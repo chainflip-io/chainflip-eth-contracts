@@ -1,3 +1,6 @@
+pragma solidity >=0.7.0;
+
+
 interface IERC20 {
     function totalSupply() external view returns (uint supply);
     function balanceOf(address _owner) external view returns (uint balance);
