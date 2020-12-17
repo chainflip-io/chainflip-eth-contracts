@@ -27,8 +27,7 @@ contract Vault is SchnorrSECP256K1 {
     // Constants
     /// @dev The address used to indicate whether transfer should send ETH or a token
     address constant private _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    // TODO: CHANGE TO PRIVATE
-    bytes32 constant public _NULL = "";
+    bytes32 constant private _NULL = "";
 
 
     struct KeyData {
@@ -53,23 +52,6 @@ contract Vault is SchnorrSECP256K1 {
 
 
     // -----Deposits/withdrawals-----
-
-    // function test(
-    //     bytes32 newKeyX,
-    //     uint8 newKeyYParity,
-    //     address newNonceTimesGAddr,
-    //     bytes32 msgHash,
-    //     bytes32 sig
-    // ) public view returns (bytes memory) {
-    //     return abi.encodeWithSelector(
-    //         this.updateAggKey.selector,
-    //         newKeyX,
-    //         newKeyYParity,
-    //         newNonceTimesGAddr,
-    //         _NULL,
-    //         _NULL
-    //     );
-    // }
 
     function transfer(
         address tokenAddr,
@@ -105,8 +87,6 @@ contract Vault is SchnorrSECP256K1 {
         }
     }
 
-    event TestEv(address indexed val0);
-
     event KeyChange(
         bytes32 indexed curKeyX,
         uint8 curKeyYParity,
@@ -139,17 +119,13 @@ contract Vault is SchnorrSECP256K1 {
     ) {
         require(swapID != _NULL, "Vault: invalid swapID");
         require(tokenAddr != address(0), "Vault: invalid tokenAddr");
-        // require(amount != 0, "Vault: invalid amount");
+        require(amount != 0, "Vault: invalid amount");
 
         tokenAddr = tokenAddr == _ETH_ADDR ? address(0) : tokenAddr;
-        // emit TestEv(tokenAddr, swapID, 17);
-        // emit TestEv(tokenAddr);
-        // emit TestEv(swapID);
         Deposit d = new Deposit{salt: swapID}(
             tokenAddr, 
             amount
         );
-        // emit TestEv(address(d));
     }
 
 
@@ -224,6 +200,14 @@ contract Vault is SchnorrSECP256K1 {
         require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
 
         _aggregateKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
+        emit KeyChange(
+            _governanceKeyData.pubKeyX,
+            _governanceKeyData.pubKeyYParity,
+            _governanceKeyData.nonceTimesGAddr,
+            newKeyX,
+            newKeyYParity,
+            newNonceTimesGAddr
+        );
     }
 
     function setGovKeyByGovKey(
@@ -253,6 +237,14 @@ contract Vault is SchnorrSECP256K1 {
         require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
 
         _governanceKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
+        emit KeyChange(
+            _governanceKeyData.pubKeyX,
+            _governanceKeyData.pubKeyYParity,
+            _governanceKeyData.nonceTimesGAddr,
+            newKeyX,
+            newKeyYParity,
+            newNonceTimesGAddr
+        );
     }
 
 
