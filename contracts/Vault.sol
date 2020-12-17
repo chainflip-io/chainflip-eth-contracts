@@ -36,6 +36,16 @@ contract Vault is SchnorrSECP256K1 {
         address nonceTimesGAddr;
     }
 
+    event KeyChange(
+        bool keyChangedIsAggKey,
+        bytes32 indexed sigKeyX,
+        uint8 sigKeyYParity,
+        address sigNonceTimesGAddr,
+        bytes32 indexed newKeyX,
+        uint8 newKeyYParity,
+        address newNonceTimesGAddr
+    );
+
 
     constructor(
         bytes32 newAggKeyX,
@@ -86,15 +96,6 @@ contract Vault is SchnorrSECP256K1 {
             IERC20(tokenAddr).transfer(recipient, amount);
         }
     }
-
-    event KeyChange(
-        bytes32 indexed curKeyX,
-        uint8 curKeyYParity,
-        address curNonceTimesGAddr,
-        bytes32 indexed newKeyX,
-        uint8 newKeyYParity,
-        address newNonceTimesGAddr
-    );
 
     function fetchDeposit(
         bytes32 swapID,
@@ -164,6 +165,7 @@ contract Vault is SchnorrSECP256K1 {
 
         _aggregateKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
         emit KeyChange(
+            true,
             _aggregateKeyData.pubKeyX,
             _aggregateKeyData.pubKeyYParity,
             _aggregateKeyData.nonceTimesGAddr,
@@ -201,9 +203,10 @@ contract Vault is SchnorrSECP256K1 {
 
         _aggregateKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
         emit KeyChange(
-            _governanceKeyData.pubKeyX,
-            _governanceKeyData.pubKeyYParity,
-            _governanceKeyData.nonceTimesGAddr,
+            true,
+            _aggregateKeyData.pubKeyX,
+            _aggregateKeyData.pubKeyYParity,
+            _aggregateKeyData.nonceTimesGAddr,
             newKeyX,
             newKeyYParity,
             newNonceTimesGAddr
@@ -238,6 +241,7 @@ contract Vault is SchnorrSECP256K1 {
 
         _governanceKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
         emit KeyChange(
+            false,
             _governanceKeyData.pubKeyX,
             _governanceKeyData.pubKeyYParity,
             _governanceKeyData.nonceTimesGAddr,
