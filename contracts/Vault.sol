@@ -4,7 +4,8 @@ pragma solidity ^0.7.0;
 // import "../interfaces/IVault.sol";
 import "../interfaces/IERC20.sol";
 import "./SchnorrSECP256K1.sol";
-import "./Deposit.sol";
+import "./DepositEth.sol";
+import "./DepositToken.sol";
 
 
 /**
@@ -122,11 +123,14 @@ contract Vault is SchnorrSECP256K1 {
         require(tokenAddr != address(0), "Vault: invalid tokenAddr");
         require(amount != 0, "Vault: invalid amount");
 
-        tokenAddr = tokenAddr == _ETH_ADDR ? address(0) : tokenAddr;
-        Deposit d = new Deposit{salt: swapID}(
-            tokenAddr, 
-            amount
-        );
+        if (tokenAddr == _ETH_ADDR) {
+            DepositEth d = new DepositEth{salt: swapID}();
+        } else {
+            DepositToken d = new DepositToken{salt: swapID}(
+                tokenAddr,
+                amount
+            );
+        }
     }
 
 
