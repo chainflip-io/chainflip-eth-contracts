@@ -163,7 +163,6 @@ contract Vault is SchnorrSECP256K1 {
         sig
     ) {
         require(newKeyX != _NULL, "Vault: invalid newKeyX");
-        require(newKeyYParity != 0, "Vault: invalid newKeyYParity");
         // Shortened the message to make it fit within 32 bytes...
         require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
 
@@ -201,7 +200,6 @@ contract Vault is SchnorrSECP256K1 {
         sig
     ) {
         require(newKeyX != _NULL, "Vault: invalid newKeyX");
-        require(newKeyYParity != 0, "Vault: invalid newKeyYParity");
         // Shortened the message to make it fit within 32 bytes...
         require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
 
@@ -239,7 +237,6 @@ contract Vault is SchnorrSECP256K1 {
         sig
     ) {
         require(newKeyX != _NULL, "Vault: invalid newKeyX");
-        require(newKeyYParity != 0, "Vault: invalid newKeyYParity");
         // Shortened the message to make it fit within 32 bytes...
         require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
 
