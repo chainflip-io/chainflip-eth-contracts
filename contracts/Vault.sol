@@ -23,7 +23,6 @@ contract Vault is SchnorrSECP256K1 {
     KeyData private _governanceKeyData;
     /// @dev The most recent time that the validate() modifier was called
     uint private _lastValidateTime;
-    /// @dev The bytecode for the create2 deposit contract
 
     // Constants
     /// @dev The address used to indicate whether transfer should send ETH or a token

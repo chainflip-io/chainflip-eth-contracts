@@ -18,8 +18,8 @@ def vault(a, Vault):
 
 
 @pytest.fixture(scope="module")
-def token(a, ERC20):
-    token = a[0].deploy(ERC20, "ShitCoin", "SC", 10**21)
+def token(a, Token):
+    token = a[0].deploy(Token, "ShitCoin", "SC", 10**21)
     return token
 
 
