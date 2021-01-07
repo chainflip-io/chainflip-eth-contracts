@@ -99,15 +99,15 @@ contract SchnorrSECP256K1 {
       **************************************************************************
       @return True if passed a valid signature, false otherwise. */
   function verifySignature(
+    uint256 msgHash, 
+    uint256 signature,
     uint256 signingPubKeyX,
     uint8 pubKeyYParity,
-    address nonceTimesGeneratorAddress,
-    uint256 msgHash, 
-    uint256 signature
+    address nonceTimesGeneratorAddress
   ) public pure returns (bool) {
     require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
     // Avoid signature malleability from multiple representations for ℤ/Qℤ elts
-    require(signature < Q, "signature must be reduced modulo Q");
+    require(signature < Q, "Sig must be reduced modulo Q");
 
     // Forbid trivial inputs, to avoid ecrecover edge cases. The main thing to
     // avoid is something which causes ecrecover to return 0x0: then trivial
@@ -116,7 +116,7 @@ contract SchnorrSECP256K1 {
     //
     // solium-disable-next-line indentation
     require(nonceTimesGeneratorAddress != address(0) && signingPubKeyX > 0 &&
-      signature > 0 && msgHash > 0, "no zero inputs allowed");
+      signature > 0 && msgHash > 0, "No zero inputs allowed");
 
     // solium-disable-next-line indentation
     uint256 msgChallenge = // "e"

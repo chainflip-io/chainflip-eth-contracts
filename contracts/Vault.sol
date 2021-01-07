@@ -1,8 +1,8 @@
 pragma solidity ^0.7.0;
 
 
-// import "../interfaces/IVault.sol";
-import "../interfaces/IERC20.sol";
+import "../interfaces/IVault.sol";
+import "OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7/contracts/token/ERC20/IERC20.sol";
 import "./SchnorrSECP256K1.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
@@ -28,31 +28,32 @@ contract Vault is SchnorrSECP256K1 {
     // Constants
     /// @dev The address used to indicate whether transfer should send ETH or a token
     address constant private _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address constant private _ZERO_ADDR = address(0);
     bytes32 constant private _NULL = "";
 
 
     struct KeyData {
-        bytes32 pubKeyX;
+        uint pubKeyX;
         uint8 pubKeyYParity;
         address nonceTimesGAddr;
     }
 
     event KeyChange(
         bool keyChangedIsAggKey,
-        bytes32 indexed sigKeyX,
+        uint indexed sigKeyX,
         uint8 sigKeyYParity,
         address sigNonceTimesGAddr,
-        bytes32 indexed newKeyX,
+        uint indexed newKeyX,
         uint8 newKeyYParity,
         address newNonceTimesGAddr
     );
 
 
     constructor(
-        bytes32 newAggKeyX,
+        uint newAggKeyX,
         uint8 newAggKeyYParity,
         address newAggNonceTimesGAddr,
-        bytes32 newGovKeyX,
+        uint newGovKeyX,
         uint8 newGovKeyYParity,
         address newGovNonceTimesGAddr
     ) {
@@ -64,65 +65,78 @@ contract Vault is SchnorrSECP256K1 {
 
     // -----Deposits/withdrawals-----
 
+
+    /**
+     * @notice  Transfers ETH or a token from this vault to a recipient
+     * @param msgHash   The keccak256 hash over the msg, which is the calldata
+     *                  for this function with empty msgHash and sig
+     * @param sig       The schnorrSECP256K1 signature over the msgHash from _aggregateKeyData
+     * @param tokenAddr The address of the token to be transferred
+     * @param recipient The address of the recipient of the transfer
+     * @param amount    The amount to transfer, in wei
+     */
     function transfer(
+        uint msgHash,
+        uint sig,
         address tokenAddr,
         address payable recipient,
-        uint amount,
-        bytes32 msgHash,
-        bytes32 sig
-    ) external validate(
-        _aggregateKeyData.pubKeyX,
-        _aggregateKeyData.pubKeyYParity,
-        _aggregateKeyData.nonceTimesGAddr,
-        msgHash,
+        uint amount
+    ) external nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) validate(
         keccak256(abi.encodeWithSelector(
             this.transfer.selector,
+            _NULL,
+            _NULL,
             tokenAddr,
             recipient,
-            amount,
-            _NULL,
-            _NULL
+            amount
         )),
-        sig
+        msgHash,
+        sig,
+        _aggregateKeyData.pubKeyX,
+        _aggregateKeyData.pubKeyYParity,
+        _aggregateKeyData.nonceTimesGAddr
     ) {
-        require(tokenAddr != address(0), "Vault: invalid tokenAddr");
-        require(recipient != address(0), "Vault: invalid recipient");
-        require(amount != 0, "Vault: invalid amount");
-
         if (tokenAddr == _ETH_ADDR) {
             recipient.transfer(amount);
         } else {
-            // It would be good to wrap require around this line, but
+            // It would be nice to wrap require around this line, but
             // some older tokens don't return a bool
             IERC20(tokenAddr).transfer(recipient, amount);
         }
     }
 
+    /**
+     * @notice  Retrieves ETH or a token from an address deterministically generated using
+     *          create2 by creating a contract for that address, sending it to this vault, and
+     *          then destroying
+     * @param msgHash   The keccak256 hash over the msg, which is the calldata
+     *                  for this function with empty msgHash and sig
+     * @param sig       The schnorrSECP256K1 signature over the msgHash from _aggregateKeyData
+     * @param swapID    The unique identifier for this swap
+     * @param tokenAddr The address of the token to be transferred
+     * @param amount    The amount to retrieve, in wei
+     */
     function fetchDeposit(
+        uint msgHash,
+        uint sig,
         bytes32 swapID,
         address tokenAddr,
-        uint amount,
-        bytes32 msgHash,
-        bytes32 sig
-    ) external validate(
-        _aggregateKeyData.pubKeyX,
-        _aggregateKeyData.pubKeyYParity,
-        _aggregateKeyData.nonceTimesGAddr,
-        msgHash,
+        uint amount
+    ) external nzBytes32(swapID) nzAddr(tokenAddr) nzUint(amount) validate(
         keccak256(abi.encodeWithSelector(
             this.fetchDeposit.selector,
+            _NULL,
+            _NULL,
             swapID,
             tokenAddr,
-            amount,
-            _NULL,
-            _NULL
+            amount
         )),
-        sig
+        msgHash,
+        sig,
+        _aggregateKeyData.pubKeyX,
+        _aggregateKeyData.pubKeyYParity,
+        _aggregateKeyData.nonceTimesGAddr
     ) {
-        require(swapID != _NULL, "Vault: invalid swapID");
-        require(tokenAddr != address(0), "Vault: invalid tokenAddr");
-        require(amount != 0, "Vault: invalid amount");
-
         if (tokenAddr == _ETH_ADDR) {
             DepositEth d = new DepositEth{salt: swapID}();
         } else {
@@ -137,36 +151,36 @@ contract Vault is SchnorrSECP256K1 {
     // -----Setters-----
 
     /**
-     * @notice  Updates the aggregate key
-     * @param sig           The aggregated signature of vault nodes
-     * @param msgHash       The hash of the calldata with an empty sig
+     * @notice  Set a new _aggregateKeyData. Requires a signature from the current _aggregateKeyData
+     * @param msgHash   The keccak256 hash over the msg, which is the calldata
+     *                  for this function with empty msgHash and sig
+     * @param sig       The schnorrSECP256K1 signature over the msgHash from _aggregateKeyData
+     * @param newKeyX   The x coordinate of the public key of the new _aggregateKeyData, as uint
+     * @param newKeyYParity The parity of the y coordinate of the public key of the new
+                            _aggregateKeyData. 0 if it's even, 1 if it's odd
+     * @param newNonceTimesGAddr    The newNonceTimesGeneratorAddress of the new key
      */
     function setAggKeyByAggKey(
-        bytes32 newKeyX,
+        uint msgHash,
+        uint sig,
+        uint newKeyX,
         uint8 newKeyYParity,
-        address newNonceTimesGAddr,
-        bytes32 msgHash,
-        bytes32 sig
-    ) external validate(
-        _aggregateKeyData.pubKeyX,
-        _aggregateKeyData.pubKeyYParity,
-        _aggregateKeyData.nonceTimesGAddr,
-        msgHash,
+        address newNonceTimesGAddr
+    ) external nzUint(newKeyX) nzAddr(newNonceTimesGAddr) validate(
         keccak256(abi.encodeWithSelector(
             this.setAggKeyByAggKey.selector,
+            _NULL,
+            _NULL,
             newKeyX,
             newKeyYParity,
-            newNonceTimesGAddr,
-            _NULL,
-            _NULL
+            newNonceTimesGAddr
         )),
-        sig
+        msgHash,
+        sig,
+        _aggregateKeyData.pubKeyX,
+        _aggregateKeyData.pubKeyYParity,
+        _aggregateKeyData.nonceTimesGAddr
     ) {
-        require(newKeyX != _NULL, "Vault: invalid newKeyX");
-        // Shortened the message to make it fit within 32 bytes...
-        require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
-
-        _aggregateKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
         emit KeyChange(
             true,
             _aggregateKeyData.pubKeyX,
@@ -176,34 +190,40 @@ contract Vault is SchnorrSECP256K1 {
             newKeyYParity,
             newNonceTimesGAddr
         );
+        _aggregateKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
     }
 
+    /**
+     * @notice  Set a new _aggregateKeyData. Requires a signature from the current _governanceKeyData
+     * @param msgHash   The keccak256 hash over the msg, which is the calldata
+     *                  for this function with empty msgHash and sig
+     * @param sig       The schnorrSECP256K1 signature over the msgHash from _governanceKeyData
+     * @param newKeyX   The x coordinate of the public key of the new _aggregateKeyData, as uint
+     * @param newKeyYParity The parity of the y coordinate of the public key of the new
+                            _aggregateKeyData. 0 if it's even, 1 if it's odd
+     * @param newNonceTimesGAddr    The newNonceTimesGeneratorAddress of the new key
+     */
     function setAggKeyByGovKey(
-        bytes32 newKeyX,
+        uint msgHash,
+        uint sig,
+        uint newKeyX,
         uint8 newKeyYParity,
-        address newNonceTimesGAddr,
-        bytes32 msgHash,
-        bytes32 sig
-    ) external validate(
-        _governanceKeyData.pubKeyX,
-        _governanceKeyData.pubKeyYParity,
-        _governanceKeyData.nonceTimesGAddr,
-        msgHash,
+        address newNonceTimesGAddr
+    ) external nzUint(newKeyX) nzAddr(newNonceTimesGAddr) validate(
         keccak256(abi.encodeWithSelector(
             this.setAggKeyByGovKey.selector,
+            _NULL,
+            _NULL,
             newKeyX,
             newKeyYParity,
-            newNonceTimesGAddr,
-            _NULL,
-            _NULL
+            newNonceTimesGAddr
         )),
-        sig
+        msgHash,
+        sig,
+        _governanceKeyData.pubKeyX,
+        _governanceKeyData.pubKeyYParity,
+        _governanceKeyData.nonceTimesGAddr
     ) {
-        require(newKeyX != _NULL, "Vault: invalid newKeyX");
-        // Shortened the message to make it fit within 32 bytes...
-        require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
-
-        _aggregateKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
         emit KeyChange(
             true,
             _aggregateKeyData.pubKeyX,
@@ -213,34 +233,40 @@ contract Vault is SchnorrSECP256K1 {
             newKeyYParity,
             newNonceTimesGAddr
         );
+        _aggregateKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
     }
 
+    /**
+     * @notice  Set a new _governanceKeyData. Requires a signature from the current _governanceKeyData
+     * @param msgHash   The keccak256 hash over the msg, which is the calldata
+     *                  for this function with empty msgHash and sig
+     * @param sig       The schnorrSECP256K1 signature over the msgHash from _governanceKeyData
+     * @param newKeyX   The x coordinate of the public key of the new _governanceKeyData, as uint
+     * @param newKeyYParity The parity of the y coordinate of the public key of the new
+                            _governanceKeyData. 0 if it's even, 1 if it's odd
+     * @param newNonceTimesGAddr    The newNonceTimesGeneratorAddress of the new key
+     */
     function setGovKeyByGovKey(
-        bytes32 newKeyX,
+        uint msgHash,
+        uint sig,
+        uint newKeyX,
         uint8 newKeyYParity,
-        address newNonceTimesGAddr,
-        bytes32 msgHash,
-        bytes32 sig
-    ) external validate(
-        _governanceKeyData.pubKeyX,
-        _governanceKeyData.pubKeyYParity,
-        _governanceKeyData.nonceTimesGAddr,
-        msgHash,
+        address newNonceTimesGAddr
+    ) external nzUint(newKeyX) nzAddr(newNonceTimesGAddr) validate(
         keccak256(abi.encodeWithSelector(
             this.setGovKeyByGovKey.selector,
+            _NULL,
+            _NULL,
             newKeyX,
             newKeyYParity,
-            newNonceTimesGAddr,
-            _NULL,
-            _NULL
+            newNonceTimesGAddr
         )),
-        sig
+        msgHash,
+        sig,
+        _governanceKeyData.pubKeyX,
+        _governanceKeyData.pubKeyYParity,
+        _governanceKeyData.nonceTimesGAddr
     ) {
-        require(newKeyX != _NULL, "Vault: invalid newKeyX");
-        // Shortened the message to make it fit within 32 bytes...
-        require(newNonceTimesGAddr != address(0), "Vault:invalid newNonceTimesGAddr");
-
-        _governanceKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
         emit KeyChange(
             false,
             _governanceKeyData.pubKeyX,
@@ -250,12 +276,19 @@ contract Vault is SchnorrSECP256K1 {
             newKeyYParity,
             newNonceTimesGAddr
         );
+        _governanceKeyData = KeyData(newKeyX, newKeyYParity, newNonceTimesGAddr);
     }
 
 
     // -----Getters-----
 
-    function getAggregateKeyData() external view returns (bytes32, uint8, address) {
+    /**
+     * @notice  Get all elements of the current _aggregateKeyData
+     * @return  The x coordinate as a uint
+     * @return  The y parity as a uint8. 0 if it's even, 1 if it's odd
+     * @return  The nonceTimesGeneratorAddress
+     */
+    function getAggregateKeyData() external view returns (uint, uint8, address) {
         return (
             _aggregateKeyData.pubKeyX,
             _aggregateKeyData.pubKeyYParity,
@@ -263,7 +296,13 @@ contract Vault is SchnorrSECP256K1 {
         );
     }
 
-    function getGovernanceKeyData() external view returns (bytes32, uint8, address) {
+    /**
+     * @notice  Get all elements of the current _governanceKeyData
+     * @return  The x coordinate as a uint
+     * @return  The y parity as a uint8. 0 if it's even, 1 if it's odd
+     * @return  The nonceTimesGeneratorAddress
+     */
+    function getGovernanceKeyData() external view returns (uint, uint8, address) {
         return (
             _governanceKeyData.pubKeyX,
             _governanceKeyData.pubKeyYParity,
@@ -271,35 +310,64 @@ contract Vault is SchnorrSECP256K1 {
         );
     }
 
+    /**
+     * @notice  Get the last time that a function was called which
+                requires a signature from _aggregateKeyData or _governanceKeyData
+     * @return  The last time validate was called, in unix time
+     */
+    function getLastValidateTime() external view returns (uint) {
+        return _lastValidateTime;
+    }
+
 
     // -----Modifiers-----
 
+    /// @dev Checks the validity of a signature and msgHash, then updates _lastValidateTime
     // It would be nice to split this up, but these checks need to be made atomicly always
     modifier validate(
-        bytes32 pubKeyX,
-        uint8 pubKeyYParity,
-        address nonceTimesGAddr,
-        bytes32 msgHash,
         bytes32 contractMsgHash,
-        bytes32 sig
+        uint msgHash,
+        uint sig,
+        uint pubKeyX,
+        uint8 pubKeyYParity,
+        address nonceTimesGAddr
     ) {
+        require(msgHash == uint(contractMsgHash), "Vault: invalid msgHash");
         require(
             verifySignature(
-                uint(pubKeyX),
+                msgHash,
+                sig,
+                pubKeyX,
                 pubKeyYParity,
-                nonceTimesGAddr,
-                uint(msgHash),
-                uint(sig)
+                nonceTimesGAddr
             ),
             "Vault: Sig invalid"
         );
-        require(msgHash == contractMsgHash, "Vault: invalid msgHash");
         _lastValidateTime = block.timestamp;
+        _;
+    }
+
+    /// @dev Checks that a uint isn't nonzero/empty
+    modifier nzUint(uint u) {
+        require(u != 0, "Vault: uint input is empty");
+        _;
+    }
+
+    /// @dev Checks that an address isn't nonzero/empty
+    modifier nzAddr(address a) {
+        require(a != _ZERO_ADDR, "Vault: address input is empty");
+        _;
+    }
+
+    /// @dev Checks that a bytes32 isn't nonzero/empty
+    modifier nzBytes32(bytes32 b) {
+        require(b != _NULL, "Vault: bytes32 input is empty");
         _;
     }
 
 
     // -----Fallbacks-----
 
+    /// @dev For receiving ETH when fetchDeposit is called
     receive() external payable {}
 }

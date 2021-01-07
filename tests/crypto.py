@@ -5,10 +5,13 @@ from umbral import pre, keys, signing
 
 umbral.config.set_default_curve()
 
+# Fcns return a list instead of a tuple since they need to be modified
+# for some tests (e.g. to make them revert)
 class Signer():
 
     Q = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
     Q_INT = int(Q, 16)
+    HALF_Q_INT = (Q_INT >> 1) + 1
 
 
     def __init__(self, privKeyHex, kHex):
@@ -32,8 +35,33 @@ class Signer():
         self.kTimesGAddressHex = cleanHexStr(w3.toChecksumAddress(cleanHexStr(w3.keccak(kTimesGPub)[-20:])))
 
 
+    @classmethod
+    def priv_key_to_pubX_int(cls, privKey):
+        pubKey = privKey.get_pubkey()
+        pubKeyX = pubKey.to_bytes()[1:]
+        return int(cleanHexStr(pubKeyX), 16)
+
+
+    @classmethod
+    def gen_key(cls):
+        key = keys.UmbralPrivateKey.gen_key()
+        while cls.priv_key_to_pubX_int(key) >= cls.HALF_Q_INT:
+            key = keys.UmbralPrivateKey.gen_key()
+        
+        return key
+
+
+    @classmethod
+    def gen_key_hex(cls):
+        return cls.gen_key().to_bytes().hex()
+
+
     def getPubData(self):
-        return self.pubKeyXInt, self.pubKeyYPar, self.kTimesGAddressHex
+        return [self.pubKeyXInt, self.pubKeyYPar, self.kTimesGAddressHex]
+    
+
+    def getPubDataWith0x(self):
+        return [self.pubKeyXInt, self.pubKeyYPar, "0x" + self.kTimesGAddressHex]
 
 
     def getSigData(self, msgToHash):
@@ -45,4 +73,10 @@ class Signer():
         s = (self.kInt - (self.privKeyInt * eInt)) % self.Q_INT
         s = s + self.Q_INT if s < 0 else s
 
-        return int(msgHashHex, 16), s
+        return [int(msgHashHex, 16), s]
+
+
+print(Signer.gen_key_hex())
+print(Signer.gen_key_hex())
+print(Signer.gen_key_hex())
+print(Signer.gen_key_hex())

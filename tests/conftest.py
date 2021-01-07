@@ -9,12 +9,13 @@ def isolation(fn_isolation):
     pass
 
 
-# Deploy the contract for repeated tests without having to redeploy each time
+# Deploy the contracts for repeated tests without having to redeploy each time
 
 @pytest.fixture(scope="module")
 def vault(a, Vault):
-    vault = a[0].deploy(Vault, *AGG_SIGNER_1.getPubData(), *AGG_SIGNER_1.getPubData())
+    vault = a[0].deploy(Vault, *AGG_SIGNER_1.getPubData(), *GOV_SIGNER_1.getPubData())
     return vault
+
 
 @pytest.fixture(scope="module")
 def token(a, ERC20):
@@ -22,4 +23,6 @@ def token(a, ERC20):
     return token
 
 
-
+@pytest.fixture(scope="module")
+def schnorrSECP256K1(a, SchnorrSECP256K1):
+    return a[0].deploy(SchnorrSECP256K1)
