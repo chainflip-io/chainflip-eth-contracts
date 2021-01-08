@@ -55,3 +55,15 @@ def test_fetchDeposit_rev_amount(vault):
 
     with reverts(REV_MSG_NZ_UINT):
         vault.fetchDeposit(*AGG_SIGNER_1.getSigData(callDataNoSig), SWAP_ID_HEX, ETH_ADDR, 0)
+
+
+# Testing to see if this test affects `bownie test --coverage`. Oddly, it increases the coverage
+# of SchnorrSECP256K1 but not Vault - probably a bug with in Brownie
+def test_fetchDeposit_rev_sig(vault):
+    callDataNoSig = vault.fetchDeposit.encode_input(0, 0, SWAP_ID_HEX, ETH_ADDR, TEST_AMNT)
+
+    sigData = list(AGG_SIGNER_1.getSigData(callDataNoSig))
+    sigData[1] = Signer.Q_INT
+    # Fetch the deposit
+    with reverts(REV_MSG_SIG_LESS_Q):
+#         vault.fetchDeposit(*sigData, SWAP_ID_HEX, ETH_ADDR, TEST_AMNT)
