@@ -113,22 +113,19 @@ contract Vault is SchnorrSECP256K1 {
      * @param sig       The schnorrSECP256K1 signature over the msgHash from _aggregateKeyData
      * @param swapID    The unique identifier for this swap
      * @param tokenAddr The address of the token to be transferred
-     * @param amount    The amount to retrieve, in wei
      */
     function fetchDeposit(
         uint msgHash,
         uint sig,
         bytes32 swapID,
-        address tokenAddr,
-        uint amount
-    ) external nzBytes32(swapID) nzAddr(tokenAddr) nzUint(amount) validate(
+        address tokenAddr
+    ) external nzBytes32(swapID) nzAddr(tokenAddr)  validate(
         keccak256(abi.encodeWithSelector(
             this.fetchDeposit.selector,
             _NULL,
             _NULL,
             swapID,
-            tokenAddr,
-            amount
+            tokenAddr
         )),
         msgHash,
         sig,
@@ -140,12 +137,10 @@ contract Vault is SchnorrSECP256K1 {
             DepositEth d = new DepositEth{salt: swapID}();
         } else {
             DepositToken d = new DepositToken{salt: swapID}(
-                tokenAddr,
-                amount
+                tokenAddr
             );
         }
     }
-
 
     // -----Setters-----
 

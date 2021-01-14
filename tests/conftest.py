@@ -22,7 +22,6 @@ def token(a, Token):
     token = a[0].deploy(Token, "ShitCoin", "SC", 10**21)
     return token
 
-
 @pytest.fixture(scope="module")
 def schnorrSECP256K1(a, SchnorrSECP256K1):
     return a[0].deploy(SchnorrSECP256K1)
