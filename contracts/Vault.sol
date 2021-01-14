@@ -119,7 +119,7 @@ contract Vault is SchnorrSECP256K1 {
         uint sig,
         bytes32 swapID,
         address tokenAddr
-    ) external nzBytes32(swapID) nzAddr(tokenAddr)  validate(
+    ) external nzBytes32(swapID) nzAddr(tokenAddr) validate(
         keccak256(abi.encodeWithSelector(
             this.fetchDeposit.selector,
             _NULL,
