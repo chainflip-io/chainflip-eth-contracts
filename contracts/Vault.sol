@@ -1,8 +1,8 @@
 pragma solidity ^0.7.0;
 
 
-import "../interfaces/IVault.sol";
-import "OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IVault.sol";
 import "./SchnorrSECP256K1.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
