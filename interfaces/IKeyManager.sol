@@ -2,16 +2,15 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 
-import "../interfaces/IShared.sol";
-import "../interfaces/IKeyManager.sol";
+import "./IShared.sol";
 
 
 /**
-* @title    Vault interface
-* @notice   The interface for functions Vault implements
+* @title    KeyManager interface
+* @notice   The interface for functions KeyManager implements
 * @author   Quantaf1re (James Key)
 */
-interface IVault is IShared {
+interface IKeyManager is IShared {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -19,18 +18,25 @@ interface IVault is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function transfer(
-        SigData calldata sigData,
-        address tokenAddr,
-        address payable recipient,
-        uint amount
+    function isValidSig(
+        bytes32 contractMsgHash,
+        SigData memory sigData,
+        Key memory key
+    ) external returns (bool);
+    
+    function setAggKeyWithAggKey(
+        SigData memory sigData,
+        Key memory newKey
     ) external;
 
-    function fetchDeposit(
-        SigData calldata sigData,
-        bytes32 swapID,
-        address tokenAddr,
-        uint amount
+    function setAggKeyWithGovKey(
+        SigData memory sigData,
+        Key memory newKey
+    ) external;
+
+    function setGovKeyWithGovKey(
+        SigData memory sigData,
+        Key memory newKey
     ) external;
 
 
@@ -40,6 +46,9 @@ interface IVault is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
+    function getAggregateKey() external view returns (Key memory);
 
-    function getKeyManager() external returns (IKeyManager);
+    function getGovernanceKey() external view returns (Key memory);
+
+    function getLastValidateTime() external view returns (uint);
 }
