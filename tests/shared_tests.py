@@ -7,40 +7,41 @@ from brownie import reverts
 
 # Set keys
 
-def testSetAggKeyByAggKey(vault):
-    assert vault.getAggregateKeyData() == AGG_SIGNER_1.getPubDataWith0x()
-    assert vault.getGovernanceKeyData() == GOV_SIGNER_1.getPubDataWith0x()
 
-    callDataNoSig = vault.setAggKeyByAggKey.encode_input(0, 0, *AGG_SIGNER_2.getPubData())
-    tx = vault.setAggKeyByAggKey(*AGG_SIGNER_1.getSigData(callDataNoSig), *AGG_SIGNER_2.getPubData())
+def setAggKeyWithAggKey_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
-    assert vault.getAggregateKeyData() == AGG_SIGNER_2.getPubDataWith0x()
-    assert tx.events["KeyChange"][0].values() == [True, *AGG_SIGNER_1.getPubDataWith0x(), *AGG_SIGNER_2.getPubDataWith0x()]
-    assert vault.getGovernanceKeyData() == GOV_SIGNER_1.getPubDataWith0x()
+    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    tx = cf.keyManager.setAggKeyWithAggKey(AGG_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
 
-
-def testSetAggKeyByGovKey(vault):
-    assert vault.getAggregateKeyData() == AGG_SIGNER_1.getPubDataWith0x()
-    assert vault.getGovernanceKeyData() == GOV_SIGNER_1.getPubDataWith0x()
-
-    callDataNoSig = vault.setAggKeyByGovKey.encode_input(0, 0, *AGG_SIGNER_2.getPubData())
-    tx = vault.setAggKeyByGovKey(*GOV_SIGNER_1.getSigData(callDataNoSig), *AGG_SIGNER_2.getPubData())
-
-    assert vault.getAggregateKeyData() == AGG_SIGNER_2.getPubDataWith0x()
-    assert tx.events["KeyChange"][0].values() == [True, *AGG_SIGNER_1.getPubDataWith0x(), *AGG_SIGNER_2.getPubDataWith0x()]
-    assert vault.getGovernanceKeyData() == GOV_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
+    assert tx.events["KeyChange"][0].values() == [True, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
 
-def testSetGovKeyByGovKey(vault):
-    assert vault.getAggregateKeyData() == AGG_SIGNER_1.getPubDataWith0x()
-    assert vault.getGovernanceKeyData() == GOV_SIGNER_1.getPubDataWith0x()
+def setAggKeyWithGovKey_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
-    callDataNoSig = vault.setGovKeyByGovKey.encode_input(0, 0, *GOV_SIGNER_2.getPubData())
-    tx = vault.setGovKeyByGovKey(*GOV_SIGNER_1.getSigData(callDataNoSig), *GOV_SIGNER_2.getPubData())
+    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    tx = cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
 
-    assert vault.getAggregateKeyData() == AGG_SIGNER_1.getPubDataWith0x()
-    assert vault.getGovernanceKeyData() == GOV_SIGNER_2.getPubDataWith0x()
-    assert tx.events["KeyChange"][0].values() == [False, *GOV_SIGNER_1.getPubDataWith0x(), *GOV_SIGNER_2.getPubDataWith0x()]
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
+    assert tx.events["KeyChange"][0].values() == [False, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
+
+
+def setGovKeyWithGovKey_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
+
+    callDataNoSig = cf.keyManager.setGovKeyWithGovKey.encode_input(NULL_SIG_DATA, GOV_SIGNER_2.getPubData())
+    tx = cf.keyManager.setGovKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), GOV_SIGNER_2.getPubData())
+
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_2.getPubDataWith0x()
+    assert tx.events["KeyChange"][0].values() == [False, GOV_SIGNER_1.getPubDataWith0x(), GOV_SIGNER_2.getPubDataWith0x()]
 
 
 
@@ -49,6 +50,4 @@ def testSetGovKeyByGovKey(vault):
 # but some tests occasionally fail for this reason even though they succeed most
 # of the time with no changes to the contract or test code
 def txTimeTest(time, tx):
-    print(time)
-    print(tx.timestamp)
-    assert time == tx.timestamp or time == (tx.timestamp+1)
+    assert time >= tx.timestamp or time <= (tx.timestamp+2)

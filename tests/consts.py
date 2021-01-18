@@ -6,8 +6,8 @@ ZERO_ADDR = "0000000000000000000000000000000000000000"
 ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 TEST_AMNT = 10**17
 # Notable the only part of the hash involved in CREATE2 that has padding
-SWAP_ID_HEX = cleanHexStrPad(12345)
-JUNK_INT = 1234
+JUNK_INT = 12345
+JUNK_HEX = cleanHexStrPad(JUNK_INT)
 
 
 # Keys for use in tests
@@ -29,6 +29,8 @@ AGG_SIGNER_2 = Signer(AGG_PRIV_HEX_2, AGG_K_HEX_2)
 GOV_PRIV_HEX_2 = "6b357e74e81bd16c202e6406d0e1883f758f0495973f316be323daebec04ad85"
 GOV_K_HEX_2 = "699d69410c7ae51703a515ae0c186889a47e0fda1f661b8451f90ec5d780eb4b"
 GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV_K_HEX_2)
+
+NULL_SIG_DATA = (0, 0)
 
 
 # Revert messages
