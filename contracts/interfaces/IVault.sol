@@ -2,8 +2,8 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 
-import "../interfaces/IShared.sol";
-import "../interfaces/IKeyManager.sol";
+import "./IShared.sol";
+import "./IKeyManager.sol";
 
 
 /**

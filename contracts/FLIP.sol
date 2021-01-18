@@ -1,8 +1,8 @@
 pragma solidity ^0.7.0;
 
 
-import "OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7/contracts/token/ERC20/ERC20.sol";
-import "OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 
 contract FLIP is ERC20, Ownable {

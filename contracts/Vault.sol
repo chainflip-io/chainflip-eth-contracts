@@ -2,10 +2,10 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 
-import "../interfaces/IVault.sol";
-import "../interfaces/IKeyManager.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IVault.sol";
+import "./interfaces/IKeyManager.sol";
 import "./Shared.sol";
-import "OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7/contracts/token/ERC20/IERC20.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
 
