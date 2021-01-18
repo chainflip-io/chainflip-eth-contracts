@@ -1,7 +1,7 @@
 pragma solidity ^0.7.0;
 
 
-import "../interfaces/IShared.sol";
+import "./interfaces/IShared.sol";
 
 
 /**
