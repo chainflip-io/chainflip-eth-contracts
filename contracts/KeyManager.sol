@@ -3,8 +3,8 @@ pragma abicoder v2;
 
 
 import "./interfaces/IKeyManager.sol";
-import "./SchnorrSECP256K1.sol";
-import "./Shared.sol";
+import "./abstract/SchnorrSECP256K1.sol";
+import "./abstract/Shared.sol";
 
 
 /**

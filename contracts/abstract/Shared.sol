@@ -1,7 +1,7 @@
 pragma solidity ^0.7.0;
 
 
-import "./interfaces/IShared.sol";
+import "../interfaces/IShared.sol";
 
 
 /**
@@ -10,7 +10,7 @@ import "./interfaces/IShared.sol";
 * @dev      It would be nice if this could be a library, but modifiers can't be exported :(
 * @author   Quantaf1re (James Key)
 */
-contract Shared is IShared {
+abstract contract Shared is IShared {
     /// @dev The address used to indicate whether transfer should send ETH or a token
     address constant internal _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant internal _ZERO_ADDR = address(0);

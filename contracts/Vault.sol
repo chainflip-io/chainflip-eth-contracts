@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
-import "./Shared.sol";
+import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
 

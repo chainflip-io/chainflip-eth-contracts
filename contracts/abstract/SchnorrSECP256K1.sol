@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 //       XXX: Do not use in production until this code has been audited.
 ////////////////////////////////////////////////////////////////////////////////
 
-contract SchnorrSECP256K1 {
+abstract contract SchnorrSECP256K1 {
   // See https://en.bitcoin.it/wiki/Secp256k1 for this constant.
   uint256 private constant Q = // Group order of secp256k1
     // solium-disable-next-line indentation
