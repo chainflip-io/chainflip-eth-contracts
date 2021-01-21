@@ -10,4 +10,8 @@ contract FLIP is ERC20, Ownable {
     constructor (string memory name, string memory symbol, uint256 mintAmount) ERC20(name, symbol) Ownable() {
         _mint(msg.sender, mintAmount);
     }
+
+    function mint(address receiver, uint amount) external onlyOwner {
+        _mint(receiver, amount);
+    }
 }

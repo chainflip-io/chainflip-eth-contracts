@@ -14,5 +14,4 @@ contract DepositEth {
         // that the user mistakenly sent
         selfdestruct(msg.sender);
     }
-
 }

@@ -34,14 +34,14 @@ NULL_SIG_DATA = (0, 0)
 
 
 # Revert messages
-# Vault
-REV_MSG_NZ_UINT = "Vault: uint input is empty"
-REV_MSG_NZ_ADDR = "Vault: address input is empty"
-REV_MSG_NZ_BYTES32 = "Vault: bytes32 input is empty"
+# Shared
+REV_MSG_NZ_UINT = "Shared: uint input is empty"
+REV_MSG_NZ_ADDR = "Shared: address input is empty"
+REV_MSG_NZ_BYTES32 = "Shared: bytes32 input is empty"
 
 # Validate
-REV_MSG_MSGHASH = "Vault: invalid msgHash"
-REV_MSG_SIG = "Vault: Sig invalid"
+REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
+REV_MSG_SIG = "KeyManager: Sig invalid"
 
 
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"

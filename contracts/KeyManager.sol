@@ -64,7 +64,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         SigData memory sigData,
         Key memory key
     ) public override returns (bool) {
-        require(sigData.msgHash == uint(contractMsgHash), "Vault: invalid msgHash");
+        require(sigData.msgHash == uint(contractMsgHash), "KeyManager: invalid msgHash");
         require(
             verifySignature(
                 sigData.msgHash,
@@ -73,7 +73,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
                 key.pubKeyYParity,
                 key.nonceTimesGAddr
             ),
-            "Vault: Sig invalid"
+            "KeyManager: Sig invalid"
         );
         
         _lastValidateTime = block.timestamp;
@@ -91,7 +91,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithAggKey(
         SigData memory sigData,
         Key memory newKey
-    ) external override nzUint(newKey.pubKeyX) nzAddr(newKey.nonceTimesGAddr) 
+    ) external override nzKey(newKey) 
     // validate(
     //     keccak256(abi.encodeWithSelector(
     //         this.setAggKeyWithAggKey.selector,
@@ -131,7 +131,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithGovKey(
         SigData memory sigData,
         Key memory newKey
-    ) external override nzUint(newKey.pubKeyX) nzAddr(newKey.nonceTimesGAddr) {
+    ) external override nzKey(newKey) {
         require(
             isValidSig(
                 keccak256(
@@ -161,7 +161,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setGovKeyWithGovKey(
         SigData memory sigData,
         Key memory newKey
-    ) external override nzUint(newKey.pubKeyX) nzAddr(newKey.nonceTimesGAddr) {
+    ) external override nzKey(newKey) {
         require(
             isValidSig(
                 keccak256(

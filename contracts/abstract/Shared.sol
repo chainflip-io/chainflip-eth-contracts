@@ -17,21 +17,28 @@ abstract contract Shared is IShared {
     bytes32 constant internal _NULL = "";
 
 
-    /// @dev Checks that a uint isn't nonzero/empty
+    /// @dev    Checks that a uint isn't nonzero/empty
     modifier nzUint(uint u) {
-        require(u != 0, "Vault: uint input is empty");
+        require(u != 0, "Shared: uint input is empty");
         _;
     }
 
-    /// @dev Checks that an address isn't nonzero/empty
+    /// @dev    Checks that an address isn't nonzero/empty
     modifier nzAddr(address a) {
-        require(a != _ZERO_ADDR, "Vault: address input is empty");
+        require(a != _ZERO_ADDR, "Shared: address input is empty");
         _;
     }
 
-    /// @dev Checks that a bytes32 isn't nonzero/empty
+    /// @dev    Checks that a bytes32 isn't nonzero/empty
     modifier nzBytes32(bytes32 b) {
-        require(b != _NULL, "Vault: bytes32 input is empty");
+        require(b != _NULL, "Shared: bytes32 input is empty");
+        _;
+    }
+
+    /// @dev    Checks that all of a Key's values are populated
+    modifier nzKey(Key memory key) {
+        require(key.pubKeyX != 0, "Shared: pubKeyX is empty");
+        require(key.nonceTimesGAddr != _ZERO_ADDR, "Shared: nonceTimesGAddr is empty");
         _;
     }
 
