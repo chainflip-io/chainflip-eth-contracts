@@ -49,5 +49,6 @@ REV_MSG_SIG_LESS_Q = "Sig must be reduced modulo Q"
 REV_MSG_INPUTS_0 = "No zero inputs allowed"
 
 
+# -----StakeManager-----
 EMISSION_PER_SEC = 428082191780821917
 MIN_STAKE = (10**5) * E_18

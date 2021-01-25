@@ -31,9 +31,10 @@ contract StakeManager is Shared {
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
 
-    constructor(IKeyManager keyManager, uint emissionPerSec) {
+    constructor(IKeyManager keyManager, uint emissionPerSec, uint minStake) {
         _keyManager = keyManager;
         _emissionPerSec = emissionPerSec;
+        _minStake = minStake;
         _FLIP = new FLIP("ChainFlip", "FLIP", 9 * (10**7) * _E_18);
         _lastClaimTime = block.timestamp;
     }
@@ -180,7 +181,7 @@ contract StakeManager is Shared {
      * @notice  Get the KeyManager address/interface that's used to validate sigs
      * @return  The KeyManager (IKeyManager)
      */
-    function getKeyManager() external returns (IKeyManager) {
+    function getKeyManager() external view returns (IKeyManager) {
         return _keyManager;
     }
 
@@ -188,7 +189,7 @@ contract StakeManager is Shared {
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external returns (address) {
+    function getFLIPAddress() external view returns (address) {
         return address(_FLIP);
     }
 
@@ -196,7 +197,7 @@ contract StakeManager is Shared {
      * @notice  Get the last time that claim() was called, in unix time
      * @return  The time of the last claim (uint)
      */
-    function getLastClaimTime() external returns (uint) {
+    function getLastClaimTime() external view returns (uint) {
         return _lastClaimTime;
     }
 
@@ -204,7 +205,7 @@ contract StakeManager is Shared {
      * @notice  Get the emission rate of FLIP in seconds
      * @return  The rate of FLIP emission (uint)
      */
-    function getEmissionPerSec() external returns (uint) {
+    function getEmissionPerSec() external view returns (uint) {
         return _emissionPerSec;
     }
 
@@ -213,7 +214,7 @@ contract StakeManager is Shared {
      *          to always ensure collateralisation
      * @return  The current total of stake in this contract (uint)
      */
-    function getTotalStaked() external returns (uint) {
+    function getTotalStaked() external view returns (uint) {
         return _totalStaked;
     }
 
@@ -222,7 +223,7 @@ contract StakeManager is Shared {
      *          attempt in the auction to be valid - used to prevent sybil attacks
      * @return  The minimum stake (uint)
      */
-    function getMinimumStake() external returns (uint) {
+    function getMinimumStake() external view returns (uint) {
         return _minStake;
     }
 
