@@ -157,7 +157,7 @@ contract Vault is IVault, Shared {
      * @notice  Get the KeyManager address/interface that's used to validate sigs
      * @return  The KeyManager (IKeyManager)
      */
-    function getKeyManager() external override returns (IKeyManager) {
+    function getKeyManager() external view override returns (IKeyManager) {
         return _keyManager;
     }
 
