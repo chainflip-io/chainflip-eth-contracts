@@ -15,6 +15,7 @@ abstract contract Shared is IShared {
     address constant internal _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant internal _ZERO_ADDR = address(0);
     bytes32 constant internal _NULL = "";
+    uint constant internal _E_18 = 10**18;
 
 
     /// @dev    Checks that a uint isn't nonzero/empty

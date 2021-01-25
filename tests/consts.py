@@ -1,14 +1,21 @@
 from crypto import *
 from utils import *
 
-
+# -----General/shared-----
 ZERO_ADDR = "0000000000000000000000000000000000000000"
 ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 TEST_AMNT = 10**17
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_INT = 12345
 JUNK_HEX = cleanHexStrPad(JUNK_INT)
+E_18 = 10**18
 
+REV_MSG_NZ_UINT = "Shared: uint input is empty"
+REV_MSG_NZ_ADDR = "Shared: address input is empty"
+REV_MSG_NZ_BYTES32 = "Shared: bytes32 input is empty"
+
+
+# -----KeyManager-----
 
 # Keys for use in tests
 
@@ -32,18 +39,15 @@ GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV_K_HEX_2)
 
 NULL_SIG_DATA = (0, 0)
 
-
-# Revert messages
-# Shared
-REV_MSG_NZ_UINT = "Shared: uint input is empty"
-REV_MSG_NZ_ADDR = "Shared: address input is empty"
-REV_MSG_NZ_BYTES32 = "Shared: bytes32 input is empty"
-
 # Validate
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
 
-
+# SchnorrSECP256K1
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"
 REV_MSG_SIG_LESS_Q = "Sig must be reduced modulo Q"
 REV_MSG_INPUTS_0 = "No zero inputs allowed"
+
+
+EMISSION_PER_SEC = 428082191780821917
+MIN_STAKE = (10**5) * E_18

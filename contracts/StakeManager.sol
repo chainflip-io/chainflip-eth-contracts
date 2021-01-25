@@ -16,23 +16,24 @@ contract StakeManager is Shared {
     FLIP private _FLIP;
     /// @dev    The last time that claim was called, so we know how much to mint now
     uint private _lastClaimTime;
-    /// @dev    Equates to 15% per year (not compounding)
-    uint private _emissionPerSec = 428082191780821917;
+    /// @dev    The amount of FLIPs emitted per second, minted when `claim` is called
+    uint private _emissionPerSec;
     /// @dev    Used to make make sure contract is collateralised at all times
     uint private _totalStaked;
-
-    uint private constant _E_18 = 10**18;
+    /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     // Pulled this number out my ass
-    uint private constant _MIN_STAKE = (10**5) * _E_18;
+    uint private _minStake = (10**5) * _E_18;
 
 
-    event AuctionStarted(uint indexed auctionEndBlock);
     event Staked(uint indexed nodeID, uint amount);
     event Unstaked(uint indexed nodeID, uint amount);
+    event EmissionChanged(uint oldEmissionPerSec, uint newEmissionPerSec);
+    event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
 
-    constructor(IKeyManager keyManager) {
+    constructor(IKeyManager keyManager, uint emissionPerSec) {
         _keyManager = keyManager;
+        _emissionPerSec = emissionPerSec;
         _FLIP = new FLIP("ChainFlip", "FLIP", 9 * (10**7) * _E_18);
         _lastClaimTime = block.timestamp;
     }
@@ -51,7 +52,7 @@ contract StakeManager is Shared {
      * @param nodeID    The nodeID of the staker
      */
     function stake(uint amount, uint nodeID) external nzUint(amount) nzUint(nodeID) noFish {
-        require(amount >= _MIN_STAKE, "StakeMan: small stake, peasant");
+        require(amount >= _minStake, "StakeMan: small stake, peasant");
 
         // Ensure FLIP is transferred and update _totalStaked. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
@@ -69,7 +70,7 @@ contract StakeManager is Shared {
                 the amount sent back = stake + rewards - penalties, as determined by the CFE
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current governance key (uint)
+     *                  from the current aggregate key (uint)
      * @param staker    The staker who is to be sent FLIP
      * @param amount    The amount of stake to be locked up
      * @param nodeID    The nodeID of the staker
@@ -109,7 +110,14 @@ contract StakeManager is Shared {
         emit Unstaked(nodeID, amount);
     }
 
-    function changeEmission(
+    /**
+     * @notice  Set the rate (per second) at which new FLIP is minted to this contract
+     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
+     *                  for this function with empty msgHash and sig) and sig over that hash
+     *                  from the current governance key (uint)
+     * @param newEmissionPerSec     The new rate
+     */
+    function setEmissionPerSec(
         SigData calldata sigData,
         uint newEmissionPerSec
     ) external nzUint(newEmissionPerSec) {
@@ -117,7 +125,7 @@ contract StakeManager is Shared {
             _keyManager.isValidSig(
                 keccak256(
                     abi.encodeWithSelector(
-                        this.changeEmission.selector,
+                        this.setEmissionPerSec.selector,
                         SigData(0, 0),
                         newEmissionPerSec
                     )
@@ -127,7 +135,38 @@ contract StakeManager is Shared {
             )
         );
 
+        emit EmissionChanged(_emissionPerSec, newEmissionPerSec);
         _emissionPerSec = newEmissionPerSec;
+    }
+
+    /**
+     * @notice      Set the minimum amount of stake needed for `stake` to be able 
+     *              to be called. Used to prevent spamming of stakes.
+     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
+     *                  for this function with empty msgHash and sig) and sig over that hash
+     *                  from the current governance key (uint)
+     * @param newMinStake   The new minimum stake
+     */
+    function setMinStake(
+        SigData calldata sigData,
+        uint newMinStake
+    ) external nzUint(newMinStake) {
+        require(
+            _keyManager.isValidSig(
+                keccak256(
+                    abi.encodeWithSelector(
+                        this.setMinStake.selector,
+                        SigData(0, 0),
+                        newMinStake
+                    )
+                ),
+                sigData,
+                _keyManager.getGovernanceKey()
+            )
+        );
+
+        emit MinStakeChanged(_minStake, newMinStake);
+        _minStake = newMinStake;
     }
 
 
@@ -184,7 +223,7 @@ contract StakeManager is Shared {
      * @return  The minimum stake (uint)
      */
     function getMinimumStake() external returns (uint) {
-        return _MIN_STAKE;
+        return _minStake;
     }
 
 
