@@ -20,8 +20,6 @@ contract StakeManager is Shared {
     uint private _emissionPerSec = 428082191780821917;
     /// @dev    Used to make make sure contract is collateralised at all times
     uint private _totalStaked;
-    /// @dev    The last block of an auction that can be used to stake (inclusive)
-    uint private _auctionEndBlock;
 
     uint private constant _E_18 = 10**18;
     // Pulled this number out my ass
@@ -46,35 +44,17 @@ contract StakeManager is Shared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function startAuction(SigData calldata sigData, uint endBlock) external nzUint(endBlock) noFish() {
-        require(
-            _keyManager.isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.startAuction.selector,
-                        SigData(0, 0),
-                        endBlock
-                    )
-                ),
-                sigData,
-                _keyManager.getAggregateKey()
-            )
-        );
-
-        _auctionEndBlock = endBlock;
-        emit AuctionStarted(_auctionEndBlock);
-    }
-
     /**
      * @notice          Stake some FLIP and attribute it to a nodeID
      * @dev             Requires the staker to have called `approve` in FLIP
      * @param amount    The amount of stake to be locked up
      * @param nodeID    The nodeID of the staker
      */
-    function stake(uint amount, uint nodeID) external nzUint(amount) nzUint(nodeID) noFish() {
-        require(block.number <= _auctionEndBlock, "StakeMan: auction has ended");
+    function stake(uint amount, uint nodeID) external nzUint(amount) nzUint(nodeID) noFish {
+        require(amount >= _MIN_STAKE, "StakeMan: small stake, peasant");
 
-        // Ensure FLIP is transferred and update _totalStaked
+        // Ensure FLIP is transferred and update _totalStaked. Technically this `require` shouldn't
+        // be necessary, but since this is mission critical, it's worth being paranoid
         uint balBefore = _FLIP.balanceOf(address(this));
         _FLIP.transferFrom(msg.sender, address(this), amount);
         require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: transfer failed");
@@ -99,7 +79,7 @@ contract StakeManager is Shared {
         address staker,
         uint amount,
         uint nodeID
-    ) external nzAddr(staker) nzUint(amount) nzUint(nodeID) noFish() {
+    ) external nzAddr(staker) nzUint(amount) nzUint(nodeID) noFish {
         require(
             _keyManager.isValidSig(
                 keccak256(
@@ -143,7 +123,7 @@ contract StakeManager is Shared {
                     )
                 ),
                 sigData,
-                _keyManager.getAggregateKey()
+                _keyManager.getGovernanceKey()
             )
         );
 
@@ -196,15 +176,6 @@ contract StakeManager is Shared {
      */
     function getTotalStaked() external returns (uint) {
         return _totalStaked;
-    }
-
-    /**
-     * @notice  Get the end block of the latest auction. Auctions are valid
-     *          up until, and including, this block number
-     * @return  The block number that ends this auction, inclusive (uint)
-     */
-    function getAuctionEndBlock() external returns (uint) {
-        return _auctionEndBlock;
     }
 
     /**
