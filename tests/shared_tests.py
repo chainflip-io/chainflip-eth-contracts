@@ -50,4 +50,5 @@ def setGovKeyWithGovKey_test(cf):
 # but some tests occasionally fail for this reason even though they succeed most
 # of the time with no changes to the contract or test code
 def txTimeTest(time, tx):
-    assert time >= tx.timestamp or time <= (tx.timestamp+2)
+    print(time, tx.timestamp)
+    assert time >= tx.timestamp and time <= (tx.timestamp+2)

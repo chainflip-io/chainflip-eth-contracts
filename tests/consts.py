@@ -2,7 +2,8 @@ from crypto import *
 from utils import *
 
 # -----General/shared-----
-ZERO_ADDR = "0000000000000000000000000000000000000000"
+ZERO_ADDR_PACKED = "0000000000000000000000000000000000000000"
+ZERO_ADDR = "0x" + ZERO_ADDR_PACKED
 ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 TEST_AMNT = 10**17
 # Notable the only part of the hash involved in CREATE2 that has padding
@@ -49,6 +50,18 @@ REV_MSG_SIG_LESS_Q = "Sig must be reduced modulo Q"
 REV_MSG_INPUTS_0 = "No zero inputs allowed"
 
 
+# -----FLIP-----
+INITIAL_SUPPLY = (9 * 10**7) * E_18
+
+REV_MSG_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
+
+
 # -----StakeManager-----
-EMISSION_PER_SEC = 428082191780821917
+# Targeting inflation at 15% per year (linear), assuming an average
+# block time of 13.1s
+EMISSION_PER_BLOCK = 5607877281367557723
 MIN_STAKE = (10**5) * E_18
+MAX_TEST_STAKE = INITIAL_SUPPLY / 9
+
+REV_MSG_MIN_STAKE = "StakeMan: small stake, peasant"
+

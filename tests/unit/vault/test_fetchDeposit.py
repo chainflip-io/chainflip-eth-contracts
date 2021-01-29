@@ -6,7 +6,7 @@ from consts import *
 def test_fetchDeposit_eth(a, cf, DepositEth):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositEth, "")
-    a[0].transfer(depositAddr, TEST_AMNT)
+    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
     assert cf.vault.balance() == 0
 
@@ -22,18 +22,18 @@ def test_fetchDeposit_eth(a, cf, DepositEth):
 def test_fetchDeposit_token(a, cf, token, DepositToken):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositToken, cleanHexStrPad(token.address) + cleanHexStrPad(TEST_AMNT))
-    token.transfer(depositAddr, TEST_AMNT, {'from': a[0]})
+    token.transfer(depositAddr, TEST_AMNT, {'from': cf.DEPLOYER})
 
-    assert token.balanceOf(cf.vault.address) == 0
+    assert token.balanceOf(cf.vault) == 0
 
     # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDeposit.encode_input(NULL_SIG_DATA, JUNK_HEX, token.address, TEST_AMNT)
+    callDataNoSig = cf.vault.fetchDeposit.encode_input(NULL_SIG_DATA, JUNK_HEX, token, TEST_AMNT)
     
     # Fetch the deposit
-    cf.vault.fetchDeposit(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, token.address, TEST_AMNT)
+    cf.vault.fetchDeposit(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, token, TEST_AMNT)
     
     assert token.balanceOf(depositAddr) == 0
-    assert token.balanceOf(cf.vault.address) == TEST_AMNT
+    assert token.balanceOf(cf.vault) == TEST_AMNT
 
 
 def test_fetchDeposit_rev_swapID(cf):

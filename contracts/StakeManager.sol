@@ -9,34 +9,36 @@ import "./FLIP.sol";
 
 contract StakeManager is Shared {
 
-
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
     /// @dev    The FLIP token
     FLIP private _FLIP;
     /// @dev    The last time that claim was called, so we know how much to mint now
-    uint private _lastClaimTime;
+    uint private _lastMintBlockNum;
     /// @dev    The amount of FLIPs emitted per second, minted when `claim` is called
-    uint private _emissionPerSec;
-    /// @dev    Used to make make sure contract is collateralised at all times
-    uint private _totalStaked;
+    uint private _emissionPerBlock;
+    /// @dev    This tracks the amount of FLIP that should be in this contract currently. It's
+    ///         equal to the total staked - total claimed + total minted (above initial
+    ///         supply). If there's some bug that drains FLIP from this contract that
+    ///         isn't part of `claim`, then `noFish` should protect against it
+    uint private _totalStake;
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     // Pulled this number out my ass
     uint private _minStake = (10**5) * _E_18;
 
 
     event Staked(uint indexed nodeID, uint amount);
-    event Unstaked(uint indexed nodeID, uint amount);
+    event Claimed(uint indexed nodeID, uint amount);
     event EmissionChanged(uint oldEmissionPerSec, uint newEmissionPerSec);
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
 
-    constructor(IKeyManager keyManager, uint emissionPerSec, uint minStake) {
+    constructor(IKeyManager keyManager, uint emissionPerBlock, uint minStake, uint flipTotalSupply) {
         _keyManager = keyManager;
-        _emissionPerSec = emissionPerSec;
+        _emissionPerBlock = emissionPerBlock;
         _minStake = minStake;
-        _FLIP = new FLIP("ChainFlip", "FLIP", 9 * (10**7) * _E_18);
-        _lastClaimTime = block.timestamp;
+        _FLIP = new FLIP("ChainFlip", "FLIP", msg.sender, flipTotalSupply);
+        _lastMintBlockNum = block.number;
     }
 
 
@@ -52,15 +54,15 @@ contract StakeManager is Shared {
      * @param amount    The amount of stake to be locked up
      * @param nodeID    The nodeID of the staker
      */
-    function stake(uint amount, uint nodeID) external nzUint(amount) nzUint(nodeID) noFish {
+    function stake(uint nodeID, uint amount) external nzUint(nodeID) noFish {
         require(amount >= _minStake, "StakeMan: small stake, peasant");
 
-        // Ensure FLIP is transferred and update _totalStaked. Technically this `require` shouldn't
+        // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
         uint balBefore = _FLIP.balanceOf(address(this));
         _FLIP.transferFrom(msg.sender, address(this), amount);
         require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: transfer failed");
-        _totalStaked += amount;
+        _totalStake += amount;
 
         emit Staked(nodeID, amount);
     }
@@ -72,15 +74,15 @@ contract StakeManager is Shared {
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
+     * @param nodeID    The nodeID of the staker
      * @param staker    The staker who is to be sent FLIP
      * @param amount    The amount of stake to be locked up
-     * @param nodeID    The nodeID of the staker
      */
     function claim(
         SigData calldata sigData,
+        uint nodeID,
         address staker,
-        uint amount,
-        uint nodeID
+        uint amount
     ) external nzAddr(staker) nzUint(amount) nzUint(nodeID) noFish {
         require(
             _keyManager.isValidSig(
@@ -88,8 +90,8 @@ contract StakeManager is Shared {
                     abi.encodeWithSelector(
                         this.claim.selector,
                         SigData(0, 0),
-                        staker,
                         nodeID,
+                        staker,
                         amount
                     )
                 ),
@@ -98,17 +100,14 @@ contract StakeManager is Shared {
             )
         );
 
-        // If time has elapsed since the last claim, printer go brrrr
-        if (block.timestamp > _lastClaimTime) {
-            _FLIP.mint(address(this), (block.timestamp - _lastClaimTime) * _emissionPerSec);
-            _lastClaimTime = block.timestamp;
-        }
+        // If time has elapsed since the last mint, printer go brrrr
+        _mintInflation();
 
-        // Send the tokens and update _totalStaked
+        // Send the tokens and update _totalStake
         _FLIP.transfer(staker, amount);
-        _totalStaked -= amount;
+        _totalStake -= amount;
 
-        emit Unstaked(nodeID, amount);
+        emit Claimed(nodeID, amount);
     }
 
     /**
@@ -121,7 +120,7 @@ contract StakeManager is Shared {
     function setEmissionPerSec(
         SigData calldata sigData,
         uint newEmissionPerSec
-    ) external nzUint(newEmissionPerSec) {
+    ) external nzUint(newEmissionPerSec) noFish {
         require(
             _keyManager.isValidSig(
                 keccak256(
@@ -135,9 +134,10 @@ contract StakeManager is Shared {
                 _keyManager.getGovernanceKey()
             )
         );
+        _mintInflation();
 
-        emit EmissionChanged(_emissionPerSec, newEmissionPerSec);
-        _emissionPerSec = newEmissionPerSec;
+        _emissionPerBlock = newEmissionPerSec;
+        emit EmissionChanged(_emissionPerBlock, newEmissionPerSec);
     }
 
     /**
@@ -151,7 +151,7 @@ contract StakeManager is Shared {
     function setMinStake(
         SigData calldata sigData,
         uint newMinStake
-    ) external nzUint(newMinStake) {
+    ) external nzUint(newMinStake) noFish {
         require(
             _keyManager.isValidSig(
                 keccak256(
@@ -168,6 +168,19 @@ contract StakeManager is Shared {
 
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
+    }
+
+    function mintInflation() external noFish {
+        _mintInflation();
+    }
+
+    function _mintInflation() private {
+        if (block.number > _lastMintBlockNum) {
+            uint amount = getAmountToMint(0);
+            _FLIP.mint(address(this), amount);
+            _totalStake += amount;
+            _lastMintBlockNum = block.number;
+        }
     }
 
 
@@ -197,25 +210,35 @@ contract StakeManager is Shared {
      * @notice  Get the last time that claim() was called, in unix time
      * @return  The time of the last claim (uint)
      */
-    function getLastClaimTime() external view returns (uint) {
-        return _lastClaimTime;
+    function getLastMintBlockNum() external view returns (uint) {
+        return _lastMintBlockNum;
     }
 
     /**
      * @notice  Get the emission rate of FLIP in seconds
      * @return  The rate of FLIP emission (uint)
      */
-    function getEmissionPerSec() external view returns (uint) {
-        return _emissionPerSec;
+    function getEmissionPerBlock() external view returns (uint) {
+        return _emissionPerBlock;
+    }
+
+    function getAmountToMint(uint blocksIntoFuture) public view returns (uint) {
+        return (block.number + blocksIntoFuture - _lastMintBlockNum) * _emissionPerBlock;
     }
 
     /**
-     * @notice  Get the total amount of FLIP currently staked by all stakers, used
-     *          to always ensure collateralisation
-     * @return  The current total of stake in this contract (uint)
+     * @notice  Get the total amount of FLIP currently staked by all stakers
+     *          plus the inflation that could be minted if someone called
+     *          `claim` or `setEmissionPerSec` at the specified block
+     * @param blocksIntoFuture  The number of blocks into the future added
+     *              onto the current highest block. E.g. if the current highest
+     *              block is 10, and the stake + inflation that you want to know
+     *              is at height 15, input 5
+     * @return  The total of stake + inflation at specified blocks in the future from now
      */
-    function getTotalStaked() external view returns (uint) {
-        return _totalStaked;
+    function getTotalStakeInFuture(uint blocksIntoFuture) external view returns (uint) {
+        // return _totalStake;
+        return _totalStake + getAmountToMint(blocksIntoFuture);
     }
 
     /**
@@ -236,7 +259,8 @@ contract StakeManager is Shared {
 
     /// @notice Ensure the contract is always collateralised
     modifier noFish() {
-        require(_FLIP.balanceOf(address(this)) >= _totalStaked, "Stake: something smells fishy");
         _;
+        // >= because someone could send some tokens to this contract and disable it if it was ==
+        require(_FLIP.balanceOf(address(this)) >= _totalStake, "Stake: something smells fishy");
     }
 }

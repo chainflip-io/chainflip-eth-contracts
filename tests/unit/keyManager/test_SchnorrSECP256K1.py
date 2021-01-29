@@ -24,7 +24,7 @@ def test_verifySignature_rev_nonceTimesGeneratorAddress_zero(a, cf):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX)
 
     signerPubData = AGG_SIGNER_1.getPubData()
-    signerPubData[2] = ZERO_ADDR
+    signerPubData[2] = ZERO_ADDR_PACKED
 
     with reverts(REV_MSG_INPUTS_0):
         cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, signerPubData)

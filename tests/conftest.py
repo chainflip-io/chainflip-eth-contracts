@@ -11,23 +11,44 @@ def isolation(fn_isolation):
 
 # Deploy the contracts for repeated tests without having to redeploy each time
 
-def deploy_initial_ChainFlip_contracts(a, KeyManager, Vault, StakeManager):
+def deploy_initial_ChainFlip_contracts(a, KeyManager, Vault, StakeManager, FLIP):
     class Context:
         pass
 
     cf = Context()
-    cf.keyManager = a[0].deploy(KeyManager, AGG_SIGNER_1.getPubData(), GOV_SIGNER_1.getPubData())
-    cf.vault = a[0].deploy(Vault, cf.keyManager.address)
-    cf.stakeManager = a[0].deploy(StakeManager, cf.keyManager.address, EMISSION_PER_SEC, MIN_STAKE)
+
+    # It's a bit easier to not get mixed up with accounts if they're named
+    # Can't define this in consts because a needs to be imported into the test
+    cf.DEPLOYER = a[0]
+    cf.ALICE = a[1]
+    cf.BOB = a[2]
+    cf.CHARLIE = a[3]
+    cf.DENICE = a[4]
+    
+    cf.keyManager = cf.DEPLOYER.deploy(KeyManager, AGG_SIGNER_1.getPubData(), GOV_SIGNER_1.getPubData())
+    cf.vault = cf.DEPLOYER.deploy(Vault, cf.keyManager)
+    cf.stakeManager = cf.DEPLOYER.deploy(StakeManager, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INITIAL_SUPPLY)
+    cf.flip = FLIP.at(cf.stakeManager.getFLIPAddress())
+    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': cf.ALICE})
+    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': cf.BOB})
+
 
     return cf
 
 
 @pytest.fixture(scope="module")
-def cf(a, KeyManager, Vault, StakeManager):
-    return deploy_initial_ChainFlip_contracts(a, KeyManager, Vault, StakeManager)
+def cf(a, KeyManager, Vault, StakeManager, FLIP):
+    return deploy_initial_ChainFlip_contracts(a, KeyManager, Vault, StakeManager, FLIP)
 
 
 @pytest.fixture(scope="module")
-def token(a, Token):
-    return a[0].deploy(Token, "ShitCoin", "SC", 10**21)
+def stakedMin(a, cf):
+    amount = cf.stakeManager.getMinimumStake()
+    return cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE}), amount
+
+
+@pytest.fixture(scope="module")
+def token(a, cf, Token):
+    return cf.DEPLOYER.deploy(Token, "ShitCoin", "SC", 10**21)
