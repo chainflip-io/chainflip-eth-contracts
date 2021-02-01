@@ -64,4 +64,5 @@ MIN_STAKE = (10**5) * E_18
 MAX_TEST_STAKE = INITIAL_SUPPLY / 9
 
 REV_MSG_MIN_STAKE = "StakeMan: small stake, peasant"
+REV_MSG_NO_FISH = "StakeMan: something smells fishy"
 

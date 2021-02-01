@@ -83,7 +83,7 @@ contract StakeManager is Shared {
         uint nodeID,
         address staker,
         uint amount
-    ) external nzAddr(staker) nzUint(amount) nzUint(nodeID) noFish {
+    ) external nzUint(nodeID) nzAddr(staker) nzUint(amount) noFish {
         require(
             _keyManager.isValidSig(
                 keccak256(
@@ -136,8 +136,8 @@ contract StakeManager is Shared {
         );
         _mintInflation();
 
-        _emissionPerBlock = newEmissionPerSec;
         emit EmissionChanged(_emissionPerBlock, newEmissionPerSec);
+        _emissionPerBlock = newEmissionPerSec;
     }
 
     /**
@@ -170,13 +170,13 @@ contract StakeManager is Shared {
         _minStake = newMinStake;
     }
 
-    function mintInflation() external noFish {
-        _mintInflation();
-    }
+    // function mintInflation() external noFish {
+    //     _mintInflation();
+    // }
 
     function _mintInflation() private {
         if (block.number > _lastMintBlockNum) {
-            uint amount = getAmountToMint(0);
+            uint amount = getInflationInFuture(0);
             _FLIP.mint(address(this), amount);
             _totalStake += amount;
             _lastMintBlockNum = block.number;
@@ -222,7 +222,15 @@ contract StakeManager is Shared {
         return _emissionPerBlock;
     }
 
-    function getAmountToMint(uint blocksIntoFuture) public view returns (uint) {
+    /**
+     * @notice  Get the amount of FLIP that would be emitted via inflation at
+     *          the current block plus addition inflation from an extra
+     *          `blocksIntoFuture` blocks
+     * @param blocksIntoFuture  The number of blocks past the current block to
+     *              calculate the inflation at
+     * @return  The amount of FLIP inflation
+     */
+    function getInflationInFuture(uint blocksIntoFuture) public view returns (uint) {
         return (block.number + blocksIntoFuture - _lastMintBlockNum) * _emissionPerBlock;
     }
 
@@ -238,7 +246,7 @@ contract StakeManager is Shared {
      */
     function getTotalStakeInFuture(uint blocksIntoFuture) external view returns (uint) {
         // return _totalStake;
-        return _totalStake + getAmountToMint(blocksIntoFuture);
+        return _totalStake + getInflationInFuture(blocksIntoFuture);
     }
 
     /**
@@ -257,10 +265,11 @@ contract StakeManager is Shared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @notice Ensure the contract is always collateralised
+    /// @notice Ensure that FLIP can only be withdrawn via `claim`
+    ///         and not any other method
     modifier noFish() {
         _;
         // >= because someone could send some tokens to this contract and disable it if it was ==
-        require(_FLIP.balanceOf(address(this)) >= _totalStake, "Stake: something smells fishy");
+        require(_FLIP.balanceOf(address(this)) >= _totalStake, "StakeMan: something smells fishy");
     }
 }

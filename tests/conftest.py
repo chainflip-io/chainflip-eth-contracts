@@ -18,7 +18,7 @@ def deploy_initial_ChainFlip_contracts(a, KeyManager, Vault, StakeManager, FLIP)
     cf = Context()
 
     # It's a bit easier to not get mixed up with accounts if they're named
-    # Can't define this in consts because a needs to be imported into the test
+    # Can't define this in consts because `a` needs to be instantiated by brownie itself
     cf.DEPLOYER = a[0]
     cf.ALICE = a[1]
     cf.BOB = a[2]
@@ -34,7 +34,6 @@ def deploy_initial_ChainFlip_contracts(a, KeyManager, Vault, StakeManager, FLIP)
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
     cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': cf.BOB})
 
-
     return cf
 
 
@@ -44,11 +43,38 @@ def cf(a, KeyManager, Vault, StakeManager, FLIP):
 
 
 @pytest.fixture(scope="module")
-def stakedMin(a, cf):
-    amount = cf.stakeManager.getMinimumStake()
+def stakedMin(cf):
+    amount = MIN_STAKE
     return cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE}), amount
 
 
 @pytest.fixture(scope="module")
-def token(a, cf, Token):
+def token(cf, Token):
     return cf.DEPLOYER.deploy(Token, "ShitCoin", "SC", 10**21)
+
+
+@pytest.fixture(scope="module")
+def vulnerableStakedStakeMan(cf, StakeManagerVulnerable, FLIP):
+    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INITIAL_SUPPLY)
+    flipVuln = FLIP.at(smVuln.getFLIPAddress())
+    # Can't set _FLIP in the constructor because it's made in the constructor
+    # of StakeManager and getFLIPAddress is external
+    smVuln.testSetFLIP(flipVuln)
+    flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    flipVuln.approve(smVuln, MAX_TEST_STAKE, {'from': cf.ALICE})
+    
+    assert flipVuln.balanceOf(cf.CHARLIE) == 0
+    # Need to stake 1st so that there's coins to hack out of it
+    smVuln.stake(JUNK_INT, MIN_STAKE, {'from': cf.ALICE})
+
+    return smVuln, flipVuln
+
+@pytest.fixture(scope="module")
+def vulnerableR3ktStakeMan(cf, vulnerableStakedStakeMan):
+    smVuln, flipVuln = vulnerableStakedStakeMan
+    amount = 1
+    # Somebody r3ks us somehow
+    smVuln.testSendFLIP(cf.CHARLIE, amount)
+    assert flipVuln.balanceOf(cf.CHARLIE) == amount
+
+    return vulnerableStakedStakeMan
