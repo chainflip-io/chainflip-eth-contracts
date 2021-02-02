@@ -16,6 +16,8 @@ def cleanHexStrPad(thing):
 
 def getCreate2Addr(sender, saltHex, contractContainer, argsHex):
     deployByteCode = contractContainer.bytecode + argsHex
-    print(f'deployByteCodeSansArgs = {contractContainer.bytecode}')
-    print(f'deployByteCodeFull = {deployByteCode}')
     return w3.keccak(hexstr=("ff" + cleanHexStr(sender) + saltHex + cleanHexStr(w3.keccak(hexstr=deployByteCode))))[-20:].hex()
+
+
+def getInflation(prevBlockNum, curBlockNum, emissionRate):
+    return (curBlockNum - prevBlockNum) * emissionRate
