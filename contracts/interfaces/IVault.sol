@@ -26,11 +26,15 @@ interface IVault is IShared {
         uint amount
     ) external;
 
-    function fetchDeposit(
+    function fetchDepositEth(
+        SigData calldata sigData,
+        bytes32 swapID
+    ) external;
+
+    function fetchDepositToken(
         SigData calldata sigData,
         bytes32 swapID,
-        address tokenAddr,
-        uint amount
+        address tokenAddr
     ) external;
 
 

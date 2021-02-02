@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
+import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
@@ -90,6 +91,36 @@ contract Vault is IVault, Shared {
     }
 
     /**
+     * @notice  Retrieves ETH from an address deterministically generated using
+     *          create2 by creating a contract for that address, sending it to this vault, and
+     *          then destroying
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
+     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  sig over that hash (uint) from the aggregate key
+     * @param swapID    The unique identifier for this swap (bytes32)
+     */
+    function fetchDepositEth(
+        SigData calldata sigData,
+        bytes32 swapID
+    ) external override nzBytes32(swapID) {
+        require(
+            _keyManager.isValidSig(
+                keccak256(
+                    abi.encodeWithSelector(
+                        this.fetchDepositEth.selector,
+                        SigData(0, 0),
+                        swapID
+                    )
+                ),
+                sigData,
+                _keyManager.getAggregateKey()
+            )
+        );
+        
+        new DepositEth{salt: swapID}();
+    }
+
+    /**
      * @notice  Retrieves ETH or a token from an address deterministically generated using
      *          create2 by creating a contract for that address, sending it to this vault, and
      *          then destroying
@@ -98,23 +129,20 @@ contract Vault is IVault, Shared {
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32)
      * @param tokenAddr The address of the token to be transferred
-     * @param amount    The amount to retrieve, in wei (uint)
      */
-    function fetchDeposit(
+    function fetchDepositToken(
         SigData calldata sigData,
         bytes32 swapID,
-        address tokenAddr,
-        uint amount
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) nzUint(amount) {
+        address tokenAddr
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) {
         require(
             _keyManager.isValidSig(
                 keccak256(
                     abi.encodeWithSelector(
-                        this.fetchDeposit.selector,
+                        this.fetchDepositToken.selector,
                         SigData(0, 0),
                         swapID,
-                        tokenAddr,
-                        amount
+                        tokenAddr
                     )
                 ),
                 sigData,
@@ -122,14 +150,7 @@ contract Vault is IVault, Shared {
             )
         );
         
-        if (tokenAddr == _ETH_ADDR) {
-            DepositEth d = new DepositEth{salt: swapID}();
-        } else {
-            DepositToken d = new DepositToken{salt: swapID}(
-                tokenAddr,
-                amount
-            );
-        }
+        new DepositToken{salt: swapID}(tokenAddr);
     }
 
 
@@ -164,6 +185,6 @@ contract Vault is IVault, Shared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving ETH when fetchDeposit is called
+    /// @dev For receiving ETH when fetchDepositEth is called
     receive() external payable {}
 }
