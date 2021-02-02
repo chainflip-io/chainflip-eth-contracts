@@ -6,6 +6,12 @@ interface IERC20Lite {
     function balanceOf(address holder) external view returns (uint);
 }
 
+
+/**
+* @title    DepositToken contract
+* @notice   Creates a contract with a known address and withdraws tokens (and ETH) from it
+* @author   Quantaf1re (James Key)
+*/
 contract DepositToken {
 
     constructor(address tokenAddr) {
