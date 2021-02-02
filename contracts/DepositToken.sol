@@ -5,12 +5,6 @@ interface IERC20Lite {
     function transfer(address recipient, uint256 amount) external returns (bool);
 }
 
-
-/**
-* @title    DepositToken contract
-* @notice   Creates a contract with a known address and withdraws tokens (and ETH) from it
-* @author   Quantaf1re (James Key)
-*/
 contract DepositToken {
 
     constructor(address tokenAddr, uint amount) {

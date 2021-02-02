@@ -5,43 +5,44 @@ from brownie import reverts
 
 # Test changing keys and then calling other fcns
 
-def test_setAggKeyByAggKey_transfer(a, cf):
+def test_setAggKeyByAggKey_transfer(a, vault):
     # Change agg keys
-    setAggKeyWithAggKey_test(cf)
+    testSetAggKeyByAggKey(vault)
 
     # Set up the transfer
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
-    startBalVault = cf.vault.balance()
-    startBalRecipient = cf.ALICE.balance()
-    
+    a[0].transfer(vault.address, TEST_AMNT)
+    startBalVault = vault.balance()
+    startBalRecipient = a[1].balance()
+
     # Check transfer fails with old agg key
-    callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, cf.ALICE, TEST_AMNT)
+    callDataNoSig = vault.transfer.encode_input(0, 0, ETH_ADDR, a[1], TEST_AMNT)
     with reverts(REV_MSG_SIG):
-        cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
+        vault.transfer(*AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, a[1], TEST_AMNT)
 
     # Check transfer with new agg key
-    tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
-    
-    assert cf.vault.balance() - startBalVault == -TEST_AMNT
-    assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
-    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    tx = vault.transfer(*AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, a[1], TEST_AMNT)
+
+    assert vault.balance() - startBalVault == -TEST_AMNT
+    assert a[1].balance() - startBalRecipient == TEST_AMNT
+    txTimeTest(vault.getLastValidateTime(), tx)
 
 
-def test_setAggKeyByAggKey_fetchDeposit_eth_transfer(a, cf, DepositEth):
-    recipient = cf.BOB
-    recipientStartBal = cf.BOB.balance()
+def test_setAggKeyByAggKey_fetchDeposit_eth_transfer(a, vault, DepositEth):
+    recipient = a[2]
+    recipientStartBal = a[2].balance()
 
     # Change agg keys
-    setAggKeyWithAggKey_test(cf)
+    testSetAggKeyByAggKey(vault)
 
-    assert cf.BOB.balance() == recipientStartBal
-    assert cf.vault.balance() == 0
+    assert a[2].balance() == recipientStartBal
+    assert vault.balance() == 0
 
     # Set up the deposit
-    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositEth, "")
-    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+    depositAddr = getCreate2Addr(vault.address, SWAP_ID_HEX, DepositEth, "")
+    a[0].transfer(depositAddr, TEST_AMNT)
 
     # Check transfer fails with old agg key
+<<<<<<< HEAD
     callDataNoSig = cf.vault.fetchDeposit.encode_input(NULL_SIG_DATA, JUNK_HEX, ETH_ADDR, TEST_AMNT)
     with reverts(REV_MSG_SIG):
         cf.vault.fetchDeposit(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, ETH_ADDR, TEST_AMNT)
@@ -49,39 +50,49 @@ def test_setAggKeyByAggKey_fetchDeposit_eth_transfer(a, cf, DepositEth):
     # Fetch the deposit with new agg key
     tx = cf.vault.fetchDeposit(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX, ETH_ADDR, TEST_AMNT)
     
+=======
+    callDataNoSig = vault.fetchDeposit.encode_input(0, 0, SWAP_ID_HEX, ETH_ADDR)
+    with reverts(REV_MSG_SIG):
+        vault.fetchDeposit(*AGG_SIGNER_1.getSigData(callDataNoSig), SWAP_ID_HEX, ETH_ADDR)
+
+    # Fetch the deposit with new agg key
+    tx = vault.fetchDeposit(*AGG_SIGNER_2.getSigData(callDataNoSig), SWAP_ID_HEX, ETH_ADDR)
+
+>>>>>>> parent of 781ca87... Resolving conflicts
     assert w3.eth.getBalance(w3.toChecksumAddress(depositAddr)) == 0
-    assert cf.vault.balance() == TEST_AMNT
-    assert cf.BOB.balance() == recipientStartBal
-    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    assert vault.balance() == TEST_AMNT
+    assert a[2].balance() == recipientStartBal
+    txTimeTest(vault.getLastValidateTime(), tx)
 
     # Check transfer fails with old agg key
-    callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, recipient, TEST_AMNT)
+    callDataNoSig = vault.transfer.encode_input(0, 0, ETH_ADDR, recipient, TEST_AMNT)
     with reverts(REV_MSG_SIG):
-        cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, recipient, TEST_AMNT)
+        vault.transfer(*AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, recipient, TEST_AMNT)
 
-    tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, recipient, TEST_AMNT)
+    tx = vault.transfer(*AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, recipient, TEST_AMNT)
 
     assert w3.eth.getBalance(w3.toChecksumAddress(depositAddr)) == 0
-    assert cf.vault.balance() == 0
-    assert cf.BOB.balance() == recipientStartBal + TEST_AMNT
-    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    assert vault.balance() == 0
+    assert a[2].balance() == recipientStartBal + TEST_AMNT
+    txTimeTest(vault.getLastValidateTime(), tx)
 
 
-def test_setAggKeyByAggKey_fetchDeposit_token_transfer(a, cf, token, DepositToken):
-    recipient = cf.BOB
-    recipientStartBal = token.balanceOf(cf.BOB)
+def test_setAggKeyByAggKey_fetchDeposit_token_transfer(a, vault, token, DepositToken):
+    recipient = a[2]
+    recipientStartBal = token.balanceOf(a[2])
 
     # Change agg keys
-    setAggKeyWithAggKey_test(cf)
+    testSetAggKeyByAggKey(vault)
 
-    assert token.balanceOf(cf.BOB) == recipientStartBal
-    assert token.balanceOf(cf.vault) == 0
+    assert token.balanceOf(a[2]) == recipientStartBal
+    assert token.balanceOf(vault.address) == 0
 
     # Set up the deposit
-    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositToken, cleanHexStrPad(token.address) + cleanHexStrPad(TEST_AMNT))
-    token.transfer(depositAddr, TEST_AMNT, {'from': cf.DEPLOYER})
+    depositAddr = getCreate2Addr(vault.address, SWAP_ID_HEX, DepositToken, cleanHexStrPad(token.address))
+    token.transfer(depositAddr, TEST_AMNT, {'from': a[0]})
 
     # Check transfer fails with old agg key
+<<<<<<< HEAD
     callDataNoSig = cf.vault.fetchDeposit.encode_input(NULL_SIG_DATA, JUNK_HEX, token, TEST_AMNT)
 
     with reverts(REV_MSG_SIG):
@@ -89,21 +100,30 @@ def test_setAggKeyByAggKey_fetchDeposit_token_transfer(a, cf, token, DepositToke
 
     # Fetch the deposit with new agg key
     tx = cf.vault.fetchDeposit(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX, token, TEST_AMNT)
+=======
+    callDataNoSig = vault.fetchDeposit.encode_input(0, 0, SWAP_ID_HEX, token.address)
+
+    with reverts(REV_MSG_SIG):
+        vault.fetchDeposit(*AGG_SIGNER_1.getSigData(callDataNoSig), SWAP_ID_HEX, token.address)
+
+    # Fetch the deposit with new agg key
+    tx = vault.fetchDeposit(*AGG_SIGNER_2.getSigData(callDataNoSig), SWAP_ID_HEX, token.address)
+>>>>>>> parent of 781ca87... Resolving conflicts
 
     assert token.balanceOf(depositAddr) == 0
-    assert token.balanceOf(cf.vault) == TEST_AMNT
-    assert token.balanceOf(cf.BOB) == recipientStartBal
-    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    assert token.balanceOf(vault.address) == TEST_AMNT
+    assert token.balanceOf(a[2]) == recipientStartBal
+    txTimeTest(vault.getLastValidateTime(), tx)
 
     # Check transfer fails with old agg key
-    callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, token, recipient, TEST_AMNT)
+    callDataNoSig = vault.transfer.encode_input(0, 0, token.address, recipient, TEST_AMNT)
     with reverts(REV_MSG_SIG):
-        cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), token, recipient, TEST_AMNT)
-    
+        vault.transfer(*AGG_SIGNER_1.getSigData(callDataNoSig), token.address, recipient, TEST_AMNT)
+
     # Transfer to recipient
-    tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), token, recipient, TEST_AMNT)
+    tx = vault.transfer(*AGG_SIGNER_2.getSigData(callDataNoSig), token.address, recipient, TEST_AMNT)
 
     assert token.balanceOf(depositAddr) == 0
-    assert token.balanceOf(cf.vault) == 0
-    assert token.balanceOf(cf.BOB) == recipientStartBal + TEST_AMNT
-    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    assert token.balanceOf(vault.address) == 0
+    assert token.balanceOf(a[2]) == recipientStartBal + TEST_AMNT
+    txTimeTest(vault.getLastValidateTime(), tx)

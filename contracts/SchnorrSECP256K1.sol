@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 //       XXX: Do not use in production until this code has been audited.
 ////////////////////////////////////////////////////////////////////////////////
 
-abstract contract SchnorrSECP256K1 {
+contract SchnorrSECP256K1 {
   // See https://en.bitcoin.it/wiki/Secp256k1 for this constant.
   uint256 private constant Q = // Group order of secp256k1
     // solium-disable-next-line indentation
@@ -104,7 +104,7 @@ abstract contract SchnorrSECP256K1 {
     uint256 signingPubKeyX,
     uint8 pubKeyYParity,
     address nonceTimesGeneratorAddress
-  ) internal pure returns (bool) {
+  ) public pure returns (bool) {
     require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
     // Avoid signature malleability from multiple representations for ℤ/Qℤ elts
     require(signature < Q, "Sig must be reduced modulo Q");
