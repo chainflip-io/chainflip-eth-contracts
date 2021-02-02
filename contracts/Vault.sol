@@ -98,14 +98,12 @@ contract Vault is IVault, Shared {
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32)
      * @param tokenAddr The address of the token to be transferred
-     * @param amount    The amount to retrieve, in wei (uint)
      */
     function fetchDeposit(
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr,
-        uint amount
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) nzUint(amount) {
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) {
         require(
             _keyManager.isValidSig(
                 keccak256(
@@ -125,10 +123,7 @@ contract Vault is IVault, Shared {
         if (tokenAddr == _ETH_ADDR) {
             DepositEth d = new DepositEth{salt: swapID}();
         } else {
-            DepositToken d = new DepositToken{salt: swapID}(
-                tokenAddr,
-                amount
-            );
+            DepositToken d = new DepositToken{salt: swapID}(tokenAddr);
         }
     }
 
