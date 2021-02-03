@@ -207,7 +207,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /**
      * @notice  Get the last time that a function was called which
                 required a signature from _aggregateKeyData or _governanceKeyData
-     * @return  The last time validate was called, in unix time (uint)
+     * @return  The last time isValidSig was called, in unix time (uint)
      */
     function getLastValidateTime() external override view returns (uint) {
         return _lastValidateTime;

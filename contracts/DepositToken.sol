@@ -11,8 +11,8 @@ import "./interfaces/IERC20Lite.sol";
 */
 contract DepositToken {
 
-    constructor(address token) {
-        IERC20Lite(token).transfer(msg.sender, IERC20Lite(token).balanceOf(address(this)));
+    constructor(IERC20Lite token) {
+        token.transfer(msg.sender, token.balanceOf(address(this)));
         // This will also send any excess ETH that the user mistakenly sent
         selfdestruct(msg.sender);
     }

@@ -39,8 +39,13 @@ GOV_K_HEX_2 = "699d69410c7ae51703a515ae0c186889a47e0fda1f661b8451f90ec5d780eb4b"
 GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV_K_HEX_2)
 
 NULL_SIG_DATA = (0, 0)
+NULL_KEY = (0, 0, ZERO_ADDR)
 
-# Validate
+# nzKey
+REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
+REV_MSG_NONCETIMESGADDR = "Shared: nonceTimesGAddr is empty"
+
+# isValidSig
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
 

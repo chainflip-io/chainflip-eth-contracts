@@ -4,7 +4,6 @@ from shared_tests import *
 
 
 
-# It's not possible to test isValidSig directly because 
 def test_isValidSig(cf):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX)
     tx = cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, AGG_SIGNER_1.getPubData())
@@ -15,7 +14,7 @@ def test_isValidSig(cf):
 
 def test_isValidSig_rev_msgHash(cf):
     # Fails because msgHash in sigData is a hash of JUNK_HEX, whereas JUNK_HEX
-    #  is used directly for contractMsgHash
+    # is used directly for contractMsgHash
     with reverts(REV_MSG_MSGHASH):
         cf.keyManager.isValidSig(JUNK_HEX, AGG_SIGNER_1.getSigData(JUNK_HEX), AGG_SIGNER_1.getPubData())
 

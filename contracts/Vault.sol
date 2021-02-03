@@ -150,7 +150,7 @@ contract Vault is IVault, Shared {
             )
         );
         
-        new DepositToken{salt: swapID}(tokenAddr);
+        new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
     }
 
 
