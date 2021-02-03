@@ -2,7 +2,7 @@ from consts import *
 from brownie import reverts
 
 
-def test_transfer_eth(a, cf):
+def test_transfer_eth(cf):
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
@@ -15,7 +15,7 @@ def test_transfer_eth(a, cf):
     assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
 
 
-def test_transfer_token(a, cf, token):
+def test_transfer_token(cf, token):
     token.transfer(cf.vault, TEST_AMNT, {'from': cf.DEPLOYER})
 
     startBalVault = token.balanceOf(cf.vault)
@@ -28,28 +28,28 @@ def test_transfer_token(a, cf, token):
     assert token.balanceOf(cf.ALICE) - startBalRecipient == TEST_AMNT
 
 
-def test_transfer_rev_tokenAddr(a, cf):
+def test_transfer_rev_tokenAddr(cf):
     callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ZERO_ADDR, cf.ALICE, TEST_AMNT)
 
     with reverts(REV_MSG_NZ_ADDR):
         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ZERO_ADDR, cf.ALICE, TEST_AMNT)
 
 
-def test_transfer_rev_recipient(a, cf):
+def test_transfer_rev_recipient(cf):
     callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, ZERO_ADDR, TEST_AMNT)
 
     with reverts(REV_MSG_NZ_ADDR):
         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, ZERO_ADDR, TEST_AMNT)
 
 
-def test_transfer_rev_amount(a, cf):
+def test_transfer_rev_amount(cf):
     callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, cf.ALICE, 0)
 
     with reverts(REV_MSG_NZ_UINT):
         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, 0)
 
 
-def test_transfer_rev_msgHash(a, cf):
+def test_transfer_rev_msgHash(cf):
     callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, cf.ALICE, TEST_AMNT)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
@@ -58,7 +58,7 @@ def test_transfer_rev_msgHash(a, cf):
         cf.vault.transfer(sigData, ETH_ADDR, cf.ALICE, TEST_AMNT)
 
 
-def test_transfer_rev_sig(a, cf):
+def test_transfer_rev_sig(cf):
     callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, cf.ALICE, TEST_AMNT)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1

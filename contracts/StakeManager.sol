@@ -96,7 +96,7 @@ contract StakeManager is Shared {
                     )
                 ),
                 sigData,
-                _keyManager.getAggregateKey()
+                KeyID.Agg
             )
         );
 
@@ -131,7 +131,7 @@ contract StakeManager is Shared {
                     )
                 ),
                 sigData,
-                _keyManager.getGovernanceKey()
+                KeyID.Gov
             )
         );
         _mintInflation();
@@ -162,7 +162,7 @@ contract StakeManager is Shared {
                     )
                 ),
                 sigData,
-                _keyManager.getGovernanceKey()
+                KeyID.Gov
             )
         );
 

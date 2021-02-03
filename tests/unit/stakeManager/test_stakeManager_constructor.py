@@ -1,7 +1,7 @@
 from shared_tests import *
 
 
-def test_constructor(a, cf, web3):
+def test_constructor(cf, web3):
     assert cf.stakeManager.getKeyManager() == cf.keyManager.address
     assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.block_number
     assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK

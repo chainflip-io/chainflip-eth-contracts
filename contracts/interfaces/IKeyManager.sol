@@ -21,7 +21,7 @@ interface IKeyManager is IShared {
     function isValidSig(
         bytes32 contractMsgHash,
         SigData memory sigData,
-        Key memory key
+        KeyID keyID
     ) external returns (bool);
     
     function setAggKeyWithAggKey(

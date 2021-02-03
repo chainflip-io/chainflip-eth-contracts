@@ -2,7 +2,7 @@ from brownie import reverts, web3 as w3
 from consts import *
 
 
-def test_fetchDepositEth(a, cf, DepositEth):
+def test_fetchDepositEth(cf, DepositEth):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)

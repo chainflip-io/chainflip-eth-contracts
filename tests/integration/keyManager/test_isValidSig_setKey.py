@@ -6,18 +6,52 @@ from brownie import reverts
 def test_isValidSig_setAggKeyWithAggKey_validate(cf):
     txTimeTest(cf.keyManager.getLastValidateTime(), cf.keyManager.tx)
 
-    # Should validate successfully
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX)
-    tx = cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, AGG_SIGNER_1.getPubData())
-
-    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    # Should validate with current keys and revert with future keys
+    isValidSig_test(cf, AGG_SIGNER_1)
+    isValidSig_rev_test(cf, AGG_SIGNER_2)
+    isValidSig_test(cf, GOV_SIGNER_1)
 
     # Should change key successfully
     setAggKeyWithAggKey_test(cf)
 
-    # Should revert with old key
-    # sigData = AGG_SIGNER_1.getSigData(JUNK_HEX)
-    # with reverts(REV_MSG_SIG):
-    #     cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, AGG_SIGNER_1.getPubData())
+    # Should validate with current keys and revert with past keys
+    isValidSig_rev_test(cf, AGG_SIGNER_1)
+    isValidSig_test(cf, AGG_SIGNER_2)
+    isValidSig_test(cf, GOV_SIGNER_1)
 
-    # Should validate with new key
+
+def test_isValid_setGovKeyWithGovKey_isValid_setAggKeyWithGovKey_isValidSig(cf):
+    txTimeTest(cf.keyManager.getLastValidateTime(), cf.keyManager.tx)
+
+    # Should validate with current keys and revert with future keys
+    isValidSig_test(cf, AGG_SIGNER_1)
+    isValidSig_rev_test(cf, AGG_SIGNER_2)
+    isValidSig_test(cf, GOV_SIGNER_1)
+    isValidSig_rev_test(cf, GOV_SIGNER_2)
+
+    # Should change key successfully
+    setGovKeyWithGovKey_test(cf)
+
+    # Should validate with current keys and revert with past and future keys
+    isValidSig_test(cf, AGG_SIGNER_1)
+    isValidSig_rev_test(cf, AGG_SIGNER_2)
+    isValidSig_rev_test(cf, GOV_SIGNER_1)
+    isValidSig_test(cf, GOV_SIGNER_2)
+
+    # Should change key successfully
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_2.getPubDataWith0x()
+
+    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    tx = cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_2.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
+
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_2.getPubDataWith0x()
+    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    assert tx.events["KeyChange"][0].values() == [False, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
+
+    # Should validate with current keys and revert with past keys
+    isValidSig_rev_test(cf, AGG_SIGNER_1)
+    isValidSig_test(cf, AGG_SIGNER_2)
+    isValidSig_rev_test(cf, GOV_SIGNER_1)
+    isValidSig_test(cf, GOV_SIGNER_2)

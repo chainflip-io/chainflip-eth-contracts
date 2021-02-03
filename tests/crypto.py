@@ -14,7 +14,7 @@ class Signer():
     HALF_Q_INT = (Q_INT >> 1) + 1
 
 
-    def __init__(self, privKeyHex, kHex):
+    def __init__(self, privKeyHex, kHex, keyIDNum):
         self.privKeyHex = privKeyHex
         self.privKey = keys.UmbralPrivateKey.from_bytes(bytes.fromhex(privKeyHex))
         self.privKeyInt = int(self.privKeyHex, 16)
@@ -33,6 +33,8 @@ class Signer():
         kTimesG = self.k.get_pubkey()
         kTimesGPub = kTimesG.to_bytes(is_compressed=False)[1:]
         self.kTimesGAddressHex = cleanHexStr(w3.toChecksumAddress(cleanHexStr(w3.keccak(kTimesGPub)[-20:])))
+
+        self.keyIDNum = keyIDNum
 
 
     @classmethod
@@ -74,9 +76,3 @@ class Signer():
         s = s + self.Q_INT if s < 0 else s
 
         return [int(msgHashHex, 16), s]
-
-
-print(Signer.gen_key_hex())
-print(Signer.gen_key_hex())
-print(Signer.gen_key_hex())
-print(Signer.gen_key_hex())

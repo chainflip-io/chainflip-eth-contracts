@@ -85,3 +85,15 @@ def setKey_rev_sig_test(cf, fcn, signer):
     sigData[1] += 1
     with reverts(REV_MSG_SIG):
         fcn(sigData, AGG_SIGNER_2.getPubData())
+
+
+def isValidSig_test(cf, signer):
+    sigData = signer.getSigData(JUNK_HEX)
+    tx = cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, signer.keyIDNum)
+    txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+
+
+def isValidSig_rev_test(cf, signer):
+    sigData = signer.getSigData(JUNK_HEX)
+    with reverts(REV_MSG_SIG):
+        tx = cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, signer.keyIDNum)

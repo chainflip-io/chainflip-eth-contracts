@@ -76,7 +76,7 @@ contract Vault is IVault, Shared {
                     )
                 ),
                 sigData,
-                _keyManager.getAggregateKey()
+                KeyID.Agg
             )
         );
 
@@ -113,7 +113,7 @@ contract Vault is IVault, Shared {
                     )
                 ),
                 sigData,
-                _keyManager.getAggregateKey()
+                KeyID.Agg
             )
         );
         
@@ -146,7 +146,7 @@ contract Vault is IVault, Shared {
                     )
                 ),
                 sigData,
-                _keyManager.getAggregateKey()
+                KeyID.Agg
             )
         );
         

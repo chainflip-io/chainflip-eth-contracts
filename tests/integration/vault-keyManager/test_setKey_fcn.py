@@ -5,7 +5,7 @@ from brownie import reverts
 
 # Test changing keys and then calling other fcns
 
-def test_setAggKeyByAggKey_transfer(a, cf):
+def test_setAggKeyByAggKey_transfer(cf):
     # Change agg keys
     setAggKeyWithAggKey_test(cf)
 
@@ -27,7 +27,7 @@ def test_setAggKeyByAggKey_transfer(a, cf):
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
-def test_setAggKeyByAggKey_fetchDepositEth_transfer(a, cf, DepositEth):
+def test_setAggKeyByAggKey_fetchDepositEth_transfer(cf, DepositEth):
     recipient = cf.BOB
     recipientStartBal = cf.BOB.balance()
 
@@ -67,7 +67,7 @@ def test_setAggKeyByAggKey_fetchDepositEth_transfer(a, cf, DepositEth):
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
-def test_setAggKeyByAggKey_fetchDepositToken_transfer(a, cf, token, DepositToken):
+def test_setAggKeyByAggKey_fetchDepositToken_transfer(cf, token, DepositToken):
     recipient = cf.BOB
     recipientStartBal = token.balanceOf(cf.BOB)
 

@@ -2,7 +2,7 @@ from brownie import reverts, web3 as w3
 from consts import *
 
 
-def test_fetchDepositToken(a, cf, token, DepositToken):
+def test_fetchDepositToken(cf, token, DepositToken):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositToken, cleanHexStrPad(token.address))
     token.transfer(depositAddr, TEST_AMNT, {'from': cf.DEPLOYER})
@@ -15,6 +15,26 @@ def test_fetchDepositToken(a, cf, token, DepositToken):
     # Fetch the deposit
     cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, token)
     
+    assert token.balanceOf(depositAddr) == 0
+    assert token.balanceOf(cf.vault) == TEST_AMNT
+
+
+def test_fetchDepositToken_and_eth(cf, token, DepositToken):
+    # Get the address to deposit to and deposit
+    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositToken, cleanHexStrPad(token.address))
+    token.transfer(depositAddr, TEST_AMNT, {'from': cf.DEPLOYER})
+    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+
+    assert cf.vault.balance() == 0
+    assert token.balanceOf(cf.vault) == 0
+
+    # Sign the tx without a msgHash or sig
+    callDataNoSig = cf.vault.fetchDepositToken.encode_input(NULL_SIG_DATA, JUNK_HEX, token)
+    
+    # Fetch the deposit
+    cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, token)
+    
+    assert cf.vault.balance() == TEST_AMNT
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
 

@@ -15,10 +15,10 @@ import "./abstract/Shared.sol";
 */
 contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
+    mapping(KeyID => Key) private _keyIDToKey;
+        
     /// @dev The aggregate key data used by ETH vault nodes to sign transfers
-    Key private _aggKey;
     /// @dev The governance key data of the current governance quorum
-    Key private _govKey;
     /// @dev The last time that a sig was verified (used for a dead man's switch)
     uint private _lastValidateTime;
     // Can't enable this line because the compiler errors
@@ -34,8 +34,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
 
     constructor(Key memory aggKey, Key memory govKey) {
-        _aggKey = aggKey;
-        _govKey = govKey;
+        _keyIDToKey[KeyID.Agg] = aggKey;
+        _keyIDToKey[KeyID.Gov] = govKey;
         _lastValidateTime = block.timestamp;
     }
 
@@ -62,8 +62,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function isValidSig(
         bytes32 contractMsgHash,
         SigData memory sigData,
-        Key memory key
+        KeyID keyID
     ) public override returns (bool) {
+        Key memory key = _keyIDToKey[keyID];
         require(sigData.msgHash == uint(contractMsgHash), "KeyManager: invalid msgHash");
         require(
             verifySignature(
@@ -99,7 +100,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //         newKey
     //     )),
     //     sigData,
-    //     _aggKey
+    //     KeyID.Agg
     // ) 
     {
         require(
@@ -112,12 +113,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
                     )
                 ),
                 sigData,
-                _aggKey
+                KeyID.Agg
             )
         );
 
-        emit KeyChange(true, _aggKey, newKey);
-        _aggKey = newKey;
+        emit KeyChange(true, _keyIDToKey[KeyID.Agg], newKey);
+        _keyIDToKey[KeyID.Agg] = newKey;
     }
 
     /**
@@ -142,12 +143,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
                     )
                 ),
                 sigData,
-                _govKey
+                KeyID.Gov
             )
         );
 
-        emit KeyChange(false, _aggKey, newKey);
-        _aggKey = newKey;
+        emit KeyChange(false, _keyIDToKey[KeyID.Agg], newKey);
+        _keyIDToKey[KeyID.Agg] = newKey;
     }
 
     /**
@@ -172,12 +173,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
                     )
                 ),
                 sigData,
-                _govKey
+                KeyID.Gov
             )
         );
 
-        emit KeyChange(false, _govKey, newKey);
-        _govKey = newKey;
+        emit KeyChange(false, _keyIDToKey[KeyID.Gov], newKey);
+        _keyIDToKey[KeyID.Gov] = newKey;
     }
 
 
@@ -193,7 +194,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the aggregate key
      */
     function getAggregateKey() external override view returns (Key memory) {
-        return (_aggKey);
+        return (_keyIDToKey[KeyID.Agg]);
     }
 
     /**
@@ -201,7 +202,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the governance key
      */
     function getGovernanceKey() external override view returns (Key memory) {
-        return (_govKey);
+        return (_keyIDToKey[KeyID.Gov]);
     }
 
     /**

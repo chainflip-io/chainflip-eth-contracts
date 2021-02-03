@@ -43,6 +43,11 @@ def cf(a, KeyManager, Vault, StakeManager, FLIP):
 
 
 @pytest.fixture(scope="module")
+def schnorrTest(cf, SchnorrSECP256K1Test):
+    return cf.DEPLOYER.deploy(SchnorrSECP256K1Test)
+
+
+@pytest.fixture(scope="module")
 def stakedMin(cf):
     amount = MIN_STAKE
     return cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE}), amount
