@@ -97,3 +97,56 @@ def isValidSig_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX)
     with reverts(REV_MSG_SIG):
         tx = cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, signer.keyIDNum)
+
+
+# Hypothesis/brownie doesn't allow you to specifically include values when generating random
+# inputs through @given, so this is a common fcn that can be used for `test_claim` and
+# similar tests that test specific desired values
+# Can't put the if conditions for `amount` in this fcn like in test_claim because
+# it's we need to accomodate already having a tx because it's best to test
+# `stakedMin` directly
+def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStake, tx, amount):
+    assert cf.flip.balanceOf(cf.stakeManager) == prevTotal + amount
+    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + amount + getInflation(lastMintBlockNum, tx.block_number, EMISSION_PER_BLOCK)
+    assert tx.events["Staked"][0].values() == [nodeID, amount]
+    assert cf.stakeManager.getLastMintBlockNum() == lastMintBlockNum
+    assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
+    assert cf.stakeManager.getMinimumStake() == minStake
+
+
+# Hypothesis/brownie doesn't allow you to specifically include values when generating random
+# inputs through @given, so this is a common fcn that can be used for `test_claim` and
+# similar tests that test specific desired values
+def claimTest(cf, web3, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal):
+    # Want to calculate inflation 1 block into the future because that's when the tx will execute
+    newLastMintBlockNum = web3.eth.blockNumber + 1
+    inflation = getInflation(prevTx.block_number, newLastMintBlockNum, emissionPerBlock)
+    maxValidAmount = prevTotal + inflation
+
+    assert cf.flip.balanceOf(receiver) == prevReceiverBal
+
+    callDataNoSig = cf.stakeManager.claim.encode_input(NULL_SIG_DATA, nodeID, receiver, amount)
+    tx = None
+
+    if amount == 0:
+        with reverts(REV_MSG_NZ_UINT):
+            cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, receiver, amount)
+    elif amount <= maxValidAmount:
+        tx = cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, receiver, amount)
+        
+        # Check things that should've changed
+        assert cf.flip.balanceOf(receiver) == prevReceiverBal + amount
+        assert newLastMintBlockNum == tx.block_number
+        assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
+        assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
+        assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
+        assert tx.events["Transfer"][0].values() == [ZERO_ADDR, cf.stakeManager.address, inflation]
+        assert tx.events["Claimed"][0].values() == [nodeID, amount]
+        # Check things that shouldn't have changed
+        assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
+        assert cf.stakeManager.getMinimumStake() == minStake
+    else:
+        with reverts(REV_MSG_EXCEED_BAL):
+            cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, receiver, amount)
+    
+    return tx, inflation

@@ -14,7 +14,7 @@ from brownie import chain
 
 
 
-# Since _mintInflation is private, need to use setEmissionPerSec to test it
+# Since _mintInflation is private, need to use setEmissionPerBlock to test it
 @given(blocks=strategy('uint256', max_value=10))
 def test_mintInflation(cf, stakedMin, web3, blocks):
     chain.mine(blocks)
@@ -26,8 +26,8 @@ def test_mintInflation(cf, stakedMin, web3, blocks):
     assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE
     assert cf.stakeManager.getLastMintBlockNum() == initBlockNum
 
-    callDataNoSig = cf.stakeManager.setEmissionPerSec.encode_input(NULL_SIG_DATA, EMISSION_PER_BLOCK)
-    tx = cf.stakeManager.setEmissionPerSec(GOV_SIGNER_1.getSigData(callDataNoSig), EMISSION_PER_BLOCK, {"from": cf.ALICE})
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, EMISSION_PER_BLOCK)
+    tx = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), EMISSION_PER_BLOCK, {"from": cf.ALICE})
 
     assert cf.stakeManager.getInflationInFuture(0) == 0
     assert cf.stakeManager.getTotalStakeInFuture(0) == MIN_STAKE + inflation
@@ -42,7 +42,7 @@ def test_mintInflation(cf, stakedMin, web3, blocks):
     assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + inflation
     assert cf.stakeManager.getLastMintBlockNum() == tx.block_number
 
-    tx2 = cf.stakeManager.setEmissionPerSec(GOV_SIGNER_1.getSigData(callDataNoSig), EMISSION_PER_BLOCK, {"from": cf.ALICE})
+    tx2 = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), EMISSION_PER_BLOCK, {"from": cf.ALICE})
 
     assert cf.stakeManager.getInflationInFuture(0) == 0
     assert cf.stakeManager.getTotalStakeInFuture(0) == MIN_STAKE + inflation + inflation2

@@ -1,56 +1,20 @@
 from consts import *
+from shared_tests import *
 from brownie import reverts
 from brownie.test import given, strategy
-import time
 
-
-# Hypothesis/brownie doesn't allow you to specifically include values when generating random
-# inputs through @given, so this is a common fcn that can be used for `test_claim` and
-# similar tests that test specific desired values
-def claimTest(cf, stakedMin, web3, amount):
-    stakeMinTx, initAmount = stakedMin
-    receiver = cf.DENICE
-    # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.blockNumber + 1
-    inflation = getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
-    maxValidAmount = initAmount + inflation
-
-    assert cf.flip.balanceOf(receiver) == 0
-
-    callDataNoSig = cf.stakeManager.claim.encode_input(NULL_SIG_DATA, JUNK_INT, receiver, amount)
-
-    if amount == 0:
-        with reverts(REV_MSG_NZ_UINT):
-            cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_INT, receiver, amount)
-    elif amount <= maxValidAmount:
-        tx = cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_INT, receiver, amount)
-        
-        # Check things that should've changed
-        assert cf.flip.balanceOf(receiver) == amount
-        assert newLastMintBlockNum == tx.block_number
-        assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
-        assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
-        assert tx.events["Transfer"][0].values() == [ZERO_ADDR, cf.stakeManager.address, inflation]
-        assert tx.events["Claimed"][0].values() == [JUNK_INT, amount]
-        # Check things that shouldn't have changed
-        assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-        assert cf.stakeManager.getMinimumStake() == MIN_STAKE
-    else:
-        with reverts(REV_MSG_EXCEED_BAL):
-            cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_INT, receiver, amount)
-    
 
 @given(amount=strategy('uint256', max_value=MIN_STAKE*2))
 def test_claim_amount_rand(cf, stakedMin, web3, amount):
-    claimTest(cf, stakedMin, web3, amount)
+    claimTest(cf, web3, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, amount, cf.DENICE, 0)
 
 
 def test_claim_min(cf, stakedMin, web3):
-    claimTest(cf, stakedMin, web3, MIN_STAKE)
+    claimTest(cf, web3, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, 0)
 
 
 def test_claim_rev_amount_just_under_min(cf, stakedMin, web3):
-    claimTest(cf, stakedMin, web3, MIN_STAKE-1)
+    claimTest(cf, web3, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, 0)
 
 
 def test_claim_max(cf, stakedMin, web3):
@@ -59,7 +23,7 @@ def test_claim_max(cf, stakedMin, web3):
     newLastMintBlockNum = web3.eth.blockNumber + 1
     maxValidAmount = initAmount + getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
 
-    claimTest(cf, stakedMin, web3, maxValidAmount)
+    claimTest(cf, web3, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, maxValidAmount, cf.DENICE, 0)
 
 
 def test_claim_rev_just_over_max(cf, stakedMin, web3):
@@ -68,7 +32,7 @@ def test_claim_rev_just_over_max(cf, stakedMin, web3):
     newLastMintBlockNum = web3.eth.blockNumber + 1
     maxValidAmount = initAmount + getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
 
-    claimTest(cf, stakedMin, web3, maxValidAmount+1)
+    claimTest(cf, web3, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, maxValidAmount+1, cf.DENICE, 0)
 
 
 def test_claim_rev_nodeID(cf, stakedMin):

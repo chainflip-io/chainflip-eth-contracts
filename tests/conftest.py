@@ -18,12 +18,17 @@ def deploy_initial_ChainFlip_contracts(a, KeyManager, Vault, StakeManager, FLIP)
     cf = Context()
 
     # It's a bit easier to not get mixed up with accounts if they're named
-    # Can't define this in consts because `a` needs to be instantiated by brownie itself
+    # Can't define this in consts because a needs to be imported into the test
     cf.DEPLOYER = a[0]
+    cf.FR_DEPLOYER = {"from": cf.DEPLOYER}
     cf.ALICE = a[1]
+    cf.FR_ALICE = {"from": cf.ALICE}
     cf.BOB = a[2]
+    cf.FR_BOB = {"from": cf.BOB}
     cf.CHARLIE = a[3]
+    cf.FR_CHARLIE = {"from": cf.CHARLIE}
     cf.DENICE = a[4]
+    cf.FR_DENICE = {"from": cf.DENICE}
     
     cf.keyManager = cf.DEPLOYER.deploy(KeyManager, AGG_SIGNER_1.getPubData(), GOV_SIGNER_1.getPubData())
     cf.vault = cf.DEPLOYER.deploy(Vault, cf.keyManager)

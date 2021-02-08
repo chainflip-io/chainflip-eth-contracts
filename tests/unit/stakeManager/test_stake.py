@@ -5,23 +5,6 @@ from brownie.test import given, strategy
 from utils import *
 
 
-# Hypothesis/brownie doesn't allow you to specifically include values when generating random
-# inputs through @given, so this is a common fcn that can be used for `test_claim` and
-# similar tests that test specific desired values
-# Can't put the if conditions for `amount` in this fcn like in test_claim because
-# it's we need to accomodate already having a tx because it's best to test
-# `stakedMin` directly
-def stakeTest(cf, tx, amount):
-    # Check things that should've changed
-    assert cf.flip.balanceOf(cf.stakeManager) == amount
-    assert cf.stakeManager.getTotalStakeInFuture(0) == amount + getInflation(cf.stakeManager.tx.block_number, tx.block_number, EMISSION_PER_BLOCK)
-    assert tx.events["Staked"][0].values() == [JUNK_INT, amount]
-    # Check things that shouldn't have changed
-    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.block_number
-    assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-    assert cf.stakeManager.getMinimumStake() == MIN_STAKE
-
-
 @given(amount=strategy('uint256', max_value=MAX_TEST_STAKE))
 def test_stake_amount_rand(cf, amount):
     print(cf.flip.balanceOf(cf.stakeManager))
@@ -30,13 +13,30 @@ def test_stake_amount_rand(cf, amount):
             cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE})
     else:
         tx = cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE})
-        stakeTest(cf, tx, amount)
+        stakeTest(
+            cf,
+            0,
+            JUNK_INT,
+            cf.stakeManager.tx.block_number,
+            EMISSION_PER_BLOCK,
+            MIN_STAKE,
+            tx,
+            amount
+        )
 
 
 # For some reason the snapshot doesn't revert after this test,
 # can't put it before `test_stake_amount_rand`
 def test_stake_min(cf, stakedMin):
-    stakeTest(cf, *stakedMin)
+    stakeTest(
+        cf,
+        0,
+        JUNK_INT,
+        cf.stakeManager.tx.block_number,
+        EMISSION_PER_BLOCK,
+        MIN_STAKE,
+        *stakedMin
+    )
 
 
 def test_stake_rev_amount_just_under_minStake(cf):

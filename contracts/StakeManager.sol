@@ -29,7 +29,7 @@ contract StakeManager is Shared {
 
     event Staked(uint indexed nodeID, uint amount);
     event Claimed(uint indexed nodeID, uint amount);
-    event EmissionChanged(uint oldEmissionPerSec, uint newEmissionPerSec);
+    event EmissionChanged(uint oldEmissionPerBlock, uint newEmissionPerBlock);
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
 
@@ -115,19 +115,19 @@ contract StakeManager is Shared {
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current governance key (uint)
-     * @param newEmissionPerSec     The new rate
+     * @param newEmissionPerBlock     The new rate
      */
-    function setEmissionPerSec(
+    function setEmissionPerBlock(
         SigData calldata sigData,
-        uint newEmissionPerSec
-    ) external nzUint(newEmissionPerSec) noFish {
+        uint newEmissionPerBlock
+    ) external nzUint(newEmissionPerBlock) noFish {
         require(
             _keyManager.isValidSig(
                 keccak256(
                     abi.encodeWithSelector(
-                        this.setEmissionPerSec.selector,
+                        this.setEmissionPerBlock.selector,
                         SigData(0, 0),
-                        newEmissionPerSec
+                        newEmissionPerBlock
                     )
                 ),
                 sigData,
@@ -136,8 +136,8 @@ contract StakeManager is Shared {
         );
         _mintInflation();
 
-        emit EmissionChanged(_emissionPerBlock, newEmissionPerSec);
-        _emissionPerBlock = newEmissionPerSec;
+        emit EmissionChanged(_emissionPerBlock, newEmissionPerBlock);
+        _emissionPerBlock = newEmissionPerBlock;
     }
 
     /**
@@ -237,7 +237,7 @@ contract StakeManager is Shared {
     /**
      * @notice  Get the total amount of FLIP currently staked by all stakers
      *          plus the inflation that could be minted if someone called
-     *          `claim` or `setEmissionPerSec` at the specified block
+     *          `claim` or `setEmissionPerBlock` at the specified block
      * @param blocksIntoFuture  The number of blocks into the future added
      *              onto the current highest block. E.g. if the current highest
      *              block is 10, and the stake + inflation that you want to know
