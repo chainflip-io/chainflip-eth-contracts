@@ -13,6 +13,7 @@ E_18 = 10**18
 AGG = "Agg"
 GOV = "Gov"
 KEYID_TO_NUM  = {AGG: 0, GOV: 1}
+INIT_TOKEN_SUPPLY = int(10**26)
 
 REV_MSG_NZ_UINT = "Shared: uint input is empty"
 REV_MSG_NZ_ADDR = "Shared: address input is empty"
