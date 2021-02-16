@@ -21,6 +21,10 @@ REV_MSG_NZ_BYTES32 = "Shared: bytes32 input is empty"
 
 
 # -----KeyManager-----
+# 2 days
+AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
+
+REV_MSG_DELAY = "KeyManager: not enough delay"
 
 # Keys for use in tests
 

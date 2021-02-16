@@ -9,15 +9,12 @@ class _BaseStateMachine:
     methods that are shared across multiple stateful tests.
     """
 
-    def __init__(cls, a, KeyManager, Vault, StakeManager, FLIP):
+    def __init__(cls, a, cfDeploy):
         cls.a = a
-        cf = deploy_initial_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
-        cls.km = cf.keyManager
-        cls.v = cf.vault
-        cls.sm = cf.stakeManager
-        cls.f = cf.flip
-
-    # def invariant_balances(self):
+        cls.km = cfDeploy.keyManager
+        cls.v = cfDeploy.vault
+        cls.sm = cfDeploy.stakeManager
+        cls.f = cfDeploy.flip
 
 
 @pytest.fixture

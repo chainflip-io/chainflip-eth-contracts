@@ -1,5 +1,5 @@
 from consts import *
-from brownie import reverts
+from brownie import reverts, chain
 
 
 # Test with timestamp-1 because of an error where there's a difference of 1s

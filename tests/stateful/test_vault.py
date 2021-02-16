@@ -3,7 +3,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy
 
 
-def test_vault(BaseStateMachine, state_machine, a, KeyManager, Vault, StakeManager, DepositEth, DepositToken, FLIP, Token):
+def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):
     MAX_SWAPID = 5
     MAX_NUM_SENDERS = 5
     INIT_ETH = 100 * E_18
@@ -13,9 +13,9 @@ def test_vault(BaseStateMachine, state_machine, a, KeyManager, Vault, StakeManag
     
     class StateMachine(BaseStateMachine):
 
-        def __init__(cls, a, KeyManager, Vault, StakeManager, DepositEth, DepositToken, FLIP, Token):
+        def __init__(cls, a, cfDeploy, DepositEth, DepositToken, Token):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
-            super().__init__(cls, a, KeyManager, Vault, StakeManager, FLIP)
+            super().__init__(cls, a, cfDeploy)
             cls.tokenA = a[0].deploy(Token, "ShitcoinA", "SCA", INIT_TOKEN_SUPPLY)
             cls.tokenB = a[0].deploy(Token, "ShitcoinB", "SCB", INIT_TOKEN_SUPPLY)
 
@@ -26,23 +26,13 @@ def test_vault(BaseStateMachine, state_machine, a, KeyManager, Vault, StakeManag
             cls.create2EthAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenAAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenA.address)) for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenBAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenB.address)) for swapID in range(MAX_SWAPID+1)]
-            print([addr for addr in a])
-            print(cls.create2EthAddrs)
-            print(cls.create2TokenAAddrs)
-            print(cls.create2TokenBAddrs)
-            print(cls.v.address)
-            print()
             cls.allAddrs = [*[addr.address for addr in a[0:MAX_NUM_SENDERS]], *cls.create2EthAddrs, *cls.create2TokenAAddrs, *cls.create2TokenBAddrs, cls.v.address]
 
 
         def setup(self):
             self.ethBals = {addr: INIT_ETH if addr in a else 0 for addr in self.allAddrs}
-            # print(self.ethBals)
             self.tokenABals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
-            # print(self.tokenABals)
             self.tokenBBals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
-            # print(self.tokenBBals)
-            self.idx = 0
 
 
         st_eth_amount = strategy("uint", max_value=MAX_ETH_SEND)
@@ -93,8 +83,6 @@ def test_vault(BaseStateMachine, state_machine, a, KeyManager, Vault, StakeManag
 
                 self.ethBals[st_sender] -= st_eth_amount
                 self.ethBals[depositAddr] += st_eth_amount
-
-                print(f'depositing eth amount {st_eth_amount}')
         
 
         def _transfer_tokens_to_token_deposit(self, bals, token, st_sender, st_swapID, st_token_amount):
@@ -104,8 +92,6 @@ def test_vault(BaseStateMachine, state_machine, a, KeyManager, Vault, StakeManag
 
                 bals[st_sender] -= st_token_amount
                 bals[depositAddr] += st_token_amount
-                
-                print(f'depositing token amount {st_token_amount}')
             
         
         def rule_transfer_tokens_to_depositTokenA(self, st_sender, st_swapID, st_token_amount):
@@ -149,15 +135,11 @@ def test_vault(BaseStateMachine, state_machine, a, KeyManager, Vault, StakeManag
 
         def invariant_bals(self):
             for addr in self.allAddrs:
-                # print(addr)
                 assert web3.eth.getBalance(addr) == self.ethBals[addr]
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
-
-            print(self.idx)
-            self.idx += 1
         
 
     
-    settings = {"stateful_step_count": 1000, "max_examples": 20}
-    state_machine(StateMachine, a, KeyManager, Vault, StakeManager, DepositEth, DepositToken, FLIP, Token, settings=settings)
+    settings = {"stateful_step_count": 10, "max_examples": 10}
+    state_machine(StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings)

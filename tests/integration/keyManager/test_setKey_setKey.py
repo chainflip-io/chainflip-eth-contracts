@@ -1,6 +1,6 @@
 from consts import *
 from shared_tests import *
-from brownie import reverts
+from brownie import reverts, chain
 
 
 def test_setAggKeyWithAggKey_setAggKeyWithAggKey(cf):
@@ -29,8 +29,13 @@ def test_setGovKeyWithGovKey_setAggKeyWithGovKey(cf):
     # Change the gov key
     setGovKeyWithGovKey_test(cf)
 
-    # Try to change agg key with old gov key
     callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    # Changing the agg key with the gov key should fail if the delay hasn't been long enough yet
+    with reverts(REV_MSG_DELAY):
+        cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_2.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
+    
+    chain.sleep(AGG_KEY_TIMEOUT)
+    # Trying to change agg key with old gov key should revert
     with reverts(REV_MSG_SIG):
         cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
     

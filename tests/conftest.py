@@ -12,8 +12,14 @@ def isolation(fn_isolation):
 
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
-def cf(a, KeyManager, Vault, StakeManager, FLIP):
-    cf = deploy_initial_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
+    return deploy_initial_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+
+
+# Deploy the contracts and set up common test environment
+@pytest.fixture(scope="module")
+def cf(a, cfDeploy):
+    cf = cfDeploy
 
     # It's a bit easier to not get mixed up with accounts if they're named
     # Can't define this in consts because `a` needs to be imported into the test

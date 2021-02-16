@@ -15,11 +15,13 @@ import "./abstract/Shared.sol";
 */
 contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
+    uint constant private _AGG_KEY_TIMEOUT = 2 days;
+
+    /// @dev    Used to get the key with the keyID. This prevents isValidSig being called
+    ///         by keys that aren't the aggKey or govKey, which prevents outsiders being
+    ///         able to change _lastValidateTime
     mapping(KeyID => Key) private _keyIDToKey;
-        
-    /// @dev The aggregate key data used by ETH vault nodes to sign transfers
-    /// @dev The governance key data of the current governance quorum
-    /// @dev The last time that a sig was verified (used for a dead man's switch)
+    /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint private _lastValidateTime;
     // Can't enable this line because the compiler errors
     // with "Constants of non-value type not yet implemented."
@@ -133,6 +135,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         SigData memory sigData,
         Key memory newKey
     ) external override nzKey(newKey) {
+        require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough delay");
         require(
             isValidSig(
                 keccak256(
