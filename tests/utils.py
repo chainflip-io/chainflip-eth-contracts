@@ -21,3 +21,8 @@ def getCreate2Addr(sender, saltHex, contractContainer, argsHex):
 
 def getInflation(prevBlockNum, curBlockNum, emissionRate):
     return (curBlockNum - prevBlockNum) * emissionRate
+
+def getKeyFromValue(dic, value):
+    for key, val in dic.items():
+        if val == value:
+            return key

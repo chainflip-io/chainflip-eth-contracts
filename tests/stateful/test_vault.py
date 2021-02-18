@@ -57,10 +57,10 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
                     bals[st_recip] += st_eth_amount
                 else:
                     with reverts():
-                        self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount)
+                        self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
             else:
                 with reverts(REV_MSG_NZ_UINT):
-                    self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount)
+                    self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
 
 
         def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
@@ -141,5 +141,5 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         
 
     
-    settings = {"stateful_step_count": 10, "max_examples": 10}
+    settings = {"stateful_step_count": 10, "max_examples": 5}
     state_machine(StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings)

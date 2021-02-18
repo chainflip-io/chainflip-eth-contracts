@@ -56,6 +56,14 @@ class Signer():
     @classmethod
     def gen_key_hex(cls):
         return cls.gen_key().to_bytes().hex()
+    
+
+    @classmethod
+    def gen_signer(cls):
+        privKeyHex = cls.gen_key_hex()
+        kHex = keys.UmbralPrivateKey.gen_key().to_bytes().hex()
+        return cls(privKeyHex, kHex, -1)
+
 
 
     def getPubData(self):
