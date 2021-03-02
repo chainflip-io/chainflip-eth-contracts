@@ -10,7 +10,7 @@ import "./abstract/Shared.sol";
 /**
 * @title    KeyManager contract
 * @notice   Holds the aggregate and governance keys, functions to update them, 
-            and isValidSig so other contracts can verify signatures and updates _lastValidateTime
+*           and isValidSig so other contracts can verify signatures and updates _lastValidateTime
 * @author   Quantaf1re (James Key)
 */
 contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {

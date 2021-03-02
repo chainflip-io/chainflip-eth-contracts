@@ -20,21 +20,14 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1, GOV: GOV_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + ([Signer.gen_signer()] * (TOTAL_KEYS - 2))
 
-        # st_eth_amount = strategy("uint", max_value=MAX_ETH_SEND)
-        # st_token_amount = strategy("uint", max_value=MAX_TOKEN_SEND)
-        # st_swapID = strategy("uint", min_value=1, max_value=MAX_SWAPID)
-        # # Only want the 1st 5 addresses so that the chances of multiple
-        # # txs occurring from the same address is greatly increased while still
-        # # ensuring diversity in senders
-        # st_sender = strategy("address", length=MAX_NUM_SENDERS)
-        # st_recip = strategy("address", length=MAX_NUM_SENDERS)
-        # # st_recip = strategy("address")
 
         st_sender = strategy("address")
         st_sig_key_idx = strategy("uint", max_value=TOTAL_KEYS-1)
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS-1)
         st_keyID_num = strategy("uint", max_value=len(KEYID_TO_NUM)-1)
         st_msg_data = strategy("bytes")
+        # A week
+        st_sleep_time = strategy("uint", max_value=604800, exclude=0)
 
 
         def rule_isValidSig(self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data):
@@ -66,6 +59,10 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         def rule_setGovKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
             self._set_same_key(st_sender, self.km.setGovKeyWithGovKey, GOV, st_sig_key_idx, st_new_key_idx)
+        
+
+        def rule_sleep(self, st_sleep_time):
+            chain.sleep(st_sleep_time)
 
 
         def rule_setAggKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
@@ -74,7 +71,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
                 if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[GOV]:
                     tx = self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigData(callDataNoSig), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
 
-                    self.keyIDToCurKeys[GOV] = self.allKeys[st_new_key_idx]
+                    self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
                     self.lastValidateTime = tx.timestamp
                 else:
                     with reverts(REV_MSG_SIG):
