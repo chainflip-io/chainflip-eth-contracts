@@ -26,13 +26,14 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             cls.create2EthAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenAAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenA.address)) for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenBAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenB.address)) for swapID in range(MAX_SWAPID+1)]
-            cls.allAddrs = [*[addr.address for addr in a[0:MAX_NUM_SENDERS]], *cls.create2EthAddrs, *cls.create2TokenAAddrs, *cls.create2TokenBAddrs, cls.v.address]
+            cls.allAddrs = [*[addr.address for addr in a[:MAX_NUM_SENDERS]], *cls.create2EthAddrs, *cls.create2TokenAAddrs, *cls.create2TokenBAddrs, cls.v.address]
 
 
         def setup(self):
-            self.ethBals = {addr: INIT_ETH if addr in a else 0 for addr in self.allAddrs}
+            self.ethBals = {addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs}
             self.tokenABals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
             self.tokenBBals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
+            self.numTxsTested = 0
 
 
         st_eth_amount = strategy("uint", max_value=MAX_ETH_SEND)
@@ -43,24 +44,25 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         # ensuring diversity in senders
         st_sender = strategy("address", length=MAX_NUM_SENDERS)
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
-        # st_recip = strategy("address")
 
 
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
             callDataNoSig = self.v.transfer.encode_input(NULL_SIG_DATA, tokenAddr, st_recip, st_eth_amount)
             
-            if st_eth_amount > 0:
-                if bals[self.v.address] >= st_eth_amount:
-                    self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
-
-                    bals[self.v.address] -= st_eth_amount
-                    bals[st_recip] += st_eth_amount
-                else:
-                    with reverts():
-                        self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
-            else:
+            if st_eth_amount == 0:
+                print('REV_MSG_NZ_UINT _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount)
                 with reverts(REV_MSG_NZ_UINT):
                     self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
+            elif bals[self.v.address] < st_eth_amount:
+                print('NOT ENOUGH TOKENS IN VAULT _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount)
+                with reverts():
+                    self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
+            else:
+                print('             _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount)
+                self.v.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
+
+                bals[self.v.address] -= st_eth_amount
+                bals[st_recip] += st_eth_amount
 
 
         def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
@@ -77,7 +79,9 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         
 
         def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
+            # No point testing reverts of these conditions since it's not what we're trying to test
             if st_swapID != 0 and self.ethBals[st_sender] >= st_eth_amount:
+                print('             rule_transfer_eth_to_depositEth', st_sender, st_swapID, st_eth_amount)
                 depositAddr = getCreate2Addr(self.v.address, cleanHexStrPad(st_swapID), DepositEth, "")
                 st_sender.transfer(depositAddr, st_eth_amount)
 
@@ -86,7 +90,9 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         
 
         def _transfer_tokens_to_token_deposit(self, bals, token, st_sender, st_swapID, st_token_amount):
+            # No point testing reverts of these conditions since it's not what we're trying to test
             if st_swapID != 0 and bals[st_sender] >= st_token_amount:
+                print('             _transfer_tokens_to_token_deposit', token, st_sender, st_swapID, st_token_amount)
                 depositAddr = getCreate2Addr(self.v.address, cleanHexStrPad(st_swapID), DepositToken, cleanHexStrPad(token.address))
                 token.transfer(depositAddr, st_token_amount, {'from': st_sender})
 
@@ -104,6 +110,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
 
         def rule_fetchDepositEth(self, st_sender, st_swapID):
             if st_swapID != 0:
+                print('             rule_fetchDepositEth', st_sender, st_swapID)
                 depositAddr = getCreate2Addr(self.v.address, cleanHexStrPad(st_swapID), DepositEth, "")
                 depositBal = self.ethBals[depositAddr]
                 callDataNoSig = self.v.fetchDepositEth.encode_input(NULL_SIG_DATA, st_swapID)
@@ -115,6 +122,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
 
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
             if st_swapID != 0:
+                print('             _fetchDepositToken', token, st_sender, st_swapID)
                 depositAddr = getCreate2Addr(self.v.address, cleanHexStrPad(st_swapID), DepositToken, cleanHexStrPad(token.address))
                 depositBal = bals[depositAddr]
                 callDataNoSig = self.v.fetchDepositToken.encode_input(NULL_SIG_DATA, st_swapID, token)
@@ -133,6 +141,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
 
 
         def invariant_bals(self):
+            self.numTxsTested += 1
             for addr in self.allAddrs:
                 assert web3.eth.getBalance(addr) == self.ethBals[addr]
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
@@ -142,9 +151,11 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         # Variable(s) that shouldn't change since there's no intentional way to
         def invariant_nonchangeable(self):
             assert self.v.getKeyManager() == self.km.address
-
         
 
+        def teardown(self):
+            print(self.numTxsTested)
+
     
-    settings = {"stateful_step_count": 10, "max_examples": 5}
+    settings = {"stateful_step_count": 200, "max_examples": 50}
     state_machine(StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings)

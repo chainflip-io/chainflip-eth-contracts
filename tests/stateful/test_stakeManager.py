@@ -18,7 +18,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
     class StateMachine(BaseStateMachine):
 
         def __init__(cls, a, cfDeploy):
-            # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
             callDataNoSig = cls.sm.setMinStake.encode_input(NULL_SIG_DATA, INIT_MIN_STAKE)
@@ -44,7 +43,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             # Eth bals shouldn't change in this test, but just to be sure...
             self.ethBals = {addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs}
             self.flipBals = {addr: INIT_STAKE if addr in self.stakers else 0 for addr in self.allAddrs}
-            # self.flipBals = {addr: 0 for addr in a}
+            self.numTxsTested = 0
 
 
         st_sender = strategy("address")
@@ -56,18 +55,11 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         st_emission = strategy("uint", max_value=370 * E_18)
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minStake = strategy("uint", max_value=int(INIT_STAKE/2))
-        # Want to generate randomness suc
-        # st_signer = strategy("uint", max_value=100)
-        # So there's a 1% chance of a bad sig
+        # So there's a 1% chance of a bad sig to maximise useful txs
         st_signer_agg = hypStrat.sampled_from(([AGG_SIGNER_1] * 99) + [GOV_SIGNER_1])
         st_signer_gov = hypStrat.sampled_from([AGG_SIGNER_1] + ([GOV_SIGNER_1] * 99))
 
 
-        # Ideally nodeID would be randomised too, but for some reason that makes
-        # Brownie/Hypothesis use the min value for st_amount almost constantly, 
-        # which doesn't result in useful tests. Just gonna use st_amount as the
-        # nodeID so atleast it varies too
-        # def rule_stake(self, st_staker, st_nodeID, st_amount):
         def rule_stake(self, st_staker, st_nodeID, st_amount):
             if st_nodeID == 0:
                 print('rule_stake NODEID', st_staker, st_nodeID, st_amount/E_18)
@@ -101,8 +93,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NZ_UINT):
                     self.sm.claim(st_signer_agg.getSigData(callDataNoSig), st_nodeID, st_staker, st_amount, {'from': st_sender})
             elif st_amount == 0:
-            # st_amount = MAX_TEST_STAKE - st_amount
-            # if st_amount < self.minStake:
                 print('rule_claim AMOUNT', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_NZ_UINT):
                     self.sm.claim(st_signer_agg.getSigData(callDataNoSig), st_nodeID, st_staker, st_amount, {'from': st_sender})
@@ -164,8 +154,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 self.minStake = st_minStake
 
 
-
-
         # Variable(s) that shouldn't change since there's no intentional way to
         def invariant_nonchangeable(self):
             assert self.sm.getKeyManager() == self.km.address
@@ -185,15 +173,18 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         
 
         def invariant_inflation_calcs(self):
+            self.numTxsTested += 1
             # Test in present and future
             assert self.sm.getInflationInFuture(0) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
             assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
             assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
             assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
+        
+
+        def teardown(self):
+            print('Num rules used = ', self.numTxsTested)
             
-
-
     
     # settings = {"stateful_step_count": 50, "max_examples": 10, "phases": {"shrink":False}}
-    settings = {"stateful_step_count": 500, "max_examples": 100}
+    settings = {"stateful_step_count": 1000, "max_examples": 50}
     state_machine(StateMachine, a, cfDeploy, settings=settings)
