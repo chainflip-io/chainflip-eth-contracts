@@ -1,5 +1,4 @@
 import pytest
-from deploy import deploy_initial_ChainFlip_contracts
 
 
 class _BaseStateMachine:

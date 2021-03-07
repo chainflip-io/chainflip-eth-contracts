@@ -4,9 +4,9 @@ from brownie.test import strategy
 
 
 def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):
+    
     MAX_SWAPID = 5
     MAX_NUM_SENDERS = 5
-    INIT_ETH = 100 * E_18
     MAX_ETH_SEND = E_18
     MAX_TOKEN_SEND = 10**23
     INIT_TOKEN_AMNT = MAX_TOKEN_SEND * 100
@@ -131,13 +131,18 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         def rule_fetchDepositToken_tokenB(self, st_sender, st_swapID):
             self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
 
-                
 
         def invariant_bals(self):
             for addr in self.allAddrs:
                 assert web3.eth.getBalance(addr) == self.ethBals[addr]
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
+        
+
+        # Variable(s) that shouldn't change since there's no intentional way to
+        def invariant_nonchangeable(self):
+            assert self.v.getKeyManager() == self.km.address
+
         
 
     

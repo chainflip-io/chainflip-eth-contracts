@@ -24,7 +24,7 @@ contract StakeManager is Shared {
     uint private _totalStake;
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     // Pulled this number out my ass
-    uint private _minStake = (10**5) * _E_18;
+    uint private _minStake;
 
 
     event Staked(uint indexed nodeID, uint amount);
@@ -62,8 +62,8 @@ contract StakeManager is Shared {
         uint balBefore = _FLIP.balanceOf(address(this));
         _FLIP.transferFrom(msg.sender, address(this), amount);
         require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: transfer failed");
-        _totalStake += amount;
 
+        _totalStake += amount;
         emit Staked(nodeID, amount);
     }
 

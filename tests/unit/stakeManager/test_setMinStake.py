@@ -56,7 +56,7 @@ def test_setMinStake_rev_aggKey(cf):
 # has `testSendFLIP` in it to simulate some kind of hack
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
 def test_setMinStake_rev_noFish(cf, StakeManagerVulnerable, FLIP, web3, amount):
-    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INITIAL_SUPPLY)
+    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INIT_SUPPLY)
     flipVuln = FLIP.at(smVuln.getFLIPAddress())
     # Can't set _FLIP in the constructor because it's made in the constructor
     # of StakeManager and getFLIPAddress is external

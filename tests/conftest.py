@@ -3,7 +3,6 @@ from consts import *
 from deploy import deploy_initial_ChainFlip_contracts
 
 
-
 # Test isolation
 @pytest.fixture(autouse=True)
 def isolation(fn_isolation):
@@ -60,7 +59,7 @@ def token(cf, Token):
 
 @pytest.fixture(scope="module")
 def vulnerableStakedStakeMan(cf, StakeManagerVulnerable, FLIP):
-    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INITIAL_SUPPLY)
+    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INIT_SUPPLY)
     flipVuln = FLIP.at(smVuln.getFLIPAddress())
     # Can't set _FLIP in the constructor because it's made in the constructor
     # of StakeManager and getFLIPAddress is external

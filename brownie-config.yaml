@@ -15,4 +15,4 @@ compiler:
 
 # Property-based tests run 10 times with random inputs rather than the default 50
 hypothesis:
-    max_examples: 10
+  max_examples: 10
