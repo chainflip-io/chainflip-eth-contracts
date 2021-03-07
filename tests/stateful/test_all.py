@@ -42,9 +42,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             cls.create2EthAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenAAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenA.address)) for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenBAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenB.address)) for swapID in range(MAX_SWAPID+1)]
-            
-            callDataNoSig = cls.sm.setMinStake.encode_input(NULL_SIG_DATA, INIT_MIN_STAKE)
-            cls.sm.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), INIT_MIN_STAKE)
 
             cls.stakers = a[:MAX_NUM_SENDERS]
 
@@ -60,14 +57,17 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             self.allAddrs = self.stakers + [self.sm]
             self.allAddrs = [*[addr.address for addr in self.stakers], *self.create2EthAddrs, 
                 *self.create2TokenAAddrs, *self.create2TokenBAddrs, self.v, self.km, self.sm]
+            
+            callDataNoSig = self.sm.setMinStake.encode_input(NULL_SIG_DATA, INIT_MIN_STAKE)
+            tx = self.sm.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), INIT_MIN_STAKE)
 
             # Vault
             self.ethBals = {addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs}
             self.tokenABals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
             self.tokenBBals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
             
-            # Vault
-            self.lastValidateTime = self.km.tx.timestamp
+            # KeyManager
+            self.lastValidateTime = tx.timestamp
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1, GOV: GOV_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + ([Signer.gen_signer()] * (TOTAL_KEYS - 2))
 
@@ -339,7 +339,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
                 self.flipBals[st_staker] -= st_stake
                 self.flipBals[self.sm] += st_stake
                 self.totalStake += st_stake
-                self.lastValidateTime = tx.timestamp
             
 
         def rule_claim(self, st_nodeID, st_staker, st_stake, st_sender):
@@ -429,6 +428,29 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         # Variable(s) that shouldn't change since there's no intentional way to
         def invariant_nonchangeable(self):
             assert self.v.getKeyManager() == self.km.address
+            assert self.sm.getKeyManager() == self.km.address
+            assert self.sm.getFLIPAddress() == self.f.address
+        
+
+        def invariant_keys(self):
+            assert self.km.getAggregateKey() == self.keyIDToCurKeys[AGG].getPubDataWith0x()
+            assert self.km.getGovernanceKey() == self.keyIDToCurKeys[GOV].getPubDataWith0x()
+        
+
+        def invariant_state_vars(self):
+            assert self.sm.getLastMintBlockNum() == self.lastMintBlockNum
+            assert self.sm.getEmissionPerBlock() == self.emissionPerBlock
+            assert self.sm.getMinimumStake() == self.minStake
+            assert self.km.getLastValidateTime() == self.lastValidateTime
+
+
+        def invariant_inflation_calcs(self):
+            # Test in present and future
+            assert self.sm.getInflationInFuture(0) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
+            assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
+            assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
+            assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
+        
         
 
         def teardown(self):
