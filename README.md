@@ -4,7 +4,6 @@ This repository contains the Ethereum smart contracts which are used to handle d
 
 Additional information can be found in the [Ethereum Research](https://github.com/chainflip-io/ethereum-research) repository.
 
-
 ## Dependencies
 
 - [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
@@ -13,7 +12,7 @@ Additional information can be found in the [Ethereum Research](https://github.co
 
 First, ensure you have Poetry installed.
 
-```
+```bash
 git clone git@github.com:chainflip-io/chainflip-eth-contracts.git
 cd chainflip-eth-contracts
 poetry shell
@@ -26,12 +25,12 @@ brownie test
 
 Requires [Yarn](https://yarnpkg.com) and [NPX](https://www.npmjs.com/package/npx) to be installed.
 
-```
+```bash
 yarn
 npx solidity-docgen --solc-module solc-0.7
 ```
 
-## Notes
+## Notes
 
 Brownie and `solidity-docgen` don't play very nice with each other. For this reason we've installed the OpenZeppelin contracts through both the brownie package manager (because it doesn't like node_modules when compiling internally), and `yarn` (because `solc` doesn't search the `~/.brownie` folder for packages).
 
