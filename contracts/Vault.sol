@@ -1,5 +1,4 @@
-pragma solidity ^0.7.0;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -48,7 +47,19 @@ contract Vault is IVault, Shared {
         address tokenAddr,
         address payable recipient,
         uint amount
-    ) external override nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) {
+    ) external override nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.transfer.selector,
+                SigData(0, 0),
+                tokenAddr,
+                recipient,
+                amount
+            )
+        ),
+        KeyID.Agg
+    ) {
     // validate(
     //     keccak256(abi.encodeWithSelector(
     //         this.transfer.selector,
@@ -64,21 +75,21 @@ contract Vault is IVault, Shared {
     //     _aggregateKeyData.pubKeyYParity,
     //     _aggregateKeyData.nonceTimesGAddr
     // )
-        require(
-            _keyManager.isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.transfer.selector,
-                        SigData(0, 0),
-                        tokenAddr,
-                        recipient,
-                        amount
-                    )
-                ),
-                sigData,
-                KeyID.Agg
-            )
-        );
+        // require(
+        //     _keyManager.isValidSig(
+        //         keccak256(
+        //             abi.encodeWithSelector(
+        //                 this.transfer.selector,
+        //                 SigData(0, 0),
+        //                 tokenAddr,
+        //                 recipient,
+        //                 amount
+        //             )
+        //         ),
+        //         sigData,
+        //         KeyID.Agg
+        //     )
+        // );
 
         // When separating this into 2 fcns, remember to delete _ETH_ADDR in Shared
         if (tokenAddr == _ETH_ADDR) {
@@ -102,20 +113,30 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) {
-        require(
-            _keyManager.isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.fetchDepositEth.selector,
-                        SigData(0, 0),
-                        swapID
-                    )
-                ),
-                sigData,
-                KeyID.Agg
+    ) external override nzBytes32(swapID) validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.fetchDepositEth.selector,
+                SigData(0, 0),
+                swapID
             )
-        );
+        ),
+        KeyID.Agg
+    ) {
+        // require(
+        //     _keyManager.isValidSig(
+        //         keccak256(
+        //             abi.encodeWithSelector(
+        //                 this.fetchDepositEth.selector,
+        //                 SigData(0, 0),
+        //                 swapID
+        //             )
+        //         ),
+        //         sigData,
+        //         KeyID.Agg
+        //     )
+        // );
         
         new DepositEth{salt: swapID}();
     }
@@ -134,21 +155,32 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) {
-        require(
-            _keyManager.isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.fetchDepositToken.selector,
-                        SigData(0, 0),
-                        swapID,
-                        tokenAddr
-                    )
-                ),
-                sigData,
-                KeyID.Agg
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.fetchDepositToken.selector,
+                SigData(0, 0),
+                swapID,
+                tokenAddr
             )
-        );
+        ),
+        KeyID.Agg
+    ) {
+        // require(
+        //     _keyManager.isValidSig(
+        //         keccak256(
+        //             abi.encodeWithSelector(
+        //                 this.fetchDepositToken.selector,
+        //                 SigData(0, 0),
+        //                 swapID,
+        //                 tokenAddr
+        //             )
+        //         ),
+        //         sigData,
+        //         KeyID.Agg
+        //     )
+        // );
         
         new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
     }
@@ -176,8 +208,15 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
     
-    // TODO: add modifier for checking sig once we can use v0.8 and it
-    // compiles. See comment with validate in KeyManager
+    /// @dev    Call isValidSig in _keyManager
+    modifier validSig(
+        SigData calldata sigData,
+        bytes32 contractMsgHash,
+        KeyID keyID
+    ) {
+        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        _;
+    }
 
     //////////////////////////////////////////////////////////////
     //                                                          //

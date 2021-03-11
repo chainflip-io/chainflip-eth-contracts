@@ -1,5 +1,4 @@
-pragma solidity ^0.7.0;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 
 import "./interfaces/IKeyManager.sol";
@@ -7,6 +6,31 @@ import "./abstract/Shared.sol";
 import "./FLIP.sol";
 
 
+/**
+* @title    StakeManager contract
+* @notice   Manages the staking of FLIP. Validators on the FLIP state chain
+*           basically have full control of FLIP leaving the contract. Auction
+*           logic for validator slots is not handled in this contract - bidders
+*           just send their bid to this contract via `stake` with their FLIP state chain
+*           nodeID, the ChainFlip Engine witnesses the bids, takes the top n bids,
+*           assigns them to slots, then signs/calls `claim` to refund everyone else.
+*
+*           This contract also handles the minting of FLIP after the initial supply
+*           is minted during FLIP's creation. Every new block after the contract is created is
+*           able to mint `_emissionPerBlock` amount of FLIP. This is FLIP that's meant to 
+*           be rewarded to validators for their service. If none of them end up being naughty
+*           boys or girls, then their proportion of that newly minted reward will be rewarded
+*           to them based on their proportion of the total stake when they `claim` - though the logic of
+*           assigning rewards is handled by the ChainFlip Engine via aggKey and this contract just blindly
+*           trusts its judgement. There is an intentional limit on the power to mint, which is
+*           why there's an emission rate controlled within the contract, so that a compromised
+*           aggKey can't mint infinite tokens - the most that can be minted is any outstanding
+*           emission of FLIP and the most that can be stolen is the FLIP balance of this contract,
+*           which is the total staked (or bidded during auctions) + total emitted from rewards.
+*           However, a compromised govKey could change the emission rate and therefore mint
+*           infinite tokens.
+* @author   Quantaf1re (James Key)
+*/
 contract StakeManager is Shared {
 
     /// @dev    The KeyManager used to checks sigs used in functions here
@@ -17,10 +41,13 @@ contract StakeManager is Shared {
     uint private _lastMintBlockNum;
     /// @dev    The amount of FLIPs emitted per second, minted when `claim` is called
     uint private _emissionPerBlock;
-    /// @dev    This tracks the amount of FLIP that should be in this contract currently. It's
-    ///         equal to the total staked - total claimed + total minted (above initial
-    ///         supply). If there's some bug that drains FLIP from this contract that
-    ///         isn't part of `claim`, then `noFish` should protect against it
+    /**
+     * @dev     This tracks the amount of FLIP that should be in this contract currently. It's
+     *          equal to the total staked - total claimed + total minted (above initial
+     *          supply). If there's some bug that drains FLIP from this contract that
+     *          isn't part of `claim`, then `noFish` should protect against it. Note that
+     *          if someone is slashed, _totalStake will not be reduced.
+     */
     uint private _totalStake;
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     // Pulled this number out my ass
@@ -83,23 +110,19 @@ contract StakeManager is Shared {
         uint nodeID,
         address staker,
         uint amount
-    ) external nzUint(nodeID) nzAddr(staker) nzUint(amount) noFish {
-        require(
-            _keyManager.isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.claim.selector,
-                        SigData(0, 0),
-                        nodeID,
-                        staker,
-                        amount
-                    )
-                ),
-                sigData,
-                KeyID.Agg
+    ) external nzUint(nodeID) nzAddr(staker) nzUint(amount) noFish validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.claim.selector,
+                SigData(0, 0),
+                nodeID,
+                staker,
+                amount
             )
-        );
-
+        ),
+        KeyID.Agg
+    ) {
         // If time has elapsed since the last mint, printer go brrrr
         _mintInflation();
 
@@ -120,20 +143,17 @@ contract StakeManager is Shared {
     function setEmissionPerBlock(
         SigData calldata sigData,
         uint newEmissionPerBlock
-    ) external nzUint(newEmissionPerBlock) noFish {
-        require(
-            _keyManager.isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.setEmissionPerBlock.selector,
-                        SigData(0, 0),
-                        newEmissionPerBlock
-                    )
-                ),
-                sigData,
-                KeyID.Gov
+    ) external nzUint(newEmissionPerBlock) noFish validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.setEmissionPerBlock.selector,
+                SigData(0, 0),
+                newEmissionPerBlock
             )
-        );
+        ),
+        KeyID.Gov
+    ) {
         _mintInflation();
 
         emit EmissionChanged(_emissionPerBlock, newEmissionPerBlock);
@@ -151,29 +171,25 @@ contract StakeManager is Shared {
     function setMinStake(
         SigData calldata sigData,
         uint newMinStake
-    ) external nzUint(newMinStake) noFish {
-        require(
-            _keyManager.isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.setMinStake.selector,
-                        SigData(0, 0),
-                        newMinStake
-                    )
-                ),
-                sigData,
-                KeyID.Gov
+    ) external nzUint(newMinStake) noFish validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.setMinStake.selector,
+                SigData(0, 0),
+                newMinStake
             )
-        );
-
+        ),
+        KeyID.Gov
+    ) {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
     }
 
-    // function mintInflation() external noFish {
-    //     _mintInflation();
-    // }
-
+    /**
+     * @notice  Mints any outstanding FLIP and updates _totalStake & _lastMintBlockNum
+     *          if there was any to mint
+     */
     function _mintInflation() private {
         if (block.number > _lastMintBlockNum) {
             uint amount = getInflationInFuture(0);
@@ -264,6 +280,17 @@ contract StakeManager is Shared {
     //                          Modifiers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    
+    /// @dev    Call isValidSig in _keyManager
+    modifier validSig(
+        SigData calldata sigData,
+        bytes32 contractMsgHash,
+        KeyID keyID
+    ) {
+        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        _;
+    }
 
     /// @notice Ensure that FLIP can only be withdrawn via `claim`
     ///         and not any other method

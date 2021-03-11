@@ -1,5 +1,4 @@
-pragma solidity ^0.7.0;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 
 import "./interfaces/IKeyManager.sol";
@@ -59,11 +58,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and 
      *                  sig over that hash (uint) from the key input
+     * @param keyID     The KeyID that indicates which key to verify the sig with. Ensures that
+     *                  only 'registered' keys can be used to successfully call this fcn and change
+     *                  _lastValidateTime
      * @return          Bool used by caller to be absolutely sure that the function hasn't reverted
      */
     function isValidSig(
+        SigData calldata sigData,
         bytes32 contractMsgHash,
-        SigData memory sigData,
         KeyID keyID
     ) public override returns (bool) {
         Key memory key = _keyIDToKey[keyID];
@@ -89,36 +91,20 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
      * @param newKey    The new aggregate key to be set. The x component of the pubkey (uint),
-     *                  the parity of the 7 component (uint8), and the nonce times G (address)
+     *                  the parity of the y component (uint8), and the nonce times G (address)
      */
     function setAggKeyWithAggKey(
-        SigData memory sigData,
-        Key memory newKey
-    ) external override nzKey(newKey) 
-    // validate(
-    //     keccak256(abi.encodeWithSelector(
-    //         this.setAggKeyWithAggKey.selector,
-    //         SigData(0, 0),
-    //         newKey
-    //     )),
-    //     sigData,
-    //     KeyID.Agg
-    // ) 
-    {
-        require(
-            isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.setAggKeyWithAggKey.selector,
-                        SigData(0, 0),
-                        newKey
-                    )
-                ),
-                sigData,
-                KeyID.Agg
-            )
-        );
-
+        SigData calldata sigData,
+        Key calldata newKey
+    ) external override nzKey(newKey) validSig(
+        sigData,
+        keccak256(abi.encodeWithSelector(
+            this.setAggKeyWithAggKey.selector,
+            SigData(0, 0),
+            newKey
+        )),
+        KeyID.Agg
+    ) {
         emit KeyChange(true, _keyIDToKey[KeyID.Agg], newKey);
         _keyIDToKey[KeyID.Agg] = newKey;
     }
@@ -129,27 +115,20 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current governance key (uint)
      * @param newKey    The new aggregate key to be set. The x component of the pubkey (uint),
-     *                  the parity of the 7 component (uint8), and the nonce times G (address)
+     *                  the parity of the y component (uint8), and the nonce times G (address)
      */
     function setAggKeyWithGovKey(
-        SigData memory sigData,
-        Key memory newKey
-    ) external override nzKey(newKey) {
-        require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough delay");
-        require(
-            isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.setAggKeyWithGovKey.selector,
-                        SigData(0, 0),
-                        newKey
-                    )
-                ),
-                sigData,
-                KeyID.Gov
-            )
-        );
-
+        SigData calldata sigData,
+        Key calldata newKey
+    ) external override nzKey(newKey) validTime validSig(
+        sigData,
+        keccak256(abi.encodeWithSelector(
+            this.setAggKeyWithGovKey.selector,
+            SigData(0, 0),
+            newKey
+        )),
+        KeyID.Gov
+    ) {
         emit KeyChange(false, _keyIDToKey[KeyID.Agg], newKey);
         _keyIDToKey[KeyID.Agg] = newKey;
     }
@@ -160,26 +139,20 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current governance key (uint)
      * @param newKey    The new governance key to be set. The x component of the pubkey (uint),
-     *                  the parity of the 7 component (uint8), and the nonce times G (address)
+     *                  the parity of the y component (uint8), and the nonce times G (address)
      */
     function setGovKeyWithGovKey(
-        SigData memory sigData,
-        Key memory newKey
-    ) external override nzKey(newKey) {
-        require(
-            isValidSig(
-                keccak256(
-                    abi.encodeWithSelector(
-                        this.setGovKeyWithGovKey.selector,
-                        SigData(0, 0),
-                        newKey
-                    )
-                ),
-                sigData,
-                KeyID.Gov
-            )
-        );
-
+        SigData calldata sigData,
+        Key calldata newKey
+    ) external override nzKey(newKey) validSig(
+        sigData,
+        keccak256(abi.encodeWithSelector(
+            this.setGovKeyWithGovKey.selector,
+            SigData(0, 0),
+            newKey
+        )),
+        KeyID.Gov
+    ) {
         emit KeyChange(false, _keyIDToKey[KeyID.Gov], newKey);
         _keyIDToKey[KeyID.Gov] = newKey;
     }
@@ -225,18 +198,20 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    For some reason the sigData in this modifier is empty when
-    ///         passed to this modifier. I've tested the exact same code
-    ///         with the same compiler version (0.7) in Remix and it works,
-    ///         so it's likely a bug in Brownie. It works in v0.8 in Brownie,
-    ///         but there's currently no v0.8 for OpenZeppelin contracts so
-    ///         we're stuck with it for now until their v0.8 release
-    // modifier validate(
-    //     bytes32 contractMsgHash,
-    //     SigData calldata sigData,
-    //     Key memory key
-    // ) {
-    //     require(isValidSig(contractMsgHash, sigData, key));
-    //     _;
-    // }
+    /// @dev    Check that enough time has passed for setAggKeyWithGovKey. Needs
+    ///         to be done as a modifier so that it can happen before validSig
+    modifier validTime() {
+        require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough delay");
+        _;
+    }
+
+    /// @dev    Call isValidSig
+    modifier validSig(
+        SigData calldata sigData,
+        bytes32 contractMsgHash,
+        KeyID keyID
+    ) {
+        require(isValidSig(sigData, contractMsgHash, keyID));
+        _;
+    }
 }

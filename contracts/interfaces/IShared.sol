@@ -1,4 +1,4 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 
 /**
@@ -19,12 +19,21 @@ interface IShared {
         Gov
     }
 
+    /**
+    * @dev  SchnorrSECP256K1 requires that each key has a public key part (x coordinate), 
+    *       a parity for the y coordinate (0 if the y ordinate of the public key is even, 1 
+    *       if it's odd), and a nonceTimesGAddr which is to help exploit built-in crypto curves
+    */
     struct Key {
         uint pubKeyX;
         uint8 pubKeyYParity;
         address nonceTimesGAddr;
     }
 
+    /**
+    * @dev  Contains a signature and the msgHash that the signature is over. Kept as a single
+    *       struct since they should always be used together
+    */
     struct SigData {
         uint msgHash;
         uint sig;
