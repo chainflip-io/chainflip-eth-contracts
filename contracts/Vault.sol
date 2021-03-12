@@ -60,37 +60,6 @@ contract Vault is IVault, Shared {
         ),
         KeyID.Agg
     ) {
-    // validate(
-    //     keccak256(abi.encodeWithSelector(
-    //         this.transfer.selector,
-    //         _NULL,
-    //         _NULL,
-    //         tokenAddr,
-    //         recipient,
-    //         amount
-    //     )),
-    //     msgHash,
-    //     sig,
-    //     _aggregateKeyData.pubKeyX,
-    //     _aggregateKeyData.pubKeyYParity,
-    //     _aggregateKeyData.nonceTimesGAddr
-    // )
-        // require(
-        //     _keyManager.isValidSig(
-        //         keccak256(
-        //             abi.encodeWithSelector(
-        //                 this.transfer.selector,
-        //                 SigData(0, 0),
-        //                 tokenAddr,
-        //                 recipient,
-        //                 amount
-        //             )
-        //         ),
-        //         sigData,
-        //         KeyID.Agg
-        //     )
-        // );
-
         // When separating this into 2 fcns, remember to delete _ETH_ADDR in Shared
         if (tokenAddr == _ETH_ADDR) {
             recipient.transfer(amount);
@@ -124,20 +93,6 @@ contract Vault is IVault, Shared {
         ),
         KeyID.Agg
     ) {
-        // require(
-        //     _keyManager.isValidSig(
-        //         keccak256(
-        //             abi.encodeWithSelector(
-        //                 this.fetchDepositEth.selector,
-        //                 SigData(0, 0),
-        //                 swapID
-        //             )
-        //         ),
-        //         sigData,
-        //         KeyID.Agg
-        //     )
-        // );
-        
         new DepositEth{salt: swapID}();
     }
 
@@ -167,21 +122,6 @@ contract Vault is IVault, Shared {
         ),
         KeyID.Agg
     ) {
-        // require(
-        //     _keyManager.isValidSig(
-        //         keccak256(
-        //             abi.encodeWithSelector(
-        //                 this.fetchDepositToken.selector,
-        //                 SigData(0, 0),
-        //                 swapID,
-        //                 tokenAddr
-        //             )
-        //         ),
-        //         sigData,
-        //         KeyID.Agg
-        //     )
-        // );
-        
         new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
     }
 
