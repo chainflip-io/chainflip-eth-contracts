@@ -22,11 +22,13 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
         address being used in multiple interactions and large enough to ensure there's variety in them
         """
 
+        # Set up the initial test conditions once
         def __init__(cls, a, cfDeploy):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
 
+        # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             self.lastValidateTime = self.km.tx.timestamp
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1, GOV: GOV_SIGNER_1}

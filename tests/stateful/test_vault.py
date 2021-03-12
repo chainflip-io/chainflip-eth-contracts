@@ -40,6 +40,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         enough to ensure there's variety in them
         """
 
+        # Set up the initial test conditions once
         def __init__(cls, a, cfDeploy, DepositEth, DepositToken, Token):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
@@ -57,6 +58,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             cls.allAddrs = [*[addr.address for addr in a[:MAX_NUM_SENDERS]], *cls.create2EthAddrs, *cls.create2TokenAAddrs, *cls.create2TokenBAddrs, cls.v.address]
 
 
+        # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             self.ethBals = {addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs}
             self.tokenABals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}

@@ -25,6 +25,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         enough to ensure there's variety in them
         """
 
+        # Set up the initial test conditions once
         def __init__(cls, a, cfDeploy):
             super().__init__(cls, a, cfDeploy)
 
@@ -42,6 +43,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             cls.f.transfer("0x0000000000000000000000000000000000000001", cls.f.balanceOf(a[0]) - INIT_STAKE, {'from': a[0]})
 
 
+        # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             self.lastMintBlockNum = self.sm.tx.block_number
             self.emissionPerBlock = EMISSION_PER_BLOCK

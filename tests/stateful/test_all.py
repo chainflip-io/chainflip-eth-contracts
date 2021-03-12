@@ -66,6 +66,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         address being used in multiple interactions and large enough to ensure there's variety in them
         """
 
+        # Set up the initial test conditions once
         def __init__(cls, a, cfDeploy, DepositEth, DepositToken, Token):
             super().__init__(cls, a, cfDeploy)
 
@@ -90,6 +91,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             cls.f.transfer("0x0000000000000000000000000000000000000001", cls.f.balanceOf(a[0]) - INIT_STAKE, {'from': a[0]})
 
 
+        # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             self.allAddrs = self.stakers + [self.sm]
             self.allAddrs = [*[addr.address for addr in self.stakers], *self.create2EthAddrs, 
