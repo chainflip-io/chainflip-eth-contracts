@@ -67,7 +67,6 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         """
 
         def __init__(cls, a, cfDeploy, DepositEth, DepositToken, Token):
-            # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY)
