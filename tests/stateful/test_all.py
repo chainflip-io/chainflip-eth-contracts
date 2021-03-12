@@ -6,6 +6,9 @@ from hypothesis import strategies as hypStrat
 import random
 
 
+settings = {"stateful_step_count": 500, "max_examples": 50}
+
+
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
 def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):
     
@@ -529,5 +532,4 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             print(f'Total rules executed = {self.numTxsTested-1}')
 
     
-    settings = {"stateful_step_count": 500, "max_examples": 50}
     state_machine(StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings)

@@ -6,6 +6,7 @@ from utils import *
 
 settings = {"stateful_step_count": 500, "max_examples": 20}
 
+
 # Stateful test for all functions in the KeyManager
 def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
 

@@ -5,6 +5,10 @@ from utils import *
 from hypothesis import strategies as hypStrat
 
 
+settings = {"stateful_step_count": 1000, "max_examples": 50}
+
+
+# Stateful test for all functions in the StakeManager
 def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
     NUM_STAKERS = 5
@@ -209,6 +213,4 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             print(f'Total rules executed = {self.numTxsTested-1}')
             
     
-    # settings = {"stateful_step_count": 50, "max_examples": 10, "phases": {"shrink":False}}
-    settings = {"stateful_step_count": 1000, "max_examples": 50}
     state_machine(StateMachine, a, cfDeploy, settings=settings)
