@@ -29,7 +29,7 @@ contract Vault is IVault, Shared {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                  State-changing functions                //
+    //                          Transfers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -60,7 +60,61 @@ contract Vault is IVault, Shared {
         ),
         KeyID.Agg
     ) {
-        // When separating this into 2 fcns, remember to delete _ETH_ADDR in Shared
+        _transfer(tokenAddr, recipient, amount);
+    }
+
+    /**
+     * @notice  Transfers ETH or tokens from this vault to a recipients. It is assumed
+     *          that the elements of each array match in terms of ordering, i.e. a given
+     *          transfer should should have the same index tokenAddrs[i], recipients[i],
+     *          and amounts[i].
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's
+     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  sig over that hash (uint) from the aggregate key
+     * @param tokenAddrs The addresses of the tokens to be transferred
+     * @param recipients The address of the recipient of the transfer
+     * @param amounts    The amount to transfer, in wei (uint)
+     */
+    function transferBatch(
+        SigData calldata sigData,
+        address[] calldata tokenAddrs,
+        address payable[] calldata recipients,
+        uint[] calldata amounts
+    ) external override validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.transferBatch.selector,
+                SigData(0, 0),
+                tokenAddrs,
+                recipients,
+                amounts
+            )
+        ),
+        KeyID.Agg
+    ) {
+        require(
+            tokenAddrs.length == recipients.length &&
+            recipients.length == amounts.length, 
+            "Vault: arrays not same length"
+        );
+
+        for (uint i; i < tokenAddrs.length; i++) {
+            _transfer(tokenAddrs[i], recipients[i], amounts[i]);
+        }
+    }
+
+    /**
+     * @notice  Transfers ETH or a token from this vault to a recipient
+     * @param tokenAddr The address of the token to be transferred
+     * @param recipient The address of the recipient of the transfer
+     * @param amount    The amount to transfer, in wei (uint)
+     */
+    function _transfer(
+        address tokenAddr,
+        address payable recipient,
+        uint amount
+    ) private {
         if (tokenAddr == _ETH_ADDR) {
             recipient.transfer(amount);
         } else {
@@ -69,6 +123,13 @@ contract Vault is IVault, Shared {
             IERC20(tokenAddr).transfer(recipient, amount);
         }
     }
+
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                        Fetch Deposits                    //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
 
     /**
      * @notice  Retrieves ETH from an address deterministically generated using
@@ -123,6 +184,35 @@ contract Vault is IVault, Shared {
         KeyID.Agg
     ) {
         new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
+    }
+
+    // function batch
+
+    function fetchDepositBatch(
+        SigData calldata sigData,
+        bytes32[] calldata swapIDs,
+        address[] calldata tokenAddrs
+    ) external override validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.fetchDepositBatch.selector,
+                SigData(0, 0),
+                swapIDs,
+                tokenAddrs
+            )
+        ),
+        KeyID.Agg
+    ) {
+        require(swapIDs.length == tokenAddrs.length, "Vault: arrays not same length");
+
+        for (uint i; i < swapIDs.length; i++) {
+            if (tokenAddrs[i] == _ETH_ADDR) {
+                new DepositEth{salt: swapIDs[i]}();
+            } else {
+                new DepositToken{salt: swapIDs[i]}(IERC20Lite(tokenAddrs[i]));
+            }
+        }
     }
 
 
