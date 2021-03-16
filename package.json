@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "docgen": "npx solidity-docgen --solc-module solc-0.7 --templates=./docgen/"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^3.3.0",
     "solc-0.7": "npm:solc@^0.7.0",
