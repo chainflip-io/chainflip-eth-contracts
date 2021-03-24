@@ -80,9 +80,9 @@ REV_MSG_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
 # Targeting inflation at 15% per year (linear), assuming an average
 # block time of 13.1s
 EMISSION_PER_BLOCK = 5607877281367557723
-MIN_STAKE = (10**5) * E_18
+MIN_STAKE = (42069) * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
 
 REV_MSG_MIN_STAKE = "StakeMan: small stake, peasant"
 REV_MSG_NO_FISH = "StakeMan: something smells fishy"
-
+REV_MSG_ARR_LEN = "StakeMan: arrays not same length"

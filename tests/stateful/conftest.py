@@ -4,8 +4,9 @@ import pytest
 class _BaseStateMachine:
 
     """
-    This base state machine class contains initialization and invariant
-    methods that are shared across multiple stateful tests.
+    https://eth-brownie.readthedocs.io/en/stable/tests-hypothesis-stateful.html
+    This base state machine class contains initialization of the system that all
+    other tests need to start at (simple deployment).
     """
 
     def __init__(cls, a, cfDeploy):

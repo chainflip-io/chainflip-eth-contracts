@@ -41,22 +41,29 @@ def cf(a, cfDeploy):
     return cf
 
 
+# Deploys SchnorrSECP256K1Test to enable testing of SchnorrSECP256K1
 @pytest.fixture(scope="module")
 def schnorrTest(cf, SchnorrSECP256K1Test):
     return cf.DEPLOYER.deploy(SchnorrSECP256K1Test)
 
 
+# stake the minimum amount
 @pytest.fixture(scope="module")
 def stakedMin(cf):
     amount = MIN_STAKE
     return cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE}), amount
 
 
+# Deploy a generic token
 @pytest.fixture(scope="module")
 def token(cf, Token):
-    return cf.DEPLOYER.deploy(Token, "ShitCoin", "SC", INIT_TOKEN_SUPPLY)
+    return cf.DEPLOYER.deploy(Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY)
 
 
+# Deploy and initialise StakeManagerVulnerable, a vulnerable version of
+# StakeManager so that we can test that the StakeManager behaves properly
+# (with noFish) if FLIP was to be somehow siphoned out of the contract.
+# This also puts the minimum stake in it.
 @pytest.fixture(scope="module")
 def vulnerableStakedStakeMan(cf, StakeManagerVulnerable, FLIP):
     smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INIT_SUPPLY)
@@ -73,6 +80,8 @@ def vulnerableStakedStakeMan(cf, StakeManagerVulnerable, FLIP):
 
     return smVuln, flipVuln
 
+# Siphon some FLIP out of a StakeManagerVulnerable so that it
+# can be tested on post-siphon
 @pytest.fixture(scope="module")
 def vulnerableR3ktStakeMan(cf, vulnerableStakedStakeMan):
     smVuln, flipVuln = vulnerableStakedStakeMan

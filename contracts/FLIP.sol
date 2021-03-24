@@ -1,4 +1,4 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -6,6 +6,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./abstract/Shared.sol";
 
 
+/**
+* @title    FLIP contract
+* @notice   The FLIP utility token which is used to stake in the FLIP system and pay for
+*           trap fees with
+* @author   Quantaf1re (James Key)
+*/
 contract FLIP is ERC20, Ownable, Shared {
     
     constructor(

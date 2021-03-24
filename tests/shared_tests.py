@@ -89,14 +89,14 @@ def setKey_rev_sig_test(cf, fcn, signer):
 
 def isValidSig_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX)
-    tx = cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, signer.keyIDNum)
+    tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), signer.keyIDNum)
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
 def isValidSig_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX)
     with reverts(REV_MSG_SIG):
-        tx = cf.keyManager.isValidSig(cleanHexStr(sigData[0]), sigData, signer.keyIDNum)
+        tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), signer.keyIDNum)
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random

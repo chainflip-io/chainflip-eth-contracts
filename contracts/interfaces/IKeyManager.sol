@@ -1,5 +1,4 @@
-pragma solidity ^0.7.0;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 
 import "./IShared.sol";
@@ -19,8 +18,8 @@ interface IKeyManager is IShared {
     //////////////////////////////////////////////////////////////
 
     function isValidSig(
-        bytes32 contractMsgHash,
         SigData memory sigData,
+        bytes32 contractMsgHash,
         KeyID keyID
     ) external returns (bool);
     
