@@ -1,0 +1,9 @@
+kind: pipeline
+name: chainflip-eth-contracts
+type: docker
+
+steps:
+  - name: test
+    image: docker.pkg.github.com/sambacha/brownie-ci-docker/pyownie:latest
+    commands:
+      - brownie test
