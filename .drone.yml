@@ -14,7 +14,7 @@ steps:
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
       - echo $username
-      - git clone https://$username:$password@github.com/chainflip-io/chainflip-eth-contracts.git
+      - git clone git@github.com:chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
       - brownie test
 trigger:
