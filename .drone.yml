@@ -7,10 +7,7 @@ clone:
 steps:
   - name: test
     environment:
-      DRONE_GIT_USERNAME:
-        from_secret: docker_username
-      DRONE_GIT_PASSWORD:
-        from_secret: docker_password
+      PYTHONPATH: /tmp/chainflip-eth-contracts
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
       - cd /tmp
