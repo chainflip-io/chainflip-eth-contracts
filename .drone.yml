@@ -4,7 +4,7 @@ type: docker
 
 steps:
   - name: test
-    image: http://ghcr.io/chainflip-io/eth-brownie:latest
+    image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
       - brownie test
 trigger:
