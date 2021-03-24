@@ -7,9 +7,9 @@ clone:
 steps:
   - name: test
     environment:
-      username:
+      DRONE_GIT_USERNAME:
         from_secret: docker_username
-      password:
+      DRONE_GIT_PASSWORD:
         from_secret: docker_password
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
