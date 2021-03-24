@@ -37,17 +37,28 @@ interface IVault is IShared {
         bytes32 swapID
     ) external;
 
+    function fetchDepositEthBatch(
+        SigData calldata sigData,
+        bytes32[] calldata swapIDs
+    ) external;
+
     function fetchDepositToken(
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
     ) external;
 
-    function fetchDepositBatch(
+    function fetchDepositTokenBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         address[] calldata tokenAddrs
     ) external;
+
+    // function fetchDepositBatch(
+    //     SigData calldata sigData,
+    //     bytes32[] calldata swapIDs,
+    //     address[] calldata tokenAddrs
+    // ) external;
 
 
     //////////////////////////////////////////////////////////////

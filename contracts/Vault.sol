@@ -132,8 +132,8 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Retrieves ETH from an address deterministically generated using
-     *          create2 by creating a contract for that address, sending it to this vault, and
+     * @notice  Retrieves ETH from an address, deterministically generated using
+     *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and 
@@ -158,13 +158,41 @@ contract Vault is IVault, Shared {
     }
 
     /**
-     * @notice  Retrieves ETH or a token from an address deterministically generated using
+     * @notice  Retrieves ETH from multiple addresses, deterministically generated using
+     *          create2, by creating a contract for that address, sending it to this vault, and
+     *          then destroying
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
+     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  sig over that hash (uint) from the aggregate key
+     * @param swapIDs    The unique identifiers for this swap (bytes32)
+     */
+    function fetchDepositEthBatch(
+        SigData calldata sigData,
+        bytes32[] calldata swapIDs
+    ) external override validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.fetchDepositEthBatch.selector,
+                SigData(0, 0),
+                swapIDs
+            )
+        ),
+        KeyID.Agg
+    ) {
+        for (uint i; i < swapIDs.length; i++) {
+            new DepositEth{salt: swapIDs[i]}();
+        }
+    }
+
+    /**
+     * @notice  Retrieves a token from an address deterministically generated using
      *          create2 by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and 
      *                  sig over that hash (uint) from the aggregate key
-     * @param swapID    The unique identifier for this swap (bytes32)
+     * @param swapID    The unique identifier for this swap (bytes32), used for create2
      * @param tokenAddr The address of the token to be transferred
      */
     function fetchDepositToken(
@@ -186,9 +214,17 @@ contract Vault is IVault, Shared {
         new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
     }
 
-    // function batch
-
-    function fetchDepositBatch(
+    /**
+     * @notice  Retrieves tokens from multiple addresses, deterministically generated using
+     *          create2, by creating a contract for that address, sending it to this vault, and
+     *          then destroying
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
+     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  sig over that hash (uint) from the aggregate key
+     * @param swapIDs       The unique identifiers for this swap (bytes32), used for create2
+     * @param tokenAddrs    The addresses of the tokens to be transferred
+     */
+    function fetchDepositTokenBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         address[] calldata tokenAddrs
@@ -196,7 +232,7 @@ contract Vault is IVault, Shared {
         sigData,
         keccak256(
             abi.encodeWithSelector(
-                this.fetchDepositBatch.selector,
+                this.fetchDepositTokenBatch.selector,
                 SigData(0, 0),
                 swapIDs,
                 tokenAddrs
@@ -204,21 +240,20 @@ contract Vault is IVault, Shared {
         ),
         KeyID.Agg
     ) {
-        require(swapIDs.length == tokenAddrs.length, "Vault: arrays not same length");
+        require(
+            swapIDs.length == tokenAddrs.length,
+            "Vault: arrays not same length"
+        );
 
         for (uint i; i < swapIDs.length; i++) {
-            if (tokenAddrs[i] == _ETH_ADDR) {
-                new DepositEth{salt: swapIDs[i]}();
-            } else {
-                new DepositToken{salt: swapIDs[i]}(IERC20Lite(tokenAddrs[i]));
-            }
+            new DepositToken{salt: swapIDs[i]}(IERC20Lite(tokenAddrs[i]));
         }
     }
 
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                  Non-state-changing functions            //
+    //                          Getters                         //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -238,7 +273,7 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
     
-    /// @dev    Call isValidSig in _keyManager
+    /// @dev    Calls isValidSig in _keyManager
     modifier validSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,

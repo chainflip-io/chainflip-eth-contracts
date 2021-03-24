@@ -153,13 +153,14 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_SIG):
                     self.sm.claimBatch(st_signer_agg.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_amounts, {'from': st_sender})
             elif minLen == 5 and minLen != maxLen:
-                print('        REV_MSG_ARR_LEN rule_claimBatch', st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender)
-                with reverts(REV_MSG_ARR_LEN):
+                print('        REV_MSG_SM_ARR_LEN rule_claimBatch', st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender)
+                with reverts(REV_MSG_SM_ARR_LEN):
                     self.sm.claimBatch(st_signer_agg.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_amounts, {'from': st_sender})
             else:
                 st_nodeIDs = st_nodeIDs[:minLen]
                 st_receivers = st_receivers[:minLen]
                 st_amounts = st_amounts[:minLen]
+                minLen = trimToShortest([st_nodeIDs, st_receivers, st_amounts])
                 
                 callDataNoSig = self.sm.claimBatch.encode_input(NULL_SIG_DATA, st_nodeIDs, st_receivers, st_amounts)
 

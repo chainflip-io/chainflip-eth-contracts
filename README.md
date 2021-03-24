@@ -36,3 +36,10 @@ npx solidity-docgen --solc-module solc-0.7
 Brownie and `solidity-docgen` don't play very nice with each other. For this reason we've installed the OpenZeppelin contracts through both the brownie package manager (because it doesn't like node_modules when compiling internally), and `yarn` (because `solc` doesn't search the `~/.brownie` folder for packages).
 
 This isn't an ideal solution but it'll do for now.
+
+## Useful commands
+`brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
+
+`brownie test --stateful false` runs all tests EXCEPT stateful tests
+
+`brownie test --stateful true` runs ONLY the stateful tests

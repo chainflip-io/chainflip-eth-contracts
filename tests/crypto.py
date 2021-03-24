@@ -32,7 +32,7 @@ class Signer():
         self.kInt = int(self.kHex, 16)
         kTimesG = self.k.get_pubkey()
         kTimesGPub = kTimesG.to_bytes(is_compressed=False)[1:]
-        self.kTimesGAddressHex = cleanHexStr(w3.toChecksumAddress(cleanHexStr(w3.keccak(kTimesGPub)[-20:])))
+        self.kTimesGAddressHex = cleanHexStr(web3.toChecksumAddress(cleanHexStr(web3.keccak(kTimesGPub)[-20:])))
 
         self.keyIDNum = keyIDNum
 
@@ -75,8 +75,8 @@ class Signer():
 
 
     def getSigData(self, msgToHash):
-        msgHashHex = cleanHexStr(w3.keccak(hexstr=msgToHash))
-        e = w3.keccak(hexstr=(cleanHexStr(self.pubKeyX) + self.pubKeyYParHex + msgHashHex + self.kTimesGAddressHex))
+        msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
+        e = web3.keccak(hexstr=(cleanHexStr(self.pubKeyX) + self.pubKeyYParHex + msgHashHex + self.kTimesGAddressHex))
 
         eInt = int(cleanHexStr(e), 16)
 

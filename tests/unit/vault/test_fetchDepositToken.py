@@ -1,4 +1,4 @@
-from brownie import reverts, web3 as w3
+from brownie import reverts, web3
 from consts import *
 
 

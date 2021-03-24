@@ -85,7 +85,7 @@ def test_claimBatch_rev_arr_len(cf, stakedMin):
     amounts = [MIN_STAKE, 1]
     callDataNoSig = cf.stakeManager.claimBatch.encode_input(NULL_SIG_DATA, nodeIDs, receivers, amounts)
 
-    with reverts(REV_MSG_ARR_LEN):
+    with reverts(REV_MSG_SM_ARR_LEN):
         cf.stakeManager.claimBatch(AGG_SIGNER_1.getSigData(callDataNoSig), nodeIDs, receivers, amounts)
 
 

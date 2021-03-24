@@ -85,4 +85,8 @@ MAX_TEST_STAKE = INIT_SUPPLY / 9
 
 REV_MSG_MIN_STAKE = "StakeMan: small stake, peasant"
 REV_MSG_NO_FISH = "StakeMan: something smells fishy"
-REV_MSG_ARR_LEN = "StakeMan: arrays not same length"
+REV_MSG_SM_ARR_LEN = "StakeMan: arrays not same length"
+
+
+# -----Vault-----
+REV_MSG_V_ARR_LEN = "Vault: arrays not same length"

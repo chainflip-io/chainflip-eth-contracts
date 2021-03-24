@@ -4,7 +4,7 @@ from brownie.test import strategy
 from utils import *
 
 
-settings = {"stateful_step_count": 500, "max_examples": 20}
+settings = {"stateful_step_count": 200, "max_examples": 50}
 
 
 # Stateful test for all functions in the KeyManager
@@ -54,12 +54,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]:
                 print('                    rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                tx = self.km.isValidSig(cleanHexStr(sigData[0]), sigData, st_keyID_num, {'from': st_sender})
+                tx = self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print('        REV_MSG_SIG rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                    self.km.isValidSig(cleanHexStr(sigData[0]), sigData, st_keyID_num, {'from': st_sender})
+                    self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
 
         
         # Replace a key with a random key - either setAggKeyWithAggKey or setGovKeyWithGovKey
