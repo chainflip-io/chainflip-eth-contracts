@@ -13,6 +13,7 @@ steps:
         from_secret: docker_password
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
+      - cd /tmp
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
       - brownie test
