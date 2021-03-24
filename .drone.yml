@@ -13,6 +13,7 @@ steps:
       - cd /tmp
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
+      - pip install umbral
       - brownie test
 trigger:
   event:
