@@ -6,10 +6,9 @@ clone:
   disable: true
 steps:
   - name: test
-    environment:
-      PYTHONPATH: /tmp/chainflip-eth-contracts
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
+      - echo $PYTHONPATH
       - cd /tmp
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
