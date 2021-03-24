@@ -2,10 +2,19 @@ kind: pipeline
 name: chainflip-eth-contracts
 type: docker
 
+clone:
+  disable: true
 steps:
   - name: test
+    environment:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
+      - git clone https://$username:$password@github.com/chainflip-io/chainflip-eth-contracts.git
+      - cd chainflip-eth-contracts
       - brownie test
 trigger:
   event:
