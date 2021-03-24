@@ -7,4 +7,6 @@ steps:
     image: docker.pkg.github.com/sambacha/brownie-ci-docker/pyownie:latest
     commands:
       - brownie test
-
+trigger:
+  event:
+    - push
