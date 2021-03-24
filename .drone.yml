@@ -3,14 +3,8 @@ name: chainflip-eth-contracts
 type: docker
 
 steps:
-  - name: build
-    image: docker
-    commands:
-      - docker pull docker.pkg.github.com/sambacha/brownie-ci-docker/pyownie:latest
-      - docker tag docker.pkg.github.com/sambacha/brownie-ci-docker/pyownie:latest ghcr.io/chainflip-io/eth-brownie:latest
-      - docker push ghcr.io/chainflip-io/eth-brownie:latest
   - name: test
-    image: ghcr.io/chainflip-io/eth-brownie
+    image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
       - brownie test
 trigger:
