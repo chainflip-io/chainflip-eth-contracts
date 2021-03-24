@@ -4,16 +4,11 @@ type: docker
 
 steps:
   - name: build
-    image: plugins/docker
-    settings:
-      username:
-        from_secret: docker_username
-      password:
-        from_secret: docker_password
-      repo: ghcr.io/chainflip-io/eth-brownie
-      registry: ghcr.io
-      tags: latest
-      cache_from: ghcr.io/chainflip-io/eth-brownie
+    image: docker
+    commands:
+      - docker pull docker.pkg.github.com/sambacha/brownie-ci-docker/pyownie:latest
+      - docker tag docker.pkg.github.com/sambacha/brownie-ci-docker/pyownie:latest ghcr.io/chainflip-io/eth-brownie:latest
+      - docker push ghcr.io/chainflip-io/eth-brownie:latest
   - name: test
     image: ghcr.io/chainflip-io/eth-brownie
     commands:
