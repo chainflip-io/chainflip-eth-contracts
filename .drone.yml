@@ -6,10 +6,8 @@ clone:
   disable: true
 steps:
   - name: test
-    image: python:rc-buster
+    image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
-      - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-      - pip install eth-brownie
       - cd /tmp
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
