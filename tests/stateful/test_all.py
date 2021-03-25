@@ -6,7 +6,7 @@ from hypothesis import strategies as hypStrat
 import random
 
 
-settings = {"stateful_step_count": 200, "max_examples": 50}
+settings = {"stateful_step_count": 200, "max_examples": 20}
 
 
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager

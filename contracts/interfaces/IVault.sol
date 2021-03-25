@@ -54,12 +54,6 @@ interface IVault is IShared {
         address[] calldata tokenAddrs
     ) external;
 
-    // function fetchDepositBatch(
-    //     SigData calldata sigData,
-    //     bytes32[] calldata swapIDs,
-    //     address[] calldata tokenAddrs
-    // ) external;
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //

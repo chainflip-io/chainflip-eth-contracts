@@ -4,7 +4,7 @@ from brownie.test import strategy, contract_strategy
 from hypothesis import strategies as hypStrat
 
 
-settings = {"stateful_step_count": 200, "max_examples": 50}
+settings = {"stateful_step_count": 200, "max_examples": 20}
 
 # Stateful test for all functions in the Vault
 def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):
