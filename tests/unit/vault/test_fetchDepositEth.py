@@ -1,4 +1,4 @@
-from brownie import reverts, web3 as w3
+from brownie import reverts, web3
 from consts import *
 
 
@@ -14,7 +14,7 @@ def test_fetchDepositEth(cf, DepositEth):
 
     # Fetch the deposit
     cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
-    assert w3.eth.getBalance(w3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
 
 

@@ -1,9 +1,10 @@
 from consts import *
 from brownie import reverts, chain, web3
-from brownie.test import strategy
+from brownie.test import strategy, contract_strategy
+from hypothesis import strategies as hypStrat
 
 
-settings = {"stateful_step_count": 1000, "max_examples": 50}
+settings = {"stateful_step_count": 200, "max_examples": 20}
 
 # Stateful test for all functions in the Vault
 def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):
@@ -69,8 +70,11 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         # Variables that will be a random value with each fcn/rule called
 
         st_eth_amount = strategy("uint", max_value=MAX_ETH_SEND)
+        st_token = contract_strategy('Token')
+        st_tokens = hypStrat.lists(st_token)
         st_token_amount = strategy("uint", max_value=MAX_TOKEN_SEND)
         st_swapID = strategy("uint", max_value=MAX_SWAPID)
+        st_swapIDs = strategy("uint[]", min_value=1, max_value=MAX_SWAPID, unique=True)
         # Only want the 1st 5 addresses so that the chances of multiple
         # txs occurring from the same address is greatly increased while still
         # ensuring diversity in senders
@@ -168,6 +172,19 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
                 self.ethBals[self.v.address] += depositBal
         
 
+        def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
+            addrs = [getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in st_swapIDs]
+            total = sum([web3.eth.getBalance(addr) for addr in addrs])
+
+            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, st_swapIDs)
+            print('                    rule_fetchDepositEthBatch', st_sender, st_swapIDs)
+            self.v.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapIDs)
+
+            for addr in addrs:
+                self.ethBals[addr] = 0
+            self.ethBals[self.v.address] += total
+        
+
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
             callDataNoSig = self.v.fetchDepositToken.encode_input(NULL_SIG_DATA, st_swapID, token)
@@ -175,7 +192,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             if st_swapID == 0:
                 print('        REV_MSG_NZ_UINT _fetchDepositToken', token.address, st_sender, st_swapID)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.v.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapID, token)
+                     self.v.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapID, token)
             else:
                 print('                    _fetchDepositToken', token, st_sender, st_swapID)
                 self.v.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapID, token)
@@ -194,6 +211,40 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         # Fetch the tokenB deposit of a random create2
         def rule_fetchDepositToken_tokenB(self, st_sender, st_swapID):
             self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
+        
+
+        # Fetches random tokens from random swapID. Since there's no real way
+        # to get the lengths of the input arrays to be the same most of the time, I'm going to have to
+        # use a random number to determine whether or not to concat all arrays to the
+        # length of the shortest so that we'll get mostly valid txs and maximise usefulness. The
+        # easiest random num to use is the length of the arrays themselves - I'm gonna use '3' as the
+        # magic shortest length that should trigger not concating for no particular reason
+        def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
+            minLen = min(map(len, [st_swapIDs, st_tokens]))
+            maxLen = max(map(len, [st_swapIDs, st_tokens]))
+
+            if minLen == 3 and minLen != maxLen:
+                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, st_swapIDs, st_tokens)
+                print('        rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens)
+                with reverts(REV_MSG_V_ARR_LEN):
+                    self.v.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapIDs, st_tokens)
+            else:
+                minLen = trimToShortest([st_swapIDs, st_tokens])
+                
+                for swapID, token in zip(st_swapIDs, st_tokens):
+                    addr = getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(token.address))
+                    if token == self.tokenA:
+                        self.tokenABals[self.v.address] += self.tokenABals[addr]
+                        self.tokenABals[addr] = 0
+                    elif token == self.tokenB:
+                        self.tokenBBals[self.v.address] += self.tokenBBals[addr]
+                        self.tokenBBals[addr] = 0
+                    else:
+                        assert False, "Panicc"
+
+                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, st_swapIDs, st_tokens)
+                print('                    rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens)
+                self.v.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapIDs, st_tokens)
 
 
         # Check all the balances of every address are as they should be after every tx

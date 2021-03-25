@@ -123,6 +123,62 @@ contract StakeManager is Shared {
         ),
         KeyID.Agg
     ) {
+        _claim(nodeID, staker, amount);
+    }
+
+    /**
+     * @notice  Claim back stakes in a batch. If only losing an auction, the same amount
+     *          initially staked will be sent back. If losing an auction while being a validator,
+     *          the amount sent back = stake + rewards - penalties, as determined by the CFE.
+     *          It is assumed that the elements of each array match in terms of ordering,
+     *          i.e. a given transfer should should have the same index tokenAddrs[i],
+     *          recipients[i], and amounts[i].
+     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
+     *                  for this function with empty msgHash and sig) and sig over that hash
+     *                  from the current aggregate key (uint)
+     * @param nodeIDs   The nodeIDs of the stakers
+     * @param stakers   The stakers who are to be sent FLIP
+     * @param amounts   The amounts of stake to be locked up
+     */
+    function claimBatch(
+        SigData calldata sigData,
+        uint[] calldata nodeIDs,
+        address[] calldata stakers,
+        uint[] calldata amounts
+    ) external noFish validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.claimBatch.selector,
+                SigData(0, 0),
+                nodeIDs,
+                stakers,
+                amounts
+            )
+        ),
+        KeyID.Agg
+    ) {
+        require(
+            nodeIDs.length == stakers.length &&
+            stakers.length == amounts.length,
+            "StakeMan: arrays not same length"
+        );
+
+        for (uint i; i < amounts.length; i++) {
+            // Technically this will change _totalStake an amounts.length
+            // number of times which unnecessarily costs gas. However, since
+            // this should only be called once a month, the total $ saved
+            // is less valuable than the better coding practice of keeping
+            // everything atomic that's supposed to be atomic
+            _claim(nodeIDs[i], stakers[i], amounts[i]);
+        }
+    }
+
+    function _claim(
+        uint nodeID,
+        address staker,
+        uint amount
+    ) private {
         // If time has elapsed since the last mint, printer go brrrr
         _mintInflation();
 
@@ -161,7 +217,7 @@ contract StakeManager is Shared {
     }
 
     /**
-     * @notice      Set the minimum amount of stake needed for `stake` to be able 
+     * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash

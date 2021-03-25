@@ -60,6 +60,12 @@ def token(cf, Token):
     return cf.DEPLOYER.deploy(Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY)
 
 
+# Deploy a generic token
+@pytest.fixture(scope="module")
+def token2(cf, Token):
+    return cf.DEPLOYER.deploy(Token, "NotAPonzi2", "NAP2", INIT_TOKEN_SUPPLY)
+
+
 # Deploy and initialise StakeManagerVulnerable, a vulnerable version of
 # StakeManager so that we can test that the StakeManager behaves properly
 # (with noFish) if FLIP was to be somehow siphoned out of the contract.

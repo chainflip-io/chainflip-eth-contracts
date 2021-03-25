@@ -1,12 +1,12 @@
 from consts import *
 from brownie import reverts, chain, web3
-from brownie.test import strategy
+from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 import random
 
 
-settings = {"stateful_step_count": 500, "max_examples": 50}
+settings = {"stateful_step_count": 200, "max_examples": 20}
 
 
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
@@ -127,8 +127,11 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # Vault
 
         st_eth_amount = strategy("uint", max_value=MAX_ETH_SEND)
+        st_token = contract_strategy('Token')
+        st_tokens = hypStrat.lists(st_token)
         st_token_amount = strategy("uint", max_value=MAX_TOKEN_SEND)
         st_swapID = strategy("uint", min_value=1, max_value=MAX_SWAPID)
+        st_swapIDs = strategy("uint[]", min_value=1, max_value=MAX_SWAPID, unique=True)
         # Only want the 1st 5 addresses so that the chances of multiple
         # txs occurring from the same address is greatly increased while still
         # ensuring diversity in senders
@@ -147,14 +150,15 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         st_staker = strategy("address", length=MAX_NUM_SENDERS)
         st_nodeID = strategy("uint")
+        st_nodeIDs = strategy('uint256[]')
         st_stake = strategy("uint", max_value=MAX_TEST_STAKE)
         # This would be 10x the initial supply in 1 year, so is a reasonable max without
         # uint overflowing
         st_emission = strategy("uint", max_value=370 * E_18)
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minStake = strategy("uint", max_value=int(INIT_STAKE/2))
-        # So there's a 1% chance of a bad sig to maximise useful txs
-        st_signer_agg = hypStrat.sampled_from(([AGG_SIGNER_1] * 99) + [GOV_SIGNER_1])
+        st_receivers = strategy('address[]', length=MAX_NUM_SENDERS)
+        st_f_amnt = strategy('uint256[]', max_value=MAX_TEST_STAKE)
 
 
         # Vault
@@ -261,6 +265,26 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 self.lastValidateTime = tx.timestamp
         
 
+        def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
+            addrs = [getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in st_swapIDs]
+            total = sum([web3.eth.getBalance(addr) for addr in addrs])
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, st_swapIDs)
+
+            if signer != self.keyIDToCurKeys[AGG]:
+                print('        REV_MSG_SIG rule_fetchDepositEthBatch', st_sender, st_swapIDs, signer)
+                with reverts(REV_MSG_SIG):
+                    self.v.fetchDepositEthBatch(signer.getSigData(callDataNoSig), st_swapIDs)
+            else:
+                print('                    rule_fetchDepositEthBatch', st_sender, st_swapIDs, signer)
+                tx = self.v.fetchDepositEthBatch(signer.getSigData(callDataNoSig), st_swapIDs)
+
+                for addr in addrs:
+                    self.ethBals[addr] = 0
+                self.ethBals[self.v] += total
+                self.lastValidateTime = tx.timestamp
+        
+
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
             callDataNoSig = self.v.fetchDepositToken.encode_input(NULL_SIG_DATA, st_swapID, token)
@@ -295,6 +319,33 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
         
 
+        def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
+            minLen = trimToShortest([st_swapIDs, st_tokens])
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, st_swapIDs, st_tokens)
+            
+            if signer != self.keyIDToCurKeys[AGG]:
+                print('        REV_MSG_SIG rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens, signer)
+                with reverts(REV_MSG_SIG):
+                    self.v.fetchDepositTokenBatch(signer.getSigData(callDataNoSig), st_swapIDs, st_tokens)
+            else:
+                for swapID, token in zip(st_swapIDs, st_tokens):
+                    addr = getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(token.address))
+                    if token == self.tokenA:
+                        self.tokenABals[self.v] += self.tokenABals[addr]
+                        self.tokenABals[addr] = 0
+                    elif token == self.tokenB:
+                        self.tokenBBals[self.v] += self.tokenBBals[addr]
+                        self.tokenBBals[addr] = 0
+                    else:
+                        assert False, "Panicc"
+
+                print('                    rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens, signer)
+                tx = self.v.fetchDepositTokenBatch(signer.getSigData(callDataNoSig), st_swapIDs, st_tokens)
+
+                self.lastValidateTime = tx.timestamp
+        
+
         # KeyManager
 
         # Get the key that is probably what we want, but also has a low chance of choosing
@@ -312,12 +363,12 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]:
                 print('                    rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                tx = self.km.isValidSig(cleanHexStr(sigData[0]), sigData, st_keyID_num, {'from': st_sender})
+                tx = self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print('        REV_MSG_SIG rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                    self.km.isValidSig(cleanHexStr(sigData[0]), sigData, st_keyID_num, {'from': st_sender})
+                    self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
 
         
         # Replace a key with a random key - either setAggKeyWithAggKey or setGovKeyWithGovKey
@@ -439,6 +490,51 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 self.totalStake -= (st_stake - inflation)
                 self.lastMintBlockNum = tx.block_number
                 self.lastValidateTime = tx.timestamp
+        
+        
+        # Claims a random amount from a random nodeID to a random recipient. Since there's no real way
+        # to get the lengths of the input arrays to be the same most of the time, I'm going to have to
+        # use a random number to determine whether or not to concat all arrays to the
+        # length of the shortest so that we'll get mostly valid txs and maximise usefulness. The
+        # easiest random num to use is the length of the arrays themselves - I'm gonna use '5' as the
+        # magic shortest length that should trigger not concating for no particular reason
+        def rule_claimBatch(self, st_nodeIDs, st_receivers, st_f_amnt, st_sender):
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.sm.claimBatch.encode_input(NULL_SIG_DATA, st_nodeIDs, st_receivers, st_f_amnt)
+            inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber + 1, self.emissionPerBlock)
+            minLen = min(map(len, [st_nodeIDs, st_receivers, st_f_amnt]))
+            maxLen = max(map(len, [st_nodeIDs, st_receivers, st_f_amnt]))
+
+            if signer != self.keyIDToCurKeys[AGG]:
+                print('        REV_MSG_SIG rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
+                with reverts(REV_MSG_SIG):
+                    self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
+            elif minLen == 5 and minLen != maxLen:
+                print('        REV_MSG_SM_ARR_LEN rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
+                with reverts(REV_MSG_SM_ARR_LEN):
+                    self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
+            else:
+                st_nodeIDs = st_nodeIDs[:minLen]
+                st_receivers = st_receivers[:minLen]
+                st_f_amnt = st_f_amnt[:minLen]
+                minLen = trimToShortest([st_nodeIDs, st_receivers, st_f_amnt])
+                
+                callDataNoSig = self.sm.claimBatch.encode_input(NULL_SIG_DATA, st_nodeIDs, st_receivers, st_f_amnt)
+
+                if sum(st_f_amnt) > self.flipBals[self.sm] + inflation:
+                    print('        REV_MSG_EXCEED_BAL rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
+                    with reverts(REV_MSG_EXCEED_BAL):
+                        self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
+                else:
+                    print('                    rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
+                    tx = self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
+
+                    self.lastValidateTime = tx.timestamp
+                    self.lastMintBlockNum = tx.block_number
+                    self.totalStake -= (sum(st_f_amnt) - inflation)
+                    self.flipBals[self.sm] -= (sum(st_f_amnt) - inflation)
+                    for i in range(minLen):
+                        self.flipBals[st_receivers[i]] += st_f_amnt[i]
         
 
         # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,

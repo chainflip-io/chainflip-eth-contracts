@@ -5,7 +5,7 @@ from utils import *
 from hypothesis import strategies as hypStrat
 
 
-settings = {"stateful_step_count": 1000, "max_examples": 50}
+settings = {"stateful_step_count": 200, "max_examples": 20}
 
 
 # Stateful test for all functions in the StakeManager
@@ -65,8 +65,11 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         st_sender = strategy("address")
         st_staker = strategy("address", length=NUM_STAKERS)
+        st_receivers = strategy('address[]', length=NUM_STAKERS)
         st_nodeID = strategy("uint")
+        st_nodeIDs = strategy('uint256[]')
         st_amount = strategy("uint", max_value=MAX_TEST_STAKE)
+        st_amounts = strategy('uint256[]', max_value=MAX_TEST_STAKE)
         # This would be 10x the initial supply in 1 year, so is a reasonable max without
         # uint overflowing
         st_emission = strategy("uint", max_value=370 * E_18)
@@ -131,6 +134,52 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 self.flipBals[self.sm] -= (st_amount - inflation)
                 self.totalStake -= (st_amount - inflation)
                 self.lastMintBlockNum = tx.block_number
+        
+        
+        # Claims a random amount from a random nodeID to a random recipient. Since there's no real way
+        # to get the lengths of the input arrays to be the same most of the time, I'm going to have to
+        # use a random number to determine whether or not to concat all arrays to the
+        # length of the shortest so that we'll get mostly valid txs and maximise usefulness. The
+        # easiest random num to use is the length of the arrays themselves - I'm gonna use '5' as the
+        # magic shortest length that should trigger not concating for no particular reason
+        def rule_claimBatch(self, st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender):
+            callDataNoSig = self.sm.claimBatch.encode_input(NULL_SIG_DATA, st_nodeIDs, st_receivers, st_amounts)
+            inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber + 1, self.emissionPerBlock)
+            minLen = min(map(len, [st_nodeIDs, st_receivers, st_amounts]))
+            maxLen = max(map(len, [st_nodeIDs, st_receivers, st_amounts]))
+
+            if st_signer_agg != AGG_SIGNER_1:
+                print('        REV_MSG_SIG rule_claimBatch', st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender)
+                with reverts(REV_MSG_SIG):
+                    self.sm.claimBatch(st_signer_agg.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_amounts, {'from': st_sender})
+            elif minLen == 5 and minLen != maxLen:
+                print('        REV_MSG_SM_ARR_LEN rule_claimBatch', st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender)
+                with reverts(REV_MSG_SM_ARR_LEN):
+                    self.sm.claimBatch(st_signer_agg.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_amounts, {'from': st_sender})
+            else:
+                st_nodeIDs = st_nodeIDs[:minLen]
+                st_receivers = st_receivers[:minLen]
+                st_amounts = st_amounts[:minLen]
+                minLen = trimToShortest([st_nodeIDs, st_receivers, st_amounts])
+                
+                callDataNoSig = self.sm.claimBatch.encode_input(NULL_SIG_DATA, st_nodeIDs, st_receivers, st_amounts)
+
+                if sum(st_amounts) > self.flipBals[self.sm] + inflation:
+                    print('        REV_MSG_EXCEED_BAL rule_claimBatch', st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender)
+                    with reverts(REV_MSG_EXCEED_BAL):
+                        self.sm.claimBatch(st_signer_agg.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_amounts, {'from': st_sender})
+                else:
+                    print('                    rule_claimBatch', st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender)
+                    tx = self.sm.claimBatch(st_signer_agg.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_amounts, {'from': st_sender})
+
+                    self.lastMintBlockNum = tx.block_number
+                    self.totalStake -= (sum(st_amounts) - inflation)
+                    self.flipBals[self.sm] -= (sum(st_amounts) - inflation)
+                    for i in range(minLen):
+                        self.flipBals[st_receivers[i]] += st_amounts[i]
+                
+
+
         
 
         # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,
