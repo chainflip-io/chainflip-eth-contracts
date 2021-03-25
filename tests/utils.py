@@ -1,4 +1,4 @@
-from brownie import web3 as w3
+from brownie import web3
 
 
 def cleanHexStr(thing):
@@ -16,7 +16,7 @@ def cleanHexStrPad(thing):
 
 def getCreate2Addr(sender, saltHex, contractContainer, argsHex):
     deployByteCode = contractContainer.bytecode + argsHex
-    return w3.toChecksumAddress(w3.keccak(hexstr=("ff" + cleanHexStr(sender) + saltHex + cleanHexStr(w3.keccak(hexstr=deployByteCode))))[-20:].hex())
+    return web3.toChecksumAddress(web3.keccak(hexstr=("ff" + cleanHexStr(sender) + saltHex + cleanHexStr(web3.keccak(hexstr=deployByteCode))))[-20:].hex())
 
 
 def getInflation(prevBlockNum, curBlockNum, emissionRate):
@@ -26,3 +26,11 @@ def getKeyFromValue(dic, value):
     for key, val in dic.items():
         if val == value:
             return key
+
+
+def trimToShortest(lists):
+    minLen = min(*[len(l) for l in lists])
+    for l in lists:
+        del l[minLen:]
+    
+    return minLen

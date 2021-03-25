@@ -1,5 +1,4 @@
-pragma solidity ^0.7.0;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 
 import "./IShared.sol";
@@ -26,15 +25,33 @@ interface IVault is IShared {
         uint amount
     ) external;
 
+    function transferBatch(
+        SigData calldata sigData,
+        address[] calldata tokenAddrs,
+        address payable[] calldata recipients,
+        uint[] calldata amounts
+    ) external;
+
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
+    ) external;
+
+    function fetchDepositEthBatch(
+        SigData calldata sigData,
+        bytes32[] calldata swapIDs
     ) external;
 
     function fetchDepositToken(
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
+    ) external;
+
+    function fetchDepositTokenBatch(
+        SigData calldata sigData,
+        bytes32[] calldata swapIDs,
+        address[] calldata tokenAddrs
     ) external;
 
 

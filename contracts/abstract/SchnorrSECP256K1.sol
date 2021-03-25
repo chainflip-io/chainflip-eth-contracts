@@ -1,9 +1,10 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 ////////////////////////////////////////////////////////////////////////////////
 //       XXX: Do not use in production until this code has been audited.
 ////////////////////////////////////////////////////////////////////////////////
 
+/// @notice Slightly modified from https://github.com/smartcontractkit/chainlink/pull/1272/files
 abstract contract SchnorrSECP256K1 {
   // See https://en.bitcoin.it/wiki/Secp256k1 for this constant.
   uint256 private constant Q = // Group order of secp256k1
