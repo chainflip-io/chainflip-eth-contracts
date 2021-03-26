@@ -17,7 +17,7 @@ git clone git@github.com:chainflip-io/chainflip-eth-contracts.git
 cd chainflip-eth-contracts
 poetry shell
 poetry install
-brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
+brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
 brownie test
 ```
 
@@ -27,7 +27,7 @@ Requires [Yarn](https://yarnpkg.com) and [NPX](https://www.npmjs.com/package/npx
 
 ```bash
 yarn
-npx solidity-docgen --solc-module solc-0.7
+npx solidity-docgen --solc-module solc-0.8
 ```
 
 ## Notes
