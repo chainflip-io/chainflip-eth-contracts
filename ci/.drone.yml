@@ -6,7 +6,7 @@ clone:
   disable: true
 
 workspace:
-  path: ~/
+  path: /home/circleci
 
 steps:
   - name: test
