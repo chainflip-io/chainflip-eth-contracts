@@ -12,12 +12,9 @@ steps:
   - name: test
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
-      - pwd
-      - whoami
-      - ls
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
-      - poetry run 'pre-commit install'
+      - poetry run 'install'
       - brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
       - brownie test
 trigger:
