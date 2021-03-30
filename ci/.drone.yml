@@ -12,6 +12,8 @@ steps:
   - name: test
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
+      - pwd
+      - whoami
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
       - poetry shell
