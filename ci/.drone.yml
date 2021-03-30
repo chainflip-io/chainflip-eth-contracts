@@ -2,9 +2,6 @@ kind: pipeline
 name: chainflip-eth-contracts
 type: docker
 
-clone:
-  disable: true
-
 workspace:
   path: /home/circleci
 
@@ -12,8 +9,6 @@ steps:
   - name: test
     image: ghcr.io/chainflip-io/eth-brownie:latest
     commands:
-      - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
-      - cd chainflip-eth-contracts
       - poetry install --no-root
       - brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
       - pip3 install umbral && brownie test
