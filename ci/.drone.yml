@@ -6,7 +6,7 @@ clone:
   disable: true
 
 workspace:
-  path: /home
+  path: ~/
 
 steps:
   - name: test
@@ -14,6 +14,7 @@ steps:
     commands:
       - pwd
       - whoami
+      - ls
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
       - poetry shell
