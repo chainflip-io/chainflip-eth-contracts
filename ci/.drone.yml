@@ -6,8 +6,8 @@ clone:
   disable: true
 
 workspace:
-  - path: /home
-    
+  path: /home
+
 steps:
   - name: test
     image: ghcr.io/chainflip-io/eth-brownie:latest
