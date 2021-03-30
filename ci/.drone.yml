@@ -1,0 +1,23 @@
+kind: pipeline
+name: chainflip-eth-contracts
+type: docker
+
+clone:
+  disable: true
+steps:
+  - name: test
+    image: ghcr.io/chainflip-io/eth-brownie:latest
+    commands:
+      - cd /tmp
+      - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
+      - cd chainflip-eth-contracts
+      - poetry shell
+      - poetry install
+      - brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
+      - brownie test
+trigger:
+  event:
+    - pull_request
+    - push
+image_pull_secrets:
+  - dockerconfigjson
