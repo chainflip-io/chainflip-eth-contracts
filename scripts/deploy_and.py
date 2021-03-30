@@ -36,7 +36,7 @@ class Chainflip:
         self.vault = None
         self.stakeManager = None
         self.flip = None
-    
+
     def __enter__(self):
         if not self.deployed:
             self.deploy()
@@ -53,7 +53,7 @@ class Chainflip:
         
         self.keyManager = self.DEPLOYER.deploy(KeyManager, AGG_SIGNER_1.getPubData(), GOV_SIGNER_1.getPubData())
         self.vault = self.DEPLOYER.deploy(Vault, self.keyManager)
-        self.stakeManager = self.DEPLOYER.deploy(StakeManager, self.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INITIAL_SUPPLY)
+        self.stakeManager = self.DEPLOYER.deploy(StakeManager, self.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INIT_SUPPLY)
         self.flip = FLIP.at(self.stakeManager.getFLIPAddress())
 
         self.deployed = True
