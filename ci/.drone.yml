@@ -2,8 +2,8 @@ kind: pipeline
 name: chainflip-eth-contracts
 type: docker
 
-#clone:
-#  disable: false
+clone:
+  disable: false
 
 workspace:
   path: /home/circleci
@@ -26,7 +26,8 @@ steps:
     pull: always
     image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
     commands:
-      - which poetry
+      - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
+      - cd chainflip-eth-contracts
       - poetry run brownie test --stateful false
 
 trigger:
