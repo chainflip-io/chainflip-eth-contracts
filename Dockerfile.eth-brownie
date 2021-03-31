@@ -4,4 +4,9 @@ USER root
 
 RUN yarn global add ganache-cli && ganache-cli --version
 
-RUN which poetry
+COPY poetry.lock pyproject.toml brownie-config.yaml ./
+
+RUN poetry install
+
+RUN brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
+
