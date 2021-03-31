@@ -20,8 +20,10 @@ steps:
       - poetry update eth-brownie
       - brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
       - poetry run brownie test --stateful false
+
 trigger:
   event:
     - pull_request
+
 image_pull_secrets:
   - dockerconfigjson
