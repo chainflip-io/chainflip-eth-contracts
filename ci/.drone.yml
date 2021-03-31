@@ -23,6 +23,7 @@ steps:
       cache_from: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
 
   - name: test
+    pull: always
     image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
     commands:
       - poetry run brownie test --stateful false
