@@ -2,9 +2,6 @@ kind: pipeline
 name: chainflip-eth-contracts
 type: docker
 
-clone:
-  disable: true
-
 workspace:
   path: /home/circleci
 
