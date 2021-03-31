@@ -2,4 +2,12 @@ FROM ghcr.io/chainflip-io/eth-brownie:latest
 
 USER root
 
-RUN yarn global add ganache-cli && ganache-cli --version
+RUN apt-get update -y \
+    && apt-get install software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install python3.9 \
+    && python --version
+    
+RUN yarn global add ganache-cli \
+    && ganache-cli --version \
