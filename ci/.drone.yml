@@ -5,6 +5,9 @@ type: docker
 clone:
   disable: false
 
+workspace:
+  path: /home/circleci
+
 steps:
   - name: build
     image: plugins/docker
