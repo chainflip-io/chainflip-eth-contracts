@@ -1,5 +1,7 @@
 FROM ghcr.io/chainflip-io/eth-brownie:latest
 
+USER root
+
 RUN export PATH="$(yarn global bin):$PATH" \
     && yarn global add ganache-cli
 
