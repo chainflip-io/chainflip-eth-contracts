@@ -1,4 +1,4 @@
-FROM docker.pkg.github.com/sambacha/brownie-ci-docker/pyownie:latest
+FROM ghcr.io/chainflip-io/eth-brownie:latest
 
 USER root
 
