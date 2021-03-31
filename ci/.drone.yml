@@ -20,6 +20,8 @@ steps:
     pull: always
     image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
     commands:
+      - /home/circleci/.poetry/bin/poetry install
+      - brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
       - /home/circleci/.poetry/bin/poetry run brownie test --stateful false
 
 trigger:
