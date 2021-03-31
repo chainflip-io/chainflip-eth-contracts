@@ -9,18 +9,18 @@ workspace:
   path: /home/circleci
 
 steps:
-  - name: build
-    image: plugins/docker
-    settings:
-      username:
-        from_secret: docker_username
-      password:
-        from_secret: docker_password
-      repo: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie
-      dockerfile: Dockerfile.eth-brownie
-      registry: ghcr.io
-      tags: latest
-      cache_from: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
+  #  - name: build
+  #    image: plugins/docker
+  #    settings:
+  #      username:
+  #        from_secret: docker_username
+  #      password:
+  #        from_secret: docker_password
+  #      repo: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie
+  #      dockerfile: Dockerfile.eth-brownie
+  #      registry: ghcr.io
+  #      tags: latest
+  #      cache_from: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
 
   - name: test
     pull: always
@@ -28,7 +28,7 @@ steps:
     commands:
       - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
       - cd chainflip-eth-contracts
-      - poetry run brownie test --stateful false
+      - $(which poetry) run brownie test --stateful false
 
 trigger:
   event:
