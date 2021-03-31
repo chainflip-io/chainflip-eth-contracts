@@ -4,8 +4,4 @@ USER root
 
 RUN yarn global add ganache-cli && ganache-cli --version
 
-RUN chown circleci:circleci /home/circleci/*
-
-USER circleci
-
 RUN which poetry

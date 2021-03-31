@@ -2,9 +2,6 @@ kind: pipeline
 name: chainflip-eth-contracts
 type: docker
 
-workspace:
-  path: /home/circleci
-
 steps:
   - name: build
     image: plugins/docker
