@@ -11,4 +11,6 @@ RUN poetry install && poetry update
 
 RUN brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
 
+RUN chown circleci:circleci /home/circleci/*g
+
 USER circleci
