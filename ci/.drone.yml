@@ -1,0 +1,57 @@
+kind: pipeline
+name: chainflip-eth-contracts
+type: docker
+
+steps:
+  - name: build
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      repo: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie
+      dockerfile: Dockerfile.eth-brownie
+      registry: ghcr.io
+      tags: latest
+      cache_from: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
+
+  - name: test
+    pull: always
+    image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
+    commands:
+      - /home/circleci/.poetry/bin/poetry install
+      - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+      - /home/circleci/.poetry/bin/poetry run brownie test --stateful false
+
+trigger:
+  event:
+    - pull_request
+
+image_pull_secrets:
+  - dockerconfigjson
+
+---
+
+kind: pipeline
+name: chainflip-eth-contracts-nightly-stateful
+type: docker
+
+steps:
+  - name: test
+    pull: always
+    image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
+    commands:
+      - /home/circleci/.poetry/bin/poetry install
+      - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+      - /home/circleci/.poetry/bin/poetry run brownie test
+
+
+image_pull_secrets:
+  - dockerconfigjson
+
+trigger:
+  event:
+    - cron
+  cron:
+    - nightly
