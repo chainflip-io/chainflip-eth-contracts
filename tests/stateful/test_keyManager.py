@@ -4,7 +4,7 @@ from brownie.test import strategy
 from utils import *
 
 
-settings = {"stateful_step_count": 200, "max_examples": 20}
+settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
 # Stateful test for all functions in the KeyManager
@@ -89,6 +89,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Sleep for a random time so that setAggKeyWithGovKey can be called without reverting
         def rule_sleep(self, st_sleep_time):
+            print('                    rule_sleep_2_days', st_sleep_time)
             chain.sleep(st_sleep_time)
         
 
@@ -96,6 +97,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
+            print('                    rule_sleep_2_days')
             chain.sleep(2 * DAY)
 
 

@@ -4,15 +4,14 @@ networks:
 
 # Require OpenZepplin Contracts
 dependencies:
-  - OpenZeppelin/openzeppelin-contracts@4.0.0-rc.0
+  - OpenZeppelin/openzeppelin-contracts@4.0.0
 
 # Path remapping to support OpenZepplin imports with NPM-style path
 compiler:
   solc:
     version: 0.8.2
     remappings:
-      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0-rc.0"
+      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
 
-# Property-based tests run 10 times with random inputs rather than the default 50
 hypothesis:
   max_examples: 10

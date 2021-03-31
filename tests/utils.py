@@ -22,12 +22,16 @@ def getCreate2Addr(sender, saltHex, contractContainer, argsHex):
 def getInflation(prevBlockNum, curBlockNum, emissionRate):
     return (curBlockNum - prevBlockNum) * emissionRate
 
+
 def getKeyFromValue(dic, value):
     for key, val in dic.items():
         if val == value:
             return key
 
 
+# This deletes elements in the lists inputted to the length of the shortest
+# such that they're all the same length and returns the new lengths. The effect
+# persists in the scope of whatever fcn calls trimToShortest since lists are a reference
 def trimToShortest(lists):
     minLen = min(*[len(l) for l in lists])
     for l in lists:

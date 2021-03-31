@@ -14,8 +14,6 @@ def test_transfer_eth(cf, chain):
     assert cf.vault.balance() - startBalVault == -TEST_AMNT
     assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
 
-    chain.mine(13292)
-
 
 def test_transfer_token(cf, token):
     token.transfer(cf.vault, TEST_AMNT, {'from': cf.DEPLOYER})

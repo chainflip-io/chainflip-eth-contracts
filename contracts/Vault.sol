@@ -27,6 +27,70 @@ contract Vault is IVault, Shared {
     }
 
 
+    /**
+     * @notice  Can do a combination of all fcns in this contract. It first fetches all
+     *          deposits specified with fetchSwapIDs and fetchTokenAddrs (which are requried
+     *          to be of equal length), then it performs all transfers specified with the rest
+     *          of the inputs, the same as transferBatch (where all inputs are again required
+     *          to be of equal length - however the lengths of the fetch inputs do not have to
+     *          be equal to lengths of the transfer inputs). Fetches/transfers of ETH are indicated
+     *          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address. It is assumed
+     *          that the elements of each array match in terms of ordering, i.e. a given
+     *          fetch should should have the same index swapIDs[i] and tokenAddrs[i]
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's
+     *                  a hash over the calldata to the function with an empty sigData) and 
+     * @param fetchSwapIDs      The unique identifiers for this swap (bytes32[]), used for create2
+     * @param fetchTokenAddrs   The addresses of the tokens to be transferred
+     *                          sig over that hash (uint) from the aggregate key
+     * @param tranTokenAddrs    The addresses of the tokens to be transferred
+     * @param tranRecipients    The address of the recipient of the transfer
+     * @param tranAmounts       The amount to transfer, in wei (uint)
+     */
+    function allBatch(
+        SigData calldata sigData,
+        bytes32[] calldata fetchSwapIDs,
+        address[] calldata fetchTokenAddrs,
+        address[] calldata tranTokenAddrs,
+        address payable[] calldata tranRecipients,
+        uint[] calldata tranAmounts
+    ) external override validSig(
+        sigData,
+        keccak256(
+            abi.encodeWithSelector(
+                this.allBatch.selector,
+                SigData(0, 0),
+                fetchSwapIDs,
+                fetchTokenAddrs,
+                tranTokenAddrs,
+                tranRecipients,
+                tranAmounts
+            )
+        ),
+        KeyID.Agg
+    ) {
+        // Can't put these as modifiers annoyingly because it creates
+        // a 'stack too deep' error
+        require(
+            fetchSwapIDs.length == fetchTokenAddrs.length &&
+            tranTokenAddrs.length == tranRecipients.length &&
+            tranRecipients.length == tranAmounts.length, 
+            "Vault: arrays not same length"
+        );
+        
+        // Fetch all deposits
+        for (uint i; i < fetchSwapIDs.length; i++) {
+            if (fetchTokenAddrs[i] == _ETH_ADDR) {
+                new DepositEth{salt: fetchSwapIDs[i]}();
+            } else {
+                new DepositToken{salt: fetchSwapIDs[i]}(IERC20Lite(fetchTokenAddrs[i]));
+            }
+        }
+
+        // Send all transfers
+        _transferBatch(tranTokenAddrs, tranRecipients, tranAmounts);
+    }
+
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Transfers                       //
@@ -64,7 +128,7 @@ contract Vault is IVault, Shared {
     }
 
     /**
-     * @notice  Transfers ETH or tokens from this vault to a recipients. It is assumed
+     * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          transfer should should have the same index tokenAddrs[i], recipients[i],
      *          and amounts[i].
@@ -99,6 +163,23 @@ contract Vault is IVault, Shared {
             "Vault: arrays not same length"
         );
 
+        _transferBatch(tokenAddrs, recipients, amounts);
+    }
+
+    /**
+     * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
+     *          that the elements of each array match in terms of ordering, i.e. a given
+     *          transfer should should have the same index tokenAddrs[i], recipients[i],
+     *          and amounts[i].
+     * @param tokenAddrs The addresses of the tokens to be transferred
+     * @param recipients The address of the recipient of the transfer
+     * @param amounts    The amount to transfer, in wei (uint)
+     */
+    function _transferBatch(
+        address[] calldata tokenAddrs,
+        address payable[] calldata recipients,
+        uint[] calldata amounts
+    ) private {
         for (uint i; i < tokenAddrs.length; i++) {
             _transfer(tokenAddrs[i], recipients[i], amounts[i]);
         }
@@ -221,7 +302,7 @@ contract Vault is IVault, Shared {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and 
      *                  sig over that hash (uint) from the aggregate key
-     * @param swapIDs       The unique identifiers for this swap (bytes32), used for create2
+     * @param swapIDs       The unique identifiers for this swap (bytes32[]), used for create2
      * @param tokenAddrs    The addresses of the tokens to be transferred
      */
     function fetchDepositTokenBatch(
