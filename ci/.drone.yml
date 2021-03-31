@@ -17,7 +17,7 @@ steps:
       - export PATH="$(yarn global bin):$PATH"
       - yarn global add ganache-cli
       - poetry install
-      - poetry update eth-brownie
+      - poetry update
       - brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
       - poetry run brownie test --stateful false
 
