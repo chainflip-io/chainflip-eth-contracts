@@ -20,7 +20,7 @@ steps:
       dockerfile: Dockerfile.eth-brownie
       registry: ghcr.io
       tags: latest
-      cache_from: ghcr.io/chainflip-io/chainflip-infrastructure:latest
+      cache_from: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
 
   - name: test
     image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
