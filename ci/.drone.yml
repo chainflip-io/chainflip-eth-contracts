@@ -2,23 +2,29 @@ kind: pipeline
 name: chainflip-eth-contracts
 type: docker
 
-clone:
-  disable: true
+#clone:
+#  disable: false
 
 workspace:
   path: /home/circleci
 
 steps:
+  - name: build
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      repo: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie
+      dockerfile: Dockerfile.eth-brownie
+      registry: ghcr.io
+      tags: latest
+      cache_from: ghcr.io/chainflip-io/chainflip-infrastructure:latest
+
   - name: test
-    image: ghcr.io/chainflip-io/eth-brownie:latest
+    image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
     commands:
-      - git clone https://github.com/chainflip-io/chainflip-eth-contracts.git
-      - cd chainflip-eth-contracts
-      - export PATH="$(yarn global bin):$PATH"
-      - yarn global add ganache-cli
-      - poetry install
-      - poetry update
-      - brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
       - poetry run brownie test --stateful false
 
 trigger:

@@ -1,0 +1,10 @@
+FROM ghcr.io/chainflip-io/eth-brownie:latest
+
+RUN export PATH="$(yarn global bin):$PATH" \
+    && yarn global add ganache-cli
+
+COPY poetry.lock pyproject.toml brownie-config.yaml ./
+
+RUN poetry install && poetry update
+
+RUN brownie pm install OpenZeppelin/openzeppelin-contracts@3.3.0-solc-0.7
