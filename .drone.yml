@@ -32,7 +32,6 @@ image_pull_secrets:
   - dockerconfigjson
 
 ---
-
 kind: pipeline
 name: chainflip-eth-contracts-nightly-stateful
 type: docker
