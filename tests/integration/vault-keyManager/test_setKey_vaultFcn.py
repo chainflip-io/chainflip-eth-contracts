@@ -253,7 +253,7 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
     # Change agg keys
     setAggKeyWithAggKey_test(cf)
 
-        # Sort out deposits first so enough can be sent to the create2 addresses
+    # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([fetchAmounts, fetchSwapIDs])
     tokensList = [ETH_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=fetchMinLen)
