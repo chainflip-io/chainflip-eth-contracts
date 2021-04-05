@@ -54,3 +54,6 @@ trigger:
     - cron
   cron:
     - nightly
+
+node:
+  builder: "true"
