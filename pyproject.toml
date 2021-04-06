@@ -5,8 +5,8 @@ description = ""
 authors = ["James Key <james@chainflip.io>", "Tom Nash <tom@chainflip.io>"]
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
-eth-brownie = "^1.12.4"
+python = "^3.7.9"
+eth-brownie = "1.14.3"
 umbral = "^0.1.3-alpha.2"
 
 [tool.poetry.dev-dependencies]

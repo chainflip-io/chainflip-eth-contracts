@@ -2,7 +2,7 @@ from consts import *
 from brownie import reverts
 
 
-def test_transfer_eth(cf, chain):
+def test_transfer_eth(cf):
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
@@ -13,8 +13,6 @@ def test_transfer_eth(cf, chain):
     
     assert cf.vault.balance() - startBalVault == -TEST_AMNT
     assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
-
-    chain.mine(13292)
 
 
 def test_transfer_token(cf, token):
