@@ -6,6 +6,8 @@ Additional information can be found in the [Ethereum Research](https://github.co
 
 ## Dependencies
 
+- Python 2.7 or 3.5+   
+For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential` 
 - [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
 
 ## Usage
