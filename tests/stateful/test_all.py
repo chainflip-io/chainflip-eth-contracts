@@ -3,10 +3,10 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
-import random
+from random import choice, choices
 
 
-settings = {"stateful_step_count": 200, "max_examples": 20}
+settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
@@ -75,6 +75,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
             cls.tokenA = a[0].deploy(Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY)
             cls.tokenB = a[0].deploy(Token, "NotAPonziB", "NAPB", INIT_TOKEN_SUPPLY)
+            cls.tokensList = (ETH_ADDR, cls.tokenA, cls.tokenB)
 
             for token in [cls.tokenA, cls.tokenB]:
                 for recip in a[1:]:
@@ -127,6 +128,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # Vault
 
         st_eth_amount = strategy("uint", max_value=MAX_ETH_SEND)
+        st_eth_amounts = strategy("uint[]", max_value=MAX_ETH_SEND)
         st_token = contract_strategy('Token')
         st_tokens = hypStrat.lists(st_token)
         st_token_amount = strategy("uint", max_value=MAX_TOKEN_SEND)
@@ -137,6 +139,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # ensuring diversity in senders
         st_sender = strategy("address", length=MAX_NUM_SENDERS)
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
+        st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
 
         # KeyManager
 
@@ -163,6 +166,67 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         # Vault
 
+
+        def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
+            fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
+            fetchEthTotal = sum(self.ethBals[getCreate2Addr(self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositEth, "")] for i, x in enumerate(fetchTokens) if x == ETH_ADDR)
+            fetchTokenATotal = sum(self.tokenABals[getCreate2Addr(self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositToken, cleanHexStrPad(self.tokenA.address))] for i, x in enumerate(fetchTokens) if x == self.tokenA)
+            fetchTokenBTotal = sum(self.tokenBBals[getCreate2Addr(self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositToken, cleanHexStrPad(self.tokenB.address))] for i, x in enumerate(fetchTokens) if x == self.tokenB)
+
+            tranMinLen = trimToShortest([st_recips, st_eth_amounts])
+            tranTokens = choices(self.tokensList, k=tranMinLen)
+            tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in self.tokensList}
+
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.v.allBatch.encode_input(NULL_SIG_DATA, st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
+
+            if signer != self.keyIDToCurKeys[AGG]:
+                print('        REV_MSG_SIG rule_allBatch', signer, st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, st_sender)
+                with reverts(REV_MSG_SIG):
+                    self.v.allBatch(signer.getSigData(callDataNoSig), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
+            elif tranTotals[ETH_ADDR] - fetchEthTotal > self.ethBals[self.v] or \
+            tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v] or \
+            tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v]:
+                print('        NOT ENOUGH TOKENS IN VAULT rule_allBatch', signer, st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, st_sender)
+                with reverts():
+                    self.v.allBatch(signer.getSigData(callDataNoSig), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
+            else:
+                print('                    rule_allBatch', signer, st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, st_sender)
+                tx = self.v.allBatch(signer.getSigData(callDataNoSig), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, {'from': st_sender})
+
+                self.lastValidateTime = tx.timestamp
+                
+                # Alter bals from the fetch
+                for swapID, tok in zip(st_swapIDs, fetchTokens):
+                    if tok == ETH_ADDR:
+                        addr = getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "")
+                        self.ethBals[self.v] += self.ethBals[addr]
+                        self.ethBals[addr] = 0
+                    else:
+                        addr = getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(tok.address))
+                        if tok == self.tokenA:
+                            self.tokenABals[self.v] += self.tokenABals[addr]
+                            self.tokenABals[addr] = 0
+                        elif tok == self.tokenB:
+                            self.tokenBBals[self.v] += self.tokenBBals[addr]
+                            self.tokenBBals[addr] = 0
+                        else:
+                            assert False, "Panicc"
+                
+                # Alter bals from the transfers
+                for tok, rec, am in zip(tranTokens, st_recips, st_eth_amounts):
+                    if tok == ETH_ADDR:
+                        self.ethBals[rec] += am
+                        self.ethBals[self.v] -= am
+                    elif tok == self.tokenA:
+                        self.tokenABals[rec] += am
+                        self.tokenABals[self.v] -= am
+                    elif tok == self.tokenB:
+                        self.tokenBBals[rec] += am
+                        self.tokenBBals[self.v] -= am
+                    else:
+                        assert False, "Panic"
+        
 
         # Transfers ETH or tokens out the vault. Want this to be called by rule_vault_transfer_eth
         # etc individually and not directly since they're all the same just with a different tokenAddr
@@ -204,6 +268,55 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
             self._vault_transfer(self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount)
         
+
+        # Send any combination of eth/tokenA/tokenB out of the vault. Using st_eth_amounts
+        # for both eth amounts and token amounts here because its max is within the bounds of
+        # both eth and tokens.
+        def rule_vault_transferBatch(self, st_sender, st_recips, st_eth_amounts):
+            signer = self._get_key_prob(AGG)
+            minLen = trimToShortest([st_recips, st_eth_amounts])
+            tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
+            callDataNoSig = self.v.transferBatch.encode_input(NULL_SIG_DATA, tokens, st_recips, st_eth_amounts)
+
+            totalEth = 0
+            totalTokenA = 0
+            totalTokenB = 0
+            for tok, am in zip(tokens, st_eth_amounts):
+                if tok == ETH_ADDR:
+                    totalEth += am
+                elif tok == self.tokenA:
+                    totalTokenA += am
+                elif tok == self.tokenB:
+                    totalTokenB += am
+                else:
+                    assert False, "Unknown asset"
+            
+            if signer != self.keyIDToCurKeys[AGG]:
+                print('        REV_MSG_SIG rule_vault_transferBatch', signer, st_sender, tokens, st_recips, st_eth_amounts)
+                with reverts(REV_MSG_SIG):
+                    self.v.transferBatch(signer.getSigData(callDataNoSig), tokens, st_recips, st_eth_amounts)
+            elif totalEth > self.ethBals[self.v] or totalTokenA > self.tokenABals[self.v] or totalTokenB > self.tokenBBals[self.v]:
+                print('        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch', signer, st_sender, tokens, st_recips, st_eth_amounts)
+                with reverts():
+                    self.v.transferBatch(signer.getSigData(callDataNoSig), tokens, st_recips, st_eth_amounts)
+            else:
+                print('                    rule_vault_transferBatch', signer, st_sender, tokens, st_recips, st_eth_amounts)
+                tx = self.v.transferBatch(signer.getSigData(callDataNoSig), tokens, st_recips, st_eth_amounts)
+
+                self.lastValidateTime = tx.timestamp
+                for i in range(len(st_recips)):
+                    if tokens[i] == ETH_ADDR:
+                        self.ethBals[st_recips[i]] += st_eth_amounts[i]
+                        self.ethBals[self.v] -= st_eth_amounts[i]
+                    elif tokens[i] == self.tokenA:
+                        self.tokenABals[st_recips[i]] += st_eth_amounts[i]
+                        self.tokenABals[self.v] -= st_eth_amounts[i]
+                    elif tokens[i] == self.tokenB:
+                        self.tokenBBals[st_recips[i]] += st_eth_amounts[i]
+                        self.tokenBBals[self.v] -= st_eth_amounts[i]
+                    else:
+                        assert False, "Panic"
+
 
         # Transfers ETH from a user/sender to one of the depositEth create2 addresses
         def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
@@ -353,7 +466,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # results whilst still testing the full range.
         def _get_key_prob(self, keyID):
             samples = ([self.keyIDToCurKeys[keyID]] * 100) + self.allKeys
-            return random.choice(samples)
+            return choice(samples)
 
 
         # Checks if isValidSig returns the correct value when called with a random sender,
@@ -400,6 +513,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         # Sleep for a random time so that setAggKeyWithGovKey can be called without reverting
         def rule_sleep(self, st_sleep_time):
+            print('                    rule_sleep_2_days', st_sleep_time)
             chain.sleep(st_sleep_time)
         
 
@@ -407,6 +521,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
+            print('                    rule_sleep_2_days')
             chain.sleep(2 * DAY)
 
 

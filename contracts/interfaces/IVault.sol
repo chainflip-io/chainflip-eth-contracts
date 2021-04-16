@@ -12,9 +12,19 @@ import "./IKeyManager.sol";
 */
 interface IVault is IShared {
 
+    function allBatch(
+        SigData calldata sigData,
+        bytes32[] calldata fetchSwapIDs,
+        address[] calldata fetchTokenAddrs,
+        address[] calldata tranTokenAddrs,
+        address payable[] calldata tranRecipients,
+        uint[] calldata tranAmounts
+    ) external;
+
+
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                  State-changing functions                //
+    //                          Transfers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -31,6 +41,13 @@ interface IVault is IShared {
         address payable[] calldata recipients,
         uint[] calldata amounts
     ) external;
+
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                        Fetch Deposits                    //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
 
     function fetchDepositEth(
         SigData calldata sigData,
@@ -57,10 +74,9 @@ interface IVault is IShared {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                  Non-state-changing functions            //
+    //                          Getters                         //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
 
     function getKeyManager() external returns (IKeyManager);
 }
