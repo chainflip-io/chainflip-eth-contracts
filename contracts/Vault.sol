@@ -39,9 +39,9 @@ contract Vault is IVault, Shared {
      *          fetch should should have the same index swapIDs[i] and tokenAddrs[i]
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  sig over that hash (uint) from the aggregate key
      * @param fetchSwapIDs      The unique identifiers for this swap (bytes32[]), used for create2
      * @param fetchTokenAddrs   The addresses of the tokens to be transferred
-     *                          sig over that hash (uint) from the aggregate key
      * @param tranTokenAddrs    The addresses of the tokens to be transferred
      * @param tranRecipients    The address of the recipient of the transfer
      * @param tranAmounts       The amount to transfer, in wei (uint)
