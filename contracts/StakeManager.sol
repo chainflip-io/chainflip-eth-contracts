@@ -82,7 +82,7 @@ contract StakeManager is Shared {
      * @param nodeID    The nodeID of the staker
      */
     function stake(uint nodeID, uint amount) external nzUint(nodeID) noFish {
-        require(amount >= _minStake, "StakeMan: small stake, peasant");
+        require(amount >= _minStake, "StakeMan: stake too small");
 
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
