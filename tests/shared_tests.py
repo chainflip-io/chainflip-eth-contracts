@@ -118,7 +118,6 @@ def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStak
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
 def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, expiryBlock):
-    assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
     prevReceiverBal = cf.flip.balanceOf(receiver)
     prevStakeManBal = cf.flip.balanceOf(cf.stakeManager)
 

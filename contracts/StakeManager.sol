@@ -122,8 +122,7 @@ contract StakeManager is Shared {
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
-     * @param nodeID    The nodeID of the staker. Annoyingly this has to be last otherwise
-     *                  there's a 'stack to deep' error
+     * @param nodeID    The nodeID of the staker
      * @param staker    The staker who is to be sent FLIP
      * @param amount    The amount of stake to be locked up
      * @param expiryBlock   The last valid block height that can execute this claim (uint48)
@@ -152,7 +151,7 @@ contract StakeManager is Shared {
         require(
             // Must have been executed & deleted if _ZERO_ADDR
             oldClaim.staker == _ZERO_ADDR ||
-            uint(oldClaim.expiryBlock) > block.number,
+            block.number > uint(oldClaim.expiryBlock),
             "StakeMan: a pending claim exists"
         );
 

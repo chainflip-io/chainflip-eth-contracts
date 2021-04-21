@@ -1,6 +1,6 @@
 from consts import *
 from shared_tests import *
-from brownie import reverts, web3
+from brownie import reverts, web3, chain
 from brownie.test import given, strategy
 
 
@@ -43,8 +43,24 @@ def test_registerClaim_rev_just_under_min_expiryBlock(cf, stakedMin):
         cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
 
 
-# def test_registerClaim_rev_claim_not_expired(cf, stakedMin):
+def test_registerClaim_claim_expired(cf, stakedMin):
+    _, amount = stakedMin
+    args1 = (JUNK_INT, amount, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args1)
+    cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args1)
     
+    chain.mine(CLAIM_BLOCK_DELAY+1)
+    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, web3.eth.blockNumber+3+CLAIM_BLOCK_DELAY)
+
+
+def test_registerClaim_rev_claim_not_expired(cf, stakedMin):
+    _, amount = stakedMin
+    args1 = (JUNK_INT, amount, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args1)
+    cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args1)
+
+    with reverts(REV_MSG_CLAIM_EXISTS):
+        cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args1)
 
 
 def test_registerClaim_rev_nodeID(cf, stakedMin):
