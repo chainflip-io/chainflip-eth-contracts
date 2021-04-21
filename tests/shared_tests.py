@@ -1,5 +1,5 @@
 from consts import *
-from brownie import reverts, chain
+from brownie import reverts, chain, web3
 
 
 # Test with timestamp-1 because of an error where there's a difference of 1s
@@ -117,36 +117,62 @@ def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStak
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
-def claimTest(cf, web3, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal):
-    # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.blockNumber + 1
-    inflation = getInflation(prevTx.block_number, newLastMintBlockNum, emissionPerBlock)
-    maxValidAmount = prevTotal + inflation
+def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, expiryBlock):
+    assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
+    prevReceiverBal = cf.flip.balanceOf(receiver)
+    prevStakeManBal = cf.flip.balanceOf(cf.stakeManager)
 
-    assert cf.flip.balanceOf(receiver) == prevReceiverBal
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, nodeID, amount, receiver, expiryBlock)
+    startBlock = web3.eth.blockNumber + 1 + CLAIM_BLOCK_DELAY
 
-    callDataNoSig = cf.stakeManager.claim.encode_input(NULL_SIG_DATA, nodeID, receiver, amount)
-    tx = None
-
-    if amount == 0:
+    if amount == 0 or expiryBlock == 0 or nodeID == 0:
         with reverts(REV_MSG_NZ_UINT):
-            cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, receiver, amount)
-    elif amount <= maxValidAmount:
-        tx = cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, receiver, amount)
+            cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryBlock)
+    elif startBlock >= expiryBlock:
+        with reverts(REV_MSG_EXPIRY_TOO_SOON):
+            cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryBlock)
+    else:
+        tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryBlock)
         
         # Check things that should've changed
-        assert cf.flip.balanceOf(receiver) == prevReceiverBal + amount
-        assert newLastMintBlockNum == tx.block_number
-        assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
-        assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
-        assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
-        assert tx.events["Transfer"][0].values() == [ZERO_ADDR, cf.stakeManager.address, inflation]
-        assert tx.events["Claimed"][0].values() == [nodeID, amount]
+        assert cf.stakeManager.getPendingClaim(nodeID) == (amount, receiver, startBlock, expiryBlock)
+        assert tx.events["ClaimRegistered"][0].values() == (nodeID, amount, receiver, startBlock, expiryBlock)
         # Check things that shouldn't have changed
+        assert cf.flip.balanceOf(receiver) == prevReceiverBal
+        assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
+        assert cf.stakeManager.getLastMintBlockNum() == prevTx.block_number
         assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
+        assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
         assert cf.stakeManager.getMinimumStake() == minStake
-    else:
-        with reverts(REV_MSG_EXCEED_BAL):
-            cf.stakeManager.claim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, receiver, amount)
-    
-    return tx, inflation
+
+
+# # Hypothesis/brownie doesn't allow you to specifically include values when generating random
+# # inputs through @given, so this is a common fcn that can be used for `test_claim` and
+# # similar tests that test specific desired values
+# def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal, expiryBlock):
+#     # Want to calculate inflation 1 block into the future because that's when the tx will execute
+#     newLastMintBlockNum = web3.eth.blockNumber + 1
+#     inflation = getInflation(prevTx.block_number, newLastMintBlockNum, emissionPerBlock)
+#     maxValidAmount = prevTotal + inflation
+
+#     assert cf.flip.balanceOf(receiver) == prevReceiverBal
+
+#     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, receiver, amount, expiryBlock, nodeID)
+
+#     if amount == 0:
+#         with reverts(REV_MSG_NZ_UINT):
+#             cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryBlock, nodeID)
+#     else:
+#         tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryBlock, nodeID)
+        
+#         # Check things that should've changed
+#         assert newLastMintBlockNum == tx.block_number
+#         assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
+#         assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
+#         assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
+#         assert tx.events["Claimed"][0].values() == [nodeID, amount]
+#         # Check things that shouldn't have changed
+#         assert cf.flip.balanceOf(receiver) == prevReceiverBal
+#         assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
+#         assert cf.stakeManager.getMinimumStake() == minStake
+

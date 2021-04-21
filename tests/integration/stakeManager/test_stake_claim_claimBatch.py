@@ -17,7 +17,7 @@ def test_stake_claim_stake_claim(cf, web3):
     receiver = cf.DENICE
 
     # Unstaking before anything is staked should revert
-    tx, inflationRev = claimTest(
+    tx, inflationRev = registerClaimTest(
         cf,
         web3,
         cf.stakeManager.tx,
@@ -49,7 +49,7 @@ def test_stake_claim_stake_claim(cf, web3):
     # Claim a portion of staked funds
     callDataNoSig = cf.stakeManager.claim.encode_input(NULL_SIG_DATA, nodeID1, receiver, stakeAmount1)
 
-    claimTx1, inflation1 = claimTest(
+    claimTx1, inflation1 = registerClaimTest(
         cf,
         web3,
         cf.stakeManager.tx,
@@ -78,7 +78,7 @@ def test_stake_claim_stake_claim(cf, web3):
     )
     
     # 2nd claim
-    claimTx2, inflation2 = claimTest(
+    claimTx2, inflation2 = registerClaimTest(
         cf,
         web3,
         claimTx1,

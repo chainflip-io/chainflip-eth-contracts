@@ -10,7 +10,7 @@ def test_claim_setEmissionPerBlock_claim(cf, stakedMin):
     emissionPerBlock2 = int(EMISSION_PER_BLOCK * 1.5)
     receiver = cf.DENICE
 
-    claimTx1, inflation1 = claimTest(
+    claimTx1, inflation1 = registerClaimTest(
         cf,
         web3,
         cf.stakeManager.tx,
@@ -40,7 +40,7 @@ def test_claim_setEmissionPerBlock_claim(cf, stakedMin):
 
     calcInflation3 = getInflation(emissionTx1.block_number, web3.eth.blockNumber + 1, emissionPerBlock2)
 
-    claimTx2, inflation3 = claimTest(
+    claimTx2, inflation3 = registerClaimTest(
         cf,
         web3,
         emissionTx1,

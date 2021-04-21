@@ -69,7 +69,13 @@ contract StakeManager is Shared {
 
 
     event Staked(uint indexed nodeID, uint amount);
-    event ClaimRegistered(Claim);
+    event ClaimRegistered(
+        uint indexed nodeID,
+        uint amount,
+        address staker,
+        uint48 startBlock,
+        uint48 expiryBlock
+    );
     event ClaimExecuted(uint indexed nodeID, uint amount);
     event EmissionChanged(uint oldEmissionPerBlock, uint newEmissionPerBlock);
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
@@ -116,7 +122,8 @@ contract StakeManager is Shared {
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
-     * @param nodeID    The nodeID of the staker
+     * @param nodeID    The nodeID of the staker. Annoyingly this has to be last otherwise
+     *                  there's a 'stack to deep' error
      * @param staker    The staker who is to be sent FLIP
      * @param amount    The amount of stake to be locked up
      * @param expiryBlock   The last valid block height that can execute this claim (uint48)
@@ -124,8 +131,8 @@ contract StakeManager is Shared {
     function registerClaim(
         SigData calldata sigData,
         uint nodeID,
-        address staker,
         uint amount,
+        address staker,
         uint48 expiryBlock
     ) external nzUint(nodeID) nzAddr(staker) nzUint(amount) nzUint(expiryBlock) noFish validSig(
         sigData,
@@ -134,8 +141,8 @@ contract StakeManager is Shared {
                 this.registerClaim.selector,
                 SigData(0, 0),
                 nodeID,
-                staker,
                 amount,
+                staker,
                 expiryBlock
             )
         ),
@@ -143,14 +150,17 @@ contract StakeManager is Shared {
     ) {
         Claim memory oldClaim = _pendingClaims[nodeID];
         require(
+            // Must have been executed & deleted if _ZERO_ADDR
             oldClaim.staker == _ZERO_ADDR ||
             uint(oldClaim.expiryBlock) > block.number,
             "StakeMan: a pending claim exists"
         );
 
-        Claim memory newClaim = Claim(amount, staker, uint48(block.number) + CLAIM_BLOCK_DELAY, expiryBlock);
-        _pendingClaims[nodeID] = newClaim;
-        emit ClaimRegistered(newClaim);
+        uint48 startBlock = uint48(block.number) + CLAIM_BLOCK_DELAY;
+        require(expiryBlock > startBlock, "StakeMan: expiry block too soon");
+
+        _pendingClaims[nodeID] = Claim(amount, staker, startBlock, expiryBlock);
+        emit ClaimRegistered(nodeID, amount, staker, startBlock, expiryBlock);
     }
 
     /**
@@ -176,7 +186,7 @@ contract StakeManager is Shared {
         _mintInflation();
 
         // Send the tokens and update _totalStake
-        _FLIP.transfer(claim.staker, claim.amount);
+        require(_FLIP.transfer(claim.staker, claim.amount));
         _totalStake -= claim.amount;
 
         // Housekeeping

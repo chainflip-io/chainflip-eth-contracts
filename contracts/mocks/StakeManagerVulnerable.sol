@@ -40,6 +40,6 @@ contract StakeManagerVulnerable is StakeManager {
      * @param amount    The amount of FLIP to send
      */
     function testSendFLIP(address receiver, uint amount) external {
-        _FLIP.transfer(receiver, amount);
+        require(_FLIP.transfer(receiver, amount));
     }
 }
