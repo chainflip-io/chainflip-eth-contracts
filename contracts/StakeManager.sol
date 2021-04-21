@@ -52,10 +52,25 @@ contract StakeManager is Shared {
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     // Pulled this number out my ass
     uint private _minStake;
+    /// @dev    Holding pending claims for the 48h withdrawal delay
+    mapping(uint => Claim) private _pendingClaims;
+    // The number of blocks in 48h assuming a block every 13s
+    uint48 constant public CLAIM_BLOCK_DELAY = 13292;
+
+
+    struct Claim {
+        uint amount;
+        address staker;
+        // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
+        // into a single 256 bit slot
+        uint48 startBlock;
+        uint48 expiryBlock;
+    }
 
 
     event Staked(uint indexed nodeID, uint amount);
-    event Claimed(uint indexed nodeID, uint amount);
+    event ClaimRegistered(Claim);
+    event ClaimExecuted(uint indexed nodeID, uint amount);
     event EmissionChanged(uint oldEmissionPerBlock, uint newEmissionPerBlock);
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
@@ -104,89 +119,69 @@ contract StakeManager is Shared {
      * @param nodeID    The nodeID of the staker
      * @param staker    The staker who is to be sent FLIP
      * @param amount    The amount of stake to be locked up
+     * @param expiryBlock   The last valid block height that can execute this claim (uint48)
      */
-    function claim(
+    function registerClaim(
         SigData calldata sigData,
         uint nodeID,
         address staker,
-        uint amount
-    ) external nzUint(nodeID) nzAddr(staker) nzUint(amount) noFish validSig(
+        uint amount,
+        uint48 expiryBlock
+    ) external nzUint(nodeID) nzAddr(staker) nzUint(amount) nzUint(expiryBlock) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
-                this.claim.selector,
+                this.registerClaim.selector,
                 SigData(0, 0),
                 nodeID,
                 staker,
-                amount
+                amount,
+                expiryBlock
             )
         ),
         KeyID.Agg
     ) {
-        _claim(nodeID, staker, amount);
+        Claim memory oldClaim = _pendingClaims[nodeID];
+        require(
+            oldClaim.staker == _ZERO_ADDR ||
+            uint(oldClaim.expiryBlock) > block.number,
+            "StakeMan: a pending claim exists"
+        );
+
+        Claim memory newClaim = Claim(amount, staker, uint48(block.number) + CLAIM_BLOCK_DELAY, expiryBlock);
+        _pendingClaims[nodeID] = newClaim;
+        emit ClaimRegistered(newClaim);
     }
 
     /**
-     * @notice  Claim back stakes in a batch. If only losing an auction, the same amount
-     *          initially staked will be sent back. If losing an auction while being a validator,
-     *          the amount sent back = stake + rewards - penalties, as determined by the CFE.
-     *          It is assumed that the elements of each array match in terms of ordering,
-     *          i.e. a given transfer should should have the same index tokenAddrs[i],
-     *          recipients[i], and amounts[i].
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current aggregate key (uint)
-     * @param nodeIDs   The nodeIDs of the stakers
-     * @param stakers   The stakers who are to be sent FLIP
-     * @param amounts   The amounts of stake to be locked up
+     * @notice  Execute a pending claim to get back stake. If only losing an auction,
+     *          the same amount initially staked will be sent back. If losing an
+     *          auction while being a validator, the amount sent back = stake + 
+     *          rewards - penalties, as determined by the CFE. Cannot execute a pending
+     *          claim before 48h have passed after registering it, or after the specified
+     *          expiry block height
+     * @param nodeID    The nodeID of the staker
      */
-    function claimBatch(
-        SigData calldata sigData,
-        uint[] calldata nodeIDs,
-        address[] calldata stakers,
-        uint[] calldata amounts
-    ) external noFish validSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.claimBatch.selector,
-                SigData(0, 0),
-                nodeIDs,
-                stakers,
-                amounts
-            )
-        ),
-        KeyID.Agg
-    ) {
+    function executeClaim(
+        uint nodeID
+    ) external {
+        Claim memory claim = _pendingClaims[nodeID];
         require(
-            nodeIDs.length == stakers.length &&
-            stakers.length == amounts.length,
-            "StakeMan: arrays not same length"
+            uint(block.number) >= claim.startBlock &&
+            uint(block.number) <= claim.startBlock,
+            "StakeMan: too late or early"
         );
 
-        for (uint i; i < amounts.length; i++) {
-            // Technically this will change _totalStake an amounts.length
-            // number of times which unnecessarily costs gas. However, since
-            // this should only be called once a month, the total $ saved
-            // is less valuable than the better coding practice of keeping
-            // everything atomic that's supposed to be atomic
-            _claim(nodeIDs[i], stakers[i], amounts[i]);
-        }
-    }
-
-    function _claim(
-        uint nodeID,
-        address staker,
-        uint amount
-    ) private {
         // If time has elapsed since the last mint, printer go brrrr
         _mintInflation();
 
         // Send the tokens and update _totalStake
-        _FLIP.transfer(staker, amount);
-        _totalStake -= amount;
+        _FLIP.transfer(claim.staker, claim.amount);
+        _totalStake -= claim.amount;
 
-        emit Claimed(nodeID, amount);
+        // Housekeeping
+        delete _pendingClaims[nodeID];
+        emit ClaimExecuted(nodeID, claim.amount);
     }
 
     /**
@@ -328,6 +323,15 @@ contract StakeManager is Shared {
      */
     function getMinimumStake() external view returns (uint) {
         return _minStake;
+    }
+
+    /**
+     * @notice  Get the minimum amount of stake that's required for a bid
+     *          attempt in the auction to be valid - used to prevent sybil attacks
+     * @return  The minimum stake (uint)
+     */
+    function getPendingClaim(uint nodeID) external view returns (Claim memory) {
+        return _pendingClaims[nodeID];
     }
 
 
