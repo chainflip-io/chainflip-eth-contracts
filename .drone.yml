@@ -44,6 +44,26 @@ steps:
       - /home/circleci/.poetry/bin/poetry install
       - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - /home/circleci/.poetry/bin/poetry run brownie test
+  - name: notify
+    image: appleboy/drone-discord
+    when:
+      status:
+        - failure
+    settings:
+      avatar_url: https://png2.cleanpng.com/sh/809888174adf1a2f743a77fa1d63b2c9/L0KzQYm3VsE4N6dmkZH0aYP2gLBuTgNifaN0hp99aHWwfLF5hL1wbl55gNc2cnnxd8S0hglmNaVtfZ98aXzwccPwjPxqd58yTdQ7NnW4RbK3gcA2a2IzSaM9OUe6RYe4VcI6Omg6T6UDMES0QXB3jvc=/kisspng-sauron-the-lord-of-the-rings-eye-the-silmarillion-5b26e55a0a05c1.1149775615292757380411.png
+      username: Sauron
+      webhook_id:
+        from_secret: discord_webhook_id
+      webhook_token:
+        from_secret: discord_webhook_token
+      message: >
+        ⚠️ Stateful tests have failed ⚠️
+
+        The nightly test job was unsuccessful.
+        Logs: {{build.link}}
+        Duration: `{{since build.started}}`
+        Responsible parties: <@705248954073219142>
+
 
 
 image_pull_secrets:
