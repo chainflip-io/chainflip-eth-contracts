@@ -5,38 +5,32 @@ from brownie.test import given, strategy
 
 
 @given(
-    amount=strategy('uint', max_value=MIN_STAKE*2),
+    amount=strategy('uint', exclude=0),
     staker=strategy('address'),
-    # 30 days max should be far more than enough that the block height of the testing chain won't be above it
-    expiryBlockDiff=strategy('uint', max_value=int(30*DAY/SECS_PER_BLOCK))
+    # 5s because without a buffer time, the time that the tx actually executes may have changed
+    # and make the test fail even though nothing is wrong
+    expiryTimeDiff=strategy('uint', min_value=5, max_value=365*DAY)
 )
-def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryBlockDiff):
-    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, amount, cf.DENICE, web3.eth.blockNumber + expiryBlockDiff)
+def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryTimeDiff):
+    args = (JUNK_INT, amount, staker, chain.time() + CLAIM_DELAY + expiryTimeDiff)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
+    if amount == 0:
+        with reverts(REV_MSG_NZ_UINT):
+            cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+    else:
+        registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, amount, staker, chain.time() + (2 * CLAIM_DELAY))
 
 
 # Specific amounts that should/shouldn't work
 
 
-def test_registerClaim_min_amount(cf, stakedMin):
-    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, web3.eth.blockNumber+(2*CLAIM_BLOCK_DELAY))
+def test_registerClaim_min_expiryTime(cf, stakedMin):
+    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time()+CLAIM_DELAY+5)
 
 
-def test_registerClaim_max_amount(cf, stakedMin):
-    stakeMinTx, initAmount = stakedMin
-    # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.blockNumber + 1
-    maxValidAmount = initAmount + getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
-
-    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, maxValidAmount, cf.DENICE, web3.eth.blockNumber+(2*CLAIM_BLOCK_DELAY))
-
-
-def test_registerClaim_min_expiryBlock(cf, stakedMin):
-    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
-
-
-def test_registerClaim_rev_just_under_min_expiryBlock(cf, stakedMin):
+def test_registerClaim_rev_just_under_min_expiryTime(cf, stakedMin):
     _, amount = stakedMin
-    args = (JUNK_INT, amount, cf.DENICE, web3.eth.blockNumber + CLAIM_BLOCK_DELAY)
+    args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY - 5)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
     with reverts(REV_MSG_EXPIRY_TOO_SOON):
@@ -45,28 +39,28 @@ def test_registerClaim_rev_just_under_min_expiryBlock(cf, stakedMin):
 
 def test_registerClaim_claim_expired(cf, stakedMin):
     _, amount = stakedMin
-    args1 = (JUNK_INT, amount, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args1)
-    cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args1)
+    args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
+    cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
     
-    chain.mine(CLAIM_BLOCK_DELAY+1)
-    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, web3.eth.blockNumber+3+CLAIM_BLOCK_DELAY)
+    chain.sleep(CLAIM_DELAY + 10)
+    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_INT, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time()+(2*CLAIM_DELAY))
 
 
 def test_registerClaim_rev_claim_not_expired(cf, stakedMin):
     _, amount = stakedMin
-    args1 = (JUNK_INT, amount, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args1)
-    cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args1)
+    args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
+    cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
 
     with reverts(REV_MSG_CLAIM_EXISTS):
-        cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args1)
+        cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
 
 
 def test_registerClaim_rev_nodeID(cf, stakedMin):
     _, amount = stakedMin
     receiver = cf.DENICE
-    args = (0, amount, receiver, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
+    args = (0, amount, receiver, chain.time() + CLAIM_DELAY + 5)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
     with reverts(REV_MSG_NZ_UINT):
@@ -75,7 +69,7 @@ def test_registerClaim_rev_nodeID(cf, stakedMin):
 
 def test_registerClaim_rev_staker(cf, stakedMin):
     _, amount = stakedMin
-    args = (JUNK_INT, amount, ZERO_ADDR, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
+    args = (JUNK_INT, amount, ZERO_ADDR, chain.time() + CLAIM_DELAY + 5)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
     with reverts(REV_MSG_NZ_ADDR):
@@ -85,7 +79,7 @@ def test_registerClaim_rev_staker(cf, stakedMin):
 def test_registerClaim_rev_msgHash(cf, stakedMin):
     _, amount = stakedMin
     receiver = cf.DENICE
-    args = (JUNK_INT, amount, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
+    args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
@@ -97,7 +91,7 @@ def test_registerClaim_rev_msgHash(cf, stakedMin):
 def test_registerClaim_rev_sig(cf, stakedMin):
     _, amount = stakedMin
     receiver = cf.DENICE
-    args = (JUNK_INT, amount, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
+    args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1
@@ -113,7 +107,7 @@ def test_registerClaim_rev_sig(cf, stakedMin):
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
 def test_stake_rev_noFish(cf, vulnerableR3ktStakeMan, amount):
     smVuln, _ = vulnerableR3ktStakeMan
-    args = (JUNK_INT, 1, cf.DENICE, web3.eth.blockNumber+2+CLAIM_BLOCK_DELAY)
+    args = (JUNK_INT, 1, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
 
     callDataNoSig = smVuln.registerClaim.encode_input(NULL_SIG_DATA, *args)
     with reverts(REV_MSG_NO_FISH):

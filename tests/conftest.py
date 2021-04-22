@@ -47,11 +47,24 @@ def schnorrTest(cf, SchnorrSECP256K1Test):
     return cf.DEPLOYER.deploy(SchnorrSECP256K1Test)
 
 
-# stake the minimum amount
+# Stake the minimum amount
 @pytest.fixture(scope="module")
 def stakedMin(cf):
     amount = MIN_STAKE
     return cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE}), amount
+
+
+# Register a claim to use executeClaim with
+@pytest.fixture(scope="module")
+def claimRegistered(cf, stakedMin):
+    _, amount = stakedMin
+    expiryTime = web3.eth.blockNumber+2+CLAIM_DELAY
+    args = (JUNK_INT, amount, cf.DENICE, expiryTime)
+
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
+    tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+
+    return tx, (amount, cf.DENICE, tx.block_number+CLAIM_DELAY, expiryTime)
 
 
 # Deploy a generic token

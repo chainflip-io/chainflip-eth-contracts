@@ -117,38 +117,30 @@ def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStak
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
-def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, expiryBlock):
+def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, expiryTime):
     prevReceiverBal = cf.flip.balanceOf(receiver)
     prevStakeManBal = cf.flip.balanceOf(cf.stakeManager)
 
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, nodeID, amount, receiver, expiryBlock)
-    startBlock = web3.eth.blockNumber + 1 + CLAIM_BLOCK_DELAY
-
-    if amount == 0 or expiryBlock == 0 or nodeID == 0:
-        with reverts(REV_MSG_NZ_UINT):
-            cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryBlock)
-    elif startBlock >= expiryBlock:
-        with reverts(REV_MSG_EXPIRY_TOO_SOON):
-            cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryBlock)
-    else:
-        tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryBlock)
-        
-        # Check things that should've changed
-        assert cf.stakeManager.getPendingClaim(nodeID) == (amount, receiver, startBlock, expiryBlock)
-        assert tx.events["ClaimRegistered"][0].values() == (nodeID, amount, receiver, startBlock, expiryBlock)
-        # Check things that shouldn't have changed
-        assert cf.flip.balanceOf(receiver) == prevReceiverBal
-        assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
-        assert cf.stakeManager.getLastMintBlockNum() == prevTx.block_number
-        assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
-        assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
-        assert cf.stakeManager.getMinimumStake() == minStake
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, nodeID, amount, receiver, expiryTime)
+    tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryTime)
+    
+    startTime = tx.timestamp + CLAIM_DELAY
+    # Check things that should've changed
+    assert cf.stakeManager.getPendingClaim(nodeID) == (amount, receiver, startTime, expiryTime)
+    assert tx.events["ClaimRegistered"][0].values() == (nodeID, amount, receiver, startTime, expiryTime)
+    # Check things that shouldn't have changed
+    assert cf.flip.balanceOf(receiver) == prevReceiverBal
+    assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
+    assert cf.stakeManager.getLastMintBlockNum() == prevTx.block_number
+    assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
+    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
+    assert cf.stakeManager.getMinimumStake() == minStake
 
 
 # # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # # similar tests that test specific desired values
-# def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal, expiryBlock):
+# def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal, expiryTime):
 #     # Want to calculate inflation 1 block into the future because that's when the tx will execute
 #     newLastMintBlockNum = web3.eth.blockNumber + 1
 #     inflation = getInflation(prevTx.block_number, newLastMintBlockNum, emissionPerBlock)
@@ -156,13 +148,13 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
 
 #     assert cf.flip.balanceOf(receiver) == prevReceiverBal
 
-#     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, receiver, amount, expiryBlock, nodeID)
+#     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, receiver, amount, expiryTime, nodeID)
 
 #     if amount == 0:
 #         with reverts(REV_MSG_NZ_UINT):
-#             cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryBlock, nodeID)
+#             cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryTime, nodeID)
 #     else:
-#         tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryBlock, nodeID)
+#         tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryTime, nodeID)
         
 #         # Check things that should've changed
 #         assert newLastMintBlockNum == tx.block_number

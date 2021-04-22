@@ -84,14 +84,14 @@ EMISSION_PER_BLOCK = 5607877281367557723
 MIN_STAKE = 40000 * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
 # 13292
-CLAIM_BLOCK_DELAY = int(2 * DAY / SECS_PER_BLOCK)
+CLAIM_DELAY = 2 * DAY
 NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
 
 REV_MSG_MIN_STAKE = "StakeMan: stake too small"
 REV_MSG_NO_FISH = "StakeMan: something smells fishy"
 REV_MSG_SM_ARR_LEN = "StakeMan: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "StakeMan: a pending claim exists"
-REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry block too soon"
+REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry time too soon"
 
 
 # -----Vault-----

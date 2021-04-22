@@ -50,12 +50,11 @@ contract StakeManager is Shared {
      */
     uint private _totalStake;
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
-    // Pulled this number out my ass
     uint private _minStake;
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(uint => Claim) private _pendingClaims;
     // The number of blocks in 48h assuming a block every 13s
-    uint48 constant public CLAIM_BLOCK_DELAY = 13292;
+    uint48 constant public CLAIM_DELAY = 2 days;
 
 
     struct Claim {
@@ -63,8 +62,8 @@ contract StakeManager is Shared {
         address staker;
         // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
         // into a single 256 bit slot
-        uint48 startBlock;
-        uint48 expiryBlock;
+        uint48 startTime;
+        uint48 expiryTime;
     }
 
 
@@ -73,8 +72,8 @@ contract StakeManager is Shared {
         uint indexed nodeID,
         uint amount,
         address staker,
-        uint48 startBlock,
-        uint48 expiryBlock
+        uint48 startTime,
+        uint48 expiryTime
     );
     event ClaimExecuted(uint indexed nodeID, uint amount);
     event EmissionChanged(uint oldEmissionPerBlock, uint newEmissionPerBlock);
@@ -125,15 +124,15 @@ contract StakeManager is Shared {
      * @param nodeID    The nodeID of the staker
      * @param staker    The staker who is to be sent FLIP
      * @param amount    The amount of stake to be locked up
-     * @param expiryBlock   The last valid block height that can execute this claim (uint48)
+     * @param expiryTime   The last valid block height that can execute this claim (uint48)
      */
     function registerClaim(
         SigData calldata sigData,
         uint nodeID,
         uint amount,
         address staker,
-        uint48 expiryBlock
-    ) external nzUint(nodeID) nzAddr(staker) nzUint(amount) nzUint(expiryBlock) noFish validSig(
+        uint48 expiryTime
+    ) external nzUint(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -142,24 +141,22 @@ contract StakeManager is Shared {
                 nodeID,
                 amount,
                 staker,
-                expiryBlock
+                expiryTime
             )
         ),
         KeyID.Agg
     ) {
-        Claim memory oldClaim = _pendingClaims[nodeID];
         require(
-            // Must have been executed & deleted if _ZERO_ADDR
-            oldClaim.staker == _ZERO_ADDR ||
-            block.number > uint(oldClaim.expiryBlock),
+            // Must be fresh or have been executed & deleted, or past the expiry
+            block.timestamp > uint(_pendingClaims[nodeID].expiryTime),
             "StakeMan: a pending claim exists"
         );
 
-        uint48 startBlock = uint48(block.number) + CLAIM_BLOCK_DELAY;
-        require(expiryBlock > startBlock, "StakeMan: expiry block too soon");
+        uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
+        require(expiryTime > startTime, "StakeMan: expiry time too soon");
 
-        _pendingClaims[nodeID] = Claim(amount, staker, startBlock, expiryBlock);
-        emit ClaimRegistered(nodeID, amount, staker, startBlock, expiryBlock);
+        _pendingClaims[nodeID] = Claim(amount, staker, startTime, expiryTime);
+        emit ClaimRegistered(nodeID, amount, staker, startTime, expiryTime);
     }
 
     /**
@@ -169,15 +166,17 @@ contract StakeManager is Shared {
      *          rewards - penalties, as determined by the CFE. Cannot execute a pending
      *          claim before 48h have passed after registering it, or after the specified
      *          expiry block height
+     * @dev     No need for nzUint(nodeID) since that is handled by
+     *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
     function executeClaim(
         uint nodeID
-    ) external {
+    ) external noFish {
         Claim memory claim = _pendingClaims[nodeID];
         require(
-            uint(block.number) >= claim.startBlock &&
-            uint(block.number) <= claim.startBlock,
+            uint(block.timestamp) >= claim.startTime &&
+            uint(block.timestamp) <= claim.expiryTime,
             "StakeMan: too late or early"
         );
 
