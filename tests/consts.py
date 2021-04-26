@@ -92,6 +92,7 @@ REV_MSG_NO_FISH = "StakeMan: something smells fishy"
 REV_MSG_SM_ARR_LEN = "StakeMan: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "StakeMan: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry time too soon"
+REV_MSG_NOT_ON_TIME = "StakeMan: too late or early"
 
 
 # -----Vault-----

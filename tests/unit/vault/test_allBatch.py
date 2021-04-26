@@ -6,7 +6,7 @@ from random import choices
 
 @given(
     fetchAmounts=strategy('uint[]', max_value=TEST_AMNT, max_length=int(INIT_TOKEN_SUPPLY / TEST_AMNT)),
-    fetchSwapIDs=strategy('bytes32[]'),
+    fetchSwapIDs=strategy('bytes32[]', unique=True),
     tranRecipients=strategy('address[]', unique=True),
     tranAmounts=strategy('uint[]', max_value=TEST_AMNT),
     sender=strategy('address')

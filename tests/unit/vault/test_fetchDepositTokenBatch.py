@@ -5,7 +5,7 @@ from consts import *
 
 @given(
     amounts=strategy('uint[]', max_value=TEST_AMNT, max_length=int(INIT_TOKEN_SUPPLY / TEST_AMNT)),
-    swapIDs=strategy('bytes32[]'),
+    swapIDs=strategy('bytes32[]', unique=True),
     tokenBools=strategy('bool[]')
 )
 def test_fetchDepositTokenBatch(cf, token, token2, DepositToken, amounts, swapIDs, tokenBools):

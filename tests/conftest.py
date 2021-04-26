@@ -1,6 +1,7 @@
 import pytest
 from consts import *
 from deploy import deploy_initial_ChainFlip_contracts
+from brownie import chain
 
 
 # Test isolation
@@ -58,13 +59,13 @@ def stakedMin(cf):
 @pytest.fixture(scope="module")
 def claimRegistered(cf, stakedMin):
     _, amount = stakedMin
-    expiryTime = web3.eth.blockNumber+2+CLAIM_DELAY
+    expiryTime = chain.time() + CLAIM_DELAY + 5
     args = (JUNK_INT, amount, cf.DENICE, expiryTime)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
     tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
 
-    return tx, (amount, cf.DENICE, tx.block_number+CLAIM_DELAY, expiryTime)
+    return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
 
 
 # Deploy a generic token

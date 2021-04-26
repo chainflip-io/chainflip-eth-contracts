@@ -105,9 +105,9 @@ def test_registerClaim_rev_sig(cf, stakedMin):
 # so we have to use StakeManagerVulnerable which inherits StakeManager and
 # has `testSendFLIP` in it to simulate some kind of hack
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
-def test_stake_rev_noFish(cf, vulnerableR3ktStakeMan, amount):
+def test_registerClaim_rev_noFish(cf, vulnerableR3ktStakeMan, amount):
     smVuln, _ = vulnerableR3ktStakeMan
-    args = (JUNK_INT, 1, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
 
     callDataNoSig = smVuln.registerClaim.encode_input(NULL_SIG_DATA, *args)
     with reverts(REV_MSG_NO_FISH):

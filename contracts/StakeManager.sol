@@ -162,7 +162,7 @@ contract StakeManager is Shared {
     /**
      * @notice  Execute a pending claim to get back stake. If only losing an auction,
      *          the same amount initially staked will be sent back. If losing an
-     *          auction while being a validator, the amount sent back = stake + 
+     *          auction while being a validator, the amount sent back = stake +
      *          rewards - penalties, as determined by the CFE. Cannot execute a pending
      *          claim before 48h have passed after registering it, or after the specified
      *          expiry block height
@@ -213,6 +213,7 @@ contract StakeManager is Shared {
         ),
         KeyID.Gov
     ) {
+        // If time has elapsed since the last mint, printer go brrrr
         _mintInflation();
 
         emit EmissionChanged(_emissionPerBlock, newEmissionPerBlock);

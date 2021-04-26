@@ -5,7 +5,7 @@ from consts import *
 
 @given(
     amounts=strategy('uint[]', max_value=TEST_AMNT),
-    swapIDs=strategy('bytes32[]')
+    swapIDs=strategy('bytes32[]', unique=True)
 )
 def test_fetchDepositEthBatch(cf, DepositEth, amounts, swapIDs):
     trimToShortest([amounts, swapIDs])
