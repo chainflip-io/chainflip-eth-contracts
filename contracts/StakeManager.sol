@@ -117,7 +117,7 @@ contract StakeManager is Shared {
     /**
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
      *          will be sent back. If losing an auction while being a validator,
-                the amount sent back = stake + rewards - penalties, as determined by the CFE
+     *          the amount sent back = stake + rewards - penalties, as determined by the CFE
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
@@ -177,7 +177,7 @@ contract StakeManager is Shared {
         require(
             uint(block.timestamp) >= claim.startTime &&
             uint(block.timestamp) <= claim.expiryTime,
-            "StakeMan: too late or early"
+            "StakeMan: early, late, or execd"
         );
 
         // If time has elapsed since the last mint, printer go brrrr

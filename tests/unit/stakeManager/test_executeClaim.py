@@ -48,8 +48,8 @@ def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff
         assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
         assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
         assert tx.events["ClaimExecuted"][0].values() == [nodeID, amount]
-        # Check things that shouldn't have changed
         assert cf.flip.balanceOf(staker) == stakerStartBal + amount
+        # Check things that shouldn't have changed
         assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
         assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
@@ -73,8 +73,8 @@ def test_executeClaim_min_delay(cf, claimRegistered):
     assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - claim[0]
     assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - claim[0]
     assert tx.events["ClaimExecuted"][0].values() == [JUNK_INT, claim[0]]
-    # Check things that shouldn't have changed
     assert cf.flip.balanceOf(claim[1]) == claim[0]
+    # Check things that shouldn't have changed
     assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
@@ -98,8 +98,8 @@ def test_executeClaim_max_delay(cf, claimRegistered):
     assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - claim[0]
     assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - claim[0]
     assert tx.events["ClaimExecuted"][0].values() == [JUNK_INT, claim[0]]
-    # Check things that shouldn't have changed
     assert cf.flip.balanceOf(claim[1]) == claim[0]
+    # Check things that shouldn't have changed
     assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 

@@ -125,6 +125,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
     tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryTime)
     
     startTime = tx.timestamp + CLAIM_DELAY
+    inflation = getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID) == (amount, receiver, startTime, expiryTime)
     assert tx.events["ClaimRegistered"][0].values() == (nodeID, amount, receiver, startTime, expiryTime)
@@ -133,7 +134,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
     assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
     assert cf.stakeManager.getLastMintBlockNum() == prevTx.block_number
     assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
-    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
+    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + inflation
     assert cf.stakeManager.getMinimumStake() == minStake
 
 
