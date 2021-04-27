@@ -5,7 +5,7 @@ from utils import *
 from hypothesis import strategies as hypStrat
 
 
-settings = {"stateful_step_count": 200, "max_examples": 50}
+settings = {"stateful_step_count": 100, "max_examples": 25}
 
 
 # Stateful test for all functions in the StakeManager
