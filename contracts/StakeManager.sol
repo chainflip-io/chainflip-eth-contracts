@@ -53,7 +53,7 @@ contract StakeManager is Shared {
     uint private _minStake;
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(uint => Claim) private _pendingClaims;
-    // The number of blocks in 48h assuming a block every 13s
+    // The number of seconds in 48h
     uint48 constant public CLAIM_DELAY = 2 days;
 
 
@@ -117,13 +117,13 @@ contract StakeManager is Shared {
     /**
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
      *          will be sent back. If losing an auction while being a validator,
-     *          the amount sent back = stake + rewards - penalties, as determined by the CFE
+     *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
      * @param nodeID    The nodeID of the staker
-     * @param staker    The staker who is to be sent FLIP
      * @param amount    The amount of stake to be locked up
+     * @param staker    The staker who is to be sent FLIP
      * @param expiryTime   The last valid block height that can execute this claim (uint48)
      */
     function registerClaim(
@@ -163,7 +163,7 @@ contract StakeManager is Shared {
      * @notice  Execute a pending claim to get back stake. If only losing an auction,
      *          the same amount initially staked will be sent back. If losing an
      *          auction while being a validator, the amount sent back = stake +
-     *          rewards - penalties, as determined by the CFE. Cannot execute a pending
+     *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
      *          claim before 48h have passed after registering it, or after the specified
      *          expiry block height
      * @dev     No need for nzUint(nodeID) since that is handled by
@@ -335,9 +335,10 @@ contract StakeManager is Shared {
     }
 
     /**
-     * @notice  Get the minimum amount of stake that's required for a bid
-     *          attempt in the auction to be valid - used to prevent sybil attacks
-     * @return  The minimum stake (uint)
+     * @notice  Get the pending claim for the input nodeID. If there was never
+     *          a pending claim for this nodeID, or it has already been executed
+     *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
+     * @return  The claim (Claim)
      */
     function getPendingClaim(uint nodeID) external view returns (Claim memory) {
         return _pendingClaims[nodeID];

@@ -604,6 +604,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 tx = self.sm.registerClaim(signer.getSigData(callDataNoSig), *args, {'from': st_sender})
 
                 self.pendingClaims[st_nodeID] = (st_stake, st_staker, tx.timestamp + CLAIM_DELAY, args[3])
+                self.lastValidateTime = tx.timestamp
         
 
         # Executes a random claim
