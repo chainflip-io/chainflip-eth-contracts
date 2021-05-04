@@ -30,4 +30,4 @@ def test_executeClaim(a, cfDeploy):
 def test_setEmissionPerBlock(a, cfDeploy):
     callDataNoSig = cfDeploy.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, JUNK_INT)
     tx = cfDeploy.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_INT, {'from': a[0]})
-    print(f'Send: {tx.gas_used}')
+    print(f'setEmissionPerBlock: {tx.gas_used}')
