@@ -49,7 +49,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
-            self.lastMintBlockNum = self.sm.tx.block_number
+            self.lastMintBlockNum = self.sm.tx.blockNumber
             self.emissionPerBlock = EMISSION_PER_BLOCK
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
@@ -173,7 +173,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 self.flipBals[claim[1]] += claim[0]
                 self.flipBals[self.sm] -= (claim[0] - inflation)
                 self.totalStake -= (claim[0] - inflation)
-                self.lastMintBlockNum = tx.block_number
+                self.lastMintBlockNum = tx.blockNumber
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
 
 
@@ -197,7 +197,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
                 self.flipBals[self.sm] += inflation
                 self.totalStake += inflation
-                self.lastMintBlockNum = tx.block_number
+                self.lastMintBlockNum = tx.blockNumber
                 self.emissionPerBlock = st_emission
 
 

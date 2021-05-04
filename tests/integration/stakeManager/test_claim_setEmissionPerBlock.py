@@ -26,25 +26,25 @@ def test_registerClaim_setEmissionPerBlock_executeClaim(cf, stakedMin):
     emissionTx1 = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), emissionPerBlock2, {"from": cf.ALICE})
     
     # Check things that should've changed
-    inflation1 = getInflation(cf.stakeManager.tx.block_number, emissionTx1.block_number, EMISSION_PER_BLOCK)
+    inflation1 = getInflation(cf.stakeManager.tx.blockNumber, emissionTx1.blockNumber, EMISSION_PER_BLOCK)
     assert cf.flip.balanceOf(cf.stakeManager) == amountStaked + inflation1
     assert cf.stakeManager.getInflationInFuture(0) == 0
     assert cf.stakeManager.getTotalStakeInFuture(0) == amountStaked + inflation1
     assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock2
-    assert cf.stakeManager.getLastMintBlockNum() == emissionTx1.block_number
+    assert cf.stakeManager.getLastMintBlockNum() == emissionTx1.blockNumber
     assert emissionTx1.events["EmissionChanged"][0].values() == [EMISSION_PER_BLOCK, emissionPerBlock2]
     # Check things that shouldn't have changed
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
     # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    inflation2 = getInflation(emissionTx1.block_number, web3.eth.blockNumber + 1, emissionPerBlock2)
+    inflation2 = getInflation(emissionTx1.blockNumber, web3.eth.blockNumber + 1, emissionPerBlock2)
 
     chain.sleep(CLAIM_DELAY + 5)
     execTx = cf.stakeManager.executeClaim(JUNK_INT)
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(JUNK_INT) == NULL_CLAIM
-    assert cf.stakeManager.getLastMintBlockNum() == execTx.block_number
+    assert cf.stakeManager.getLastMintBlockNum() == execTx.blockNumber
     assert cf.flip.balanceOf(cf.stakeManager) == amountStaked + inflation1 + inflation2 - claimAmount
     assert cf.stakeManager.getTotalStakeInFuture(0) == amountStaked + inflation1 + inflation2 - claimAmount
     assert execTx.events["ClaimExecuted"][0].values() == [JUNK_INT, claimAmount]

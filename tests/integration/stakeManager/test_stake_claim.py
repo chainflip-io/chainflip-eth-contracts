@@ -38,7 +38,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     chain.sleep(CLAIM_DELAY + 5)
 
     # Should revert with trying to claim stake that doesn't exist
-    with reverts(REV_MSG_EXCEED_BAL):
+    with reverts(REV_MSG_ERC777_EXCEED_BAL):
         cf.stakeManager.executeClaim(nodeID1)
 
     # 1st stake
@@ -47,7 +47,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
         cf,
         0,
         nodeID1,
-        cf.stakeManager.tx.block_number,
+        cf.stakeManager.tx.blockNumber,
         EMISSION_PER_BLOCK,
         MIN_STAKE,
         stakeTx1,
@@ -57,10 +57,10 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     # Execute claim
     execClaimTx1 = cf.stakeManager.executeClaim(nodeID1)
 
-    inflation1 = getInflation(cf.stakeManager.tx.block_number, web3.eth.blockNumber, EMISSION_PER_BLOCK)
+    inflation1 = getInflation(cf.stakeManager.tx.blockNumber, web3.eth.blockNumber, EMISSION_PER_BLOCK)
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID1) == NULL_CLAIM
-    assert cf.stakeManager.getLastMintBlockNum() == execClaimTx1.block_number
+    assert cf.stakeManager.getLastMintBlockNum() == execClaimTx1.blockNumber
     assert cf.flip.balanceOf(cf.stakeManager) == stakeAmount1 + inflation1 - claimAmount1
     assert cf.stakeManager.getTotalStakeInFuture(0) == stakeAmount1 + inflation1 - claimAmount1
     assert execClaimTx1.events["ClaimExecuted"][0].values() == [nodeID1, claimAmount1]
@@ -76,7 +76,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
         cf,
         stakeAmount1 - claimAmount1 + inflation1,
         nodeID2,
-        execClaimTx1.block_number,
+        execClaimTx1.blockNumber,
         EMISSION_PER_BLOCK,
         MIN_STAKE,
         stakeTx2,
@@ -109,10 +109,10 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     # Execute 2nd claim
     execClaimTx2 = cf.stakeManager.executeClaim(nodeID2)
 
-    inflation2 = getInflation(execClaimTx1.block_number, web3.eth.blockNumber, EMISSION_PER_BLOCK)
+    inflation2 = getInflation(execClaimTx1.blockNumber, web3.eth.blockNumber, EMISSION_PER_BLOCK)
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID2) == NULL_CLAIM
-    assert cf.stakeManager.getLastMintBlockNum() == execClaimTx2.block_number
+    assert cf.stakeManager.getLastMintBlockNum() == execClaimTx2.blockNumber
     assert cf.flip.balanceOf(cf.stakeManager) == stakeAmount1 + inflation1 - claimAmount1 + stakeAmount2 + inflation2 - claimAmount2
     assert cf.stakeManager.getTotalStakeInFuture(0) == stakeAmount1 + inflation1 - claimAmount1 + stakeAmount2 + inflation2 - claimAmount2
     assert execClaimTx2.events["ClaimExecuted"][0].values() == [nodeID2, claimAmount2]

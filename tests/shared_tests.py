@@ -107,7 +107,7 @@ def isValidSig_rev_test(cf, signer):
 # `stakedMin` directly
 def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStake, tx, amount):
     assert cf.flip.balanceOf(cf.stakeManager) == prevTotal + amount
-    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + amount + getInflation(lastMintBlockNum, tx.block_number, EMISSION_PER_BLOCK)
+    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + amount + getInflation(lastMintBlockNum, tx.blockNumber, EMISSION_PER_BLOCK)
     assert tx.events["Staked"][0].values() == [nodeID, amount]
     assert cf.stakeManager.getLastMintBlockNum() == lastMintBlockNum
     assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
@@ -125,14 +125,14 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
     tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryTime)
     
     startTime = tx.timestamp + CLAIM_DELAY
-    inflation = getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
+    inflation = getInflation(prevTx.blockNumber, tx.blockNumber, emissionPerBlock)
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID) == (amount, receiver, startTime, expiryTime)
     assert tx.events["ClaimRegistered"][0].values() == (nodeID, amount, receiver, startTime, expiryTime)
     # Check things that shouldn't have changed
     assert cf.flip.balanceOf(receiver) == prevReceiverBal
     assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
-    assert cf.stakeManager.getLastMintBlockNum() == prevTx.block_number
+    assert cf.stakeManager.getLastMintBlockNum() == prevTx.blockNumber
     assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
     assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + inflation
     assert cf.stakeManager.getMinimumStake() == minStake
@@ -144,7 +144,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
 # def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal, expiryTime):
 #     # Want to calculate inflation 1 block into the future because that's when the tx will execute
 #     newLastMintBlockNum = web3.eth.blockNumber + 1
-#     inflation = getInflation(prevTx.block_number, newLastMintBlockNum, emissionPerBlock)
+#     inflation = getInflation(prevTx.blockNumber, newLastMintBlockNum, emissionPerBlock)
 #     maxValidAmount = prevTotal + inflation
 
 #     assert cf.flip.balanceOf(receiver) == prevReceiverBal
@@ -158,7 +158,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
 #         tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryTime, nodeID)
         
 #         # Check things that should've changed
-#         assert newLastMintBlockNum == tx.block_number
+#         assert newLastMintBlockNum == tx.blockNumber
 #         assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
 #         assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
 #         assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount

@@ -12,12 +12,12 @@ def test_setMinStake(cf, newMinStake):
     assert cf.stakeManager.getMinimumStake() == newMinStake
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
     # Check things that shouldn't have changed
-    inflation = getInflation(cf.stakeManager.tx.block_number, tx.block_number, EMISSION_PER_BLOCK)
+    inflation = getInflation(cf.stakeManager.tx.blockNumber, tx.blockNumber, EMISSION_PER_BLOCK)
     assert cf.flip.balanceOf(cf.stakeManager) == 0
     assert cf.stakeManager.getInflationInFuture(0) == inflation
     assert cf.stakeManager.getTotalStakeInFuture(0) == inflation
     assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.block_number
+    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.blockNumber
 
 
 def test_setMinStake_rev_amount(cf):

@@ -146,7 +146,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     assert token.balanceOf(cf.BOB) - tokenStartBalBob == amountBob
 
     # Transferring out again should fail
-    with reverts(REV_MSG_EXCEED_BAL):
+    with reverts(REV_MSG_ERC20_EXCEED_BAL):
         cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     
     # Get the address to deposit to and deposit
@@ -211,7 +211,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
     assert token.balanceOf(cf.BOB) - tokenStartBalBob == amountBob
 
     # Transferring out again should fail
-    with reverts(REV_MSG_EXCEED_BAL):
+    with reverts(REV_MSG_ERC20_EXCEED_BAL):
         cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     
     # Get the address to deposit to and deposit

@@ -115,7 +115,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             self.allKeys = [*self.keyIDToCurKeys.values()] + ([Signer.gen_signer()] * (TOTAL_KEYS - 2))
 
             # StakeManager
-            self.lastMintBlockNum = self.sm.tx.block_number
+            self.lastMintBlockNum = self.sm.tx.blockNumber
             self.emissionPerBlock = EMISSION_PER_BLOCK
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
@@ -627,7 +627,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 self.flipBals[claim[1]] += claim[0]
                 self.flipBals[self.sm] -= (claim[0] - inflation)
                 self.totalStake -= (claim[0] - inflation)
-                self.lastMintBlockNum = tx.block_number
+                self.lastMintBlockNum = tx.blockNumber
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
         
         
@@ -652,7 +652,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
                 self.flipBals[self.sm] += inflation
                 self.totalStake += inflation
-                self.lastMintBlockNum = tx.block_number
+                self.lastMintBlockNum = tx.blockNumber
                 self.emissionPerBlock = st_emission
                 self.lastValidateTime = tx.timestamp
 
