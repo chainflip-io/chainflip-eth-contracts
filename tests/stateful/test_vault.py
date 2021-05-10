@@ -5,7 +5,7 @@ from hypothesis import strategies as hypStrat
 from random import choices
 
 
-settings = {"stateful_step_count": 100, "max_examples": 50}
+settings = {"stateful_step_count": 100, "max_examples": 25}
 
 # Stateful test for all functions in the Vault
 def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):

@@ -6,7 +6,7 @@ from hypothesis import strategies as hypStrat
 from random import choice, choices
 
 
-settings = {"stateful_step_count": 100, "max_examples": 50}
+settings = {"stateful_step_count": 100, "max_examples": 25}
 
 
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
@@ -59,7 +59,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         keys are from a pool of the default AGG_KEY and GOV_KEY plus freshly generated 
         keys at the start of each run.
 
-        There's a NUM_STAKERS number of stakers that randomly `stake` and are randomly 
+        There's a MAX_NUM_SENDERS number of stakers that randomly `stake` and are randomly 
         the recipients of `claim`. The parameters used are so that they're small enough 
         to increase the likelihood of the same address being used in multiple 
         interactions (e.g. 2  x stakes then a claim etc) and large enough to ensure 
@@ -120,6 +120,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
             self.flipBals = {addr: INIT_STAKE if addr in self.stakers else 0 for addr in self.allAddrs}
+            self.pendingClaims = {nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)}
             self.numTxsTested = 0
 
 
@@ -152,16 +153,14 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # StakeManager
 
         st_staker = strategy("address", length=MAX_NUM_SENDERS)
-        st_nodeID = strategy("uint")
-        st_nodeIDs = strategy('uint256[]')
+        st_nodeID = strategy("uint", max_value=MAX_NUM_SENDERS)
         st_stake = strategy("uint", max_value=MAX_TEST_STAKE)
+        st_expiry_time_diff = strategy("uint", max_value=CLAIM_DELAY*10)
         # This would be 10x the initial supply in 1 year, so is a reasonable max without
         # uint overflowing
         st_emission = strategy("uint", max_value=370 * E_18)
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minStake = strategy("uint", max_value=int(INIT_STAKE/2))
-        st_receivers = strategy('address[]', length=MAX_NUM_SENDERS)
-        st_f_amnt = strategy('uint256[]', max_value=MAX_TEST_STAKE)
 
 
         # Vault
@@ -513,7 +512,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         # Sleep for a random time so that setAggKeyWithGovKey can be called without reverting
         def rule_sleep(self, st_sleep_time):
-            print('                    rule_sleep_2_days', st_sleep_time)
+            print('                    rule_sleep', st_sleep_time)
             chain.sleep(st_sleep_time)
         
 
@@ -575,83 +574,63 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             
 
         # Claims a random amount from a random nodeID to a random recipient
-        def rule_claim(self, st_nodeID, st_staker, st_stake, st_sender):
-            callDataNoSig = self.sm.claim.encode_input(NULL_SIG_DATA, st_nodeID, st_staker, st_stake)
-            inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber + 1, self.emissionPerBlock)
+        def rule_registerClaim(self, st_nodeID, st_staker, st_stake, st_sender, st_expiry_time_diff):
+            args = (st_nodeID, st_stake, st_staker, chain.time() + st_expiry_time_diff)
+            callDataNoSig = self.sm.registerClaim.encode_input(NULL_SIG_DATA, *args)
             signer = self._get_key_prob(AGG)
 
             if st_nodeID == 0:
-                print('        rule_claim NODEID', st_staker, st_nodeID, st_stake/E_18)
+                print('        NODEID rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.claim(signer.getSigData(callDataNoSig), st_nodeID, st_staker, st_stake, {'from': st_sender})
+                    self.sm.registerClaim(signer.getSigData(callDataNoSig), *args, {'from': st_sender})
             elif st_stake == 0:
-                print('        rule_claim AMOUNT', st_staker, st_nodeID, st_stake/E_18)
+                print('        AMOUNT rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.claim(signer.getSigData(callDataNoSig), st_nodeID, st_staker, st_stake, {'from': st_sender})
+                    self.sm.registerClaim(signer.getSigData(callDataNoSig), *args, {'from': st_sender})
             elif signer != self.keyIDToCurKeys[AGG]:
-                print('        rule_claim REV_MSG_SIG', st_staker, st_nodeID, st_stake/E_18)
+                print('        REV_MSG_SIG rule_registerClaim', *args)
                 with reverts(REV_MSG_SIG):
-                    self.sm.claim(signer.getSigData(callDataNoSig), st_nodeID, st_staker, st_stake, {'from': st_sender})
-            elif st_stake > self.flipBals[self.sm] + inflation:
-                print('        rule_claim REV_MSG_EXCEED_BAL', st_staker, st_nodeID, st_stake/E_18)
-                with reverts(REV_MSG_EXCEED_BAL):
-                    self.sm.claim(signer.getSigData(callDataNoSig), st_nodeID, st_staker, st_stake, {'from': st_sender})
+                    self.sm.registerClaim(signer.getSigData(callDataNoSig), *args, {'from': st_sender})
+            elif chain.time() <= self.pendingClaims[st_nodeID][3]:
+                print('        REV_MSG_CLAIM_EXISTS rule_registerClaim', *args)
+                with reverts(REV_MSG_CLAIM_EXISTS):
+                    self.sm.registerClaim(signer.getSigData(callDataNoSig), *args, {'from': st_sender})
+            elif st_expiry_time_diff <= CLAIM_DELAY:
+                print('        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim', *args)
+                with reverts(REV_MSG_EXPIRY_TOO_SOON):
+                    self.sm.registerClaim(signer.getSigData(callDataNoSig), *args, {'from': st_sender})
             else:
-                print('                    rule_claim ', st_staker, st_nodeID, st_stake/E_18)
-                tx = self.sm.claim(signer.getSigData(callDataNoSig), st_nodeID, st_staker, st_stake, {'from': st_sender})
+                print('                    rule_registerClaim ', *args)
+                tx = self.sm.registerClaim(signer.getSigData(callDataNoSig), *args, {'from': st_sender})
 
-                self.flipBals[st_staker] += st_stake
-                self.flipBals[self.sm] -= (st_stake - inflation)
-                self.totalStake -= (st_stake - inflation)
-                self.lastMintBlockNum = tx.block_number
+                self.pendingClaims[st_nodeID] = (st_stake, st_staker, tx.timestamp + CLAIM_DELAY, args[3])
                 self.lastValidateTime = tx.timestamp
         
-        
-        # Claims a random amount from a random nodeID to a random recipient. Since there's no real way
-        # to get the lengths of the input arrays to be the same most of the time, I'm going to have to
-        # use a random number to determine whether or not to concat all arrays to the
-        # length of the shortest so that we'll get mostly valid txs and maximise usefulness. The
-        # easiest random num to use is the length of the arrays themselves - I'm gonna use '5' as the
-        # magic shortest length that should trigger not concating for no particular reason
-        def rule_claimBatch(self, st_nodeIDs, st_receivers, st_f_amnt, st_sender):
-            signer = self._get_key_prob(AGG)
-            callDataNoSig = self.sm.claimBatch.encode_input(NULL_SIG_DATA, st_nodeIDs, st_receivers, st_f_amnt)
+
+        # Executes a random claim
+        def rule_executeClaim(self, st_nodeID, st_sender):
             inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber + 1, self.emissionPerBlock)
-            minLen = min(map(len, [st_nodeIDs, st_receivers, st_f_amnt]))
-            maxLen = max(map(len, [st_nodeIDs, st_receivers, st_f_amnt]))
+            claim = self.pendingClaims[st_nodeID]
 
-            if signer != self.keyIDToCurKeys[AGG]:
-                print('        REV_MSG_SIG rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
-                with reverts(REV_MSG_SIG):
-                    self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
-            elif minLen == 5 and minLen != maxLen:
-                print('        REV_MSG_SM_ARR_LEN rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
-                with reverts(REV_MSG_SM_ARR_LEN):
-                    self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
+            if not claim[2] <= chain.time() <= claim[3]:
+                print('        REV_MSG_NOT_ON_TIME rule_executeClaim', st_nodeID)
+                with reverts(REV_MSG_NOT_ON_TIME):
+                    self.sm.executeClaim(st_nodeID, {'from': st_sender})
+            elif self.flipBals[self.sm] + inflation < claim[0]:
+                print('        REV_MSG_EXCEED_BAL rule_executeClaim', st_nodeID)
+                with reverts(REV_MSG_EXCEED_BAL):
+                    self.sm.executeClaim(st_nodeID, {'from': st_sender})
             else:
-                st_nodeIDs = st_nodeIDs[:minLen]
-                st_receivers = st_receivers[:minLen]
-                st_f_amnt = st_f_amnt[:minLen]
-                minLen = trimToShortest([st_nodeIDs, st_receivers, st_f_amnt])
-                
-                callDataNoSig = self.sm.claimBatch.encode_input(NULL_SIG_DATA, st_nodeIDs, st_receivers, st_f_amnt)
+                print('                    rule_executeClaim', st_nodeID)
+                tx = self.sm.executeClaim(st_nodeID, {'from': st_sender})
 
-                if sum(st_f_amnt) > self.flipBals[self.sm] + inflation:
-                    print('        REV_MSG_EXCEED_BAL rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
-                    with reverts(REV_MSG_EXCEED_BAL):
-                        self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
-                else:
-                    print('                    rule_claimBatch', signer, st_nodeIDs, st_receivers, st_f_amnt, st_sender)
-                    tx = self.sm.claimBatch(signer.getSigData(callDataNoSig), st_nodeIDs, st_receivers, st_f_amnt, {'from': st_sender})
-
-                    self.lastValidateTime = tx.timestamp
-                    self.lastMintBlockNum = tx.block_number
-                    self.totalStake -= (sum(st_f_amnt) - inflation)
-                    self.flipBals[self.sm] -= (sum(st_f_amnt) - inflation)
-                    for i in range(minLen):
-                        self.flipBals[st_receivers[i]] += st_f_amnt[i]
+                self.flipBals[claim[1]] += claim[0]
+                self.flipBals[self.sm] -= (claim[0] - inflation)
+                self.totalStake -= (claim[0] - inflation)
+                self.lastMintBlockNum = tx.block_number
+                self.pendingClaims[st_nodeID] = NULL_CLAIM
         
-
+        
         # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setEmissionPerBlock(self, st_emission, st_sender):
@@ -728,6 +707,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             assert self.sm.getEmissionPerBlock() == self.emissionPerBlock
             assert self.sm.getMinimumStake() == self.minStake
             assert self.km.getLastValidateTime() == self.lastValidateTime
+            for nodeID, claim in self.pendingClaims.items():
+                assert self.sm.getPendingClaim(nodeID) == claim
 
 
         def invariant_inflation_calcs(self):

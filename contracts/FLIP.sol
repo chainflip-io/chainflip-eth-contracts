@@ -15,9 +15,9 @@ import "./abstract/Shared.sol";
 contract FLIP is ERC20, Ownable, Shared {
     
     constructor(
-        string memory name, 
-        string memory symbol, 
-        address receiver, 
+        string memory name,
+        string memory symbol,
+        address receiver,
         uint256 mintAmount
     ) ERC20(name, symbol) Ownable() {
         _mint(receiver, mintAmount);

@@ -16,6 +16,7 @@ KEYID_TO_NUM  = {AGG: 0, GOV: 1}
 NUM_TO_KEYID  = [AGG, GOV]
 INIT_TOKEN_SUPPLY = int(10**26)
 INIT_ETH_BAL = 100 * E_18
+SECS_PER_BLOCK = 13
 
 # Time in seconds
 HOUR = 60 * 60
@@ -80,12 +81,18 @@ REV_MSG_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
 # Targeting inflation at 15% per year (linear), assuming an average
 # block time of 13.1s
 EMISSION_PER_BLOCK = 5607877281367557723
-MIN_STAKE = (42069) * E_18
+MIN_STAKE = 40000 * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
+# 13292
+CLAIM_DELAY = 2 * DAY
+NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
 
-REV_MSG_MIN_STAKE = "StakeMan: small stake, peasant"
+REV_MSG_MIN_STAKE = "StakeMan: stake too small"
 REV_MSG_NO_FISH = "StakeMan: something smells fishy"
 REV_MSG_SM_ARR_LEN = "StakeMan: arrays not same length"
+REV_MSG_CLAIM_EXISTS = "StakeMan: a pending claim exists"
+REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry time too soon"
+REV_MSG_NOT_ON_TIME = "StakeMan: early, late, or execd"
 
 
 # -----Vault-----

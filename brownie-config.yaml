@@ -14,4 +14,4 @@ compiler:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
 
 hypothesis:
-  max_examples: 10
+  max_examples: 50
