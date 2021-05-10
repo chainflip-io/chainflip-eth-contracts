@@ -10,6 +10,9 @@ Additional information can be found in the [Ethereum Research](https://github.co
 For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential` 
 - [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
 
+
+TODO: Some ganache setup instructions?
+
 ## Usage
 
 First, ensure you have Poetry installed.
@@ -39,9 +42,13 @@ Brownie and `solidity-docgen` don't play very nice with each other. For this rea
 This isn't an ideal solution but it'll do for now.
 
 ## Useful commands
+
+From the repository root:
+
 `brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
 
 `brownie test --stateful false` runs all tests EXCEPT stateful tests
 
 `brownie test --stateful true` runs ONLY the stateful tests
 
+`brownie run deploy_and stake_alice_and_bob` will deploy the contracts to ganache and create 2 stake events
