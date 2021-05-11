@@ -197,6 +197,11 @@ Returns
 - The minimum stake (uint)
 
 
+<hr>
+
+## Events Emitted
+
+
 ## `Staked(uint256 nodeID, uint256 amount)`
 
 
