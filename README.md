@@ -45,3 +45,12 @@ This isn't an ideal solution but it'll do for now.
 
 `brownie test --stateful true` runs ONLY the stateful tests
 
+
+## Scripts
+
+# !!!DON'T USE THE PRIVATE KEYS ASSOCIATED WITH THE MNEMONIC IN SCRIPTS ON MAINNET - YOU WILL LOSE YOUR ETH INSTANTLY!!!
+
+The `testnet_and` script has some preset deploy and interaction functions for testing on testnets (currently only Ropsten has been set up). Deployment and fcns for interacting with existing deployments are separated in  You can run the following:
+
+`brownie run testnet_and init_deploy --network ropsten` deploys new CF contracts. Note that other fcns like `stake_alice_and_bob` won't use these new addresses by default - you'd have to paste in the new addresses in the file
+`brownie run testnet_and stake_alice_and_bob --network ropsten` creates 2 staking txs by 2 different stakers
