@@ -67,7 +67,6 @@ class Chainflip:
             print(f"\n💸 Seeding {addr} with FLIP. KERCHINGGG!!\n")
 
             self.flip.transfer(addr, MAX_TEST_STAKE, {'from': self.DEPLOYER})
-            self.flip.approve(self.stakeManager, MAX_TEST_STAKE, {'from': addr})
 
 
 def stake_alice_and_bob():

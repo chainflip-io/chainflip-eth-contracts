@@ -51,7 +51,7 @@ def test_setAggKeyByAggKey_fetchDepositEth_transfer(cf, DepositEth):
     # Fetch the deposit with new agg key
     tx = cf.vault.fetchDepositEth(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX)
     
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
     assert cf.BOB.balance() == recipientStartBal
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
@@ -63,7 +63,7 @@ def test_setAggKeyByAggKey_fetchDepositEth_transfer(cf, DepositEth):
 
     tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, recipient, TEST_AMNT)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == 0
     assert cf.BOB.balance() == recipientStartBal + TEST_AMNT
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
@@ -133,8 +133,8 @@ def test_setAggKeyByAggKey_fetchDepositEthBatch_transfer_fetchDepositBatchBatch_
     # Fetch the deposits with new agg key
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_2.getSigData(callDataNoSig), swapIDs)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr2)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
     assert cf.vault.balance() == 3 * TEST_AMNT
 
     # Transfer the eth out the vault
@@ -215,8 +215,8 @@ def test_fetchDepositEthBatch_setAggKeyByAggKey_transferBatch(cf, token, Deposit
     # Fetch the deposits with new agg key
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr2)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
     assert cf.vault.balance() == 3 * TEST_AMNT
 
     # Change agg keys
@@ -283,7 +283,7 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
 
     tranTotals = {tok: sum([tranAmounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in tokensList}
 
-    ethBals = [web3.eth.getBalance(str(recip)) for recip in tranRecipients]
+    ethBals = [web3.eth.get_balance(str(recip)) for recip in tranRecipients]
     tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in tranRecipients]
 
@@ -308,7 +308,7 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
         
         for i in range(len(tranRecipients)):
             if tranTokens[i] == ETH_ADDR:
-                assert web3.eth.getBalance(str(tranRecipients[i])) == ethBals[i] + tranAmounts[i]
+                assert web3.eth.get_balance(str(tranRecipients[i])) == ethBals[i] + tranAmounts[i]
             elif tranTokens[i] == token:
                 assert token.balanceOf(tranRecipients[i]) == tokenBals[i] + tranAmounts[i]
             elif tranTokens[i] == token2:

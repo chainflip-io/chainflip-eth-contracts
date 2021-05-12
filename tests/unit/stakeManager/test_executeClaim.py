@@ -26,8 +26,8 @@ def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff
     assert cf.flip.balanceOf(cf.stakeManager) == smStartBal
 
     # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.blockNumber + 1
-    inflation = getInflation(cf.stakeManager.tx.blockNumber, newLastMintBlockNum, EMISSION_PER_BLOCK)
+    newLastMintBlockNum = web3.eth.block_number + 1
+    inflation = getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager) + inflation
 
     chain.sleep(sleepTime)
@@ -43,7 +43,7 @@ def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff
         
         # Check things that should've changed
         assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
-        assert newLastMintBlockNum == tx.blockNumber
+        assert newLastMintBlockNum == tx.block_number
         assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
         assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
         assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
@@ -59,8 +59,8 @@ def test_executeClaim_min_delay(cf, claimRegistered):
     assert cf.stakeManager.getPendingClaim(JUNK_INT) == claim
     
     # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.blockNumber + 1
-    inflation = getInflation(cf.stakeManager.tx.blockNumber, newLastMintBlockNum, EMISSION_PER_BLOCK)
+    newLastMintBlockNum = web3.eth.block_number + 1
+    inflation = getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager) + inflation
 
     chain.sleep(CLAIM_DELAY)
@@ -68,7 +68,7 @@ def test_executeClaim_min_delay(cf, claimRegistered):
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(JUNK_INT) == NULL_CLAIM
-    assert newLastMintBlockNum == tx.blockNumber
+    assert newLastMintBlockNum == tx.block_number
     assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
     assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - claim[0]
     assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - claim[0]
@@ -84,8 +84,8 @@ def test_executeClaim_max_delay(cf, claimRegistered):
     assert cf.stakeManager.getPendingClaim(JUNK_INT) == claim
     
     # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.blockNumber + 1
-    inflation = getInflation(cf.stakeManager.tx.blockNumber, newLastMintBlockNum, EMISSION_PER_BLOCK)
+    newLastMintBlockNum = web3.eth.block_number + 1
+    inflation = getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager) + inflation
 
     chain.sleep(claim[3] - chain.time())
@@ -93,7 +93,7 @@ def test_executeClaim_max_delay(cf, claimRegistered):
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(JUNK_INT) == NULL_CLAIM
-    assert newLastMintBlockNum == tx.blockNumber
+    assert newLastMintBlockNum == tx.block_number
     assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
     assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - claim[0]
     assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - claim[0]

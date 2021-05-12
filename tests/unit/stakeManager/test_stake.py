@@ -17,7 +17,7 @@ def test_stake_amount_rand(cf, amount):
             cf,
             0,
             JUNK_INT,
-            cf.stakeManager.tx.blockNumber,
+            cf.stakeManager.tx.block_number,
             EMISSION_PER_BLOCK,
             MIN_STAKE,
             tx,
@@ -32,7 +32,7 @@ def test_stake_min(cf, stakedMin):
         cf,
         0,
         JUNK_INT,
-        cf.stakeManager.tx.blockNumber,
+        cf.stakeManager.tx.block_number,
         EMISSION_PER_BLOCK,
         MIN_STAKE,
         *stakedMin

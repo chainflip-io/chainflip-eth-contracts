@@ -18,9 +18,9 @@ from brownie import chain
 @given(blocks=strategy('uint256', max_value=10))
 def test_mintInflation(cf, stakedMin, web3, blocks):
     chain.mine(blocks)
-    initBlockNum = cf.stakeManager.tx.blockNumber
+    initBlockNum = cf.stakeManager.tx.block_number
 
-    inflation = getInflation(initBlockNum, web3.eth.blockNumber+1, EMISSION_PER_BLOCK)
+    inflation = getInflation(initBlockNum, web3.eth.block_number+1, EMISSION_PER_BLOCK)
     assert cf.stakeManager.getInflationInFuture(1) == inflation
     assert cf.stakeManager.getTotalStakeInFuture(1) == MIN_STAKE + inflation
     assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE
@@ -32,22 +32,22 @@ def test_mintInflation(cf, stakedMin, web3, blocks):
     assert cf.stakeManager.getInflationInFuture(0) == 0
     assert cf.stakeManager.getTotalStakeInFuture(0) == MIN_STAKE + inflation
     assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + inflation
-    assert cf.stakeManager.getLastMintBlockNum() == tx.blockNumber
+    assert cf.stakeManager.getLastMintBlockNum() == tx.block_number
 
     chain.mine(blocks)
 
-    inflation2 = getInflation(tx.blockNumber, web3.eth.blockNumber+1, EMISSION_PER_BLOCK)
+    inflation2 = getInflation(tx.block_number, web3.eth.block_number+1, EMISSION_PER_BLOCK)
     assert cf.stakeManager.getInflationInFuture(1) == inflation2
     assert cf.stakeManager.getTotalStakeInFuture(1) == MIN_STAKE + inflation + inflation2
     assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + inflation
-    assert cf.stakeManager.getLastMintBlockNum() == tx.blockNumber
+    assert cf.stakeManager.getLastMintBlockNum() == tx.block_number
 
     tx2 = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), EMISSION_PER_BLOCK, {"from": cf.ALICE})
 
     assert cf.stakeManager.getInflationInFuture(0) == 0
     assert cf.stakeManager.getTotalStakeInFuture(0) == MIN_STAKE + inflation + inflation2
     assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + inflation + inflation2
-    assert cf.stakeManager.getLastMintBlockNum() == tx2.blockNumber
+    assert cf.stakeManager.getLastMintBlockNum() == tx2.block_number
 
 
     # test transfer event

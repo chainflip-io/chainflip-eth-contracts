@@ -14,7 +14,7 @@ def test_fetchDepositEth(cf, DepositEth):
 
     # Fetch the deposit
     cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
 
 

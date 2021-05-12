@@ -12,7 +12,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
     callDataNoSig = cf.vault.fetchDepositEth.encode_input(NULL_SIG_DATA, JUNK_HEX)
     cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
 
     # Transfer the eth out the vault
@@ -68,8 +68,8 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(cf, token
     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, swapIDs)
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr2)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
     assert cf.vault.balance() == 3 * TEST_AMNT
 
     # Transfer the eth out the vault
@@ -160,8 +160,8 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, swapIDs)
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr2)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
     assert cf.vault.balance() == 3 * TEST_AMNT
 
     # Transfer the eth out the vault

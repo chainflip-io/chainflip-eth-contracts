@@ -12,12 +12,12 @@ def test_setMinStake(cf, newMinStake):
     assert cf.stakeManager.getMinimumStake() == newMinStake
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
     # Check things that shouldn't have changed
-    inflation = getInflation(cf.stakeManager.tx.blockNumber, tx.blockNumber, EMISSION_PER_BLOCK)
+    inflation = getInflation(cf.stakeManager.tx.block_number, tx.block_number, EMISSION_PER_BLOCK)
     assert cf.flip.balanceOf(cf.stakeManager) == 0
     assert cf.stakeManager.getInflationInFuture(0) == inflation
     assert cf.stakeManager.getTotalStakeInFuture(0) == inflation
     assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.blockNumber
+    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.block_number
 
 
 def test_setMinStake_rev_amount(cf):
@@ -62,7 +62,6 @@ def test_setMinStake_rev_noFish(cf, StakeManagerVulnerable, FLIP, web3, amount):
     # of StakeManager and getFLIPAddress is external
     smVuln.testSetFLIP(flipVuln)
     flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    flipVuln.approve(smVuln, MAX_TEST_STAKE, {'from': cf.ALICE})
     
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it

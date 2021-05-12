@@ -35,9 +35,7 @@ def cf(a, cfDeploy):
     cf.FR_DENICE = {"from": cf.DENICE}
 
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': cf.ALICE})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': cf.BOB})
 
     return cf
 
@@ -92,7 +90,6 @@ def vulnerableStakedStakeMan(cf, StakeManagerVulnerable, FLIP):
     # of StakeManager and getFLIPAddress is external
     smVuln.testSetFLIP(flipVuln)
     flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    flipVuln.approve(smVuln, MAX_TEST_STAKE, {'from': cf.ALICE})
     
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it

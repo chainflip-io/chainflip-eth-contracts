@@ -7,7 +7,7 @@ from brownie.test import given, strategy
 @given(blocksIntoFuture=strategy('uint256', max_value=int((2**256)/EMISSION_PER_BLOCK)))
 def test_getTotalStakeInFuture(cf, stakedMin, web3, blocksIntoFuture):
     _, amount = stakedMin
-    initBlockNum = cf.stakeManager.tx.blockNumber
-    currentBlockNum = web3.eth.blockNumber
+    initBlockNum = cf.stakeManager.tx.block_number
+    currentBlockNum = web3.eth.block_number
     assert cf.stakeManager.getTotalStakeInFuture(blocksIntoFuture) == \
         amount + getInflation(initBlockNum, currentBlockNum + blocksIntoFuture, EMISSION_PER_BLOCK)
