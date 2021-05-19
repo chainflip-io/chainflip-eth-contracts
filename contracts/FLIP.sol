@@ -1,10 +1,9 @@
 pragma solidity ^0.8.0;
 
 
-// import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
+import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./abstract/Shared.sol";
-import "./ERC777.sol";
 
 
 /**

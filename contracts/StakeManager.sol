@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./interfaces/IKeyManager.sol";
 import "./abstract/Shared.sol";
 import "./FLIP.sol";
-// import "./ERC1820Registry.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 
@@ -59,7 +58,6 @@ contract StakeManager is Shared, IERC777Recipient {
     uint48 constant public CLAIM_DELAY = 2 days;
 
     IERC1820Registry constant private _ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
-    // ERC1820Registry constant private _ERC1820_REGISTRY = new ERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
     address[] private _defaultOperators;
     bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256('ERC777TokensRecipient');
 
@@ -104,7 +102,6 @@ contract StakeManager is Shared, IERC777Recipient {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    event TestB(address a, address b, uint c);
     /**
      * @notice          Stake some FLIP and attribute it to a nodeID
      * @dev             Requires the staker to have called `approve` in FLIP
@@ -117,8 +114,7 @@ contract StakeManager is Shared, IERC777Recipient {
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
         uint balBefore = _FLIP.balanceOf(address(this));
-        emit TestB(msg.sender, address(this), amount);
-        _FLIP.operatorSend(msg.sender, address(this), amount, "", "");
+        _FLIP.operatorSend(msg.sender, address(this), amount, "", "stake");
         require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
 
         _totalStake += amount;
@@ -264,13 +260,12 @@ contract StakeManager is Shared, IERC777Recipient {
     function _mintInflation() private {
         if (block.number > _lastMintBlockNum) {
             uint amount = getInflationInFuture(0);
-            _FLIP.mint(address(this), amount, "", "");
+            _FLIP.mint(address(this), amount, "", "mint");
             _totalStake += amount;
             _lastMintBlockNum = block.number;
         }
     }
 
-    event Test(uint a, uint b, uint c);
     function tokensReceived(
         address _operator,
         address _from,
@@ -280,7 +275,6 @@ contract StakeManager is Shared, IERC777Recipient {
         bytes calldata _operatorData
     ) external override {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
-        emit Test(2, 1, 3);
     }
 
 
