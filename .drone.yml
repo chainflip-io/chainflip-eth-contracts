@@ -1,6 +1,36 @@
+kind: secret
+name: docker_username
+get:
+  path: repo-secret
+  name: docker_username
+---
+kind: secret
+name: docker_password
+get:
+  path: repo-secret
+  name: docker_password
+---
+kind: secret
+name: discord_webhook_id
+get:
+  path: repo-secret
+  name: discord_webhook_id
+---
+kind: secret
+name: discord_webhook_token
+get:
+  path: repo-secret
+  name: discord_webhook_token
+---
+kind: secret
+name: dockerconfigjson
+get:
+  path: dockerconfigjson
+  name: .dockerconfigjson
+---
 kind: pipeline
 name: chainflip-eth-contracts
-type: docker
+type: kubernetes
 
 steps:
   - name: build
@@ -34,7 +64,7 @@ image_pull_secrets:
 ---
 kind: pipeline
 name: chainflip-eth-contracts-nightly-stateful
-type: docker
+type: kubernetes
 
 steps:
   - name: test
