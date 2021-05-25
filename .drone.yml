@@ -105,6 +105,6 @@ trigger:
   cron:
     - nightly
 
-node:
-  builder: "true"
+node_selector:
+  type: ci
 
