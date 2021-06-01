@@ -61,6 +61,14 @@ trigger:
 image_pull_secrets:
   - dockerconfigjson
 
+node_selector:
+  type: ci
+
+tolerations:
+  - key: "workloadKind"
+    operator: "Equal"
+    value: "ci"
+
 ---
 kind: pipeline
 name: chainflip-eth-contracts-nightly-stateful
@@ -108,3 +116,7 @@ trigger:
 node_selector:
   type: ci
 
+tolerations:
+  - key: "workloadKind"
+    operator: "Equal"
+    value: "ci"
