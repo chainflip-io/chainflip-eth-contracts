@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 
+import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./abstract/Shared.sol";
 import "./FLIP.sol";
@@ -32,7 +33,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 *           infinite tokens.
 * @author   Quantaf1re (James Key)
 */
-contract StakeManager is Shared, IERC777Recipient {
+contract StakeManager is Shared, IStakeManager, IERC777Recipient {
 
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
@@ -62,17 +63,18 @@ contract StakeManager is Shared, IERC777Recipient {
     bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256('ERC777TokensRecipient');
 
 
-    struct Claim {
-        uint amount;
-        address staker;
-        // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
-        // into a single 256 bit slot
-        uint48 startTime;
-        uint48 expiryTime;
-    }
+    // Defined in IStakeManager, just here for convenience
+    // struct Claim {
+    //     uint amount;
+    //     address staker;
+    //     // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
+    //     // into a single 256 bit slot
+    //     uint48 startTime;
+    //     uint48 expiryTime;
+    // }
 
 
-    event Staked(uint indexed nodeID, uint amount);
+    event Staked(uint indexed nodeID, uint amount, address returnAddr);
     event ClaimRegistered(
         uint indexed nodeID,
         uint amount,
@@ -107,8 +109,14 @@ contract StakeManager is Shared, IERC777Recipient {
      * @dev             Requires the staker to have called `approve` in FLIP
      * @param amount    The amount of stake to be locked up
      * @param nodeID    The nodeID of the staker
+     * @param returnAddr    The address which the staker requires to be used
+     *                      when claiming back FLIP for `nodeID`
      */
-    function stake(uint nodeID, uint amount) external nzUint(nodeID) noFish {
+    function stake(
+        uint nodeID,
+        uint amount,
+        address returnAddr
+    ) external override nzUint(nodeID) nzAddr(returnAddr) noFish {
         require(amount >= _minStake, "StakeMan: stake too small");
 
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
@@ -118,7 +126,7 @@ contract StakeManager is Shared, IERC777Recipient {
         require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
 
         _totalStake += amount;
-        emit Staked(nodeID, amount);
+        emit Staked(nodeID, amount, returnAddr);
     }
 
     /**
@@ -139,7 +147,7 @@ contract StakeManager is Shared, IERC777Recipient {
         uint amount,
         address staker,
         uint48 expiryTime
-    ) external nzUint(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
+    ) external override nzUint(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -177,9 +185,7 @@ contract StakeManager is Shared, IERC777Recipient {
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(
-        uint nodeID
-    ) external noFish {
+    function executeClaim(uint nodeID) external override noFish {
         Claim memory claim = _pendingClaims[nodeID];
         require(
             uint(block.timestamp) >= claim.startTime &&
@@ -190,9 +196,9 @@ contract StakeManager is Shared, IERC777Recipient {
         // If time has elapsed since the last mint, printer go brrrr
         _mintInflation();
 
-        // Send the tokens and update _totalStake
-        require(_FLIP.transfer(claim.staker, claim.amount));
+        // Update _totalStake and send tokens
         _totalStake -= claim.amount;
+        require(_FLIP.transfer(claim.staker, claim.amount));
 
         // Housekeeping
         delete _pendingClaims[nodeID];
@@ -209,7 +215,7 @@ contract StakeManager is Shared, IERC777Recipient {
     function setEmissionPerBlock(
         SigData calldata sigData,
         uint newEmissionPerBlock
-    ) external nzUint(newEmissionPerBlock) noFish validSig(
+    ) external override nzUint(newEmissionPerBlock) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -238,7 +244,7 @@ contract StakeManager is Shared, IERC777Recipient {
     function setMinStake(
         SigData calldata sigData,
         uint newMinStake
-    ) external nzUint(newMinStake) noFish validSig(
+    ) external override nzUint(newMinStake) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -288,7 +294,7 @@ contract StakeManager is Shared, IERC777Recipient {
      * @notice  Get the KeyManager address/interface that's used to validate sigs
      * @return  The KeyManager (IKeyManager)
      */
-    function getKeyManager() external view returns (IKeyManager) {
+    function getKeyManager() external override view returns (IKeyManager) {
         return _keyManager;
     }
 
@@ -296,7 +302,7 @@ contract StakeManager is Shared, IERC777Recipient {
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external view returns (address) {
+    function getFLIPAddress() external override view returns (address) {
         return address(_FLIP);
     }
 
@@ -304,7 +310,7 @@ contract StakeManager is Shared, IERC777Recipient {
      * @notice  Get the last time that claim() was called, in unix time
      * @return  The time of the last claim (uint)
      */
-    function getLastMintBlockNum() external view returns (uint) {
+    function getLastMintBlockNum() external override view returns (uint) {
         return _lastMintBlockNum;
     }
 
@@ -312,7 +318,7 @@ contract StakeManager is Shared, IERC777Recipient {
      * @notice  Get the emission rate of FLIP in seconds
      * @return  The rate of FLIP emission (uint)
      */
-    function getEmissionPerBlock() external view returns (uint) {
+    function getEmissionPerBlock() external override view returns (uint) {
         return _emissionPerBlock;
     }
 
@@ -324,7 +330,7 @@ contract StakeManager is Shared, IERC777Recipient {
      *              calculate the inflation at
      * @return  The amount of FLIP inflation
      */
-    function getInflationInFuture(uint blocksIntoFuture) public view returns (uint) {
+    function getInflationInFuture(uint blocksIntoFuture) public override view returns (uint) {
         return (block.number + blocksIntoFuture - _lastMintBlockNum) * _emissionPerBlock;
     }
 
@@ -338,7 +344,7 @@ contract StakeManager is Shared, IERC777Recipient {
      *              is at height 15, input 5
      * @return  The total of stake + inflation at specified blocks in the future from now
      */
-    function getTotalStakeInFuture(uint blocksIntoFuture) external view returns (uint) {
+    function getTotalStakeInFuture(uint blocksIntoFuture) external override view returns (uint) {
         // return _totalStake;
         return _totalStake + getInflationInFuture(blocksIntoFuture);
     }
@@ -348,7 +354,7 @@ contract StakeManager is Shared, IERC777Recipient {
      *          attempt in the auction to be valid - used to prevent sybil attacks
      * @return  The minimum stake (uint)
      */
-    function getMinimumStake() external view returns (uint) {
+    function getMinimumStake() external override view returns (uint) {
         return _minStake;
     }
 
@@ -358,7 +364,7 @@ contract StakeManager is Shared, IERC777Recipient {
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
      * @return  The claim (Claim)
      */
-    function getPendingClaim(uint nodeID) external view returns (Claim memory) {
+    function getPendingClaim(uint nodeID) external override view returns (Claim memory) {
         return _pendingClaims[nodeID];
     }
 
