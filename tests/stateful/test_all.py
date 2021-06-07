@@ -258,7 +258,6 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             self._vault_transfer(self.ethBals, ETH_ADDR, st_sender, st_recip, st_eth_amount)
 
 
-
         def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
             self._vault_transfer(self.tokenABals, self.tokenA, st_sender, st_recip, st_token_amount)
 

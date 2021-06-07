@@ -58,7 +58,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.allBatch.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 fetchSwapIDs,
                 fetchTokenAddrs,
                 tranTokenAddrs,
@@ -116,7 +116,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 tokenAddr,
                 recipient,
                 amount
@@ -149,7 +149,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transferBatch.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 tokenAddrs,
                 recipients,
                 amounts
@@ -229,7 +229,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEth.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 swapID
             )
         ),
@@ -255,7 +255,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEthBatch.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 swapIDs
             )
         ),
@@ -285,7 +285,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 swapID,
                 tokenAddr
             )
@@ -314,7 +314,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositTokenBatch.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 swapIDs,
                 tokenAddrs
             )

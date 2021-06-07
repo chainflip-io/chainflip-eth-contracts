@@ -25,6 +25,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     // Can't enable this line because the compiler errors
     // with "Constants of non-value type not yet implemented."
     // SigData private constant _NULL_SIG_DATA = SigData(0, 0);
+    mapping(uint => bool) private _nonceUsed;
 
 
     event KeyChange(
@@ -69,6 +70,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         KeyID keyID
     ) public override returns (bool) {
         Key memory key = _keyIDToKey[keyID];
+        require(!_nonceUsed[sigData.nonce], "KeyManager: nonce already used");
         require(sigData.msgHash == uint(contractMsgHash), "KeyManager: invalid msgHash");
         require(
             verifySignature(
@@ -82,6 +84,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         );
         
         _lastValidateTime = block.timestamp;
+        _nonceUsed[sigData.nonce] = true;
+        
         return true;
     }
 
@@ -100,7 +104,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
-            SigData(0, 0),
+            SigData(0, 0, sigData.nonce),
             newKey
         )),
         KeyID.Agg
@@ -124,7 +128,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithGovKey.selector,
-            SigData(0, 0),
+            SigData(0, 0, sigData.nonce),
             newKey
         )),
         KeyID.Gov
@@ -148,7 +152,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setGovKeyWithGovKey.selector,
-            SigData(0, 0),
+            SigData(0, 0, sigData.nonce),
             newKey
         )),
         KeyID.Gov

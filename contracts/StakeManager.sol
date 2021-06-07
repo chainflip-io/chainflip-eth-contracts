@@ -152,7 +152,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         keccak256(
             abi.encodeWithSelector(
                 this.registerClaim.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 nodeID,
                 amount,
                 staker,
@@ -220,7 +220,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         keccak256(
             abi.encodeWithSelector(
                 this.setEmissionPerBlock.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 newEmissionPerBlock
             )
         ),
@@ -249,7 +249,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         keccak256(
             abi.encodeWithSelector(
                 this.setMinStake.selector,
-                SigData(0, 0),
+                SigData(0, 0, sigData.nonce),
                 newMinStake
             )
         ),
