@@ -22,7 +22,7 @@ def test_transferBatch(cf, token, token2, recipients, amounts, sender):
     tokenBals = [token.balanceOf(recip) for recip in recipients]
     token2Bals = [token2.balanceOf(recip) for recip in recipients]
 
-    callDataNoSig = cf.vault.transferBatch.encode_input(NULL_SIG_DATA, tokens, recipients, amounts)
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), tokens, recipients, amounts)
     tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), tokens, recipients, amounts, {'from': sender})
 
     for i in range(len(recipients)):
@@ -46,14 +46,14 @@ def test_transferBatch_rev_array_length(cf, token, token2, recipients, amounts, 
     # Make sure the lengths are always different somewhere
     k = len(amounts) if len(recipients) != len(amounts) else len(amounts) + randK
     tokens = choices([ETH_ADDR, token, token2], k=k)
-    callDataNoSig = cf.vault.transferBatch.encode_input(NULL_SIG_DATA, tokens, recipients, amounts)
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), tokens, recipients, amounts)
 
     with reverts(REV_MSG_V_ARR_LEN):
         cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), tokens, recipients, amounts)
 
 
 def test_transferBatch_rev_msgHash(cf):
-    callDataNoSig = cf.vault.transferBatch.encode_input(NULL_SIG_DATA, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
 
@@ -62,7 +62,7 @@ def test_transferBatch_rev_msgHash(cf):
 
 
 def test_transferBatch_rev_sig(cf):
-    callDataNoSig = cf.vault.transferBatch.encode_input(NULL_SIG_DATA, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1
 

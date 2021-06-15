@@ -13,13 +13,13 @@
 
 
 # def test_stake(a, cfDeploy):
-#     tx = cfDeploy.stakeManager.stake(JUNK_INT, MIN_STAKE, {'from': a[0]})
+#     tx = cfDeploy.stakeManager.stake(JUNK_INT, MIN_STAKE, NON_ZERO_ADDR, {'from': a[0]})
 #     print(f'Stake: {tx.gas_used}')
 
 
 # def test_executeClaim(a, cfDeploy):
 #     args = (JUNK_INT, TEST_AMNT, a[0], chain.time() + CLAIM_DELAY + 10)
-#     callDataNoSig = cfDeploy.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
+#     callDataNoSig = cfDeploy.stakeManager.registerClaim.encode_input(agg_null_sig(), *args)
 #     cfDeploy.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args, {'from': a[0]})
 
 #     chain.sleep(CLAIM_DELAY)
@@ -28,6 +28,6 @@
 
 
 # def test_setEmissionPerBlock(a, cfDeploy):
-#     callDataNoSig = cfDeploy.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, JUNK_INT)
+#     callDataNoSig = cfDeploy.stakeManager.setEmissionPerBlock.encode_input(agg_null_sig(), JUNK_INT)
 #     tx = cfDeploy.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_INT, {'from': a[0]})
 #     print(f'setEmissionPerBlock: {tx.gas_used}')

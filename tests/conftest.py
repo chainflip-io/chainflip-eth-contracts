@@ -50,7 +50,7 @@ def schnorrTest(cf, SchnorrSECP256K1Test):
 @pytest.fixture(scope="module")
 def stakedMin(cf):
     amount = MIN_STAKE
-    return cf.stakeManager.stake(JUNK_INT, amount, {'from': cf.ALICE}), amount
+    return cf.stakeManager.stake(JUNK_INT, amount, NON_ZERO_ADDR, {'from': cf.ALICE}), amount
 
 
 # Register a claim to use executeClaim with
@@ -60,7 +60,7 @@ def claimRegistered(cf, stakedMin):
     expiryTime = chain.time() + CLAIM_DELAY + 5
     args = (JUNK_INT, amount, cf.DENICE, expiryTime)
 
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), *args)
     tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
 
     return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
@@ -93,7 +93,7 @@ def vulnerableStakedStakeMan(cf, StakeManagerVulnerable, FLIP):
     
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it
-    smVuln.stake(JUNK_INT, MIN_STAKE, {'from': cf.ALICE})
+    smVuln.stake(JUNK_INT, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
 
     return smVuln, flipVuln
 

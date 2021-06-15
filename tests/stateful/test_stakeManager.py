@@ -5,7 +5,7 @@ from utils import *
 from hypothesis import strategies as hypStrat
 
 
-settings = {"stateful_step_count": 100, "max_examples": 25}
+settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
 # Stateful test for all functions in the StakeManager
@@ -34,7 +34,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             super().__init__(cls, a, cfDeploy)
 
             # Set the initial minStake to be different than the default in cfDeploy
-            callDataNoSig = cls.sm.setMinStake.encode_input(NULL_SIG_DATA, INIT_MIN_STAKE)
+            callDataNoSig = cls.sm.setMinStake.encode_input(gov_null_sig(), INIT_MIN_STAKE)
             cls.sm.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), INIT_MIN_STAKE)
 
             cls.stakers = a[:NUM_STAKERS]
@@ -64,6 +64,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Variables that will be a random value with each fcn/rule called
 
         st_sender = strategy("address")
+        st_returnAddr = strategy("address")
         st_staker = strategy("address", length=NUM_STAKERS)
         # +1 since nodeID==0 is unusable
         st_nodeID = strategy("uint", max_value=NUM_STAKERS)
@@ -82,22 +83,22 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # def rule_claimBatch(self, st_signer_agg, st_nodeIDs, st_receivers, st_amounts, st_sender):
 
         # Stakes a random amount from a random staker to a random nodeID
-        def rule_stake(self, st_staker, st_nodeID, st_amount):
+        def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
             if st_nodeID == 0:
                 print('        NODEID rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.stake(st_nodeID, st_amount, {'from': st_staker})
+                    self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount < self.minStake:
                 print('        MIN_STAKE rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_MIN_STAKE):
-                    self.sm.stake(st_nodeID, st_amount, {'from': st_staker})
+                    self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount > self.flipBals[st_staker]:
                 print('        REV_MSG_ERC777_EXCEED_BAL rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_ERC777_EXCEED_BAL):
-                    self.sm.stake(st_nodeID, st_amount, {'from': st_staker})
+                    self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             else:
                 print('                    rule_stake', st_staker, st_nodeID, st_amount/E_18)
-                self.sm.stake(st_nodeID, st_amount, {'from': st_staker})
+                self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
 
                 self.flipBals[st_staker] -= st_amount
                 self.flipBals[self.sm] += st_amount
@@ -107,7 +108,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(self, st_signer_agg, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff):
             args = (st_nodeID, st_amount, st_staker, chain.time() + st_expiry_time_diff)
-            callDataNoSig = self.sm.registerClaim.encode_input(NULL_SIG_DATA, *args)
+            nullSig = agg_null_sig() if st_signer_agg.keyID == AGG else gov_null_sig()
+            callDataNoSig = self.sm.registerClaim.encode_input(nullSig, *args)
 
             if st_nodeID == 0:
                 print('        NODEID rule_registerClaim', *args)
@@ -177,7 +179,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setEmissionPerBlock(self, st_emission, st_signer_gov, st_sender):
-            callDataNoSig = self.sm.setEmissionPerBlock.encode_input(NULL_SIG_DATA, st_emission)
+            nullSig = agg_null_sig() if st_signer_gov.keyID == AGG else gov_null_sig()
+            callDataNoSig = self.sm.setEmissionPerBlock.encode_input(nullSig, st_emission)
 
             if st_emission == 0:
                 print('        REV_MSG_NZ_UINT rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
@@ -201,7 +204,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setMinStake(self, st_minStake, st_signer_gov, st_sender):
-            callDataNoSig = self.sm.setMinStake.encode_input(NULL_SIG_DATA, st_minStake)
+            nullSig = agg_null_sig() if st_signer_gov.keyID == AGG else gov_null_sig()
+            callDataNoSig = self.sm.setMinStake.encode_input(nullSig, st_minStake)
 
             if st_minStake == 0:
                 print('        REV_MSG_NZ_UINT rule_setMinstake', st_minStake, st_signer_gov, st_sender)

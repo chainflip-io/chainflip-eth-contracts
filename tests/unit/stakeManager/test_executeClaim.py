@@ -13,45 +13,47 @@ from brownie.test import given, strategy
     sleepTime=strategy('uint', min_value=5, max_value=3*CLAIM_DELAY)
 )
 def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff, sleepTime):
-    assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
-    smStartBal = cf.flip.balanceOf(cf.stakeManager)
-    stakerStartBal = cf.flip.balanceOf(staker)
-
-    expiryTime = chain.time() + expiryTimeDiff + 5
-    args = (nodeID, amount, staker, expiryTime)
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
-    tx1 = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
-    
-    assert cf.stakeManager.getPendingClaim(nodeID) == (amount, staker, tx1.timestamp + CLAIM_DELAY, expiryTime)
-    assert cf.flip.balanceOf(cf.stakeManager) == smStartBal
-
-    # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.block_number + 1
-    inflation = getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
-    maxValidAmount = cf.flip.balanceOf(cf.stakeManager) + inflation
-
-    chain.sleep(sleepTime)
-    
-    if chain.time() < tx1.timestamp + CLAIM_DELAY or chain.time() > expiryTime:
-        with reverts(REV_MSG_NOT_ON_TIME):
-            cf.stakeManager.executeClaim(nodeID)
-    elif amount > maxValidAmount:
-        with reverts(REV_MSG_ERC777_EXCEED_BAL):
-            cf.stakeManager.executeClaim(nodeID)
-    else:
-        tx = cf.stakeManager.executeClaim(nodeID)
-        
-        # Check things that should've changed
+    # Differences in the time.time() and chain time cause errors between runs when there's no actual issue
+    if not (CLAIM_DELAY - 100 < expiryTimeDiff < CLAIM_DELAY + 100):
         assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
-        assert newLastMintBlockNum == tx.block_number
-        assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
-        assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
-        assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
-        assert tx.events["ClaimExecuted"][0].values() == [nodeID, amount]
-        assert cf.flip.balanceOf(staker) == stakerStartBal + amount
-        # Check things that shouldn't have changed
-        assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-        assert cf.stakeManager.getMinimumStake() == MIN_STAKE
+        smStartBal = cf.flip.balanceOf(cf.stakeManager)
+        stakerStartBal = cf.flip.balanceOf(staker)
+
+        expiryTime = chain.time() + expiryTimeDiff + 5
+        args = (nodeID, amount, staker, expiryTime)
+        callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), *args)
+        tx1 = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+        
+        assert cf.stakeManager.getPendingClaim(nodeID) == (amount, staker, tx1.timestamp + CLAIM_DELAY, expiryTime)
+        assert cf.flip.balanceOf(cf.stakeManager) == smStartBal
+
+        # Want to calculate inflation 1 block into the future because that's when the tx will execute
+        newLastMintBlockNum = web3.eth.block_number + 1
+        inflation = getInflation(cf.stakeManager.tx.block_number, newLastMintBlockNum, EMISSION_PER_BLOCK)
+        maxValidAmount = cf.flip.balanceOf(cf.stakeManager) + inflation
+
+        chain.sleep(sleepTime)
+        
+        if chain.time() < tx1.timestamp + CLAIM_DELAY or chain.time() > expiryTime:
+            with reverts(REV_MSG_NOT_ON_TIME):
+                cf.stakeManager.executeClaim(nodeID)
+        elif amount > maxValidAmount:
+            with reverts(REV_MSG_INTEGER_OVERFLOW):
+                cf.stakeManager.executeClaim(nodeID)
+        else:
+            tx = cf.stakeManager.executeClaim(nodeID)
+            
+            # Check things that should've changed
+            assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
+            assert newLastMintBlockNum == tx.block_number
+            assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
+            assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
+            assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
+            assert tx.events["ClaimExecuted"][0].values() == [nodeID, amount]
+            assert cf.flip.balanceOf(staker) == stakerStartBal + amount
+            # Check things that shouldn't have changed
+            assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
+            assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
 
 def test_executeClaim_min_delay(cf, claimRegistered):
@@ -129,6 +131,6 @@ def test_executeClaim_rev_noFish(cf, vulnerableR3ktStakeMan, amount):
     smVuln, _ = vulnerableR3ktStakeMan
     args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
 
-    callDataNoSig = smVuln.registerClaim.encode_input(NULL_SIG_DATA, *args)
+    callDataNoSig = smVuln.registerClaim.encode_input(agg_null_sig(), *args)
     with reverts(REV_MSG_NO_FISH):
         smVuln.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)

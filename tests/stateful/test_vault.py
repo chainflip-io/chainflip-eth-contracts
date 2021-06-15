@@ -5,7 +5,7 @@ from hypothesis import strategies as hypStrat
 from random import choices
 
 
-settings = {"stateful_step_count": 100, "max_examples": 25}
+settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
 # Stateful test for all functions in the Vault
@@ -97,7 +97,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             tranTokens = choices(self.tokensList, k=tranMinLen)
             tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in self.tokensList}
 
-            callDataNoSig = self.v.allBatch.encode_input(NULL_SIG_DATA, st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
+            callDataNoSig = self.v.allBatch.encode_input(agg_null_sig(), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
 
             if tranTotals[ETH_ADDR] - fetchEthTotal > self.ethBals[self.v.address] or \
             tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v.address] or \
@@ -145,7 +145,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            callDataNoSig = self.v.transfer.encode_input(NULL_SIG_DATA, tokenAddr, st_recip, st_eth_amount)
+            callDataNoSig = self.v.transfer.encode_input(agg_null_sig(), tokenAddr, st_recip, st_eth_amount)
             
             if st_eth_amount == 0:
                 print('        REV_MSG_NZ_UINT _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount)
@@ -183,7 +183,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             tokens = choices(self.tokensList, k=minLen)
             tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tokens) if x == tok]) for tok in self.tokensList}
             
-            callDataNoSig = self.v.transferBatch.encode_input(NULL_SIG_DATA, tokens, st_recips, st_eth_amounts)
+            callDataNoSig = self.v.transferBatch.encode_input(agg_null_sig(), tokens, st_recips, st_eth_amounts)
             
             if tranTotals[ETH_ADDR] > self.ethBals[self.v.address] or \
             tranTotals[self.tokenA] > self.tokenABals[self.v.address] or \
@@ -249,7 +249,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
 
         # Fetch the ETH deposit of a random create2
         def rule_fetchDepositEth(self, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositEth.encode_input(NULL_SIG_DATA, st_swapID)
+            callDataNoSig = self.v.fetchDepositEth.encode_input(agg_null_sig(), st_swapID)
 
             if st_swapID == 0:
                 print('        REV_MSG_NZ_UINT rule_fetchDepositEth', st_sender, st_swapID)
@@ -269,7 +269,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             addrs = [getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in st_swapIDs]
             total = sum([web3.eth.get_balance(addr) for addr in addrs])
 
-            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, st_swapIDs)
+            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(agg_null_sig(), st_swapIDs)
             print('                    rule_fetchDepositEthBatch', st_sender, st_swapIDs)
             self.v.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapIDs)
 
@@ -280,7 +280,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositToken.encode_input(NULL_SIG_DATA, st_swapID, token)
+            callDataNoSig = self.v.fetchDepositToken.encode_input(agg_null_sig(), st_swapID, token)
 
             if st_swapID == 0:
                 print('        REV_MSG_NZ_UINT _fetchDepositToken', token.address, st_sender, st_swapID)
@@ -317,13 +317,13 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             maxLen = max(map(len, [st_swapIDs, st_tokens]))
 
             if minLen == 3 and minLen != maxLen:
-                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, st_swapIDs, st_tokens)
+                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(agg_null_sig(), st_swapIDs, st_tokens)
                 print('        rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens)
                 with reverts(REV_MSG_V_ARR_LEN):
                     self.v.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapIDs, st_tokens)
             else:
                 trimToShortest([st_swapIDs, st_tokens])
-                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, st_swapIDs, st_tokens)
+                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(agg_null_sig(), st_swapIDs, st_tokens)
 
                 print('                    rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens)
                 self.v.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), st_swapIDs, st_tokens)

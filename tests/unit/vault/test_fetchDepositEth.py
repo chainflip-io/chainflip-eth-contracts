@@ -10,7 +10,7 @@ def test_fetchDepositEth(cf, DepositEth):
     assert cf.vault.balance() == 0
 
     # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(NULL_SIG_DATA, JUNK_HEX)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX)
 
     # Fetch the deposit
     cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
@@ -19,7 +19,7 @@ def test_fetchDepositEth(cf, DepositEth):
 
 
 def test_fetchDepositEth_rev_swapID(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(NULL_SIG_DATA, "")
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), "")
 
     with reverts(REV_MSG_NZ_BYTES32):
         cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), "")
@@ -27,7 +27,7 @@ def test_fetchDepositEth_rev_swapID(cf):
 
 
 def test_fetchDepositEth_rev_msgHash(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(NULL_SIG_DATA, JUNK_HEX)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX)
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
@@ -37,7 +37,7 @@ def test_fetchDepositEth_rev_msgHash(cf):
 
 
 def test_fetchDepositEth_rev_sig(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(NULL_SIG_DATA, JUNK_HEX)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX)
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1

@@ -9,7 +9,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
 
     assert cf.vault.balance() == 0
 
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(NULL_SIG_DATA, JUNK_HEX)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX)
     cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
@@ -19,7 +19,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
     ethStartBalVault = cf.vault.balance()
     tokenStartBalRecipient = cf.ALICE.balance()
 
-    callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, cf.ALICE, TEST_AMNT)
+    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
     cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
     
     assert cf.vault.balance() - ethStartBalVault == -TEST_AMNT
@@ -37,7 +37,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
 
     assert token.balanceOf(cf.vault) == 0
 
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(NULL_SIG_DATA, JUNK_HEX, token)
+    callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX, token)
     cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, token)
     
     assert token.balanceOf(depositAddr) == 0
@@ -48,7 +48,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
     tokenStartBalVault = token.balanceOf(cf.vault)
     tokenStartBalRecipient = token.balanceOf(cf.ALICE)
 
-    callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, token, cf.ALICE, amount)
+    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), token, cf.ALICE, amount)
     cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), token, cf.ALICE, amount)
     
     assert token.balanceOf(cf.vault) - tokenStartBalVault == -amount
@@ -65,7 +65,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(cf, token
 
     assert cf.vault.balance() == 0
 
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, swapIDs)
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
@@ -76,7 +76,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(cf, token
     ethStartBalVault = cf.vault.balance()
     ethStartBalRecipient = cf.ALICE.balance()
 
-    callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, ETH_ADDR, cf.ALICE, TEST_AMNT)
+    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
     cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
     
     assert cf.vault.balance() - ethStartBalVault == -TEST_AMNT
@@ -96,7 +96,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(cf, token
 
     assert token.balanceOf(cf.vault) == 0
 
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, swapIDs, [token, token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), swapIDs, [token, token])
     cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs, [token, token])
     
     assert token.balanceOf(depositAddr) == 0
@@ -107,7 +107,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(cf, token
     tokenStartBalVault = token.balanceOf(cf.vault)
     tokenStartBalRecipient = token.balanceOf(cf.ALICE)
 
-    callDataNoSig = cf.vault.transfer.encode_input(NULL_SIG_DATA, token, cf.ALICE, amount)
+    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), token, cf.ALICE, amount)
     cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), token, cf.ALICE, amount)
     
     assert token.balanceOf(cf.vault) - tokenStartBalVault == -amount
@@ -125,7 +125,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
 
     assert token.balanceOf(cf.vault) == 0
 
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, swapIDs, [token, token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), swapIDs, [token, token])
     cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs, [token, token])
     
     assert token.balanceOf(depositAddr) == 0
@@ -138,7 +138,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     tokenStartBalAlice = token.balanceOf(cf.ALICE)
     tokenStartBalBob = token.balanceOf(cf.BOB)
 
-    callDataNoSig = cf.vault.transferBatch.encode_input(NULL_SIG_DATA, [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     
     assert token.balanceOf(cf.vault) - tokenStartBalVault == - amountAlice - amountBob
@@ -146,6 +146,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     assert token.balanceOf(cf.BOB) - tokenStartBalBob == amountBob
 
     # Transferring out again should fail
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     with reverts(REV_MSG_ERC20_EXCEED_BAL):
         cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     
@@ -157,7 +158,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
 
     assert cf.vault.balance() == 0
 
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, swapIDs)
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
@@ -171,7 +172,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     ethStartBalAlice = cf.ALICE.balance()
     ethStartBalBob = cf.BOB.balance()
 
-    callDataNoSig = cf.vault.transferBatch.encode_input(NULL_SIG_DATA, [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     
     assert cf.vault.balance() - ethStartBalVault == - amountAlice - amountBob
@@ -190,7 +191,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
 
     assert token.balanceOf(cf.vault) == 0
 
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, swapIDs, [token, token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), swapIDs, [token, token])
     cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs, [token, token])
     
     assert token.balanceOf(depositAddr) == 0
@@ -203,7 +204,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
     tokenStartBalAlice = token.balanceOf(cf.ALICE)
     tokenStartBalBob = token.balanceOf(cf.BOB)
 
-    callDataNoSig = cf.vault.transferBatch.encode_input(NULL_SIG_DATA, [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     
     assert token.balanceOf(cf.vault) - tokenStartBalVault == - amountAlice - amountBob
@@ -211,6 +212,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
     assert token.balanceOf(cf.BOB) - tokenStartBalBob == amountBob
 
     # Transferring out again should fail
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     with reverts(REV_MSG_ERC20_EXCEED_BAL):
         cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
     
@@ -236,7 +238,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
 
 
     callDataNoSig = cf.vault.allBatch.encode_input(
-        NULL_SIG_DATA,
+        agg_null_sig(),
         swapIDs,
         [ETH_ADDR, ETH_ADDR],
         [ETH_ADDR, ETH_ADDR, token],

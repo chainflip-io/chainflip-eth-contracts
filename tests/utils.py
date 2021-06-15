@@ -38,3 +38,10 @@ def trimToShortest(lists):
         del l[minLen:]
     
     return minLen
+
+
+def getNonce(keyID):
+    if keyID == AGG:
+        return agg_nonce
+    elif keyID == GOV:
+        return gov_nonce

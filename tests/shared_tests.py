@@ -20,7 +20,7 @@ def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
     tx = cf.keyManager.setAggKeyWithAggKey(AGG_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
@@ -33,7 +33,7 @@ def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
-    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(gov_null_sig(), AGG_SIGNER_2.getPubData())
     tx = cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
@@ -46,7 +46,7 @@ def setGovKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
-    callDataNoSig = cf.keyManager.setGovKeyWithGovKey.encode_input(NULL_SIG_DATA, GOV_SIGNER_2.getPubData())
+    callDataNoSig = cf.keyManager.setGovKeyWithGovKey.encode_input(gov_null_sig(), GOV_SIGNER_2.getPubData())
     tx = cf.keyManager.setGovKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), GOV_SIGNER_2.getPubData())
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
@@ -58,7 +58,8 @@ def setGovKeyWithGovKey_test(cf):
 def setKey_rev_pubKeyX_test(cf, fcn, signer):
     newKey = AGG_SIGNER_2.getPubData()
     newKey[0] = 0
-    callDataNoSig = fcn.encode_input(NULL_SIG_DATA, newKey)
+    nullSig = agg_null_sig() if signer.keyID == AGG else gov_null_sig()
+    callDataNoSig = fcn.encode_input(nullSig, newKey)
     with reverts(REV_MSG_PUBKEYX):
         fcn(signer.getSigData(callDataNoSig), newKey)
 
@@ -66,13 +67,15 @@ def setKey_rev_pubKeyX_test(cf, fcn, signer):
 def setKey_rev_nonceTimesGAddr_test(cf, fcn, signer):
     newKey = AGG_SIGNER_2.getPubData()
     newKey[2] = ZERO_ADDR
-    callDataNoSig = fcn.encode_input(NULL_SIG_DATA, newKey)
+    nullSig = agg_null_sig() if signer.keyID == AGG else gov_null_sig()
+    callDataNoSig = fcn.encode_input(nullSig, newKey)
     with reverts(REV_MSG_NONCETIMESGADDR):
         fcn(signer.getSigData(callDataNoSig), newKey)
 
 
 def setKey_rev_msgHash_test(cf, fcn, signer):
-    callDataNoSig = fcn.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    nullSig = agg_null_sig() if signer.keyID == AGG else gov_null_sig()
+    callDataNoSig = fcn.encode_input(nullSig, AGG_SIGNER_2.getPubData())
     sigData = signer.getSigData(callDataNoSig)
     sigData[0] += 1
     with reverts(REV_MSG_MSGHASH):
@@ -80,7 +83,8 @@ def setKey_rev_msgHash_test(cf, fcn, signer):
 
 
 def setKey_rev_sig_test(cf, fcn, signer):
-    callDataNoSig = fcn.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    nullSig = agg_null_sig() if signer.keyID == AGG else gov_null_sig()
+    callDataNoSig = fcn.encode_input(nullSig, AGG_SIGNER_2.getPubData())
     sigData = signer.getSigData(callDataNoSig)
     sigData[1] += 1
     with reverts(REV_MSG_SIG):
@@ -89,14 +93,14 @@ def setKey_rev_sig_test(cf, fcn, signer):
 
 def isValidSig_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX)
-    tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), signer.keyIDNum)
+    tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
 def isValidSig_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX)
     with reverts(REV_MSG_SIG):
-        tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), signer.keyIDNum)
+        tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
@@ -105,10 +109,10 @@ def isValidSig_rev_test(cf, signer):
 # Can't put the if conditions for `amount` in this fcn like in test_claim because
 # it's we need to accomodate already having a tx because it's best to test
 # `stakedMin` directly
-def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStake, tx, amount):
+def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStake, tx, amount, returnAddr):
     assert cf.flip.balanceOf(cf.stakeManager) == prevTotal + amount
     assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + amount + getInflation(lastMintBlockNum, tx.block_number, EMISSION_PER_BLOCK)
-    assert tx.events["Staked"][0].values() == [nodeID, amount]
+    assert tx.events["Staked"][0].values() == [nodeID, amount, returnAddr]
     assert cf.stakeManager.getLastMintBlockNum() == lastMintBlockNum
     assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
     assert cf.stakeManager.getMinimumStake() == minStake
@@ -121,7 +125,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
     prevReceiverBal = cf.flip.balanceOf(receiver)
     prevStakeManBal = cf.flip.balanceOf(cf.stakeManager)
 
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, nodeID, amount, receiver, expiryTime)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), nodeID, amount, receiver, expiryTime)
     tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryTime)
     
     startTime = tx.timestamp + CLAIM_DELAY
@@ -149,7 +153,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
 
 #     assert cf.flip.balanceOf(receiver) == prevReceiverBal
 
-#     callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, receiver, amount, expiryTime, nodeID)
+#     callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), receiver, amount, expiryTime, nodeID)
 
 #     if amount == 0:
 #         with reverts(REV_MSG_NZ_UINT):

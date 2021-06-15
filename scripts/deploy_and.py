@@ -74,5 +74,5 @@ def stake_alice_and_bob():
         cf.seed_flip([cf.ALICE, cf.BOB])
 
         print(f"\n💰 Staking on behalf of Alice and Bob.\n")
-        cf.stakeManager.stake(12321, MIN_STAKE, {'from': cf.ALICE})
-        cf.stakeManager.stake(45654, MIN_STAKE + 1, {'from': cf.BOB})
+        cf.stakeManager.stake(12321, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
+        cf.stakeManager.stake(45654, MIN_STAKE + 1, NON_ZERO_ADDR, {'from': cf.BOB})

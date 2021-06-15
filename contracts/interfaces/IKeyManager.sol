@@ -50,4 +50,6 @@ interface IKeyManager is IShared {
     function getGovernanceKey() external view returns (Key memory);
 
     function getLastValidateTime() external view returns (uint);
+
+    function isNonceUsedByKey(KeyID keyID, uint nonce) external view returns (bool);
 }

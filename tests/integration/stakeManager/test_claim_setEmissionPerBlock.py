@@ -22,7 +22,7 @@ def test_registerClaim_setEmissionPerBlock_executeClaim(cf, stakedMin):
         chain.time() + (2 * CLAIM_DELAY)
     )
 
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, emissionPerBlock2)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), emissionPerBlock2)
     emissionTx1 = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), emissionPerBlock2, {"from": cf.ALICE})
     
     # Check things that should've changed

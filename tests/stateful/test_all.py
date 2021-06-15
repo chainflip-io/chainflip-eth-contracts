@@ -6,7 +6,7 @@ from hypothesis import strategies as hypStrat
 from random import choice, choices
 
 
-settings = {"stateful_step_count": 100, "max_examples": 25}
+settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
@@ -100,7 +100,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             self.allAddrs = [*[addr.address for addr in self.stakers], *self.create2EthAddrs, 
                 *self.create2TokenAAddrs, *self.create2TokenBAddrs, self.v, self.km, self.sm]
             
-            callDataNoSig = self.sm.setMinStake.encode_input(NULL_SIG_DATA, INIT_MIN_STAKE)
+            callDataNoSig = self.sm.setMinStake.encode_input(gov_null_sig(), INIT_MIN_STAKE)
             tx = self.sm.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), INIT_MIN_STAKE)
 
             # Vault
@@ -111,7 +111,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             # KeyManager
             self.lastValidateTime = tx.timestamp
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1, GOV: GOV_SIGNER_1}
-            self.allKeys = [*self.keyIDToCurKeys.values()] + ([Signer.gen_signer()] * (TOTAL_KEYS - 2))
+            self.allKeys = [*self.keyIDToCurKeys.values()] + ([Signer.gen_signer(AGG, nonces)] * int((TOTAL_KEYS - 2)/2)) + ([Signer.gen_signer(GOV, nonces)] * int((TOTAL_KEYS - 2)/2))
 
             # StakeManager
             self.lastMintBlockNum = self.sm.tx.block_number
@@ -152,6 +152,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # StakeManager
 
         st_staker = strategy("address", length=MAX_NUM_SENDERS)
+        st_returnAddr = strategy("address")
         st_nodeID = strategy("uint", max_value=MAX_NUM_SENDERS)
         st_stake = strategy("uint", max_value=MAX_TEST_STAKE)
         st_expiry_time_diff = strategy("uint", max_value=CLAIM_DELAY*10)
@@ -176,7 +177,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in self.tokensList}
 
             signer = self._get_key_prob(AGG)
-            callDataNoSig = self.v.allBatch.encode_input(NULL_SIG_DATA, st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
+            callDataNoSig = self.v.allBatch.encode_input(agg_null_sig(), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
 
             if signer != self.keyIDToCurKeys[AGG]:
                 print('        REV_MSG_SIG rule_allBatch', signer, st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, st_sender)
@@ -230,7 +231,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            callDataNoSig = self.v.transfer.encode_input(NULL_SIG_DATA, tokenAddr, st_recip, st_eth_amount)
+            callDataNoSig = self.v.transfer.encode_input(agg_null_sig(), tokenAddr, st_recip, st_eth_amount)
             signer = self._get_key_prob(AGG)
             
             if st_eth_amount == 0:
@@ -273,7 +274,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             signer = self._get_key_prob(AGG)
             minLen = trimToShortest([st_recips, st_eth_amounts])
             tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
-            callDataNoSig = self.v.transferBatch.encode_input(NULL_SIG_DATA, tokens, st_recips, st_eth_amounts)
+            callDataNoSig = self.v.transferBatch.encode_input(agg_null_sig(), tokens, st_recips, st_eth_amounts)
 
             totalEth = 0
             totalTokenA = 0
@@ -353,7 +354,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         # Fetch the ETH deposit of a random create2
         def rule_fetchDepositEth(self, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositEth.encode_input(NULL_SIG_DATA, st_swapID)
+            callDataNoSig = self.v.fetchDepositEth.encode_input(agg_null_sig(), st_swapID)
             signer = self._get_key_prob(AGG)
             
             if st_swapID == 0:
@@ -379,7 +380,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             addrs = [getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in st_swapIDs]
             total = sum([web3.eth.get_balance(addr) for addr in addrs])
             signer = self._get_key_prob(AGG)
-            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, st_swapIDs)
+            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(agg_null_sig(), st_swapIDs)
 
             if signer != self.keyIDToCurKeys[AGG]:
                 print('        REV_MSG_SIG rule_fetchDepositEthBatch', st_sender, st_swapIDs, signer)
@@ -397,7 +398,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositToken.encode_input(NULL_SIG_DATA, st_swapID, token)
+            callDataNoSig = self.v.fetchDepositToken.encode_input(agg_null_sig(), st_swapID, token)
             signer = self._get_key_prob(AGG)
 
             if st_swapID == 0:
@@ -432,7 +433,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
             minLen = trimToShortest([st_swapIDs, st_tokens])
             signer = self._get_key_prob(AGG)
-            callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(NULL_SIG_DATA, st_swapIDs, st_tokens)
+            callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(agg_null_sig(), st_swapIDs, st_tokens)
             
             if signer != self.keyIDToCurKeys[AGG]:
                 print('        REV_MSG_SIG rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens, signer)
@@ -483,7 +484,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         
         # Replace a key with a random key - either setAggKeyWithAggKey or setGovKeyWithGovKey
         def _set_same_key(self, st_sender, fcn, keyID, st_new_key_idx):
-            callDataNoSig = fcn.encode_input(NULL_SIG_DATA, self.allKeys[st_new_key_idx].getPubData())
+            callDataNoSig = fcn.encode_input(agg_null_sig(), self.allKeys[st_new_key_idx].getPubData())
             signer = self._get_key_prob(keyID)
 
             if signer == self.keyIDToCurKeys[keyID]:
@@ -524,7 +525,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         # Call setAggKeyWithGovKey with a random new key, signing key, and sender
         def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
-            callDataNoSig = self.km.setAggKeyWithGovKey.encode_input(NULL_SIG_DATA, self.allKeys[st_new_key_idx].getPubData())
+            callDataNoSig = self.km.setAggKeyWithGovKey.encode_input(gov_null_sig(), self.allKeys[st_new_key_idx].getPubData())
             signer = self._get_key_prob(GOV)
 
             if chain.time() - self.lastValidateTime < AGG_KEY_TIMEOUT:
@@ -547,24 +548,24 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
 
         # Stakes a random amount from a random staker to a random nodeID
-        def rule_stake(self, st_staker, st_nodeID, st_stake):
+        def rule_stake(self, st_staker, st_nodeID, st_stake, st_returnAddr):
             if st_nodeID == 0:
                 print('        rule_stake NODEID', st_staker, st_nodeID, st_stake/E_18)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.stake(st_nodeID, st_stake, {'from': st_staker})
+                    self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
             elif st_stake < self.minStake:
             # st_stake = MAX_TEST_STAKE - st_stake
             # if st_stake < self.minStake:
                 print('        rule_stake MIN_STAKE', st_staker, st_nodeID, st_stake/E_18)
                 with reverts(REV_MSG_MIN_STAKE):
-                    self.sm.stake(st_nodeID, st_stake, {'from': st_staker})
+                    self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
             elif st_stake > self.flipBals[st_staker]:
                 print('        rule_stake REV_MSG_ERC777_EXCEED_BAL', st_staker, st_nodeID, st_stake/E_18)
                 with reverts(REV_MSG_ERC777_EXCEED_BAL):
-                    self.sm.stake(st_nodeID, st_stake, {'from': st_staker})
+                    self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
             else:
                 print('                    rule_stake ', st_staker, st_nodeID, st_stake/E_18)
-                tx = self.sm.stake(st_nodeID, st_stake, {'from': st_staker})
+                tx = self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
 
                 self.flipBals[st_staker] -= st_stake
                 self.flipBals[self.sm] += st_stake
@@ -574,7 +575,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(self, st_nodeID, st_staker, st_stake, st_sender, st_expiry_time_diff):
             args = (st_nodeID, st_stake, st_staker, chain.time() + st_expiry_time_diff)
-            callDataNoSig = self.sm.registerClaim.encode_input(NULL_SIG_DATA, *args)
+            callDataNoSig = self.sm.registerClaim.encode_input(agg_null_sig(), *args)
             signer = self._get_key_prob(AGG)
 
             if st_nodeID == 0:
@@ -632,7 +633,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setEmissionPerBlock(self, st_emission, st_sender):
-            callDataNoSig = self.sm.setEmissionPerBlock.encode_input(NULL_SIG_DATA, st_emission)
+            callDataNoSig = self.sm.setEmissionPerBlock.encode_input(gov_null_sig(), st_emission)
             signer = self._get_key_prob(GOV)
 
             if st_emission == 0:
@@ -658,7 +659,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setMinStake(self, st_minStake, st_sender):
-            callDataNoSig = self.sm.setMinStake.encode_input(NULL_SIG_DATA, st_minStake)
+            callDataNoSig = self.sm.setMinStake.encode_input(gov_null_sig(), st_minStake)
             signer = self._get_key_prob(GOV)
 
             if st_minStake == 0:

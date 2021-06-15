@@ -5,7 +5,7 @@ from brownie.test import given, strategy
 
 @given(newEmissionPerBlock=strategy('uint256', exclude=0))
 def test_setEmissionPerBlock(cf, newEmissionPerBlock):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, newEmissionPerBlock)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), newEmissionPerBlock)
     tx = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), newEmissionPerBlock, {"from": cf.ALICE})
     
     # Check things that should've changed
@@ -21,13 +21,13 @@ def test_setEmissionPerBlock(cf, newEmissionPerBlock):
 
 
 def test_setEmissionPerBlock_rev_amount(cf):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, 0)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), 0)
     with reverts(REV_MSG_NZ_UINT):
         cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), 0, {"from": cf.ALICE})
 
 
 def test_setEmissionPerBlock_rev_msgHash(cf):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_INT)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
 
@@ -36,7 +36,7 @@ def test_setEmissionPerBlock_rev_msgHash(cf):
 
 
 def test_setEmissionPerBlock_rev_sig(cf):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_INT)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1
 
@@ -45,7 +45,7 @@ def test_setEmissionPerBlock_rev_sig(cf):
 
 
 def test_setEmissionPerBlock_rev_aggKey(cf):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(agg_null_sig(), JUNK_INT)
     with reverts(REV_MSG_SIG):
         cf.stakeManager.setEmissionPerBlock(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_INT)
 
@@ -59,6 +59,6 @@ def test_setEmissionPerBlock_rev_noFish(cf, vulnerableR3ktStakeMan, FLIP, web3, 
     smVuln, flipVuln = vulnerableR3ktStakeMan
 
     # Ensure test doesn't fail because there aren't enough coins
-    callDataNoSig = smVuln.setEmissionPerBlock.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = smVuln.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_INT)
     with reverts(REV_MSG_NO_FISH):
         smVuln.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_INT)

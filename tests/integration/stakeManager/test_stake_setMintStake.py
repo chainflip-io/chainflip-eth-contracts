@@ -6,7 +6,7 @@ from brownie import reverts, web3
 def test_setMinStake_stake(cf):
     # Set new minimum stake
     newMinStake = int(MIN_STAKE * 1.5)
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, newMinStake)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
     setMinStakeTx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake)
 
     # Check things that should've changed
@@ -22,9 +22,9 @@ def test_setMinStake_stake(cf):
 
     # Staking an amount valid for the last min but not the current min should revert
     with reverts(REV_MSG_MIN_STAKE):
-        cf.stakeManager.stake(JUNK_INT, MIN_STAKE, cf.FR_ALICE)
+        cf.stakeManager.stake(JUNK_INT, MIN_STAKE, NON_ZERO_ADDR, cf.FR_ALICE)
     
-    stakeTx = cf.stakeManager.stake(JUNK_INT, newMinStake, cf.FR_ALICE)
+    stakeTx = cf.stakeManager.stake(JUNK_INT, newMinStake, NON_ZERO_ADDR, cf.FR_ALICE)
 
     stakeTest(
         cf,
@@ -34,5 +34,6 @@ def test_setMinStake_stake(cf):
         EMISSION_PER_BLOCK,
         newMinStake,
         stakeTx,
-        newMinStake
+        newMinStake,
+        NON_ZERO_ADDR
     )
