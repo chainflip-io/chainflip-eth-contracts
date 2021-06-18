@@ -4,9 +4,6 @@ from brownie import reverts, web3, chain
 from brownie.test import given, strategy
 
 
-print(JUNK_HEX)
-print(type(JUNK_HEX))
-
 # Need to also register a claim in this since the amounts sent etc depend on registerClaim
 @given(
     nodeID=strategy('uint', exclude=0),

@@ -102,9 +102,6 @@ class Signer():
         s = s + self.Q_INT if s < 0 else s
 
         # Since nonces is passed by reference, it will be altered for all other signers too
-        print('b')
-        print(keyID)
-        print(nonces[keyID])
         sigData = [int(msgHashHex, 16), s, nonces[keyID]]
         nonces[keyID] += 1
         return sigData
