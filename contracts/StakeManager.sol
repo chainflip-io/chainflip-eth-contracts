@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 import "./interfaces/IKeyManager.sol";
 import "./abstract/Shared.sol";
 import "./FLIP.sol";
-
+import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 
 /**
 * @title    StakeManager contract
@@ -17,7 +18,7 @@ import "./FLIP.sol";
 *
 *           This contract also handles the minting of FLIP after the initial supply
 *           is minted during FLIP's creation. Every new block after the contract is created is
-*           able to mint `_emissionPerBlock` amount of FLIP. This is FLIP that's meant to 
+*           able to mint `_emissionPerBlock` amount of FLIP. This is FLIP that's meant to
 *           be rewarded to validators for their service. If none of them end up being naughty
 *           boys or girls, then their proportion of that newly minted reward will be rewarded
 *           to them based on their proportion of the total stake when they `claim` - though the logic of
@@ -31,7 +32,7 @@ import "./FLIP.sol";
 *           infinite tokens.
 * @author   Quantaf1re (James Key)
 */
-contract StakeManager is Shared {
+contract StakeManager is Shared, IERC777Recipient {
 
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
@@ -55,6 +56,10 @@ contract StakeManager is Shared {
     mapping(uint => Claim) private _pendingClaims;
     // The number of seconds in 48h
     uint48 constant public CLAIM_DELAY = 2 days;
+
+    IERC1820Registry constant private _ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+    address[] private _defaultOperators;
+    bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256('ERC777TokensRecipient');
 
 
     struct Claim {
@@ -84,8 +89,10 @@ contract StakeManager is Shared {
         _keyManager = keyManager;
         _emissionPerBlock = emissionPerBlock;
         _minStake = minStake;
-        _FLIP = new FLIP("ChainFlip", "FLIP", msg.sender, flipTotalSupply);
+        _defaultOperators.push(address(this));
+        _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, msg.sender, flipTotalSupply);
         _lastMintBlockNum = block.number;
+        _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
 
@@ -107,8 +114,8 @@ contract StakeManager is Shared {
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
         uint balBefore = _FLIP.balanceOf(address(this));
-        _FLIP.transferFrom(msg.sender, address(this), amount);
-        require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: transfer failed");
+        _FLIP.operatorSend(msg.sender, address(this), amount, "", "stake");
+        require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
 
         _totalStake += amount;
         emit Staked(nodeID, amount);
@@ -253,10 +260,21 @@ contract StakeManager is Shared {
     function _mintInflation() private {
         if (block.number > _lastMintBlockNum) {
             uint amount = getInflationInFuture(0);
-            _FLIP.mint(address(this), amount);
+            _FLIP.mint(address(this), amount, "", "mint");
             _totalStake += amount;
             _lastMintBlockNum = block.number;
         }
+    }
+
+    function tokensReceived(
+        address _operator,
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes calldata _data,
+        bytes calldata _operatorData
+    ) external override {
+        require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
     }
 
 

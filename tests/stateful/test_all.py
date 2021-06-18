@@ -89,7 +89,6 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
             for staker in cls.stakers:
                 cls.f.transfer(staker, INIT_STAKE, {'from': a[0]})
-                cls.f.approve(cls.sm, INIT_STAKE, {'from': staker})
             # Send excess from the deployer to the zero address so that all stakers start
             # with the same balance to make the accounting simpler
             cls.f.transfer("0x0000000000000000000000000000000000000001", cls.f.balanceOf(a[0]) - INIT_STAKE, {'from': a[0]})
@@ -379,7 +378,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
             addrs = [getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in st_swapIDs]
-            total = sum([web3.eth.getBalance(addr) for addr in addrs])
+            total = sum([web3.eth.get_balance(addr) for addr in addrs])
             signer = self._get_key_prob(AGG)
             callDataNoSig = self.v.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, st_swapIDs)
 
@@ -561,8 +560,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 with reverts(REV_MSG_MIN_STAKE):
                     self.sm.stake(st_nodeID, st_stake, {'from': st_staker})
             elif st_stake > self.flipBals[st_staker]:
-                print('        rule_stake REV_MSG_EXCEED_BAL', st_staker, st_nodeID, st_stake/E_18)
-                with reverts(REV_MSG_EXCEED_BAL):
+                print('        rule_stake REV_MSG_ERC777_EXCEED_BAL', st_staker, st_nodeID, st_stake/E_18)
+                with reverts(REV_MSG_ERC777_EXCEED_BAL):
                     self.sm.stake(st_nodeID, st_stake, {'from': st_staker})
             else:
                 print('                    rule_stake ', st_staker, st_nodeID, st_stake/E_18)
@@ -609,7 +608,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
-            inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber + 1, self.emissionPerBlock)
+            inflation = getInflation(self.lastMintBlockNum, web3.eth.block_number + 1, self.emissionPerBlock)
             claim = self.pendingClaims[st_nodeID]
 
             if not claim[2] <= chain.time() <= claim[3]:
@@ -617,8 +616,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             elif self.flipBals[self.sm] + inflation < claim[0]:
-                print('        REV_MSG_EXCEED_BAL rule_executeClaim', st_nodeID)
-                with reverts(REV_MSG_EXCEED_BAL):
+                print('        REV_MSG_ERC777_EXCEED_BAL rule_executeClaim', st_nodeID)
+                with reverts(REV_MSG_ERC777_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             else:
                 print('                    rule_executeClaim', st_nodeID)
@@ -649,7 +648,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 print('                    rule_setEmissionPerBlock', st_emission, signer, st_sender)
                 tx = self.sm.setEmissionPerBlock(signer.getSigData(callDataNoSig), st_emission, {'from': st_sender})
 
-                inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
+                inflation = getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
                 self.flipBals[self.sm] += inflation
                 self.totalStake += inflation
                 self.lastMintBlockNum = tx.block_number
@@ -683,7 +682,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         def invariant_bals(self):
             self.numTxsTested += 1
             for addr in self.allAddrs:
-                assert web3.eth.getBalance(str(addr)) == self.ethBals[addr]
+                assert web3.eth.get_balance(str(addr)) == self.ethBals[addr]
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
         
@@ -713,10 +712,10 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         def invariant_inflation_calcs(self):
             # Test in present and future
-            assert self.sm.getInflationInFuture(0) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
-            assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
-            assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
-            assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
+            assert self.sm.getInflationInFuture(0) == getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
+            assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
+            assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
+            assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
         
         
         # Print how many rules were executed at the end of each run

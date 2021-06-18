@@ -1,4 +1,4 @@
-# Use Ganache's forked mainnet mode as the default network
+# Use Ganache's network as the default
 networks:
   default: development
 

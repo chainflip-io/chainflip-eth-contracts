@@ -37,7 +37,7 @@ def test_registerClaim_setEmissionPerBlock_executeClaim(cf, stakedMin):
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
     # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    inflation2 = getInflation(emissionTx1.block_number, web3.eth.blockNumber + 1, emissionPerBlock2)
+    inflation2 = getInflation(emissionTx1.block_number, web3.eth.block_number + 1, emissionPerBlock2)
 
     chain.sleep(CLAIM_DELAY + 5)
     execTx = cf.stakeManager.executeClaim(JUNK_INT)

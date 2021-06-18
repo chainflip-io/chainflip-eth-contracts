@@ -38,7 +38,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     chain.sleep(CLAIM_DELAY + 5)
 
     # Should revert with trying to claim stake that doesn't exist
-    with reverts(REV_MSG_EXCEED_BAL):
+    with reverts(REV_MSG_ERC777_EXCEED_BAL):
         cf.stakeManager.executeClaim(nodeID1)
 
     # 1st stake
@@ -57,7 +57,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     # Execute claim
     execClaimTx1 = cf.stakeManager.executeClaim(nodeID1)
 
-    inflation1 = getInflation(cf.stakeManager.tx.block_number, web3.eth.blockNumber, EMISSION_PER_BLOCK)
+    inflation1 = getInflation(cf.stakeManager.tx.block_number, web3.eth.block_number, EMISSION_PER_BLOCK)
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID1) == NULL_CLAIM
     assert cf.stakeManager.getLastMintBlockNum() == execClaimTx1.block_number
@@ -109,7 +109,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     # Execute 2nd claim
     execClaimTx2 = cf.stakeManager.executeClaim(nodeID2)
 
-    inflation2 = getInflation(execClaimTx1.block_number, web3.eth.blockNumber, EMISSION_PER_BLOCK)
+    inflation2 = getInflation(execClaimTx1.block_number, web3.eth.block_number, EMISSION_PER_BLOCK)
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID2) == NULL_CLAIM
     assert cf.stakeManager.getLastMintBlockNum() == execClaimTx2.block_number

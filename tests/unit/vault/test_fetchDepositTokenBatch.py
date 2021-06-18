@@ -33,7 +33,7 @@ def test_fetchDepositTokenBatch(cf, token, token2, DepositToken, amounts, swapID
     # Fetch the deposit
     cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs, tokens)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert token.balanceOf(cf.vault) == tokenATotal
     assert token2.balanceOf(cf.vault) == tokenBTotal
 

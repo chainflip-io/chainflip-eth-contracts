@@ -24,7 +24,7 @@ def test_fetchDepositEthBatch(cf, DepositEth, amounts, swapIDs):
     # Fetch the deposit
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
 
-    assert web3.eth.getBalance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == sum(amounts)
 
 

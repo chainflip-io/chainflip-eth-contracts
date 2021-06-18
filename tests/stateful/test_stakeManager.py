@@ -41,7 +41,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             for staker in cls.stakers:
                 cls.f.transfer(staker, INIT_STAKE, {'from': a[0]})
-                cls.f.approve(cls.sm, INIT_STAKE, {'from': staker})
             # Send excess from the deployer to the zero address so that all stakers start
             # with the same balance to make the accounting simpler
             cls.f.transfer("0x0000000000000000000000000000000000000001", cls.f.balanceOf(a[0]) - INIT_STAKE, {'from': a[0]})
@@ -89,14 +88,12 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NZ_UINT):
                     self.sm.stake(st_nodeID, st_amount, {'from': st_staker})
             elif st_amount < self.minStake:
-            # st_amount = MAX_TEST_STAKE - st_amount
-            # if st_amount < self.minStake:
                 print('        MIN_STAKE rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_MIN_STAKE):
                     self.sm.stake(st_nodeID, st_amount, {'from': st_staker})
             elif st_amount > self.flipBals[st_staker]:
-                print('        REV_MSG_EXCEED_BAL rule_stake', st_staker, st_nodeID, st_amount/E_18)
-                with reverts(REV_MSG_EXCEED_BAL):
+                print('        REV_MSG_ERC777_EXCEED_BAL rule_stake', st_staker, st_nodeID, st_amount/E_18)
+                with reverts(REV_MSG_ERC777_EXCEED_BAL):
                     self.sm.stake(st_nodeID, st_amount, {'from': st_staker})
             else:
                 print('                    rule_stake', st_staker, st_nodeID, st_amount/E_18)
@@ -155,7 +152,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
-            inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber + 1, self.emissionPerBlock)
+            inflation = getInflation(self.lastMintBlockNum, web3.eth.block_number + 1, self.emissionPerBlock)
             claim = self.pendingClaims[st_nodeID]
 
             if not claim[2] <= chain.time() <= claim[3]:
@@ -163,8 +160,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             elif self.flipBals[self.sm] + inflation < claim[0]:
-                print('        REV_MSG_EXCEED_BAL rule_executeClaim', st_nodeID)
-                with reverts(REV_MSG_EXCEED_BAL):
+                print('        REV_MSG_ERC777_EXCEED_BAL rule_executeClaim', st_nodeID)
+                with reverts(REV_MSG_ERC777_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             else:
                 print('                    rule_executeClaim', st_nodeID)
@@ -194,7 +191,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 print('                    rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
                 tx = self.sm.setEmissionPerBlock(st_signer_gov.getSigData(callDataNoSig), st_emission, {'from': st_sender})
 
-                inflation = getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
+                inflation = getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
                 self.flipBals[self.sm] += inflation
                 self.totalStake += inflation
                 self.lastMintBlockNum = tx.block_number
@@ -248,10 +245,10 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def invariant_inflation_calcs(self):
             self.numTxsTested += 1
             # Test in present and future
-            assert self.sm.getInflationInFuture(0) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
-            assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
-            assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber, self.emissionPerBlock)
-            assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.blockNumber+100, self.emissionPerBlock)
+            assert self.sm.getInflationInFuture(0) == getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
+            assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
+            assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
+            assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
         
 
         # Print how many rules were executed at the end of each run

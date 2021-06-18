@@ -8,6 +8,6 @@ from brownie.test import given, strategy
 def test_getTotalStakeInFuture(cf, stakedMin, web3, blocksIntoFuture):
     _, amount = stakedMin
     initBlockNum = cf.stakeManager.tx.block_number
-    currentBlockNum = web3.eth.blockNumber
+    currentBlockNum = web3.eth.block_number
     assert cf.stakeManager.getTotalStakeInFuture(blocksIntoFuture) == \
         amount + getInflation(initBlockNum, currentBlockNum + blocksIntoFuture, EMISSION_PER_BLOCK)

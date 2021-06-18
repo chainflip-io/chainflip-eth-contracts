@@ -143,7 +143,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
 # # similar tests that test specific desired values
 # def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal, expiryTime):
 #     # Want to calculate inflation 1 block into the future because that's when the tx will execute
-#     newLastMintBlockNum = web3.eth.blockNumber + 1
+#     newLastMintBlockNum = web3.eth.block_number + 1
 #     inflation = getInflation(prevTx.block_number, newLastMintBlockNum, emissionPerBlock)
 #     maxValidAmount = prevTotal + inflation
 

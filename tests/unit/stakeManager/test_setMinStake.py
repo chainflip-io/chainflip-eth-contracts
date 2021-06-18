@@ -62,7 +62,6 @@ def test_setMinStake_rev_noFish(cf, StakeManagerVulnerable, FLIP, web3, amount):
     # of StakeManager and getFLIPAddress is external
     smVuln.testSetFLIP(flipVuln)
     flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    flipVuln.approve(smVuln, MAX_TEST_STAKE, {'from': cf.ALICE})
     
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it

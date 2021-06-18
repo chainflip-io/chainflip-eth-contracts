@@ -7,6 +7,7 @@ from random import choices
 
 settings = {"stateful_step_count": 100, "max_examples": 25}
 
+
 # Stateful test for all functions in the Vault
 def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):
     
@@ -266,7 +267,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
 
         def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
             addrs = [getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in st_swapIDs]
-            total = sum([web3.eth.getBalance(addr) for addr in addrs])
+            total = sum([web3.eth.get_balance(addr) for addr in addrs])
 
             callDataNoSig = self.v.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, st_swapIDs)
             print('                    rule_fetchDepositEthBatch', st_sender, st_swapIDs)
@@ -343,7 +344,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         def invariant_bals(self):
             self.numTxsTested += 1
             for addr in self.allAddrs:
-                assert web3.eth.getBalance(addr) == self.ethBals[addr]
+                assert web3.eth.get_balance(addr) == self.ethBals[addr]
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
         

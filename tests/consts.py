@@ -74,7 +74,8 @@ REV_MSG_INPUTS_0 = "No zero inputs allowed"
 # -----FLIP-----
 INIT_SUPPLY = (9 * 10**7) * E_18
 
-REV_MSG_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
+REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
+REV_MSG_ERC777_EXCEED_BAL = "ERC777: transfer amount exceeds balance"
 
 
 # -----StakeManager-----
