@@ -4,13 +4,13 @@ from brownie import reverts
 
 def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositEth, DepositToken):
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositEth, "")
+    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
     assert cf.vault.balance() == 0
 
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX)
-    cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
+    cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
@@ -32,13 +32,13 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
     
     # Fetch token deposit
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositToken, cleanHexStrPad(token.address))
+    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositToken, cleanHexStrPad(token.address))
     token.transfer(depositAddr, TEST_AMNT, {'from': cf.DEPLOYER})
 
     assert token.balanceOf(cf.vault) == 0
 
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX, token)
-    cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, token)
+    callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX_PAD, token)
+    cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD, token)
     
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT

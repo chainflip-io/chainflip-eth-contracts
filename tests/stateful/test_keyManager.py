@@ -33,8 +33,9 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
         def setup(self):
             self.lastValidateTime = self.km.tx.timestamp
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1, GOV: GOV_SIGNER_1}
-            self.allKeys = [*self.keyIDToCurKeys.values()] + ([Signer.gen_signer(AGG, nonces)] * int((TOTAL_KEYS - 2)/2)) + ([Signer.gen_signer(GOV, nonces)] * int((TOTAL_KEYS - 2)/2))
+            self.allKeys = [*self.keyIDToCurKeys.values()] + ([Signer.gen_signer(None, {})] * (TOTAL_KEYS - 2))
             self.numTxsTested = 0
+            self.nonces = {AGG: 0, GOV: 0}
 
         
         # Variables that will be a random value with each fcn/rule called
@@ -50,7 +51,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Checks if isValidSig returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
         def rule_isValidSig(self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data):
-            sigData = self.allKeys[st_sig_key_idx].getSigData(st_msg_data.hex())
+            sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(st_msg_data.hex(), self.nonces, NUM_TO_KEYID[st_keyID_num])
 
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]:
                 print('                    rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
@@ -64,22 +65,17 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
         
         # Replace a key with a random key - either setAggKeyWithAggKey or setGovKeyWithGovKey
         def _set_same_key(self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx):
-            nullSig = agg_null_sig() if keyID == AGG else gov_null_sig()
-            callDataNoSig = fcn.encode_input(nullSig, self.allKeys[st_new_key_idx].getPubData())
+            callDataNoSig = fcn.encode_input(null_sig(self.nonces[keyID]), self.allKeys[st_new_key_idx].getPubData())
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
                 print(f'                    {fcn}', st_sender, keyID, st_sig_key_idx, st_new_key_idx)
-                tx = fcn(self.allKeys[st_sig_key_idx].getSigDataWithKeyID(callDataNoSig, keyID), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
+                tx = fcn(self.allKeys[st_sig_key_idx].getSigDataWithNonces(callDataNoSig, self.nonces, keyID), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
 
                 self.keyIDToCurKeys[keyID] = self.allKeys[st_new_key_idx]
                 self.lastValidateTime = tx.timestamp
-            # elif self.allKeys[st_sig_key_idx].keyID != keyID and agg_null_sig() != gov_null_sig():
-            #     with reverts(REV_MSG_MSGHASH):
-            #         print(f'        REV_MSG_SIG {fcn}', st_sender, keyID, st_sig_key_idx, st_new_key_idx)
-            #         fcn(self.allKeys[st_sig_key_idx].getSigData(callDataNoSig), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
             else:
                 with reverts(REV_MSG_SIG):
                     print(f'        REV_MSG_SIG {fcn}', st_sender, keyID, st_sig_key_idx, st_new_key_idx)
-                    fcn(self.allKeys[st_sig_key_idx].getSigDataWithKeyID(callDataNoSig, keyID), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
+                    fcn(self.allKeys[st_sig_key_idx].getSigDataWithNonces(callDataNoSig, self.nonces, keyID), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
 
 
         # Call setAggKeyWithAggKey with a random new key, signing key, and sender
@@ -108,23 +104,18 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Call setAggKeyWithGovKey with a random new key, signing key, and sender
         def rule_setAggKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            callDataNoSig = self.km.setAggKeyWithGovKey.encode_input(gov_null_sig(), self.allKeys[st_new_key_idx].getPubData())
+            callDataNoSig = self.km.setAggKeyWithGovKey.encode_input(null_sig(self.nonces[GOV]), self.allKeys[st_new_key_idx].getPubData())
             if chain.time() - self.lastValidateTime < AGG_KEY_TIMEOUT:
                 print('        REV_MSG_DELAY rule_setAggKeyWithGovKey', st_sender, st_sig_key_idx, st_new_key_idx)
                 with reverts(REV_MSG_DELAY):
-                    self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigDataWithKeyID(callDataNoSig, GOV), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
+                    self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigDataWithNonces(callDataNoSig, self.nonces, GOV), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
             elif self.allKeys[st_sig_key_idx] != self.keyIDToCurKeys[GOV]:
-                # if self.allKeys[st_sig_key_idx].keyID != GOV and agg_null_sig() != gov_null_sig():
-                #     print('        REV_MSG_SIG rule_setAggKeyWithGovKey', st_sender, st_sig_key_idx, st_new_key_idx)
-                #     with reverts(REV_MSG_MSGHASH):
-                #         self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigData(callDataNoSig), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
-                # else:
                 print('        REV_MSG_SIG rule_setAggKeyWithGovKey', st_sender, st_sig_key_idx, st_new_key_idx)
                 with reverts(REV_MSG_SIG):
-                    self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigDataWithKeyID(callDataNoSig, GOV), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
+                    self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigDataWithNonces(callDataNoSig, self.nonces, GOV), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
             else:
                 print('                    rule_setAggKeyWithGovKey', st_sender, st_sig_key_idx, st_new_key_idx)
-                tx = self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigDataWithKeyID(callDataNoSig, GOV), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
+                tx = self.km.setAggKeyWithGovKey(self.allKeys[st_sig_key_idx].getSigDataWithNonces(callDataNoSig, self.nonces, GOV), self.allKeys[st_new_key_idx].getPubData(), {'from': st_sender})
 
                 self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
                 self.lastValidateTime = tx.timestamp

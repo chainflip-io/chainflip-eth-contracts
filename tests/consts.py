@@ -7,9 +7,10 @@ ZERO_ADDR = "0x" + ZERO_ADDR_PACKED
 ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
 TEST_AMNT = 10**17
-# Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_INT = 12345
-JUNK_HEX = cleanHexStrPad(JUNK_INT)
+JUNK_HEX = web3.toHex(JUNK_INT)
+# Notable the only part of the hash involved in CREATE2 that has padding
+JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
 E_18 = 10**18
 AGG = "Agg"
 GOV = "Gov"

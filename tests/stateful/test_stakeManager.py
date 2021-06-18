@@ -34,8 +34,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             super().__init__(cls, a, cfDeploy)
 
             # Set the initial minStake to be different than the default in cfDeploy
-            callDataNoSig = cls.sm.setMinStake.encode_input(gov_null_sig(), INIT_MIN_STAKE)
-            cls.sm.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), INIT_MIN_STAKE)
 
             cls.stakers = a[:NUM_STAKERS]
 
@@ -59,6 +57,9 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.flipBals = {addr: INIT_STAKE if addr in self.stakers else 0 for addr in self.allAddrs}
             self.pendingClaims = {nodeID: NULL_CLAIM for nodeID in range(NUM_STAKERS + 1)}
             self.numTxsTested = 0
+            self.nonces = {AGG: 0, GOV: 0}
+            callDataNoSig = self.sm.setMinStake.encode_input(null_sig(self.nonces[GOV]), INIT_MIN_STAKE)
+            self.sm.setMinStake(GOV_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), INIT_MIN_STAKE)
 
 
         # Variables that will be a random value with each fcn/rule called
@@ -89,7 +90,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NZ_UINT):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount < self.minStake:
-                print('        MIN_STAKE rule_stake', st_staker, st_nodeID, st_amount/E_18)
+                print('        REV_MSG_MIN_STAKE rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_MIN_STAKE):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount > self.flipBals[st_staker]:
@@ -108,32 +109,31 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(self, st_signer_agg, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff):
             args = (st_nodeID, st_amount, st_staker, chain.time() + st_expiry_time_diff)
-            nullSig = agg_null_sig() if st_signer_agg.keyID == AGG else gov_null_sig()
-            callDataNoSig = self.sm.registerClaim.encode_input(nullSig, *args)
+            callDataNoSig = self.sm.registerClaim.encode_input(null_sig(self.nonces[AGG]), *args)
 
             if st_nodeID == 0:
                 print('        NODEID rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.registerClaim(st_signer_agg.getSigData(callDataNoSig), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
             elif st_amount == 0:
                 print('        AMOUNT rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.registerClaim(st_signer_agg.getSigData(callDataNoSig), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
             elif st_signer_agg != AGG_SIGNER_1:
                 print('        REV_MSG_SIG rule_registerClaim', *args)
                 with reverts(REV_MSG_SIG):
-                    self.sm.registerClaim(st_signer_agg.getSigData(callDataNoSig), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
             elif chain.time() <= self.pendingClaims[st_nodeID][3]:
                 print('        REV_MSG_CLAIM_EXISTS rule_registerClaim', *args)
                 with reverts(REV_MSG_CLAIM_EXISTS):
-                    self.sm.registerClaim(st_signer_agg.getSigData(callDataNoSig), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
             elif st_expiry_time_diff <= CLAIM_DELAY:
                 print('        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim', *args)
                 with reverts(REV_MSG_EXPIRY_TOO_SOON):
-                    self.sm.registerClaim(st_signer_agg.getSigData(callDataNoSig), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
             else:
                 print('                    rule_registerClaim ', *args)
-                tx = self.sm.registerClaim(st_signer_agg.getSigData(callDataNoSig), *args, {'from': st_sender})
+                tx = self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
 
                 self.pendingClaims[st_nodeID] = (st_amount, st_staker, tx.timestamp + CLAIM_DELAY, args[3])
 
@@ -179,20 +179,19 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setEmissionPerBlock(self, st_emission, st_signer_gov, st_sender):
-            nullSig = agg_null_sig() if st_signer_gov.keyID == AGG else gov_null_sig()
-            callDataNoSig = self.sm.setEmissionPerBlock.encode_input(nullSig, st_emission)
+            callDataNoSig = self.sm.setEmissionPerBlock.encode_input(null_sig(self.nonces[GOV]), st_emission)
 
             if st_emission == 0:
                 print('        REV_MSG_NZ_UINT rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setEmissionPerBlock(st_signer_gov.getSigData(callDataNoSig), st_emission, {'from': st_sender})
+                    self.sm.setEmissionPerBlock(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_emission, {'from': st_sender})
             elif st_signer_gov != GOV_SIGNER_1:
                 print('        REV_MSG_SIG rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
                 with reverts(REV_MSG_SIG):
-                    self.sm.setEmissionPerBlock(st_signer_gov.getSigData(callDataNoSig), st_emission, {'from': st_sender})
+                    self.sm.setEmissionPerBlock(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_emission, {'from': st_sender})
             else:
                 print('                    rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
-                tx = self.sm.setEmissionPerBlock(st_signer_gov.getSigData(callDataNoSig), st_emission, {'from': st_sender})
+                tx = self.sm.setEmissionPerBlock(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_emission, {'from': st_sender})
 
                 inflation = getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
                 self.flipBals[self.sm] += inflation
@@ -204,20 +203,19 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setMinStake(self, st_minStake, st_signer_gov, st_sender):
-            nullSig = agg_null_sig() if st_signer_gov.keyID == AGG else gov_null_sig()
-            callDataNoSig = self.sm.setMinStake.encode_input(nullSig, st_minStake)
+            callDataNoSig = self.sm.setMinStake.encode_input(null_sig(self.nonces[GOV]), st_minStake)
 
             if st_minStake == 0:
                 print('        REV_MSG_NZ_UINT rule_setMinstake', st_minStake, st_signer_gov, st_sender)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setMinStake(st_signer_gov.getSigData(callDataNoSig), st_minStake, {'from': st_sender})
+                    self.sm.setMinStake(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_minStake, {'from': st_sender})
             elif st_signer_gov != GOV_SIGNER_1:
                 print('        REV_MSG_SIG rule_setMinstake', st_minStake, st_signer_gov, st_sender)
                 with reverts(REV_MSG_SIG):
-                    self.sm.setMinStake(st_signer_gov.getSigData(callDataNoSig), st_minStake, {'from': st_sender})
+                    self.sm.setMinStake(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_minStake, {'from': st_sender})
             else:
                 print('                    rule_setMinstake', st_minStake, st_signer_gov, st_sender)
-                tx = self.sm.setMinStake(st_signer_gov.getSigData(callDataNoSig), st_minStake, {'from': st_sender})
+                tx = self.sm.setMinStake(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_minStake, {'from': st_sender})
 
                 self.minStake = st_minStake
         

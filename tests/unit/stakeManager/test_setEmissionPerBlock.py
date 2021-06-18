@@ -27,27 +27,27 @@ def test_setEmissionPerBlock_rev_amount(cf):
 
 
 def test_setEmissionPerBlock_rev_msgHash(cf):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_INT)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_HEX)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.stakeManager.setEmissionPerBlock(sigData, JUNK_INT)
+        cf.stakeManager.setEmissionPerBlock(sigData, JUNK_HEX)
 
 
 def test_setEmissionPerBlock_rev_sig(cf):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_INT)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_HEX)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setEmissionPerBlock(sigData, JUNK_INT)
+        cf.stakeManager.setEmissionPerBlock(sigData, JUNK_HEX)
 
 
 def test_setEmissionPerBlock_rev_aggKey(cf):
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(agg_null_sig(), JUNK_INT)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(agg_null_sig(), JUNK_HEX)
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setEmissionPerBlock(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_INT)
+        cf.stakeManager.setEmissionPerBlock(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
 
 
 # Can't use the normal StakeManager to test this since there's obviously
@@ -59,6 +59,6 @@ def test_setEmissionPerBlock_rev_noFish(cf, vulnerableR3ktStakeMan, FLIP, web3, 
     smVuln, flipVuln = vulnerableR3ktStakeMan
 
     # Ensure test doesn't fail because there aren't enough coins
-    callDataNoSig = smVuln.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_INT)
+    callDataNoSig = smVuln.setEmissionPerBlock.encode_input(gov_null_sig(), JUNK_HEX)
     with reverts(REV_MSG_NO_FISH):
-        smVuln.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_INT)
+        smVuln.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)

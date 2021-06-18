@@ -29,7 +29,7 @@ interface IStakeManager is IShared {
      *                      when claiming back FLIP for `nodeID`
      */
     function stake(
-        uint nodeID,
+        bytes32 nodeID,
         uint amount,
         address returnAddr
     ) external;
@@ -48,7 +48,7 @@ interface IStakeManager is IShared {
      */
     function registerClaim(
         SigData calldata sigData,
-        uint nodeID,
+        bytes32 nodeID,
         uint amount,
         address staker,
         uint48 expiryTime
@@ -65,7 +65,7 @@ interface IStakeManager is IShared {
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(uint nodeID) external;
+    function executeClaim(bytes32 nodeID) external;
 
     /**
      * @notice  Set the rate (per second) at which new FLIP is minted to this contract
@@ -159,5 +159,5 @@ interface IStakeManager is IShared {
      * @param nodeID    The nodeID which is has a pending claim
      * @return  The claim (Claim)
      */
-    function getPendingClaim(uint nodeID) external view returns (Claim memory);
+    function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
 }

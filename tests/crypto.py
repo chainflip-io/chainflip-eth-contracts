@@ -90,3 +90,21 @@ class Signer():
         sigData = [int(msgHashHex, 16), s, self.nonces[keyID]]
         self.nonces[keyID] += 1
         return sigData
+
+
+    def getSigDataWithNonces(self, msgToHash, nonces, keyID):
+        msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
+        e = web3.keccak(hexstr=(cleanHexStr(self.pubKeyX) + self.pubKeyYParHex + msgHashHex + self.kTimesGAddressHex))
+
+        eInt = int(cleanHexStr(e), 16)
+
+        s = (self.kInt - (self.privKeyInt * eInt)) % self.Q_INT
+        s = s + self.Q_INT if s < 0 else s
+
+        # Since nonces is passed by reference, it will be altered for all other signers too
+        print('b')
+        print(keyID)
+        print(nonces[keyID])
+        sigData = [int(msgHashHex, 16), s, nonces[keyID]]
+        nonces[keyID] += 1
+        return sigData

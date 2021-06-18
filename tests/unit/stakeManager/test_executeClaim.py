@@ -4,6 +4,9 @@ from brownie import reverts, web3, chain
 from brownie.test import given, strategy
 
 
+print(JUNK_HEX)
+print(type(JUNK_HEX))
+
 # Need to also register a claim in this since the amounts sent etc depend on registerClaim
 @given(
     nodeID=strategy('uint', exclude=0),
@@ -15,6 +18,7 @@ from brownie.test import given, strategy
 def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff, sleepTime):
     # Differences in the time.time() and chain time cause errors between runs when there's no actual issue
     if not (CLAIM_DELAY - 100 < expiryTimeDiff < CLAIM_DELAY + 100):
+        nodeID = web3.toHex(nodeID)
         assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
         smStartBal = cf.flip.balanceOf(cf.stakeManager)
         stakerStartBal = cf.flip.balanceOf(staker)
@@ -58,7 +62,7 @@ def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff
 
 def test_executeClaim_min_delay(cf, claimRegistered):
     _, claim = claimRegistered
-    assert cf.stakeManager.getPendingClaim(JUNK_INT) == claim
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == claim
     
     # Want to calculate inflation 1 block into the future because that's when the tx will execute
     newLastMintBlockNum = web3.eth.block_number + 1
@@ -66,15 +70,15 @@ def test_executeClaim_min_delay(cf, claimRegistered):
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager) + inflation
 
     chain.sleep(CLAIM_DELAY)
-    tx = cf.stakeManager.executeClaim(JUNK_INT)
+    tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Check things that should've changed
-    assert cf.stakeManager.getPendingClaim(JUNK_INT) == NULL_CLAIM
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
     assert newLastMintBlockNum == tx.block_number
     assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
     assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - claim[0]
     assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - claim[0]
-    assert tx.events["ClaimExecuted"][0].values() == [JUNK_INT, claim[0]]
+    assert tx.events["ClaimExecuted"][0].values() == [JUNK_HEX, claim[0]]
     assert cf.flip.balanceOf(claim[1]) == claim[0]
     # Check things that shouldn't have changed
     assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
@@ -83,7 +87,7 @@ def test_executeClaim_min_delay(cf, claimRegistered):
 
 def test_executeClaim_max_delay(cf, claimRegistered):
     _, claim = claimRegistered
-    assert cf.stakeManager.getPendingClaim(JUNK_INT) == claim
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == claim
     
     # Want to calculate inflation 1 block into the future because that's when the tx will execute
     newLastMintBlockNum = web3.eth.block_number + 1
@@ -91,15 +95,15 @@ def test_executeClaim_max_delay(cf, claimRegistered):
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager) + inflation
 
     chain.sleep(claim[3] - chain.time())
-    tx = cf.stakeManager.executeClaim(JUNK_INT)
+    tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Check things that should've changed
-    assert cf.stakeManager.getPendingClaim(JUNK_INT) == NULL_CLAIM
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
     assert newLastMintBlockNum == tx.block_number
     assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
     assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - claim[0]
     assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - claim[0]
-    assert tx.events["ClaimExecuted"][0].values() == [JUNK_INT, claim[0]]
+    assert tx.events["ClaimExecuted"][0].values() == [JUNK_HEX, claim[0]]
     assert cf.flip.balanceOf(claim[1]) == claim[0]
     # Check things that shouldn't have changed
     assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
@@ -111,7 +115,7 @@ def test_executeClaim_rev_too_early(cf, claimRegistered):
     chain.sleep(CLAIM_DELAY - 5)
 
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(JUNK_INT)
+        cf.stakeManager.executeClaim(JUNK_HEX)
 
 
 def test_executeClaim_rev_too_late(cf, claimRegistered):
@@ -119,7 +123,7 @@ def test_executeClaim_rev_too_late(cf, claimRegistered):
     chain.sleep(claim[3] - chain.time() + 5)
 
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(JUNK_INT)
+        cf.stakeManager.executeClaim(JUNK_HEX)
 
 
 # Can't use the normal StakeManager to test this since there's obviously
@@ -129,7 +133,7 @@ def test_executeClaim_rev_too_late(cf, claimRegistered):
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
 def test_executeClaim_rev_noFish(cf, vulnerableR3ktStakeMan, amount):
     smVuln, _ = vulnerableR3ktStakeMan
-    args = (JUNK_INT, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
 
     callDataNoSig = smVuln.registerClaim.encode_input(agg_null_sig(), *args)
     with reverts(REV_MSG_NO_FISH):

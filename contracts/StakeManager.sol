@@ -54,7 +54,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     uint private _minStake;
     /// @dev    Holding pending claims for the 48h withdrawal delay
-    mapping(uint => Claim) private _pendingClaims;
+    mapping(bytes32 => Claim) private _pendingClaims;
     // The number of seconds in 48h
     uint48 constant public CLAIM_DELAY = 2 days;
 
@@ -74,15 +74,15 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     // }
 
 
-    event Staked(uint indexed nodeID, uint amount, address returnAddr);
+    event Staked(bytes32 indexed nodeID, uint amount, address returnAddr);
     event ClaimRegistered(
-        uint indexed nodeID,
+        bytes32 indexed nodeID,
         uint amount,
         address staker,
         uint48 startTime,
         uint48 expiryTime
     );
-    event ClaimExecuted(uint indexed nodeID, uint amount);
+    event ClaimExecuted(bytes32 indexed nodeID, uint amount);
     event EmissionChanged(uint oldEmissionPerBlock, uint newEmissionPerBlock);
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
@@ -113,10 +113,10 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
      *                      when claiming back FLIP for `nodeID`
      */
     function stake(
-        uint nodeID,
+        bytes32 nodeID,
         uint amount,
         address returnAddr
-    ) external override nzUint(nodeID) nzAddr(returnAddr) noFish {
+    ) external override nzBytes32(nodeID) nzAddr(returnAddr) noFish {
         require(amount >= _minStake, "StakeMan: stake too small");
 
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
@@ -143,11 +143,11 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
      */
     function registerClaim(
         SigData calldata sigData,
-        uint nodeID,
+        bytes32 nodeID,
         uint amount,
         address staker,
         uint48 expiryTime
-    ) external override nzUint(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
+    ) external override nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -185,7 +185,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(uint nodeID) external override noFish {
+    function executeClaim(bytes32 nodeID) external override noFish {
         Claim memory claim = _pendingClaims[nodeID];
         require(
             uint(block.timestamp) >= claim.startTime &&
@@ -364,7 +364,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
      * @return  The claim (Claim)
      */
-    function getPendingClaim(uint nodeID) external override view returns (Claim memory) {
+    function getPendingClaim(bytes32 nodeID) external override view returns (Claim memory) {
         return _pendingClaims[nodeID];
     }
 

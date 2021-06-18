@@ -6,12 +6,12 @@ from brownie import reverts, web3, chain
 def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     receiver = cf.DENICE
 
-    nodeID1 = 1
+    nodeID1 = web3.toHex(1)
     stakeAmount1 = MIN_STAKE * 3
     expiryTime1 = chain.time() + (CLAIM_DELAY * 2)
     claimAmount1 = 12345 * E_18
 
-    nodeID2 = 2
+    nodeID2 = web3.toHex(2)
     stakeAmount2 = MIN_STAKE * 7
     expiryTime2 = chain.time() + (CLAIM_DELAY * 3)
     claimAmount2 = claimAmount1*2

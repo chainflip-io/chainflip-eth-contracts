@@ -22,14 +22,14 @@ def test_setMinStake_stake(cf):
 
     # Staking an amount valid for the last min but not the current min should revert
     with reverts(REV_MSG_MIN_STAKE):
-        cf.stakeManager.stake(JUNK_INT, MIN_STAKE, NON_ZERO_ADDR, cf.FR_ALICE)
+        cf.stakeManager.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, cf.FR_ALICE)
     
-    stakeTx = cf.stakeManager.stake(JUNK_INT, newMinStake, NON_ZERO_ADDR, cf.FR_ALICE)
+    stakeTx = cf.stakeManager.stake(JUNK_HEX, newMinStake, NON_ZERO_ADDR, cf.FR_ALICE)
 
     stakeTest(
         cf,
         0,
-        JUNK_INT,
+        JUNK_HEX,
         cf.stakeManager.tx.block_number,
         EMISSION_PER_BLOCK,
         newMinStake,

@@ -92,13 +92,13 @@ def setKey_rev_sig_test(cf, fcn, signer):
 
 
 def isValidSig_test(cf, signer):
-    sigData = signer.getSigData(JUNK_HEX)
+    sigData = signer.getSigData(JUNK_HEX_PAD)
     tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
 def isValidSig_rev_test(cf, signer):
-    sigData = signer.getSigData(JUNK_HEX)
+    sigData = signer.getSigData(JUNK_HEX_PAD)
     with reverts(REV_MSG_SIG):
         tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
 

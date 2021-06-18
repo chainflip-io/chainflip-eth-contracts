@@ -39,26 +39,26 @@ def test_fetchDepositTokenBatch(cf, token, token2, DepositToken, amounts, swapID
 
 
 def test_fetchDepositTokenBatch_rev_msgHash(cf, token):
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX], [token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD], [token])
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.fetchDepositTokenBatch(sigData, [JUNK_HEX], [token])
+        cf.vault.fetchDepositTokenBatch(sigData, [JUNK_HEX_PAD], [token])
 
 
 def test_fetchDepositTokenBatch_rev_sig(cf, token):
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX], [token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD], [token])
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
-        cf.vault.fetchDepositTokenBatch(sigData, [JUNK_HEX], [token])
+        cf.vault.fetchDepositTokenBatch(sigData, [JUNK_HEX_PAD], [token])
 
 
 def test_fetchDepositTokenBatch_rev_array_length(cf, token):
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX, JUNK_HEX], [token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD, JUNK_HEX_PAD], [token])
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [JUNK_HEX, JUNK_HEX], [token])
+        cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [JUNK_HEX_PAD, JUNK_HEX_PAD], [token])

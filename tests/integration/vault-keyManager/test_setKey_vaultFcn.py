@@ -41,17 +41,17 @@ def test_setAggKeyByAggKey_fetchDepositEth_transfer(cf, DepositEth):
     assert cf.vault.balance() == 0
 
     # Set up the deposit
-    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositEth, "")
+    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
     # Check transfer fails with old agg key
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
     with reverts(REV_MSG_SIG):
-        cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
+        cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD)
     
     # Fetch the deposit with new agg key
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX)
-    tx = cf.vault.fetchDepositEth(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
+    tx = cf.vault.fetchDepositEth(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX_PAD)
     
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
@@ -83,18 +83,18 @@ def test_setAggKeyByAggKey_fetchDepositToken_transfer(cf, token, DepositToken):
     assert token.balanceOf(cf.vault) == 0
 
     # Set up the deposit
-    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX, DepositToken, cleanHexStrPad(token.address))
+    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositToken, cleanHexStrPad(token.address))
     token.transfer(depositAddr, TEST_AMNT, {'from': cf.DEPLOYER})
 
     # Check transfer fails with old agg key
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX, token)
+    callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX_PAD, token)
 
     with reverts(REV_MSG_SIG):
-        cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX, token)
+        cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD, token)
 
     # Fetch the deposit with new agg key
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX, token)
-    tx = cf.vault.fetchDepositToken(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX, token)
+    callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX_PAD, token)
+    tx = cf.vault.fetchDepositToken(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX_PAD, token)
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT

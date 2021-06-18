@@ -40,8 +40,5 @@ def trimToShortest(lists):
     return minLen
 
 
-def getNonce(keyID):
-    if keyID == AGG:
-        return agg_nonce
-    elif keyID == GOV:
-        return gov_nonce
+def null_sig(nonce):
+    return (0, 0, nonce)
