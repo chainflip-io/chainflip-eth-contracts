@@ -61,7 +61,7 @@ steps:
     commands:
       - /home/circleci/.poetry/bin/poetry install
       - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-      - /home/circleci/.poetry/bin/poetry run brownie test --stateful false
+      - /home/circleci/.poetry/bin/poetry run brownie test --stateful false --network mainnet-fork
 
 trigger:
   event:
@@ -90,7 +90,11 @@ steps:
     commands:
       - /home/circleci/.poetry/bin/poetry install
       - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-      - /home/circleci/.poetry/bin/poetry run brownie test
+      - >
+        /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_keyManager.py --network mainnet-fork
+        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_vault.py --network mainnet-fork
+        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_stakeManager.py --network mainnet-fork
+        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_all.py --network mainnet-fork
   - name: notify
     image: appleboy/drone-discord
     when:
