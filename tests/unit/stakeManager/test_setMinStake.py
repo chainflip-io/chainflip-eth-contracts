@@ -5,7 +5,7 @@ from brownie.test import given, strategy
 
 @given(newMinStake=strategy('uint256', exclude=0))
 def test_setMinStake(cf, newMinStake):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, newMinStake)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
     tx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, {"from": cf.ALICE})
     
     # Check things that should've changed
@@ -21,33 +21,33 @@ def test_setMinStake(cf, newMinStake):
 
 
 def test_setMinStake_rev_amount(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, 0)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), 0)
     with reverts(REV_MSG_NZ_UINT):
         cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), 0, {"from": cf.ALICE})
 
 
 def test_setMinStake_rev_msgHash(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), JUNK_HEX)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.stakeManager.setMinStake(sigData, JUNK_INT)
+        cf.stakeManager.setMinStake(sigData, JUNK_HEX)
 
 
 def test_setMinStake_rev_sig(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), JUNK_HEX)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setMinStake(sigData, JUNK_INT)
+        cf.stakeManager.setMinStake(sigData, JUNK_HEX)
 
 
 def test_setMinStake_rev_aggKey(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(agg_null_sig(), JUNK_HEX)
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setMinStake(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_INT)
+        cf.stakeManager.setMinStake(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
 
 
 # Can't use the normal StakeManager to test this since there's obviously
@@ -65,12 +65,12 @@ def test_setMinStake_rev_noFish(cf, StakeManagerVulnerable, FLIP, web3, amount):
     
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it
-    smVuln.stake(JUNK_INT, MIN_STAKE, {'from': cf.ALICE})
+    smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
     # Somebody r3kts us somehow
     smVuln.testSendFLIP(cf.CHARLIE, amount)
     assert flipVuln.balanceOf(cf.CHARLIE) == amount
 
     # Ensure test doesn't fail because there aren't enough coins
-    callDataNoSig = smVuln.setMinStake.encode_input(NULL_SIG_DATA, JUNK_INT)
+    callDataNoSig = smVuln.setMinStake.encode_input(gov_null_sig(), JUNK_HEX)
     with reverts(REV_MSG_NO_FISH):
-        smVuln.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_INT)
+        smVuln.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)

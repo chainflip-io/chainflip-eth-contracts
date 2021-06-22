@@ -8,13 +8,14 @@ def test_setAggKeyWithAggKey_setEmissionPerBlock(cf):
     setGovKeyWithGovKey_test(cf)
 
     newEmissionPerBlock = int(EMISSION_PER_BLOCK * 1.5)
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, newEmissionPerBlock)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), newEmissionPerBlock)
     
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
         cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), newEmissionPerBlock, {"from": cf.ALICE})
 
     # Change emission with new key
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), newEmissionPerBlock)
     tx = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_2.getSigData(callDataNoSig), newEmissionPerBlock, {"from": cf.ALICE})
     
     # Check things that should've changed
@@ -34,13 +35,14 @@ def test_setAggKeyWithAggKey_setMinStake(cf):
     setGovKeyWithGovKey_test(cf)
 
     newMinStake = int(MIN_STAKE * 1.5)
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, newMinStake)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
     
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
         cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, {"from": cf.ALICE})
 
     # Change minStake with new key
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
     tx = cf.stakeManager.setMinStake(GOV_SIGNER_2.getSigData(callDataNoSig), newMinStake, {"from": cf.ALICE})
 
     # Check things that should've changed

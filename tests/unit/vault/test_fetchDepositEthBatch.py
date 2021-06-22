@@ -19,7 +19,7 @@ def test_fetchDepositEthBatch(cf, DepositEth, amounts, swapIDs):
     assert cf.vault.balance() == 0
 
     # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, swapIDs)
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
 
     # Fetch the deposit
     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
@@ -29,20 +29,20 @@ def test_fetchDepositEthBatch(cf, DepositEth, amounts, swapIDs):
 
 
 def test_fetchDepositEthBatch_rev_msgHash(cf):
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, [JUNK_HEX])
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD])
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[0] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.fetchDepositEthBatch(sigData, [JUNK_HEX])
+        cf.vault.fetchDepositEthBatch(sigData, [JUNK_HEX_PAD])
 
 
 def test_fetchDepositEthBatch_rev_sig(cf):
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(NULL_SIG_DATA, [JUNK_HEX])
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD])
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
     sigData[1] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
-        cf.vault.fetchDepositEthBatch(sigData, [JUNK_HEX])
+        cf.vault.fetchDepositEthBatch(sigData, [JUNK_HEX_PAD])

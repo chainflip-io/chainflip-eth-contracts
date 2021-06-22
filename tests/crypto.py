@@ -14,7 +14,7 @@ class Signer():
     HALF_Q_INT = (Q_INT >> 1) + 1
 
 
-    def __init__(self, privKeyHex, kHex, keyIDNum):
+    def __init__(self, privKeyHex, kHex, keyID, nonces):
         self.privKeyHex = privKeyHex
         self.privKey = keys.UmbralPrivateKey.from_bytes(bytes.fromhex(privKeyHex))
         self.privKeyInt = int(self.privKeyHex, 16)
@@ -34,7 +34,8 @@ class Signer():
         kTimesGPub = kTimesG.to_bytes(is_compressed=False)[1:]
         self.kTimesGAddressHex = cleanHexStr(web3.toChecksumAddress(cleanHexStr(web3.keccak(kTimesGPub)[-20:])))
 
-        self.keyIDNum = keyIDNum
+        self.keyID = keyID
+        self.nonces = nonces
 
 
     @classmethod
@@ -59,11 +60,10 @@ class Signer():
     
 
     @classmethod
-    def gen_signer(cls):
+    def gen_signer(cls, keyID, nonces):
         privKeyHex = cls.gen_key_hex()
         kHex = keys.UmbralPrivateKey.gen_key().to_bytes().hex()
-        return cls(privKeyHex, kHex, -1)
-
+        return cls(privKeyHex, kHex, keyID, nonces)
 
 
     def getPubData(self):
@@ -75,6 +75,9 @@ class Signer():
 
 
     def getSigData(self, msgToHash):
+        return self.getSigDataWithKeyID(msgToHash, self.keyID)
+
+    def getSigDataWithKeyID(self, msgToHash, keyID):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
         e = web3.keccak(hexstr=(cleanHexStr(self.pubKeyX) + self.pubKeyYParHex + msgHashHex + self.kTimesGAddressHex))
 
@@ -83,4 +86,22 @@ class Signer():
         s = (self.kInt - (self.privKeyInt * eInt)) % self.Q_INT
         s = s + self.Q_INT if s < 0 else s
 
-        return [int(msgHashHex, 16), s]
+        # Since nonces is passed by reference, it will be altered for all other signers too
+        sigData = [int(msgHashHex, 16), s, self.nonces[keyID]]
+        self.nonces[keyID] += 1
+        return sigData
+
+
+    def getSigDataWithNonces(self, msgToHash, nonces, keyID):
+        msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
+        e = web3.keccak(hexstr=(cleanHexStr(self.pubKeyX) + self.pubKeyYParHex + msgHashHex + self.kTimesGAddressHex))
+
+        eInt = int(cleanHexStr(e), 16)
+
+        s = (self.kInt - (self.privKeyInt * eInt)) % self.Q_INT
+        s = s + self.Q_INT if s < 0 else s
+
+        # Since nonces is passed by reference, it will be altered for all other signers too
+        sigData = [int(msgHashHex, 16), s, nonces[keyID]]
+        nonces[keyID] += 1
+        return sigData

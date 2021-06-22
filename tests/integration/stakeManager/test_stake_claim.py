@@ -6,12 +6,12 @@ from brownie import reverts, web3, chain
 def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     receiver = cf.DENICE
 
-    nodeID1 = 1
+    nodeID1 = web3.toHex(1)
     stakeAmount1 = MIN_STAKE * 3
     expiryTime1 = chain.time() + (CLAIM_DELAY * 2)
     claimAmount1 = 12345 * E_18
 
-    nodeID2 = 2
+    nodeID2 = web3.toHex(2)
     stakeAmount2 = MIN_STAKE * 7
     expiryTime2 = chain.time() + (CLAIM_DELAY * 3)
     claimAmount2 = claimAmount1*2
@@ -38,11 +38,11 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     chain.sleep(CLAIM_DELAY + 5)
 
     # Should revert with trying to claim stake that doesn't exist
-    with reverts(REV_MSG_ERC777_EXCEED_BAL):
+    with reverts(REV_MSG_INTEGER_OVERFLOW):
         cf.stakeManager.executeClaim(nodeID1)
 
     # 1st stake
-    stakeTx1 = cf.stakeManager.stake(nodeID1, stakeAmount1, cf.FR_ALICE)
+    stakeTx1 = cf.stakeManager.stake(nodeID1, stakeAmount1, NON_ZERO_ADDR, cf.FR_ALICE)
     stakeTest(
         cf,
         0,
@@ -51,7 +51,8 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
         EMISSION_PER_BLOCK,
         MIN_STAKE,
         stakeTx1,
-        stakeAmount1
+        stakeAmount1,
+        NON_ZERO_ADDR
     )
     
     # Execute claim
@@ -70,7 +71,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
     # 2nd stake
-    stakeTx2 = cf.stakeManager.stake(nodeID2, stakeAmount2, cf.FR_BOB)
+    stakeTx2 = cf.stakeManager.stake(nodeID2, stakeAmount2, NON_ZERO_ADDR, cf.FR_BOB)
 
     stakeTest(
         cf,
@@ -80,7 +81,8 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeCLaim(cf):
         EMISSION_PER_BLOCK,
         MIN_STAKE,
         stakeTx2,
-        stakeAmount2
+        stakeAmount2,
+        NON_ZERO_ADDR
     )
 
     # Executing the 1st claim again should revert

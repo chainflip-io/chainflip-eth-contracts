@@ -33,6 +33,6 @@ def test_setAggKeyWithGovKey_rev_sig(cf):
 @given(delay=strategy('uint256', max_value=AGG_KEY_TIMEOUT-1))
 def test_setAggKeyWithGovKey_rev_delay(cf, delay):
     chain.sleep(delay)
-    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(NULL_SIG_DATA, AGG_SIGNER_2.getPubData())
+    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(gov_null_sig(), AGG_SIGNER_2.getPubData())
     with reverts(REV_MSG_DELAY):
         cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())

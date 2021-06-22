@@ -38,3 +38,7 @@ def trimToShortest(lists):
         del l[minLen:]
     
     return minLen
+
+
+def null_sig(nonce):
+    return (0, 0, nonce)

@@ -14,7 +14,7 @@ def test_registerClaim_setEmissionPerBlock_executeClaim(cf, stakedMin):
         cf,
         cf.stakeManager.tx,
         amountStaked,
-        JUNK_INT,
+        JUNK_HEX,
         EMISSION_PER_BLOCK,
         MIN_STAKE,
         claimAmount,
@@ -22,7 +22,7 @@ def test_registerClaim_setEmissionPerBlock_executeClaim(cf, stakedMin):
         chain.time() + (2 * CLAIM_DELAY)
     )
 
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, emissionPerBlock2)
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), emissionPerBlock2)
     emissionTx1 = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), emissionPerBlock2, {"from": cf.ALICE})
     
     # Check things that should've changed
@@ -40,14 +40,14 @@ def test_registerClaim_setEmissionPerBlock_executeClaim(cf, stakedMin):
     inflation2 = getInflation(emissionTx1.block_number, web3.eth.block_number + 1, emissionPerBlock2)
 
     chain.sleep(CLAIM_DELAY + 5)
-    execTx = cf.stakeManager.executeClaim(JUNK_INT)
+    execTx = cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Check things that should've changed
-    assert cf.stakeManager.getPendingClaim(JUNK_INT) == NULL_CLAIM
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
     assert cf.stakeManager.getLastMintBlockNum() == execTx.block_number
     assert cf.flip.balanceOf(cf.stakeManager) == amountStaked + inflation1 + inflation2 - claimAmount
     assert cf.stakeManager.getTotalStakeInFuture(0) == amountStaked + inflation1 + inflation2 - claimAmount
-    assert execTx.events["ClaimExecuted"][0].values() == [JUNK_INT, claimAmount]
+    assert execTx.events["ClaimExecuted"][0].values() == [JUNK_HEX, claimAmount]
     assert cf.flip.balanceOf(receiver) == claimAmount
     # Check things that shouldn't have changed
     assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock2
