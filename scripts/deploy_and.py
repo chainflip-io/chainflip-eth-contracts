@@ -1,78 +1,53 @@
-from contextlib import contextmanager
-from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP
-
-### A bit of a hack so we can reuse the chainflip test deployment
-#
 import sys
 from os import path
 sys.path.append(path.abspath('tests'))
-
-## Any import statements that are relative to the `tests` dir should go here.
-
 from consts import *
-
-sys.path.pop()
-#
-###
-
-class Chainflip:
-    '''
-    A very simple context manager to deploy the chainflip contracts and seed some accounts. Based on 
-    deploy_initial_ChainFlip_contracts() in conftest.py.
-
-    Can be used from brownie like this: `brownie run deploy_and stake_alice_and_bob`. 
-    '''
-
-    def __init__(self):
-        self.deployed = False
-
-        self.DEPLOYER = accounts[0]
-        self.ALICE = accounts[1]
-        self.BOB = accounts[2]
-        self.CHARLIE = accounts[3]
-        self.DENICE = accounts[4]
-
-        self.keyManager = None
-        self.vault = None
-        self.stakeManager = None
-        self.flip = None
-
-    def __enter__(self):
-        if not self.deployed:
-            self.deploy()
-            chain.snapshot()
-        
-        return self
-    
-    def __exit__(self, *args):
-        # chain.revert()
-        pass
-    
-    def deploy(self):
-        print(f"\n💾 Deploying chainflip contracts in {path.abspath((path.curdir))}\n")
-        
-        self.keyManager = self.DEPLOYER.deploy(KeyManager, AGG_SIGNER_1.getPubData(), GOV_SIGNER_1.getPubData())
-        self.vault = self.DEPLOYER.deploy(Vault, self.keyManager)
-        self.stakeManager = self.DEPLOYER.deploy(StakeManager, self.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INIT_SUPPLY)
-        self.flip = FLIP.at(self.stakeManager.getFLIPAddress())
-
-        self.deployed = True
-
-        print("========================= 😎  Deployed! 😎 ==========================\n")
-        print(f"StakeManager deployed by {self.DEPLOYER} to address: {StakeManager[0]}\n")
-        print("====================================================================")
-    
-    def seed_flip(self, addrs):
-        for addr in addrs:
-            print(f"\n💸 Seeding {addr} with FLIP. KERCHINGGG!!\n")
-
-            self.flip.transfer(addr, MAX_TEST_STAKE, {'from': self.DEPLOYER})
+from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP, chain
+from deploy import deploy_initial_ChainFlip_contracts
 
 
-def stake_alice_and_bob():
-    with Chainflip() as cf:
-        cf.seed_flip([cf.ALICE, cf.BOB])
+DEPLOYER = accounts[0]
+ALICE = accounts[1]
+BOB = accounts[2]
+CHARLIE = accounts[3]
+DENICE = accounts[4]
 
-        print(f"\n💰 Staking on behalf of Alice and Bob.\n")
-        cf.stakeManager.stake(12321, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
-        cf.stakeManager.stake(45654, MIN_STAKE + 1, NON_ZERO_ADDR, {'from': cf.BOB})
+cf = deploy_initial_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
+
+cf.flip.transfer(ALICE, MAX_TEST_STAKE, {'from': DEPLOYER})
+cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': ALICE})
+cf.flip.transfer(BOB, MAX_TEST_STAKE, {'from': DEPLOYER})
+cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': BOB})
+
+print("========================= 😎  Deployed! 😎 ==========================\n")
+print(f"KeyManager deployed by {DEPLOYER} to address: {cf.keyManager.address}\n")
+print(f"Vault deployed by {DEPLOYER} to address: {cf.vault.address}\n")
+print(f"StakeManager deployed by {DEPLOYER} to address: {cf.stakeManager.address}\n")
+print(f"FLIP deployed by {DEPLOYER} to address: {cf.flip.address}\n")
+print("======================================================================")
+
+
+def all_stakeManager_events():
+    print(f"\n💰 Alice stakes {MIN_STAKE} with nodeID {JUNK_INT}\n")
+    cf.stakeManager.stake(JUNK_INT, MIN_STAKE, {'from': ALICE})
+
+    claim_amount = int(MIN_STAKE / 3)
+    print(f"\n💰 Alice registers a claim for {claim_amount} with nodeID {JUNK_INT}\n")
+    args = (JUNK_INT, claim_amount, ALICE, chain.time()+(2*CLAIM_DELAY))
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(NULL_SIG_DATA, *args)
+    cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+
+    chain.sleep(CLAIM_DELAY)
+
+    print(f"\n💰 Alice executes a claim for nodeID {JUNK_INT}\n")
+    cf.stakeManager.executeClaim(JUNK_INT)
+
+    new_min_stake = int(MIN_STAKE / 3)
+    print(f"\n💰 Denice sets the minimum stake to {new_min_stake}\n")
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(NULL_SIG_DATA, new_min_stake)
+    cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), new_min_stake, {"from": DENICE})
+
+    new_emission_per_block = int(EMISSION_PER_BLOCK / 3)
+    print(f"\n💰 Denice sets the new emission per block to {new_emission_per_block}\n")
+    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(NULL_SIG_DATA, new_emission_per_block)
+    cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), new_emission_per_block, {"from": DENICE})
