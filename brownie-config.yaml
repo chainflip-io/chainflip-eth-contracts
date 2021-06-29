@@ -9,7 +9,7 @@ dependencies:
 # Path remapping to support OpenZepplin imports with NPM-style path
 compiler:
   solc:
-    version: 0.8.2
+    version: 0.8.6
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
 
