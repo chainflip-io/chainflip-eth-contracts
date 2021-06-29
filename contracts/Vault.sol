@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IERC20Lite.sol";
@@ -17,7 +18,9 @@ import "./DepositToken.sol";
 * @author   Quantaf1re (James Key)
 */
 contract Vault is IVault, Shared {
-
+    
+    using SafeERC20 for IERC20;
+    
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
@@ -201,7 +204,7 @@ contract Vault is IVault, Shared {
         } else {
             // It would be nice to wrap require around this line, but
             // some older tokens don't return a bool
-            IERC20(tokenAddr).transfer(recipient, amount);
+            IERC20(tokenAddr).safeTransfer(recipient, amount);
         }
     }
 
