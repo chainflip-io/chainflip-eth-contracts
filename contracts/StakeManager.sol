@@ -266,9 +266,9 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     function _mintInflation() private {
         if (block.number > _lastMintBlockNum) {
             uint amount = getInflationInFuture(0);
-            _FLIP.mint(address(this), amount, "", "mint");
             _totalStake += amount;
             _lastMintBlockNum = block.number;
+            _FLIP.mint(address(this), amount, "", "mint");
         }
     }
 
