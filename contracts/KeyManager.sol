@@ -8,7 +8,7 @@ import "./abstract/Shared.sol";
 
 /**
 * @title    KeyManager contract
-* @notice   Holds the aggregate and governance keys, functions to update them, 
+* @notice   Holds the aggregate and governance keys, functions to update them,
 *           and isValidSig so other contracts can verify signatures and updates _lastValidateTime
 * @author   Quantaf1re (James Key)
 */
@@ -74,15 +74,15 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
                 sigData.sig,
                 key.pubKeyX,
                 key.pubKeyYParity,
-                key.nonceTimesGAddr
+                sigData.kTimesGAddr
             ),
             "KeyManager: Sig invalid"
         );
         require(!_keyToNoncesUsed[keyID][sigData.nonce], "KeyManager: nonce already used");
-        
+
         _lastValidateTime = block.timestamp;
         _keyToNoncesUsed[keyID][sigData.nonce] = true;
-        
+
         return true;
     }
 
@@ -101,7 +101,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
-            SigData(0, 0, sigData.nonce),
+            SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.Agg
@@ -125,7 +125,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce),
+            SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.Gov
@@ -149,7 +149,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setGovKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce),
+            SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.Gov

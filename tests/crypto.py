@@ -23,7 +23,7 @@ class Signer():
         self.pubKeyX = self.pubKey.to_bytes()[1:]
         self.pubKeyXHex = cleanHexStr(self.pubKeyX)
         self.pubKeyXInt = int(self.pubKeyXHex, 16)
-        
+
         self.pubKeyYPar = 0 if cleanHexStr(self.pubKey.to_bytes()[:1]) == "02" else 1
         self.pubKeyYParHex = "00" if self.pubKeyYPar == 0 else "01"
 
@@ -50,14 +50,14 @@ class Signer():
         key = keys.UmbralPrivateKey.gen_key()
         while cls.priv_key_to_pubX_int(key) >= cls.HALF_Q_INT:
             key = keys.UmbralPrivateKey.gen_key()
-        
+
         return key
 
 
     @classmethod
     def gen_key_hex(cls):
         return cls.gen_key().to_bytes().hex()
-    
+
 
     @classmethod
     def gen_signer(cls, keyID, nonces):
@@ -67,11 +67,11 @@ class Signer():
 
 
     def getPubData(self):
-        return [self.pubKeyXInt, self.pubKeyYPar, self.kTimesGAddressHex]
-    
+        return [self.pubKeyXInt, self.pubKeyYPar]
+
 
     def getPubDataWith0x(self):
-        return [self.pubKeyXInt, self.pubKeyYPar, "0x" + self.kTimesGAddressHex]
+        return [self.pubKeyXInt, self.pubKeyYPar]
 
 
     def getSigData(self, msgToHash):
