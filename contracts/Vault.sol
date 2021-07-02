@@ -205,7 +205,7 @@ contract Vault is IVault, Shared {
      * @param recipient The address to receive the ETH
      */
     function sendEth(address payable recipient) external payable {
-        require(msg.sender == address(this));
+        require(msg.sender == address(this), "Vault: only Vault can send ETH");
         recipient.transfer(msg.value);
     }
 

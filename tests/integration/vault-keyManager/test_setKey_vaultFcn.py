@@ -293,6 +293,15 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
     tranTokens = choices(tokensList, k=tranMinLen)
 
     tranTotals = {tok: sum([tranAmounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in tokensList}
+    # Need to know which index that ETH transfers start to fail since they won't revert the tx, but won't send the expected amount
+    cumulEthTran = 0
+    validEthIdxs = []
+    for i in range(len(tranTokens)):
+        if tranTokens[i] == ETH_ADDR:
+            if cumulEthTran + tranAmounts[i] <= fetchTotals[ETH_ADDR]:
+                validEthIdxs.append(i)
+                cumulEthTran += tranAmounts[i]
+    tranTotals[ETH_ADDR] = sum([tranAmounts[i] for i, x in enumerate(tranTokens) if x == ETH_ADDR and i in validEthIdxs])
 
     ethBals = [web3.eth.get_balance(str(recip)) for recip in tranRecipients]
     tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
@@ -307,7 +316,7 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
     callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
-    if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList]):
+    if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
             cf.vault.allBatch(AGG_SIGNER_2.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
     else:
@@ -319,7 +328,7 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
         
         for i in range(len(tranRecipients)):
             if tranTokens[i] == ETH_ADDR:
-                assert web3.eth.get_balance(str(tranRecipients[i])) == ethBals[i] + tranAmounts[i]
+                if i in validEthIdxs: assert web3.eth.get_balance(str(tranRecipients[i])) == ethBals[i] + tranAmounts[i]
             elif tranTokens[i] == token:
                 assert token.balanceOf(tranRecipients[i]) == tokenBals[i] + tranAmounts[i]
             elif tranTokens[i] == token2:

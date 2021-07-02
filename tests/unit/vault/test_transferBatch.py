@@ -10,6 +10,7 @@ from random import choices
     sender=strategy('address')
 )
 def test_transferBatch(cf, token, token2, recipients, amounts, sender):
+    
     # Make sure that they're all the same length
     minLen = trimToShortest([recipients, amounts])
     tokens = choices([ETH_ADDR, token, token2], k=minLen)
