@@ -10,10 +10,16 @@ from random import choices
     sender=strategy('address')
 )
 def test_transferBatch(cf, token, token2, recipients, amounts, sender):
-    
+    recipients = [recip for recip in recipients if recip != cf.vault.address]
+    print()
+    print(recipients)
+    print(cf.vault)
+    print(token, token2)
     # Make sure that they're all the same length
     minLen = trimToShortest([recipients, amounts])
     tokens = choices([ETH_ADDR, token, token2], k=minLen)
+    print(minLen)
+    print(tokens)
 
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT * minLen)
     token.transfer(cf.vault, TEST_AMNT * minLen, {'from': cf.DEPLOYER})
@@ -32,6 +38,7 @@ def test_transferBatch(cf, token, token2, recipients, amounts, sender):
         elif tokens[i] == token:
             assert token.balanceOf(recipients[i]) == tokenBals[i] + amounts[i]
         elif tokens[i] == token2:
+            print(recipients)
             assert token2.balanceOf(recipients[i]) == token2Bals[i] + amounts[i]
         else:
             assert False, "Panic"
