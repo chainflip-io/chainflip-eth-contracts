@@ -42,3 +42,16 @@ def trimToShortest(lists):
 
 def null_sig(nonce):
     return (0, 0, nonce)
+
+
+def getValidTranIdxs(tokens, amounts, prevBal, tok):
+    # Need to know which index that ETH transfers start to fail since they won't revert the tx, but won't send the expected amount
+    cumulEthTran = 0
+    validEthIdxs = []
+    for i in range(len(tokens)):
+        if tokens[i] == tok:
+            if cumulEthTran + amounts[i] <= prevBal:
+                validEthIdxs.append(i)
+                cumulEthTran += amounts[i]
+    
+    return validEthIdxs

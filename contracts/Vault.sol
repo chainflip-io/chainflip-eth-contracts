@@ -26,7 +26,6 @@ contract Vault is IVault, Shared {
 
 
     event TransferFailed(
-        address tokenAddr,
         address payable recipient,
         uint amount,
         bytes lowLevelData
@@ -223,7 +222,7 @@ contract Vault is IVault, Shared {
         if (tokenAddr == _ETH_ADDR) {
             try this.sendEth{value: amount}(recipient) {
             } catch (bytes memory lowLevelData) {
-                emit TransferFailed(tokenAddr, recipient, amount, lowLevelData);
+                emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
             // It would be nice to wrap require around this line, but

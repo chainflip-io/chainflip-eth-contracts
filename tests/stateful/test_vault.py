@@ -97,12 +97,12 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             tranMinLen = trimToShortest([st_recips, st_eth_amounts])
             tranTokens = choices(self.tokensList, k=tranMinLen)
             tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in self.tokensList}
+            validEthIdxs = getValidTranIdxs(tranTokens, st_eth_amounts, self.ethBals[self.v.address], ETH_ADDR)
+            tranTotals[ETH_ADDR] = sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == ETH_ADDR and i in validEthIdxs])
 
             callDataNoSig = self.v.allBatch.encode_input(null_sig(self.nonces[AGG]), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
 
-            if tranTotals[ETH_ADDR] - fetchEthTotal > self.ethBals[self.v.address] or \
-            tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v.address] or \
-            tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v.address]:
+            if tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v.address] or tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v.address]:
                 print('        NOT ENOUGH TOKENS IN VAULT rule_allBatch', st_swapIDs, fetchTokens, tranTotals, st_recips, st_eth_amounts, st_sender)
                 with reverts():
                     self.v.allBatch(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)
@@ -110,7 +110,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
                 print('                    rule_allBatch', st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, st_sender)
                 tx = self.v.allBatch(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, {'from': st_sender})
 
-                # Alter bals from the fetch
+                # Alter bals from the fetches
                 for swapID, tok in zip(st_swapIDs, fetchTokens):
                     if tok == ETH_ADDR:
                         addr = getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "")
@@ -128,10 +128,11 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
                             assert False, "Panicc"
                 
                 # Alter bals from the transfers
-                for tok, rec, am in zip(tranTokens, st_recips, st_eth_amounts):
+                for i, (tok, rec, am) in enumerate(zip(tranTokens, st_recips, st_eth_amounts)):
                     if tok == ETH_ADDR:
-                        self.ethBals[rec] += am
-                        self.ethBals[self.v.address] -= am
+                        if i in validEthIdxs:
+                            self.ethBals[rec] += am
+                            self.ethBals[self.v.address] -= am
                     elif tok == self.tokenA:
                         self.tokenABals[rec] += am
                         self.tokenABals[self.v.address] -= am
@@ -152,7 +153,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
                 print('        REV_MSG_NZ_UINT _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount)
                 with reverts(REV_MSG_NZ_UINT):
                     self.v.transfer(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
-            elif bals[self.v.address] < st_eth_amount:
+            elif bals[self.v.address] < st_eth_amount and tokenAddr != ETH_ADDR:
                 print('        NOT ENOUGH TOKENS IN VAULT _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount)
                 with reverts():
                     self.v.transfer(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
@@ -160,8 +161,9 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
                 print('                    _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount)
                 self.v.transfer(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
 
-                bals[self.v.address] -= st_eth_amount
-                bals[st_recip] += st_eth_amount
+                if bals[self.v.address] >= st_eth_amount or tokenAddr != ETH_ADDR:
+                    bals[self.v.address] -= st_eth_amount
+                    bals[st_recip] += st_eth_amount
 
         
         def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
@@ -183,12 +185,12 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             minLen = trimToShortest([st_recips, st_eth_amounts])
             tokens = choices(self.tokensList, k=minLen)
             tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tokens) if x == tok]) for tok in self.tokensList}
+            validEthIdxs = getValidTranIdxs(tokens, st_eth_amounts, self.ethBals[self.v.address], ETH_ADDR)
+            tranTotals[ETH_ADDR] = sum([st_eth_amounts[i] for i, x in enumerate(tokens) if x == ETH_ADDR and i in validEthIdxs])
             
             callDataNoSig = self.v.transferBatch.encode_input(null_sig(self.nonces[AGG]), tokens, st_recips, st_eth_amounts)
             
-            if tranTotals[ETH_ADDR] > self.ethBals[self.v.address] or \
-            tranTotals[self.tokenA] > self.tokenABals[self.v.address] or \
-            tranTotals[self.tokenB] > self.tokenBBals[self.v.address]:
+            if tranTotals[self.tokenA] > self.tokenABals[self.v.address] or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]:
                 print('        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch', st_sender, tokens, st_recips, st_eth_amounts)
                 with reverts():
                     self.v.transferBatch(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), tokens, st_recips, st_eth_amounts)
@@ -198,8 +200,9 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
 
                 for i in range(len(st_recips)):
                     if tokens[i] == ETH_ADDR:
-                        self.ethBals[st_recips[i]] += st_eth_amounts[i]
-                        self.ethBals[self.v.address] -= st_eth_amounts[i]
+                        if i in validEthIdxs:
+                            self.ethBals[st_recips[i]] += st_eth_amounts[i]
+                            self.ethBals[self.v.address] -= st_eth_amounts[i]
                     elif tokens[i] == self.tokenA:
                         self.tokenABals[st_recips[i]] += st_eth_amounts[i]
                         self.tokenABals[self.v.address] -= st_eth_amounts[i]
@@ -253,7 +256,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             callDataNoSig = self.v.fetchDepositEth.encode_input(null_sig(self.nonces[AGG]), st_swapID)
 
             if st_swapID == 0:
-                print('        REV_MSG_NZ_UINT rule_fetchDepositEth', st_sender, st_swapID)
+                print('        REV_MSG_NZ_BYTES32 rule_fetchDepositEth', st_sender, st_swapID)
                 with reverts(REV_MSG_NZ_BYTES32):
                     self.v.fetchDepositEth(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapID)
             else:
@@ -284,7 +287,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             callDataNoSig = self.v.fetchDepositToken.encode_input(null_sig(self.nonces[AGG]), st_swapID, token)
 
             if st_swapID == 0:
-                print('        REV_MSG_NZ_UINT _fetchDepositToken', token.address, st_sender, st_swapID)
+                print('        REV_MSG_NZ_BYTES32 _fetchDepositToken', token.address, st_sender, st_swapID)
                 with reverts(REV_MSG_NZ_BYTES32):
                      self.v.fetchDepositToken(AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapID, token)
             else:

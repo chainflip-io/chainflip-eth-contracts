@@ -87,7 +87,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
             if st_nodeID == 0:
                 print('        NODEID rule_stake', st_staker, st_nodeID, st_amount/E_18)
-                with reverts(REV_MSG_NZ_UINT):
+                with reverts(REV_MSG_NZ_BYTES32):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount < self.minStake:
                 print('        REV_MSG_MIN_STAKE rule_stake', st_staker, st_nodeID, st_amount/E_18)
@@ -113,7 +113,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             if st_nodeID == 0:
                 print('        NODEID rule_registerClaim', *args)
-                with reverts(REV_MSG_NZ_UINT):
+                with reverts(REV_MSG_NZ_BYTES32):
                     self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
             elif st_amount == 0:
                 print('        AMOUNT rule_registerClaim', *args)
