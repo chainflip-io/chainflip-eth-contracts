@@ -97,7 +97,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
             tranMinLen = trimToShortest([st_recips, st_eth_amounts])
             tranTokens = choices(self.tokensList, k=tranMinLen)
             tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in self.tokensList}
-            validEthIdxs = getValidTranIdxs(tranTokens, st_eth_amounts, self.ethBals[self.v.address], ETH_ADDR)
+            validEthIdxs = getValidTranIdxs(tranTokens, st_eth_amounts, self.ethBals[self.v.address] + fetchEthTotal, ETH_ADDR)
             tranTotals[ETH_ADDR] = sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == ETH_ADDR and i in validEthIdxs])
 
             callDataNoSig = self.v.allBatch.encode_input(null_sig(self.nonces[AGG]), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts)

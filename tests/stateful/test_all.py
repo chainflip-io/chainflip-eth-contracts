@@ -176,7 +176,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             tranMinLen = trimToShortest([st_recips, st_eth_amounts])
             tranTokens = choices(self.tokensList, k=tranMinLen)
             tranTotals = {tok: sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]) for tok in self.tokensList}
-            validEthIdxs = getValidTranIdxs(tranTokens, st_eth_amounts, self.ethBals[self.v.address], ETH_ADDR)
+            validEthIdxs = getValidTranIdxs(tranTokens, st_eth_amounts, self.ethBals[self.v] + fetchEthTotal, ETH_ADDR)
             tranTotals[ETH_ADDR] = sum([st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == ETH_ADDR and i in validEthIdxs])
 
             signer = self._get_key_prob(AGG)
@@ -252,7 +252,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 print('                    _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount, signer)
                 tx = self.v.transfer(signer.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), tokenAddr, st_recip, st_eth_amount, {'from': st_sender})
 
-                if bals[self.v.address] >= st_eth_amount or tokenAddr != ETH_ADDR:
+                if bals[self.v] >= st_eth_amount or tokenAddr != ETH_ADDR:
                     bals[self.v] -= st_eth_amount
                     bals[st_recip] += st_eth_amount
                 self.lastValidateTime = tx.timestamp
@@ -282,16 +282,17 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             totalEth = 0
             totalTokenA = 0
             totalTokenB = 0
-            for tok, am in zip(tokens, st_eth_amounts):
-                if tok == self.tokenA:
+            validEthIdxs = getValidTranIdxs(tokens, st_eth_amounts, self.ethBals[self.v], ETH_ADDR)
+            for i, (tok, am) in enumerate(zip(tokens, st_eth_amounts)):
+                if tok == ETH_ADDR:
+                    if i in validEthIdxs:
+                        totalEth += am
+                elif tok == self.tokenA:
                     totalTokenA += am
                 elif tok == self.tokenB:
                     totalTokenB += am
                 else:
                     assert False, "Unknown asset"
-            
-            validEthIdxs = getValidTranIdxs(tokens, st_eth_amounts, self.ethBals[self.v.address], ETH_ADDR)
-            totalEth = sum([st_eth_amounts[i] for i, x in enumerate(tokens) if x == ETH_ADDR and i in validEthIdxs])
             
             if signer != self.keyIDToCurKeys[AGG]:
                 print('        REV_MSG_SIG rule_vault_transferBatch', signer, st_sender, tokens, st_recips, st_eth_amounts)
@@ -621,8 +622,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             elif self.flipBals[self.sm] + inflation < claim[0]:
-                print('        REV_MSG_ERC777_EXCEED_BAL rule_executeClaim', st_nodeID)
-                with reverts(REV_MSG_ERC777_EXCEED_BAL):
+                print('        REV_MSG_INTEGER_OVERFLOW rule_executeClaim', st_nodeID)
+                with reverts(REV_MSG_INTEGER_OVERFLOW):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             else:
                 print('                    rule_executeClaim', st_nodeID)

@@ -162,8 +162,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             elif self.flipBals[self.sm] + inflation < claim[0]:
-                print('        REV_MSG_ERC777_EXCEED_BAL rule_executeClaim', st_nodeID)
-                with reverts(REV_MSG_ERC777_EXCEED_BAL):
+                print('        REV_MSG_INTEGER_OVERFLOW rule_executeClaim', st_nodeID)
+                with reverts(REV_MSG_INTEGER_OVERFLOW):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             else:
                 print('                    rule_executeClaim', st_nodeID)
