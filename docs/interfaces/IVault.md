@@ -6,6 +6,11 @@
 
 
 
+## `allBatch(struct IShared.SigData sigData, bytes32[] fetchSwapIDs, address[] fetchTokenAddrs, address[] tranTokenAddrs, address payable[] tranRecipients, uint256[] tranAmounts)` (external)
+
+No description
+
+
 ## `transfer(struct IShared.SigData sigData, address tokenAddr, address payable recipient, uint256 amount)` (external)
 
 No description
