@@ -66,14 +66,11 @@ def setKey_rev_pubKeyX_test(cf, fcn, signer):
 
 def setKey_rev_nonceTimesGAddr_test(cf, fcn, signer):
     newKey = AGG_SIGNER_2.getPubData()
-    print(newKey)
     nullSig = agg_null_sig() if signer.keyID == AGG else gov_null_sig()
     callDataNoSig = fcn.encode_input(nullSig, newKey)
-    print(callDataNoSig)
     sigData = signer.getSigData(callDataNoSig)
     sigData[3] = ZERO_ADDR
-    print(sigData)
-    with reverts(REV_MSG_NONCETIMESGADDR):
+    with reverts(REV_MSG_NONCETIMESGADDR_EMPTY):
         fcn(sigData, newKey)
 
 
