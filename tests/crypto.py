@@ -2,7 +2,6 @@ from utils import *
 import umbral
 from umbral import pre, keys, signing
 
-
 umbral.config.set_default_curve()
 
 # Fcns return a list instead of a tuple since they need to be modified
@@ -87,7 +86,7 @@ class Signer():
         s = s + self.Q_INT if s < 0 else s
 
         # Since nonces is passed by reference, it will be altered for all other signers too
-        sigData = [int(msgHashHex, 16), s, self.nonces[keyID]]
+        sigData = [int(msgHashHex, 16), s, self.nonces[keyID], self.kTimesGAddressHex]
         self.nonces[keyID] += 1
         return sigData
 
@@ -102,6 +101,6 @@ class Signer():
         s = s + self.Q_INT if s < 0 else s
 
         # Since nonces is passed by reference, it will be altered for all other signers too
-        sigData = [int(msgHashHex, 16), s, nonces[keyID]]
+        sigData = [int(msgHashHex, 16), s, nonces[keyID], self.kTimesGAddressHex]
         nonces[keyID] += 1
         return sigData

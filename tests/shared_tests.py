@@ -11,7 +11,7 @@ def txTimeTest(time, tx):
 
 
 
-# ----------Vault---------- 
+# ----------Vault----------
 
 # Set keys
 
@@ -66,11 +66,15 @@ def setKey_rev_pubKeyX_test(cf, fcn, signer):
 
 def setKey_rev_nonceTimesGAddr_test(cf, fcn, signer):
     newKey = AGG_SIGNER_2.getPubData()
-    newKey[2] = ZERO_ADDR
+    print(newKey)
     nullSig = agg_null_sig() if signer.keyID == AGG else gov_null_sig()
     callDataNoSig = fcn.encode_input(nullSig, newKey)
+    print(callDataNoSig)
+    sigData = signer.getSigData(callDataNoSig)
+    sigData[3] = ZERO_ADDR
+    print(sigData)
     with reverts(REV_MSG_NONCETIMESGADDR):
-        fcn(signer.getSigData(callDataNoSig), newKey)
+        fcn(sigData, newKey)
 
 
 def setKey_rev_msgHash_test(cf, fcn, signer):
@@ -127,7 +131,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), nodeID, amount, receiver, expiryTime)
     tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryTime)
-    
+
     startTime = tx.timestamp + CLAIM_DELAY
     inflation = getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
     # Check things that should've changed
@@ -160,7 +164,7 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
 #             cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryTime, nodeID)
 #     else:
 #         tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryTime, nodeID)
-        
+
 #         # Check things that should've changed
 #         assert newLastMintBlockNum == tx.block_number
 #         assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
