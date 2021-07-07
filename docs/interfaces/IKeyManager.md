@@ -41,4 +41,9 @@ No description
 No description
 
 
+## `isNonceUsedByKey(enum IShared.KeyID keyID, uint256 nonce) → bool` (external)
+
+No description
+
+
 

@@ -1,47 +1,8 @@
-# `StakeManager`
-
-  Manages the staking of FLIP. Validators on the FLIP state chain
-          basically have full control of FLIP leaving the contract. Auction
-          logic for validator slots is not handled in this contract - bidders
-          just send their bid to this contract via `stake` with their FLIP state chain
-          nodeID, the ChainFlip Engine witnesses the bids, takes the top n bids,
-          assigns them to slots, then signs/calls `claim` to refund everyone else.
-
-          This contract also handles the minting of FLIP after the initial supply
-          is minted during FLIP's creation. Every new block after the contract is created is
-          able to mint `_emissionPerBlock` amount of FLIP. This is FLIP that's meant to
-          be rewarded to validators for their service. If none of them end up being naughty
-          boys or girls, then their proportion of that newly minted reward will be rewarded
-          to them based on their proportion of the total stake when they `claim` - though the logic of
-          assigning rewards is handled by the ChainFlip Engine via aggKey and this contract just blindly
-          trusts its judgement. There is an intentional limit on the power to mint, which is
-          why there's an emission rate controlled within the contract, so that a compromised
-          aggKey can't mint infinite tokens - the most that can be minted is any outstanding
-          emission of FLIP and the most that can be stolen is the FLIP balance of this contract,
-          which is the total staked (or bidded during auctions) + total emitted from rewards.
-          However, a compromised govKey could change the emission rate and therefore mint
-          infinite tokens.
+# `IStakeManager`
 
 
 
 
-## `validSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
-
-
-
-   Call isValidSig in _keyManager
-
-## `noFish()`
-
-Ensure that FLIP can only be withdrawn via `claim`
-        and not any other method
-
-
-
-
-## `constructor(contract IKeyManager keyManager, uint256 emissionPerBlock, uint256 minStake, uint256 flipTotalSupply)` (public)
-
-No description
 
 
 ## `stake(bytes32 nodeID, uint256 amount, address returnAddr)` (external)
@@ -115,11 +76,6 @@ No description
 - `newMinStake`:   The new minimum stake
 
 
-## `tokensReceived(address _operator, address _from, address _to, uint256 _amount, bytes _data, bytes _operatorData)` (external)
-
-No description
-
-
 ## `getKeyManager() → contract IKeyManager` (external)
 
  Get the KeyManager address/interface that's used to validate sigs
@@ -156,7 +112,7 @@ Returns
 
 - The rate of FLIP emission (uint)
 
-## `getInflationInFuture(uint256 blocksIntoFuture) → uint256` (public)
+## `getInflationInFuture(uint256 blocksIntoFuture) → uint256` (external)
 
  Get the amount of FLIP that would be emitted via inflation at
          the current block plus addition inflation from an extra
@@ -205,43 +161,11 @@ Returns
          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
 
 
+- `nodeID`:    The nodeID which is has a pending claim
+
+
 Returns
 
 - The claim (Claim)
-
-
-## `Staked(bytes32 nodeID, uint256 amount, address returnAddr)`
-
-
-
-
-
-
-## `ClaimRegistered(bytes32 nodeID, uint256 amount, address staker, uint48 startTime, uint48 expiryTime)`
-
-
-
-
-
-
-## `ClaimExecuted(bytes32 nodeID, uint256 amount)`
-
-
-
-
-
-
-## `EmissionChanged(uint256 oldEmissionPerBlock, uint256 newEmissionPerBlock)`
-
-
-
-
-
-
-## `MinStakeChanged(uint256 oldMinStake, uint256 newMinStake)`
-
-
-
-
 
 

@@ -38,7 +38,7 @@ contract Vault is IVault, Shared {
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          fetch should should have the same index swapIDs[i] and tokenAddrs[i]
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param fetchSwapIDs      The unique identifiers for this swap (bytes32[]), used for create2
      * @param fetchTokenAddrs   The addresses of the tokens to be transferred
@@ -58,7 +58,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.allBatch.selector,
-                SigData(0, 0, sigData.nonce),
+                SigData(0, 0, sigData.nonce, address(0)),
                 fetchSwapIDs,
                 fetchTokenAddrs,
                 tranTokenAddrs,
@@ -73,10 +73,10 @@ contract Vault is IVault, Shared {
         require(
             fetchSwapIDs.length == fetchTokenAddrs.length &&
             tranTokenAddrs.length == tranRecipients.length &&
-            tranRecipients.length == tranAmounts.length, 
+            tranRecipients.length == tranAmounts.length,
             "Vault: arrays not same length"
         );
-        
+
         // Fetch all deposits
         for (uint i; i < fetchSwapIDs.length; i++) {
             if (fetchTokenAddrs[i] == _ETH_ADDR) {
@@ -100,7 +100,7 @@ contract Vault is IVault, Shared {
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param tokenAddr The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
@@ -116,7 +116,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
-                SigData(0, 0, sigData.nonce),
+                SigData(0, 0, sigData.nonce, address(0)),
                 tokenAddr,
                 recipient,
                 amount
@@ -133,7 +133,7 @@ contract Vault is IVault, Shared {
      *          transfer should should have the same index tokenAddrs[i], recipients[i],
      *          and amounts[i].
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param tokenAddrs The addresses of the tokens to be transferred
      * @param recipients The address of the recipient of the transfer
@@ -149,7 +149,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transferBatch.selector,
-                SigData(0, 0, sigData.nonce),
+                SigData(0, 0, sigData.nonce, address(0)),
                 tokenAddrs,
                 recipients,
                 amounts
@@ -159,7 +159,7 @@ contract Vault is IVault, Shared {
     ) {
         require(
             tokenAddrs.length == recipients.length &&
-            recipients.length == amounts.length, 
+            recipients.length == amounts.length,
             "Vault: arrays not same length"
         );
 
@@ -217,7 +217,7 @@ contract Vault is IVault, Shared {
      *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32)
      */
@@ -229,7 +229,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEth.selector,
-                SigData(0, 0, sigData.nonce),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapID
             )
         ),
@@ -243,7 +243,7 @@ contract Vault is IVault, Shared {
      *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param swapIDs    The unique identifiers for this swap (bytes32)
      */
@@ -255,7 +255,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEthBatch.selector,
-                SigData(0, 0, sigData.nonce),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapIDs
             )
         ),
@@ -271,7 +271,7 @@ contract Vault is IVault, Shared {
      *          create2 by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32), used for create2
      * @param tokenAddr The address of the token to be transferred
@@ -285,7 +285,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
-                SigData(0, 0, sigData.nonce),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapID,
                 tokenAddr
             )
@@ -300,7 +300,7 @@ contract Vault is IVault, Shared {
      *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and 
+     *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param swapIDs       The unique identifiers for this swap (bytes32[]), used for create2
      * @param tokenAddrs    The addresses of the tokens to be transferred
@@ -314,7 +314,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositTokenBatch.selector,
-                SigData(0, 0, sigData.nonce),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapIDs,
                 tokenAddrs
             )
@@ -353,7 +353,7 @@ contract Vault is IVault, Shared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    
+
     /// @dev    Calls isValidSig in _keyManager
     modifier validSig(
         SigData calldata sigData,

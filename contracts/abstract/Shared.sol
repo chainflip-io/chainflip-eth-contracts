@@ -39,7 +39,6 @@ abstract contract Shared is IShared {
     /// @dev    Checks that all of a Key's values are populated
     modifier nzKey(Key memory key) {
         require(key.pubKeyX != 0, "Shared: pubKeyX is empty");
-        require(key.nonceTimesGAddr != _ZERO_ADDR, "Shared: nonceTimesGAddr is empty");
         _;
     }
 

@@ -44,8 +44,8 @@ AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
 # This wouldn't be the case if a single uint was used to track the current nonce for
 # each agg and gov key tho
 nonces = {AGG: 0, GOV: 0}
-def agg_null_sig(): return (0, 0, nonces[AGG])
-def gov_null_sig(): return (0, 0, nonces[GOV])
+def agg_null_sig(): return (0, 0, nonces[AGG], ZERO_ADDR)
+def gov_null_sig(): return (0, 0, nonces[GOV], ZERO_ADDR)
 
 REV_MSG_DELAY = "KeyManager: not enough delay"
 
@@ -74,6 +74,7 @@ NULL_KEY = (0, 0, ZERO_ADDR)
 # nzKey
 REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
 REV_MSG_NONCETIMESGADDR = "Shared: nonceTimesGAddr is empty"
+REV_MSG_NONCETIMESGADDR_EMPTY = "No zero inputs allowed"
 
 # isValidSig
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"

@@ -7,9 +7,9 @@ from shared_tests import *
 def test_isValidSig(cf):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD)
     tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[AGG])
-    
+
     assert tx.return_value == True
-    txTimeTest(cf.keyManager.getLastValidateTime(), cf.keyManager.tx)
+    # txTimeTest(cf.keyManager.getLastValidateTime(), cf.keyManager.tx)
 
 
 def test_isValidSig_rev_msgHash(cf):

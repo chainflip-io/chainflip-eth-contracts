@@ -7,12 +7,12 @@
 
 
 
-## `constructor(string name, string symbol, address receiver, uint256 mintAmount)` (public)
+## `constructor(string name, string symbol, address[] defaultOperators, address receiver, uint256 mintAmount)` (public)
 
 No description
 
 
-## `mint(address receiver, uint256 amount)` (external)
+## `mint(address receiver, uint256 amount, bytes userData, bytes operatorData)` (external)
 
 No description
 

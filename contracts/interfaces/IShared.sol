@@ -22,12 +22,11 @@ interface IShared {
     /**
     * @dev  SchnorrSECP256K1 requires that each key has a public key part (x coordinate),
     *       a parity for the y coordinate (0 if the y ordinate of the public key is even, 1
-    *       if it's odd), and a nonceTimesGAddr which is to help exploit built-in crypto curves
+    *       if it's odd)
     */
     struct Key {
         uint pubKeyX;
         uint8 pubKeyYParity;
-        address nonceTimesGAddr;
     }
 
     /**
@@ -38,5 +37,6 @@ interface IShared {
         uint msgHash;
         uint sig;
         uint nonce;
+        address kTimesGAddr;
     }
 }
