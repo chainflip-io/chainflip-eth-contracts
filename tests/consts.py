@@ -95,9 +95,8 @@ REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
 
 
 # -----StakeManager-----
-# Targeting inflation at 15% per year (linear), assuming an average
-# block time of 13.1s
-EMISSION_PER_BLOCK = 5607877281367557723
+NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
+NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
 MIN_STAKE = 40000 * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
 # 13292

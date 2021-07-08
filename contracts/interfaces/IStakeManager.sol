@@ -68,15 +68,16 @@ interface IStakeManager is IShared {
     function executeClaim(bytes32 nodeID) external;
 
     /**
-     * @notice  Set the rate (per second) at which new FLIP is minted to this contract
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current governance key (uint)
-     * @param newEmissionPerBlock     The new rate
+     * @notice  Compares a given new FLIP supply it against the old supply,
+     *          then mints and burns as appropriate
+     * @param sigData               signature over the abi-encoded function params
+     * @param newTotalSupply        new total supply of FLIP
+     * @param stateChainBlockNumber State Chain block number for the new total supply
      */
-    function setEmissionPerBlock(
+    function updateFlipSupply(
         SigData calldata sigData,
-        uint newEmissionPerBlock
+        uint newTotalSupply,
+        uint stateChainBlockNumber
     ) external;
 
     /**
@@ -91,7 +92,6 @@ interface IStakeManager is IShared {
         SigData calldata sigData,
         uint newMinStake
     ) external;
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -112,38 +112,10 @@ interface IStakeManager is IShared {
     function getFLIPAddress() external view returns (address);
 
     /**
-     * @notice  Get the last time that claim() was called, in unix time
-     * @return  The time of the last claim (uint)
+     * @notice  Get the last state chain block number that the supply was updated at
+     * @return  The state chain block number of the last update
      */
-    function getLastMintBlockNum() external view returns (uint);
-
-    /**
-     * @notice  Get the emission rate of FLIP in seconds
-     * @return  The rate of FLIP emission (uint)
-     */
-    function getEmissionPerBlock() external view returns (uint);
-
-    /**
-     * @notice  Get the amount of FLIP that would be emitted via inflation at
-     *          the current block plus addition inflation from an extra
-     *          `blocksIntoFuture` blocks
-     * @param blocksIntoFuture  The number of blocks past the current block to
-     *              calculate the inflation at
-     * @return  The amount of FLIP inflation
-     */
-    function getInflationInFuture(uint blocksIntoFuture) external view returns (uint);
-
-    /**
-     * @notice  Get the total amount of FLIP currently staked by all stakers
-     *          plus the inflation that could be minted if someone called
-     *          `claim` or `setEmissionPerBlock` at the specified block
-     * @param blocksIntoFuture  The number of blocks into the future added
-     *              onto the current highest block. E.g. if the current highest
-     *              block is 10, and the stake + inflation that you want to know
-     *              is at height 15, input 5
-     * @return  The total of stake + inflation at specified blocks in the future from now
-     */
-    function getTotalStakeInFuture(uint blocksIntoFuture) external view returns (uint);
+    function getLastSupplyUpdateBlockNumber() external view returns (uint);
 
     /**
      * @notice  Get the minimum amount of stake that's required for a bid

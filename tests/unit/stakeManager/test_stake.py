@@ -16,8 +16,6 @@ def test_stake_amount_rand(cf, amount):
             cf,
             0,
             JUNK_HEX,
-            cf.stakeManager.tx.block_number,
-            EMISSION_PER_BLOCK,
             MIN_STAKE,
             tx,
             amount,
@@ -32,8 +30,6 @@ def test_stake_min(cf, stakedMin):
         cf,
         0,
         JUNK_HEX,
-        cf.stakeManager.tx.block_number,
-        EMISSION_PER_BLOCK,
         MIN_STAKE,
         *stakedMin,
         NON_ZERO_ADDR

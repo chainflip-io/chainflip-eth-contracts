@@ -110,19 +110,16 @@ def isValidSig_rev_test(cf, signer):
 # Can't put the if conditions for `amount` in this fcn like in test_claim because
 # it's we need to accomodate already having a tx because it's best to test
 # `stakedMin` directly
-def stakeTest(cf, prevTotal, nodeID, lastMintBlockNum, emissionPerBlock, minStake, tx, amount, returnAddr):
+def stakeTest(cf, prevTotal, nodeID, minStake, tx, amount, returnAddr):
     assert cf.flip.balanceOf(cf.stakeManager) == prevTotal + amount
-    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + amount + getInflation(lastMintBlockNum, tx.block_number, EMISSION_PER_BLOCK)
     assert tx.events["Staked"][0].values() == [nodeID, amount, returnAddr]
-    assert cf.stakeManager.getLastMintBlockNum() == lastMintBlockNum
-    assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
     assert cf.stakeManager.getMinimumStake() == minStake
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
-def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, expiryTime):
+def registerClaimTest(cf, nodeID, minStake, amount, receiver, expiryTime):
     prevReceiverBal = cf.flip.balanceOf(receiver)
     prevStakeManBal = cf.flip.balanceOf(cf.stakeManager)
 
@@ -130,16 +127,12 @@ def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake,
     tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), nodeID, amount, receiver, expiryTime)
 
     startTime = tx.timestamp + CLAIM_DELAY
-    inflation = getInflation(prevTx.block_number, tx.block_number, emissionPerBlock)
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID) == (amount, receiver, startTime, expiryTime)
     assert tx.events["ClaimRegistered"][0].values() == (nodeID, amount, receiver, startTime, expiryTime)
     # Check things that shouldn't have changed
     assert cf.flip.balanceOf(receiver) == prevReceiverBal
     assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
-    assert cf.stakeManager.getLastMintBlockNum() == prevTx.block_number
-    assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
-    assert cf.stakeManager.getTotalStakeInFuture(0) == prevTotal + inflation
     assert cf.stakeManager.getMinimumStake() == minStake
 
 

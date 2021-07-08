@@ -7,17 +7,13 @@ from brownie.test import given, strategy
 def test_setMinStake(cf, newMinStake):
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
     tx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, {"from": cf.ALICE})
-    
+
     # Check things that should've changed
     assert cf.stakeManager.getMinimumStake() == newMinStake
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
+
     # Check things that shouldn't have changed
-    inflation = getInflation(cf.stakeManager.tx.block_number, tx.block_number, EMISSION_PER_BLOCK)
     assert cf.flip.balanceOf(cf.stakeManager) == 0
-    assert cf.stakeManager.getInflationInFuture(0) == inflation
-    assert cf.stakeManager.getTotalStakeInFuture(0) == inflation
-    assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.block_number
 
 
 def test_setMinStake_rev_amount(cf):
@@ -56,13 +52,13 @@ def test_setMinStake_rev_aggKey(cf):
 # has `testSendFLIP` in it to simulate some kind of hack
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
 def test_setMinStake_rev_noFish(cf, StakeManagerVulnerable, FLIP, web3, amount):
-    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, EMISSION_PER_BLOCK, MIN_STAKE, INIT_SUPPLY)
+    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, MIN_STAKE, INIT_SUPPLY)
     flipVuln = FLIP.at(smVuln.getFLIPAddress())
     # Can't set _FLIP in the constructor because it's made in the constructor
     # of StakeManager and getFLIPAddress is external
     smVuln.testSetFLIP(flipVuln)
     flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    
+
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it
     smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
