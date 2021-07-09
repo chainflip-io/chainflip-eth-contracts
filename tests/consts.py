@@ -114,3 +114,4 @@ REV_MSG_NOT_ON_TIME = "StakeMan: early, late, or execd"
 
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
+REV_MSG_SENDER = "Vault: only Vault can send ETH"

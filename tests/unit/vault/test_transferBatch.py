@@ -10,6 +10,7 @@ from random import choices
     sender=strategy('address')
 )
 def test_transferBatch(cf, token, token2, recipients, amounts, sender):
+    recipients = [recip for recip in recipients if recip != cf.vault.address]
     # Make sure that they're all the same length
     minLen = trimToShortest([recipients, amounts])
     tokens = choices([ETH_ADDR, token, token2], k=minLen)

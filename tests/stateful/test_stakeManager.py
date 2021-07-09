@@ -87,7 +87,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
             if st_nodeID == 0:
                 print('        NODEID rule_stake', st_staker, st_nodeID, st_amount/E_18)
-                with reverts(REV_MSG_NZ_UINT):
+                with reverts(REV_MSG_NZ_BYTES32):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount < self.minStake:
                 print('        REV_MSG_MIN_STAKE rule_stake', st_staker, st_nodeID, st_amount/E_18)
@@ -113,7 +113,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             if st_nodeID == 0:
                 print('        NODEID rule_registerClaim', *args)
-                with reverts(REV_MSG_NZ_UINT):
+                with reverts(REV_MSG_NZ_BYTES32):
                     self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
             elif st_amount == 0:
                 print('        AMOUNT rule_registerClaim', *args)
@@ -162,8 +162,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             elif self.flipBals[self.sm] + inflation < claim[0]:
-                print('        REV_MSG_ERC777_EXCEED_BAL rule_executeClaim', st_nodeID)
-                with reverts(REV_MSG_ERC777_EXCEED_BAL):
+                print('        REV_MSG_INTEGER_OVERFLOW rule_executeClaim', st_nodeID)
+                with reverts(REV_MSG_INTEGER_OVERFLOW):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             else:
                 print('                    rule_executeClaim', st_nodeID)
