@@ -11,11 +11,9 @@ import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 /**
 * @title    StakeManager contract
 * @notice   Manages the staking of FLIP. Validators on the FLIP state chain
-*           basically have full control of FLIP leaving the contract. Auction
-*           logic for validator slots is not handled in this contract - bidders
-*           just send their bid to this contract via `stake` with their FLIP state chain
-*           nodeID, the ChainFlip Engine witnesses the bids, then the State chain
-*           takes the top n bids, and assigns them to Validator slots.
+*           basically have full control of FLIP leaving the contract. Bidders
+*           send their bid to this contract via `stake` with their state chain
+*           nodeID.
 *
 *           This contract also handles the minting and burning of FLIP after the
 *           initial supply is minted during FLIP's creation. At any time, a
@@ -190,7 +188,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     }
 
     /**
-     * @notice  Compares a given new FLIP supply it against the old supply,
+     * @notice  Compares a given new FLIP supply against the old supply,
      *          then mints and burns as appropriate
      * @param sigData               signature over the abi-encoded function params
      * @param newTotalSupply        new total supply of FLIP
@@ -212,13 +210,15 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         ),
         KeyID.Agg
     ) {
-        uint oldSupply = _FLIP.totalSupply();
-        if (newTotalSupply < oldSupply) {
-            _FLIP.burn(oldSupply - newTotalSupply, "");
-        } else if (newTotalSupply > oldSupply) {
-            _FLIP.mint(address(this), newTotalSupply - oldSupply, "", "");
-        }
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "StakeMan: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
+        FLIP flip = _FLIP;
+        uint oldSupply = flip.totalSupply();
+        if (newTotalSupply < oldSupply) {
+            flip.burn(oldSupply - newTotalSupply, "");
+        } else if (newTotalSupply > oldSupply) {
+            flip.mint(address(this), newTotalSupply - oldSupply, "", "");
+        }
         emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
     }
 
@@ -283,8 +283,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     }
 
     /**
-     * @notice  Get the last time that claim() was called, in unix time
-     * @return  The time of the last claim (uint)
+     * @notice  Get the last state chain block number of the last supply update
+     * @return  The state chain block number of the last supply update
      */
     function getLastSupplyUpdateBlockNumber() external override view returns (uint) {
         return _lastSupplyUpdateBlockNum;
