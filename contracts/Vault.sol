@@ -1,7 +1,8 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.6;
 
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IERC20Lite.sol";
@@ -17,9 +18,18 @@ import "./DepositToken.sol";
 * @author   Quantaf1re (James Key)
 */
 contract Vault is IVault, Shared {
-
+    
+    using SafeERC20 for IERC20;
+    
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
+
+
+    event TransferFailed(
+        address payable recipient,
+        uint amount,
+        bytes lowLevelData
+    );
 
 
     constructor(IKeyManager keyManager) {
@@ -186,6 +196,19 @@ contract Vault is IVault, Shared {
     }
 
     /**
+     * @notice  Annoyingly, doing `try addr.transfer` in `_transfer` fails because
+     *          Solidity doesn't see the `address` type as an external contract
+     *          and so doing try/catch on it won't work. Need to make it an external
+     *          call, and doing `this.something` counts as an external call, but that
+     *          means we need a fcn that just sends eth
+     * @param recipient The address to receive the ETH
+     */
+    function sendEth(address payable recipient) external payable {
+        require(msg.sender == address(this), "Vault: only Vault can send ETH");
+        recipient.transfer(msg.value);
+    }
+
+    /**
      * @notice  Transfers ETH or a token from this vault to a recipient
      * @param tokenAddr The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
@@ -197,11 +220,14 @@ contract Vault is IVault, Shared {
         uint amount
     ) private {
         if (tokenAddr == _ETH_ADDR) {
-            recipient.transfer(amount);
+            try this.sendEth{value: amount}(recipient) {
+            } catch (bytes memory lowLevelData) {
+                emit TransferFailed(recipient, amount, lowLevelData);
+            }
         } else {
             // It would be nice to wrap require around this line, but
             // some older tokens don't return a bool
-            IERC20(tokenAddr).transfer(recipient, amount);
+            IERC20(tokenAddr).safeTransfer(recipient, amount);
         }
     }
 

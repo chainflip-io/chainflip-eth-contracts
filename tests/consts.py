@@ -114,3 +114,4 @@ REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "StakeMan: old FLIP supply update"
 
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
+REV_MSG_SENDER = "Vault: only Vault can send ETH"

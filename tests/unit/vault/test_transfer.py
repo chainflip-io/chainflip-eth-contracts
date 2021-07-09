@@ -15,6 +15,33 @@ def test_transfer_eth(cf):
     assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
 
 
+# token doesn't have a fallback function for receiving eth, so should fail
+def test_transfer_eth_fails_recipient(cf, token):
+    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+
+    startBalVault = cf.vault.balance()
+    startBalRecipient = cf.ALICE.balance()
+    
+    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, token, TEST_AMNT)
+    tx = cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, token, TEST_AMNT)
+    
+    assert tx.events["TransferFailed"][0].values() == [token, TEST_AMNT, web3.toHex(0)]
+    assert cf.vault.balance() == startBalVault
+    assert cf.ALICE.balance() == startBalRecipient
+
+
+# Trying to send ETH when there's none in the Vault
+def test_transfer_eth_fails_not_enough_eth(cf, token):
+    startBalRecipient = cf.ALICE.balance()
+    
+    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
+    tx = cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
+    
+    assert tx.events["TransferFailed"][0].values() == [cf.ALICE, TEST_AMNT, web3.toHex(0)]
+    assert cf.vault.balance() == 0
+    assert cf.ALICE.balance() == startBalRecipient
+
+
 def test_transfer_token(cf, token):
     token.transfer(cf.vault, TEST_AMNT, {'from': cf.DEPLOYER})
 
