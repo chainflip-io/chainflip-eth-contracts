@@ -6,8 +6,8 @@ Additional information can be found in the [Ethereum Research](https://github.co
 
 ## Dependencies
 
-- Python 2.7 or 3.5+   
-For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential` 
+- Python 2.7 or 3.5+
+For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
 - [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
 
 ## Usage
@@ -38,10 +38,24 @@ Brownie and `solidity-docgen` don't play very nice with each other. For this rea
 
 This isn't an ideal solution but it'll do for now.
 
+## Deploy the contracts
+
+The deploying account will be allocated all the FLIP on a testnet (90M)
+
+Inside the poetry shell:
+
+```bash
+# ensure that the ETH account associated with this seed has ETH on that network
+export SEED=<your seed phrase>
+brownie run deploy_contracts --network rinkeby deploy the contracts to rinkeby.
+```
+
 ## Useful commands
+
+NB: You may need to run the tests with the additional `--network mainnet-fork`
+
 `brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
 
 `brownie test --stateful false` runs all tests EXCEPT stateful tests
 
 `brownie test --stateful true` runs ONLY the stateful tests
-
