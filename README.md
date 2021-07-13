@@ -47,7 +47,8 @@ Inside the poetry shell:
 ```bash
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED=<your seed phrase>
-brownie run deploy_contracts --network rinkeby deploy the contracts to rinkeby.
+# deploy the contracts to rinkeby.
+brownie run deploy_contracts --network rinkeby
 ```
 
 ## Useful commands
