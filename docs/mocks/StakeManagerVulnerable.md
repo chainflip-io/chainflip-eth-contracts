@@ -8,7 +8,7 @@
 
 
 
-## `constructor(contract IKeyManager keyManager, uint256 emissionPerBlock, uint256 minStake, uint256 flipTotalSupply)` (public)
+## `constructor(contract IKeyManager keyManager, uint256 minStake, uint256 flipTotalSupply)` (public)
 
 No description
 

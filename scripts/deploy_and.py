@@ -27,6 +27,8 @@ print(f"StakeManager deployed by {DEPLOYER} to address: {cf.stakeManager.address
 print(f"FLIP deployed by {DEPLOYER} to address: {cf.flip.address}\n")
 print("======================================================================")
 
+def main():
+    print()
 
 def all_stakeManager_events():
     print(f"\n💰 Alice stakes {MIN_STAKE} with nodeID {JUNK_INT}\n")
@@ -48,7 +50,7 @@ def all_stakeManager_events():
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), new_min_stake)
     cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), new_min_stake, {"from": DENICE})
 
-    new_emission_per_block = int(EMISSION_PER_BLOCK / 3)
-    print(f"\n💰 Denice sets the new emission per block to {new_emission_per_block}\n")
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), new_emission_per_block)
-    cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), new_emission_per_block, {"from": DENICE})
+    stateChainBlockNumber = 100
+    print(f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block 100\n")
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+    cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, {"from": DENICE})

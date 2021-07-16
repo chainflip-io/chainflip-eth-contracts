@@ -51,16 +51,17 @@
 - `nodeID`:    The nodeID of the staker
 
 
-## `setEmissionPerBlock(struct IShared.SigData sigData, uint256 newEmissionPerBlock)` (external)
+## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber)` (external)
 
- Set the rate (per second) at which new FLIP is minted to this contract
+ Compares a given new FLIP supply it against the old supply,
+         then mints and burns as appropriate
 
 
-- `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
-                 for this function with empty msgHash and sig) and sig over that hash
-                 from the current governance key (uint)
+- `sigData`:               signature over the abi-encoded function params
 
-- `newEmissionPerBlock`:     The new rate
+- `newTotalSupply`:        new total supply of FLIP
+
+- `stateChainBlockNumber`: State Chain block number for the new total supply
 
 
 ## `setMinStake(struct IShared.SigData sigData, uint256 newMinStake)` (external)
@@ -94,55 +95,14 @@ Returns
 
 - The address of FLIP
 
-## `getLastMintBlockNum() → uint256` (external)
+## `getLastSupplyUpdateBlockNumber() → uint256` (external)
 
- Get the last time that claim() was called, in unix time
-
-
-Returns
-
-- The time of the last claim (uint)
-
-## `getEmissionPerBlock() → uint256` (external)
-
- Get the emission rate of FLIP in seconds
+ Get the last state chain block number that the supply was updated at
 
 
 Returns
 
-- The rate of FLIP emission (uint)
-
-## `getInflationInFuture(uint256 blocksIntoFuture) → uint256` (external)
-
- Get the amount of FLIP that would be emitted via inflation at
-         the current block plus addition inflation from an extra
-         `blocksIntoFuture` blocks
-
-
-- `blocksIntoFuture`:  The number of blocks past the current block to
-             calculate the inflation at
-
-
-Returns
-
-- The amount of FLIP inflation
-
-## `getTotalStakeInFuture(uint256 blocksIntoFuture) → uint256` (external)
-
- Get the total amount of FLIP currently staked by all stakers
-         plus the inflation that could be minted if someone called
-         `claim` or `setEmissionPerBlock` at the specified block
-
-
-- `blocksIntoFuture`:  The number of blocks into the future added
-             onto the current highest block. E.g. if the current highest
-             block is 10, and the stake + inflation that you want to know
-             is at height 15, input 5
-
-
-Returns
-
-- The total of stake + inflation at specified blocks in the future from now
+- The state chain block number of the last update
 
 ## `getMinimumStake() → uint256` (external)
 

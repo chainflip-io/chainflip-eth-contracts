@@ -2,41 +2,39 @@ from consts import *
 from shared_tests import *
 from brownie import reverts, web3
 
-
-def test_setAggKeyWithAggKey_setEmissionPerBlock(cf):
+def test_setAggKeyWithAggKey_updateFlipSupply(cf):
     # Change agg keys
-    setGovKeyWithGovKey_test(cf)
+    setAggKeyWithAggKey_test(cf)
 
-    newEmissionPerBlock = int(EMISSION_PER_BLOCK * 1.5)
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), newEmissionPerBlock)
-    
+    stateChainBlockNumber = 1
+
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_1.getSigData(callDataNoSig), newEmissionPerBlock, {"from": cf.ALICE})
+        cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, {"from": cf.ALICE})
 
     # Change emission with new key
-    callDataNoSig = cf.stakeManager.setEmissionPerBlock.encode_input(gov_null_sig(), newEmissionPerBlock)
-    tx = cf.stakeManager.setEmissionPerBlock(GOV_SIGNER_2.getSigData(callDataNoSig), newEmissionPerBlock, {"from": cf.ALICE})
-    
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_2.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, {"from": cf.ALICE})
+
     # Check things that should've changed
-    inflation = getInflation(cf.stakeManager.tx.block_number, tx.block_number, EMISSION_PER_BLOCK)
-    assert cf.flip.balanceOf(cf.stakeManager) == inflation
-    assert cf.stakeManager.getInflationInFuture(0) == 0
-    assert cf.stakeManager.getTotalStakeInFuture(0) == inflation
-    assert cf.stakeManager.getEmissionPerBlock() == newEmissionPerBlock
-    assert cf.stakeManager.getLastMintBlockNum() == tx.block_number
-    assert tx.events["EmissionChanged"][0].values() == [EMISSION_PER_BLOCK, newEmissionPerBlock]
+    assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
+    assert cf.flip.balanceOf(cf.stakeManager) == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY
+    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
+    assert tx.events["FlipSupplyUpdated"][0].values() == [INIT_SUPPLY, NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber]
+
     # Check things that shouldn't have changed
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
 
-def test_setAggKeyWithAggKey_setMinStake(cf):
+def test_setGovKeyWithGovKey_setMinStake(cf):
     # Change agg keys
     setGovKeyWithGovKey_test(cf)
 
     newMinStake = int(MIN_STAKE * 1.5)
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
-    
+
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
         cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, {"from": cf.ALICE})
@@ -48,10 +46,6 @@ def test_setAggKeyWithAggKey_setMinStake(cf):
     # Check things that should've changed
     assert cf.stakeManager.getMinimumStake() == newMinStake
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
+
     # Check things that shouldn't have changed
-    inflation = getInflation(cf.stakeManager.tx.block_number, tx.block_number, EMISSION_PER_BLOCK)
     assert cf.flip.balanceOf(cf.stakeManager) == 0
-    assert cf.stakeManager.getInflationInFuture(0) == inflation
-    assert cf.stakeManager.getTotalStakeInFuture(0) == inflation
-    assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.block_number
