@@ -34,10 +34,6 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
 
     chain.sleep(CLAIM_DELAY + 5)
 
-    # Should revert with trying to claim stake that doesn't exist
-    with reverts(REV_MSG_INTEGER_OVERFLOW):
-        cf.stakeManager.executeClaim(nodeID1)
-
     # 1st stake
     stakeTx1 = cf.stakeManager.stake(nodeID1, stakeAmount1, NON_ZERO_ADDR, cf.FR_ALICE)
     stakeTest(
@@ -56,7 +52,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID1) == NULL_CLAIM
 
-    assert cf.flip.balanceOf(cf.stakeManager) == stakeAmount1 - claimAmount1
+    assert cf.flip.balanceOf(cf.stakeManager) == stakeAmount1 - claimAmount1 + STAKEMANAGER_INITIAL_BALANCE
     assert execClaimTx1.events["ClaimExecuted"][0].values() == [nodeID1, claimAmount1]
     assert cf.flip.balanceOf(receiver) == claimAmount1
     # Check things that shouldn't have changed
@@ -101,7 +97,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID2) == NULL_CLAIM
 
-    assert cf.flip.balanceOf(cf.stakeManager) == stakeAmount1 - claimAmount1 + stakeAmount2 - claimAmount2
+    assert cf.flip.balanceOf(cf.stakeManager) == stakeAmount1 - claimAmount1 + stakeAmount2 - claimAmount2 + STAKEMANAGER_INITIAL_BALANCE
     assert execClaimTx2.events["ClaimExecuted"][0].values() == [nodeID2, claimAmount2]
     assert cf.flip.balanceOf(receiver) == claimAmount1 + claimAmount2
     # Check things that shouldn't have changed

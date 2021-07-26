@@ -23,7 +23,7 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
 
 
     # Check things that should've changed
-    assert cf.flip.balanceOf(cf.stakeManager) == amountStaked + NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY
+    assert cf.flip.balanceOf(cf.stakeManager) == amountStaked + NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + STAKEMANAGER_INITIAL_BALANCE
     assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
     assert tx.events["FlipSupplyUpdated"][0].values() == [INIT_SUPPLY, NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber]
 
@@ -36,7 +36,7 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
 
-    assert cf.flip.balanceOf(cf.stakeManager) == amountStaked + (NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY) - claimAmount
+    assert cf.flip.balanceOf(cf.stakeManager) == amountStaked + (NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + STAKEMANAGER_INITIAL_BALANCE) - claimAmount
     assert cf.flip.balanceOf(receiver) == claimAmount
     assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
 

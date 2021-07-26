@@ -13,7 +13,7 @@ def test_setMinStake_stake(cf):
     assert cf.stakeManager.getMinimumStake() == newMinStake
     assert setMinStakeTx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
     # Check things that shouldn't have changed
-    assert cf.flip.balanceOf(cf.stakeManager) == 0
+    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
 
     # Staking an amount valid for the last min but not the current min should revert
     with reverts(REV_MSG_MIN_STAKE):

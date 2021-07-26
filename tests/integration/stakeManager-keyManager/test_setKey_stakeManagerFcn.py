@@ -20,7 +20,7 @@ def test_setAggKeyWithAggKey_updateFlipSupply(cf):
 
     # Check things that should've changed
     assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
-    assert cf.flip.balanceOf(cf.stakeManager) == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY
+    assert cf.flip.balanceOf(cf.stakeManager) == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + STAKEMANAGER_INITIAL_BALANCE
     assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx.events["FlipSupplyUpdated"][0].values() == [INIT_SUPPLY, NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber]
 
@@ -48,4 +48,4 @@ def test_setGovKeyWithGovKey_setMinStake(cf):
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
 
     # Check things that shouldn't have changed
-    assert cf.flip.balanceOf(cf.stakeManager) == 0
+    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
