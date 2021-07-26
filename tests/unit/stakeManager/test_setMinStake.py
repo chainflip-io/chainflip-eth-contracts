@@ -13,7 +13,7 @@ def test_setMinStake(cf, newMinStake):
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
 
     # Check things that shouldn't have changed
-    assert cf.flip.balanceOf(cf.stakeManager) == 0
+    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
 
 
 def test_setMinStake_rev_amount(cf):
@@ -52,7 +52,7 @@ def test_setMinStake_rev_aggKey(cf):
 # has `testSendFLIP` in it to simulate some kind of hack
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
 def test_setMinStake_rev_noFish(cf, StakeManagerVulnerable, FLIP, web3, amount):
-    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, MIN_STAKE, INIT_SUPPLY)
+    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
     flipVuln = FLIP.at(smVuln.getFLIPAddress())
     # Can't set _FLIP in the constructor because it's made in the constructor
     # of StakeManager and getFLIPAddress is external

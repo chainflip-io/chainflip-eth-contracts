@@ -6,7 +6,7 @@ def test_updateFlipSupply(cf):
 
     cf.stakeManager.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
 
-    assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE
+    assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + STAKEMANAGER_INITIAL_BALANCE
     assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == 0
 
     stateChainBlockNumber = 1
@@ -15,7 +15,7 @@ def test_updateFlipSupply(cf):
     tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, {"from": cf.ALICE})
 
     # Balance should be MIN_STAKE plus the minted delta
-    assert cf.flip.balanceOf(cf.stakeManager) == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + MIN_STAKE
+    assert cf.flip.balanceOf(cf.stakeManager) == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + MIN_STAKE + STAKEMANAGER_INITIAL_BALANCE
     assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx.events["FlipSupplyUpdated"][0].values() == [INIT_SUPPLY, NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber]
 
@@ -25,7 +25,7 @@ def test_updateFlipSupply(cf):
     tx2 = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), INIT_SUPPLY, stateChainBlockNumber, {"from": cf.ALICE})
 
     # Balance should be MIN_STAKE as we've just burned all the FLIP we minted
-    assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE
+    assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + STAKEMANAGER_INITIAL_BALANCE
     assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx2.events["FlipSupplyUpdated"][0].values() == [NEW_TOTAL_SUPPLY_MINT, INIT_SUPPLY, stateChainBlockNumber]
 

@@ -111,7 +111,7 @@ def isValidSig_rev_test(cf, signer):
 # it's we need to accomodate already having a tx because it's best to test
 # `stakedMin` directly
 def stakeTest(cf, prevTotal, nodeID, minStake, tx, amount, returnAddr):
-    assert cf.flip.balanceOf(cf.stakeManager) == prevTotal + amount
+    assert cf.flip.balanceOf(cf.stakeManager) == prevTotal + amount + STAKEMANAGER_INITIAL_BALANCE
     assert tx.events["Staked"][0].values() == [nodeID, amount, returnAddr]
     assert cf.stakeManager.getMinimumStake() == minStake
 
