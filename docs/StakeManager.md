@@ -1,11 +1,9 @@
 # `StakeManager`
 
   Manages the staking of FLIP. Validators on the FLIP state chain
-          basically have full control of FLIP leaving the contract. Auction
-          logic for validator slots is not handled in this contract - bidders
-          just send their bid to this contract via `stake` with their FLIP state chain
-          nodeID, the ChainFlip Engine witnesses the bids, then the State chain
-          takes the top n bids, and assigns them to Validator slots.
+          basically have full control of FLIP leaving the contract. Bidders
+          send their bid to this contract via `stake` with their state chain
+          nodeID.
 
           This contract also handles the minting and burning of FLIP after the
           initial supply is minted during FLIP's creation. At any time, a
@@ -29,7 +27,7 @@ Ensure that FLIP can only be withdrawn via `claim`
 
 
 
-## `constructor(contract IKeyManager keyManager, uint256 minStake, uint256 flipTotalSupply)` (public)
+## `constructor(contract IKeyManager keyManager, uint256 minStake, uint256 flipTotalSupply, uint256 numGenesisValidators, uint256 genesisStake)` (public)
 
 No description
 
@@ -82,7 +80,7 @@ No description
 
 ## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber)` (external)
 
- Compares a given new FLIP supply it against the old supply,
+ Compares a given new FLIP supply against the old supply,
          then mints and burns as appropriate
 
 
@@ -131,12 +129,12 @@ Returns
 
 ## `getLastSupplyUpdateBlockNumber() → uint256` (external)
 
- Get the last time that claim() was called, in unix time
+ Get the last state chain block number of the last supply update
 
 
 Returns
 
-- The time of the last claim (uint)
+- The state chain block number of the last supply update
 
 ## `getMinimumStake() → uint256` (external)
 

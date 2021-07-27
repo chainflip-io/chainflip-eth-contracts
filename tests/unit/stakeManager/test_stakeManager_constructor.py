@@ -6,4 +6,4 @@ def test_constructor(cf, web3):
     assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == 0
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
     assert cf.flip.totalSupply() == INIT_SUPPLY
-    assert cf.flip.balanceOf(cf.stakeManager) == 0
+    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE

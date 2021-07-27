@@ -74,11 +74,14 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
 
-    constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply) {
+    constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
         _minStake = minStake;
         _defaultOperators.push(address(this));
-        _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, msg.sender, flipTotalSupply);
+        uint genesisValidatorFlip = numGenesisValidators * genesisStake;
+        _totalStake = genesisValidatorFlip;
+        _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
+        _FLIP.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
