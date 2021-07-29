@@ -11,26 +11,14 @@ import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 /**
 * @title    StakeManager contract
 * @notice   Manages the staking of FLIP. Validators on the FLIP state chain
-*           basically have full control of FLIP leaving the contract. Auction
-*           logic for validator slots is not handled in this contract - bidders
-*           just send their bid to this contract via `stake` with their FLIP state chain
-*           nodeID, the ChainFlip Engine witnesses the bids, takes the top n bids,
-*           assigns them to slots, then signs/calls `claim` to refund everyone else.
+*           basically have full control of FLIP leaving the contract. Bidders
+*           send their bid to this contract via `stake` with their state chain
+*           nodeID.
 *
-*           This contract also handles the minting of FLIP after the initial supply
-*           is minted during FLIP's creation. Every new block after the contract is created is
-*           able to mint `_emissionPerBlock` amount of FLIP. This is FLIP that's meant to
-*           be rewarded to validators for their service. If none of them end up being naughty
-*           boys or girls, then their proportion of that newly minted reward will be rewarded
-*           to them based on their proportion of the total stake when they `claim` - though the logic of
-*           assigning rewards is handled by the ChainFlip Engine via aggKey and this contract just blindly
-*           trusts its judgement. There is an intentional limit on the power to mint, which is
-*           why there's an emission rate controlled within the contract, so that a compromised
-*           aggKey can't mint infinite tokens - the most that can be minted is any outstanding
-*           emission of FLIP and the most that can be stolen is the FLIP balance of this contract,
-*           which is the total staked (or bidded during auctions) + total emitted from rewards.
-*           However, a compromised govKey could change the emission rate and therefore mint
-*           infinite tokens.
+*           This contract also handles the minting and burning of FLIP after the
+*           initial supply is minted during FLIP's creation. At any time, a
+*           valid aggragate signature can be submitted to the contract which
+*           updates the total supply by minting or burning the necessary FLIP.
 * @author   Quantaf1re (James Key)
 */
 contract StakeManager is Shared, IStakeManager, IERC777Recipient {
@@ -39,10 +27,9 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     IKeyManager private _keyManager;
     /// @dev    The FLIP token
     FLIP private _FLIP;
-    /// @dev    The last time that claim was called, so we know how much to mint now
-    uint private _lastMintBlockNum;
-    /// @dev    The amount of FLIPs emitted per second, minted when `claim` is called
-    uint private _emissionPerBlock;
+    /// @dev    The last time that the State Chain updated the totalSupply
+    uint private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
+
     /**
      * @dev     This tracks the amount of FLIP that should be in this contract currently. It's
      *          equal to the total staked - total claimed + total minted (above initial
@@ -83,17 +70,18 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         uint48 expiryTime
     );
     event ClaimExecuted(bytes32 indexed nodeID, uint amount);
-    event EmissionChanged(uint oldEmissionPerBlock, uint newEmissionPerBlock);
+    event FlipSupplyUpdated(uint oldSupply, uint newSupply, uint stateChainBlockNumber);
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
 
-    constructor(IKeyManager keyManager, uint emissionPerBlock, uint minStake, uint flipTotalSupply) {
+    constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
-        _emissionPerBlock = emissionPerBlock;
         _minStake = minStake;
         _defaultOperators.push(address(this));
-        _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, msg.sender, flipTotalSupply);
-        _lastMintBlockNum = block.number;
+        uint genesisValidatorFlip = numGenesisValidators * genesisStake;
+        _totalStake = genesisValidatorFlip;
+        _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
+        _FLIP.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
@@ -193,9 +181,6 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
             "StakeMan: early, late, or execd"
         );
 
-        // If time has elapsed since the last mint, printer go brrrr
-        _mintInflation();
-
         // Update _totalStake and send tokens
         _totalStake -= claim.amount;
         require(_FLIP.transfer(claim.staker, claim.amount));
@@ -206,31 +191,38 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     }
 
     /**
-     * @notice  Set the rate (per second) at which new FLIP is minted to this contract
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current governance key (uint)
-     * @param newEmissionPerBlock     The new rate
+     * @notice  Compares a given new FLIP supply against the old supply,
+     *          then mints and burns as appropriate
+     * @param sigData               signature over the abi-encoded function params
+     * @param newTotalSupply        new total supply of FLIP
+     * @param stateChainBlockNumber State Chain block number for the new total supply
      */
-    function setEmissionPerBlock(
+    function updateFlipSupply(
         SigData calldata sigData,
-        uint newEmissionPerBlock
-    ) external override nzUint(newEmissionPerBlock) noFish validSig(
+        uint newTotalSupply,
+        uint stateChainBlockNumber
+    ) external override nzUint(newTotalSupply) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
-                this.setEmissionPerBlock.selector,
+                this.updateFlipSupply.selector,
                 SigData(0, 0, sigData.nonce, address(0)),
-                newEmissionPerBlock
+                newTotalSupply,
+                stateChainBlockNumber
             )
         ),
-        KeyID.Gov
+        KeyID.Agg
     ) {
-        // If time has elapsed since the last mint, printer go brrrr
-        _mintInflation();
-
-        emit EmissionChanged(_emissionPerBlock, newEmissionPerBlock);
-        _emissionPerBlock = newEmissionPerBlock;
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "StakeMan: old FLIP supply update");
+        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
+        FLIP flip = _FLIP;
+        uint oldSupply = flip.totalSupply();
+        if (newTotalSupply < oldSupply) {
+            flip.burn(oldSupply - newTotalSupply, "");
+        } else if (newTotalSupply > oldSupply) {
+            flip.mint(address(this), newTotalSupply - oldSupply, "", "");
+        }
+        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
     }
 
     /**
@@ -257,19 +249,6 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     ) {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
-    }
-
-    /**
-     * @notice  Mints any outstanding FLIP and updates _totalStake & _lastMintBlockNum
-     *          if there was any to mint
-     */
-    function _mintInflation() private {
-        if (block.number > _lastMintBlockNum) {
-            uint amount = getInflationInFuture(0);
-            _totalStake += amount;
-            _lastMintBlockNum = block.number;
-            _FLIP.mint(address(this), amount, "", "mint");
-        }
     }
 
     function tokensReceived(
@@ -307,46 +286,11 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     }
 
     /**
-     * @notice  Get the last time that claim() was called, in unix time
-     * @return  The time of the last claim (uint)
+     * @notice  Get the last state chain block number of the last supply update
+     * @return  The state chain block number of the last supply update
      */
-    function getLastMintBlockNum() external override view returns (uint) {
-        return _lastMintBlockNum;
-    }
-
-    /**
-     * @notice  Get the emission rate of FLIP in seconds
-     * @return  The rate of FLIP emission (uint)
-     */
-    function getEmissionPerBlock() external override view returns (uint) {
-        return _emissionPerBlock;
-    }
-
-    /**
-     * @notice  Get the amount of FLIP that would be emitted via inflation at
-     *          the current block plus addition inflation from an extra
-     *          `blocksIntoFuture` blocks
-     * @param blocksIntoFuture  The number of blocks past the current block to
-     *              calculate the inflation at
-     * @return  The amount of FLIP inflation
-     */
-    function getInflationInFuture(uint blocksIntoFuture) public override view returns (uint) {
-        return (block.number + blocksIntoFuture - _lastMintBlockNum) * _emissionPerBlock;
-    }
-
-    /**
-     * @notice  Get the total amount of FLIP currently staked by all stakers
-     *          plus the inflation that could be minted if someone called
-     *          `claim` or `setEmissionPerBlock` at the specified block
-     * @param blocksIntoFuture  The number of blocks into the future added
-     *              onto the current highest block. E.g. if the current highest
-     *              block is 10, and the stake + inflation that you want to know
-     *              is at height 15, input 5
-     * @return  The total of stake + inflation at specified blocks in the future from now
-     */
-    function getTotalStakeInFuture(uint blocksIntoFuture) external override view returns (uint) {
-        // return _totalStake;
-        return _totalStake + getInflationInFuture(blocksIntoFuture);
+    function getLastSupplyUpdateBlockNumber() external override view returns (uint) {
+        return _lastSupplyUpdateBlockNum;
     }
 
     /**

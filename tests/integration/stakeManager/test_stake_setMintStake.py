@@ -13,25 +13,18 @@ def test_setMinStake_stake(cf):
     assert cf.stakeManager.getMinimumStake() == newMinStake
     assert setMinStakeTx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
     # Check things that shouldn't have changed
-    inflation = getInflation(cf.stakeManager.tx.block_number, setMinStakeTx.block_number, EMISSION_PER_BLOCK)
-    assert cf.flip.balanceOf(cf.stakeManager) == 0
-    assert cf.stakeManager.getInflationInFuture(0) == inflation
-    assert cf.stakeManager.getTotalStakeInFuture(0) == inflation
-    assert cf.stakeManager.getEmissionPerBlock() == EMISSION_PER_BLOCK
-    assert cf.stakeManager.getLastMintBlockNum() == cf.stakeManager.tx.block_number
+    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
 
     # Staking an amount valid for the last min but not the current min should revert
     with reverts(REV_MSG_MIN_STAKE):
         cf.stakeManager.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, cf.FR_ALICE)
-    
+
     stakeTx = cf.stakeManager.stake(JUNK_HEX, newMinStake, NON_ZERO_ADDR, cf.FR_ALICE)
 
     stakeTest(
         cf,
         0,
         JUNK_HEX,
-        cf.stakeManager.tx.block_number,
-        EMISSION_PER_BLOCK,
         newMinStake,
         stakeTx,
         newMinStake,

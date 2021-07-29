@@ -19,12 +19,13 @@ contract StakeManagerVulnerable is StakeManager {
 
     constructor(
         IKeyManager keyManager,
-        uint emissionPerBlock,
         uint minStake,
-        uint flipTotalSupply
-    ) StakeManager(keyManager, emissionPerBlock, minStake, flipTotalSupply) {}
+        uint flipTotalSupply,
+        uint numGenesisValidators,
+        uint genesisStake
+    ) StakeManager(keyManager, minStake, flipTotalSupply, numGenesisValidators, genesisStake) {}
 
-    // 
+    //
     /**
      * @notice  Can't set _FLIP in the constructor because it's made in the constructor
      *          of StakeManager and getFLIPAddress is external

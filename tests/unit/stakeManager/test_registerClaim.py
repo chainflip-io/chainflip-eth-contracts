@@ -18,14 +18,14 @@ def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryTimeDiff
         with reverts(REV_MSG_NZ_UINT):
             cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
     else:
-        registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_HEX, EMISSION_PER_BLOCK, MIN_STAKE, amount, staker, chain.time() + (2 * CLAIM_DELAY))
+        registerClaimTest(cf, JUNK_HEX, MIN_STAKE, amount, staker, chain.time() + (2 * CLAIM_DELAY))
 
 
 # Specific amounts that should/shouldn't work
 
 
 def test_registerClaim_min_expiryTime(cf, stakedMin):
-    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_HEX, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time()+CLAIM_DELAY+5)
+    registerClaimTest(cf, JUNK_HEX, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time()+CLAIM_DELAY+5)
 
 
 def test_registerClaim_rev_just_under_min_expiryTime(cf, stakedMin):
@@ -42,9 +42,9 @@ def test_registerClaim_claim_expired(cf, stakedMin):
     args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), *args)
     cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
-    
+
     chain.sleep(CLAIM_DELAY + 10)
-    registerClaimTest(cf, cf.stakeManager.tx, MIN_STAKE, JUNK_HEX, EMISSION_PER_BLOCK, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time()+(2*CLAIM_DELAY))
+    registerClaimTest(cf, JUNK_HEX, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time()+(2*CLAIM_DELAY))
 
 
 def test_registerClaim_rev_claim_not_expired(cf, stakedMin):

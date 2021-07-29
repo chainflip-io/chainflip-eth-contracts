@@ -95,9 +95,11 @@ REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
 
 
 # -----StakeManager-----
-# Targeting inflation at 15% per year (linear), assuming an average
-# block time of 13.1s
-EMISSION_PER_BLOCK = 5607877281367557723
+NUM_GENESIS_VALIDATORS = 5
+GENESIS_STAKE = 50000 * E_18
+STAKEMANAGER_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
+NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
+NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
 MIN_STAKE = 40000 * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
 # 13292
@@ -110,6 +112,7 @@ REV_MSG_SM_ARR_LEN = "StakeMan: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "StakeMan: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "StakeMan: early, late, or execd"
+REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "StakeMan: old FLIP supply update"
 
 
 # -----Vault-----

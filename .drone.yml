@@ -55,13 +55,10 @@ steps:
   - name: test
     pull: always
     image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
-    environment:
-      WEB3_INFURA_PROJECT_ID:
-        from_secret: web3_infura_project_id
     commands:
       - /home/circleci/.poetry/bin/poetry install
       - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-      - /home/circleci/.poetry/bin/poetry run brownie test --stateful false --network mainnet-fork
+      - /home/circleci/.poetry/bin/poetry run brownie test --stateful false
 
 trigger:
   event:
@@ -94,10 +91,10 @@ steps:
       - /home/circleci/.poetry/bin/poetry install
       - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - >
-        /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_keyManager.py --network mainnet-fork
-        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_vault.py --network mainnet-fork
-        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_stakeManager.py --network mainnet-fork
-        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_all.py --network mainnet-fork
+        /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_keyManager.py
+        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_vault.py
+        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_stakeManager.py
+        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_all.py
   - name: notify
     image: appleboy/drone-discord
     when:

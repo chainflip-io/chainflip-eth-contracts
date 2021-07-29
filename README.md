@@ -10,7 +10,7 @@ Additional information can be found in the [Ethereum Research](https://github.co
 For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
 - [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
 
-## Usage
+## Setup
 
 First, ensure you have Poetry installed.
 
@@ -20,7 +20,15 @@ cd chainflip-eth-contracts
 poetry shell
 poetry install
 brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-brownie test
+```
+
+Then, create a `.env` file using `.env.example` as a reference. ~~You will need an infura key to run the tests~~, and a seed to run the deploy script on a live network.
+
+### Running Tests
+
+```bash
+# Run without the stateful tests, because they take hours
+brownie test --stateful false
 ```
 
 ### Generating Docs
@@ -52,8 +60,6 @@ brownie run deploy_contracts --network rinkeby
 ```
 
 ## Useful commands
-
-NB: You may need to run the tests with the additional `--network mainnet-fork`
 
 `brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
 

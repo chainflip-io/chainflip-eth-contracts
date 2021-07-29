@@ -1,26 +1,14 @@
 # `StakeManager`
 
   Manages the staking of FLIP. Validators on the FLIP state chain
-          basically have full control of FLIP leaving the contract. Auction
-          logic for validator slots is not handled in this contract - bidders
-          just send their bid to this contract via `stake` with their FLIP state chain
-          nodeID, the ChainFlip Engine witnesses the bids, takes the top n bids,
-          assigns them to slots, then signs/calls `claim` to refund everyone else.
+          basically have full control of FLIP leaving the contract. Bidders
+          send their bid to this contract via `stake` with their state chain
+          nodeID.
 
-          This contract also handles the minting of FLIP after the initial supply
-          is minted during FLIP's creation. Every new block after the contract is created is
-          able to mint `_emissionPerBlock` amount of FLIP. This is FLIP that's meant to
-          be rewarded to validators for their service. If none of them end up being naughty
-          boys or girls, then their proportion of that newly minted reward will be rewarded
-          to them based on their proportion of the total stake when they `claim` - though the logic of
-          assigning rewards is handled by the ChainFlip Engine via aggKey and this contract just blindly
-          trusts its judgement. There is an intentional limit on the power to mint, which is
-          why there's an emission rate controlled within the contract, so that a compromised
-          aggKey can't mint infinite tokens - the most that can be minted is any outstanding
-          emission of FLIP and the most that can be stolen is the FLIP balance of this contract,
-          which is the total staked (or bidded during auctions) + total emitted from rewards.
-          However, a compromised govKey could change the emission rate and therefore mint
-          infinite tokens.
+          This contract also handles the minting and burning of FLIP after the
+          initial supply is minted during FLIP's creation. At any time, a
+          valid aggragate signature can be submitted to the contract which
+          updates the total supply by minting or burning the necessary FLIP.
 
 
 
@@ -39,7 +27,7 @@ Ensure that FLIP can only be withdrawn via `claim`
 
 
 
-## `constructor(contract IKeyManager keyManager, uint256 emissionPerBlock, uint256 minStake, uint256 flipTotalSupply)` (public)
+## `constructor(contract IKeyManager keyManager, uint256 minStake, uint256 flipTotalSupply, uint256 numGenesisValidators, uint256 genesisStake)` (public)
 
 No description
 
@@ -90,16 +78,17 @@ No description
 - `nodeID`:    The nodeID of the staker
 
 
-## `setEmissionPerBlock(struct IShared.SigData sigData, uint256 newEmissionPerBlock)` (external)
+## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber)` (external)
 
- Set the rate (per second) at which new FLIP is minted to this contract
+ Compares a given new FLIP supply against the old supply,
+         then mints and burns as appropriate
 
 
-- `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
-                 for this function with empty msgHash and sig) and sig over that hash
-                 from the current governance key (uint)
+- `sigData`:               signature over the abi-encoded function params
 
-- `newEmissionPerBlock`:     The new rate
+- `newTotalSupply`:        new total supply of FLIP
+
+- `stateChainBlockNumber`: State Chain block number for the new total supply
 
 
 ## `setMinStake(struct IShared.SigData sigData, uint256 newMinStake)` (external)
@@ -138,55 +127,14 @@ Returns
 
 - The address of FLIP
 
-## `getLastMintBlockNum() → uint256` (external)
+## `getLastSupplyUpdateBlockNumber() → uint256` (external)
 
- Get the last time that claim() was called, in unix time
-
-
-Returns
-
-- The time of the last claim (uint)
-
-## `getEmissionPerBlock() → uint256` (external)
-
- Get the emission rate of FLIP in seconds
+ Get the last state chain block number of the last supply update
 
 
 Returns
 
-- The rate of FLIP emission (uint)
-
-## `getInflationInFuture(uint256 blocksIntoFuture) → uint256` (public)
-
- Get the amount of FLIP that would be emitted via inflation at
-         the current block plus addition inflation from an extra
-         `blocksIntoFuture` blocks
-
-
-- `blocksIntoFuture`:  The number of blocks past the current block to
-             calculate the inflation at
-
-
-Returns
-
-- The amount of FLIP inflation
-
-## `getTotalStakeInFuture(uint256 blocksIntoFuture) → uint256` (external)
-
- Get the total amount of FLIP currently staked by all stakers
-         plus the inflation that could be minted if someone called
-         `claim` or `setEmissionPerBlock` at the specified block
-
-
-- `blocksIntoFuture`:  The number of blocks into the future added
-             onto the current highest block. E.g. if the current highest
-             block is 10, and the stake + inflation that you want to know
-             is at height 15, input 5
-
-
-Returns
-
-- The total of stake + inflation at specified blocks in the future from now
+- The state chain block number of the last supply update
 
 ## `getMinimumStake() → uint256` (external)
 
@@ -231,7 +179,7 @@ Returns
 
 
 
-## `EmissionChanged(uint256 oldEmissionPerBlock, uint256 newEmissionPerBlock)`
+## `FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber)`
 
 
 

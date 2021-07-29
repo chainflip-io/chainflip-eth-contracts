@@ -81,6 +81,18 @@ No description
 - `amounts`:    The amount to transfer, in wei (uint)
 
 
+## `sendEth(address payable recipient)` (external)
+
+ Annoyingly, doing `try addr.transfer` in `_transfer` fails because
+         Solidity doesn't see the `address` type as an external contract
+         and so doing try/catch on it won't work. Need to make it an external
+         call, and doing `this.something` counts as an external call, but that
+         means we need a fcn that just sends eth
+
+
+- `recipient`: The address to receive the ETH
+
+
 ## `fetchDepositEth(struct IShared.SigData sigData, bytes32 swapID)` (external)
 
  Retrieves ETH from an address, deterministically generated using
@@ -153,6 +165,13 @@ Returns
 ## `receive()` (external)
 
 No description
+
+
+
+## `TransferFailed(address payable recipient, uint256 amount, bytes lowLevelData)`
+
+
+
 
 
 
