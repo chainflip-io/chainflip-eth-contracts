@@ -22,16 +22,13 @@ poetry install
 brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
 ```
 
-Then, create a `.env` file using `.env.example` as a reference. You will need an infura key to run the tests, and a seed to run the deploy script on a live network.
+Then, create a `.env` file using `.env.example` as a reference. ~~You will need an infura key to run the tests~~, and a seed to run the deploy script on a live network.
 
 ### Running Tests
 
 ```bash
-# After ensuring you have at least WEB3_INFURA_PROJECT_ID filled out
-source .env
-
 # Run without the stateful tests, because they take hours
-brownie test --network mainnet-fork --stateful false
+brownie test --stateful false
 ```
 
 ### Generating Docs
