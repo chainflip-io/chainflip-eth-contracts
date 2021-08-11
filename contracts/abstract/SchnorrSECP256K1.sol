@@ -89,8 +89,8 @@ abstract contract SchnorrSECP256K1 {
       has no natural relationship to the order of the curve's cyclic group.
       **************************************************************************
       @param signingPubKeyX is the x ordinate of the public key. This must be
-             less than HALF_Q. 
-      @param pubKeyYParity is 0 if the y ordinate of the public key is even, 1 
+             less than HALF_Q.
+      @param pubKeyYParity is 0 if the y ordinate of the public key is even, 1
              if it's odd.
       @param signature is the actual signature, described as s in the above
              instructions.
@@ -100,7 +100,7 @@ abstract contract SchnorrSECP256K1 {
       **************************************************************************
       @return True if passed a valid signature, false otherwise. */
   function verifySignature(
-    uint256 msgHash, 
+    uint256 msgHash,
     uint256 signature,
     uint256 signingPubKeyX,
     uint8 pubKeyYParity,

@@ -140,7 +140,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         keccak256(
             abi.encodeWithSelector(
                 this.registerClaim.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 nodeID,
                 amount,
                 staker,
@@ -201,12 +201,12 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish validSig(
+    ) external override nzUint(newTotalSupply) noFish refundGas() validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.updateFlipSupply.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 newTotalSupply,
                 stateChainBlockNumber
             )
@@ -241,7 +241,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         keccak256(
             abi.encodeWithSelector(
                 this.setMinStake.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 newMinStake
             )
         ),
@@ -261,6 +261,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     ) external override {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
     }
+
+    receive () external payable {}
 
 
     //////////////////////////////////////////////////////////////

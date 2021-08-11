@@ -38,5 +38,6 @@ interface IShared {
         uint sig;
         uint nonce;
         address kTimesGAddr;
+        uint gasPrice;
     }
 }

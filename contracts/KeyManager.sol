@@ -67,6 +67,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         KeyID keyID
     ) public override returns (bool) {
         Key memory key = _keyIDToKey[keyID];
+        // We require the msgHash param in the sigData is equal to the contract
+        // message hash (the rules coded into the contract)
         require(sigData.msgHash == uint(contractMsgHash), "KeyManager: invalid msgHash");
         require(
             verifySignature(
@@ -86,6 +88,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         return true;
     }
 
+    event Hash(bytes32 hash);
+    event Signature(SigData sig);
+    event NewKey(Key key);
+
     /**
      * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
@@ -97,15 +103,25 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithAggKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) validSig(
+    ) external override nzKey(newKey) refundGas() validSig(
+        // Passed in by whoever is submitting the function
         sigData,
+        // The Keccack hash of the abi-encoded function arguments, including
+        // the tx.gasprice as one of the elements of SigData
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
-            SigData(0, 0, sigData.nonce, address(0)),
+            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
             newKey
         )),
         KeyID.Agg
     ) {
+        emit Signature(sigData);
+        emit Hash(keccak256(abi.encodeWithSelector(
+            this.setAggKeyWithAggKey.selector,
+            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+            newKey
+        )));
+        emit NewKey(newKey);
         emit KeyChange(true, _keyIDToKey[KeyID.Agg], newKey);
         _keyIDToKey[KeyID.Agg] = newKey;
     }
@@ -121,11 +137,11 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithGovKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) validTime validSig(
+    ) external override nzKey(newKey) validTime refundGas() validSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce, address(0)),
+            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
             newKey
         )),
         KeyID.Gov
@@ -149,7 +165,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setGovKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce, address(0)),
+            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
             newKey
         )),
         KeyID.Gov
@@ -199,6 +215,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function isNonceUsedByKey(KeyID keyID, uint nonce) external override view returns (bool) {
         return _keyToNoncesUsed[keyID][nonce];
     }
+
+    receive () external payable {}
 
 
 

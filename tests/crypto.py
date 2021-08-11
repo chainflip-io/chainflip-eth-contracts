@@ -13,7 +13,7 @@ class Signer():
     HALF_Q_INT = (Q_INT >> 1) + 1
 
 
-    def __init__(self, privKeyHex, kHex, keyID, nonces):
+    def __init__(self, privKeyHex, kHex, keyID, nonces, gasPrice):
         self.privKeyHex = privKeyHex
         self.privKey = keys.UmbralPrivateKey.from_bytes(bytes.fromhex(privKeyHex))
         self.privKeyInt = int(self.privKeyHex, 16)
@@ -35,6 +35,8 @@ class Signer():
 
         self.keyID = keyID
         self.nonces = nonces
+        self.gasPrice = gasPrice
+        self.gasPriceHex = cleanHexStr(gasPrice)
 
 
     @classmethod
@@ -86,7 +88,7 @@ class Signer():
         s = s + self.Q_INT if s < 0 else s
 
         # Since nonces is passed by reference, it will be altered for all other signers too
-        sigData = [int(msgHashHex, 16), s, self.nonces[keyID], self.kTimesGAddressHex]
+        sigData = [int(msgHashHex, 16), s, self.nonces[keyID], self.kTimesGAddressHex, self.gasPrice]
         self.nonces[keyID] += 1
         return sigData
 

@@ -18,9 +18,9 @@ import "./DepositToken.sol";
 * @author   Quantaf1re (James Key)
 */
 contract Vault is IVault, Shared {
-    
+
     using SafeERC20 for IERC20;
-    
+
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
@@ -63,12 +63,12 @@ contract Vault is IVault, Shared {
         address[] calldata tranTokenAddrs,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
-    ) external override validSig(
+    ) external override refundGas() validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.allBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 fetchSwapIDs,
                 fetchTokenAddrs,
                 tranTokenAddrs,
@@ -126,7 +126,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 tokenAddr,
                 recipient,
                 amount
@@ -154,12 +154,12 @@ contract Vault is IVault, Shared {
         address[] calldata tokenAddrs,
         address payable[] calldata recipients,
         uint[] calldata amounts
-    ) external override validSig(
+    ) external override refundGas() validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.transferBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 tokenAddrs,
                 recipients,
                 amounts
@@ -250,12 +250,12 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) validSig(
+    ) external override nzBytes32(swapID) refundGas() validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEth.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 swapID
             )
         ),
@@ -276,12 +276,12 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs
-    ) external override validSig(
+    ) external override refundGas() validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEthBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 swapIDs
             )
         ),
@@ -306,12 +306,12 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) validSig(
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas() validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 swapID,
                 tokenAddr
             )
@@ -335,12 +335,12 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         address[] calldata tokenAddrs
-    ) external override validSig(
+    ) external override refundGas() validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositTokenBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
                 swapIDs,
                 tokenAddrs
             )

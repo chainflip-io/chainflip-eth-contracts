@@ -11,7 +11,7 @@ def test_sendEth(cf):
     assert cf.vault.balance() == 2*TEST_AMNT
     assert cf.DENICE.balance() == INIT_ETH_BAL
 
-    cf.vault.sendEth(cf.DENICE, {'from': cf.vault, 'value': TEST_AMNT})
+    tx = cf.vault.sendEth(cf.DENICE, {'from': cf.vault, 'value': TEST_AMNT})
 
     assert cf.vault.balance() == TEST_AMNT
     assert cf.DENICE.balance() == INIT_ETH_BAL + TEST_AMNT
