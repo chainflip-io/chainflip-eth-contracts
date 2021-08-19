@@ -49,14 +49,14 @@ abstract contract Shared is IShared {
     modifier refundGas {
         uint gasStart = gasleft();
         _;
-        uint gasEnd = gasleft();
-        uint gasSpent = gasStart - gasEnd;
+        uint gasSpent = gasStart - gasleft();
+        uint refundWei = gasSpent * block.basefee;
 
-        try this.sendEth(msg.sender, (gasSpent * block.basefee)) {
-            emit Refunded(gasSpent * block.basefee);
+        try this.sendEth(msg.sender, refundWei) {
+            emit Refunded(refundWei);
         } catch (bytes memory lowLevelData) {
             // There's not enough ETH in the contract to pay anyone
-            emit RefundFailed(msg.sender, gasSpent * block.basefee, address(this).balance);
+            emit RefundFailed(msg.sender, refundWei, address(this).balance);
         }
     }
 
