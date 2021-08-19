@@ -1,6 +1,6 @@
 # `SchnorrSECP256K1Test`
 
-  A contract that implements SchnorrSECP256K1 and exposes 
+  A contract that implements SchnorrSECP256K1 and exposes
           testVerifySignature for the purpose of testing it, since
           we want the contract used in production (SchnorrSECP256K1)
           to be abstract and have testVerifySignature internal

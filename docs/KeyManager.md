@@ -124,6 +124,11 @@ Returns
 
 - Whether the nonce has already been used (bool)
 
+## `receive()` (external)
+
+No description
+
+
 
 ## `KeyChange(bool signedByAggKey, struct IShared.Key oldKey, struct IShared.Key newKey)`
 

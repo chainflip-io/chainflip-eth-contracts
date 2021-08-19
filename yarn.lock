@@ -2398,10 +2398,10 @@ slash@^3.0.0:
   resolved "https://registry.yarnpkg.com/slash/-/slash-3.0.0.tgz#6539be870c165adbd5240220dbe361f1bc4d4634"
   integrity sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==
 
-"solc-0.8@npm:solc@^0.8.7":
-  version "0.8.7"
-  resolved "https://registry.yarnpkg.com/solc/-/solc-0.8.7.tgz#54434959cc3d69a569ad8853c0d9ee1338da0aab"
-  integrity sha512-p8Zi+YcGN22P3Stb6KJhNypD9xSnNF3D6eIw6LyxZpMIVpcwrG8fTaXeEbKITmlp14DC1iZ4BC4aV7r7gJ/EJw==
+"solc-0.8@npm:solc@^0.8.7-fixed":
+  version "0.8.7-fixed"
+  resolved "https://registry.yarnpkg.com/solc/-/solc-0.8.7-fixed.tgz#76eb37d33637ad278ad858e2633e9da597d877ac"
+  integrity sha512-nWZRkdPwfBpimAelO30Bz7/hxoj+mylb30gEpBL8hhEWR4xqu2ezQAxWK1Hz5xx1NqesbgGjSgnGul49tRHWgQ==
   dependencies:
     command-exists "^1.2.8"
     commander "3.0.2"

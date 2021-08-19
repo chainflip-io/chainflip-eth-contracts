@@ -30,5 +30,30 @@
 
    Checks that all of a Key's values are populated
 
+## `refundGas()`
+
+
+
+   Refunds (almost all) the gas spend to call this function
+
+
+## `sendEth(address to, uint256 amount)` (external)
+
+No description
+
+
+
+## `Refunded(uint256 amount)`
+
+
+
+
+
+
+## `RefundFailed(address to, uint256 amount, uint256 currentBalance)`
+
+
+
+
 
 

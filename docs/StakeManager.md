@@ -109,6 +109,11 @@ No description
 No description
 
 
+## `receive()` (external)
+
+No description
+
+
 ## `getKeyManager() → contract IKeyManager` (external)
 
  Get the KeyManager address/interface that's used to validate sigs

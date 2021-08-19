@@ -27,6 +27,8 @@ Then, create a `.env` file using `.env.example` as a reference. ~~You will need 
 
 ### Running Tests
 
+We use the `hardhat` EVM for testing, since we use EIP1559 opcodes.
+
 ```bash
 # Run without the stateful tests, because they take hours
 brownie test --network hardhat --stateful false
