@@ -12,11 +12,12 @@ For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
 
 ## Setup
 
-First, ensure you have Poetry installed.
+First, ensure you have [Poetry](https://python-poetry.org) and [Yarn](https://yarnpkg.com) installed.
 
 ```bash
 git clone git@github.com:chainflip-io/chainflip-eth-contracts.git
 cd chainflip-eth-contracts
+yarn
 poetry shell
 poetry install
 brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
@@ -28,16 +29,15 @@ Then, create a `.env` file using `.env.example` as a reference. ~~You will need 
 
 ```bash
 # Run without the stateful tests, because they take hours
-brownie test --stateful false
+brownie test --network hardhat --stateful false
 ```
 
 ### Generating Docs
 
-Requires [Yarn](https://yarnpkg.com) and [NPX](https://www.npmjs.com/package/npx) to be installed.
+Requires [Yarn](https://yarnpkg.com).
 
 ```bash
-yarn
-npx solidity-docgen --solc-module solc-0.8
+yarn docgen
 ```
 
 ## Notes
