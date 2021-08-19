@@ -264,9 +264,7 @@ from random import choices
 def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fetchSwapIDs, tranRecipients, tranAmounts, sender):
 
     # Allowing this breaks the refund test
-    for i in range(len(tranRecipients)):
-        if tranRecipients[i] == sender:
-            return
+    if sender in tranRecipients: return
 
     # Change agg keys
     setAggKeyWithAggKey_test(cf)

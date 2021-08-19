@@ -15,9 +15,7 @@ from utils import *
 def test_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fetchSwapIDs, tranRecipients, tranAmounts, sender):
 
     # Allowing this breaks the refund test
-    for i in range(len(tranRecipients)):
-        if tranRecipients[i] == sender:
-            return
+    if sender in tranRecipients: return
 
     # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([fetchAmounts, fetchSwapIDs])
