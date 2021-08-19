@@ -32,7 +32,7 @@ def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff
 
         chain.sleep(sleepTime)
 
-        if chain.time() < tx1.timestamp + CLAIM_DELAY or chain.time() > expiryTime:
+        if chain.time() < tx1.timestamp + CLAIM_DELAY - 1 or chain.time() > expiryTime:
             with reverts(REV_MSG_NOT_ON_TIME):
                 cf.stakeManager.executeClaim(nodeID)
         elif amount > maxValidAmount:
@@ -73,11 +73,9 @@ def test_executeClaim_max_delay(cf, claimRegistered):
     _, claim = claimRegistered
     assert cf.stakeManager.getPendingClaim(JUNK_HEX) == claim
 
-    # Want to calculate inflation 1 block into the future because that's when the tx will execute
-    newLastMintBlockNum = web3.eth.block_number + 1
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager)
 
-    chain.sleep(claim[3] - chain.time())
+    chain.sleep(claim[3] - chain.time() - 1)
     tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Check things that should've changed

@@ -14,36 +14,19 @@ def setAggKeyWithAggKey_test(cf):
 
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
 
-    balance_before = cf.ALICE.balance()
+    balanceBefore = cf.ALICE.balance()
     tx = cf.keyManager.setAggKeyWithAggKey(
         AGG_SIGNER_1.getSigData(callDataNoSig),
         AGG_SIGNER_2.getPubData(),
-        { 'gasPrice': DEFAULT_GAS_PRICE, 'from': cf.ALICE }
+        { 'from': cf.ALICE }
     )
-    balance_after = cf.ALICE.balance()
+    balanceAfter = cf.ALICE.balance()
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
-    txRefundTest(balance_before, balance_after, tx)
+    txRefundTest(balanceBefore, balanceAfter, tx)
     assert tx.events["KeyChange"][0].values() == [True, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
-
-def setAggKeyWithAggKey_gas_rev_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
-
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
-
-    # Since we initialised the signer with X gwei, we should not be able to send
-    # the transaction with Y gwei, since it would cause the contract to refund
-    # more than the Validators have agreed to
-    with reverts(REV_MSG_MSGHASH):
-        cf.keyManager.setAggKeyWithAggKey(
-            AGG_SIGNER_1.getSigData(callDataNoSig),
-            AGG_SIGNER_2.getPubData(),
-            { 'gasPrice': DIFFERENT_GAS_PRICE, 'from': cf.ALICE }
-        )
-
 
 def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()

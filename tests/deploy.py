@@ -5,9 +5,6 @@ from brownie import network
 
 def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP):
 
-    # set the defualt gas price for the rest of the transactions
-    network.gas_price(DEFAULT_GAS_PRICE)
-
     class Context:
         pass
 

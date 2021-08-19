@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -63,12 +63,12 @@ contract Vault is IVault, Shared {
         address[] calldata tranTokenAddrs,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
-    ) external override refundGas() validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.allBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 fetchSwapIDs,
                 fetchTokenAddrs,
                 tranTokenAddrs,
@@ -126,7 +126,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 tokenAddr,
                 recipient,
                 amount
@@ -154,12 +154,12 @@ contract Vault is IVault, Shared {
         address[] calldata tokenAddrs,
         address payable[] calldata recipients,
         uint[] calldata amounts
-    ) external override refundGas() validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.transferBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 tokenAddrs,
                 recipients,
                 amounts
@@ -250,12 +250,12 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) refundGas() validSig(
+    ) external override nzBytes32(swapID) refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEth.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapID
             )
         ),
@@ -276,12 +276,12 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs
-    ) external override refundGas() validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEthBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapIDs
             )
         ),
@@ -306,12 +306,12 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas() validSig(
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapID,
                 tokenAddr
             )
@@ -335,12 +335,12 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         address[] calldata tokenAddrs
-    ) external override refundGas() validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositTokenBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 swapIDs,
                 tokenAddrs
             )

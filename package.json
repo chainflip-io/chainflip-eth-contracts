@@ -6,5 +6,8 @@
     "@openzeppelin/contracts": "^4.0.0-rc3",
     "solc-0.8": "npm:solc@^0.8.6",
     "solidity-docgen": "^0.5.11"
+  },
+  "devDependencies": {
+    "hardhat": "^2.6.0"
   }
 }

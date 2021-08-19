@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 ////////////////////////////////////////////////////////////////////////////////
 //       XXX: Do not use in production until this code has been audited.
@@ -99,6 +99,7 @@ abstract contract SchnorrSECP256K1 {
              above instructions
       **************************************************************************
       @return True if passed a valid signature, false otherwise. */
+
   function verifySignature(
     uint256 msgHash,
     uint256 signature,
@@ -146,4 +147,5 @@ abstract contract SchnorrSECP256K1 {
       bytes32(mulmod(msgChallenge, signingPubKeyX, Q)));
     return nonceTimesGeneratorAddress == recoveredAddress;
   }
+
 }

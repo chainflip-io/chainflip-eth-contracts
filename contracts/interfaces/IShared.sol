@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 /**
@@ -38,6 +38,5 @@ interface IShared {
         uint sig;
         uint nonce;
         address kTimesGAddr;
-        uint gasPrice;
     }
 }

@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "../interfaces/IShared.sol";
@@ -17,6 +17,7 @@ abstract contract Shared is IShared {
     bytes32 constant internal _NULL = "";
     uint constant internal _E_18 = 10**18;
 
+    event Refunded (uint amount);
     event RefundFailed(address to, uint256 amount, uint256 currentBalance);
 
 
@@ -45,17 +46,17 @@ abstract contract Shared is IShared {
     }
 
     /// @dev    Refunds (almost all) the gas spend to call this function
-    modifier refundGas() {
+    modifier refundGas {
         uint gasStart = gasleft();
         _;
         uint gasEnd = gasleft();
         uint gasSpent = gasStart - gasEnd;
 
-        // validator is not allowed to call this from a contract
-        try this.sendEth(msg.sender, gasSpent * tx.gasprice) {
+        try this.sendEth(msg.sender, (gasSpent * block.basefee)) {
+            emit Refunded(gasSpent * block.basefee);
         } catch (bytes memory lowLevelData) {
             // There's not enough ETH in the contract to pay anyone
-            emit RefundFailed(msg.sender, gasSpent * tx.gasprice, address(this).balance);
+            emit RefundFailed(msg.sender, gasSpent * block.basefee, address(this).balance);
         }
     }
 
@@ -63,7 +64,7 @@ abstract contract Shared is IShared {
         // Hack this so that it's an internal call
         require(msg.sender == address(this));
         // Send 0 gas so that if we go to a contract it fails
-        payable(to).call{gas: 0, value: amount}("");
+        payable(to).transfer(amount);
     }
 
 }

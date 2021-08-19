@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "./interfaces/IStakeManager.sol";
@@ -140,7 +140,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         keccak256(
             abi.encodeWithSelector(
                 this.registerClaim.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 nodeID,
                 amount,
                 staker,
@@ -201,12 +201,12 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish refundGas() validSig(
+    ) external override nzUint(newTotalSupply) noFish refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.updateFlipSupply.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 newTotalSupply,
                 stateChainBlockNumber
             )
@@ -241,7 +241,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         keccak256(
             abi.encodeWithSelector(
                 this.setMinStake.selector,
-                SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+                SigData(0, 0, sigData.nonce, address(0)),
                 newMinStake
             )
         ),

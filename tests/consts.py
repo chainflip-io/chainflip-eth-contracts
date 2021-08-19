@@ -18,10 +18,8 @@ GOV = "Gov"
 KEYID_TO_NUM  = {AGG: 0, GOV: 1}
 NUM_TO_KEYID  = [AGG, GOV]
 INIT_TOKEN_SUPPLY = int(10**26)
-INIT_ETH_BAL = 100 * E_18
+INIT_ETH_BAL = 10000 * E_18
 SECS_PER_BLOCK = 13
-DEFAULT_GAS_PRICE = 10**9
-DIFFERENT_GAS_PRICE = 10**10
 
 # Time in seconds
 HOUR = 60 * 60
@@ -47,8 +45,8 @@ AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
 # This wouldn't be the case if a single uint was used to track the current nonce for
 # each agg and gov key tho
 nonces = {AGG: 0, GOV: 0}
-def agg_null_sig(): return (0, 0, nonces[AGG], ZERO_ADDR, DEFAULT_GAS_PRICE)
-def gov_null_sig(): return (0, 0, nonces[GOV], ZERO_ADDR, DEFAULT_GAS_PRICE)
+def agg_null_sig(): return (0, 0, nonces[AGG], ZERO_ADDR)
+def gov_null_sig(): return (0, 0, nonces[GOV], ZERO_ADDR)
 
 REV_MSG_DELAY = "KeyManager: not enough delay"
 
@@ -57,20 +55,20 @@ REV_MSG_DELAY = "KeyManager: not enough delay"
 # Original keys in the constructor
 AGG_PRIV_HEX_1 = "fbcb47bc85b881e0dfb31c872d4e06848f80530ccbd18fc016a27c4a744d0eba"
 AGG_K_HEX_1 = "d51e13c68bf56155a83e50fd9bc840e2a1847fb9b49cd206a577ecd1cd15e285"
-AGG_SIGNER_1 = Signer(AGG_PRIV_HEX_1, AGG_K_HEX_1, AGG, nonces, DEFAULT_GAS_PRICE)
+AGG_SIGNER_1 = Signer(AGG_PRIV_HEX_1, AGG_K_HEX_1, AGG, nonces)
 
 GOV_PRIV_HEX_1 = "fd0491a72700b50de61ea97c81a2df9d5a301e9b5e71d5c7786ee86d1994f1b8"
 GOV_K_HEX_1 = "41e581ebb25e4d7f7bd9c502e45389ac0b991fe27052e6d9e78521d06a0eeca1"
-GOV_SIGNER_1 = Signer(GOV_PRIV_HEX_1, GOV_K_HEX_1, GOV, nonces, DEFAULT_GAS_PRICE)
+GOV_SIGNER_1 = Signer(GOV_PRIV_HEX_1, GOV_K_HEX_1, GOV, nonces)
 
 # New keys
 AGG_PRIV_HEX_2 = "bbade2da39cfc81b1b64b6a2d66531ed74dd01803dc5b376ce7ad548bbe23608"
 AGG_K_HEX_2 = "ecb77b2eb59614237e5646b38bdf03cbdbdce61c874fdee6e228edaa26f01f5d"
-AGG_SIGNER_2 = Signer(AGG_PRIV_HEX_2, AGG_K_HEX_2, AGG, nonces, DEFAULT_GAS_PRICE)
+AGG_SIGNER_2 = Signer(AGG_PRIV_HEX_2, AGG_K_HEX_2, AGG, nonces)
 
 GOV_PRIV_HEX_2 = "6b357e74e81bd16c202e6406d0e1883f758f0495973f316be323daebec04ad85"
 GOV_K_HEX_2 = "699d69410c7ae51703a515ae0c186889a47e0fda1f661b8451f90ec5d780eb4b"
-GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV_K_HEX_2, GOV, nonces, DEFAULT_GAS_PRICE)
+GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV_K_HEX_2, GOV, nonces)
 
 NULL_KEY = (0, 0, ZERO_ADDR)
 

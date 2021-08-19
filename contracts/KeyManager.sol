@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "./interfaces/IKeyManager.sol";
@@ -103,14 +103,11 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithAggKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) refundGas() validSig(
-        // Passed in by whoever is submitting the function
+    ) external override nzKey(newKey) refundGas validSig(
         sigData,
-        // The Keccack hash of the abi-encoded function arguments, including
-        // the tx.gasprice as one of the elements of SigData
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
-            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+            SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.Agg
@@ -118,7 +115,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         emit Signature(sigData);
         emit Hash(keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
-            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+            SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )));
         emit NewKey(newKey);
@@ -137,11 +134,11 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithGovKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) validTime refundGas() validSig(
+    ) external override nzKey(newKey) validTime validSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+            SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.Gov
@@ -165,7 +162,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setGovKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce, address(0), tx.gasprice),
+            SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.Gov

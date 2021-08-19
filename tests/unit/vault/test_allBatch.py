@@ -2,6 +2,7 @@ from consts import *
 from brownie import reverts, web3
 from brownie.test import given, strategy
 from random import choices
+from utils import *
 
 
 @given(
@@ -12,14 +13,16 @@ from random import choices
     sender=strategy('address')
 )
 def test_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fetchSwapIDs, tranRecipients, tranAmounts, sender):
+
+    # Allowing this breaks the refund test
+    for i in range(len(tranRecipients)):
+        if tranRecipients[i] == sender:
+            return
+
     # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([fetchAmounts, fetchSwapIDs])
     tokensList = [ETH_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=fetchMinLen)
-    ethTotal = 0
-    tokenATotal = 0
-    tokenBTotal = 0
-
     fetchTotals = {tok: sum([fetchAmounts[i] for i, x in enumerate(fetchTokens) if x == tok]) for tok in tokensList}
 
     # Transfer tokens to the deposit addresses
@@ -31,8 +34,8 @@ def test_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fet
         else:
             depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositToken, cleanHexStrPad(tok.address))
             tok.transfer(depositAddr, am, {'from': cf.DEPLOYER})
-    
-    assert cf.vault.balance() == 0
+
+    assert cf.vault.balance() == ONE_ETH # starting balance
     assert token.balanceOf(cf.vault) == 0
     assert token2.balanceOf(cf.vault) == 0
 
@@ -46,7 +49,7 @@ def test_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fet
     validEthIdxs = []
     for i in range(len(tranTokens)):
         if tranTokens[i] == ETH_ADDR:
-            if cumulEthTran + tranAmounts[i] <= fetchTotals[ETH_ADDR]:
+            if cumulEthTran + tranAmounts[i] <= fetchTotals[ETH_ADDR] + ONE_ETH:
                 validEthIdxs.append(i)
                 cumulEthTran += tranAmounts[i]
     tranTotals[ETH_ADDR] = sum([tranAmounts[i] for i, x in enumerate(tranTokens) if x == ETH_ADDR and i in validEthIdxs])
@@ -62,12 +65,15 @@ def test_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fet
         with reverts():
             cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
     else:
+        # Why the F is Alice being paid to make this transaction when the amounts are small?
+        balanceBefore = sender.balance()
         tx = cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
-
-        assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
+        balanceAfter = sender.balance()
+        refunded = txRefundTest(balanceBefore, balanceAfter, tx)
+        assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR] + ONE_ETH - refunded
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
-        
+
         for i in range(len(tranRecipients)):
             if tranTokens[i] == ETH_ADDR:
                 if i in validEthIdxs: assert web3.eth.get_balance(str(tranRecipients[i])) == ethBals[i] + tranAmounts[i]
@@ -90,7 +96,7 @@ def test_allBatch_rev_fetch_array_length(cf, token, token2, DepositToken, Deposi
     # Make sure the lengths are always different somewhere
     tokensList = [ETH_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=len(fetchSwapIDs) + randK)
-    
+
     tranMinLen = trimToShortest([tranRecipients, tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen)
 
@@ -111,7 +117,7 @@ def test_allBatch_rev_transfer_array_length(cf, token, token2, DepositToken, Dep
     # Make sure the lengths are always different somewhere
     tokensList = [ETH_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=len(fetchSwapIDs) + randK)
-    
+
     tranMinLen = trimToShortest([tranRecipients, tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen + randK)
 
@@ -119,7 +125,6 @@ def test_allBatch_rev_transfer_array_length(cf, token, token2, DepositToken, Dep
 
     with reverts(REV_MSG_V_ARR_LEN):
         cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
-
 
 def test_allBatch_rev_msgHash(cf):
     callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
