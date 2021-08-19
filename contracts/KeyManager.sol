@@ -88,10 +88,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         return true;
     }
 
-    event Hash(bytes32 hash);
-    event Signature(SigData sig);
-    event NewKey(Key key);
-
     /**
      * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
@@ -112,13 +108,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         )),
         KeyID.Agg
     ) {
-        emit Signature(sigData);
-        emit Hash(keccak256(abi.encodeWithSelector(
-            this.setAggKeyWithAggKey.selector,
-            SigData(0, 0, sigData.nonce, address(0)),
-            newKey
-        )));
-        emit NewKey(newKey);
         emit KeyChange(true, _keyIDToKey[KeyID.Agg], newKey);
         _keyIDToKey[KeyID.Agg] = newKey;
     }
