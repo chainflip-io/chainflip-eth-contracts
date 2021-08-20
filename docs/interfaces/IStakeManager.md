@@ -1,14 +1,8 @@
 # `IStakeManager`
 
-
-
-
-
-
 ## `stake(bytes32 nodeID, uint256 amount, address returnAddr)` (external)
 
          Stake some FLIP and attribute it to a nodeID
-
 
 - `amount`:    The amount of stake to be locked up
 
@@ -17,13 +11,11 @@
 - `returnAddr`:    The address which the staker requires to be used
                      when claiming back FLIP for `nodeID`
 
-
 ## `registerClaim(struct IShared.SigData sigData, bytes32 nodeID, uint256 amount, address staker, uint48 expiryTime)` (external)
 
  Claim back stake. If only losing an auction, the same amount initially staked
          will be sent back. If losing an auction while being a validator,
          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
@@ -37,7 +29,6 @@
 
 - `expiryTime`:   The last valid block height that can execute this claim (uint48)
 
-
 ## `executeClaim(bytes32 nodeID)` (external)
 
  Execute a pending claim to get back stake. If only losing an auction,
@@ -47,15 +38,12 @@
          claim before 48h have passed after registering it, or after the specified
          expiry block height
 
-
 - `nodeID`:    The nodeID of the staker
-
 
 ## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber)` (external)
 
  Compares a given new FLIP supply it against the old supply,
          then mints and burns as appropriate
-
 
 - `sigData`:               signature over the abi-encoded function params
 
@@ -63,12 +51,10 @@
 
 - `stateChainBlockNumber`: State Chain block number for the new total supply
 
-
 ## `setMinStake(struct IShared.SigData sigData, uint256 newMinStake)` (external)
 
      Set the minimum amount of stake needed for `stake` to be able
              to be called. Used to prevent spamming of stakes.
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
@@ -76,11 +62,9 @@
 
 - `newMinStake`:   The new minimum stake
 
-
 ## `getKeyManager() → contract IKeyManager` (external)
 
  Get the KeyManager address/interface that's used to validate sigs
-
 
 Returns
 
@@ -90,7 +74,6 @@ Returns
 
  Get the FLIP token address
 
-
 Returns
 
 - The address of FLIP
@@ -98,7 +81,6 @@ Returns
 ## `getLastSupplyUpdateBlockNumber() → uint256` (external)
 
  Get the last state chain block number that the supply was updated at
-
 
 Returns
 
@@ -108,7 +90,6 @@ Returns
 
  Get the minimum amount of stake that's required for a bid
          attempt in the auction to be valid - used to prevent sybil attacks
-
 
 Returns
 
@@ -120,12 +101,8 @@ Returns
          a pending claim for this nodeID, or it has already been executed
          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
 
-
 - `nodeID`:    The nodeID which is has a pending claim
-
 
 Returns
 
 - The claim (Claim)
-
-
