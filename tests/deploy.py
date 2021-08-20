@@ -5,6 +5,9 @@ from brownie import network
 
 def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP):
 
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
     class Context:
         pass
 

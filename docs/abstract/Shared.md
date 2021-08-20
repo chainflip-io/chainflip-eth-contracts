@@ -37,7 +37,7 @@
    Refunds (almost all) the gas spend to call this function
 
 
-## `sendEth(address to, uint256 amount)` (external)
+## `refundEth(address to, uint256 amount)` (external)
 
 No description
 

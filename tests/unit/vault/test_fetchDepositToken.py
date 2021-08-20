@@ -1,5 +1,6 @@
 from brownie import reverts, web3
 from consts import *
+from utils import *
 
 
 def test_fetchDepositToken(cf, token, DepositToken):
@@ -32,9 +33,12 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
     callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX_PAD, token)
 
     # Fetch the deposit
-    cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD, token)
+    balanceBefore = cf.ALICE.balance()
+    tx = cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD, token, cf.FR_ALICE)
+    balanceAfter = cf.ALICE.balance()
+    refunded = txRefundTest(balanceBefore, balanceAfter, tx)
 
-    assert cf.vault.balance() == TEST_AMNT + ONE_ETH
+    assert cf.vault.balance() == TEST_AMNT + ONE_ETH - refunded
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
 

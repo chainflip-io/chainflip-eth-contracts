@@ -62,7 +62,12 @@ def getValidTranIdxs(tokens, amounts, prevBal, tok):
 # balanceBefore (we know the Validator has not got more than they should)
 def txRefundTest(balanceBefore, balanceAfter, tx):
     base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
-    ethUsed = tx.gas_used * base_fee
+
+    # this is set in the tests earlier, (deploy.py) but we might as well
+    # calculate it here so we only have to update it once
+    priority_fee = tx.gas_price - base_fee
+
+    ethUsed = (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)
     totalRefunded = tx.events["Refunded"][0].values()[0]
     assert balanceAfter <= balanceBefore
     assert balanceAfter >= balanceBefore - ethUsed

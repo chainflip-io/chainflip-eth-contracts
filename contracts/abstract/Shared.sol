@@ -52,7 +52,7 @@ abstract contract Shared is IShared {
         uint gasSpent = gasStart - gasleft();
         uint refundWei = gasSpent * block.basefee;
 
-        try this.sendEth(msg.sender, refundWei) {
+        try this.refundEth(msg.sender, refundWei) {
             emit Refunded(refundWei);
         } catch (bytes memory lowLevelData) {
             // There's not enough ETH in the contract to pay anyone
@@ -60,7 +60,7 @@ abstract contract Shared is IShared {
         }
     }
 
-    function sendEth (address to, uint256 amount) external {
+    function refundEth(address to, uint256 amount) external {
         // Hack this so that it's an internal call
         require(msg.sender == address(this));
         // Send 0 gas so that if we go to a contract it fails
