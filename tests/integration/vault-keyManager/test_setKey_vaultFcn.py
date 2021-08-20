@@ -286,7 +286,9 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
             depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositToken, cleanHexStrPad(tok.address))
             tok.transfer(depositAddr, am, {'from': cf.DEPLOYER})
 
-    assert cf.vault.balance() == ONE_ETH
+    # Commented out this assertion as the setAggKeyWithAggKey_test function above
+    # will cause a refund to the caller, which will decrease vault's balance
+    # assert cf.vault.balance() == ONE_ETH
     assert token.balanceOf(cf.vault) == 0
     assert token2.balanceOf(cf.vault) == 0
 
@@ -298,6 +300,7 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
     validEthIdxs = getValidTranIdxs(tranTokens, tranAmounts, fetchTotals[ETH_ADDR] + ONE_ETH, ETH_ADDR)
     tranTotals[ETH_ADDR] = sum([tranAmounts[i] for i, x in enumerate(tranTokens) if x == ETH_ADDR and i in validEthIdxs])
 
+    ethStartBalVault = cf.vault.balance()
     ethBals = [web3.eth.get_balance(str(recip)) for recip in tranRecipients]
     tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in tranRecipients]
@@ -318,9 +321,9 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
         balanceBefore = sender.balance()
         tx = cf.vault.allBatch(AGG_SIGNER_2.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
         balanceAfter = sender.balance()
-        txRefundTest(balanceBefore, balanceAfter, tx)
+        refund = txRefundTest(balanceBefore, balanceAfter, tx)
 
-        assert cf.vault.balance() == ONE_ETH + (fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR])
+        assert cf.vault.balance() == ethStartBalVault + (fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]) - refund
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
 

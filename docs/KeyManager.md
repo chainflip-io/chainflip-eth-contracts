@@ -126,7 +126,7 @@ Returns
 
 ## `receive()` (external)
 
-No description
+ @notice Allows this contract to receive ETH used to refund callers
 
 
 

@@ -202,6 +202,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         return _keyToNoncesUsed[keyID][nonce];
     }
 
+    /**
+     *  @notice Allows this contract to receive ETH used to refund callers
+     */
     receive () external payable {}
 
 

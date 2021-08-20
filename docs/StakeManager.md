@@ -111,7 +111,7 @@ No description
 
 ## `receive()` (external)
 
-No description
+ @notice Allows this contract to receive ETH used to refund callers
 
 
 ## `getKeyManager() → contract IKeyManager` (external)

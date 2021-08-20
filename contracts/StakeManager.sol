@@ -262,6 +262,9 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
     }
 
+    /**
+     *  @notice Allows this contract to receive ETH used to refund callers
+     */
     receive () external payable {}
 
 
