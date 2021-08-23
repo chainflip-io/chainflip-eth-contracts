@@ -1,13 +1,10 @@
 # `SchnorrSECP256K1`
 
-Slightly modified from https://github.com/smartcontractkit/chainlink/pull/1272/files
-
-
-
+Slightly modified from <https://github.com/smartcontractkit/chainlink/pull/1272/files>
 
 ## `verifySignature(uint256 msgHash, uint256 signature, uint256 signingPubKeyX, uint8 pubKeyYParity, address nonceTimesGeneratorAddress) → bool` (internal)
 
-/** **************************************************************************
+/****************************************************************************
       @notice verifySignature returns true iff passed a valid Schnorr signature.
 
       @dev See https://en.wikipedia.org/wiki/Schnorr_signature for reference.
@@ -94,6 +91,3 @@ Slightly modified from https://github.com/smartcontractkit/chainlink/pull/1272/f
 *************************************************************************
       @return True if passed a valid signature, false otherwise. */
   funct
-
-
-
