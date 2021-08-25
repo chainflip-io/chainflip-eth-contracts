@@ -11,7 +11,7 @@ def test_verifySignature_rev_pubKeyX(schnorrTest):
     print(REV_MSG_PUB_KEY_X)
 
     with reverts(REV_MSG_PUB_KEY_X):
-        tx = schnorrTest.testVerifySignature(*sigData[:2], *signerPubData, sigData[3])
+        schnorrTest.testVerifySignature(*sigData[:2], *signerPubData, sigData[3])
 
 
 def test_verifySignature_rev_SigLessQ(schnorrTest):
