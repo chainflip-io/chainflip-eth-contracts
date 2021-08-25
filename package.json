@@ -3,11 +3,12 @@
     "docgen": "npx solidity-docgen --solc-module solc-0.8 --templates=./docgen/ && npx markdownlint docs/**/*.md --config docgen/.markdownlint.json --fix"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.0.0-rc3",
-    "solc-0.8": "npm:solc@^0.8.6",
-    "solidity-docgen": "^0.5.11"
+    "@openzeppelin/contracts": "^4.0.0-rc3"
   },
   "devDependencies": {
+    "hardhat": "^2.6.0",
+    "solc-0.8": "npm:solc@^0.8.7-fixed",
+    "solidity-docgen": "^0.5.11",
     "markdownlint-cli": "^0.28.1"
   }
 }

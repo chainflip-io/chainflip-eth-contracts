@@ -1,15 +1,6 @@
 from consts import *
 from brownie import reverts, chain, web3
-
-
-# Test with timestamp-1 because of an error where there's a difference of 1s
-# because the evm and local clock were out of sync or something... not 100% sure why,
-# but some tests occasionally fail for this reason even though they succeed most
-# of the time with no changes to the contract or test code
-def txTimeTest(time, tx):
-    assert time >= tx.timestamp and time <= (tx.timestamp+2)
-
-
+from utils import *
 
 # ----------Vault----------
 
@@ -20,14 +11,22 @@ def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
+
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
-    tx = cf.keyManager.setAggKeyWithAggKey(AGG_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
+
+    balanceBefore = cf.ALICE.balance()
+    tx = cf.keyManager.setAggKeyWithAggKey(
+        AGG_SIGNER_1.getSigData(callDataNoSig),
+        AGG_SIGNER_2.getPubData(),
+        { 'from': cf.ALICE }
+    )
+    balanceAfter = cf.ALICE.balance()
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    txRefundTest(balanceBefore, balanceAfter, tx)
     assert tx.events["KeyChange"][0].values() == [True, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
-
 
 def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
@@ -134,35 +133,3 @@ def registerClaimTest(cf, nodeID, minStake, amount, receiver, expiryTime):
     assert cf.flip.balanceOf(receiver) == prevReceiverBal
     assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
     assert cf.stakeManager.getMinimumStake() == minStake
-
-
-# # Hypothesis/brownie doesn't allow you to specifically include values when generating random
-# # inputs through @given, so this is a common fcn that can be used for `test_claim` and
-# # similar tests that test specific desired values
-# def registerClaimTest(cf, prevTx, prevTotal, nodeID, emissionPerBlock, minStake, amount, receiver, prevReceiverBal, expiryTime):
-#     # Want to calculate inflation 1 block into the future because that's when the tx will execute
-#     newLastMintBlockNum = web3.eth.block_number + 1
-#     inflation = getInflation(prevTx.block_number, newLastMintBlockNum, emissionPerBlock)
-#     maxValidAmount = prevTotal + inflation
-
-#     assert cf.flip.balanceOf(receiver) == prevReceiverBal
-
-#     callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), receiver, amount, expiryTime, nodeID)
-
-#     if amount == 0:
-#         with reverts(REV_MSG_NZ_UINT):
-#             cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryTime, nodeID)
-#     else:
-#         tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), receiver, amount, expiryTime, nodeID)
-
-#         # Check things that should've changed
-#         assert newLastMintBlockNum == tx.block_number
-#         assert cf.stakeManager.getLastMintBlockNum() == newLastMintBlockNum
-#         assert cf.flip.balanceOf(cf.stakeManager) == maxValidAmount - amount
-#         assert cf.stakeManager.getTotalStakeInFuture(0) == maxValidAmount - amount
-#         assert tx.events["Claimed"][0].values() == [nodeID, amount]
-#         # Check things that shouldn't have changed
-#         assert cf.flip.balanceOf(receiver) == prevReceiverBal
-#         assert cf.stakeManager.getEmissionPerBlock() == emissionPerBlock
-#         assert cf.stakeManager.getMinimumStake() == minStake
-

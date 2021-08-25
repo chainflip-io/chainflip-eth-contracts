@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,9 +18,9 @@ import "./DepositToken.sol";
 * @author   Quantaf1re (James Key)
 */
 contract Vault is IVault, Shared {
-    
+
     using SafeERC20 for IERC20;
-    
+
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
@@ -63,7 +63,7 @@ contract Vault is IVault, Shared {
         address[] calldata tranTokenAddrs,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
-    ) external override validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -154,7 +154,7 @@ contract Vault is IVault, Shared {
         address[] calldata tokenAddrs,
         address payable[] calldata recipients,
         uint[] calldata amounts
-    ) external override validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -250,7 +250,7 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) validSig(
+    ) external override nzBytes32(swapID) refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -276,7 +276,7 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs
-    ) external override validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -306,7 +306,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) validSig(
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -335,7 +335,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         address[] calldata tokenAddrs
-    ) external override validSig(
+    ) external override refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(

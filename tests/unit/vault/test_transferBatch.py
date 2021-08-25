@@ -10,7 +10,7 @@ from random import choices
     sender=strategy('address')
 )
 def test_transferBatch(cf, token, token2, recipients, amounts, sender):
-    recipients = [recip for recip in recipients if recip != cf.vault.address]
+    recipients = [recip for recip in recipients if recip != cf.vault.address and recip != sender]
     # Make sure that they're all the same length
     minLen = trimToShortest([recipients, amounts])
     tokens = choices([ETH_ADDR, token, token2], k=minLen)
@@ -24,7 +24,10 @@ def test_transferBatch(cf, token, token2, recipients, amounts, sender):
     token2Bals = [token2.balanceOf(recip) for recip in recipients]
 
     callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), tokens, recipients, amounts)
+    balanceBefore = sender.balance()
     tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), tokens, recipients, amounts, {'from': sender})
+    balanceAfter = sender.balance()
+    txRefundTest(balanceBefore, balanceAfter, tx)
 
     for i in range(len(recipients)):
         if tokens[i] == ETH_ADDR:

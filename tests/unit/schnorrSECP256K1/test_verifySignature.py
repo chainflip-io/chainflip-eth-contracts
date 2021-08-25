@@ -8,6 +8,8 @@ def test_verifySignature_rev_pubKeyX(schnorrTest):
     signerPubData = AGG_SIGNER_1.getPubData()
     signerPubData[0] += Signer.HALF_Q_INT
 
+    print(REV_MSG_PUB_KEY_X)
+
     with reverts(REV_MSG_PUB_KEY_X):
         schnorrTest.testVerifySignature(*sigData[:2], *signerPubData, sigData[3])
 
@@ -24,6 +26,8 @@ def test_verifySignature_rev_nonceTimesGeneratorAddress_zero(schnorrTest):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD)
 
     signerPubData = AGG_SIGNER_1.getPubData()
+
+    print(*sigData[:2], *signerPubData, ZERO_ADDR)
 
     with reverts(REV_MSG_INPUTS_0):
         schnorrTest.testVerifySignature(*sigData[:2], *signerPubData, ZERO_ADDR)

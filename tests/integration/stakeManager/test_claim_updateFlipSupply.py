@@ -19,7 +19,7 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
     stateChainBlockNumber = 1
 
     callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
-    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, {"from": cf.ALICE})
+    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
 
 
     # Check things that should've changed

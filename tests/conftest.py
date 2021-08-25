@@ -2,6 +2,7 @@ import pytest
 from consts import *
 from deploy import deploy_initial_ChainFlip_contracts
 from brownie import chain
+from brownie.network import priority_fee
 
 
 # Test isolation

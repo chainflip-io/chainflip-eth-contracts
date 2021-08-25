@@ -7,6 +7,7 @@ ZERO_ADDR = "0x" + ZERO_ADDR_PACKED
 ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
 TEST_AMNT = 10**17
+ONE_ETH = 10**18
 JUNK_INT = 12345
 JUNK_HEX = web3.toHex(JUNK_INT)
 # Notable the only part of the hash involved in CREATE2 that has padding
@@ -17,7 +18,7 @@ GOV = "Gov"
 KEYID_TO_NUM  = {AGG: 0, GOV: 1}
 NUM_TO_KEYID  = [AGG, GOV]
 INIT_TOKEN_SUPPLY = int(10**26)
-INIT_ETH_BAL = 100 * E_18
+INIT_ETH_BAL = 10000 * E_18
 SECS_PER_BLOCK = 13
 
 # Time in seconds

@@ -78,5 +78,3 @@ def all_keyManager_events():
     print(f"\n🔑 Governance Key sets the new Governance Key 🔑\n")
     callDataNoSig = cf.keyManager.setGovKeyWithGovKey.encode_input(gov_null_sig(), GOV_SIGNER_2.getPubData())
     cf.keyManager.setGovKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), GOV_SIGNER_2.getPubData())
-
-

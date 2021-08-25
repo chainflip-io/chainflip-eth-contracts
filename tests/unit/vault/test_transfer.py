@@ -7,10 +7,10 @@ def test_transfer_eth(cf):
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
-    
+
     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
     cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
-    
+
     assert cf.vault.balance() - startBalVault == -TEST_AMNT
     assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
 
@@ -21,10 +21,10 @@ def test_transfer_eth_fails_recipient(cf, token):
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
-    
+
     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, token, TEST_AMNT)
     tx = cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, token, TEST_AMNT)
-    
+
     assert tx.events["TransferFailed"][0].values() == [token, TEST_AMNT, web3.toHex(0)]
     assert cf.vault.balance() == startBalVault
     assert cf.ALICE.balance() == startBalRecipient
@@ -33,12 +33,12 @@ def test_transfer_eth_fails_recipient(cf, token):
 # Trying to send ETH when there's none in the Vault
 def test_transfer_eth_fails_not_enough_eth(cf, token):
     startBalRecipient = cf.ALICE.balance()
-    
-    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
-    tx = cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
-    
-    assert tx.events["TransferFailed"][0].values() == [cf.ALICE, TEST_AMNT, web3.toHex(0)]
-    assert cf.vault.balance() == 0
+
+    callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT + ONE_ETH)
+    tx = cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT + ONE_ETH)
+
+    assert tx.events["TransferFailed"][0].values() == [cf.ALICE, TEST_AMNT + ONE_ETH, web3.toHex(0)]
+    assert cf.vault.balance() == ONE_ETH
     assert cf.ALICE.balance() == startBalRecipient
 
 
@@ -50,7 +50,7 @@ def test_transfer_token(cf, token):
 
     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), token, cf.ALICE, TEST_AMNT)
     cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), token, cf.ALICE, TEST_AMNT)
-    
+
     assert token.balanceOf(cf.vault) - startBalVault == -TEST_AMNT
     assert token.balanceOf(cf.ALICE) - startBalRecipient == TEST_AMNT
 

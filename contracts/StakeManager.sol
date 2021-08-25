@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "./interfaces/IStakeManager.sol";
@@ -201,7 +201,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish validSig(
+    ) external override nzUint(newTotalSupply) noFish refundGas validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -261,6 +261,11 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     ) external override {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
     }
+
+    /**
+     *  @notice Allows this contract to receive ETH used to refund callers
+     */
+    receive () external payable {}
 
 
     //////////////////////////////////////////////////////////////

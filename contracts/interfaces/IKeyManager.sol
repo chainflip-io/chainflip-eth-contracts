@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "./IShared.sol";
@@ -22,7 +22,7 @@ interface IKeyManager is IShared {
         bytes32 contractMsgHash,
         KeyID keyID
     ) external returns (bool);
-    
+
     function setAggKeyWithAggKey(
         SigData memory sigData,
         Key memory newKey

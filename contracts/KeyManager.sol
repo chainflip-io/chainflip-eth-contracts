@@ -1,4 +1,4 @@
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.7;
 
 
 import "./interfaces/IKeyManager.sol";
@@ -67,6 +67,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         KeyID keyID
     ) public override returns (bool) {
         Key memory key = _keyIDToKey[keyID];
+        // We require the msgHash param in the sigData is equal to the contract
+        // message hash (the rules coded into the contract)
         require(sigData.msgHash == uint(contractMsgHash), "KeyManager: invalid msgHash");
         require(
             verifySignature(
@@ -97,7 +99,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithAggKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) validSig(
+    ) external override nzKey(newKey) refundGas validSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
@@ -199,6 +201,11 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function isNonceUsedByKey(KeyID keyID, uint nonce) external override view returns (bool) {
         return _keyToNoncesUsed[keyID][nonce];
     }
+
+    /**
+     *  @notice Allows this contract to receive ETH used to refund callers
+     */
+    receive () external payable {}
 
 
 

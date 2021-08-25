@@ -6,7 +6,7 @@ from brownie.test import given, strategy
 @given(newMinStake=strategy('uint256', exclude=0))
 def test_setMinStake(cf, newMinStake):
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
-    tx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, {"from": cf.ALICE})
+    tx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, cf.FR_ALICE)
 
     # Check things that should've changed
     assert cf.stakeManager.getMinimumStake() == newMinStake
@@ -19,7 +19,7 @@ def test_setMinStake(cf, newMinStake):
 def test_setMinStake_rev_amount(cf):
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), 0)
     with reverts(REV_MSG_NZ_UINT):
-        cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), 0, {"from": cf.ALICE})
+        cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), 0, cf.FR_ALICE)
 
 
 def test_setMinStake_rev_msgHash(cf):
