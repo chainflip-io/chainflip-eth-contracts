@@ -56,6 +56,7 @@ steps:
     pull: always
     image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
     commands:
+      - npm install
       - /home/circleci/.poetry/bin/poetry install
       - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - /home/circleci/.poetry/bin/poetry run brownie test --network hardhat --stateful false
