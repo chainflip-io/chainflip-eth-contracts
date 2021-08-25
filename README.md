@@ -48,6 +48,19 @@ Brownie and `solidity-docgen` don't play very nice with each other. For this rea
 
 This isn't an ideal solution but it'll do for now.
 
+## Deploy the contracts
+
+The deploying account will be allocated all the FLIP on a testnet (90M)
+
+Inside the poetry shell:
+
+```bash
+# ensure that the ETH account associated with this seed has ETH on that network
+export SEED=<your seed phrase>
+# deploy the contracts to rinkeby.
+brownie run deploy_contracts --network rinkeby
+```
+
 ## Useful commands
 
 `brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting

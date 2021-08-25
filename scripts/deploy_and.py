@@ -31,7 +31,10 @@ def main():
     print()
 
 def all_events():
+    print(f"\n-- Stake Manager Events --\n")
     all_stakeManager_events()
+    chain.sleep(CLAIM_DELAY)
+    print(f"\n-- Key Manager Events --\n")
     all_keyManager_events()
 
 def all_stakeManager_events():
