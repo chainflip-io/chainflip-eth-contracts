@@ -59,7 +59,6 @@ steps:
       - npm install
       - $HOME/.poetry/bin/poetry install
       - $HOME/.poetry/bin/poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-      - $HOME/.poetry/bin/poetry run brownie networks add development hardhat cmd='npx hardhat node' host=http://127.0.0.1 port=8545
       - $HOME/.poetry/bin/poetry run brownie test --network hardhat --stateful false
 
 trigger:
