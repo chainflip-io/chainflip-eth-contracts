@@ -89,13 +89,13 @@ steps:
       WEB3_INFURA_PROJECT_ID:
         from_secret: web3_infura_project_id
     commands:
-      - /home/circleci/.poetry/bin/poetry install
+      - $HOME/.poetry/bin/poetry install
       - brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - >
-        /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_keyManager.py
-        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_vault.py
-        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_stakeManager.py
-        && /home/circleci/.poetry/bin/poetry run brownie test ./tests/stateful/test_all.py
+        $HOME/.poetry/bin/poetry run brownie test ./tests/stateful/test_keyManager.py
+        && $HOME/.poetry/bin/poetry run brownie test ./tests/stateful/test_vault.py
+        && $HOME/.poetry/bin/poetry run brownie test ./tests/stateful/test_stakeManager.py
+        && $HOME/.poetry/bin/poetry run brownie test ./tests/stateful/test_all.py
   - name: notify
     image: appleboy/drone-discord
     when:
@@ -114,7 +114,7 @@ steps:
         The nightly test job was unsuccessful.
         Logs: {{build.link}}
         Duration: `{{since build.started}}`
-        Responsible parties: <@705248954073219142>
+        Responsible parties: <@238452185900253185>
 
 image_pull_secrets:
   - dockerconfigjson
