@@ -1,13 +1,14 @@
-FROM ghcr.io/chainflip-io/eth-brownie:latest
+FROM python:buster
 
 USER root
 
 RUN apt-get update -y \
-    && apt-get install software-properties-common \
-    && add-apt-repository ppa:deadsnakes/ppa \
-    && apt-get update \
-    && apt-get install python3.9 \
-    && python --version
-    
-RUN yarn global add ganache-cli \
-    && ganache-cli --version \
+    && apt-get install curl
+
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+
+RUN curl -fsSL https://deb.nodesource.com/setup_14.x | sh - \
+    && apt-get install -y nodejs
+
+RUN npm install --global ganache-cli \
+    && ganache-cli --version

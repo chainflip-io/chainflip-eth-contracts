@@ -39,7 +39,7 @@ name: chainflip-eth-contracts
 type: kubernetes
 
 steps:
-  - name: build
+  - name: build-eth-brownie
     image: plugins/docker
     settings:
       username:
@@ -116,8 +116,6 @@ steps:
         Logs: {{build.link}}
         Duration: `{{since build.started}}`
         Responsible parties: <@705248954073219142>
-
-
 
 image_pull_secrets:
   - dockerconfigjson
