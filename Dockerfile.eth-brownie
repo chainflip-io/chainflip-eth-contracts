@@ -12,3 +12,5 @@ RUN curl -fsSL https://deb.nodesource.com/setup_14.x | sh - \
 
 RUN npm install --global ganache-cli \
     && ganache-cli --version
+
+ENV PATH="/root/.poetry/bin:${PATH}"
