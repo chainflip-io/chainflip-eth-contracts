@@ -5,7 +5,7 @@ USER root
 RUN apt-get update -y \
     && apt-get install curl
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - && chown -R root:root /root
 
 RUN curl -fsSL https://deb.nodesource.com/setup_14.x | sh - \
     && apt-get install -y nodejs
