@@ -56,7 +56,7 @@ jobs:
 
   run-tests:
     docker:
-      - image: ghcr.io/chainflip-io/chainflip-backend/rust-poetry:latest
+      - image: ghcr.io/chainflip-io/chainflip-backend/eth-brownie:latest
         auth: *dockerconfig
     resource_class: xlarge
     steps:
