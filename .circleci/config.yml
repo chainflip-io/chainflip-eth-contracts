@@ -35,7 +35,7 @@ orbs:
   discord: antonioned/discord@0.1.0
   gh: circleci/github-cli@1.0.4
 workflows:
-  chainflip-eth-contract-tests:
+  chainflip-eth-contracts-tests:
     jobs:
       - build-eth-brownie:
           context:
@@ -66,5 +66,5 @@ jobs:
           command: |
             npm install
             poetry --quiet install
-            poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+            poetry --quiet run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
             poetry run brownie test --network hardhat --stateful false
