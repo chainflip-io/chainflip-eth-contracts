@@ -55,6 +55,8 @@ The deploying account will be allocated all the FLIP on a testnet (90M)
 Inside the poetry shell:
 
 ```bash
+# get this id from LastPass
+export WEB3_INFURA_PROJECT_ID=<Infura project id>
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED=<your seed phrase>
 # deploy the contracts to rinkeby.
