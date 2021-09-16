@@ -54,7 +54,20 @@ The deploying account will be allocated all the FLIP on a testnet (90M)
 
 Inside the poetry shell:
 
+### Local Test network
+
 ```bash
+# if you haven't already started a hardhat node
+npx hardhat node
+# deploy the contracts - they will be deployed by acct #1 on the hardhat pre-seeded accounts
+brownie run deploy_and
+```
+
+### Live Test network
+
+```bash
+# get this id from Infura
+export WEB3_INFURA_PROJECT_ID=<Infura project id>
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED=<your seed phrase>
 # deploy the contracts to rinkeby.
