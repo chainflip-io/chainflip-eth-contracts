@@ -18,14 +18,14 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
 
     environment = args[0]
     aggKey = environment.get('AGG_KEY')
-    if (aggKey):
+    if aggKey:
         parity = aggKey[0:2]
         x = aggKey[2:]
         aggKey = [int(x, 16), int(parity, 16)]
     else: aggKey = AGG_SIGNER_1.getPubData()
 
     govKey = environment.get('GOV_KEY')
-    if (govKey):
+    if govKey:
         parity = govKey[0:2]
         x = govKey[2:]
         govKey = [int(x, 16), int(parity, 16)]
