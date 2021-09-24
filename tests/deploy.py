@@ -1,9 +1,10 @@
+from os import environ
 from consts import *
 from web3.auto import w3
 from brownie import network
 
 
-def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP):
+def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP, *args):
 
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
@@ -14,7 +15,23 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
     cf = Context()
     if network.show_active() == 'development' or network.show_active() == 'hardhat':
         deploy_erc1820(deployer)
-    cf.keyManager = deployer.deploy(KeyManager, AGG_SIGNER_1.getPubData(), GOV_SIGNER_1.getPubData())
+
+    environment = args[0]
+    aggKey = environment.get('AGG_KEY')
+    if (aggKey):
+        parity = aggKey[0:2]
+        x = aggKey[2:]
+        aggKey = [int(x, 16), int(parity, 16)]
+    else: aggKey = AGG_SIGNER_1.getPubData()
+
+    govKey = environment.get('GOV_KEY')
+    if (govKey):
+        parity = govKey[0:2]
+        x = govKey[2:]
+        govKey = [int(x, 16), int(parity, 16)]
+    else: govKey = GOV_SIGNER_1.getPubData()
+
+    cf.keyManager = deployer.deploy(KeyManager, aggKey, govKey)
     cf.vault = deployer.deploy(Vault, cf.keyManager)
     cf.stakeManager = deployer.deploy(StakeManager, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
     cf.flip = FLIP.at(cf.stakeManager.getFLIPAddress())
