@@ -1,4 +1,3 @@
-from os import environ
 from consts import *
 from web3.auto import w3
 from brownie import network
