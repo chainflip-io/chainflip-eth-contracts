@@ -70,6 +70,9 @@ brownie run deploy_and
 export WEB3_INFURA_PROJECT_ID=<Infura project id>
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED=<your seed phrase>
+# Set an aggregate or governance key that you would like to use (optional)
+export AGG_KEY=<agg key with leading parity byte>
+export GOV_KEY<gov key with leading parity byte>
 # deploy the contracts to rinkeby.
 brownie run deploy_contracts --network rinkeby
 ```
