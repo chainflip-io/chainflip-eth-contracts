@@ -16,7 +16,8 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
     if network.show_active() == 'development' or network.show_active() == 'hardhat':
         deploy_erc1820(deployer)
 
-    environment = args[0]
+    environment = {}
+    if args: environment = args[0]
     aggKey = environment.get('AGG_KEY')
     if aggKey:
         parity = aggKey[0:2]
