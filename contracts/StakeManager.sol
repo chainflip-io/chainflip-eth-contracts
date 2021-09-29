@@ -97,14 +97,14 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
      * @dev             Requires the staker to have called `approve` in FLIP
      * @param amount    The amount of stake to be locked up
      * @param nodeID    The nodeID of the staker
-     * @param returnAddr    The address which the staker requires to be used
-     *                      when claiming back FLIP for `nodeID`
+     * @param returnAddr    Optional address to be referenced by Claim Sigs. If
+     *                      zero, any address can be used.
      */
     function stake(
         bytes32 nodeID,
         uint amount,
         address returnAddr
-    ) external override nzBytes32(nodeID) nzAddr(returnAddr) noFish {
+    ) external override nzBytes32(nodeID) noFish {
         require(amount >= _minStake, "StakeMan: stake too small");
 
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't

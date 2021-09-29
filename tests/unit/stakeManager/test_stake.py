@@ -36,6 +36,10 @@ def test_stake_min(cf, stakedMin):
     )
 
 
+def test_stake_zero_addr(cf):
+    cf.stakeManager.stake(JUNK_HEX, MIN_STAKE, ZERO_ADDR, {'from': cf.ALICE})
+
+
 def test_stake_rev_amount_just_under_minStake(cf):
     with reverts(REV_MSG_MIN_STAKE):
         cf.stakeManager.stake(JUNK_HEX, MIN_STAKE-1, NON_ZERO_ADDR, {'from': cf.ALICE})
