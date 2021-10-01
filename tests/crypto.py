@@ -1,6 +1,7 @@
 from utils import *
 import umbral
 from umbral import pre, keys, signing
+from py_ecc.secp256k1 import secp256k1
 
 umbral.config.set_default_curve()
 
@@ -13,7 +14,7 @@ class Signer():
     HALF_Q_INT = (Q_INT >> 1) + 1
 
 
-    def __init__(self, privKeyHex, kHex, keyID, nonces):
+    def __init__(self, privKeyHex, keyID, nonces):
         self.privKeyHex = privKeyHex
         self.privKey = keys.UmbralPrivateKey.from_bytes(bytes.fromhex(privKeyHex))
         self.privKeyInt = int(self.privKeyHex, 16)
@@ -21,17 +22,11 @@ class Signer():
         self.pubKey = self.privKey.get_pubkey()
         self.pubKeyX = self.pubKey.to_bytes()[1:]
         self.pubKeyXHex = cleanHexStr(self.pubKeyX)
+        # print(kHex, self.pubKeyXHex)
         self.pubKeyXInt = int(self.pubKeyXHex, 16)
 
         self.pubKeyYPar = 0 if cleanHexStr(self.pubKey.to_bytes()[:1]) == "02" else 1
         self.pubKeyYParHex = "00" if self.pubKeyYPar == 0 else "01"
-
-        self.k = keys.UmbralPrivateKey.from_bytes(bytes.fromhex(kHex))
-        self.kHex = kHex
-        self.kInt = int(self.kHex, 16)
-        kTimesG = self.k.get_pubkey()
-        kTimesGPub = kTimesG.to_bytes(is_compressed=False)[1:]
-        self.kTimesGAddressHex = cleanHexStr(web3.toChecksumAddress(cleanHexStr(web3.keccak(kTimesGPub)[-20:])))
 
         self.keyID = keyID
         self.nonces = nonces
@@ -78,29 +73,62 @@ class Signer():
 
     def getSigDataWithKeyID(self, msgToHash, keyID):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
-        e = web3.keccak(hexstr=(cleanHexStr(self.pubKeyX) + self.pubKeyYParHex + msgHashHex + self.kTimesGAddressHex))
 
+        # Pick a "random" nonce and then hash it just for a laugh
+        print(web3.keccak(self.Q_INT % (self.nonces[keyID] + 2)).hex())
+        k = int(web3.keccak(self.Q_INT % (self.nonces[keyID] + 2)).hex(), 16)
+        kTimesG = tuple(secp256k1.multiply(secp256k1.G, k))
+
+        # Get the x and y ordinate of our K*g value
+        kTimesGXHex = hex(kTimesG[0])
+        kTimesGYParityHex = hex(kTimesG[1])
+        k256 = web3.keccak(hexstr=cleanHexStr(kTimesGXHex) + cleanHexStr(kTimesGYParityHex))
+        nonceTimesGeneratorAddress = web3.toChecksumAddress(cleanHexStr(k256)[-40:])
+        challengeEncodedPacked = cleanHexStrPad(self.pubKeyX) + self.pubKeyYParHex + cleanHexStr(msgHashHex) + cleanHexStr(nonceTimesGeneratorAddress)
+
+        print("challenge", challengeEncodedPacked)
+
+        # 31b2ba4b46201610901c5164f42edd1f64ce88076fde2e2c544f9dc3d7b350ae
+        # 01
+        # 2bdc19071c7994f088103dbf8d5476d6deb6d55ee005a2f510dc7640055cc84e
+        # 3Eea25034397B249a3eD8614BB4d0533e5b03594
+
+        e = web3.keccak(hexstr=challengeEncodedPacked)
         eInt = int(cleanHexStr(e), 16)
 
-        s = (self.kInt - (self.privKeyInt * eInt)) % self.Q_INT
+        s = (k - (self.privKeyInt * eInt)) % self.Q_INT
         s = s + self.Q_INT if s < 0 else s
 
         # Since nonces is passed by reference, it will be altered for all other signers too
-        sigData = [int(msgHashHex, 16), s, self.nonces[keyID], self.kTimesGAddressHex]
+        sigData = [int(msgHashHex, 16), s, self.nonces[keyID], nonceTimesGeneratorAddress]
+
+        print(msgHashHex, hex(s), nonceTimesGeneratorAddress)
+
         self.nonces[keyID] += 1
         return sigData
 
 
     def getSigDataWithNonces(self, msgToHash, nonces, keyID):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
-        e = web3.keccak(hexstr=(cleanHexStr(self.pubKeyX) + self.pubKeyYParHex + msgHashHex + self.kTimesGAddressHex))
 
+        # Pick a "random" nonce and then hash it just for a laugh
+        k = int(web3.keccak(self.Q_INT % (self.nonces[keyID] + 2)).hex(), 16)
+        kTimesG = tuple(secp256k1.multiply(secp256k1.G, k))
+
+        # Get the x and y ordinate of our K*g value
+        kTimesGXHex = hex(kTimesG[0])
+        kTimesGYParityHex = hex(kTimesG[1])
+        k256 = web3.keccak(hexstr=cleanHexStr(kTimesGXHex) + cleanHexStr(kTimesGYParityHex))
+        nonceTimesGeneratorAddress = web3.toChecksumAddress(cleanHexStr(k256)[-40:])
+        challengeEncodedPacked = cleanHexStrPad(self.pubKeyX) + self.pubKeyYParHex + cleanHexStr(msgHashHex) + cleanHexStr(nonceTimesGeneratorAddress)
+
+        e = web3.keccak(hexstr=challengeEncodedPacked)
         eInt = int(cleanHexStr(e), 16)
 
-        s = (self.kInt - (self.privKeyInt * eInt)) % self.Q_INT
+        s = (k - (self.privKeyInt * eInt)) % self.Q_INT
         s = s + self.Q_INT if s < 0 else s
 
         # Since nonces is passed by reference, it will be altered for all other signers too
-        sigData = [int(msgHashHex, 16), s, nonces[keyID], self.kTimesGAddressHex]
+        sigData = [int(msgHashHex, 16), s, nonces[keyID], nonceTimesGeneratorAddress]
         nonces[keyID] += 1
         return sigData
