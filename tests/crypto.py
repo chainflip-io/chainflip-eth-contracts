@@ -22,7 +22,6 @@ class Signer():
         self.pubKey = self.privKey.get_pubkey()
         self.pubKeyX = self.pubKey.to_bytes()[1:]
         self.pubKeyXHex = cleanHexStr(self.pubKeyX)
-        # print(kHex, self.pubKeyXHex)
         self.pubKeyXInt = int(self.pubKeyXHex, 16)
 
         self.pubKeyYPar = 0 if cleanHexStr(self.pubKey.to_bytes()[:1]) == "02" else 1
