@@ -75,7 +75,6 @@ class Signer():
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
 
         # Pick a "random" nonce and then hash it just for a laugh
-        print(web3.keccak(self.Q_INT % (self.nonces[keyID] + 2)).hex())
         k = int(web3.keccak(self.Q_INT % (self.nonces[keyID] + 2)).hex(), 16)
         kTimesG = tuple(secp256k1.multiply(secp256k1.G, k))
 
@@ -86,13 +85,6 @@ class Signer():
         nonceTimesGeneratorAddress = web3.toChecksumAddress(cleanHexStr(k256)[-40:])
         challengeEncodedPacked = cleanHexStrPad(self.pubKeyX) + self.pubKeyYParHex + cleanHexStr(msgHashHex) + cleanHexStr(nonceTimesGeneratorAddress)
 
-        print("challenge", challengeEncodedPacked)
-
-        # 31b2ba4b46201610901c5164f42edd1f64ce88076fde2e2c544f9dc3d7b350ae
-        # 01
-        # 2bdc19071c7994f088103dbf8d5476d6deb6d55ee005a2f510dc7640055cc84e
-        # 3Eea25034397B249a3eD8614BB4d0533e5b03594
-
         e = web3.keccak(hexstr=challengeEncodedPacked)
         eInt = int(cleanHexStr(e), 16)
 
@@ -101,9 +93,6 @@ class Signer():
 
         # Since nonces is passed by reference, it will be altered for all other signers too
         sigData = [int(msgHashHex, 16), s, self.nonces[keyID], nonceTimesGeneratorAddress]
-
-        print(msgHashHex, hex(s), nonceTimesGeneratorAddress)
-
         self.nonces[keyID] += 1
         return sigData
 
