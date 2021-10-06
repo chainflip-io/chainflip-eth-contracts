@@ -96,12 +96,12 @@ class Signer():
 
         # Get the x and y ordinate of our k*G value
         kTimesGXInt = kTimesG[0]
-        kTimesGYParityInt = kTimesG[1]
+        kTimesGYInt = kTimesG[1]
         kTimesGXBytes = (kTimesGXInt).to_bytes(32, byteorder='big')
-        kTimesGYParityBytes = (kTimesGYParityInt).to_bytes(32, byteorder='big')
+        kTimesGYParityBytes = (kTimesGYInt).to_bytes(32, byteorder='big')
         kTimesGConcat = kTimesGXBytes + kTimesGYParityBytes
 
-        # Get the hash of the concatenated (uncompressed) keys
+        # Get the hash of the concatenated (uncompressed) key
         k256 = web3.keccak(kTimesGConcat)
 
         # Get the last 20 bytes of the hash, which is Ethereum Address format
