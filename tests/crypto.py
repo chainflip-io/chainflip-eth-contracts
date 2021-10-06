@@ -73,14 +73,19 @@ class Signer():
     def getSigDataWithKeyID(self, msgToHash, keyID):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
 
-        # Pick a "random" nonce and then hash it just for a laugh
-        k = int(web3.keccak(self.Q_INT % (self.nonces[keyID] + 2)).hex(), 16)
+        # Pick a "random" nonce (k)
+        k = int(web3.keccak(hexstr=msgHashHex).hex(), 16)
         kTimesG = tuple(secp256k1.multiply(secp256k1.G, k))
 
         # Get the x and y ordinate of our K*g value
-        kTimesGXHex = hex(kTimesG[0])
-        kTimesGYParityHex = hex(kTimesG[1])
-        k256 = web3.keccak(hexstr=cleanHexStr(kTimesGXHex) + cleanHexStr(kTimesGYParityHex))
+        kTimesGXInt = kTimesG[0] # bigint
+        kTimesGYParityInt = kTimesG[1] # bigint
+        kTimesGXBytes = (kTimesGXInt).to_bytes(32, byteorder='big')
+        kTimesGYParityBytes = (kTimesGYParityInt).to_bytes(32, byteorder='big')
+        kTimesGConcat = kTimesGXBytes + kTimesGYParityBytes
+
+        # kTime
+        k256 = web3.keccak(kTimesGConcat)
         nonceTimesGeneratorAddress = web3.toChecksumAddress(cleanHexStr(k256)[-40:])
         challengeEncodedPacked = cleanHexStrPad(self.pubKeyX) + self.pubKeyYParHex + cleanHexStr(msgHashHex) + cleanHexStr(nonceTimesGeneratorAddress)
 
@@ -92,6 +97,9 @@ class Signer():
 
         # Since nonces is passed by reference, it will be altered for all other signers too
         sigData = [int(msgHashHex, 16), s, self.nonces[keyID], nonceTimesGeneratorAddress]
+
+        print(sigData)
+
         self.nonces[keyID] += 1
         return sigData
 
@@ -99,14 +107,17 @@ class Signer():
     def getSigDataWithNonces(self, msgToHash, nonces, keyID):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
 
-        # Pick a "random" nonce and then hash it just for a laugh
-        k = int(web3.keccak(self.Q_INT % (self.nonces[keyID] + 2)).hex(), 16)
+        # Pick a "random" nonce (k)
+        k = int(web3.keccak(hexstr=msgHashHex).hex(), 16)
         kTimesG = tuple(secp256k1.multiply(secp256k1.G, k))
 
-        # Get the x and y ordinate of our K*g value
-        kTimesGXHex = hex(kTimesG[0])
-        kTimesGYParityHex = hex(kTimesG[1])
-        k256 = web3.keccak(hexstr=cleanHexStr(kTimesGXHex) + cleanHexStr(kTimesGYParityHex))
+        kTimesGXInt = kTimesG[0] # bigint
+        kTimesGYParityInt = kTimesG[1] # bigint
+        kTimesGXBytes = (kTimesGXInt).to_bytes(32, byteorder='big')
+        kTimesGYParityBytes = (kTimesGYParityInt).to_bytes(32, byteorder='big')
+        kTimesGConcat = kTimesGXBytes + kTimesGYParityBytes
+
+        k256 = web3.keccak(kTimesGConcat)
         nonceTimesGeneratorAddress = web3.toChecksumAddress(cleanHexStr(k256)[-40:])
         challengeEncodedPacked = cleanHexStrPad(self.pubKeyX) + self.pubKeyYParHex + cleanHexStr(msgHashHex) + cleanHexStr(nonceTimesGeneratorAddress)
 
