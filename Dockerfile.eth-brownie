@@ -5,7 +5,10 @@ USER root
 RUN apt-get update -y \
     && apt-get install curl
 
-RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | POETRY_PREVIEW=1 python && chown -R root:root /root
+RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | POETRY_PREVIEW=1 python \
+    && chown -R root:root /root \
+    && cp -r $HOME/.poetry/lib/poetry/_vendor/py3.7 $HOME/.poetry/lib/poetry/_vendor/py3.8
+
 
 RUN curl -fsSL https://deb.nodesource.com/setup_14.x | sh - \
     && apt-get install -y nodejs
