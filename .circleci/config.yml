@@ -37,12 +37,12 @@ orbs:
 workflows:
   chainflip-eth-contracts-tests:
     jobs:
-      - build-eth-brownie:
-          context:
-            - ghcr-credentials
+      #      - build-eth-brownie:
+      #          context:
+      #            - ghcr-credentials
       - run-tests:
-          requires:
-            - build-eth-brownie
+          #          requires:
+          #            - build-eth-brownie
           context:
             - ghcr-credentials
 
@@ -56,8 +56,7 @@ jobs:
 
   run-tests:
     docker:
-      - image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
-        auth: *dockerconfig
+      - image: cimg/python:3.10.0-node
     resource_class: xlarge
     steps:
       - checkout
