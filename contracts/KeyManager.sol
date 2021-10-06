@@ -25,11 +25,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     mapping(KeyID => mapping(uint => bool)) private _keyToNoncesUsed;
 
 
-    event KeyChange(
-        bool signedByAggKey,
-        Key oldKey,
-        Key newKey
-    );
+    event AggKeySetByAggKey(Key oldKey, Key newKey);
+    event AggKeySetByGovKey(Key oldKey, Key newKey);
+    event GovKeySetByGovKey(Key oldKey, Key newKey);
 
 
     constructor(Key memory aggKey, Key memory govKey) {
@@ -108,7 +106,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         )),
         KeyID.Agg
     ) {
-        emit KeyChange(true, _keyIDToKey[KeyID.Agg], newKey);
+        emit AggKeySetByAggKey(_keyIDToKey[KeyID.Agg], newKey);
         _keyIDToKey[KeyID.Agg] = newKey;
     }
 
@@ -132,7 +130,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         )),
         KeyID.Gov
     ) {
-        emit KeyChange(false, _keyIDToKey[KeyID.Agg], newKey);
+        emit AggKeySetByGovKey(_keyIDToKey[KeyID.Agg], newKey);
         _keyIDToKey[KeyID.Agg] = newKey;
     }
 
@@ -156,7 +154,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         )),
         KeyID.Gov
     ) {
-        emit KeyChange(false, _keyIDToKey[KeyID.Gov], newKey);
+        emit GovKeySetByGovKey(_keyIDToKey[KeyID.Gov], newKey);
         _keyIDToKey[KeyID.Gov] = newKey;
     }
 
