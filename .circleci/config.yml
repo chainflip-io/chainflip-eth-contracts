@@ -65,6 +65,6 @@ jobs:
           name: Install dependencies and test
           command: |
             npm install
-            poetry install
+            poetry install -vvv
             poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
             poetry run brownie test --network hardhat --stateful false
