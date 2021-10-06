@@ -61,7 +61,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     // }
 
 
-    event Staked(bytes32 indexed nodeID, uint amount, address returnAddr);
+    event Staked(bytes32 indexed nodeID, uint amount, address staker, address returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
         uint amount,
@@ -114,7 +114,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
 
         _totalStake += amount;
-        emit Staked(nodeID, amount, returnAddr);
+        emit Staked(nodeID, amount, msg.sender, returnAddr);
     }
 
     /**
