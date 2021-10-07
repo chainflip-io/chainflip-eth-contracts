@@ -1,9 +1,7 @@
 from utils import *
 import umbral
-from umbral import pre, keys, signing
+from umbral import SecretKey
 from py_ecc.secp256k1 import secp256k1
-
-umbral.config.set_default_curve()
 
 # Fcns return a list instead of a tuple since they need to be modified
 # for some tests (e.g. to make them revert)
@@ -16,15 +14,15 @@ class Signer():
 
     def __init__(self, privKeyHex, keyID, nonces):
         self.privKeyHex = privKeyHex
-        self.privKey = keys.UmbralPrivateKey.from_bytes(bytes.fromhex(privKeyHex))
+        self.privKey = SecretKey._from_exact_bytes(bytes.fromhex(privKeyHex))
         self.privKeyInt = int(self.privKeyHex, 16)
 
-        self.pubKey = self.privKey.get_pubkey()
-        self.pubKeyX = self.pubKey.to_bytes()[1:]
+        self.pubKey = self.privKey.public_key()
+        self.pubKeyX = bytes(self.pubKey)[1:]
         self.pubKeyXHex = cleanHexStr(self.pubKeyX)
         self.pubKeyXInt = int(self.pubKeyXHex, 16)
 
-        self.pubKeyYPar = 0 if cleanHexStr(self.pubKey.to_bytes()[:1]) == "02" else 1
+        self.pubKeyYPar = 0 if cleanHexStr(bytes(self.pubKey)[:1]) == "02" else 1
         self.pubKeyYParHex = "00" if self.pubKeyYPar == 0 else "01"
 
         self.keyID = keyID
@@ -33,29 +31,29 @@ class Signer():
 
     @classmethod
     def priv_key_to_pubX_int(cls, privKey):
-        pubKey = privKey.get_pubkey()
-        pubKeyX = pubKey.to_bytes()[1:]
+        pubKey = privKey.public_key()
+        pubKeyX = bytes(pubKey)[1:]
         return int(cleanHexStr(pubKeyX), 16)
 
 
     @classmethod
     def gen_key(cls):
-        key = keys.UmbralPrivateKey.gen_key()
+        key = SecretKey.random()
         while cls.priv_key_to_pubX_int(key) >= cls.HALF_Q_INT:
-            key = keys.UmbralPrivateKey.gen_key()
+            key = SecretKey.random()
 
         return key
 
 
     @classmethod
     def gen_key_hex(cls):
-        return cls.gen_key().to_bytes().hex()
+        return bytes(cls.gen_key()).hex()
 
 
     @classmethod
     def gen_signer(cls, keyID, nonces):
         privKeyHex = cls.gen_key_hex()
-        kHex = keys.UmbralPrivateKey.gen_key().to_bytes().hex()
+        kHex = bytes(SecretKey.random()).hex()
         return cls(privKeyHex, kHex, keyID, nonces)
 
 
