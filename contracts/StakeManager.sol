@@ -82,7 +82,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
         _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
-        _FLIP.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        require(_FLIP.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip));
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
