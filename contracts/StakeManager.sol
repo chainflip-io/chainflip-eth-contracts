@@ -261,6 +261,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         bytes calldata _operatorData
     ) external override {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
+        require(_operator == address(this), "StakeMan: not the operator");
     }
 
     /**
