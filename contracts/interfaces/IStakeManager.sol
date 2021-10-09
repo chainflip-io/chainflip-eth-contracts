@@ -2,6 +2,7 @@ pragma solidity ^0.8.7;
 
 
 import "./IKeyManager.sol";
+import "./IFLIP.sol";
 import "./IShared.sol";
 
 
@@ -109,7 +110,7 @@ interface IStakeManager is IShared {
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external view returns (address);
+    function getFLIP() external view returns (IFLIP);
 
     /**
      * @notice  Get the last state chain block number that the supply was updated at

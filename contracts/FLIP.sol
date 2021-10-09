@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
 
 

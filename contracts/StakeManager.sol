@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
+import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
 import "./FLIP.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
@@ -287,8 +288,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external override view returns (address) {
-        return address(_FLIP);
+    function getFLIP() external override view returns (IFLIP) {
+        return IFLIP(address(_FLIP));
     }
 
     /**
