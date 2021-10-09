@@ -62,19 +62,6 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     // }
 
 
-    event Staked(bytes32 indexed nodeID, uint amount, address staker, address returnAddr);
-    event ClaimRegistered(
-        bytes32 indexed nodeID,
-        uint amount,
-        address staker,
-        uint48 startTime,
-        uint48 expiryTime
-    );
-    event ClaimExecuted(bytes32 indexed nodeID, uint amount);
-    event FlipSupplyUpdated(uint oldSupply, uint newSupply, uint stateChainBlockNumber);
-    event MinStakeChanged(uint oldMinStake, uint newMinStake);
-
-
     constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
         _minStake = minStake;
