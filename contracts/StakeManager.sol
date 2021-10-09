@@ -136,7 +136,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         uint amount,
         address staker,
         uint48 expiryTime
-    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
+    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -202,7 +202,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish refundGas validSig(
+    ) external override nzUint(newTotalSupply) noFish refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -237,7 +237,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     function setMinStake(
         SigData calldata sigData,
         uint newMinStake
-    ) external override nzUint(newMinStake) noFish validSig(
+    ) external override nzUint(newMinStake) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -327,7 +327,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
 
 
     /// @dev    Call isValidSig in _keyManager
-    modifier validSig(
+    modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID

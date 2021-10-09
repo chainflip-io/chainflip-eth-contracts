@@ -61,9 +61,8 @@ abstract contract Shared is IShared {
     }
 
     function refundEth(address to, uint256 amount) external {
-        // Hack this so that it's an internal call
+        // Hack this so that it's effectively an internal call
         require(msg.sender == address(this));
-        // Send 0 gas so that if we go to a contract it fails
         payable(to).transfer(amount);
     }
 

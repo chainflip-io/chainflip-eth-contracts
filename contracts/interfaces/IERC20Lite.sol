@@ -9,6 +9,21 @@ pragma solidity ^0.8.7;
 * @author   Quantaf1re (James Key)
 */
 interface IERC20Lite {
+
+    // Taken from OZ:
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
     function transfer(address, uint256) external returns (bool);
+
+
+    // Taken from OZ:
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
     function balanceOf(address) external returns(uint);
 }

@@ -11,9 +11,9 @@
 
 
    Check that enough time has passed for setAggKeyWithGovKey. Needs
-        to be done as a modifier so that it can happen before validSig
+        to be done as a modifier so that it can happen before updatedValidSig
 
-## `validSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
+## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
 
 
 
