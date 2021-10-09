@@ -326,13 +326,13 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Call isValidSig in _keyManager
+    /// @dev    Call isUpdatedValidSig in _keyManager
     modifier validSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 

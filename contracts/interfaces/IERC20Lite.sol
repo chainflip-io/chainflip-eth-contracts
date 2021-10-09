@@ -9,6 +9,6 @@ pragma solidity ^0.8.7;
 * @author   Quantaf1re (James Key)
 */
 interface IERC20Lite {
-    function transfer(address, uint256) external returns (bool);
+    function transfer(address, uint) external returns (bool);
     function balanceOf(address) external returns(uint);
 }

@@ -10,7 +10,7 @@
 
 
 
-   Calls isValidSig in _keyManager
+   Calls isUpdatedValidSig in _keyManager
 
 
 ## `constructor(contract IKeyManager keyManager)` (public)
