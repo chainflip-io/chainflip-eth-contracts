@@ -88,7 +88,7 @@ contract Vault is IVault, Shared {
         );
 
         // Fetch all deposits
-        for (uint i; i < fetchSwapIDs.length; i++) {
+        for (uint i = 0; i < fetchSwapIDs.length; i++) {
             if (fetchTokenAddrs[i] == _ETH_ADDR) {
                 new DepositEth{salt: fetchSwapIDs[i]}();
             } else {
@@ -190,7 +190,7 @@ contract Vault is IVault, Shared {
         address payable[] calldata recipients,
         uint[] calldata amounts
     ) private {
-        for (uint i; i < tokenAddrs.length; i++) {
+        for (uint i = 0; i < tokenAddrs.length; i++) {
             _transfer(tokenAddrs[i], recipients[i], amounts[i]);
         }
     }

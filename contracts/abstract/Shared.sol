@@ -15,7 +15,7 @@ abstract contract Shared is IShared {
     address constant internal _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant internal _ZERO_ADDR = address(0);
     bytes32 constant internal _NULL = "";
-    uint constant internal _E_18 = 10**18;
+    uint constant internal _E_18 = 1e18;
 
     event Refunded (uint amount);
     event RefundFailed(address to, uint256 amount, uint256 currentBalance);
