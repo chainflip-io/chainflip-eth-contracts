@@ -20,7 +20,7 @@ contract FLIP is ERC777, Ownable, Shared {
         address[] memory defaultOperators,
         address receiver,
         uint256 mintAmount
-    ) ERC777(name, symbol, defaultOperators) Ownable() {
+    ) ERC777(name, symbol, defaultOperators) Ownable() nzAddr(receiver) nzUint(mintAmount) {
         _mint(receiver, mintAmount, "", "");
     }
 

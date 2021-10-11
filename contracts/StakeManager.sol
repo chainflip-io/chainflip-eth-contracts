@@ -169,7 +169,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      *          auction while being a validator, the amount sent back = stake +
      *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
      *          claim before 48h have passed after registering it, or after the specified
-     *          expiry block height
+     *          expiry time
      * @dev     No need for nzUint(nodeID) since that is handled by
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
