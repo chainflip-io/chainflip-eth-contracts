@@ -7,6 +7,7 @@ import "./abstract/Shared.sol";
 import "./FLIP.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
 * @title    StakeManager contract
@@ -21,7 +22,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 *           updates the total supply by minting or burning the necessary FLIP.
 * @author   Quantaf1re (James Key)
 */
-contract StakeManager is Shared, IStakeManager, IERC777Recipient {
+contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuard {
 
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
@@ -104,7 +105,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         bytes32 nodeID,
         uint amount,
         address returnAddr
-    ) external override nzBytes32(nodeID) nzAddr(returnAddr) noFish {
+    ) external override nonReentrant nzBytes32(nodeID) nzAddr(returnAddr) noFish {
         require(amount >= _minStake, "StakeMan: stake too small");
 
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
@@ -135,7 +136,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
         uint amount,
         address staker,
         uint48 expiryTime
-    ) external override nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
+    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -181,13 +182,13 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
             "StakeMan: early, late, or execd"
         );
 
-        // Update _totalStake and send tokens
-        _totalStake -= claim.amount;
-        require(_FLIP.transfer(claim.staker, claim.amount));
-
         // Housekeeping
         delete _pendingClaims[nodeID];
+        _totalStake -= claim.amount;
         emit ClaimExecuted(nodeID, claim.amount);
+
+        // Send the tokens
+        require(_FLIP.transfer(claim.staker, claim.amount));
     }
 
     /**
