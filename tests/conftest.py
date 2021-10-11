@@ -1,6 +1,6 @@
 import pytest
 from consts import *
-from deploy import deploy_initial_ChainFlip_contracts
+from deploy import deploy_initial_Chainflip_contracts
 from brownie import chain
 from brownie.network import priority_fee
 
@@ -14,7 +14,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
-    return deploy_initial_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    return deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
 
 
 # Deploy the contracts and set up common test environment
