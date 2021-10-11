@@ -21,25 +21,25 @@ abstract contract Shared is IShared {
     event RefundFailed(address to, uint256 amount, uint256 currentBalance);
 
 
-    /// @dev    Checks that a uint isn't nonzero/empty
+    /// @dev    Checks that a uint isn't zero/empty
     modifier nzUint(uint u) {
         require(u != 0, "Shared: uint input is empty");
         _;
     }
 
-    /// @dev    Checks that an address isn't nonzero/empty
+    /// @dev    Checks that an address isn't zero/empty
     modifier nzAddr(address a) {
         require(a != _ZERO_ADDR, "Shared: address input is empty");
         _;
     }
 
-    /// @dev    Checks that a bytes32 isn't nonzero/empty
+    /// @dev    Checks that a bytes32 isn't zero/empty
     modifier nzBytes32(bytes32 b) {
         require(b != _NULL, "Shared: bytes32 input is empty");
         _;
     }
 
-    /// @dev    Checks that all of a Key's values are populated
+    /// @dev    Checks that the pubKeyX is populated
     modifier nzKey(Key memory key) {
         require(key.pubKeyX != 0, "Shared: pubKeyX is empty");
         _;
