@@ -11,7 +11,6 @@ def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
-
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
 
     balanceBefore = cf.ALICE.balance()
@@ -111,7 +110,7 @@ def isValidSig_rev_test(cf, signer):
 # `stakedMin` directly
 def stakeTest(cf, prevTotal, nodeID, minStake, tx, amount, returnAddr):
     assert cf.flip.balanceOf(cf.stakeManager) == prevTotal + amount + STAKEMANAGER_INITIAL_BALANCE
-    assert tx.events["Staked"][0].values() == [nodeID, amount, returnAddr]
+    assert tx.events["Staked"][0].values() == [nodeID, amount, tx.sender, returnAddr]
     assert cf.stakeManager.getMinimumStake() == minStake
 
 
