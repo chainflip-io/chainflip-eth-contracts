@@ -220,9 +220,13 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         FLIP flip = _FLIP;
         uint oldSupply = flip.totalSupply();
         if (newTotalSupply < oldSupply) {
-            flip.burn(oldSupply - newTotalSupply, "");
+            uint amount = oldSupply - newTotalSupply;
+            flip.burn(amount, "");
+            _totalStake -= amount;
         } else if (newTotalSupply > oldSupply) {
-            flip.mint(address(this), newTotalSupply - oldSupply, "", "");
+            uint amount = newTotalSupply - oldSupply;
+            flip.mint(address(this), amount, "", "");
+            _totalStake += amount;
         }
         emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
     }
@@ -262,6 +266,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         bytes calldata _operatorData
     ) external override {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
+        require(_operator == address(this), "StakeMan: not the operator");
     }
 
     /**
