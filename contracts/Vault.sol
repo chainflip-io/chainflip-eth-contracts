@@ -22,7 +22,7 @@ contract Vault is IVault, Shared {
     using SafeERC20 for IERC20;
 
     /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private _keyManager;
+    IKeyManager private immutable _keyManager;
 
 
     event TransferFailed(

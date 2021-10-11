@@ -25,9 +25,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuard {
 
     /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private _keyManager;
+    IKeyManager private immutable _keyManager;
     /// @dev    The FLIP token
-    FLIP private _FLIP;
+    FLIP private immutable _FLIP;
     /// @dev    The last time that the State Chain updated the totalSupply
     uint private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
 
@@ -81,8 +81,9 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         _defaultOperators.push(address(this));
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
-        _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
-        require(_FLIP.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip));
+        FLIP flip = new FLIP("Chainflip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
+        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        _FLIP = flip;
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
