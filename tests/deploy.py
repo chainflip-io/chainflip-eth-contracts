@@ -39,9 +39,11 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
 
     # Now fund the contracts that we expect the Validators to interact with so
     # that we can test the refund functionality
-    deployer.transfer(to=cf.keyManager, amount=ONE_ETH)
-    deployer.transfer(to=cf.vault, amount=ONE_ETH)
-    deployer.transfer(to=cf.stakeManager, amount=ONE_ETH)
+    skipInitialFund = environment.get('SKIP_INITIAL_FUND')
+    if skipInitialFund != "false":
+        deployer.transfer(to=cf.keyManager, amount=ONE_ETH)
+        deployer.transfer(to=cf.vault, amount=ONE_ETH)
+        deployer.transfer(to=cf.stakeManager, amount=ONE_ETH)
 
     return cf
 
