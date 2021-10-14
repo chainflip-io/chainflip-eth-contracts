@@ -73,6 +73,9 @@ export SEED=<your seed phrase>
 # Set an aggregate or governance key that you would like to use (optional)
 export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
 export GOV_KEY<gov key with leading parity byte, hex format, no leading 0x>
+# Skip funding the contracts with 1 ETH when deploying
+export SKIP_INITIAL_FUND=true
+
 # deploy the contracts to rinkeby.
 brownie run deploy_contracts --network rinkeby
 ```
@@ -84,3 +87,5 @@ brownie run deploy_contracts --network rinkeby
 `brownie test --stateful false` runs all tests EXCEPT stateful tests
 
 `brownie test --stateful true` runs ONLY the stateful tests
+
+`brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events
