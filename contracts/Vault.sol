@@ -380,13 +380,13 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Calls isValidSig in _keyManager
+    /// @dev    Calls isUpdatedValidSig in _keyManager
     modifier validSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 

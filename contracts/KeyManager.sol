@@ -9,14 +9,14 @@ import "./abstract/Shared.sol";
 /**
 * @title    KeyManager contract
 * @notice   Holds the aggregate and governance keys, functions to update them,
-*           and isValidSig so other contracts can verify signatures and updates _lastValidateTime
+*           and isUpdatedValidSig so other contracts can verify signatures and updates _lastValidateTime
 * @author   Quantaf1re (James Key)
 */
 contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     uint constant private _AGG_KEY_TIMEOUT = 2 days;
 
-    /// @dev    Used to get the key with the keyID. This prevents isValidSig being called
+    /// @dev    Used to get the key with the keyID. This prevents isUpdatedValidSig being called
     ///         by keys that aren't the aggKey or govKey, which prevents outsiders being
     ///         able to change _lastValidateTime
     mapping(KeyID => Key) private _keyIDToKey;
@@ -59,7 +59,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  _lastValidateTime
      * @return          Bool used by caller to be absolutely sure that the function hasn't reverted
      */
-    function isValidSig(
+    function isUpdatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
@@ -185,7 +185,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /**
      * @notice  Get the last time that a function was called which
      *          required a signature from _aggregateKeyData or _governanceKeyData
-     * @return  The last time isValidSig was called, in unix time (uint)
+     * @return  The last time isUpdatedValidSig was called, in unix time (uint)
      */
     function getLastValidateTime() external override view returns (uint) {
         return _lastValidateTime;
@@ -220,13 +220,13 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _;
     }
 
-    /// @dev    Call isValidSig
+    /// @dev    Call isUpdatedValidSig
     modifier validSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(isValidSig(sigData, contractMsgHash, keyID));
+        require(isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 }
