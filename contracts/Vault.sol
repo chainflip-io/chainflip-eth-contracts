@@ -63,7 +63,7 @@ contract Vault is IVault, Shared {
         address[] calldata tranTokenAddrs,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -121,7 +121,7 @@ contract Vault is IVault, Shared {
         address tokenAddr,
         address payable recipient,
         uint amount
-    ) external override nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) validSig(
+    ) external override nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -154,7 +154,7 @@ contract Vault is IVault, Shared {
         address[] calldata tokenAddrs,
         address payable[] calldata recipients,
         uint[] calldata amounts
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -250,7 +250,7 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) refundGas validSig(
+    ) external override nzBytes32(swapID) refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -276,7 +276,7 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -306,7 +306,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas validSig(
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -335,7 +335,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         address[] calldata tokenAddrs
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -380,13 +380,13 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Calls isValidSig in _keyManager
-    modifier validSig(
+    /// @dev    Calls isUpdatedValidSig in _keyManager
+    modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 

@@ -2,7 +2,7 @@
 
   The interface for functions KeyManager implements
 
-## `isValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID) → bool` (external)
+## `isUpdatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID) → bool` (external)
 
 No description
 

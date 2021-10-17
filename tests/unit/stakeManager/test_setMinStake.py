@@ -53,9 +53,9 @@ def test_setMinStake_rev_aggKey(cf):
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
 def test_setMinStake_rev_noFish(cfAW, StakeManagerVulnerable, FLIP, web3, amount):
     smVuln = cfAW.DEPLOYER.deploy(StakeManagerVulnerable, cfAW.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
-    flipVuln = FLIP.at(smVuln.getFLIPAddress())
+    flipVuln = FLIP.at(smVuln.getFLIP())
     # Can't set _FLIP in the constructor because it's made in the constructor
-    # of StakeManager and getFLIPAddress is external
+    # of StakeManager and getFLIP is external
     smVuln.testSetFLIP(flipVuln)
     flipVuln.transfer(cfAW.ALICE, MAX_TEST_STAKE, {'from': cfAW.DEPLOYER})
 

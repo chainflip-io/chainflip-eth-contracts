@@ -11,7 +11,7 @@ settings = {"stateful_step_count": 100, "max_examples": 50}
 
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
 def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token):
-    
+
     # Vault
     # The max swapID to use. SwapID is needed as a salt to create a unique create2
     # address, and for ease they're used between 1 and MAX_SWAPID inclusive in this test
@@ -43,26 +43,26 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
     # the amount of non-reverted txs there are, while also allowing for some reverts
     INIT_MIN_STAKE = 1000
     MAX_TEST_STAKE = 10**24
-    
+
     class StateMachine(BaseStateMachine):
 
         """
         This test calls functions Vault, from KeyManager and StakeManager in random orders.
 
-        It uses a set number of DepositEth and DepositToken contracts/create2 addresses 
-        for ETH & each token (MAX_SWAPID amount of each, 3 * MAX_SWAPID total) and also 
-        randomly sends ETH and the 2 ERC20 tokens to the create2 addresses that 
+        It uses a set number of DepositEth and DepositToken contracts/create2 addresses
+        for ETH & each token (MAX_SWAPID amount of each, 3 * MAX_SWAPID total) and also
+        randomly sends ETH and the 2 ERC20 tokens to the create2 addresses that
         correspond to the create2 addresses so that something can actually be fetched
         and transferred.
 
-        Keys are attempted to be set as random keys with a random signing key - all 
-        keys are from a pool of the default AGG_KEY and GOV_KEY plus freshly generated 
+        Keys are attempted to be set as random keys with a random signing key - all
+        keys are from a pool of the default AGG_KEY and GOV_KEY plus freshly generated
         keys at the start of each run.
 
-        There's a MAX_NUM_SENDERS number of stakers that randomly `stake` and are randomly 
-        the recipients of `claim`. The parameters used are so that they're small enough 
-        to increase the likelihood of the same address being used in multiple 
-        interactions (e.g. 2  x stakes then a claim etc) and large enough to ensure 
+        There's a MAX_NUM_SENDERS number of stakers that randomly `stake` and are randomly
+        the recipients of `claim`. The parameters used are so that they're small enough
+        to increase the likelihood of the same address being used in multiple
+        interactions (e.g. 2  x stakes then a claim etc) and large enough to ensure
         there's variety in them.
 
         The parameters used are so that they're small enough to increase the likelihood of the same
@@ -80,7 +80,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             for token in [cls.tokenA, cls.tokenB]:
                 for recip in a[1:]:
                     token.transfer(recip, INIT_TOKEN_AMNT)
-            
+
             cls.create2EthAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenAAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenA.address)) for swapID in range(MAX_SWAPID+1)]
             cls.create2TokenBAddrs = [getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositToken, cleanHexStrPad(cls.tokenB.address)) for swapID in range(MAX_SWAPID+1)]
@@ -97,9 +97,9 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             self.allAddrs = self.stakers + [self.sm]
-            self.allAddrs = [*[addr.address for addr in self.stakers], *self.create2EthAddrs, 
+            self.allAddrs = [*[addr.address for addr in self.stakers], *self.create2EthAddrs,
                 *self.create2TokenAAddrs, *self.create2TokenBAddrs, self.v, self.km, self.sm]
-            
+
             self.nonces = {AGG: 0, GOV: 0}
             callDataNoSig = self.sm.setMinStake.encode_input(null_sig(self.nonces[GOV]), INIT_MIN_STAKE)
             tx = self.sm.setMinStake(GOV_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), INIT_MIN_STAKE)
@@ -108,7 +108,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             self.ethBals = {addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs}
             self.tokenABals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
             self.tokenBBals = {addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs}
-            
+
             # KeyManager
             self.lastValidateTime = tx.timestamp
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1, GOV: GOV_SIGNER_1}
@@ -195,7 +195,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 tx = self.v.allBatch(signer.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapIDs, fetchTokens, tranTokens, st_recips, st_eth_amounts, {'from': st_sender})
 
                 self.lastValidateTime = tx.timestamp
-                
+
                 # Alter bals from the fetch
                 for swapID, tok in zip(st_swapIDs, fetchTokens):
                     if tok == ETH_ADDR:
@@ -212,7 +212,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                             self.tokenBBals[addr] = 0
                         else:
                             assert False, "Panicc"
-                
+
                 # Alter bals from the transfers
                 for i, (tok, rec, am) in enumerate(zip(tranTokens, st_recips, st_eth_amounts)):
                     if tok == ETH_ADDR:
@@ -227,7 +227,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                         self.tokenBBals[self.v] -= am
                     else:
                         assert False, "Panic"
-        
+
 
         # Transfers ETH or tokens out the vault. Want this to be called by rule_vault_transfer_eth
         # etc individually and not directly since they're all the same just with a different tokenAddr
@@ -235,7 +235,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
             callDataNoSig = self.v.transfer.encode_input(null_sig(self.nonces[AGG]), tokenAddr, st_recip, st_eth_amount)
             signer = self._get_key_prob(AGG)
-            
+
             if st_eth_amount == 0:
                 print('        REV_MSG_NZ_UINT _vault_transfer', tokenAddr, st_sender, st_recip, st_eth_amount, signer)
                 with reverts(REV_MSG_NZ_UINT):
@@ -268,7 +268,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
         def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
             self._vault_transfer(self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount)
-        
+
 
         # Send any combination of eth/tokenA/tokenB out of the vault. Using st_eth_amounts
         # for both eth amounts and token amounts here because its max is within the bounds of
@@ -293,7 +293,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                     totalTokenB += am
                 else:
                     assert False, "Unknown asset"
-            
+
             if signer != self.keyIDToCurKeys[AGG]:
                 print('        REV_MSG_SIG rule_vault_transferBatch', signer, st_sender, tokens, st_recips, st_eth_amounts)
                 with reverts(REV_MSG_SIG):
@@ -332,7 +332,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
                 self.ethBals[st_sender] -= st_eth_amount
                 self.ethBals[depositAddr] += st_eth_amount
-        
+
 
         # Transfers a token from a user/sender to one of the depositEth create2 addresses.
         # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
@@ -346,23 +346,23 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
                 bals[st_sender] -= st_token_amount
                 bals[depositAddr] += st_token_amount
-            
-        
+
+
         # Deposits tokenA from a user to a tokenA create2
         def rule_transfer_tokens_to_depositTokenA(self, st_sender, st_swapID, st_token_amount):
             self._transfer_tokens_to_token_deposit(self.tokenABals, self.tokenA, st_sender, st_swapID, st_token_amount)
-            
-        
+
+
         # Deposits tokenB from a user to a tokenB create2
         def rule_transfer_tokens_to_depositTokenB(self, st_sender, st_swapID, st_token_amount):
             self._transfer_tokens_to_token_deposit(self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount)
-        
+
 
         # Fetch the ETH deposit of a random create2
         def rule_fetchDepositEth(self, st_sender, st_swapID):
             callDataNoSig = self.v.fetchDepositEth.encode_input(null_sig(self.nonces[AGG]), st_swapID)
             signer = self._get_key_prob(AGG)
-            
+
             if st_swapID == 0:
                 print('        REV_MSG_NZ_BYTES32 rule_fetchDepositEth', st_sender, st_swapID, signer)
                 with reverts(REV_MSG_NZ_BYTES32):
@@ -376,11 +376,11 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 depositAddr = getCreate2Addr(self.v.address, cleanHexStrPad(st_swapID), DepositEth, "")
                 depositBal = self.ethBals[depositAddr]
                 tx = self.v.fetchDepositEth(signer.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapID)
-                
+
                 self.ethBals[depositAddr] -= depositBal
                 self.ethBals[self.v] += depositBal
                 self.lastValidateTime = tx.timestamp
-        
+
 
         def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
             addrs = [getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "") for swapID in st_swapIDs]
@@ -400,7 +400,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                     self.ethBals[addr] = 0
                 self.ethBals[self.v] += total
                 self.lastValidateTime = tx.timestamp
-        
+
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
@@ -420,27 +420,27 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 depositAddr = getCreate2Addr(self.v.address, cleanHexStrPad(st_swapID), DepositToken, cleanHexStrPad(token.address))
                 depositBal = bals[depositAddr]
                 tx = self.v.fetchDepositToken(signer.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapID, token)
-                
+
                 bals[depositAddr] -= depositBal
                 bals[self.v] += depositBal
                 self.lastValidateTime = tx.timestamp
-        
+
 
         # Fetch the tokenA deposit of a random create2
         def rule_fetchDepositToken_tokenA(self, st_sender, st_swapID):
             self._fetchDepositToken(self.tokenABals, self.tokenA, st_sender, st_swapID)
-        
+
 
         # Fetch the tokenB deposit of a random create2
         def rule_fetchDepositToken_tokenB(self, st_sender, st_swapID):
             self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
-        
+
 
         def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
             minLen = trimToShortest([st_swapIDs, st_tokens])
             signer = self._get_key_prob(AGG)
             callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(null_sig(self.nonces[AGG]), st_swapIDs, st_tokens)
-            
+
             if signer != self.keyIDToCurKeys[AGG]:
                 print('        REV_MSG_SIG rule_fetchDepositTokenBatch', st_sender, st_swapIDs, st_tokens, signer)
                 with reverts(REV_MSG_SIG):
@@ -461,7 +461,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 tx = self.v.fetchDepositTokenBatch(signer.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), st_swapIDs, st_tokens)
 
                 self.lastValidateTime = tx.timestamp
-        
+
 
         # KeyManager
 
@@ -473,21 +473,21 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             return choice(samples)
 
 
-        # Checks if isValidSig returns the correct value when called with a random sender,
+        # Checks if isUpdatedValidSig returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
         def rule_isValidSig(self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data):
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(st_msg_data.hex(), self.nonces, NUM_TO_KEYID[st_keyID_num])
 
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]:
                 print('                    rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                tx = self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
+                tx = self.km.isUpdatedValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print('        REV_MSG_SIG rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                    self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
+                    self.km.isUpdatedValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
 
-        
+
         # Replace a key with a random key - either setAggKeyWithAggKey or setGovKeyWithGovKey
         def _set_same_key(self, st_sender, fcn, keyID, st_new_key_idx):
             callDataNoSig = fcn.encode_input(null_sig(self.nonces[keyID]), self.allKeys[st_new_key_idx].getPubData())
@@ -513,13 +513,13 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
         # Call setAggKeyWithAggKey with a random new key, signing key, and sender
         def rule_setGovKeyWithGovKey(self, st_sender, st_new_key_idx):
             self._set_same_key(st_sender, self.km.setGovKeyWithGovKey, GOV, st_new_key_idx)
-        
+
 
         # Sleep for a random time so that setAggKeyWithGovKey can be called without reverting
         def rule_sleep(self, st_sleep_time):
             print('                    rule_sleep', st_sleep_time)
             chain.sleep(st_sleep_time)
-        
+
 
         # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
@@ -548,7 +548,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
                 self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
                 self.lastValidateTime = tx.timestamp
-        
+
 
         # StakeManager
 
@@ -576,7 +576,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 self.flipBals[st_staker] -= st_stake
                 self.flipBals[self.sm] += st_stake
                 self.totalStake += st_stake
-            
+
 
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(self, st_nodeID, st_staker, st_stake, st_sender, st_expiry_time_diff):
@@ -610,7 +610,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
 
                 self.pendingClaims[st_nodeID] = (st_stake, st_staker, tx.timestamp + CLAIM_DELAY, args[3])
                 self.lastValidateTime = tx.timestamp
-        
+
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
@@ -634,8 +634,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 self.totalStake -= (claim[0] - inflation)
                 self.lastMintBlockNum = tx.block_number
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
-        
-        
+
+
         # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setEmissionPerBlock(self, st_emission, st_sender):
@@ -691,20 +691,20 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
                 assert web3.eth.get_balance(str(addr)) == self.ethBals[addr]
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
-        
+
 
         # Variable(s) that shouldn't change since there's no intentional way to
         def invariant_nonchangeable(self):
             assert self.v.getKeyManager() == self.km.address
             assert self.sm.getKeyManager() == self.km.address
-            assert self.sm.getFLIPAddress() == self.f.address
-        
+            assert self.sm.getFLIP() == self.f.address
+
 
         # Check the keys are correct after every tx
         def invariant_keys(self):
             assert self.km.getAggregateKey() == self.keyIDToCurKeys[AGG].getPubDataWith0x()
             assert self.km.getGovernanceKey() == self.keyIDToCurKeys[GOV].getPubDataWith0x()
-        
+
 
         # Check the intentionally changeable variables after every tx
         def invariant_state_vars(self):
@@ -722,11 +722,11 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
             assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
             assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
-        
-        
+
+
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f'Total rules executed = {self.numTxsTested-1}')
 
-    
+
     state_machine(StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings)

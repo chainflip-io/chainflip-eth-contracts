@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
+import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
 import "./FLIP.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
@@ -137,7 +138,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         uint amount,
         address staker,
         uint48 expiryTime
-    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
+    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -203,7 +204,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish refundGas validSig(
+    ) external override nzUint(newTotalSupply) noFish refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -242,7 +243,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     function setMinStake(
         SigData calldata sigData,
         uint newMinStake
-    ) external override nzUint(newMinStake) noFish validSig(
+    ) external override nzUint(newMinStake) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -293,8 +294,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external override view returns (address) {
-        return address(_FLIP);
+    function getFLIP() external override view returns (IFLIP) {
+        return IFLIP(address(_FLIP));
     }
 
     /**
@@ -332,13 +333,13 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Call isValidSig in _keyManager
-    modifier validSig(
+    /// @dev    Call isUpdatedValidSig in _keyManager
+    modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 

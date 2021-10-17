@@ -16,4 +16,4 @@ def main():
 
     cf = deploy_set_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ)
 
-    print(f'FLIP = {cf.stakeManager.getFLIPAddress()}')
+    print(f'FLIP = {cf.stakeManager.getFLIP()}')
