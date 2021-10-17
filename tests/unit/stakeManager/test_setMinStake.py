@@ -51,20 +51,20 @@ def test_setMinStake_rev_aggKey(cf):
 # so we have to use StakeManagerVulnerable which inherits StakeManager and
 # has `testSendFLIP` in it to simulate some kind of hack
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
-def test_setMinStake_rev_noFish(cf, StakeManagerVulnerable, FLIP, web3, amount):
-    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
+def test_setMinStake_rev_noFish(cfAW, StakeManagerVulnerable, FLIP, web3, amount):
+    smVuln = cfAW.DEPLOYER.deploy(StakeManagerVulnerable, cfAW.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
     flipVuln = FLIP.at(smVuln.getFLIPAddress())
     # Can't set _FLIP in the constructor because it's made in the constructor
     # of StakeManager and getFLIPAddress is external
     smVuln.testSetFLIP(flipVuln)
-    flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    flipVuln.transfer(cfAW.ALICE, MAX_TEST_STAKE, {'from': cfAW.DEPLOYER})
 
-    assert flipVuln.balanceOf(cf.CHARLIE) == 0
+    assert flipVuln.balanceOf(cfAW.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it
-    smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
+    smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cfAW.ALICE})
     # Somebody r3kts us somehow
-    smVuln.testSendFLIP(cf.CHARLIE, amount)
-    assert flipVuln.balanceOf(cf.CHARLIE) == amount
+    smVuln.testSendFLIP(cfAW.CHARLIE, amount)
+    assert flipVuln.balanceOf(cfAW.CHARLIE) == amount
 
     # Ensure test doesn't fail because there aren't enough coins
     callDataNoSig = smVuln.setMinStake.encode_input(gov_null_sig(), JUNK_HEX)

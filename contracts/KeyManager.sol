@@ -23,6 +23,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint private _lastValidateTime;
     mapping(KeyID => mapping(uint => bool)) private _keyToNoncesUsed;
+    /// @dev    Whitelist for who can call isValidSig
+    mapping(address => bool) private _canValidateSig;
+    bool private _canValidateSigSet;
 
 
     event AggKeySetByAggKey(Key oldKey, Key newKey);
@@ -42,6 +45,22 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //                  State-changing functions                //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Sets the specific addresses that can call isValidSig. This
+     *          function can only ever be called once! Yes, it's possible to
+     *          frontrun this, but honestly, it's fine in practice - it just
+     *          needs to be set up successfully once, which is trivial
+     * @param addrs   The addresses to whitelist
+     */
+    function setCanValidateSig(address[] calldata addrs) external {
+        require(!_canValidateSigSet, "KeyManager: already set");
+        _canValidateSigSet = true;
+
+        for (uint i = 0; i < addrs.length; i++) {
+            _canValidateSig[addrs[i]] = true;
+        }
+    }
 
     /**
      * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime
@@ -64,6 +83,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         bytes32 contractMsgHash,
         KeyID keyID
     ) public override returns (bool) {
+        require(_canValidateSig[msg.sender], "KeyManager: not whitelisted");
         Key memory key = _keyIDToKey[keyID];
         // We require the msgHash param in the sigData is equal to the contract
         // message hash (the rules coded into the contract)
@@ -201,6 +221,24 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
+     * @notice  Get whether addr is whitelisted for validating a sig
+     * @param addr  The address to check
+     * @return  Whether or not addr is whitelisted or not
+     */
+    function canValidateSig(address addr) external override view returns (bool) {
+        return _canValidateSig[addr];
+    }
+
+    /**
+     * @notice  Get whether or not _canValidateSig has already been set, which
+     *          prevents it from being set again
+     * @return  The value of _canValidateSigSet
+     */
+    function canValidateSigSet() external override view returns (bool) {
+        return _canValidateSigSet;
+    }
+
+    /**
      *  @notice Allows this contract to receive ETH used to refund callers
      */
     receive () external payable {}
@@ -226,7 +264,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(isValidSig(sigData, contractMsgHash, keyID));
+        // Need to make this an external call so that the msg.sender is the
+        // address of this contract, otherwise calling setAggKeyWithAggKey
+        // from any address would fail the whitelist check
+        require(this.isValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 }

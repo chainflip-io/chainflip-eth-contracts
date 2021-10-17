@@ -3,24 +3,34 @@ from brownie import reverts
 from shared_tests import *
 
 
-
-def test_isValidSig(cf):
+def test_isValidSig(cfAW):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD)
-    tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[AGG])
+    tx = cfAW.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[AGG])
 
     assert tx.return_value == True
-    # txTimeTest(cf.keyManager.getLastValidateTime(), cf.keyManager.tx)
 
 
-def test_isValidSig_rev_msgHash(cf):
+def test_isValidSig_rev_msgHash(cfAW):
     # Fails because msgHash in sigData is a hash of JUNK_HEX_PAD, whereas JUNK_HEX_PAD
     # is used directly for contractMsgHash
     with reverts(REV_MSG_MSGHASH):
-        cf.keyManager.isValidSig(AGG_SIGNER_1.getSigData(JUNK_HEX_PAD), JUNK_HEX_PAD, KEYID_TO_NUM[AGG])
+        cfAW.keyManager.isValidSig(AGG_SIGNER_1.getSigData(JUNK_HEX_PAD), JUNK_HEX_PAD, KEYID_TO_NUM[AGG])
 
 
-def test_isValidSig_rev_sig(cf):
+def test_isValidSig_rev_sig(cfAW):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD)
     sigData[1] = JUNK_HEX
     with reverts(REV_MSG_SIG):
-        cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[AGG])
+        cfAW.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[AGG])
+
+
+def test_isValidSig_check_all(a, cf):
+    whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
+    for addr in whitelisted + list(a):
+        if addr in whitelisted:
+            sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD)
+            tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[AGG], {'from': addr})
+            assert tx.return_value == True
+        else:
+            with reverts(REV_MSG_WHITELIST):
+                cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[AGG])
