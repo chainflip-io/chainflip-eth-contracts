@@ -54,7 +54,7 @@ def test_isValid_setGovKeyWithGovKey_isValid_setAggKeyWithGovKey_isValidSig(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_2.getPubDataWith0x()
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
-    assert tx.events["KeyChange"][0].values() == [False, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
+    assert tx.events["AggKeySetByGovKey"][0].values() == [AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
     # Should validate with current keys and revert with past keys
     isValidSig_rev_test(cf, AGG_SIGNER_1)

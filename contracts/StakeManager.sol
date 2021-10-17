@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "./interfaces/IStakeManager.sol";
@@ -26,9 +26,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuard {
 
     /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private _keyManager;
+    IKeyManager private immutable _keyManager;
     /// @dev    The FLIP token
-    FLIP private _FLIP;
+    FLIP private immutable _FLIP;
     /// @dev    The last time that the State Chain updated the totalSupply
     uint private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
 
@@ -82,8 +82,9 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         _defaultOperators.push(address(this));
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
-        _FLIP = new FLIP("ChainFlip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
-        _FLIP.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        FLIP flip = new FLIP("Chainflip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
+        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        _FLIP = flip;
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
@@ -137,7 +138,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         uint amount,
         address staker,
         uint48 expiryTime
-    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
+    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -149,7 +150,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 expiryTime
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(
             // Must be fresh or have been executed & deleted, or past the expiry
@@ -170,7 +171,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      *          auction while being a validator, the amount sent back = stake +
      *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
      *          claim before 48h have passed after registering it, or after the specified
-     *          expiry block height
+     *          expiry time
      * @dev     No need for nzUint(nodeID) since that is handled by
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
@@ -203,7 +204,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish refundGas validSig(
+    ) external override nzUint(newTotalSupply) noFish refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -213,16 +214,20 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 stateChainBlockNumber
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "StakeMan: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
         FLIP flip = _FLIP;
         uint oldSupply = flip.totalSupply();
         if (newTotalSupply < oldSupply) {
-            flip.burn(oldSupply - newTotalSupply, "");
+            uint amount = oldSupply - newTotalSupply;
+            flip.burn(amount, "");
+            _totalStake -= amount;
         } else if (newTotalSupply > oldSupply) {
-            flip.mint(address(this), newTotalSupply - oldSupply, "", "");
+            uint amount = newTotalSupply - oldSupply;
+            flip.mint(address(this), amount, "", "");
+            _totalStake += amount;
         }
         emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
     }
@@ -238,7 +243,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     function setMinStake(
         SigData calldata sigData,
         uint newMinStake
-    ) external override nzUint(newMinStake) noFish validSig(
+    ) external override nzUint(newMinStake) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -247,7 +252,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 newMinStake
             )
         ),
-        KeyID.Gov
+        KeyID.GOV
     ) {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
@@ -262,6 +267,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         bytes calldata _operatorData
     ) external override {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
+        require(_operator == address(this), "StakeMan: not the operator");
     }
 
     /**
@@ -327,13 +333,13 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Call isValidSig in _keyManager
-    modifier validSig(
+    /// @dev    Call isUpdatedValidSig in _keyManager
+    modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 

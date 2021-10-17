@@ -473,19 +473,19 @@ def test_all(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositTo
             return choice(samples)
 
 
-        # Checks if isValidSig returns the correct value when called with a random sender,
+        # Checks if isUpdatedValidSig returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
         def rule_isValidSig(self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data):
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(st_msg_data.hex(), self.nonces, NUM_TO_KEYID[st_keyID_num])
 
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]:
                 print('                    rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                tx = self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
+                tx = self.km.isUpdatedValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print('        REV_MSG_SIG rule_isValidSig', st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
-                    self.km.isValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
+                    self.km.isUpdatedValidSig(sigData, cleanHexStr(sigData[0]), st_keyID_num, {'from': st_sender})
 
 
         # Replace a key with a random key - either setAggKeyWithAggKey or setGovKeyWithGovKey

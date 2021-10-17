@@ -1,7 +1,7 @@
 # `KeyManager`
 
   Holds the aggregate and governance keys, functions to update them,
-          and isValidSig so other contracts can verify signatures and updates _lastValidateTime
+          and isUpdatedValidSig so other contracts can verify signatures and updates _lastValidateTime
 
 
 
@@ -11,13 +11,13 @@
 
 
    Check that enough time has passed for setAggKeyWithGovKey. Needs
-        to be done as a modifier so that it can happen before validSig
+        to be done as a modifier so that it can happen before updatedValidSig
 
-## `validSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
+## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
 
 
 
-   Call isValidSig
+   Call isUpdatedValidSig
 
 
 ## `constructor(struct IShared.Key aggKey, struct IShared.Key govKey)` (public)
@@ -25,7 +25,7 @@
 No description
 
 
-## `isValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID) → bool` (public)
+## `isUpdatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID) → bool` (public)
 
  Checks the validity of a signature and msgHash, then updates _lastValidateTime
 
@@ -112,7 +112,7 @@ Returns
 
 Returns
 
-- The last time isValidSig was called, in unix time (uint)
+- The last time isUpdatedValidSig was called, in unix time (uint)
 
 ## `isNonceUsedByKey(enum IShared.KeyID keyID, uint256 nonce) → bool` (external)
 
