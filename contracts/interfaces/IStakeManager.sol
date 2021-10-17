@@ -68,8 +68,8 @@ interface IStakeManager is IShared {
     function executeClaim(bytes32 nodeID) external;
 
     /**
-     * @notice  Compares a given new FLIP supply it against the old supply,
-     *          then mints and burns as appropriate
+     * @notice  Compares a given new FLIP supply against the old supply,
+     *          then mints new and burns as appropriate (to/from the StakeManager)
      * @param sigData               signature over the abi-encoded function params
      * @param newTotalSupply        new total supply of FLIP
      * @param stateChainBlockNumber State Chain block number for the new total supply

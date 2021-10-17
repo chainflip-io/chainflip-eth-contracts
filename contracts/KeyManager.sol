@@ -44,7 +44,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime
+     * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime.
+     *          This also saved the nonce used so that it, and therefore the sig over it, can't
+     *          be used again
      * @dev     It would be nice to split this up, but these checks
      *          need to be made atomicly always. This needs to be available
      *          in this contract and in the Vault etc
@@ -97,7 +99,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithAggKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) refundGas validSig(
+    ) external override nzKey(newKey) refundGas updatedValidSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
@@ -121,7 +123,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithGovKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) validTime validSig(
+    ) external override nzKey(newKey) validTime updatedValidSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithGovKey.selector,
@@ -145,7 +147,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setGovKeyWithGovKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) validSig(
+    ) external override nzKey(newKey) updatedValidSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setGovKeyWithGovKey.selector,
@@ -214,14 +216,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Check that enough time has passed for setAggKeyWithGovKey. Needs
-    ///         to be done as a modifier so that it can happen before validSig
+    ///         to be done as a modifier so that it can happen before updatedValidSig
     modifier validTime() {
         require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough delay");
         _;
     }
 
     /// @dev    Call isUpdatedValidSig
-    modifier validSig(
+    modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
