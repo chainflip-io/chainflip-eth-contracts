@@ -149,7 +149,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 expiryTime
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(
             // Must be fresh or have been executed & deleted, or past the expiry
@@ -213,7 +213,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 stateChainBlockNumber
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "StakeMan: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
@@ -251,7 +251,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 newMinStake
             )
         ),
-        KeyID.Gov
+        KeyID.GOV
     ) {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
