@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "./interfaces/IKeyManager.sol";
@@ -25,16 +25,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     mapping(KeyID => mapping(uint => bool)) private _keyToNoncesUsed;
 
 
-    event KeyChange(
-        bool signedByAggKey,
-        Key oldKey,
-        Key newKey
-    );
+    event AggKeySetByAggKey(Key oldKey, Key newKey);
+    event AggKeySetByGovKey(Key oldKey, Key newKey);
+    event GovKeySetByGovKey(Key oldKey, Key newKey);
 
 
     constructor(Key memory aggKey, Key memory govKey) {
-        _keyIDToKey[KeyID.Agg] = aggKey;
-        _keyIDToKey[KeyID.Gov] = govKey;
+        _keyIDToKey[KeyID.AGG] = aggKey;
+        _keyIDToKey[KeyID.GOV] = govKey;
         _lastValidateTime = block.timestamp;
     }
 
@@ -106,10 +104,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
-        KeyID.Agg
+        KeyID.AGG
     ) {
-        emit KeyChange(true, _keyIDToKey[KeyID.Agg], newKey);
-        _keyIDToKey[KeyID.Agg] = newKey;
+        emit AggKeySetByAggKey(_keyIDToKey[KeyID.AGG], newKey);
+        _keyIDToKey[KeyID.AGG] = newKey;
     }
 
     /**
@@ -130,10 +128,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
-        KeyID.Gov
+        KeyID.GOV
     ) {
-        emit KeyChange(false, _keyIDToKey[KeyID.Agg], newKey);
-        _keyIDToKey[KeyID.Agg] = newKey;
+        emit AggKeySetByGovKey(_keyIDToKey[KeyID.AGG], newKey);
+        _keyIDToKey[KeyID.AGG] = newKey;
     }
 
     /**
@@ -154,10 +152,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
-        KeyID.Gov
+        KeyID.GOV
     ) {
-        emit KeyChange(false, _keyIDToKey[KeyID.Gov], newKey);
-        _keyIDToKey[KeyID.Gov] = newKey;
+        emit GovKeySetByGovKey(_keyIDToKey[KeyID.GOV], newKey);
+        _keyIDToKey[KeyID.GOV] = newKey;
     }
 
 
@@ -173,7 +171,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the aggregate key
      */
     function getAggregateKey() external override view returns (Key memory) {
-        return (_keyIDToKey[KeyID.Agg]);
+        return (_keyIDToKey[KeyID.AGG]);
     }
 
     /**
@@ -181,7 +179,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the governance key
      */
     function getGovernanceKey() external override view returns (Key memory) {
-        return (_keyIDToKey[KeyID.Gov]);
+        return (_keyIDToKey[KeyID.GOV]);
     }
 
     /**

@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -21,7 +21,7 @@ contract Vault is IVault, Shared {
     using SafeERC20 for IERC20;
 
     /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private _keyManager;
+    IKeyManager private immutable _keyManager;
 
 
     event TransferFailed(
@@ -75,7 +75,7 @@ contract Vault is IVault, Shared {
                 tranAmounts
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         // Can't put these as modifiers annoyingly because it creates
         // a 'stack too deep' error
@@ -87,7 +87,7 @@ contract Vault is IVault, Shared {
         );
 
         // Fetch all deposits
-        for (uint i; i < fetchSwapIDs.length; i++) {
+        for (uint i = 0; i < fetchSwapIDs.length; i++) {
             if (address(fetchTokens[i]) == _ETH_ADDR) {
                 new DepositEth{salt: fetchSwapIDs[i]}();
             } else {
@@ -131,7 +131,7 @@ contract Vault is IVault, Shared {
                 amount
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         _transfer(token, recipient, amount);
     }
@@ -164,7 +164,7 @@ contract Vault is IVault, Shared {
                 amounts
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(
             tokens.length == recipients.length &&
@@ -189,7 +189,7 @@ contract Vault is IVault, Shared {
         address payable[] calldata recipients,
         uint[] calldata amounts
     ) private {
-        for (uint i; i < tokens.length; i++) {
+        for (uint i = 0; i < tokens.length; i++) {
             _transfer(tokens[i], recipients[i], amounts[i]);
         }
     }
@@ -258,7 +258,7 @@ contract Vault is IVault, Shared {
                 swapID
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         new DepositEth{salt: swapID}();
     }
@@ -284,7 +284,7 @@ contract Vault is IVault, Shared {
                 swapIDs
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         for (uint i; i < swapIDs.length; i++) {
             new DepositEth{salt: swapIDs[i]}();
@@ -315,7 +315,7 @@ contract Vault is IVault, Shared {
                 tokenAddr
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
     }
@@ -344,7 +344,7 @@ contract Vault is IVault, Shared {
                 tokens
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(
             swapIDs.length == tokens.length,
