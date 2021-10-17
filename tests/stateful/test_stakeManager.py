@@ -18,7 +18,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
     # the amount of non-reverted txs there are, while also allowing for some reverts
     INIT_MIN_STAKE = 1000
     MAX_TEST_STAKE = 10**24
-    
+
     class StateMachine(BaseStateMachine):
 
         """
@@ -51,7 +51,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
             self.allAddrs = self.stakers + [self.sm]
-            
+
             # Eth bals shouldn't change in this test, but just to be sure...
             self.ethBals = {addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs}
             self.flipBals = {addr: INIT_STAKE if addr in self.stakers else 0 for addr in self.allAddrs}
@@ -104,7 +104,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 self.flipBals[st_staker] -= st_amount
                 self.flipBals[self.sm] += st_amount
                 self.totalStake += st_amount
-            
+
 
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(self, st_signer_agg, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff):
@@ -142,7 +142,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def rule_sleep(self, st_sleep_time):
             print('                    rule_sleep', st_sleep_time)
             chain.sleep(st_sleep_time)
-        
+
 
         # Useful results are being impeded by most attempts at executeClaim not having enough
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
@@ -150,7 +150,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def rule_sleep_2_days(self):
             print('                    rule_sleep_2_days')
             chain.sleep(2 * DAY)
-        
+
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
@@ -218,14 +218,14 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 tx = self.sm.setMinStake(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_minStake, {'from': st_sender})
 
                 self.minStake = st_minStake
-        
+
 
         # Check variable(s) after every tx that shouldn't change since there's
         # no intentional way to
         def invariant_nonchangeable(self):
             assert self.sm.getKeyManager() == self.km.address
-            assert self.sm.getFLIPAddress() == self.f.address
-        
+            assert self.sm.getFLIP() == self.f.address
+
 
         # Check all the state variables that can be changed after every tx
         def invariant_state_vars(self):
@@ -234,14 +234,14 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             assert self.sm.getMinimumStake() == self.minStake
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim
-        
+
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
             for addr in self.allAddrs:
                 assert addr.balance() == self.ethBals[addr]
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
-        
+
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_inflation_calcs(self):
@@ -251,11 +251,11 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
             assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
             assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
-        
+
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f'Total rules executed = {self.numTxsTested-1}')
-            
-    
+
+
     state_machine(StateMachine, a, cfDeploy, settings=settings)
