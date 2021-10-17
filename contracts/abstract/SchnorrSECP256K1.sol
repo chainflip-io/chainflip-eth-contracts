@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 /// @notice Slightly modified from https://github.com/smartcontractkit/chainlink/pull/1272/files
