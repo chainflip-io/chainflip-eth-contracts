@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "./interfaces/IKeyManager.sol";
@@ -9,14 +9,14 @@ import "./abstract/Shared.sol";
 /**
 * @title    KeyManager contract
 * @notice   Holds the aggregate and governance keys, functions to update them,
-*           and isValidSig so other contracts can verify signatures and updates _lastValidateTime
+*           and isUpdatedValidSig so other contracts can verify signatures and updates _lastValidateTime
 * @author   Quantaf1re (James Key)
 */
 contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     uint constant private _AGG_KEY_TIMEOUT = 2 days;
 
-    /// @dev    Used to get the key with the keyID. This prevents isValidSig being called
+    /// @dev    Used to get the key with the keyID. This prevents isUpdatedValidSig being called
     ///         by keys that aren't the aggKey or govKey, which prevents outsiders being
     ///         able to change _lastValidateTime
     mapping(KeyID => Key) private _keyIDToKey;
@@ -25,16 +25,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     mapping(KeyID => mapping(uint => bool)) private _keyToNoncesUsed;
 
 
-    event KeyChange(
-        bool signedByAggKey,
-        Key oldKey,
-        Key newKey
-    );
+    event AggKeySetByAggKey(Key oldKey, Key newKey);
+    event AggKeySetByGovKey(Key oldKey, Key newKey);
+    event GovKeySetByGovKey(Key oldKey, Key newKey);
 
 
     constructor(Key memory aggKey, Key memory govKey) {
-        _keyIDToKey[KeyID.Agg] = aggKey;
-        _keyIDToKey[KeyID.Gov] = govKey;
+        _keyIDToKey[KeyID.AGG] = aggKey;
+        _keyIDToKey[KeyID.GOV] = govKey;
         _lastValidateTime = block.timestamp;
     }
 
@@ -63,7 +61,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  _lastValidateTime
      * @return          Bool used by caller to be absolutely sure that the function hasn't reverted
      */
-    function isValidSig(
+    function isUpdatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
@@ -108,10 +106,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
-        KeyID.Agg
+        KeyID.AGG
     ) {
-        emit KeyChange(true, _keyIDToKey[KeyID.Agg], newKey);
-        _keyIDToKey[KeyID.Agg] = newKey;
+        emit AggKeySetByAggKey(_keyIDToKey[KeyID.AGG], newKey);
+        _keyIDToKey[KeyID.AGG] = newKey;
     }
 
     /**
@@ -132,10 +130,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
-        KeyID.Gov
+        KeyID.GOV
     ) {
-        emit KeyChange(false, _keyIDToKey[KeyID.Agg], newKey);
-        _keyIDToKey[KeyID.Agg] = newKey;
+        emit AggKeySetByGovKey(_keyIDToKey[KeyID.AGG], newKey);
+        _keyIDToKey[KeyID.AGG] = newKey;
     }
 
     /**
@@ -156,10 +154,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             SigData(0, 0, sigData.nonce, address(0)),
             newKey
         )),
-        KeyID.Gov
+        KeyID.GOV
     ) {
-        emit KeyChange(false, _keyIDToKey[KeyID.Gov], newKey);
-        _keyIDToKey[KeyID.Gov] = newKey;
+        emit GovKeySetByGovKey(_keyIDToKey[KeyID.GOV], newKey);
+        _keyIDToKey[KeyID.GOV] = newKey;
     }
 
 
@@ -175,7 +173,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the aggregate key
      */
     function getAggregateKey() external override view returns (Key memory) {
-        return (_keyIDToKey[KeyID.Agg]);
+        return (_keyIDToKey[KeyID.AGG]);
     }
 
     /**
@@ -183,13 +181,13 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the governance key
      */
     function getGovernanceKey() external override view returns (Key memory) {
-        return (_keyIDToKey[KeyID.Gov]);
+        return (_keyIDToKey[KeyID.GOV]);
     }
 
     /**
      * @notice  Get the last time that a function was called which
      *          required a signature from _aggregateKeyData or _governanceKeyData
-     * @return  The last time isValidSig was called, in unix time (uint)
+     * @return  The last time isUpdatedValidSig was called, in unix time (uint)
      */
     function getLastValidateTime() external override view returns (uint) {
         return _lastValidateTime;
@@ -224,13 +222,13 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _;
     }
 
-    /// @dev    Call isValidSig
+    /// @dev    Call isUpdatedValidSig
     modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(isValidSig(sigData, contractMsgHash, keyID));
+        require(isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 }

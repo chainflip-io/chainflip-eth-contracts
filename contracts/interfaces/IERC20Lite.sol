@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 /**
@@ -9,7 +9,6 @@ pragma solidity ^0.8.7;
 * @author   Quantaf1re (James Key)
 */
 interface IERC20Lite {
-
     // Taken from OZ:
     /**
      * @dev Moves `amount` tokens from the caller's account to `recipient`.

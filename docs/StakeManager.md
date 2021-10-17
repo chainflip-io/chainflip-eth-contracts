@@ -17,7 +17,7 @@
 
 
 
-   Call isValidSig in _keyManager
+   Call isUpdatedValidSig in _keyManager
 
 ## `noFish()`
 
