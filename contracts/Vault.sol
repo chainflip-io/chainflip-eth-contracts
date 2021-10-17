@@ -76,7 +76,7 @@ contract Vault is IVault, Shared {
                 tranAmounts
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         // Can't put these as modifiers annoyingly because it creates
         // a 'stack too deep' error
@@ -88,7 +88,7 @@ contract Vault is IVault, Shared {
         );
 
         // Fetch all deposits
-        for (uint i; i < fetchSwapIDs.length; i++) {
+        for (uint i = 0; i < fetchSwapIDs.length; i++) {
             if (fetchTokenAddrs[i] == _ETH_ADDR) {
                 new DepositEth{salt: fetchSwapIDs[i]}();
             } else {
@@ -132,7 +132,7 @@ contract Vault is IVault, Shared {
                 amount
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         _transfer(tokenAddr, recipient, amount);
     }
@@ -165,7 +165,7 @@ contract Vault is IVault, Shared {
                 amounts
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(
             tokenAddrs.length == recipients.length &&
@@ -190,7 +190,7 @@ contract Vault is IVault, Shared {
         address payable[] calldata recipients,
         uint[] calldata amounts
     ) private {
-        for (uint i; i < tokenAddrs.length; i++) {
+        for (uint i = 0; i < tokenAddrs.length; i++) {
             _transfer(tokenAddrs[i], recipients[i], amounts[i]);
         }
     }
@@ -259,7 +259,7 @@ contract Vault is IVault, Shared {
                 swapID
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         new DepositEth{salt: swapID}();
     }
@@ -285,7 +285,7 @@ contract Vault is IVault, Shared {
                 swapIDs
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         for (uint i; i < swapIDs.length; i++) {
             new DepositEth{salt: swapIDs[i]}();
@@ -316,7 +316,7 @@ contract Vault is IVault, Shared {
                 tokenAddr
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
     }
@@ -345,7 +345,7 @@ contract Vault is IVault, Shared {
                 tokenAddrs
             )
         ),
-        KeyID.Agg
+        KeyID.AGG
     ) {
         require(
             swapIDs.length == tokenAddrs.length,
