@@ -6,11 +6,11 @@
 
 
 
-## `validSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
+## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
 
 
 
-   Calls isValidSig in _keyManager
+   Calls isUpdatedValidSig in _keyManager
 
 
 ## `constructor(contract IKeyManager keyManager)` (public)

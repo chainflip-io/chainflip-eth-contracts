@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "./IShared.sol";
@@ -17,7 +17,7 @@ interface IKeyManager is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function isValidSig(
+    function isUpdatedValidSig(
         SigData memory sigData,
         bytes32 contractMsgHash,
         KeyID keyID

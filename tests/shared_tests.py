@@ -11,7 +11,6 @@ def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
 
-
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
 
     balanceBefore = cf.ALICE.balance()
@@ -26,7 +25,7 @@ def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
     txRefundTest(balanceBefore, balanceAfter, tx)
-    assert tx.events["KeyChange"][0].values() == [True, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
+    assert tx.events["AggKeySetByAggKey"][0].values() == [AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
 def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
@@ -38,7 +37,7 @@ def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
-    assert tx.events["KeyChange"][0].values() == [False, AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
+    assert tx.events["AggKeySetByGovKey"][0].values() == [AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
 
 def setGovKeyWithGovKey_test(cf):
@@ -51,7 +50,7 @@ def setGovKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_2.getPubDataWith0x()
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
-    assert tx.events["KeyChange"][0].values() == [False, GOV_SIGNER_1.getPubDataWith0x(), GOV_SIGNER_2.getPubDataWith0x()]
+    assert tx.events["GovKeySetByGovKey"][0].values() == [GOV_SIGNER_1.getPubDataWith0x(), GOV_SIGNER_2.getPubDataWith0x()]
 
 
 def setKey_rev_pubKeyX_test(cf, fcn, signer):
@@ -93,14 +92,14 @@ def setKey_rev_sig_test(cf, fcn, signer):
 
 def isValidSig_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD)
-    tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
+    tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
 def isValidSig_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD)
     with reverts(REV_MSG_SIG):
-        tx = cf.keyManager.isValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
+        tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[0]), KEYID_TO_NUM[signer.keyID])
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random

@@ -1,8 +1,9 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
 
 
@@ -20,7 +21,7 @@ contract FLIP is ERC777, Ownable, Shared {
         address[] memory defaultOperators,
         address receiver,
         uint256 mintAmount
-    ) ERC777(name, symbol, defaultOperators) Ownable() {
+    ) ERC777(name, symbol, defaultOperators) Ownable() nzAddr(receiver) nzUint(mintAmount) {
         _mint(receiver, mintAmount, "", "");
     }
 
