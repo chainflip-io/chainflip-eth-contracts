@@ -68,7 +68,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.allBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 fetchSwapIDs,
                 fetchTokenAddrs,
                 tranTokenAddrs,
@@ -126,7 +126,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 tokenAddr,
                 recipient,
                 amount
@@ -159,7 +159,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.transferBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 tokenAddrs,
                 recipients,
                 amounts
@@ -255,7 +255,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEth.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID
             )
         ),
@@ -281,7 +281,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEthBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapIDs
             )
         ),
@@ -311,7 +311,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID,
                 tokenAddr
             )
@@ -340,7 +340,7 @@ contract Vault is IVault, Shared {
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositTokenBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapIDs,
                 tokenAddrs
             )
