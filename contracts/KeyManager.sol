@@ -23,9 +23,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint private _lastValidateTime;
     mapping(KeyID => mapping(uint => bool)) private _keyToNoncesUsed;
-    // The chainID of the current chain being used, to check in sigs to prevent replay
-    // attacks across different EVM chains
-    uint public immutable CHAIN_ID;
 
 
     event AggKeySetByAggKey(Key oldKey, Key newKey);
@@ -33,11 +30,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     event GovKeySetByGovKey(Key oldKey, Key newKey);
 
 
-    constructor(Key memory aggKey, Key memory govKey, uint chainID) {
+    constructor(Key memory aggKey, Key memory govKey) {
         _keyIDToKey[KeyID.AGG] = aggKey;
         _keyIDToKey[KeyID.GOV] = govKey;
         _lastValidateTime = block.timestamp;
-        CHAIN_ID = chainID;
     }
 
 
@@ -86,7 +82,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         );
         require(!_keyToNoncesUsed[keyID][sigData.nonce], "KeyManager: nonce already used");
         require(sigData.keyManAddr == address(this), "KeyManager: wrong keyManAddr");
-        require(sigData.chainID == CHAIN_ID, "KeyManager: wrong chainID");
+        require(sigData.chainID == block.chainid, "KeyManager: wrong chainID");
 
         _lastValidateTime = block.timestamp;
         _keyToNoncesUsed[keyID][sigData.nonce] = true;
