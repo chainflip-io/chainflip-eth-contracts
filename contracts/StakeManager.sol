@@ -77,7 +77,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
         _minStake = minStake;
-
+        
         address[] memory operators = new address[](1);
         operators[0] = address(this);
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;
@@ -85,7 +85,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         FLIP flip = new FLIP("Chainflip", "FLIP", operators, address(this), flipTotalSupply);
         flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
         _FLIP = flip;
-        
+
         IERC1820Registry erc1820Reg = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
         erc1820Reg.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }

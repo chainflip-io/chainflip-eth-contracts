@@ -18,7 +18,7 @@ abstract contract Shared is IShared {
     uint constant internal _E_18 = 1e18;
 
     event Refunded (uint amount);
-    event RefundFailed(address to, uint256 amount, uint256 currentBalance);
+    event RefundFailed(address indexed to, uint amount, uint currentBalance);
 
 
     /// @dev    Checks that a uint isn't zero/empty
@@ -60,7 +60,7 @@ abstract contract Shared is IShared {
         }
     }
 
-    function refundEth(address to, uint256 amount) external {
+    function refundEth(address to, uint amount) external {
         // Hack this so that it's effectively an internal call
         require(msg.sender == address(this));
         payable(to).transfer(amount);
