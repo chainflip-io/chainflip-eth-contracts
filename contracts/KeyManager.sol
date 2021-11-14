@@ -82,7 +82,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         );
         require(!_keyToNoncesUsed[keyID][sigData.nonce], "KeyManager: nonce already used");
 
-        _lastValidateTime = block.timestamp;
+        // Don't want changing the GOV key to be able to reset the dead man's switch
+        if (keyID == KeyID.AGG) {
+            _lastValidateTime = block.timestamp;
+        }
         _keyToNoncesUsed[keyID][sigData.nonce] = true;
 
         return true;
