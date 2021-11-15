@@ -1,7 +1,7 @@
 import pytest
 from consts import *
-from deploy import deploy_initial_ChainFlip_contracts
-from deploy import deploy_set_ChainFlip_contracts
+from deploy import deploy_initial_Chainflip_contracts
+from deploy import deploy_set_Chainflip_contracts
 from brownie import chain
 from brownie.network import priority_fee
 
@@ -15,7 +15,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
-    return deploy_set_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    return deploy_set_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
 
 
 # Deploy the contracts and set up common test environment
@@ -43,10 +43,10 @@ def cf(a, cfDeploy):
 
 
 # Deploy the contracts for repeated tests without having to redeploy each time, with
-# all addresses whitelisted 
+# all addresses whitelisted
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
-    cf = deploy_initial_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
     cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager, cf.keyManager] + list(a))
 
     return cf
@@ -108,8 +108,8 @@ def claimRegistered(cf, stakedMin):
     expiryTime = chain.time() + CLAIM_DELAY + 5
     args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
 
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), *args)
-    tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
+    tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args)
 
     return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
 

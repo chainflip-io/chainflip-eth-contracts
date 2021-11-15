@@ -5,8 +5,8 @@ from brownie.test import given, strategy
 
 @given(newMinStake=strategy('uint256', exclude=0))
 def test_setMinStake(cf, newMinStake):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
-    tx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, cf.FR_ALICE)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), newMinStake)
+    tx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), newMinStake, cf.FR_ALICE)
 
     # Check things that should've changed
     assert cf.stakeManager.getMinimumStake() == newMinStake
@@ -17,14 +17,14 @@ def test_setMinStake(cf, newMinStake):
 
 
 def test_setMinStake_rev_amount(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), 0)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), 0)
     with reverts(REV_MSG_NZ_UINT):
-        cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), 0, cf.FR_ALICE)
+        cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), 0, cf.FR_ALICE)
 
 
 def test_setMinStake_rev_msgHash(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), JUNK_HEX)
-    sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), JUNK_HEX)
+    sigData = GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[0] += 1
 
     with reverts(REV_MSG_MSGHASH):
@@ -32,8 +32,8 @@ def test_setMinStake_rev_msgHash(cf):
 
 
 def test_setMinStake_rev_sig(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), JUNK_HEX)
-    sigData = GOV_SIGNER_1.getSigData(callDataNoSig)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), JUNK_HEX)
+    sigData = GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[1] += 1
 
     with reverts(REV_MSG_SIG):
@@ -41,9 +41,9 @@ def test_setMinStake_rev_sig(cf):
 
 
 def test_setMinStake_rev_aggKey(cf):
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(agg_null_sig(), JUNK_HEX)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX)
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setMinStake(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
+        cf.stakeManager.setMinStake(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX)
 
 
 # Can't use the normal StakeManager to test this since there's obviously
@@ -67,6 +67,6 @@ def test_setMinStake_rev_noFish(cfAW, StakeManagerVulnerable, FLIP, web3, amount
     assert flipVuln.balanceOf(cfAW.CHARLIE) == amount
 
     # Ensure test doesn't fail because there aren't enough coins
-    callDataNoSig = smVuln.setMinStake.encode_input(gov_null_sig(), JUNK_HEX)
+    callDataNoSig = smVuln.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), JUNK_HEX)
     with reverts(REV_MSG_NO_FISH):
-        smVuln.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX)
+        smVuln.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX)

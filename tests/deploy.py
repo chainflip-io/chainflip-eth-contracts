@@ -48,9 +48,9 @@ def deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager
     return cf
 
 
-# This should be used over deploy_initial_ChainFlip_contracts for actual deployments
-def deploy_set_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP, *args):
-    cf = deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP, *args)
+# This should be used over deploy_initial_Chainflip_contracts for actual deployments
+def deploy_set_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP, *args):
+    cf = deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP, *args)
     cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager, cf.keyManager])
 
     return cf

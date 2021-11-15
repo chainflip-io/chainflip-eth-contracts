@@ -20,11 +20,11 @@ def test_fetchDepositEthBatch(cf, DepositEth, amounts, swapIDs):
     assert cf.vault.balance() == ONE_ETH
 
     # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs)
 
     # Fetch the deposit
     balanceBefore = cf.ALICE.balance()
-    tx = cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs, cf.FR_ALICE)
+    tx = cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
     refunded = txRefundTest(balanceBefore, balanceAfter, tx)
 
@@ -33,9 +33,9 @@ def test_fetchDepositEthBatch(cf, DepositEth, amounts, swapIDs):
 
 
 def test_fetchDepositEthBatch_rev_msgHash(cf):
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD])
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD])
 
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[0] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
@@ -43,9 +43,9 @@ def test_fetchDepositEthBatch_rev_msgHash(cf):
 
 
 def test_fetchDepositEthBatch_rev_sig(cf):
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD])
+    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD])
 
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[1] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):

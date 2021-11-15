@@ -12,11 +12,11 @@ def test_fetchDepositEth(cf, DepositEth):
     assert cf.vault.balance() == ONE_ETH
 
     # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
 
     # Fetch the deposit
     balanceBefore = cf.ALICE.balance()
-    tx = cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD, cf.FR_ALICE)
+    tx = cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
     refunded = txRefundTest(balanceBefore, balanceAfter, tx)
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
@@ -24,17 +24,17 @@ def test_fetchDepositEth(cf, DepositEth):
 
 
 def test_fetchDepositEth_rev_swapID(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), "")
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), "")
 
     with reverts(REV_MSG_NZ_BYTES32):
-        cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), "")
+        cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), "")
 
 
 
 def test_fetchDepositEth_rev_msgHash(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
 
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[0] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
@@ -42,9 +42,9 @@ def test_fetchDepositEth_rev_msgHash(cf):
 
 
 def test_fetchDepositEth_rev_sig(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
 
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[1] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):

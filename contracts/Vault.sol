@@ -111,7 +111,7 @@ contract Vault is IVault, Shared {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param token The address of the token to be transferred
+     * @param token     The token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
      */
@@ -120,13 +120,13 @@ contract Vault is IVault, Shared {
         IERC20 token,
         address payable recipient,
         uint amount
-    ) external override nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) updatedValidSig(
+    ) external override nzAddr(address(token)) nzAddr(recipient) nzUint(amount) updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
                 SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                tokenAddr,
+                token,
                 recipient,
                 amount
             )
@@ -159,7 +159,7 @@ contract Vault is IVault, Shared {
             abi.encodeWithSelector(
                 this.transferBatch.selector,
                 SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                tokenAddrs,
+                tokens,
                 recipients,
                 amounts
             )
@@ -297,25 +297,25 @@ contract Vault is IVault, Shared {
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32), used for create2
-     * @param tokenAddr The address of the token to be transferred
+     * @param token     The token to be transferred
      */
     function fetchDepositToken(
         SigData calldata sigData,
         bytes32 swapID,
-        address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas updatedValidSig(
+        IERC20 token
+    ) external override nzBytes32(swapID) nzAddr(address(token)) refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
                 SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID,
-                tokenAddr
+                token
             )
         ),
         KeyID.AGG
     ) {
-        new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
+        new DepositToken{salt: swapID}(IERC20Lite(address(token)));
     }
 
     /**

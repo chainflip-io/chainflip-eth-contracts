@@ -18,13 +18,13 @@ from random import choices
 #     startBalRecipient = cf.ALICE.balance()
 
 #     # Check transfer fails with old agg key
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT)
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, cf.ALICE, TEST_AMNT)
 
 #     # Check transfer with new agg key
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
-#     tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#     tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, cf.ALICE, TEST_AMNT)
 
 #     assert cf.vault.balance() - startBalVault == -TEST_AMNT
 #     assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
@@ -46,13 +46,13 @@ from random import choices
 #     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
 #     # Check transfer fails with old agg key
-#     callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
+#     callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD)
+#         cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD)
 
 #     # Fetch the deposit with new agg key
-#     callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(), JUNK_HEX_PAD)
-#     tx = cf.vault.fetchDepositEth(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX_PAD)
+#     callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
+#     tx = cf.vault.fetchDepositEth(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD)
 
 #     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
 #     assert cf.vault.balance() == TEST_AMNT
@@ -60,12 +60,12 @@ from random import choices
 #     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 #     # Check transfer fails with old agg key
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, recipient, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, recipient, TEST_AMNT)
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, recipient, TEST_AMNT)
+#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, recipient, TEST_AMNT)
 
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, recipient, TEST_AMNT)
-#     tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, recipient, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, recipient, TEST_AMNT)
+#     tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, recipient, TEST_AMNT)
 
 #     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
 #     assert cf.vault.balance() == 0
@@ -88,14 +88,14 @@ from random import choices
 #     token.transfer(depositAddr, TEST_AMNT, {'from': cf.DEPLOYER})
 
 #     # Check transfer fails with old agg key
-#     callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX_PAD, token)
+#     callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD, token)
 
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig), JUNK_HEX_PAD, token)
+#         cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD, token)
 
 #     # Fetch the deposit with new agg key
-#     callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(), JUNK_HEX_PAD, token)
-#     tx = cf.vault.fetchDepositToken(AGG_SIGNER_2.getSigData(callDataNoSig), JUNK_HEX_PAD, token)
+#     callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD, token)
+#     tx = cf.vault.fetchDepositToken(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD, token)
 
 #     assert token.balanceOf(depositAddr) == 0
 #     assert token.balanceOf(cf.vault) == TEST_AMNT
@@ -103,13 +103,13 @@ from random import choices
 #     txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 #     # Check transfer fails with old agg key
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), token, recipient, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), token, recipient, TEST_AMNT)
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), token, recipient, TEST_AMNT)
+#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), token, recipient, TEST_AMNT)
 
 #     # Transfer to recipient
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), token, recipient, TEST_AMNT)
-#     tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), token, recipient, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), token, recipient, TEST_AMNT)
+#     tx = cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), token, recipient, TEST_AMNT)
 
 #     assert token.balanceOf(depositAddr) == 0
 #     assert token.balanceOf(cf.vault) == 0
@@ -130,15 +130,15 @@ from random import choices
 
 #     assert cf.vault.balance() == 0
 
-#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
+#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs)
 
 #     # Check fetchDepositEthBatch fails with old agg key
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
+#         cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs)
 
 #     # Fetch the deposits with new agg key
-#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
-#     cf.vault.fetchDepositEthBatch(AGG_SIGNER_2.getSigData(callDataNoSig), swapIDs)
+#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs)
+#     cf.vault.fetchDepositEthBatch(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), swapIDs)
 
 #     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
 #     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -148,15 +148,15 @@ from random import choices
 #     ethStartBalVault = cf.vault.balance()
 #     tokenStartBalRecipient = cf.ALICE.balance()
 
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT)
 
 #     # Check transfer fails with old agg key
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, cf.ALICE, TEST_AMNT)
 
 #     # Transfer with new agg key
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), ETH_ADDR, cf.ALICE, TEST_AMNT)
-#     cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT)
+#     cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, cf.ALICE, TEST_AMNT)
 
 #     assert cf.vault.balance() - ethStartBalVault == -TEST_AMNT
 #     assert cf.ALICE.balance() - tokenStartBalRecipient == TEST_AMNT
@@ -164,7 +164,7 @@ from random import choices
 #     # Transferring out again should fail
 #     # No specific error message for failing eth transfer
 #     with reverts():
-#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), ETH_ADDR, cf.ALICE, (2 * TEST_AMNT) + 1)
+#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, cf.ALICE, (2 * TEST_AMNT) + 1)
 
 #     # Fetch token deposit
 #     # Get the address to deposit to and deposit
@@ -176,15 +176,15 @@ from random import choices
 
 #     assert token.balanceOf(cf.vault) == 0
 
-#     callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), swapIDs, [token, token])
+#     callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs, [token, token])
 
 #     # Check fetchDepositTokenBatch fails with old agg key
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs, [token, token])
+#         cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, [token, token])
 
 #     # Fetch the deposits with new agg key
-#     callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), swapIDs, [token, token])
-#     cf.vault.fetchDepositTokenBatch(AGG_SIGNER_2.getSigData(callDataNoSig), swapIDs, [token, token])
+#     callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs, [token, token])
+#     cf.vault.fetchDepositTokenBatch(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, [token, token])
 
 #     assert token.balanceOf(depositAddr) == 0
 #     assert token.balanceOf(cf.vault) == 3 * TEST_AMNT
@@ -194,13 +194,13 @@ from random import choices
 #     tokenStartBalVault = token.balanceOf(cf.vault)
 #     tokenStartBalRecipient = token.balanceOf(cf.ALICE)
 
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), token, cf.ALICE, amount)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), token, cf.ALICE, amount)
 #     # Check transfer fails with old agg key
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig), token, cf.ALICE, amount)
+#         cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), token, cf.ALICE, amount)
 
-#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(), token, cf.ALICE, amount)
-#     cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig), token, cf.ALICE, amount)
+#     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), token, cf.ALICE, amount)
+#     cf.vault.transfer(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), token, cf.ALICE, amount)
 
 #     assert token.balanceOf(cf.vault) - tokenStartBalVault == -amount
 #     assert token.balanceOf(cf.ALICE) - tokenStartBalRecipient == amount
@@ -216,15 +216,15 @@ from random import choices
 
 #     assert cf.vault.balance() == 0
 
-#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
+#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs)
 
 #     # Check fetchDepositEthBatch fails with the future agg key
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.fetchDepositEthBatch(AGG_SIGNER_2.getSigData(callDataNoSig), swapIDs)
+#         cf.vault.fetchDepositEthBatch(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), swapIDs)
 
 #     # Fetch the deposits with new agg key
-#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(), swapIDs)
-#     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs)
+#     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs)
+#     cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs)
 
 #     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
 #     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -240,14 +240,14 @@ from random import choices
 #     ethStartBalAlice = cf.ALICE.balance()
 #     ethStartBalBob = cf.BOB.balance()
 
-#     callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
+#     callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
 
 #     # Check fetchDepositEthBatch fails with the old agg key
 #     with reverts(REV_MSG_SIG):
-#         cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
+#         cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
 
-#     callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
-#     cf.vault.transferBatch(AGG_SIGNER_2.getSigData(callDataNoSig), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
+#     callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
+#     cf.vault.transferBatch(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob])
 
 #     assert cf.vault.balance() - ethStartBalVault == - amountAlice - amountBob
 #     assert cf.ALICE.balance() - ethStartBalAlice == amountAlice
@@ -305,21 +305,21 @@ def test_setAggKeyByAggKey_allBatch(cf, token, token2, DepositToken, DepositEth,
     tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in tranRecipients]
 
-    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
+    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
 
     # Check allBatch fails with the old agg key
     with reverts(REV_MSG_SIG):
-        cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
+        cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
 
-    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
+    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            cf.vault.allBatch(AGG_SIGNER_2.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
+            cf.vault.allBatch(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
     else:
         balanceBefore = sender.balance()
-        tx = cf.vault.allBatch(AGG_SIGNER_2.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
+        tx = cf.vault.allBatch(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
         balanceAfter = sender.balance()
         refund = txRefundTest(balanceBefore, balanceAfter, tx)
 

@@ -8,15 +8,15 @@ def test_setAggKeyWithAggKey_updateFlipSupply(cf):
 
     stateChainBlockNumber = 1
 
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
 
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
+        cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
 
     # Change emission with new key
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
-    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_2.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
 
     # Check things that should've changed
     assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
@@ -33,15 +33,15 @@ def test_setGovKeyWithGovKey_setMinStake(cf):
     setGovKeyWithGovKey_test(cf)
 
     newMinStake = int(MIN_STAKE * 1.5)
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), newMinStake)
 
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake, cf.FR_ALICE)
+        cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), newMinStake, cf.FR_ALICE)
 
     # Change minStake with new key
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
-    tx = cf.stakeManager.setMinStake(GOV_SIGNER_2.getSigData(callDataNoSig), newMinStake, cf.FR_ALICE)
+    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), newMinStake)
+    tx = cf.stakeManager.setMinStake(GOV_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), newMinStake, cf.FR_ALICE)
 
     # Check things that should've changed
     assert cf.stakeManager.getMinimumStake() == newMinStake

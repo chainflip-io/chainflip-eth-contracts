@@ -63,7 +63,7 @@ interface IVault is IShared {
     function fetchDepositToken(
         SigData calldata sigData,
         bytes32 swapID,
-        address tokenAddr
+        IERC20 token
     ) external;
 
     function fetchDepositTokenBatch(

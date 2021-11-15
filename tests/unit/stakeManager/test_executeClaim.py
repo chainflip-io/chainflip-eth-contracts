@@ -22,8 +22,8 @@ def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff
 
         expiryTime = chain.time() + expiryTimeDiff + 5
         args = (nodeID, amount, staker, expiryTime)
-        callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), *args)
-        tx1 = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+        callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
+        tx1 = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args)
 
         assert cf.stakeManager.getPendingClaim(nodeID) == (amount, staker, tx1.timestamp + CLAIM_DELAY, expiryTime)
         assert cf.flip.balanceOf(cf.stakeManager) == smStartBal
@@ -113,6 +113,6 @@ def test_executeClaim_rev_noFish(cfAW, vulnerableR3ktStakeMan, amount):
     smVuln, _ = vulnerableR3ktStakeMan
     args = (JUNK_HEX, amount, cfAW.DENICE, chain.time() + CLAIM_DELAY + 5)
 
-    callDataNoSig = smVuln.registerClaim.encode_input(agg_null_sig(), *args)
+    callDataNoSig = smVuln.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
     with reverts(REV_MSG_NO_FISH):
-        smVuln.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+        smVuln.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args)
