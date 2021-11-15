@@ -173,7 +173,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the aggregate key
      */
     function getAggregateKey() external override view returns (Key memory) {
-        return (_keyIDToKey[KeyID.AGG]);
+        return _keyIDToKey[KeyID.AGG];
     }
 
     /**
@@ -181,7 +181,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the governance key
      */
     function getGovernanceKey() external override view returns (Key memory) {
-        return (_keyIDToKey[KeyID.GOV]);
+        return _keyIDToKey[KeyID.GOV];
     }
 
     /**
