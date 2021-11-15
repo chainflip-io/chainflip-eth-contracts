@@ -13,7 +13,7 @@ BOB = accounts[2]
 CHARLIE = accounts[3]
 DENICE = accounts[4]
 
-cf = deploy_set_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
+cf = deploy_set_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {'SKIP_INITIAL_FUND': True})
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {'from': DEPLOYER})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': ALICE})
@@ -54,21 +54,20 @@ def all_stakeManager_events():
 
     new_min_stake = int(MIN_STAKE / 3)
     print(f"\n💰 Denice sets the minimum stake to {new_min_stake}\n")
+    print("This transaction will emit RefundFailed")
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), new_min_stake)
     cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), new_min_stake, {"from": DENICE})
+
+    print("Fund contract so that a refund will fire in the next transaction")
+    ALICE.transfer(to=cf.stakeManager, amount=ONE_ETH)
 
     stateChainBlockNumber = 100
     print(f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block 100\n")
     callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
     cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, {"from": DENICE})
 
+
 def all_keyManager_events():
-    print(f"\n🔑 Aggregate Key sets the new Aggregate Key 🔑\n")
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
-    cf.keyManager.setAggKeyWithAggKey(AGG_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
-
-    chain.sleep(CLAIM_DELAY)
-
     print(f"\n🔑 Governance Key sets the new Aggregate Key 🔑\n")
     callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(gov_null_sig(), AGG_SIGNER_1.getPubData())
     cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_1.getPubData())
@@ -78,3 +77,19 @@ def all_keyManager_events():
     print(f"\n🔑 Governance Key sets the new Governance Key 🔑\n")
     callDataNoSig = cf.keyManager.setGovKeyWithGovKey.encode_input(gov_null_sig(), GOV_SIGNER_2.getPubData())
     cf.keyManager.setGovKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig), GOV_SIGNER_2.getPubData())
+
+    chain.sleep(CLAIM_DELAY)
+
+    print(f"\n🔑 Aggregate Key sets the new Aggregate Key 🔑\n")
+    print("This transaction will emit RefundFailed")
+    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_2.getPubData())
+    cf.keyManager.setAggKeyWithAggKey(AGG_SIGNER_1.getSigData(callDataNoSig), AGG_SIGNER_2.getPubData())
+
+    chain.sleep(CLAIM_DELAY)
+
+    print("Fund contract so that a refund event will fire in the next transaction")
+    ALICE.transfer(to=cf.keyManager, amount=ONE_ETH)
+
+    print(f"\n🔑 Aggregate Key sets the new Aggregate Key 🔑\n")
+    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(), AGG_SIGNER_1.getPubData())
+    cf.keyManager.setAggKeyWithAggKey(AGG_SIGNER_2.getSigData(callDataNoSig), AGG_SIGNER_1.getPubData())
