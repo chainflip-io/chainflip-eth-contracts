@@ -47,8 +47,6 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     // The number of seconds in 48h
     uint48 constant public CLAIM_DELAY = 2 days;
 
-    IERC1820Registry constant private _ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
-    address[] private _defaultOperators;
     bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256('ERC777TokensRecipient');
 
 
@@ -79,13 +77,17 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
         _minStake = minStake;
-        _defaultOperators.push(address(this));
+
+        address[] memory operators = new address[](1);
+        operators[0] = address(this);
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
-        FLIP flip = new FLIP("Chainflip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
+        FLIP flip = new FLIP("Chainflip", "FLIP", operators, address(this), flipTotalSupply);
         flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
         _FLIP = flip;
-        _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
+        
+        IERC1820Registry erc1820Reg = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+        erc1820Reg.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
 
