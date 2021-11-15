@@ -3,7 +3,7 @@ from os import path
 sys.path.append(path.abspath('tests'))
 from consts import *
 from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP, chain, network
-from deploy import deploy_initial_Chainflip_contracts
+from deploy import deploy_set_ChainFlip_contracts
 
 print(network.show_active())
 
@@ -13,7 +13,7 @@ BOB = accounts[2]
 CHARLIE = accounts[3]
 DENICE = accounts[4]
 
-cf = deploy_initial_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
+cf = deploy_set_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {'from': DEPLOYER})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': ALICE})

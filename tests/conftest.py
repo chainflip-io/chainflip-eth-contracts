@@ -1,6 +1,7 @@
 import pytest
 from consts import *
-from deploy import deploy_initial_Chainflip_contracts
+from deploy import deploy_initial_ChainFlip_contracts
+from deploy import deploy_set_ChainFlip_contracts
 from brownie import chain
 from brownie.network import priority_fee
 
@@ -14,7 +15,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
-    return deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    return deploy_set_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
 
 
 # Deploy the contracts and set up common test environment
@@ -39,6 +40,52 @@ def cf(a, cfDeploy):
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
 
     return cf
+
+
+# Deploy the contracts for repeated tests without having to redeploy each time, with
+# all addresses whitelisted 
+@pytest.fixture(scope="module")
+def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
+    cf = deploy_initial_ChainFlip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager, cf.keyManager] + list(a))
+
+    return cf
+
+
+# Deploy the contracts and set up common test environment, with all addresses whitelisted
+@pytest.fixture(scope="module")
+def cfAW(a, cfDeployAllWhitelist):
+    cf = cfDeployAllWhitelist
+
+    # It's a bit easier to not get mixed up with accounts if they're named
+    # Can't define this in consts because `a` needs to be imported into the test
+    cf.DEPLOYER = a[0]
+    cf.FR_DEPLOYER = {"from": cf.DEPLOYER}
+    cf.ALICE = a[1]
+    cf.FR_ALICE = {"from": cf.ALICE}
+    cf.BOB = a[2]
+    cf.FR_BOB = {"from": cf.BOB}
+    cf.CHARLIE = a[3]
+    cf.FR_CHARLIE = {"from": cf.CHARLIE}
+    cf.DENICE = a[4]
+    cf.FR_DENICE = {"from": cf.DENICE}
+
+    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+
+    return cf
+
+
+# Set the whitelist for isValidSig
+@pytest.fixture(scope="module")
+def whitelist(a, cf):
+    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager])
+
+
+# Set the whitelist for isValidSig
+@pytest.fixture(scope="module")
+def whitelistAll(a, cf):
+    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager])
 
 
 # Deploys SchnorrSECP256K1Test to enable testing of SchnorrSECP256K1

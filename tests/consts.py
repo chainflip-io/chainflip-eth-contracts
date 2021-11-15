@@ -74,6 +74,7 @@ REV_MSG_NONCETIMESGADDR = "Shared: nonceTimesGAddr is empty"
 REV_MSG_NONCETIMESGADDR_EMPTY = "No zero inputs allowed"
 
 # isUpdatedValidSig
+REV_MSG_WHITELIST = "KeyManager: not whitelisted"
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
 

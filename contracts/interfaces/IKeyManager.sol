@@ -38,6 +38,10 @@ interface IKeyManager is IShared {
         Key memory newKey
     ) external;
 
+    function canValidateSig(address addr) external view returns (bool);
+
+    function canValidateSigSet() external view returns (bool);
+
 
     //////////////////////////////////////////////////////////////
     //                                                          //
