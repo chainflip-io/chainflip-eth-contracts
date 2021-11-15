@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IShared.sol";
 import "./IKeyManager.sol";
 
@@ -15,8 +16,8 @@ interface IVault is IShared {
     function allBatch(
         SigData calldata sigData,
         bytes32[] calldata fetchSwapIDs,
-        address[] calldata fetchTokenAddrs,
-        address[] calldata tranTokenAddrs,
+        IERC20[] calldata fetchTokens,
+        IERC20[] calldata tranTokens,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
     ) external;
@@ -30,14 +31,14 @@ interface IVault is IShared {
 
     function transfer(
         SigData calldata sigData,
-        address tokenAddr,
+        IERC20 token,
         address payable recipient,
         uint amount
     ) external;
 
     function transferBatch(
         SigData calldata sigData,
-        address[] calldata tokenAddrs,
+        IERC20[] calldata tokens,
         address payable[] calldata recipients,
         uint[] calldata amounts
     ) external;
@@ -68,7 +69,7 @@ interface IVault is IShared {
     function fetchDepositTokenBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
-        address[] calldata tokenAddrs
+        IERC20[] calldata tokens
     ) external;
 
 
