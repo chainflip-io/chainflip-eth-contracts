@@ -77,7 +77,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
         _minStake = minStake;
-
+        
         address[] memory operators = new address[](1);
         operators[0] = address(this);
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;

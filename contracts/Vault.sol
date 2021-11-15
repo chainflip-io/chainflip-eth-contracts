@@ -225,8 +225,6 @@ contract Vault is IVault, Shared {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
-            // It would be nice to wrap require around this line, but
-            // some older tokens don't return a bool
             IERC20(tokenAddr).safeTransfer(recipient, amount);
         }
     }
