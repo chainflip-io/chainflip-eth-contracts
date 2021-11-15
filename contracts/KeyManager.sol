@@ -81,6 +81,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             "KeyManager: Sig invalid"
         );
         require(!_keyToNoncesUsed[keyID][sigData.nonce], "KeyManager: nonce already used");
+        require(sigData.keyManAddr == address(this), "KeyManager: wrong keyManAddr");
+        require(sigData.chainID == block.chainid, "KeyManager: wrong chainID");
 
         _lastValidateTime = block.timestamp;
         _keyToNoncesUsed[keyID][sigData.nonce] = true;
@@ -103,7 +105,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
-            SigData(0, 0, sigData.nonce, address(0)),
+            SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.AGG
@@ -127,7 +129,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce, address(0)),
+            SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.GOV
@@ -151,7 +153,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setGovKeyWithGovKey.selector,
-            SigData(0, 0, sigData.nonce, address(0)),
+            SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
             newKey
         )),
         KeyID.GOV

@@ -34,6 +34,8 @@ interface IShared {
     *       struct since they should always be used together
     */
     struct SigData {
+        address keyManAddr;
+        uint chainID;
         uint msgHash;
         uint sig;
         uint nonce;
