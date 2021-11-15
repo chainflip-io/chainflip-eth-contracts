@@ -133,7 +133,7 @@ def token2(cf, Token):
 @pytest.fixture(scope="module")
 def vulnerableStakedStakeMan(cf, StakeManagerVulnerable, FLIP):
     smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
-    flipVuln = FLIP.at(smVuln.getFLIPAddress())
+    flipVuln = FLIP.at(smVuln.getFLIP())
     # Can't set _FLIP in the constructor because it's made in the constructor
     # of StakeManager and getFLIPAddress is external
     smVuln.testSetFLIP(flipVuln)

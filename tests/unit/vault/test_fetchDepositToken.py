@@ -61,7 +61,7 @@ def test_fetchDepositToken_rev_msgHash(cf):
     callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD, ETH_ADDR)
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[0] += 1
+    sigData[2] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
         cf.vault.fetchDepositToken(sigData, JUNK_HEX_PAD, ETH_ADDR)
@@ -71,7 +71,7 @@ def test_fetchDepositToken_rev_sig(cf):
     callDataNoSig = cf.vault.fetchDepositToken.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD, ETH_ADDR)
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[1] += 1
+    sigData[3] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
         cf.vault.fetchDepositToken(sigData, JUNK_HEX_PAD, ETH_ADDR)

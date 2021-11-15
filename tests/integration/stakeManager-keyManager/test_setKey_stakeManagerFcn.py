@@ -2,50 +2,50 @@ from consts import *
 from shared_tests import *
 from brownie import reverts, web3
 
-def test_setAggKeyWithAggKey_updateFlipSupply(cf):
+def test_setAggKeyWithAggKey_updateFlipSupply(cfAW):
     # Change agg keys
-    setAggKeyWithAggKey_test(cf)
+    setAggKeyWithAggKey_test(cfAW)
 
     stateChainBlockNumber = 1
 
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+    callDataNoSig = cfAW.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cfAW.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
 
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
+        cfAW.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cfAW.FR_ALICE)
 
     # Change emission with new key
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
-    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
+    callDataNoSig = cfAW.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cfAW.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+    tx = cfAW.stakeManager.updateFlipSupply(AGG_SIGNER_2.getSigData(callDataNoSig, cfAW.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cfAW.FR_ALICE)
 
     # Check things that should've changed
-    assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
-    assert cf.flip.balanceOf(cf.stakeManager) == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + STAKEMANAGER_INITIAL_BALANCE
-    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
+    assert cfAW.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
+    assert cfAW.flip.balanceOf(cfAW.stakeManager) == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + STAKEMANAGER_INITIAL_BALANCE
+    assert cfAW.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx.events["FlipSupplyUpdated"][0].values() == [INIT_SUPPLY, NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber]
 
     # Check things that shouldn't have changed
-    assert cf.stakeManager.getMinimumStake() == MIN_STAKE
+    assert cfAW.stakeManager.getMinimumStake() == MIN_STAKE
 
 
-def test_setGovKeyWithGovKey_setMinStake(cf):
+def test_setGovKeyWithGovKey_setMinStake(cfAW):
     # Change agg keys
-    setGovKeyWithGovKey_test(cf)
+    setGovKeyWithGovKey_test(cfAW)
 
     newMinStake = int(MIN_STAKE * 1.5)
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), newMinStake)
+    callDataNoSig = cfAW.stakeManager.setMinStake.encode_input(gov_null_sig(cfAW.keyManager.address, chain.id), newMinStake)
 
     # Changing emission with old key should revert
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), newMinStake, cf.FR_ALICE)
+        cfAW.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address), newMinStake, cfAW.FR_ALICE)
 
     # Change minStake with new key
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), newMinStake)
-    tx = cf.stakeManager.setMinStake(GOV_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address), newMinStake, cf.FR_ALICE)
+    callDataNoSig = cfAW.stakeManager.setMinStake.encode_input(gov_null_sig(cfAW.keyManager.address, chain.id), newMinStake)
+    tx = cfAW.stakeManager.setMinStake(GOV_SIGNER_2.getSigData(callDataNoSig, cfAW.keyManager.address), newMinStake, cfAW.FR_ALICE)
 
     # Check things that should've changed
-    assert cf.stakeManager.getMinimumStake() == newMinStake
+    assert cfAW.stakeManager.getMinimumStake() == newMinStake
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
 
     # Check things that shouldn't have changed
-    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
+    assert cfAW.flip.balanceOf(cfAW.stakeManager) == STAKEMANAGER_INITIAL_BALANCE

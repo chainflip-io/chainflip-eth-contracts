@@ -83,7 +83,7 @@ def test_registerClaim_rev_msgHash(cf, stakedMin):
     args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[0] += 1
+    sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
         cf.stakeManager.registerClaim(sigData, *args)
@@ -95,7 +95,7 @@ def test_registerClaim_rev_sig(cf, stakedMin):
     args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[1] += 1
+    sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
         cf.stakeManager.registerClaim(sigData, *args)

@@ -59,7 +59,7 @@ def test_transferBatch_rev_array_length(cf, token, token2, recipients, amounts, 
 def test_transferBatch_rev_msgHash(cf):
     callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[0] += 1
+    sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
         cf.vault.transferBatch(sigData, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
@@ -68,7 +68,7 @@ def test_transferBatch_rev_msgHash(cf):
 def test_transferBatch_rev_sig(cf):
     callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[1] += 1
+    sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
         cf.vault.transferBatch(sigData, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])

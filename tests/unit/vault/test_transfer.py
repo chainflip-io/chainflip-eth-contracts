@@ -79,7 +79,7 @@ def test_transfer_rev_amount(cf):
 def test_transfer_rev_msgHash(cf):
     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[0] += 1
+    sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
         cf.vault.transfer(sigData, ETH_ADDR, cf.ALICE, TEST_AMNT)
@@ -88,7 +88,7 @@ def test_transfer_rev_msgHash(cf):
 def test_transfer_rev_sig(cf):
     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT)
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[1] += 1
+    sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
         cf.vault.transfer(sigData, ETH_ADDR, cf.ALICE, TEST_AMNT)

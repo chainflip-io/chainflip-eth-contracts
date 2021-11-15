@@ -25,7 +25,7 @@ def test_setMinStake_rev_amount(cf):
 def test_setMinStake_rev_msgHash(cf):
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), JUNK_HEX)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[0] += 1
+    sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
         cf.stakeManager.setMinStake(sigData, JUNK_HEX)
@@ -34,7 +34,7 @@ def test_setMinStake_rev_msgHash(cf):
 def test_setMinStake_rev_sig(cf):
     callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), JUNK_HEX)
     sigData = GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[1] += 1
+    sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
         cf.stakeManager.setMinStake(sigData, JUNK_HEX)

@@ -127,7 +127,7 @@ def test_allBatch_rev_transfer_array_length(cf, token, token2, DepositToken, Dep
 def test_allBatch_rev_msgHash(cf):
     callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[0] += 1
+    sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
         cf.vault.allBatch(sigData, [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
@@ -136,7 +136,7 @@ def test_allBatch_rev_msgHash(cf):
 def test_allBatch_rev_sig(cf):
     callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[1] += 1
+    sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
         cf.vault.allBatch(sigData, [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
