@@ -84,7 +84,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         require(sigData.keyManAddr == address(this), "KeyManager: wrong keyManAddr");
         require(sigData.chainID == block.chainid, "KeyManager: wrong chainID");
 
-        _lastValidateTime = block.timestamp;
+        // Don't want changing the GOV key to be able to reset the dead man's switch
+        if (keyID == KeyID.AGG) {
+            _lastValidateTime = block.timestamp;
+        }
         _keyToNoncesUsed[keyID][sigData.nonce] = true;
 
         return true;
