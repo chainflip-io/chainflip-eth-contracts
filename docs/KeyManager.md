@@ -25,6 +25,17 @@
 No description
 
 
+## `setCanValidateSig(address[] addrs)` (external)
+
+ Sets the specific addresses that can call isValidSig. This
+         function can only ever be called once! Yes, it's possible to
+         frontrun this, but honestly, it's fine in practice - it just
+         needs to be set up successfully once, which is trivial
+
+
+- `addrs`:   The addresses to whitelist
+
+
 ## `isUpdatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID) → bool` (public)
 
  Checks the validity of a signature and msgHash, then updates _lastValidateTime
@@ -124,13 +135,49 @@ Returns
 
 - Whether the nonce has already been used (bool)
 
+## `canValidateSig(address addr) → bool` (external)
+
+ Get whether addr is whitelisted for validating a sig
+
+
+- `addr`:  The address to check
+
+
+Returns
+
+- Whether or not addr is whitelisted or not
+
+## `canValidateSigSet() → bool` (external)
+
+ Get whether or not _canValidateSig has already been set, which
+         prevents it from being set again
+
+
+Returns
+
+- The value of _canValidateSigSet
+
 ## `receive()` (external)
 
  @notice Allows this contract to receive ETH used to refund callers
 
 
 
-## `KeyChange(bool signedByAggKey, struct IShared.Key oldKey, struct IShared.Key newKey)`
+## `AggKeySetByAggKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+
+
+
+
+
+
+## `AggKeySetByGovKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+
+
+
+
+
+
+## `GovKeySetByGovKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
 
 
 

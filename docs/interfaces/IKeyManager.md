@@ -18,6 +18,14 @@ No description
 
 No description
 
+## `canValidateSig(address addr) → bool` (external)
+
+No description
+
+## `canValidateSigSet() → bool` (external)
+
+No description
+
 ## `getAggregateKey() → struct IShared.Key` (external)
 
 No description

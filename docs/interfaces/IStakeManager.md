@@ -42,8 +42,8 @@
 
 ## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber)` (external)
 
- Compares a given new FLIP supply it against the old supply,
-         then mints and burns as appropriate
+ Compares a given new FLIP supply against the old supply,
+         then mints new and burns as appropriate (to/from the StakeManager)
 
 - `sigData`:               signature over the abi-encoded function params
 
@@ -70,7 +70,7 @@ Returns
 
 - The KeyManager (IKeyManager)
 
-## `getFLIPAddress() → address` (external)
+## `getFLIP() → contract IFLIP` (external)
 
  Get the FLIP token address
 
@@ -106,3 +106,13 @@ Returns
 Returns
 
 - The claim (Claim)
+
+## `Staked(bytes32 nodeID, uint256 amount, address staker, address returnAddr)`
+
+## `ClaimRegistered(bytes32 nodeID, uint256 amount, address staker, uint48 startTime, uint48 expiryTime)`
+
+## `ClaimExecuted(bytes32 nodeID, uint256 amount)`
+
+## `FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber)`
+
+## `MinStakeChanged(uint256 oldMinStake, uint256 newMinStake)`

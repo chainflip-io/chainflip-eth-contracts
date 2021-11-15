@@ -72,7 +72,7 @@ No description
          auction while being a validator, the amount sent back = stake +
          rewards - penalties, as determined by the State Chain. Cannot execute a pending
          claim before 48h have passed after registering it, or after the specified
-         expiry block height
+         expiry time
 
 
 - `nodeID`:    The nodeID of the staker
@@ -123,7 +123,7 @@ Returns
 
 - The KeyManager (IKeyManager)
 
-## `getFLIPAddress() → address` (external)
+## `getFLIP() → contract IFLIP` (external)
 
  Get the FLIP token address
 
@@ -161,40 +161,5 @@ Returns
 Returns
 
 - The claim (Claim)
-
-
-## `Staked(bytes32 nodeID, uint256 amount, address returnAddr)`
-
-
-
-
-
-
-## `ClaimRegistered(bytes32 nodeID, uint256 amount, address staker, uint48 startTime, uint48 expiryTime)`
-
-
-
-
-
-
-## `ClaimExecuted(bytes32 nodeID, uint256 amount)`
-
-
-
-
-
-
-## `FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber)`
-
-
-
-
-
-
-## `MinStakeChanged(uint256 oldMinStake, uint256 newMinStake)`
-
-
-
-
 
 
