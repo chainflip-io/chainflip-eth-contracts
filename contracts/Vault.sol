@@ -62,12 +62,12 @@ contract Vault is IVault, Shared {
         IERC20[] calldata tranTokens,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.allBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 fetchSwapIDs,
                 fetchTokens,
                 tranTokens,
@@ -120,13 +120,13 @@ contract Vault is IVault, Shared {
         IERC20 token,
         address payable recipient,
         uint amount
-    ) external override nzAddr(address(token)) nzAddr(recipient) nzUint(amount) validSig(
+    ) external override nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
-                token,
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                tokenAddr,
                 recipient,
                 amount
             )
@@ -153,13 +153,13 @@ contract Vault is IVault, Shared {
         IERC20[] calldata tokens,
         address payable[] calldata recipients,
         uint[] calldata amounts
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.transferBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
-                tokens,
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                tokenAddrs,
                 recipients,
                 amounts
             )
@@ -224,8 +224,6 @@ contract Vault is IVault, Shared {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
-            // It would be nice to wrap require around this line, but
-            // some older tokens don't return a bool
             IERC20(token).safeTransfer(recipient, amount);
         }
     }
@@ -249,12 +247,12 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) refundGas validSig(
+    ) external override nzBytes32(swapID) refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEth.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID
             )
         ),
@@ -275,12 +273,12 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEthBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapIDs
             )
         ),
@@ -305,12 +303,12 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas validSig(
+    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID,
                 tokenAddr
             )
@@ -334,12 +332,12 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         IERC20[] calldata tokens
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositTokenBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapIDs,
                 tokens
             )
@@ -379,13 +377,13 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Calls isValidSig in _keyManager
-    modifier validSig(
+    /// @dev    Calls isUpdatedValidSig in _keyManager
+    modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 

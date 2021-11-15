@@ -17,7 +17,7 @@ interface IKeyManager is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function isValidSig(
+    function isUpdatedValidSig(
         SigData memory sigData,
         bytes32 contractMsgHash,
         KeyID keyID

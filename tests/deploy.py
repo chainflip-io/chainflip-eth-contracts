@@ -4,7 +4,7 @@ from web3.auto import w3
 from brownie import network
 
 
-def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP, *args):
+def deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager, FLIP, *args):
 
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
@@ -35,7 +35,7 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
     cf.keyManager = deployer.deploy(KeyManager, aggKey, govKey)
     cf.vault = deployer.deploy(Vault, cf.keyManager)
     cf.stakeManager = deployer.deploy(StakeManager, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
-    cf.flip = FLIP.at(cf.stakeManager.getFLIPAddress())
+    cf.flip = FLIP.at(cf.stakeManager.getFLIP())
 
     # Now fund the contracts that we expect the Validators to interact with so
     # that we can test the refund functionality

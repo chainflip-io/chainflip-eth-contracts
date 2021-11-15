@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 
 import "./IKeyManager.sol";
+import "./IFLIP.sol";
 import "./IShared.sol";
 
 
@@ -10,6 +11,18 @@ import "./IShared.sol";
 * @author   Quantaf1re (James Key)
 */
 interface IStakeManager is IShared {
+    
+    event Staked(bytes32 indexed nodeID, uint amount, address staker, address indexed returnAddr);
+    event ClaimRegistered(
+        bytes32 indexed nodeID,
+        uint amount,
+        address indexed staker,
+        uint48 startTime,
+        uint48 expiryTime
+    );
+    event ClaimExecuted(bytes32 indexed nodeID, uint amount);
+    event FlipSupplyUpdated(uint oldSupply, uint newSupply, uint stateChainBlockNumber);
+    event MinStakeChanged(uint oldMinStake, uint newMinStake);
 
     struct Claim {
         uint amount;
@@ -68,8 +81,8 @@ interface IStakeManager is IShared {
     function executeClaim(bytes32 nodeID) external;
 
     /**
-     * @notice  Compares a given new FLIP supply it against the old supply,
-     *          then mints and burns as appropriate
+     * @notice  Compares a given new FLIP supply against the old supply,
+     *          then mints new and burns as appropriate (to/from the StakeManager)
      * @param sigData               signature over the abi-encoded function params
      * @param newTotalSupply        new total supply of FLIP
      * @param stateChainBlockNumber State Chain block number for the new total supply
@@ -109,7 +122,7 @@ interface IStakeManager is IShared {
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external view returns (address);
+    function getFLIP() external view returns (IFLIP);
 
     /**
      * @notice  Get the last state chain block number that the supply was updated at

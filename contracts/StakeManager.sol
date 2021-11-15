@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
+import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
 import "./FLIP.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
@@ -46,8 +47,6 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     // The number of seconds in 48h
     uint48 constant public CLAIM_DELAY = 2 days;
 
-    IERC1820Registry constant private _ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
-    address[] private _defaultOperators;
     bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256('ERC777TokensRecipient');
 
 
@@ -62,29 +61,20 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     // }
 
 
-    event Staked(bytes32 indexed nodeID, uint amount, address staker, address returnAddr);
-    event ClaimRegistered(
-        bytes32 indexed nodeID,
-        uint amount,
-        address staker,
-        uint48 startTime,
-        uint48 expiryTime
-    );
-    event ClaimExecuted(bytes32 indexed nodeID, uint amount);
-    event FlipSupplyUpdated(uint oldSupply, uint newSupply, uint stateChainBlockNumber);
-    event MinStakeChanged(uint oldMinStake, uint newMinStake);
-
-
     constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
         _minStake = minStake;
-        _defaultOperators.push(address(this));
+        
+        address[] memory operators = new address[](1);
+        operators[0] = address(this);
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
-        FLIP flip = new FLIP("Chainflip", "FLIP", _defaultOperators, address(this), flipTotalSupply);
+        FLIP flip = new FLIP("Chainflip", "FLIP", operators, address(this), flipTotalSupply);
         flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
         _FLIP = flip;
-        _ERC1820_REGISTRY.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
+        
+        IERC1820Registry erc1820Reg = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+        erc1820Reg.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
 
 
@@ -137,12 +127,12 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         uint amount,
         address staker,
         uint48 expiryTime
-    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish validSig(
+    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.registerClaim.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 nodeID,
                 amount,
                 staker,
@@ -203,12 +193,12 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish refundGas validSig(
+    ) external override nzUint(newTotalSupply) noFish refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.updateFlipSupply.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 newTotalSupply,
                 stateChainBlockNumber
             )
@@ -242,12 +232,12 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     function setMinStake(
         SigData calldata sigData,
         uint newMinStake
-    ) external override nzUint(newMinStake) noFish validSig(
+    ) external override nzUint(newMinStake) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.setMinStake.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 newMinStake
             )
         ),
@@ -293,8 +283,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external override view returns (address) {
-        return address(_FLIP);
+    function getFLIP() external override view returns (IFLIP) {
+        return IFLIP(address(_FLIP));
     }
 
     /**
@@ -332,13 +322,13 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Call isValidSig in _keyManager
-    modifier validSig(
+    /// @dev    Call isUpdatedValidSig in _keyManager
+    modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash,
         KeyID keyID
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
         _;
     }
 
