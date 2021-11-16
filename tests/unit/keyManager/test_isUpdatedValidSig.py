@@ -1,3 +1,4 @@
+from pprint import pprint
 from consts import *
 from brownie import reverts, chain
 from shared_tests import *
@@ -65,8 +66,8 @@ def test_isUpdatedValidSig_check_all(a, cf):
     for addr in whitelisted + list(a):
         if addr in whitelisted:
             sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-            tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG], {'from': addr})
-            assert tx.return_value == True
+            cf.ALICE.transfer(to=addr, amount=ONE_ETH)
+            cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG], {'from': addr})
         else:
             with reverts(REV_MSG_WHITELIST):
                 cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG])
