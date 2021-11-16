@@ -13,7 +13,7 @@ def deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager
         pass
 
     cf = Context()
-    if network.show_active() == 'development' or network.show_active() == 'hardhat':
+    if len(w3.eth.get_code('0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24')) == 0:
         deploy_erc1820(deployer)
 
     environment = {}
