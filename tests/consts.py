@@ -8,7 +8,7 @@ ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
 TEST_AMNT = 10**17
 ONE_ETH = 10**18
-JUNK_INT = 12345
+JUNK_INT = 42069    # quantafire
 JUNK_HEX = web3.toHex(JUNK_INT)
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)

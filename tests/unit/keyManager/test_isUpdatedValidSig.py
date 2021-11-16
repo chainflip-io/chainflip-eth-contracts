@@ -5,11 +5,29 @@ from brownie.test import given, strategy
 
 
 def test_isUpdatedValidSig(cfAW):
+    nonce = nonces[AGG]
+    assert not cfAW.keyManager.isNonceUsedByKey(KEYID_TO_NUM[AGG], nonce)
+
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
     tx = cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG])
 
+    assert nonce == sigData[4]
     assert tx.return_value == True
+    assert cfAW.keyManager.isNonceUsedByKey(KEYID_TO_NUM[AGG], sigData[4])
 
+
+def test_isUpdatedValidSig_gov(cfAW):
+    lastValidateTime = cfAW.keyManager.getLastValidateTime()
+    nonce = nonces[GOV]
+    assert not cfAW.keyManager.isNonceUsedByKey(KEYID_TO_NUM[GOV], nonce)
+
+    sigData = GOV_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
+    tx = cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[GOV])
+
+    assert nonce == sigData[4]
+    assert tx.return_value == True
+    assert cfAW.keyManager.isNonceUsedByKey(KEYID_TO_NUM[GOV], sigData[4])
+    assert cfAW.keyManager.getLastValidateTime() == lastValidateTime
 
 def test_isUpdatedValidSig_rev_msgHash(cfAW):
     # Fails because msgHash in sigData is a hash of JUNK_HEX_PAD, whereas JUNK_HEX_PAD
