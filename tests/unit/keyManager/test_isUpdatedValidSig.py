@@ -1,30 +1,48 @@
 from consts import *
-from brownie import reverts
+from brownie import reverts, chain
 from shared_tests import *
+from brownie.test import given, strategy
 
 
-def test_isValidSig(cfAW):
+def test_isUpdatedValidSig(cfAW):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
     tx = cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG])
 
     assert tx.return_value == True
 
 
-def test_isValidSig_rev_msgHash(cfAW):
+def test_isUpdatedValidSig_rev_msgHash(cfAW):
     # Fails because msgHash in sigData is a hash of JUNK_HEX_PAD, whereas JUNK_HEX_PAD
     # is used directly for contractMsgHash
     with reverts(REV_MSG_MSGHASH):
         cfAW.keyManager.isUpdatedValidSig(AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address), JUNK_HEX_PAD, KEYID_TO_NUM[AGG])
 
 
-def test_isValidSig_rev_sig(cfAW):
+def test_isUpdatedValidSig_rev_sig(cfAW):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
     sigData[3] = JUNK_HEX
     with reverts(REV_MSG_SIG):
         cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG])
 
 
-def test_isValidSig_check_all(a, cf):
+@given(addr=strategy('address'))
+def test_isUpdatedValidSig_rev_keyManAddr(a, cfAW, addr):
+    if addr != cfAW.keyManager:
+        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, addr)
+        with reverts(REV_MSG_WRONG_KEYMANADDR):
+            cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG])
+
+
+@given(chainID=strategy('uint256'))
+def test_isUpdatedValidSig_rev_chainID(a, cfAW, chainID):
+    if chainID != chain.id:
+        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
+        sigData[1] = chainID
+        with reverts(REV_MSG_WRONG_CHAINID):
+            cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[AGG])
+
+
+def test_isUpdatedValidSig_check_all(a, cf):
     whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
     for addr in whitelisted + list(a):
         if addr in whitelisted:

@@ -77,6 +77,8 @@ REV_MSG_NONCETIMESGADDR_EMPTY = "No zero inputs allowed"
 REV_MSG_WHITELIST = "KeyManager: not whitelisted"
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
+REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
+REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
 
 # SchnorrSECP256K1
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"
