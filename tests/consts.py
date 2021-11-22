@@ -113,7 +113,10 @@ REV_MSG_CLAIM_EXISTS = "StakeMan: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "StakeMan: early, late, or execd"
 REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "StakeMan: old FLIP supply update"
+REV_MSG_STAKEMAN_GOVERNOR = "StakeMan: not governor"
 
+# -----KeyManager-----
+REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"

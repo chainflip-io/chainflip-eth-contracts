@@ -33,15 +33,13 @@ def test_setGovKeyWithGovKey_setMinStake(cfAW):
     setGovKeyWithGovKey_test(cfAW)
 
     newMinStake = int(MIN_STAKE * 1.5)
-    callDataNoSig = cfAW.stakeManager.setMinStake.encode_input(gov_null_sig(cfAW.keyManager.address, chain.id), newMinStake)
 
     # Changing emission with old key should revert
-    with reverts(REV_MSG_SIG):
-        cfAW.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address), newMinStake, cfAW.FR_ALICE)
+    with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+        cfAW.stakeManager.setMinStake(newMinStake, {"from": cfAW.GOVERNOR})
 
     # Change minStake with new key
-    callDataNoSig = cfAW.stakeManager.setMinStake.encode_input(gov_null_sig(cfAW.keyManager.address, chain.id), newMinStake)
-    tx = cfAW.stakeManager.setMinStake(GOV_SIGNER_2.getSigData(callDataNoSig, cfAW.keyManager.address), newMinStake, cfAW.FR_ALICE)
+    tx = cfAW.stakeManager.setMinStake(newMinStake, {"from": cfAW.GOVERNOR_2})
 
     # Check things that should've changed
     assert cfAW.stakeManager.getMinimumStake() == newMinStake

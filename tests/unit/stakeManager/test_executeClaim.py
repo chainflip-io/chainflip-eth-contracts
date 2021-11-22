@@ -75,7 +75,7 @@ def test_executeClaim_max_delay(cf, claimRegistered):
 
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager)
 
-    chain.sleep(claim[3] - chain.time() - 1)
+    chain.sleep(claim[3] - chain.time() - 2)
     tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Check things that should've changed

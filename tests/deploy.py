@@ -25,6 +25,7 @@ def deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager
         aggKey = [int(x, 16), int(parity, 16)]
     else: aggKey = AGG_SIGNER_1.getPubData()
 
+    # TODO: Update this, GOV_KEY should now be a standard Ethereum address
     govKey = environment.get('GOV_KEY')
     if govKey:
         parity = govKey[0:2]
@@ -32,7 +33,8 @@ def deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager
         govKey = [int(x, 16), int(parity, 16)]
     else: govKey = GOV_SIGNER_1.getPubData()
 
-    cf.keyManager = deployer.deploy(KeyManager, aggKey, govKey)
+    # `deployer` here is the governor
+    cf.keyManager = deployer.deploy(KeyManager, aggKey, deployer)
     cf.vault = deployer.deploy(Vault, cf.keyManager)
     cf.stakeManager = deployer.deploy(StakeManager, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
     cf.flip = FLIP.at(cf.stakeManager.getFLIP())

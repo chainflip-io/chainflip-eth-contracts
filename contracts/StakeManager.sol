@@ -31,6 +31,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     FLIP private immutable _FLIP;
     /// @dev    The last time that the State Chain updated the totalSupply
     uint private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
+    /// @dev    Whether execution of claims is suspended. Used in emergencies.
+    bool public suspended = false;
 
     /**
      * @dev     This tracks the amount of FLIP that should be in this contract currently. It's
@@ -64,7 +66,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
         _keyManager = keyManager;
         _minStake = minStake;
-        
+
         address[] memory operators = new address[](1);
         operators[0] = address(this);
         uint genesisValidatorFlip = numGenesisValidators * genesisStake;
@@ -72,7 +74,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         FLIP flip = new FLIP("Chainflip", "FLIP", operators, address(this), flipTotalSupply);
         flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
         _FLIP = flip;
-        
+
         IERC1820Registry erc1820Reg = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
         erc1820Reg.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
     }
@@ -138,8 +140,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 staker,
                 expiryTime
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         require(
             // Must be fresh or have been executed & deleted, or past the expiry
@@ -166,6 +167,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @param nodeID    The nodeID of the staker
      */
     function executeClaim(bytes32 nodeID) external override noFish {
+        require(!suspended, "StakeMan: suspended");
         Claim memory claim = _pendingClaims[nodeID];
         require(
             uint(block.timestamp) >= claim.startTime &&
@@ -202,8 +204,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 newTotalSupply,
                 stateChainBlockNumber
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "StakeMan: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
@@ -224,25 +225,11 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current governance key (uint)
      * @param newMinStake   The new minimum stake
      */
     function setMinStake(
-        SigData calldata sigData,
         uint newMinStake
-    ) external override nzUint(newMinStake) noFish updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.setMinStake.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                newMinStake
-            )
-        ),
-        KeyID.GOV
-    ) {
+    ) external override nzUint(newMinStake) noFish isGovernor {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
     }
@@ -257,6 +244,18 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     ) external override {
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
         require(_operator == address(this), "StakeMan: not the operator");
+    }
+
+    function suspend() external override isGovernor {
+        suspended = true;
+    }
+
+    function resume() external override isGovernor {
+        suspended = false;
+    }
+
+    function govWithdraw() external override isGovernor {
+        require(suspended, "StakeMan: Not suspended");
     }
 
     /**
@@ -325,10 +324,15 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     /// @dev    Call isUpdatedValidSig in _keyManager
     modifier updatedValidSig(
         SigData calldata sigData,
-        bytes32 contractMsgHash,
-        KeyID keyID
+        bytes32 contractMsgHash
     ) {
-        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
+        _;
+    }
+
+    /// @notice Ensure that the caller is the KeyManager's governor address.
+    modifier isGovernor () {
+        require(msg.sender == _keyManager.getGovernanceKey(), "StakeMan: not governor");
         _;
     }
 

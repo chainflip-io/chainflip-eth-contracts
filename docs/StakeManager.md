@@ -13,11 +13,17 @@
 
 
 
-## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
+## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash)`
 
 
 
    Call isUpdatedValidSig in _keyManager
+
+## `isGovernor()`
+
+Ensure that the caller is the KeyManager's governor address.
+
+
 
 ## `noFish()`
 
@@ -91,20 +97,31 @@ No description
 - `stateChainBlockNumber`: State Chain block number for the new total supply
 
 
-## `setMinStake(struct IShared.SigData sigData, uint256 newMinStake)` (external)
+## `setMinStake(uint256 newMinStake)` (external)
 
      Set the minimum amount of stake needed for `stake` to be able
              to be called. Used to prevent spamming of stakes.
 
 
-- `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
-                 for this function with empty msgHash and sig) and sig over that hash
-                 from the current governance key (uint)
-
 - `newMinStake`:   The new minimum stake
 
 
 ## `tokensReceived(address _operator, address _from, address _to, uint256 _amount, bytes _data, bytes _operatorData)` (external)
+
+No description
+
+
+## `suspend()` (external)
+
+No description
+
+
+## `resume()` (external)
+
+No description
+
+
+## `govWithdraw()` (external)
 
 No description
 

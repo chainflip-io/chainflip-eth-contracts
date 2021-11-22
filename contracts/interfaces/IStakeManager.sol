@@ -96,15 +96,29 @@ interface IStakeManager is IShared {
     /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current governance key (uint)
      * @param newMinStake   The new minimum stake
      */
     function setMinStake(
-        SigData calldata sigData,
         uint newMinStake
     ) external;
+
+    /**
+     * @notice      Pause claim executions on the contract, for the purpose of
+     *              allowing governance to intervene in an emergency.
+     */
+    function suspend() external;
+
+    /**
+     * @notice      Resume claim executions on the contract.
+     */
+    function resume() external;
+
+    /**
+     * @notice      Withdraw all FLIP to governance address, only if suspended.
+     *              Used to rectify an emergency. Chainflip network is likely
+     *              to be compromised if this is necessary, it is a last resort.
+     */
+    function govWithdraw() external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

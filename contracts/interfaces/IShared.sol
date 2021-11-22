@@ -9,17 +9,6 @@ pragma solidity ^0.8.0;
 interface IShared {
 
     /**
-    * @dev  This is used to ensure that isUpdatedValidSig can only accept the agg key
-    *       or gov key as opposed to any key, which would otherwise allow
-    *       anyone to call isUpdatedValidSig without reverting and therefore change
-    *       _lastValidateTime without authorisation
-    */
-    enum KeyID {
-        AGG,
-        GOV
-    }
-
-    /**
     * @dev  SchnorrSECP256K1 requires that each key has a public key part (x coordinate),
     *       a parity for the y coordinate (0 if the y ordinate of the public key is even, 1
     *       if it's odd)

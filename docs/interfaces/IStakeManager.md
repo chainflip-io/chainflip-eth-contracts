@@ -51,16 +51,27 @@
 
 - `stateChainBlockNumber`: State Chain block number for the new total supply
 
-## `setMinStake(struct IShared.SigData sigData, uint256 newMinStake)` (external)
+## `setMinStake(uint256 newMinStake)` (external)
 
      Set the minimum amount of stake needed for `stake` to be able
              to be called. Used to prevent spamming of stakes.
 
-- `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
-                 for this function with empty msgHash and sig) and sig over that hash
-                 from the current governance key (uint)
-
 - `newMinStake`:   The new minimum stake
+
+## `suspend()` (external)
+
+     Pause claim executions on the contract, for the purpose of
+             allowing governance to intervene in an emergency.
+
+## `resume()` (external)
+
+     Resume claim executions on the contract.
+
+## `govWithdraw()` (external)
+
+     Withdraw all FLIP to governance address, only if suspended.
+             Used to rectify an emergency. Chainflip network is likely
+             to be compromised if this is necessary, it is a last resort.
 
 ## `getKeyManager() → contract IKeyManager` (external)
 

@@ -74,8 +74,7 @@ contract Vault is IVault, Shared {
                 tranRecipients,
                 tranAmounts
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         // Can't put these as modifiers annoyingly because it creates
         // a 'stack too deep' error
@@ -130,8 +129,7 @@ contract Vault is IVault, Shared {
                 recipient,
                 amount
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         _transfer(token, recipient, amount);
     }
@@ -163,8 +161,7 @@ contract Vault is IVault, Shared {
                 recipients,
                 amounts
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         require(
             tokens.length == recipients.length &&
@@ -255,8 +252,7 @@ contract Vault is IVault, Shared {
                 SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         new DepositEth{salt: swapID}();
     }
@@ -281,8 +277,7 @@ contract Vault is IVault, Shared {
                 SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapIDs
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         for (uint i; i < swapIDs.length; i++) {
             new DepositEth{salt: swapIDs[i]}();
@@ -312,8 +307,7 @@ contract Vault is IVault, Shared {
                 swapID,
                 token
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         new DepositToken{salt: swapID}(IERC20Lite(address(token)));
     }
@@ -341,8 +335,7 @@ contract Vault is IVault, Shared {
                 swapIDs,
                 tokens
             )
-        ),
-        KeyID.AGG
+        )
     ) {
         require(
             swapIDs.length == tokens.length,
@@ -380,10 +373,9 @@ contract Vault is IVault, Shared {
     /// @dev    Calls isUpdatedValidSig in _keyManager
     modifier updatedValidSig(
         SigData calldata sigData,
-        bytes32 contractMsgHash,
-        KeyID keyID
+        bytes32 contractMsgHash
     ) {
-        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }
 

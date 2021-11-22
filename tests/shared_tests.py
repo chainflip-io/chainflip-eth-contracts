@@ -9,7 +9,7 @@ from utils import *
 
 def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
 
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_2.getPubData())
 
@@ -22,35 +22,30 @@ def setAggKeyWithAggKey_test(cf):
     balanceAfter = cf.ALICE.balance()
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
-    # txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
     txRefundTest(balanceBefore, balanceAfter, tx)
     assert tx.events["AggKeySetByAggKey"][0].values() == [AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
 def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
 
-    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(gov_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_2.getPubData())
-    tx = cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), AGG_SIGNER_2.getPubData())
+    tx = cf.keyManager.setAggKeyWithGovKey(AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR})
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
-    # txTimeTest(cf.keyManager.getLastValidateTime(), tx)
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
     assert tx.events["AggKeySetByGovKey"][0].values() == [AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
 
 def setGovKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
 
-    callDataNoSig = cf.keyManager.setGovKeyWithGovKey.encode_input(gov_null_sig(cf.keyManager.address, chain.id), GOV_SIGNER_2.getPubData())
-    tx = cf.keyManager.setGovKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), GOV_SIGNER_2.getPubData())
+    tx = cf.keyManager.setGovKeyWithGovKey(cf.GOVERNOR_2, {"from": cf.GOVERNOR})
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == GOV_SIGNER_2.getPubDataWith0x()
-    # txTimeTest(cf.keyManager.getLastValidateTime(), tx)
-    assert tx.events["GovKeySetByGovKey"][0].values() == [GOV_SIGNER_1.getPubDataWith0x(), GOV_SIGNER_2.getPubDataWith0x()]
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR_2
+    assert tx.events["GovKeySetByGovKey"][0].values() == [cf.GOVERNOR, cf.GOVERNOR_2]
 
 
 def setKey_rev_pubKeyX_test(cf, fcn, signer):
@@ -92,14 +87,14 @@ def setKey_rev_sig_test(cf, fcn, signer):
 
 def isValidSig_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[signer.keyID])
+    tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
     # txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
 def isValidSig_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
     with reverts(REV_MSG_SIG):
-        tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), KEYID_TO_NUM[signer.keyID])
+        tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random

@@ -36,6 +36,11 @@ def cf(a, cfDeploy):
     cf.DENICE = a[4]
     cf.FR_DENICE = {"from": cf.DENICE}
 
+    # It's the same as DEPLOYER but shouldn't cause confusion tbh
+    cf.GOVERNOR = a[0]
+    # Set a second governor for tests
+    cf.GOVERNOR_2 = a[5]
+
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
 
@@ -69,6 +74,11 @@ def cfAW(a, cfDeployAllWhitelist):
     cf.FR_CHARLIE = {"from": cf.CHARLIE}
     cf.DENICE = a[4]
     cf.FR_DENICE = {"from": cf.DENICE}
+
+    # It's the same as DEPLOYER but shouldn't cause confusion tbh
+    cf.GOVERNOR = a[0]
+    # Set a second governor for tests
+    cf.GOVERNOR_2 = a[5]
 
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
@@ -139,6 +149,11 @@ def vulnerableStakedStakeMan(a, StakeManagerVulnerable, KeyManager, Vault, Stake
     cf.FR_CHARLIE = {"from": cf.CHARLIE}
     cf.DENICE = a[4]
     cf.FR_DENICE = {"from": cf.DENICE}
+
+    # It's the same as DEPLOYER but shouldn't cause confusion tbh
+    cf.GOVERNOR = a[0]
+    # Set a second governor for tests
+    cf.GOVERNOR_2 = a[5]
 
     smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
     flipVuln = FLIP.at(smVuln.getFLIP())
