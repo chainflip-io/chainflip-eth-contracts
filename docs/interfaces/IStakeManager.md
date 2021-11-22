@@ -127,3 +127,5 @@ Returns
 ## `FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber)`
 
 ## `MinStakeChanged(uint256 oldMinStake, uint256 newMinStake)`
+
+## `GovernanceWithdrawal(address to, uint256 amount)`

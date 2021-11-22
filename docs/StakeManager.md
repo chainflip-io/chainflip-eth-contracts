@@ -108,22 +108,40 @@ No description
 
 ## `tokensReceived(address _operator, address _from, address _to, uint256 _amount, bytes _data, bytes _operatorData)` (external)
 
-No description
+     ERC1820 tokensReceived callback, doesn't do anything in our
+             contract.
+
+
+- `_operator`:         operator
+
+- `_from`:             from
+
+- `_to`:               to
+
+- `_amount`:           amount
+
+- `_data`:             data
+
+- `_operatorData`:     operatorData
 
 
 ## `suspend()` (external)
 
-No description
+Can be used to suspend executions of claims - only executable by
+governance and should only be used if fraudulent claim is suspected.
 
 
 ## `resume()` (external)
 
-No description
+Can be used by governance to resume the execution of claims.
 
 
 ## `govWithdraw()` (external)
 
-No description
+In the event of fraudulent claims being accepted, the contract is
+effectively useless. This function allows governance to admit that by
+withdrawing all the FLIP to their address. From where it will be dealt
+with later.
 
 
 ## `receive()` (external)
