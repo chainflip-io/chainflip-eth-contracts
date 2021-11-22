@@ -3,33 +3,20 @@
   Holds the aggregate and governance keys, functions to update them,
           and isUpdatedValidSig so other contracts can verify signatures and updates _lastValidateTime
 
-
-
-
 ## `validTime()`
-
-
 
    Check that enough time has passed for setAggKeyWithGovKey. Needs
         to be done as a modifier so that it can happen before updatedValidSig
 
 ## `isGovernor()`
 
-
-
-
-
 ## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash)`
 
-
-
    Call isUpdatedValidSig
-
 
 ## `constructor(struct IShared.Key _aggKey, address _govKey)` (public)
 
 No description
-
 
 ## `setCanValidateSig(address[] addrs)` (external)
 
@@ -38,14 +25,11 @@ No description
          frontrun this, but honestly, it's fine in practice - it just
          needs to be set up successfully once, which is trivial
 
-
 - `addrs`:   The addresses to whitelist
-
 
 ## `isUpdatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash) → bool` (public)
 
  Checks the validity of a signature and msgHash, then updates _lastValidateTime
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's normally
                  a hash over the calldata to the function with an empty sigData)
@@ -55,7 +39,6 @@ No description
                  to check it against the hash in sigData (bytes32) (here that's normally
                  a hash over the calldata to the function with an empty sigData)
 
-
 Returns
 
 - Bool used by caller to be absolutely sure that the function hasn't reverted
@@ -64,7 +47,6 @@ Returns
 
  Set a new aggregate key. Requires a signature from the current aggregate key
 
-
 - `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
                  from the current aggregate key (uint)
@@ -72,29 +54,23 @@ Returns
 - `newKey`:    The new aggregate key to be set. The x component of the pubkey (uint),
                  the parity of the y component (uint8)
 
-
 ## `setAggKeyWithGovKey(struct IShared.Key newKey)` (external)
 
  Set a new aggregate key. Requires a signature from the current governance key
 
-
 - `newKey`:    The new aggregate key to be set. The x component of the pubkey (uint),
                  the parity of the y component (uint8)
-
 
 ## `setGovKeyWithGovKey(address newKey)` (external)
 
  Set a new governance key. Requires a signature from the current governance key
 
-
 - `newKey`:    The new governance key to be set. The x component of the pubkey (uint),
                  the parity of the y component (uint8)
-
 
 ## `getAggregateKey() → struct IShared.Key` (external)
 
  Get the current aggregate key
-
 
 Returns
 
@@ -104,7 +80,6 @@ Returns
 
  Get the current governance key
 
-
 Returns
 
 - The Key struct for the governance key
@@ -112,8 +87,7 @@ Returns
 ## `getLastValidateTime() → uint256` (external)
 
  Get the last time that a function was called which
-         required a signature from _aggregateKeyData or _governanceKeyData
-
+         required a signature from _aggregateKeyData or_governanceKeyData
 
 Returns
 
@@ -124,7 +98,6 @@ Returns
  Get whether or not the specific keyID has used this nonce before
          since it cannot be used again
 
-
 Returns
 
 - Whether the nonce has already been used (bool)
@@ -133,9 +106,7 @@ Returns
 
  Get whether addr is whitelisted for validating a sig
 
-
 - `addr`:  The address to check
-
 
 Returns
 
@@ -146,7 +117,6 @@ Returns
  Get whether or not _canValidateSig has already been set, which
          prevents it from being set again
 
-
 Returns
 
 - The value of _canValidateSigSet
@@ -155,26 +125,8 @@ Returns
 
  @notice Allows this contract to receive ETH used to refund callers
 
-
-
 ## `AggKeySetByAggKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
-
-
-
-
-
 
 ## `AggKeySetByGovKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
 
-
-
-
-
-
 ## `GovKeySetByGovKey(address oldKey, address newKey)`
-
-
-
-
-
-

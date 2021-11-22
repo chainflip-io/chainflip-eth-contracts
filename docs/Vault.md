@@ -3,20 +3,13 @@
   The vault for holding ETH/tokens and deploying contracts
           for fetching individual deposits
 
-
-
-
 ## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash)`
 
-
-
    Calls isUpdatedValidSig in _keyManager
-
 
 ## `constructor(contract IKeyManager keyManager)` (public)
 
 No description
-
 
 ## `allBatch(struct IShared.SigData sigData, bytes32[] fetchSwapIDs, contract IERC20[] fetchTokens, contract IERC20[] tranTokens, address payable[] tranRecipients, uint256[] tranAmounts)` (external)
 
@@ -29,7 +22,6 @@ No description
          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address. It is assumed
          that the elements of each array match in terms of ordering, i.e. a given
          fetch should should have the same index swapIDs[i] and tokens[i]
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's
                  a hash over the calldata to the function with an empty sigData) and
@@ -45,11 +37,9 @@ No description
 
 - `tranAmounts`:       The amount to transfer, in wei (uint)
 
-
 ## `transfer(struct IShared.SigData sigData, contract IERC20 token, address payable recipient, uint256 amount)` (external)
 
  Transfers ETH or a token from this vault to a recipient
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's
                  a hash over the calldata to the function with an empty sigData) and
@@ -61,14 +51,12 @@ No description
 
 - `amount`:    The amount to transfer, in wei (uint)
 
-
 ## `transferBatch(struct IShared.SigData sigData, contract IERC20[] tokens, address payable[] recipients, uint256[] amounts)` (external)
 
  Transfers ETH or tokens from this vault to recipients. It is assumed
          that the elements of each array match in terms of ordering, i.e. a given
          transfer should should have the same index tokens[i], recipients[i],
          and amounts[i].
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's
                  a hash over the calldata to the function with an empty sigData) and
@@ -80,7 +68,6 @@ No description
 
 - `amounts`:    The amount to transfer, in wei (uint)
 
-
 ## `sendEth(address payable recipient)` (external)
 
  Annoyingly, doing `try addr.transfer` in `_transfer` fails because
@@ -89,9 +76,7 @@ No description
          call, and doing `this.something` counts as an external call, but that
          means we need a fcn that just sends eth
 
-
 - `recipient`: The address to receive the ETH
-
 
 ## `fetchDepositEth(struct IShared.SigData sigData, bytes32 swapID)` (external)
 
@@ -99,13 +84,11 @@ No description
          create2, by creating a contract for that address, sending it to this vault, and
          then destroying
 
-
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's normally
                  a hash over the calldata to the function with an empty sigData) and
                  sig over that hash (uint) from the aggregate key
 
 - `swapID`:    The unique identifier for this swap (bytes32)
-
 
 ## `fetchDepositEthBatch(struct IShared.SigData sigData, bytes32[] swapIDs)` (external)
 
@@ -113,20 +96,17 @@ No description
          create2, by creating a contract for that address, sending it to this vault, and
          then destroying
 
-
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's normally
                  a hash over the calldata to the function with an empty sigData) and
                  sig over that hash (uint) from the aggregate key
 
 - `swapIDs`:    The unique identifiers for this swap (bytes32)
 
-
 ## `fetchDepositToken(struct IShared.SigData sigData, bytes32 swapID, contract IERC20 token)` (external)
 
  Retrieves a token from an address deterministically generated using
          create2 by creating a contract for that address, sending it to this vault, and
          then destroying
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's normally
                  a hash over the calldata to the function with an empty sigData) and
@@ -136,13 +116,11 @@ No description
 
 - `token`:     The token to be transferred
 
-
 ## `fetchDepositTokenBatch(struct IShared.SigData sigData, bytes32[] swapIDs, contract IERC20[] tokens)` (external)
 
  Retrieves tokens from multiple addresses, deterministically generated using
          create2, by creating a contract for that address, sending it to this vault, and
          then destroying
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's normally
                  a hash over the calldata to the function with an empty sigData) and
@@ -152,11 +130,9 @@ No description
 
 - `tokens`:        The addresses of the tokens to be transferred
 
-
 ## `getKeyManager() → contract IKeyManager` (external)
 
  Get the KeyManager address/interface that's used to validate sigs
-
 
 Returns
 
@@ -166,12 +142,4 @@ Returns
 
 No description
 
-
-
 ## `TransferFailed(address payable recipient, uint256 amount, bytes lowLevelData)`
-
-
-
-
-
-
