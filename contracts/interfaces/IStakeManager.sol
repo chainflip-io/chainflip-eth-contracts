@@ -11,7 +11,7 @@ import "./IShared.sol";
 * @author   Quantaf1re (James Key)
 */
 interface IStakeManager is IShared {
-    
+
     event Staked(bytes32 indexed nodeID, uint amount, address staker, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
@@ -23,6 +23,7 @@ interface IStakeManager is IShared {
     event ClaimExecuted(bytes32 indexed nodeID, uint amount);
     event FlipSupplyUpdated(uint oldSupply, uint newSupply, uint stateChainBlockNumber);
     event MinStakeChanged(uint oldMinStake, uint newMinStake);
+    event GovernanceWithdrawal(address to, uint amount);
 
     struct Claim {
         uint amount;

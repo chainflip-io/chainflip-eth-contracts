@@ -109,7 +109,7 @@ def stakedMin(cf):
 @pytest.fixture(scope="module")
 def claimRegistered(cf, stakedMin):
     _, amount = stakedMin
-    expiryTime = chain.time() + CLAIM_DELAY + 5
+    expiryTime = chain.time() + (2 * CLAIM_DELAY)
     args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)

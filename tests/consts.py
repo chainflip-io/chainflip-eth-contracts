@@ -114,6 +114,8 @@ REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "StakeMan: early, late, or execd"
 REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "StakeMan: old FLIP supply update"
 REV_MSG_STAKEMAN_GOVERNOR = "StakeMan: not governor"
+REV_MSG_STAKEMAN_SUSPENDED = "StakeMan: suspended"
+REV_MSG_STAKEMAN_NOT_SUSPENDED = "StakeMan: Not suspended"
 
 # -----KeyManager-----
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"

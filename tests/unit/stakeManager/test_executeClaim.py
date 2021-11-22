@@ -56,6 +56,8 @@ def test_executeClaim_min_delay(cf, claimRegistered):
 
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager)
 
+    assert maxValidAmount != 0
+
     chain.sleep(CLAIM_DELAY)
     tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
@@ -101,6 +103,18 @@ def test_executeClaim_rev_too_late(cf, claimRegistered):
     chain.sleep(claim[3] - chain.time() + 5)
 
     with reverts(REV_MSG_NOT_ON_TIME):
+        cf.stakeManager.executeClaim(JUNK_HEX)
+
+def test_executeClaim_rev_suspended(cf, claimRegistered):
+    _, claim = claimRegistered
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == claim
+
+    chain.sleep(CLAIM_DELAY)
+
+    # Suspend the stakemananger via governance
+    cf.stakeManager.suspend({"from": cf.GOVERNOR})
+
+    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
 

@@ -234,6 +234,16 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         _minStake = newMinStake;
     }
 
+    /**
+     * @notice      ERC1820 tokensReceived callback, doesn't do anything in our
+     *              contract.
+     * @param _operator         operator
+     * @param _from             from
+     * @param _to               to
+     * @param _amount           amount
+     * @param _data             data
+     * @param _operatorData     operatorData
+     */
     function tokensReceived(
         address _operator,
         address _from,
@@ -246,16 +256,33 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         require(_operator == address(this), "StakeMan: not the operator");
     }
 
+    /**
+     * @notice Can be used to suspend executions of claims - only executable by
+     * governance and should only be used if fraudulent claim is suspected.
+     */
     function suspend() external override isGovernor {
         suspended = true;
     }
 
+    /**
+     * @notice Can be used by governance to resume the execution of claims.
+     */
     function resume() external override isGovernor {
         suspended = false;
     }
 
+    /**
+     * @notice In the event of fraudulent claims being accepted, the contract is
+     * effectively useless. This function allows governance to admit that by
+     * withdrawing all the FLIP to their address. From where it will be dealt
+     * with later.
+     */
     function govWithdraw() external override isGovernor {
         require(suspended, "StakeMan: Not suspended");
+        address to = _keyManager.getGovernanceKey();
+        uint amount = _FLIP.balanceOf(address(this));
+        require(_FLIP.transfer(to, amount));
+        emit GovernanceWithdrawal(to, amount);
     }
 
     /**
