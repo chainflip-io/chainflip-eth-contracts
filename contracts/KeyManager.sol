@@ -131,7 +131,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithGovKey(
         Key calldata newKey
     ) external override nzKey(newKey) validTime isGovernor {
-        // TODO: Check that govKey is correct here
         emit AggKeySetByGovKey(aggKey, newKey);
         aggKey = newKey;
     }
@@ -144,7 +143,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setGovKeyWithGovKey(
         address newKey
     ) external override nzAddr(newKey) isGovernor {
-        // TODO: Check that the owner of the key is correct here
         emit GovKeySetByGovKey(govKey, newKey);
         govKey = newKey;
     }
