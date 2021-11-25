@@ -41,3 +41,11 @@ No description
 ## `isNonceUsedByAggKey(uint256 nonce) → bool` (external)
 
 No description
+
+## `AggKeySetByAggKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+
+## `AggKeySetByGovKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+
+## `GovKeySetByGovKey(address oldKey, address newKey)`
+
+## `SignatureAccepted(struct IShared.SigData sigData, address broadcaster)`

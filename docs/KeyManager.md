@@ -124,9 +124,3 @@ Returns
 ## `receive()` (external)
 
  @notice Allows this contract to receive ETH used to refund callers
-
-## `AggKeySetByAggKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
-
-## `AggKeySetByGovKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
-
-## `GovKeySetByGovKey(address oldKey, address newKey)`

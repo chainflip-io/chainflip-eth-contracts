@@ -27,12 +27,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     mapping(address => bool) private _canValidateSig;
     bool private _canValidateSigSet;
 
-
-    event AggKeySetByAggKey(Key oldKey, Key newKey);
-    event AggKeySetByGovKey(Key oldKey, Key newKey);
-    event GovKeySetByGovKey(address oldKey, address newKey);
-
-
     constructor(Key memory _aggKey, address _govKey) {
         aggKey = _aggKey;
         govKey = _govKey;
@@ -100,6 +94,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
         _lastValidateTime = block.timestamp;
         _isNonceUsedByAggKey[sigData.nonce] = true;
+
+        emit SignatureAccepted(sigData, tx.origin);
 
         return true;
     }
@@ -246,7 +242,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         // Need to make this an external call so that the msg.sender is the
         // address of this contract, otherwise calling setAggKeyWithAggKey
         // from any address would fail the whitelist check
-        require(isUpdatedValidSig(sigData, contractMsgHash));
+        require(this.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }
 }
