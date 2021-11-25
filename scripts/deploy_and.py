@@ -12,6 +12,8 @@ ALICE = accounts[1]
 BOB = accounts[2]
 CHARLIE = accounts[3]
 DENICE = accounts[4]
+GOVERNOR = accounts[0]
+GOVERNOR_2 = accounts[5]
 
 cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {'SKIP_INITIAL_FUND': True})
 
@@ -55,28 +57,31 @@ def all_stakeManager_events():
     new_min_stake = int(MIN_STAKE / 3)
     print(f"\n💰 Denice sets the minimum stake to {new_min_stake}\n")
     print("This transaction will emit RefundFailed")
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(cf.keyManager.address, chain.id), new_min_stake)
-    cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), new_min_stake, {"from": DENICE})
+    cf.stakeManager.setMinStake(new_min_stake, {"from": GOVERNOR})
 
     print("Fund contract so that a refund will fire in the next transaction")
     ALICE.transfer(to=cf.stakeManager, amount=ONE_ETH)
 
     stateChainBlockNumber = 100
-    print(f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block 100\n")
+    print(f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block {stateChainBlockNumber}\n")
     callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
     cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, {"from": DENICE})
+
+    print(f'\n🔐 Governnace suspends execution of claims\n')
+    cf.stakeManager.suspend({"from": GOVERNOR})
+
+    print(f'\n💸 Governance withdraws all FLIP\n')
+    cf.stakeManager.govWithdraw({"from": GOVERNOR})
 
 
 def all_keyManager_events():
     print(f"\n🔑 Governance Key sets the new Aggregate Key 🔑\n")
-    callDataNoSig = cf.keyManager.setAggKeyWithGovKey.encode_input(gov_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_1.getPubData())
-    cf.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), AGG_SIGNER_1.getPubData())
+    cf.keyManager.setAggKeyWithGovKey(AGG_SIGNER_1.getPubData(), {"from": GOVERNOR})
 
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n🔑 Governance Key sets the new Governance Key 🔑\n")
-    callDataNoSig = cf.keyManager.setGovKeyWithGovKey.encode_input(gov_null_sig(cf.keyManager.address, chain.id), GOV_SIGNER_2.getPubData())
-    cf.keyManager.setGovKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), GOV_SIGNER_2.getPubData())
+    cf.keyManager.setGovKeyWithGovKey(GOVERNOR_2, {"from": GOVERNOR})
 
     chain.sleep(CLAIM_DELAY)
 
