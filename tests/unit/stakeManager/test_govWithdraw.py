@@ -20,7 +20,8 @@ def test_govWithdraw(cf, stakedMin):
 	with reverts(REV_MSG_STAKEMAN_GOVERNOR):
 		cf.stakeManager.govWithdraw({"from": cf.ALICE})
 
-	cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
+	tx = cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
 
 	assert cf.flip.balanceOf(cf.stakeManager) == 0
 	assert cf.flip.balanceOf(cf.GOVERNOR) == stakeManagerFlipBalance + governorFlipBalance
+	assert tx.events["GovernanceWithdrawal"][0].values() == [cf.GOVERNOR, stakeManagerFlipBalance]
