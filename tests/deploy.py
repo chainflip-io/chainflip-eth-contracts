@@ -18,6 +18,7 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
 
     environment = {}
     if args: environment = args[0]
+
     aggKey = environment.get('AGG_KEY')
     if aggKey:
         parity = aggKey[0:2]
