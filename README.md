@@ -74,7 +74,7 @@ export SEED=<your seed phrase>
 export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
 export GOV_KEY<gov key with leading parity byte, hex format, no leading 0x>
 # Skip funding the contracts with 1 ETH when deploying
-export SKIP_INITIAL_FUND=true
+export PREFUND_CONTRACTS=false
 
 # deploy the contracts to rinkeby.
 brownie run deploy_contracts --network rinkeby

@@ -18,6 +18,7 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
 
     environment = {}
     if args: environment = args[0]
+
     aggKey = environment.get('AGG_KEY')
     if aggKey:
         parity = aggKey[0:2]
@@ -39,11 +40,15 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
 
     # Now fund the contracts that we expect the Validators to interact with so
     # that we can test the refund functionality
-    skipInitialFund = environment.get('SKIP_INITIAL_FUND')
-    if skipInitialFund != "false":
+    prefund_contracts = environment.get('PREFUND_CONTRACTS')
+
+    if prefund_contracts == "true" or prefund_contracts == "True" or prefund_contracts == None:
+        print("Prefunding the contracts with 1 ETH each.")
         deployer.transfer(to=cf.keyManager, amount=ONE_ETH)
         deployer.transfer(to=cf.vault, amount=ONE_ETH)
         deployer.transfer(to=cf.stakeManager, amount=ONE_ETH)
+    else:
+        print("Contracts have not been prefunded.")
 
     return cf
 
