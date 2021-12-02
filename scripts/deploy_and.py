@@ -13,7 +13,7 @@ BOB = accounts[2]
 CHARLIE = accounts[3]
 DENICE = accounts[4]
 
-cf = deploy_initial_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {'SKIP_INITIAL_FUND': True})
+cf = deploy_initial_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {'PREFUND_CONTRACTS': 'false'})
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {'from': DEPLOYER})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': ALICE})
