@@ -4,19 +4,20 @@ from brownie import accounts, StakeManager, FLIP
 FLIP_ADDRESS = environ['FLIP_ADDRESS']
 STAKE_MANAGER_ADDRESS = environ['STAKE_MANAGER_ADDRESS']
 AUTONOMY_SEED = environ['SEED']
+
+# File should be formatted as a list of NODE_IDs separated by a newline
 NODE_ID_FILE = environ['NODE_ID_FILE']
 
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
 node_ids = []
 
-flip = FLIP.at(f'0x{FLIP_ADDRESS}')
-stakeManager = StakeManager.at(f'0x{STAKE_MANAGER_ADDRESS}')
-
 stake = 45000 * (10**18)
 return_addr = "0xffffffffffffffffffffffffffffffffffffffff"
 
 def main():
+	flip = FLIP.at(f'0x{cleanHexStr(FLIP_ADDRESS)}')
+	stakeManager = StakeManager.at(f'0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}')
 	with open(NODE_ID_FILE, 'r') as f:
 		node_ids = f.readlines()
 		f.close()
@@ -30,3 +31,9 @@ def main():
 		tx = stakeManager.stake(node_id, to_stake, return_addr, {"from": staker, "required_confs": 0})
 		print(f'Staking {to_stake / 10**18} FLIP to node {node_id} in tx {tx.txid}')
 
+def cleanHexStr(thing):
+	if isinstance(thing, int):
+		thing = hex(thing)
+	elif not isinstance(thing, str):
+		thing = thing.hex()
+	return thing[2:] if thing[:2] == "0x" else thing
