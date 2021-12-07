@@ -23,6 +23,7 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
     if aggKey:
         parity = aggKey[0:2]
         x = aggKey[2:]
+        parity = "0" if parity == "00" else "1"
         aggKey = [int(x, 16), int(parity, 16)]
     else: aggKey = AGG_SIGNER_1.getPubData()
 
@@ -30,8 +31,11 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
     if govKey:
         parity = govKey[0:2]
         x = govKey[2:]
+        parity = "0" if parity == "00" else "1"
         govKey = [int(x, 16), int(parity, 16)]
     else: govKey = GOV_SIGNER_1.getPubData()
+
+    print(f'Deploying with AGG_KEY: {aggKey} and GOV_KEY: {govKey}')
 
     cf.keyManager = deployer.deploy(KeyManager, aggKey, govKey)
     cf.vault = deployer.deploy(Vault, cf.keyManager)
