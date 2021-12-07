@@ -31,7 +31,7 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
     if govKey:
         parity = govKey[0:2]
         x = govKey[2:]
-        parity = "0" if parity == "00" else "1"
+        parity = "00" if parity == "02" else "01"
         govKey = [int(x, 16), int(parity, 16)]
     else: govKey = GOV_SIGNER_1.getPubData()
 
