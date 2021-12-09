@@ -18,7 +18,11 @@ def main():
 
     cf = deploy_initial_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ)
 
-    print(f'FLIP = {cf.stakeManager.getFLIPAddress()}')
+    print(f'KeyManager: {cf.keyManager.address}')
+    print(f'StakeManager: {cf.stakeManager.address}')
+    print(f'FLIP: {cf.stakeManager.getFLIPAddress()}')
+    print(f'Vault: {cf.vault.address}')
+
 
     if DEPLOY_ARTEFACT_ID:
         json_content = json.dumps({
