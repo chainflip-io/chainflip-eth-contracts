@@ -8,6 +8,8 @@ AUTONOMY_SEED = environ['SEED']
 # File should be formatted as a list of NODE_IDs separated by a newline
 NODE_ID_FILE = environ['NODE_ID_FILE']
 
+DEPLOYER_ACCOUNT_INDEX = environ.get('DEPLOYER_ACCOUNT_INDEX') or 0
+
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
 node_ids = []
@@ -21,7 +23,7 @@ def main():
 	with open(NODE_ID_FILE, 'r') as f:
 		node_ids = f.readlines()
 		f.close()
-	staker = cf_accs[0]
+	staker = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 	to_approve = stake * (len(node_ids) + 1)
 	tx = flip.approve(stakeManager, to_approve, {"from": staker, "required_confs": 0})
 	print(f'Approving {to_approve / 10**18} FLIP in tx {tx.txid}')
