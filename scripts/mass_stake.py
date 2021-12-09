@@ -8,7 +8,7 @@ AUTONOMY_SEED = environ['SEED']
 # File should be formatted as a list of NODE_IDs separated by a newline
 NODE_ID_FILE = environ['NODE_ID_FILE']
 
-DEPLOYER_ACCOUNT_INDEX = environ.get('DEPLOYER_ACCOUNT_INDEX') or 0
+DEPLOYER_ACCOUNT_INDEX = int(environ.get('DEPLOYER_ACCOUNT_INDEX') or 0)
 
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
