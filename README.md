@@ -75,6 +75,8 @@ export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
 export GOV_KEY<gov key with leading parity byte, hex format, no leading 0x>
 # Skip funding the contracts with 1 ETH when deploying
 export PREFUND_CONTRACTS=false
+export GENESIS_STAKE=<the stake each node should have at genesis> (default = 500000000000000000000000)
+export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
 
 # deploy the contracts to rinkeby.
 brownie run deploy_contracts --network rinkeby
