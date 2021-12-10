@@ -35,11 +35,23 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
         govKey = [int(x, 16), int(parity, 16)]
     else: govKey = GOV_SIGNER_1.getPubData()
 
+    numGenesisValidators = environment.get('NUM_GENESIS_VALIDATORS')
+    if numGenesisValidators:
+        numGenesisValidators = int(numGenesisValidators)
+    else:
+        numGenesisValidators = NUM_GENESIS_VALIDATORS
+
+    genesisStake = environment.get("GENESIS_STAKE")
+    if genesisStake:
+        genesisStake = int(genesisStake)
+    else:
+        genesisStake = GENESIS_STAKE
+
     print(f'Deploying with AGG_KEY: {aggKey} and GOV_KEY: {govKey}')
 
     cf.keyManager = deployer.deploy(KeyManager, aggKey, govKey)
     cf.vault = deployer.deploy(Vault, cf.keyManager)
-    cf.stakeManager = deployer.deploy(StakeManager, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
+    cf.stakeManager = deployer.deploy(StakeManager, cf.keyManager, MIN_STAKE, INIT_SUPPLY, numGenesisValidators, genesisStake)
     cf.flip = FLIP.at(cf.stakeManager.getFLIPAddress())
 
     # Now fund the contracts that we expect the Validators to interact with so
