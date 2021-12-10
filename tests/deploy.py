@@ -35,17 +35,9 @@ def deploy_initial_ChainFlip_contracts(deployer, KeyManager, Vault, StakeManager
         govKey = [int(x, 16), int(parity, 16)]
     else: govKey = GOV_SIGNER_1.getPubData()
 
-    numGenesisValidators = environment.get('NUM_GENESIS_VALIDATORS')
-    if numGenesisValidators:
-        numGenesisValidators = int(numGenesisValidators)
-    else:
-        numGenesisValidators = NUM_GENESIS_VALIDATORS
+    numGenesisValidators = int(environment.get('NUM_GENESIS_VALIDATORS') or NUM_GENESIS_VALIDATORS)
 
-    genesisStake = environment.get("GENESIS_STAKE")
-    if genesisStake:
-        genesisStake = int(genesisStake)
-    else:
-        genesisStake = GENESIS_STAKE
+    genesisStake = int(environment.get("GENESIS_STAKE") or GENESIS_STAKE)
 
     print(f'Deploying with AGG_KEY: {aggKey} and GOV_KEY: {govKey}')
 
