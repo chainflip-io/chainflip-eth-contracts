@@ -6,6 +6,8 @@ from shared_tests import *
 def test_setAggKeyWithAggKey(cf):
     setAggKeyWithAggKey_test(cf)
 
+def test_setAggKeyWithAggKey_rev_newPubKeyX(cf):
+    setKey_rev_newPubKeyX_test(cf)
 
 def test_setAggKeyWithAggKey_rev_pubKeyX(cf):
     setKey_rev_pubKeyX_test(cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1)
