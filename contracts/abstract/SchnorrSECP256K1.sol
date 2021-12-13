@@ -148,4 +148,8 @@ abstract contract SchnorrSECP256K1 {
     return nonceTimesGeneratorAddress == recoveredAddress;
   }
 
+  function verifySigningKeyX(uint256 signingPubKeyX) public pure {
+    require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
+  }
+
 }
