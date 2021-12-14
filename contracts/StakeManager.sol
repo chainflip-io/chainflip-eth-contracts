@@ -43,7 +43,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient {
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(bytes32 => Claim) private _pendingClaims;
     // Time after registerClaim required to wait before call to executeClaim
-    uint48 constant public CLAIM_DELAY = 2 days;
+    uint48 constant public CLAIM_DELAY = 2 hours;
 
     IERC1820Registry constant private _ERC1820_REGISTRY = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
     address[] private _defaultOperators;
