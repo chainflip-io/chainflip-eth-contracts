@@ -4,10 +4,8 @@ from brownie.test import given, strategy
 
 
 @given(
-#    nodeID=strategy('bytes32'),
     nodeID=strategy('uint', exclude=0),
-
-    amount=strategy('uint256', max_value=1000*E_18)
+    amount=strategy('uint256', max_value=MAX_TEST_STAKE)
 )
 def test_stake(addrs, tokenVesting, nodeID, amount):
 
@@ -18,11 +16,10 @@ def test_stake(addrs, tokenVesting, nodeID, amount):
     if amount < MIN_STAKE:
         with reverts(REV_MSG_MIN_STAKE):
             tx = tv.stake(nodeID, amount, {'from': addrs.INVESTOR})
-    else:
+    else:       
         tx = tv.stake(nodeID, amount, {'from': addrs.INVESTOR})
-        print(tx.events["Staked"][0].values())
-        assert tx.events["Staked"][0].values() == ('0x'+nodeID.hex(), amount, tv)
-
+        assert tx.events["Staked"][0].values()[1] == amount
+        assert tx.events["Staked"][0].values()[2] == tv
 
 def test_stake_rev_beneficiary(a, addrs, tokenVesting):
     tv, start, cliff, end, total = tokenVesting
@@ -33,7 +30,7 @@ def test_stake_rev_beneficiary(a, addrs, tokenVesting):
                 tv.stake(5, 10, {'from': ad})
 
 
-def test_stake_rev_cannot_stake(a, addrs, mockSM, TokenVesting):
+def test_stake_rev_cannot_stake(a, addrs, TokenVesting, cf):
     start = 1622400000
     cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
@@ -47,7 +44,7 @@ def test_stake_rev_cannot_stake(a, addrs, mockSM, TokenVesting):
         cliff,
         end,
         False,
-        mockSM
+        cf.stakeManager
     )
     
     with reverts("TokenVesting: cannot stake"):    

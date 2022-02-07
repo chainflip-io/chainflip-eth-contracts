@@ -8,7 +8,7 @@ cliff = start + int(YEAR/2)
 end = start + YEAR
 
 
-def test_tokenVesting_constructor(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor(addrs, TokenVesting, cf):
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
@@ -18,7 +18,7 @@ def test_tokenVesting_constructor(addrs, TokenVesting, mockSM, token):
         cliff,
         end,
         True,
-        mockSM
+        cf.stakeManager
     )
 
     assert tv.beneficiary() == addrs.INVESTOR
@@ -27,12 +27,12 @@ def test_tokenVesting_constructor(addrs, TokenVesting, mockSM, token):
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == True
-    assert tv.stakeManager() == mockSM
-    assert tv.released(token) == 0
-    assert tv.revoked(token) == 0
+    assert tv.stakeManager() == cf.stakeManager
+    assert tv.released(cf.flip) == 0
+    assert tv.revoked(cf.flip) == 0
 
 
-def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, cf):
     with reverts("TokenVesting: beneficiary_ is the zero address"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -43,11 +43,11 @@ def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, mockSM, t
             cliff,
             end,
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_revoker(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_revoker(addrs, TokenVesting, cf):
     with reverts("TokenVesting: revoker_ is the zero address"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -58,11 +58,11 @@ def test_tokenVesting_constructor_rev_revoker(addrs, TokenVesting, mockSM, token
             cliff,
             end,
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_start(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_start(addrs, TokenVesting, cf):
     with reverts("TokenVesting: start_ is 0"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -73,11 +73,11 @@ def test_tokenVesting_constructor_rev_start(addrs, TokenVesting, mockSM, token):
             cliff,
             end,
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_cliff_0(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_cliff_0(addrs, TokenVesting, cf):
     with reverts("TokenVesting: start_ isn't before cliff_"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -88,11 +88,11 @@ def test_tokenVesting_constructor_rev_cliff_0(addrs, TokenVesting, mockSM, token
             0,
             end,
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_start_not_before_cliff(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_start_not_before_cliff(addrs, TokenVesting, cf):
     with reverts("TokenVesting: start_ isn't before cliff_"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -103,11 +103,11 @@ def test_tokenVesting_constructor_rev_start_not_before_cliff(addrs, TokenVesting
             start,
             end,
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
     with reverts("TokenVesting: cliff_ isn't before end_"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -118,11 +118,11 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, mockSM, token):
             cliff,
             0,
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, cf):
     with reverts("TokenVesting: cliff_ isn't before end_"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -133,11 +133,11 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, 
             cliff,
             cliff,
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, cf):
     with reverts("TokenVesting: final time is before current time"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -148,11 +148,11 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, mockSM
             cliff - (YEAR*2),
             end - (YEAR*2),
             True,
-            mockSM
+            cf.stakeManager
         )
 
 
-def test_tokenVesting_constructor_rev_stakeManager(addrs, TokenVesting, mockSM, token):
+def test_tokenVesting_constructor_rev_stakeManager(addrs, TokenVesting):
     with reverts("TokenVesting: stakeManager_ is the zero address"):
         addrs.DEPLOYER.deploy(
             TokenVesting,

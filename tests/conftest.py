@@ -192,22 +192,10 @@ def addrs(a, TokenVesting):
 
     addrs = Context()
     addrs.DEPLOYER = a[0]
-    addrs.REVOKER = a[1]
-    addrs.INVESTOR = a[2]
+    addrs.REVOKER = a[10]
+    addrs.INVESTOR = a[11]
 
     return addrs
-
-
-@pytest.fixture(scope="module")
-def mockSM(addrs, StakeManager, cfDeploy):
-    cf = cfDeploy 
-    return addrs.DEPLOYER.deploy(StakeManager,cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
-
-
-#@pytest.fixture(scope="module")
-#def token(addrs, Token):
-#    return addrs.DEPLOYER.deploy(Token, addrs.DEPLOYER)
-
 
 @pytest.fixture(scope="module")
 def maths(addrs, MockMaths):
@@ -215,7 +203,7 @@ def maths(addrs, MockMaths):
 
 
 @pytest.fixture(scope="module")
-def tokenVesting(addrs, token, mockSM, TokenVesting):
+def tokenVesting(addrs, cf, TokenVesting):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
@@ -232,10 +220,13 @@ def tokenVesting(addrs, token, mockSM, TokenVesting):
         cliff,
         end,
         True,
-        mockSM
+        cf.stakeManager
     )
 
-    total = 1000*E_18
-    token.transfer(tv, total, {'from': addrs.DEPLOYER})
+#    total = 1000*E_18
+
+    total = MAX_TEST_STAKE
+ 
+    cf.flip.transfer(tv, total, {'from': addrs.DEPLOYER})
 
     return tv, start, cliff, end, total
