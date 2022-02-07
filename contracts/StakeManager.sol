@@ -103,9 +103,11 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
 
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
-        uint balBefore = _FLIP.balanceOf(address(this));
-        _FLIP.operatorSend(msg.sender, address(this), amount, "", "stake");
-        require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
+        FLIP flip = _FLIP;
+
+        uint balBefore = flip.balanceOf(address(this));
+        flip.operatorSend(msg.sender, address(this), amount, "", "stake");
+        require(flip.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
 
         _totalStake += amount;
         emit Staked(nodeID, amount, msg.sender, returnAddr);

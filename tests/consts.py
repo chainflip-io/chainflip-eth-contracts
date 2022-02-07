@@ -24,7 +24,9 @@ SECS_PER_BLOCK = 13
 # Time in seconds
 HOUR = 60 * 60
 DAY = HOUR * 24
-
+MONTH = 30 * DAY
+YEAR = 365 * DAY
+QUARTER_YEAR = int(YEAR / 4)
 
 REV_MSG_NZ_UINT = "Shared: uint input is empty"
 REV_MSG_NZ_ADDR = "Shared: address input is empty"
@@ -123,3 +125,7 @@ REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
+
+# -----Vesting-----
+REV_MSG_NO_TOKENS = "TokenVesting: no tokens are due"
+REV_MSG_NOT_REVOKER = "TokenVesting: not the revoker"
