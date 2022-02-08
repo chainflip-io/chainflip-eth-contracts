@@ -18,9 +18,9 @@ def test_stake(addrs, tokenVesting, nodeID, amount):
             tx = tv.stake(nodeID, amount, {'from': addrs.INVESTOR})
     else:       
         tx = tv.stake(nodeID, amount, {'from': addrs.INVESTOR})
-        assert tx.events["Staked"][0].values()[1] == amount
-        assert tx.events["Staked"][0].values()[2] == tv
 
+        assert tx.events["Staked"][0].values() == (nodeID, amount, tv, tv)
+        
 def test_stake_rev_beneficiary(a, addrs, tokenVesting):
     tv, start, cliff, end, total = tokenVesting
 
