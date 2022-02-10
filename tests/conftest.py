@@ -203,14 +203,41 @@ def maths(addrs, MockMaths):
 
 
 @pytest.fixture(scope="module")
-def tokenVesting(addrs, cf, TokenVesting):
+def tokenVestingNoStaking(addrs, cf, TokenVesting):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
     start = chain.time()
     cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
+    
+    tv = addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        addrs.REVOKER,
+        True,
+        start,
+        cliff,
+        end,
+        False,
+        cf.stakeManager
+    )
 
+    total = MAX_TEST_STAKE
+ 
+    cf.flip.transfer(tv, total, {'from': addrs.DEPLOYER})
+
+    return tv, start, cliff, end, total
+
+@pytest.fixture(scope="module")
+def tokenVestingStaking(addrs, cf, TokenVesting):
+
+    # This was hardcoded to a timestamp, but ganache uses real-time when we run
+    # the tests, so we should use relative values instead of absolute ones
+    start = chain.time()
+    end = start + QUARTER_YEAR + YEAR
+    cliff = end
+    
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
@@ -222,8 +249,6 @@ def tokenVesting(addrs, cf, TokenVesting):
         True,
         cf.stakeManager
     )
-
-#    total = 1000*E_18
 
     total = MAX_TEST_STAKE
  

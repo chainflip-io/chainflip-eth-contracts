@@ -131,7 +131,7 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, 
             True,
             start,
             cliff,
-            cliff,
+            cliff - 1,
             True,
             cf.stakeManager
         )

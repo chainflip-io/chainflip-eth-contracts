@@ -72,7 +72,7 @@ contract TokenVesting is ReentrancyGuard {
         require(start_ > 0, "TokenVesting: start_ is 0");
         // solhint-disable-next-line max-line-length
         require(start_ < cliff_, "TokenVesting: start_ isn't before cliff_");
-        require(cliff_ < end_, "TokenVesting: cliff_ isn't before end_");
+        require(cliff_ <= end_, "TokenVesting: cliff_ isn't before end_");
         // solhint-disable-next-line max-line-length
         require(end_ > block.timestamp, "TokenVesting: final time is before current time");
         require(address(stakeManager_) != address(0), "TokenVesting: stakeManager_ is the zero address");
@@ -84,6 +84,7 @@ contract TokenVesting is ReentrancyGuard {
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
+        //Add require (or assign) cliff = end when canStake?
         stakeManager = stakeManager_;
     }
 
@@ -105,6 +106,7 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function release(IERC20 token) external nonReentrant {
+        require (!canStake || !revoked[token], "TokenVesting: staked funds revoked");
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "TokenVesting: no tokens are due");
 
@@ -113,16 +115,20 @@ contract TokenVesting is ReentrancyGuard {
 
         emit TokensReleased(token, unreleased);
     }
+    
 
     /**
      * @notice Allows the revoker to revoke the vesting. Tokens already vested
-     * remain in the contract, the rest are returned to the revoker.
+     *         remain in the contract, the rest are returned to the revoker.
+     *         Assumption is made that revoked will be called once funds are unstaked
+     *         and sent back to this contract.
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external {
         require(msg.sender == revoker, "TokenVesting: not the revoker");
         require(revocable, "TokenVesting: cannot revoke");
         require(!revoked[token], "TokenVesting: token already revoked");
+        require(block.timestamp <= end , "TokenVesting: vesting period expired");
 
         uint balance = token.balanceOf(address(this));
 
@@ -134,6 +140,26 @@ contract TokenVesting is ReentrancyGuard {
         token.safeTransfer(revoker, refund);
 
         emit TokenVestingRevoked(token);
+    }
+
+    /**
+     * @notice Allows the revoker to retrieve tokens that have been unstaked after
+     *         the revoke function has been called (in canStake contracts)
+     *         This is in case the staker doesn't agree to unstake in time and the funds
+     *         are not in this contract when revoked is called.
+     *         In !canStake contracts all the funds are withdrawn once revoked is called
+     * @param token ERC20 token which is being vested.
+     */
+    function retrieveRevokedFunds (IERC20 token) external {
+        require(msg.sender == revoker, "TokenVesting: not the revoker");
+        require(revocable, "TokenVesting: cannot revoke");
+        require(revoked[token], "TokenVesting: token not revoked");  
+
+        require(canStake, "TokenVesting: not retrievable");
+
+        uint balance = token.balanceOf(address(this));
+
+        token.safeTransfer(revoker, balance);
     }
 
     /**
@@ -149,15 +175,25 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function _vestedAmount(IERC20 token) private view returns (uint) {
+        
+        // We assume all the funds are in the contract and/or relased
+        // Either because the contract is option B or because
+        // all the tokens have been unstaked when revoking.
         uint256 currentBalance = token.balanceOf(address(this));
         uint256 totalBalance = currentBalance + released[token];
 
         if (block.timestamp < cliff) {
             return 0;
         } else if (block.timestamp >= end || revoked[token]) {
+            // Any amount that is in the contract
+            // we can only get here through revoked[token] if we are revoking or if we are releasing and !canstake
             return totalBalance;
         } else {
-            return totalBalance * (block.timestamp - start) / (end - start);
+            assert (!canStake);
+            // we should never enter this if canStake == true, since cliff == end in the constructor. Add an assert?
+            // This might need to be modified if we add a getRewards functionality for stakers.
+            uint256 cliffAmount = totalBalance / 5;
+            return cliffAmount + (totalBalance - cliffAmount)  * (block.timestamp - cliff) / (end - cliff);
         }
     }
 }
