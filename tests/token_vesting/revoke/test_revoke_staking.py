@@ -24,6 +24,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, maths, sleepTime):
             tv.revoke(cf.flip, {'from': addrs.REVOKER})
         return    
     else:
+        # Should not happen as cliff == end
         assert()
     
     revokedAmount = total - releasable
@@ -55,8 +56,8 @@ def test_revoke_rev_revoker(a, addrs, cf, tokenVestingStaking):
 
 def test_revoke_rev_revokable(addrs, cf, TokenVesting):
     start = 1622400000
-    cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
+    cliff = end
 
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
@@ -89,10 +90,6 @@ def test_revoke_rev_revoked(a, addrs, cf, tokenVestingStaking):
     retrieve_revoked_and_check (tv, cf, addrs.REVOKER, 0)
 
 
-
-# @given(
-#     amount=strategy('uint256', min_value = MIN_STAKE, max_value=MAX_TEST_STAKE)
-# )
 def test_revoke_staked(addrs, cf, tokenVestingStaking):
     tv, start, cliff, end, total = tokenVestingStaking
     nodeID1 = web3.toHex(1)
@@ -157,4 +154,3 @@ def test_retrieve_revoked_funds_and_rewards(addrs, cf, tokenVestingStaking, amou
         tv.release(cf.flip, {'from': addrs.INVESTOR})  
 
     retrieve_revoked_and_check (tv, cf, addrs.REVOKER, rewards)
-    

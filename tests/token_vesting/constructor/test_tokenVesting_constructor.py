@@ -1,14 +1,27 @@
 from consts import *
 import time
 from brownie import reverts
-
+from shared_tests_tokenVesting import *
 
 start = time.time()
 cliff = start + int(YEAR/2)
 end = start + YEAR
 
+def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
 
-def test_tokenVesting_constructor(addrs, TokenVesting, cf):
+    with reverts("TokenVesting: invalid staking contract cliff"):
+        addrs.DEPLOYER.deploy(
+                TokenVesting,
+                addrs.INVESTOR,
+                addrs.REVOKER,
+                True,
+                start,
+                cliff,
+                end,
+                True,
+                cf.stakeManager
+            )
+
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
@@ -17,19 +30,25 @@ def test_tokenVesting_constructor(addrs, TokenVesting, cf):
         start,
         cliff,
         end,
+        False,
+        cf.stakeManager
+    )
+    check_state(tv, cf, addrs.INVESTOR, addrs.REVOKER, True, cliff, end, False, cf.stakeManager, 0)
+
+    valid_staking_cliff = end
+
+    tv = addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        addrs.REVOKER,
+        True,
+        start,
+        valid_staking_cliff,
+        end,
         True,
         cf.stakeManager
     )
-
-    assert tv.beneficiary() == addrs.INVESTOR
-    assert tv.revoker() == addrs.REVOKER
-    assert tv.revocable() == True
-    assert tv.cliff() == cliff
-    assert tv.end() == end
-    assert tv.canStake() == True
-    assert tv.stakeManager() == cf.stakeManager
-    assert tv.released(cf.flip) == 0
-    assert tv.revoked(cf.flip) == 0
+    check_state(tv, cf, addrs.INVESTOR, addrs.REVOKER, True, valid_staking_cliff, end, True, cf.stakeManager, 0)
 
 
 def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, cf):
@@ -108,7 +127,7 @@ def test_tokenVesting_constructor_rev_start_not_before_cliff(addrs, TokenVesting
 
 
 def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
-    with reverts("TokenVesting: cliff_ isn't before end_"):
+    with reverts("TokenVesting: cliff_ after end_"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
             addrs.INVESTOR,
@@ -123,7 +142,7 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
 
 
 def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, cf):
-    with reverts("TokenVesting: cliff_ isn't before end_"):
+    with reverts("TokenVesting: cliff_ after end_"):
         addrs.DEPLOYER.deploy(
             TokenVesting,
             addrs.INVESTOR,

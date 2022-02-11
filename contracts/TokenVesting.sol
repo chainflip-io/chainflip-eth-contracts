@@ -17,6 +17,7 @@ contract TokenVesting is ReentrancyGuard {
     // therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree). Therefore,
     // it is recommended to avoid using short time durations (less than a minute). Typical vesting schemes, with a
     // cliff period of a year and a duration of four years, are safe to use.
+
     // solhint-disable not-rely-on-time
 
     using SafeERC20 for IERC20;
@@ -25,29 +26,35 @@ contract TokenVesting is ReentrancyGuard {
     event TokenVestingRevoked(IERC20 indexed token);
 
     // beneficiary of tokens after they are released
-    address public beneficiary;
-    // the revoker who can cancel cancel the vesting and withdraw any unvested tokens
-    address public revoker;
+    address public immutable beneficiary;
+    // the revoker who can cancel the vesting and withdraw any unvested tokens
+    address public immutable revoker;
     // whether the revoker can revoke and withdraw unvested tokens
-    bool public revocable;
+    bool public immutable revocable;
 
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
-    uint public start;
-    uint public cliff;
-    uint public end;
+    uint public immutable start;
+    uint public immutable cliff;
+    uint public immutable end;
 
     // If false, staking is not allowed
-    bool public canStake;
+    bool public immutable canStake;
     // The staking contract to stake to if `canStake`
-    IStakeManager public stakeManager;
+    IStakeManager public immutable stakeManager;
 
     mapping (IERC20 => uint256) public released;
     mapping (IERC20 => bool) public revoked;
 
     /**
      * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
-     * beneficiary, gradually in a linear fashion until `end`. By then all
-     * of the balance will have vested.
+     * beneficiary.
+     * Two vesting contract options:
+     *   Option A: Not stakable. 20% cliff unlocking and 80% linear after that.
+     *             If revoked send all funds to revoker and allow beneficiary to release remaining funds
+     *   Option B: Stakable. Nothing unlocked until end of contract where everything unlocks at once.
+     *             All funds can be staked during the vesting period.
+     *             If revoked send all funds to revoker and block beneficiary releases indefinitely.
+     
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to rug the vesting
      * @param revocable_ whether the vesting is revocable or not
@@ -72,10 +79,11 @@ contract TokenVesting is ReentrancyGuard {
         require(start_ > 0, "TokenVesting: start_ is 0");
         // solhint-disable-next-line max-line-length
         require(start_ < cliff_, "TokenVesting: start_ isn't before cliff_");
-        require(cliff_ <= end_, "TokenVesting: cliff_ isn't before end_");
+        require(cliff_ <= end_, "TokenVesting: cliff_ after end_");
         // solhint-disable-next-line max-line-length
         require(end_ > block.timestamp, "TokenVesting: final time is before current time");
         require(address(stakeManager_) != address(0), "TokenVesting: stakeManager_ is the zero address");
+        if (canStake_) require (cliff_ == end_ , "TokenVesting: invalid staking contract cliff");
 
         beneficiary = beneficiary_;
         revoker = revoker_;
@@ -84,7 +92,6 @@ contract TokenVesting is ReentrancyGuard {
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
-        //Add require (or assign) cliff = end when canStake?
         stakeManager = stakeManager_;
     }
 
@@ -106,7 +113,9 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function release(IERC20 token) external nonReentrant {
+        require(msg.sender == beneficiary, "TokenVesting: not the beneficiary");
         require (!canStake || !revoked[token], "TokenVesting: staked funds revoked");
+
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "TokenVesting: no tokens are due");
 
@@ -118,10 +127,11 @@ contract TokenVesting is ReentrancyGuard {
     
 
     /**
-     * @notice Allows the revoker to revoke the vesting. Tokens already vested
-     *         remain in the contract, the rest are returned to the revoker.
-     *         Assumption is made that revoked will be called once funds are unstaked
-     *         and sent back to this contract.
+     * @notice Allows the revoker to revoke the vesting.
+     *         When nonstakable, Tokens already vested remain in the contract
+     *         for the beneficiary to release, the rest are returned to the revoker.
+     *         When stakable, assumption is made that revoked will be called once
+     *         funds are unstaked and sent back to this contract.
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external {
@@ -143,11 +153,11 @@ contract TokenVesting is ReentrancyGuard {
     }
 
     /**
-     * @notice Allows the revoker to retrieve tokens that have been unstaked after
-     *         the revoke function has been called (in canStake contracts)
-     *         This is in case the staker doesn't agree to unstake in time and the funds
-     *         are not in this contract when revoked is called.
-     *         In !canStake contracts all the funds are withdrawn once revoked is called
+     * @notice Allows the revoker to retrieve tokens that have been unstaked
+     *         after the revoke function has been called (in canStake contracts).
+     *         Safeguard mechanism in case of unstaking happening after revoke.
+     *         Otherwise funds would be locked. In !canStake contracts all the 
+     *         funds are withdrawn once revoked is called, so no need for this
      * @param token ERC20 token which is being vested.
      */
     function retrieveRevokedFunds (IERC20 token) external {
@@ -155,6 +165,7 @@ contract TokenVesting is ReentrancyGuard {
         require(revocable, "TokenVesting: cannot revoke");
         require(revoked[token], "TokenVesting: token not revoked");  
 
+        // Could be allowed for nonStakable too, just as a safeguard mechanism
         require(canStake, "TokenVesting: not retrievable");
 
         uint balance = token.balanceOf(address(this));
@@ -171,27 +182,22 @@ contract TokenVesting is ReentrancyGuard {
     }
 
     /**
-     * @dev Calculates the amount that has already vested.
+     * @dev Calculates the amount that has already vested. Linear unvesting for
+     *      option A, full unvesting at the end for contract B.
      * @param token ERC20 token which is being vested.
      */
     function _vestedAmount(IERC20 token) private view returns (uint) {
         
-        // We assume all the funds are in the contract and/or relased
-        // Either because the contract is option B or because
-        // all the tokens have been unstaked when revoking.
         uint256 currentBalance = token.balanceOf(address(this));
         uint256 totalBalance = currentBalance + released[token];
 
         if (block.timestamp < cliff) {
             return 0;
         } else if (block.timestamp >= end || revoked[token]) {
-            // Any amount that is in the contract
-            // we can only get here through revoked[token] if we are revoking or if we are releasing and !canstake
             return totalBalance;
         } else {
+            // should never enter this if canStake == true, since cliff == end
             assert (!canStake);
-            // we should never enter this if canStake == true, since cliff == end in the constructor. Add an assert?
-            // This might need to be modified if we add a getRewards functionality for stakers.
             uint256 cliffAmount = totalBalance / 5;
             return cliffAmount + (totalBalance - cliffAmount)  * (block.timestamp - cliff) / (end - cliff);
         }

@@ -100,10 +100,11 @@ def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths
     check_state(tv, cf, addrs.INVESTOR, addrs.REVOKER, True, cliff, end, True, cf.stakeManager, 0)
 
 
-# Make sure the assert is not reached => cliff == end == start + QUARTER_YEAR + YEAR
-@given(sleepTime=strategy('uint256', min_value = QUARTER_YEAR + YEAR-50 ,max_value=QUARTER_YEAR + YEAR+10))
+# Test that the assert(!canStake) is not reached => cliff == end == start + QUARTER_YEAR + YEAR
+@given(sleepTime=strategy('uint256', min_value = QUARTER_YEAR ,max_value= YEAR*2))
 def test_release_around_cliff (addrs, cf, tokenVestingStaking, maths,sleepTime):
     tv, start, cliff, end, total = tokenVestingStaking
+
     chain.sleep(sleepTime)
 
     if (chain.time() >= cliff & cliff==end):

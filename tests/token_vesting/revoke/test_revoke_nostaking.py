@@ -72,7 +72,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
         start,
         cliff,
         end,
-        True,
+        False,
         cf.stakeManager
     )
 
