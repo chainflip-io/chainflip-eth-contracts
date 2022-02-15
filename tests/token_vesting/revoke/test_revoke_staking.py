@@ -115,11 +115,14 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     with reverts(REV_MSG_FUNDS_REVOKED):
         tv.release(cf.flip, {'from': addrs.INVESTOR})
 
-    sleepTime = cliff
-    chain.sleep(sleepTime)
-
     # We would need to unstake the amount. Quick workaround to do the same thing:
     cf.flip.transfer(tv, amount, {'from': addrs.DEPLOYER})
+
+    with reverts(REV_MSG_FUNDS_REVOKED):
+        tv.release(cf.flip, {'from': addrs.INVESTOR})
+
+    sleepTime = cliff
+    chain.sleep(sleepTime)
 
     # In option B, once revoked there is no way to release any funds
     with reverts(REV_MSG_FUNDS_REVOKED):

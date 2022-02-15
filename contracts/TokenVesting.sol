@@ -165,7 +165,6 @@ contract TokenVesting is ReentrancyGuard {
         require(revocable, "TokenVesting: cannot revoke");
         require(revoked[token], "TokenVesting: token not revoked");  
 
-        // Could be allowed for nonStakable too, just as a safeguard mechanism
         require(canStake, "TokenVesting: not retrievable");
 
         uint balance = token.balanceOf(address(this));
