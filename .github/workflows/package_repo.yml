@@ -1,0 +1,33 @@
+name: Package repo
+on:
+  push:
+#    branches:
+#      - master
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          path: chainflip-eth-contracts
+
+      - name: Check Python Version
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Setup Poetry
+        uses: Gr1N/setup-poetry@v7
+
+      - name: Poetry install
+        working-directory: chainflip-eth-contracts
+        run: poetry install
+      - name: Package repo
+        uses: actions/upload-artifact@v2
+        with:
+          name: chainflip-eth-contracts
+          path: |
+            chainflip-eth-contracts/
+          if-no-files-found: error
