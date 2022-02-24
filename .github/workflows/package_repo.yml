@@ -1,8 +1,8 @@
 name: Package repo
 on:
   push:
-#    branches:
-#      - master
+    branches:
+      - master
 
 jobs:
   package:
