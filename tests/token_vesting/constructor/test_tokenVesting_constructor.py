@@ -14,11 +14,11 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
                 TokenVesting,
                 addrs.INVESTOR,
                 addrs.REVOKER,
-                True,
+                REVOCABLE,
                 start,
                 cliff,
                 end,
-                True,
+                STAKABLE,
                 cf.stakeManager
             )
 
@@ -26,11 +26,11 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         TokenVesting,
         addrs.INVESTOR,
         addrs.REVOKER,
-        True,
+        REVOCABLE,
         start,
         cliff,
         end,
-        False,
+        NON_STAKABLE,
         cf.stakeManager
     )
     check_state(tv, cf, addrs.INVESTOR, addrs.REVOKER, True, cliff, end, False, cf.stakeManager, 0)
@@ -41,11 +41,11 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         TokenVesting,
         addrs.INVESTOR,
         addrs.REVOKER,
-        True,
+        REVOCABLE,
         start,
         valid_staking_cliff,
         end,
-        True,
+        STAKABLE,
         cf.stakeManager
     )
     check_state(tv, cf, addrs.INVESTOR, addrs.REVOKER, True, valid_staking_cliff, end, True, cf.stakeManager, 0)
@@ -57,11 +57,11 @@ def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, cf):
             TokenVesting,
             ZERO_ADDR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             start,
             cliff,
             end,
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -72,11 +72,11 @@ def test_tokenVesting_constructor_rev_revoker(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             ZERO_ADDR,
-            True,
+            REVOCABLE,
             start,
             cliff,
             end,
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -87,11 +87,11 @@ def test_tokenVesting_constructor_rev_start(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             0,
             cliff,
             end,
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -102,11 +102,11 @@ def test_tokenVesting_constructor_rev_cliff_0(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             start,
             0,
             end,
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -117,11 +117,11 @@ def test_tokenVesting_constructor_rev_start_not_before_cliff(addrs, TokenVesting
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             start,
             start,
             end,
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -132,11 +132,11 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             start,
             cliff,
             0,
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -147,11 +147,11 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, 
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             start,
             cliff,
             cliff - 1,
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -162,11 +162,11 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             start - (YEAR*2),
             cliff - (YEAR*2),
             end - (YEAR*2),
-            True,
+            STAKABLE,
             cf.stakeManager
         )
 
@@ -177,10 +177,10 @@ def test_tokenVesting_constructor_rev_stakeManager(addrs, TokenVesting):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            True,
+            REVOCABLE,
             start,
             cliff,
             end,
-            True,
+            STAKABLE,
             ZERO_ADDR
         )

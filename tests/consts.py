@@ -127,6 +127,10 @@ REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
 
 # -----Vesting-----
+REVOCABLE = True
+NON_REVOCABLE = False
+STAKABLE = True
+NON_STAKABLE = False
 REV_MSG_NO_TOKENS = "TokenVesting: no tokens are due"
 REV_MSG_NOT_REVOKER = "TokenVesting: not the revoker"
 REV_MSG_CANNOT_REVOKE = "TokenVesting: cannot revoke"

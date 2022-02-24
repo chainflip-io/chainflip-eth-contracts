@@ -215,11 +215,11 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
         TokenVesting,
         addrs.INVESTOR,
         addrs.REVOKER,
-        True,
+        REVOCABLE,
         start,
         cliff,
         end,
-        False,
+        NON_STAKABLE,
         cf.stakeManager
     )
 
@@ -242,11 +242,11 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
         TokenVesting,
         addrs.INVESTOR,
         addrs.REVOKER,
-        True,
+        REVOCABLE,
         start,
         cliff,
         end,
-        True,
+        STAKABLE,
         cf.stakeManager
     )
 

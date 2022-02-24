@@ -68,11 +68,11 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
         TokenVesting,
         addrs.INVESTOR,
         addrs.REVOKER,
-        False,
+        NON_REVOCABLE,
         start,
         cliff,
         end,
-        False,
+        NON_STAKABLE,
         cf.stakeManager
     )
 
