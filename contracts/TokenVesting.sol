@@ -25,7 +25,7 @@ contract TokenVesting is ReentrancyGuard {
     event TokensReleased(IERC20 indexed token, uint256 amount);
     event TokenVestingRevoked(IERC20 indexed token);
 
-    uint public constant DIVIDER_CLIFF_UNVEST = 5; // x / 5 = 20% of x
+    uint public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
 
     // beneficiary of tokens after they are released
     address public immutable beneficiary;
@@ -199,7 +199,7 @@ contract TokenVesting is ReentrancyGuard {
         } else {
             // should never enter this if canStake == true, since cliff == end
             assert (!canStake);
-            uint256 cliffAmount = totalBalance / DIVIDER_CLIFF_UNVEST;
+            uint256 cliffAmount = totalBalance / CLIFF_DENOMINATOR;
             return cliffAmount + (totalBalance - cliffAmount) * (block.timestamp - cliff) / (end - cliff);
         }
     }
