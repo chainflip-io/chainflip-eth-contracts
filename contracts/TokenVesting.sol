@@ -25,7 +25,7 @@ contract TokenVesting is ReentrancyGuard {
     event TokensReleased(IERC20 indexed token, uint256 amount);
     event TokenVestingRevoked(IERC20 indexed token);
 
-    uint public constant DIVIDER_CLIFF_UNVEST = 5;
+    uint public constant DIVIDER_CLIFF_UNVEST = 5; // x / 5 = 20% of x
 
     // beneficiary of tokens after they are released
     address public immutable beneficiary;
