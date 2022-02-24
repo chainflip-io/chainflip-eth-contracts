@@ -114,7 +114,7 @@ contract TokenVesting is ReentrancyGuard {
      */
     function release(IERC20 token) external nonReentrant {
         require(msg.sender == beneficiary, "TokenVesting: not the beneficiary");
-        require (!canStake || !revoked[token], "TokenVesting: staked funds revoked");
+        require(!canStake || !revoked[token], "TokenVesting: staked funds revoked");
 
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "TokenVesting: no tokens are due");
@@ -198,7 +198,7 @@ contract TokenVesting is ReentrancyGuard {
             // should never enter this if canStake == true, since cliff == end
             assert (!canStake);
             uint256 cliffAmount = totalBalance / 5;
-            return cliffAmount + (totalBalance - cliffAmount)  * (block.timestamp - cliff) / (end - cliff);
+            return cliffAmount + (totalBalance - cliffAmount) * (block.timestamp - cliff) / (end - cliff);
         }
     }
 }

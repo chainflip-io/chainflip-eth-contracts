@@ -148,7 +148,7 @@ def test_retrieve_revoked_funds_and_rewards(addrs, cf, tokenVestingStaking, amou
 
     # Mimic remaining stake amount unstaked
     cf.flip.transfer(tv, amount, {'from': addrs.DEPLOYER})
-    retrieve_revoked_and_check (tv, cf, addrs.REVOKER, amount)
+    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, amount)
 
     # Mimic rewards
     cf.flip.transfer(tv, rewards, {'from': addrs.DEPLOYER})
@@ -156,4 +156,4 @@ def test_retrieve_revoked_funds_and_rewards(addrs, cf, tokenVestingStaking, amou
     with reverts(REV_MSG_FUNDS_REVOKED):
         tv.release(cf.flip, {'from': addrs.INVESTOR})  
 
-    retrieve_revoked_and_check (tv, cf, addrs.REVOKER, rewards)
+    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, rewards)
