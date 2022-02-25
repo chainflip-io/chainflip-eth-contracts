@@ -26,6 +26,14 @@ def setAggKeyWithAggKey_test(cf):
     txRefundTest(balanceBefore, balanceAfter, tx)
     assert tx.events["AggKeySetByAggKey"][0].values() == [AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
+def setKey_rev_newPubKeyX_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+
+    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(agg_null_sig(cf.keyManager.address, chain.id), BAD_AGG_KEY)
+
+    with reverts(REV_MSG_PUB_KEY_X):
+        cf.keyManager.setAggKeyWithAggKey(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), BAD_AGG_KEY, { 'from': cf.ALICE })
+
 def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR

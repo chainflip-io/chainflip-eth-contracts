@@ -15,7 +15,7 @@ DENICE = accounts[4]
 GOVERNOR = accounts[0]
 GOVERNOR_2 = accounts[5]
 
-cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {'SKIP_INITIAL_FUND': True})
+cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {'PREFUND_CONTRACTS': "False"})
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {'from': DEPLOYER})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {'from': ALICE})

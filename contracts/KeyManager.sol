@@ -27,7 +27,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     mapping(address => bool) private _canValidateSig;
     bool private _canValidateSigSet;
 
-    constructor(Key memory _aggKey, address _govKey) {
+    constructor(Key memory _aggKey, address _govKey) validAggKey(_aggKey)  {
         aggKey = _aggKey;
         govKey = _govKey;
         _lastValidateTime = block.timestamp;
@@ -111,7 +111,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithAggKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) refundGas updatedValidSig(
+    ) external override nzKey(newKey) validAggKey(newKey) refundGas updatedValidSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,
@@ -224,6 +224,13 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     ///         to be done as a modifier so that it can happen before updatedValidSig
     modifier validTime() {
         require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough delay");
+        _;
+    }
+
+    /// @dev    Check that an aggregate key is capable of having its signatures
+    ///         verified by the schnorr lib.
+    modifier validAggKey(Key memory key) {
+        verifySigningKeyX(key.pubKeyX);
         _;
     }
 

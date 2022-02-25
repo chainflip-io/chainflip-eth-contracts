@@ -46,7 +46,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     uint private _minStake;
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(bytes32 => Claim) private _pendingClaims;
-    // The number of seconds in 48h
+    /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 constant public CLAIM_DELAY = 2 days;
 
     bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256('ERC777TokensRecipient');
