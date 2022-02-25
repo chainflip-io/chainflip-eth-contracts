@@ -101,11 +101,14 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     ) external override nonReentrant nzBytes32(nodeID) nzAddr(returnAddr) noFish {
         require(amount >= _minStake, "StakeMan: stake too small");
 
+        // Store it in memory to save gas
+        FLIP flip = _FLIP;
+
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
-        uint balBefore = _FLIP.balanceOf(address(this));
-        _FLIP.operatorSend(msg.sender, address(this), amount, "", "stake");
-        require(_FLIP.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
+        uint balBefore = flip.balanceOf(address(this));
+        flip.operatorSend(msg.sender, address(this), amount, "", "stake");
+        require(flip.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
 
         _totalStake += amount;
         emit Staked(nodeID, amount, msg.sender, returnAddr);

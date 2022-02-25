@@ -181,3 +181,77 @@ def vulnerableR3ktStakeMan(vulnerableStakedStakeMan):
     assert flipVuln.balanceOf(cf.CHARLIE) == amount
 
     return cf, smVuln, flipVuln
+
+
+
+# Vesting
+@pytest.fixture(scope="module")
+def addrs(a, TokenVesting):
+    class Context:
+        pass
+
+    addrs = Context()
+    addrs.DEPLOYER = a[0]
+    addrs.REVOKER = a[10]
+    addrs.INVESTOR = a[11]
+
+    return addrs
+
+@pytest.fixture(scope="module")
+def maths(addrs, MockMaths):
+    return addrs.DEPLOYER.deploy(MockMaths)
+
+
+@pytest.fixture(scope="module")
+def tokenVestingNoStaking(addrs, cf, TokenVesting):
+
+    # This was hardcoded to a timestamp, but ganache uses real-time when we run
+    # the tests, so we should use relative values instead of absolute ones
+    start = chain.time()
+    cliff = start + QUARTER_YEAR
+    end = start + QUARTER_YEAR + YEAR
+    
+    tv = addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        addrs.REVOKER,
+        REVOCABLE,
+        start,
+        cliff,
+        end,
+        NON_STAKABLE,
+        cf.stakeManager
+    )
+
+    total = MAX_TEST_STAKE
+ 
+    cf.flip.transfer(tv, total, {'from': addrs.DEPLOYER})
+
+    return tv, start, cliff, end, total
+
+@pytest.fixture(scope="module")
+def tokenVestingStaking(addrs, cf, TokenVesting):
+
+    # This was hardcoded to a timestamp, but ganache uses real-time when we run
+    # the tests, so we should use relative values instead of absolute ones
+    start = chain.time()
+    end = start + QUARTER_YEAR + YEAR
+    cliff = end
+    
+    tv = addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        addrs.REVOKER,
+        REVOCABLE,
+        start,
+        cliff,
+        end,
+        STAKABLE,
+        cf.stakeManager
+    )
+
+    total = MAX_TEST_STAKE
+ 
+    cf.flip.transfer(tv, total, {'from': addrs.DEPLOYER})
+
+    return tv, start, cliff, end, total

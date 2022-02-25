@@ -24,7 +24,9 @@ SECS_PER_BLOCK = 13
 # Time in seconds
 HOUR = 60 * 60
 DAY = HOUR * 24
-
+MONTH = 30 * DAY
+YEAR = 365 * DAY
+QUARTER_YEAR = int(YEAR / 4)
 
 REV_MSG_NZ_UINT = "Shared: uint input is empty"
 REV_MSG_NZ_ADDR = "Shared: address input is empty"
@@ -123,3 +125,18 @@ REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
+
+# -----Vesting-----
+REVOCABLE = True
+NON_REVOCABLE = False
+STAKABLE = True
+NON_STAKABLE = False
+REV_MSG_NO_TOKENS = "TokenVesting: no tokens are due"
+REV_MSG_NOT_REVOKER = "TokenVesting: not the revoker"
+REV_MSG_CANNOT_REVOKE = "TokenVesting: cannot revoke"
+REV_MSG_ALREADY_REVOKED = "TokenVesting: token already revoked"
+REV_MSG_CANNOT_STAKE = "TokenVesting: cannot stake"
+REV_MSG_VESTING_EXPIRED = "TokenVesting: vesting period expired"
+REV_MSG_CANNOT_RETRIEVE =  "TokenVesting: not retrievable"
+REV_MSG_FUNDS_REVOKED =  "TokenVesting: staked funds revoked"
+REV_MSG_NOT_REVOKED =  "TokenVesting: token not revoked"
