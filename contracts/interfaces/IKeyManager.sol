@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "./IShared.sol";
@@ -11,16 +11,20 @@ import "./IShared.sol";
 */
 interface IKeyManager is IShared {
 
+    event AggKeySetByAggKey(Key oldKey, Key newKey);
+    event AggKeySetByGovKey(Key oldKey, Key newKey);
+    event GovKeySetByGovKey(address oldKey, address newKey);
+    event SignatureAccepted(SigData sigData, address broadcaster);
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function isValidSig(
+    function isUpdatedValidSig(
         SigData memory sigData,
-        bytes32 contractMsgHash,
-        KeyID keyID
+        bytes32 contractMsgHash
     ) external returns (bool);
 
     function setAggKeyWithAggKey(
@@ -29,14 +33,16 @@ interface IKeyManager is IShared {
     ) external;
 
     function setAggKeyWithGovKey(
-        SigData memory sigData,
         Key memory newKey
     ) external;
 
     function setGovKeyWithGovKey(
-        SigData memory sigData,
-        Key memory newKey
+        address newKey
     ) external;
+
+    function canValidateSig(address addr) external view returns (bool);
+
+    function canValidateSigSet() external view returns (bool);
 
 
     //////////////////////////////////////////////////////////////
@@ -47,9 +53,9 @@ interface IKeyManager is IShared {
 
     function getAggregateKey() external view returns (Key memory);
 
-    function getGovernanceKey() external view returns (Key memory);
+    function getGovernanceKey() external view returns (address);
 
     function getLastValidateTime() external view returns (uint);
 
-    function isNonceUsedByKey(KeyID keyID, uint nonce) external view returns (bool);
+    function isNonceUsedByAggKey(uint nonce) external view returns (bool);
 }

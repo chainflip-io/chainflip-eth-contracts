@@ -8,7 +8,7 @@ ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
 TEST_AMNT = 10**17
 ONE_ETH = 10**18
-JUNK_INT = 12345
+JUNK_INT = 42069    # quantafire
 JUNK_HEX = web3.toHex(JUNK_INT)
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
@@ -24,7 +24,9 @@ SECS_PER_BLOCK = 13
 # Time in seconds
 HOUR = 60 * 60
 DAY = HOUR * 24
-
+MONTH = 30 * DAY
+YEAR = 365 * DAY
+QUARTER_YEAR = int(YEAR / 4)
 
 REV_MSG_NZ_UINT = "Shared: uint input is empty"
 REV_MSG_NZ_ADDR = "Shared: address input is empty"
@@ -45,8 +47,8 @@ AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
 # This wouldn't be the case if a single uint was used to track the current nonce for
 # each agg and gov key tho
 nonces = {AGG: 0, GOV: 0}
-def agg_null_sig(): return (0, 0, nonces[AGG], ZERO_ADDR)
-def gov_null_sig(): return (0, 0, nonces[GOV], ZERO_ADDR)
+def agg_null_sig(kmAddr, chainId): return (kmAddr, chainId, 0, 0, nonces[AGG], ZERO_ADDR)
+def gov_null_sig(kmAddr, chainId): return (kmAddr, chainId, 0, 0, nonces[GOV], ZERO_ADDR)
 
 REV_MSG_DELAY = "KeyManager: not enough delay"
 
@@ -74,9 +76,12 @@ REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
 REV_MSG_NONCETIMESGADDR = "Shared: nonceTimesGAddr is empty"
 REV_MSG_NONCETIMESGADDR_EMPTY = "No zero inputs allowed"
 
-# isValidSig
+# isUpdatedValidSig
+REV_MSG_WHITELIST = "KeyManager: not whitelisted"
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
+REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
+REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
 
 # SchnorrSECP256K1
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"
@@ -98,10 +103,10 @@ GENESIS_STAKE = 50000 * E_18
 STAKEMANAGER_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
 NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
 NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
-MIN_STAKE = 1000 * E_18
+MIN_STAKE = 40000 * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
 # 13292
-CLAIM_DELAY = 2 * HOUR
+CLAIM_DELAY = 2 * DAY
 NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
 
 REV_MSG_MIN_STAKE = "StakeMan: stake too small"
@@ -111,8 +116,28 @@ REV_MSG_CLAIM_EXISTS = "StakeMan: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "StakeMan: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "StakeMan: early, late, or execd"
 REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "StakeMan: old FLIP supply update"
+REV_MSG_STAKEMAN_GOVERNOR = "StakeMan: not governor"
+REV_MSG_STAKEMAN_SUSPENDED = "StakeMan: suspended"
+REV_MSG_STAKEMAN_NOT_SUSPENDED = "StakeMan: Not suspended"
 
+# -----KeyManager-----
+REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
+
+# -----Vesting-----
+REVOCABLE = True
+NON_REVOCABLE = False
+STAKABLE = True
+NON_STAKABLE = False
+REV_MSG_NO_TOKENS = "TokenVesting: no tokens are due"
+REV_MSG_NOT_REVOKER = "TokenVesting: not the revoker"
+REV_MSG_CANNOT_REVOKE = "TokenVesting: cannot revoke"
+REV_MSG_ALREADY_REVOKED = "TokenVesting: token already revoked"
+REV_MSG_CANNOT_STAKE = "TokenVesting: cannot stake"
+REV_MSG_VESTING_EXPIRED = "TokenVesting: vesting period expired"
+REV_MSG_CANNOT_RETRIEVE =  "TokenVesting: not retrievable"
+REV_MSG_FUNDS_REVOKED =  "TokenVesting: staked funds revoked"
+REV_MSG_NOT_REVOKED =  "TokenVesting: token not revoked"

@@ -11,7 +11,7 @@ No description
 ## `testSetFLIP(contract FLIP flip)` (external)
 
  Can't set _FLIP in the constructor because it's made in the constructor
-         of StakeManager and getFLIPAddress is external
+         of StakeManager and getFLIP is external
 
 - `flip`:      The address of the FLIP contract
 

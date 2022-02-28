@@ -1,34 +1,35 @@
 # `KeyManager`
 
   Holds the aggregate and governance keys, functions to update them,
-          and isValidSig so other contracts can verify signatures and updates _lastValidateTime
-
-
-
+          and isUpdatedValidSig so other contracts can verify signatures and updates _lastValidateTime
 
 ## `validTime()`
 
-
-
    Check that enough time has passed for setAggKeyWithGovKey. Needs
-        to be done as a modifier so that it can happen before validSig
+        to be done as a modifier so that it can happen before updatedValidSig
 
-## `validSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID)`
+## `isGovernor()`
 
+## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash)`
 
+   Call isUpdatedValidSig
 
-   Call isValidSig
-
-
-## `constructor(struct IShared.Key aggKey, struct IShared.Key govKey)` (public)
+## `constructor(struct IShared.Key _aggKey, address _govKey)` (public)
 
 No description
 
+## `setCanValidateSig(address[] addrs)` (external)
 
-## `isValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID) → bool` (public)
+ Sets the specific addresses that can call isValidSig. This
+         function can only ever be called once! Yes, it's possible to
+         frontrun this, but honestly, it's fine in practice - it just
+         needs to be set up successfully once, which is trivial
+
+- `addrs`:   The addresses to whitelist
+
+## `isUpdatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash) → bool` (public)
 
  Checks the validity of a signature and msgHash, then updates _lastValidateTime
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (here that's normally
                  a hash over the calldata to the function with an empty sigData)
@@ -38,11 +39,6 @@ No description
                  to check it against the hash in sigData (bytes32) (here that's normally
                  a hash over the calldata to the function with an empty sigData)
 
-- `keyID`:     The KeyID that indicates which key to verify the sig with. Ensures that
-                 only 'registered' keys can be used to successfully call this fcn and change
-                 _lastValidateTime
-
-
 Returns
 
 - Bool used by caller to be absolutely sure that the function hasn't reverted
@@ -51,7 +47,6 @@ Returns
 
  Set a new aggregate key. Requires a signature from the current aggregate key
 
-
 - `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
                  from the current aggregate key (uint)
@@ -59,46 +54,31 @@ Returns
 - `newKey`:    The new aggregate key to be set. The x component of the pubkey (uint),
                  the parity of the y component (uint8)
 
-
-## `setAggKeyWithGovKey(struct IShared.SigData sigData, struct IShared.Key newKey)` (external)
+## `setAggKeyWithGovKey(struct IShared.Key newKey)` (external)
 
  Set a new aggregate key. Requires a signature from the current governance key
-
-
-- `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
-                 for this function with empty msgHash and sig) and sig over that hash
-                 from the current governance key (uint)
 
 - `newKey`:    The new aggregate key to be set. The x component of the pubkey (uint),
                  the parity of the y component (uint8)
 
-
-## `setGovKeyWithGovKey(struct IShared.SigData sigData, struct IShared.Key newKey)` (external)
+## `setGovKeyWithGovKey(address newKey)` (external)
 
  Set a new governance key. Requires a signature from the current governance key
 
-
-- `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
-                 for this function with empty msgHash and sig) and sig over that hash
-                 from the current governance key (uint)
-
 - `newKey`:    The new governance key to be set. The x component of the pubkey (uint),
                  the parity of the y component (uint8)
-
 
 ## `getAggregateKey() → struct IShared.Key` (external)
 
  Get the current aggregate key
 
-
 Returns
 
 - The Key struct for the aggregate key
 
-## `getGovernanceKey() → struct IShared.Key` (external)
+## `getGovernanceKey() → address` (external)
 
  Get the current governance key
-
 
 Returns
 
@@ -107,33 +87,40 @@ Returns
 ## `getLastValidateTime() → uint256` (external)
 
  Get the last time that a function was called which
-         required a signature from _aggregateKeyData or _governanceKeyData
-
+         required a signature from _aggregateKeyData or_governanceKeyData
 
 Returns
 
-- The last time isValidSig was called, in unix time (uint)
+- The last time isUpdatedValidSig was called, in unix time (uint)
 
-## `isNonceUsedByKey(enum IShared.KeyID keyID, uint256 nonce) → bool` (external)
+## `isNonceUsedByAggKey(uint256 nonce) → bool` (external)
 
  Get whether or not the specific keyID has used this nonce before
          since it cannot be used again
-
 
 Returns
 
 - Whether the nonce has already been used (bool)
 
+## `canValidateSig(address addr) → bool` (external)
+
+ Get whether addr is whitelisted for validating a sig
+
+- `addr`:  The address to check
+
+Returns
+
+- Whether or not addr is whitelisted or not
+
+## `canValidateSigSet() → bool` (external)
+
+ Get whether or not _canValidateSig has already been set, which
+         prevents it from being set again
+
+Returns
+
+- The value of _canValidateSigSet
+
 ## `receive()` (external)
 
  @notice Allows this contract to receive ETH used to refund callers
-
-
-
-## `KeyChange(bool signedByAggKey, struct IShared.Key oldKey, struct IShared.Key newKey)`
-
-
-
-
-
-

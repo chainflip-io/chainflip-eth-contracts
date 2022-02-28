@@ -2,15 +2,15 @@
 
   The interface for functions Vault implements
 
-## `allBatch(struct IShared.SigData sigData, bytes32[] fetchSwapIDs, address[] fetchTokenAddrs, address[] tranTokenAddrs, address payable[] tranRecipients, uint256[] tranAmounts)` (external)
+## `allBatch(struct IShared.SigData sigData, bytes32[] fetchSwapIDs, contract IERC20[] fetchTokens, contract IERC20[] tranTokens, address payable[] tranRecipients, uint256[] tranAmounts)` (external)
 
 No description
 
-## `transfer(struct IShared.SigData sigData, address tokenAddr, address payable recipient, uint256 amount)` (external)
+## `transfer(struct IShared.SigData sigData, contract IERC20 token, address payable recipient, uint256 amount)` (external)
 
 No description
 
-## `transferBatch(struct IShared.SigData sigData, address[] tokenAddrs, address payable[] recipients, uint256[] amounts)` (external)
+## `transferBatch(struct IShared.SigData sigData, contract IERC20[] tokens, address payable[] recipients, uint256[] amounts)` (external)
 
 No description
 
@@ -22,11 +22,11 @@ No description
 
 No description
 
-## `fetchDepositToken(struct IShared.SigData sigData, bytes32 swapID, address tokenAddr)` (external)
+## `fetchDepositToken(struct IShared.SigData sigData, bytes32 swapID, contract IERC20 token)` (external)
 
 No description
 
-## `fetchDepositTokenBatch(struct IShared.SigData sigData, bytes32[] swapIDs, address[] tokenAddrs)` (external)
+## `fetchDepositTokenBatch(struct IShared.SigData sigData, bytes32[] swapIDs, contract IERC20[] tokens)` (external)
 
 No description
 

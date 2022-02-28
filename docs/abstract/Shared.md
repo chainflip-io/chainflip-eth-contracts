@@ -6,19 +6,19 @@
 
 ## `nzUint(uint256 u)`
 
-   Checks that a uint isn't nonzero/empty
+   Checks that a uint isn't zero/empty
 
 ## `nzAddr(address a)`
 
-   Checks that an address isn't nonzero/empty
+   Checks that an address isn't zero/empty
 
 ## `nzBytes32(bytes32 b)`
 
-   Checks that a bytes32 isn't nonzero/empty
+   Checks that a bytes32 isn't zero/empty
 
 ## `nzKey(struct IShared.Key key)`
 
-   Checks that all of a Key's values are populated
+   Checks that the pubKeyX is populated
 
 ## `refundGas()`
 

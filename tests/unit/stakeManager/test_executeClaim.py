@@ -22,8 +22,8 @@ def test_executeClaim_rand(cf, stakedMin, nodeID, amount, staker, expiryTimeDiff
 
         expiryTime = chain.time() + expiryTimeDiff + 5
         args = (nodeID, amount, staker, expiryTime)
-        callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(), *args)
-        tx1 = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+        callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
+        tx1 = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args)
 
         assert cf.stakeManager.getPendingClaim(nodeID) == (amount, staker, tx1.timestamp + CLAIM_DELAY, expiryTime)
         assert cf.flip.balanceOf(cf.stakeManager) == smStartBal
@@ -56,6 +56,8 @@ def test_executeClaim_min_delay(cf, claimRegistered):
 
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager)
 
+    assert maxValidAmount != 0
+
     chain.sleep(CLAIM_DELAY)
     tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
@@ -75,7 +77,7 @@ def test_executeClaim_max_delay(cf, claimRegistered):
 
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager)
 
-    chain.sleep(claim[3] - chain.time() - 1)
+    chain.sleep(claim[3] - chain.time() - 2)
     tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Check things that should've changed
@@ -103,16 +105,28 @@ def test_executeClaim_rev_too_late(cf, claimRegistered):
     with reverts(REV_MSG_NOT_ON_TIME):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
+def test_executeClaim_rev_suspended(cf, claimRegistered):
+    _, claim = claimRegistered
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == claim
+
+    chain.sleep(CLAIM_DELAY)
+
+    # Suspend the stakemananger via governance
+    cf.stakeManager.suspend({"from": cf.GOVERNOR})
+
+    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+        cf.stakeManager.executeClaim(JUNK_HEX)
+
 
 # Can't use the normal StakeManager to test this since there's obviously
 # intentionally no way to get FLIP out of the contract without calling `registerClaim`,
 # so we have to use StakeManagerVulnerable which inherits StakeManager and
 # has `testSendFLIP` in it to simulate some kind of hack
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
-def test_executeClaim_rev_noFish(cf, vulnerableR3ktStakeMan, amount):
-    smVuln, _ = vulnerableR3ktStakeMan
+def test_executeClaim_rev_noFish(vulnerableR3ktStakeMan, amount):
+    cf, smVuln, _ = vulnerableR3ktStakeMan
     args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
 
-    callDataNoSig = smVuln.registerClaim.encode_input(agg_null_sig(), *args)
+    callDataNoSig = smVuln.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
     with reverts(REV_MSG_NO_FISH):
-        smVuln.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig), *args)
+        smVuln.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args)

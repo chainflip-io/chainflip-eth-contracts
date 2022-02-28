@@ -2,7 +2,7 @@
 
   The interface for functions KeyManager implements
 
-## `isValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash, enum IShared.KeyID keyID) → bool` (external)
+## `isUpdatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash) → bool` (external)
 
 No description
 
@@ -10,11 +10,19 @@ No description
 
 No description
 
-## `setAggKeyWithGovKey(struct IShared.SigData sigData, struct IShared.Key newKey)` (external)
+## `setAggKeyWithGovKey(struct IShared.Key newKey)` (external)
 
 No description
 
-## `setGovKeyWithGovKey(struct IShared.SigData sigData, struct IShared.Key newKey)` (external)
+## `setGovKeyWithGovKey(address newKey)` (external)
+
+No description
+
+## `canValidateSig(address addr) → bool` (external)
+
+No description
+
+## `canValidateSigSet() → bool` (external)
 
 No description
 
@@ -22,7 +30,7 @@ No description
 
 No description
 
-## `getGovernanceKey() → struct IShared.Key` (external)
+## `getGovernanceKey() → address` (external)
 
 No description
 
@@ -30,6 +38,14 @@ No description
 
 No description
 
-## `isNonceUsedByKey(enum IShared.KeyID keyID, uint256 nonce) → bool` (external)
+## `isNonceUsedByAggKey(uint256 nonce) → bool` (external)
 
 No description
+
+## `AggKeySetByAggKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+
+## `AggKeySetByGovKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+
+## `GovKeySetByGovKey(address oldKey, address newKey)`
+
+## `SignatureAccepted(struct IShared.SigData sigData, address broadcaster)`

@@ -1,4 +1,5 @@
 from utils import *
+from brownie import chain
 import umbral
 from umbral import SecretKey
 from py_ecc.secp256k1 import secp256k1
@@ -65,22 +66,22 @@ class Signer():
         return [self.pubKeyXInt, self.pubKeyYPar]
 
 
-    def getSigData(self, msgToHash):
-        return self.getSigDataWithKeyID(msgToHash, self.keyID)
+    def getSigData(self, msgToHash, keyManagerAddress):
+        return self.getSigDataWithKeyID(msgToHash, self.keyID, keyManagerAddress)
 
-    def getSigDataWithKeyID(self, msgToHash, keyID):
+    def getSigDataWithKeyID(self, msgToHash, keyID, keyManagerAddress):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
-        sigData = [int(msgHashHex, 16), s, self.nonces[keyID], nonceTimesGeneratorAddress]
+        sigData = [keyManagerAddress, chain.id, int(msgHashHex, 16), s, self.nonces[keyID], nonceTimesGeneratorAddress]
 
         self.nonces[keyID] += 1
         return sigData
 
 
-    def getSigDataWithNonces(self, msgToHash, nonces, keyID):
+    def getSigDataWithNonces(self, msgToHash, nonces, keyID, keyManagerAddress):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
-        sigData = [int(msgHashHex, 16), s, nonces[keyID], nonceTimesGeneratorAddress]
+        sigData = [keyManagerAddress, chain.id, int(msgHashHex, 16), s, nonces[keyID], nonceTimesGeneratorAddress]
 
         # Since nonces is passed by reference, it will be altered for all other signers too
         nonces[keyID] += 1

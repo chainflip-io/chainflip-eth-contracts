@@ -1,7 +1,8 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "./IKeyManager.sol";
+import "./IFLIP.sol";
 import "./IShared.sol";
 
 
@@ -10,6 +11,19 @@ import "./IShared.sol";
 * @author   Quantaf1re (James Key)
 */
 interface IStakeManager is IShared {
+
+    event Staked(bytes32 indexed nodeID, uint amount, address staker, address indexed returnAddr);
+    event ClaimRegistered(
+        bytes32 indexed nodeID,
+        uint amount,
+        address indexed staker,
+        uint48 startTime,
+        uint48 expiryTime
+    );
+    event ClaimExecuted(bytes32 indexed nodeID, uint amount);
+    event FlipSupplyUpdated(uint oldSupply, uint newSupply, uint stateChainBlockNumber);
+    event MinStakeChanged(uint oldMinStake, uint newMinStake);
+    event GovernanceWithdrawal(address to, uint amount);
 
     struct Claim {
         uint amount;
@@ -68,8 +82,8 @@ interface IStakeManager is IShared {
     function executeClaim(bytes32 nodeID) external;
 
     /**
-     * @notice  Compares a given new FLIP supply it against the old supply,
-     *          then mints and burns as appropriate
+     * @notice  Compares a given new FLIP supply against the old supply,
+     *          then mints new and burns as appropriate (to/from the StakeManager)
      * @param sigData               signature over the abi-encoded function params
      * @param newTotalSupply        new total supply of FLIP
      * @param stateChainBlockNumber State Chain block number for the new total supply
@@ -83,15 +97,29 @@ interface IStakeManager is IShared {
     /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current governance key (uint)
      * @param newMinStake   The new minimum stake
      */
     function setMinStake(
-        SigData calldata sigData,
         uint newMinStake
     ) external;
+
+    /**
+     * @notice      Pause claim executions on the contract, for the purpose of
+     *              allowing governance to intervene in an emergency.
+     */
+    function suspend() external;
+
+    /**
+     * @notice      Resume claim executions on the contract.
+     */
+    function resume() external;
+
+    /**
+     * @notice      Withdraw all FLIP to governance address, only if suspended.
+     *              Used to rectify an emergency. Chainflip network is likely
+     *              to be compromised if this is necessary, it is a last resort.
+     */
+    function govWithdraw() external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -109,7 +137,7 @@ interface IStakeManager is IShared {
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIPAddress() external view returns (address);
+    function getFLIP() external view returns (IFLIP);
 
     /**
      * @notice  Get the last state chain block number that the supply was updated at

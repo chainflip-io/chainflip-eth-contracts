@@ -46,7 +46,7 @@ Slightly modified from <https://github.com/smartcontractkit/chainlink/pull/1272/
               code below. Here "‖" means concatenation of the listed byte
               arrays.
 
-      @dev 6. Let x be your secret key. Compute s = (k - d * e) % Q. Add Q to
+      @dev 6. Let d be your secret key. Compute s = (k - d * e) % Q. Add Q to
               it, if it's negative. This is your signature. (d is your secret
               key.)
 *************************************************************************
@@ -79,13 +79,13 @@ Slightly modified from <https://github.com/smartcontractkit/chainlink/pull/1272/
       signingPubKeyX, even though it represents a value in the base field, and
       has no natural relationship to the order of the curve's cyclic group.
 *************************************************************************
+      @param msgHash is a 256-bit hash of the message being signed.
+      @param signature is the actual signature, described as s in the above
+             instructions.
       @param signingPubKeyX is the x ordinate of the public key. This must be
              less than HALF_Q.
       @param pubKeyYParity is 0 if the y ordinate of the public key is even, 1
              if it's odd.
-      @param signature is the actual signature, described as s in the above
-             instructions.
-      @param msgHash is a 256-bit hash of the message being signed.
       @param nonceTimesGeneratorAddress is the ethereum address of k*g in the
              above instructions
 *************************************************************************

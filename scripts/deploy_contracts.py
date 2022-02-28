@@ -4,7 +4,7 @@ import json
 sys.path.append(os.path.abspath('tests'))
 from consts import *
 from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP
-from deploy import deploy_initial_ChainFlip_contracts
+from deploy import deploy_set_Chainflip_contracts
 
 
 
@@ -17,8 +17,11 @@ def main():
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
     print(f'DEPLOYER = {DEPLOYER}')
 
-    cf = deploy_initial_ChainFlip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ)
+    cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ)
 
+<<<<<<< HEAD
+    print(f'FLIP = {cf.stakeManager.getFLIP()}')
+=======
     print(f'KeyManager: {cf.keyManager.address}')
     print(f'StakeManager: {cf.stakeManager.address}')
     print(f'FLIP: {cf.stakeManager.getFLIPAddress()}')
@@ -41,3 +44,4 @@ def main():
         f = open(f'{dir_path}{DEPLOY_ARTEFACT_ID}.json', 'w')
         f.write(json_content)
         f.close()
+>>>>>>> origin/master

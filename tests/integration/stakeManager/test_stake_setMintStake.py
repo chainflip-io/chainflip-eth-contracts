@@ -6,8 +6,7 @@ from brownie import reverts, web3
 def test_setMinStake_stake(cf):
     # Set new minimum stake
     newMinStake = int(MIN_STAKE * 1.5)
-    callDataNoSig = cf.stakeManager.setMinStake.encode_input(gov_null_sig(), newMinStake)
-    setMinStakeTx = cf.stakeManager.setMinStake(GOV_SIGNER_1.getSigData(callDataNoSig), newMinStake)
+    setMinStakeTx = cf.stakeManager.setMinStake(newMinStake, {"from": cf.GOVERNOR})
 
     # Check things that should've changed
     assert cf.stakeManager.getMinimumStake() == newMinStake

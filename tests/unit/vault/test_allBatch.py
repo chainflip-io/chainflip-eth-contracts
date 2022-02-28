@@ -56,16 +56,16 @@ def test_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fet
     tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in tranRecipients]
 
-    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
+    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
+            cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
     else:
         # Why the F is Alice being paid to make this transaction when the amounts are small?
         balanceBefore = sender.balance()
-        tx = cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
+        tx = cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
         balanceAfter = sender.balance()
         refunded = txRefundTest(balanceBefore, balanceAfter, tx)
         assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR] + ONE_ETH - refunded
@@ -98,10 +98,10 @@ def test_allBatch_rev_fetch_array_length(cf, token, token2, DepositToken, Deposi
     tranMinLen = trimToShortest([tranRecipients, tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen)
 
-    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
+    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
 
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
+        cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
 
 
 @given(
@@ -119,24 +119,24 @@ def test_allBatch_rev_transfer_array_length(cf, token, token2, DepositToken, Dep
     tranMinLen = trimToShortest([tranRecipients, tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen + randK)
 
-    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
+    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts)
 
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
+        cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
 
 def test_allBatch_rev_msgHash(cf):
-    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
-    sigData[0] += 1
+    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
+    sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
         cf.vault.allBatch(sigData, [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
 
 
 def test_allBatch_rev_sig(cf):
-    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
-    sigData[1] += 1
+    callDataNoSig = cf.vault.allBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
+    sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
         cf.vault.allBatch(sigData, [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT])

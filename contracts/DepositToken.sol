@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "./interfaces/IERC20Lite.sol";
@@ -16,7 +16,7 @@ contract DepositToken {
         // SafeTransfer not used because the CFE should only fetch this deposit if
         // the coins are already in this contract, and adding library logic would
         // increase gas costs of deploying the contract quite a bit
-        token.transfer(msg.sender, token.balanceOf(address(this)));
+        require(token.transfer(msg.sender, token.balanceOf(address(this))), "DepositToken: transfer failed");
         // This will also send any excess ETH that the user mistakenly sent
         selfdestruct(payable(msg.sender));
     }

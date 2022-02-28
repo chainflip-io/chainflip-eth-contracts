@@ -28,10 +28,10 @@ def test_fetchDepositTokenBatch(cf, token, token2, DepositToken, amounts, swapID
     assert token2.balanceOf(cf.vault) == 0
 
     # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), swapIDs, tokens)
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs, tokens)
 
     # Fetch the deposit
-    cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), swapIDs, tokens)
+    cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, tokens)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert token.balanceOf(cf.vault) == tokenATotal
@@ -39,26 +39,26 @@ def test_fetchDepositTokenBatch(cf, token, token2, DepositToken, amounts, swapID
 
 
 def test_fetchDepositTokenBatch_rev_msgHash(cf, token):
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD], [token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD], [token])
 
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
-    sigData[0] += 1
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
+    sigData[2] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
         cf.vault.fetchDepositTokenBatch(sigData, [JUNK_HEX_PAD], [token])
 
 
 def test_fetchDepositTokenBatch_rev_sig(cf, token):
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD], [token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD], [token])
 
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
-    sigData[1] += 1
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
+    sigData[3] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
         cf.vault.fetchDepositTokenBatch(sigData, [JUNK_HEX_PAD], [token])
 
 
 def test_fetchDepositTokenBatch_rev_array_length(cf, token):
-    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(), [JUNK_HEX_PAD, JUNK_HEX_PAD], [token])
+    callDataNoSig = cf.vault.fetchDepositTokenBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD, JUNK_HEX_PAD], [token])
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig), [JUNK_HEX_PAD, JUNK_HEX_PAD], [token])
+        cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), [JUNK_HEX_PAD, JUNK_HEX_PAD], [token])

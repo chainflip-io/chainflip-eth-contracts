@@ -1,7 +1,6 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
@@ -22,11 +21,11 @@ contract Vault is IVault, Shared {
     using SafeERC20 for IERC20;
 
     /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private _keyManager;
+    IKeyManager private immutable _keyManager;
 
 
     event TransferFailed(
-        address payable recipient,
+        address payable indexed recipient,
         uint amount,
         bytes lowLevelData
     );
@@ -39,65 +38,64 @@ contract Vault is IVault, Shared {
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
-     *          deposits specified with fetchSwapIDs and fetchTokenAddrs (which are requried
+     *          deposits specified with fetchSwapIDs and fetchTokens (which are requried
      *          to be of equal length), then it performs all transfers specified with the rest
      *          of the inputs, the same as transferBatch (where all inputs are again required
      *          to be of equal length - however the lengths of the fetch inputs do not have to
      *          be equal to lengths of the transfer inputs). Fetches/transfers of ETH are indicated
      *          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
-     *          fetch should should have the same index swapIDs[i] and tokenAddrs[i]
+     *          fetch should should have the same index swapIDs[i] and tokens[i]
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param fetchSwapIDs      The unique identifiers for this swap (bytes32[]), used for create2
-     * @param fetchTokenAddrs   The addresses of the tokens to be transferred
-     * @param tranTokenAddrs    The addresses of the tokens to be transferred
+     * @param fetchTokens   The addresses of the tokens to be transferred
+     * @param tranTokens    The addresses of the tokens to be transferred
      * @param tranRecipients    The address of the recipient of the transfer
      * @param tranAmounts       The amount to transfer, in wei (uint)
      */
     function allBatch(
         SigData calldata sigData,
         bytes32[] calldata fetchSwapIDs,
-        address[] calldata fetchTokenAddrs,
-        address[] calldata tranTokenAddrs,
+        IERC20[] calldata fetchTokens,
+        IERC20[] calldata tranTokens,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.allBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 fetchSwapIDs,
-                fetchTokenAddrs,
-                tranTokenAddrs,
+                fetchTokens,
+                tranTokens,
                 tranRecipients,
                 tranAmounts
             )
-        ),
-        KeyID.Agg
+        )
     ) {
         // Can't put these as modifiers annoyingly because it creates
         // a 'stack too deep' error
         require(
-            fetchSwapIDs.length == fetchTokenAddrs.length &&
-            tranTokenAddrs.length == tranRecipients.length &&
+            fetchSwapIDs.length == fetchTokens.length &&
+            tranTokens.length == tranRecipients.length &&
             tranRecipients.length == tranAmounts.length,
             "Vault: arrays not same length"
         );
 
         // Fetch all deposits
-        for (uint i; i < fetchSwapIDs.length; i++) {
-            if (fetchTokenAddrs[i] == _ETH_ADDR) {
+        for (uint i = 0; i < fetchSwapIDs.length; i++) {
+            if (address(fetchTokens[i]) == _ETH_ADDR) {
                 new DepositEth{salt: fetchSwapIDs[i]}();
             } else {
-                new DepositToken{salt: fetchSwapIDs[i]}(IERC20Lite(fetchTokenAddrs[i]));
+                new DepositToken{salt: fetchSwapIDs[i]}(IERC20Lite(address(fetchTokens[i])));
             }
         }
 
         // Send all transfers
-        _transferBatch(tranTokenAddrs, tranRecipients, tranAmounts);
+        _transferBatch(tranTokens, tranRecipients, tranAmounts);
     }
 
 
@@ -112,86 +110,84 @@ contract Vault is IVault, Shared {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param tokenAddr The address of the token to be transferred
+     * @param token     The token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
      */
     function transfer(
         SigData calldata sigData,
-        address tokenAddr,
+        IERC20 token,
         address payable recipient,
         uint amount
-    ) external override nzAddr(tokenAddr) nzAddr(recipient) nzUint(amount) validSig(
+    ) external override nzAddr(address(token)) nzAddr(recipient) nzUint(amount) updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.transfer.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
-                tokenAddr,
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                token,
                 recipient,
                 amount
             )
-        ),
-        KeyID.Agg
+        )
     ) {
-        _transfer(tokenAddr, recipient, amount);
+        _transfer(token, recipient, amount);
     }
 
     /**
      * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
-     *          transfer should should have the same index tokenAddrs[i], recipients[i],
+     *          transfer should should have the same index tokens[i], recipients[i],
      *          and amounts[i].
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param tokenAddrs The addresses of the tokens to be transferred
+     * @param tokens    The addresses of the tokens to be transferred
      * @param recipients The address of the recipient of the transfer
      * @param amounts    The amount to transfer, in wei (uint)
      */
     function transferBatch(
         SigData calldata sigData,
-        address[] calldata tokenAddrs,
+        IERC20[] calldata tokens,
         address payable[] calldata recipients,
         uint[] calldata amounts
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.transferBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
-                tokenAddrs,
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                tokens,
                 recipients,
                 amounts
             )
-        ),
-        KeyID.Agg
+        )
     ) {
         require(
-            tokenAddrs.length == recipients.length &&
+            tokens.length == recipients.length &&
             recipients.length == amounts.length,
             "Vault: arrays not same length"
         );
 
-        _transferBatch(tokenAddrs, recipients, amounts);
+        _transferBatch(tokens, recipients, amounts);
     }
 
     /**
      * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
-     *          transfer should should have the same index tokenAddrs[i], recipients[i],
+     *          transfer should should have the same index tokens[i], recipients[i],
      *          and amounts[i].
-     * @param tokenAddrs The addresses of the tokens to be transferred
+     * @param tokens The addresses of the tokens to be transferred
      * @param recipients The address of the recipient of the transfer
      * @param amounts    The amount to transfer, in wei (uint)
      */
     function _transferBatch(
-        address[] calldata tokenAddrs,
+        IERC20[] calldata tokens,
         address payable[] calldata recipients,
         uint[] calldata amounts
     ) private {
-        for (uint i; i < tokenAddrs.length; i++) {
-            _transfer(tokenAddrs[i], recipients[i], amounts[i]);
+        for (uint i = 0; i < tokens.length; i++) {
+            _transfer(tokens[i], recipients[i], amounts[i]);
         }
     }
 
@@ -210,24 +206,22 @@ contract Vault is IVault, Shared {
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
-     * @param tokenAddr The address of the token to be transferred
+     * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
      */
     function _transfer(
-        address tokenAddr,
+        IERC20 token,
         address payable recipient,
         uint amount
     ) private {
-        if (tokenAddr == _ETH_ADDR) {
+        if (address(token) == _ETH_ADDR) {
             try this.sendEth{value: amount}(recipient) {
             } catch (bytes memory lowLevelData) {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
-            // It would be nice to wrap require around this line, but
-            // some older tokens don't return a bool
-            IERC20(tokenAddr).safeTransfer(recipient, amount);
+            IERC20(token).safeTransfer(recipient, amount);
         }
     }
 
@@ -250,16 +244,15 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) refundGas validSig(
+    ) external override nzBytes32(swapID) refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEth.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID
             )
-        ),
-        KeyID.Agg
+        )
     ) {
         new DepositEth{salt: swapID}();
     }
@@ -276,16 +269,15 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs
-    ) external override refundGas validSig(
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositEthBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapIDs
             )
-        ),
-        KeyID.Agg
+        )
     ) {
         for (uint i; i < swapIDs.length; i++) {
             new DepositEth{salt: swapIDs[i]}();
@@ -300,25 +292,24 @@ contract Vault is IVault, Shared {
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32), used for create2
-     * @param tokenAddr The address of the token to be transferred
+     * @param token     The token to be transferred
      */
     function fetchDepositToken(
         SigData calldata sigData,
         bytes32 swapID,
-        address tokenAddr
-    ) external override nzBytes32(swapID) nzAddr(tokenAddr) refundGas validSig(
+        IERC20 token
+    ) external override nzBytes32(swapID) nzAddr(address(token)) refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositToken.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapID,
-                tokenAddr
+                token
             )
-        ),
-        KeyID.Agg
+        )
     ) {
-        new DepositToken{salt: swapID}(IERC20Lite(tokenAddr));
+        new DepositToken{salt: swapID}(IERC20Lite(address(token)));
     }
 
     /**
@@ -329,31 +320,30 @@ contract Vault is IVault, Shared {
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param swapIDs       The unique identifiers for this swap (bytes32[]), used for create2
-     * @param tokenAddrs    The addresses of the tokens to be transferred
+     * @param tokens        The addresses of the tokens to be transferred
      */
     function fetchDepositTokenBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
-        address[] calldata tokenAddrs
-    ) external override refundGas validSig(
+        IERC20[] calldata tokens
+    ) external override refundGas updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
                 this.fetchDepositTokenBatch.selector,
-                SigData(0, 0, sigData.nonce, address(0)),
+                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 swapIDs,
-                tokenAddrs
+                tokens
             )
-        ),
-        KeyID.Agg
+        )
     ) {
         require(
-            swapIDs.length == tokenAddrs.length,
+            swapIDs.length == tokens.length,
             "Vault: arrays not same length"
         );
 
         for (uint i; i < swapIDs.length; i++) {
-            new DepositToken{salt: swapIDs[i]}(IERC20Lite(tokenAddrs[i]));
+            new DepositToken{salt: swapIDs[i]}(IERC20Lite(address(tokens[i])));
         }
     }
 
@@ -380,13 +370,12 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
 
-    /// @dev    Calls isValidSig in _keyManager
-    modifier validSig(
+    /// @dev    Calls isUpdatedValidSig in _keyManager
+    modifier updatedValidSig(
         SigData calldata sigData,
-        bytes32 contractMsgHash,
-        KeyID keyID
+        bytes32 contractMsgHash
     ) {
-        require(_keyManager.isValidSig(sigData, contractMsgHash, keyID));
+        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }
 

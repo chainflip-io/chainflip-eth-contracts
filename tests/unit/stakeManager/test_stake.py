@@ -52,7 +52,7 @@ def test_stake_rev_nodeID(cf):
 # has `testSendFLIP` in it to simulate some kind of hack
 @given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE))
 def test_stake_rev_noFish(cf, vulnerableR3ktStakeMan, FLIP, amount):
-    smVuln, _ = vulnerableR3ktStakeMan
+    cf, smVuln, _ = vulnerableR3ktStakeMan
 
     with reverts(REV_MSG_NO_FISH):
         smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})

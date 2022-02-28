@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 import "../StakeManager.sol";
@@ -28,7 +28,7 @@ contract StakeManagerVulnerable is StakeManager {
     //
     /**
      * @notice  Can't set _FLIP in the constructor because it's made in the constructor
-     *          of StakeManager and getFLIPAddress is external
+     *          of StakeManager and getFLIP is external
      * @param flip      The address of the FLIP contract
      */
     function testSetFLIP(FLIP flip) external {

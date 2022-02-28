@@ -23,9 +23,9 @@ def test_transferBatch(cf, token, token2, recipients, amounts, sender):
     tokenBals = [token.balanceOf(recip) for recip in recipients]
     token2Bals = [token2.balanceOf(recip) for recip in recipients]
 
-    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), tokens, recipients, amounts)
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), tokens, recipients, amounts)
     balanceBefore = sender.balance()
-    tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), tokens, recipients, amounts, {'from': sender})
+    tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), tokens, recipients, amounts, {'from': sender})
     balanceAfter = sender.balance()
     txRefundTest(balanceBefore, balanceAfter, tx)
 
@@ -50,25 +50,25 @@ def test_transferBatch_rev_array_length(cf, token, token2, recipients, amounts, 
     # Make sure the lengths are always different somewhere
     k = len(amounts) if len(recipients) != len(amounts) else len(amounts) + randK
     tokens = choices([ETH_ADDR, token, token2], k=k)
-    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), tokens, recipients, amounts)
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), tokens, recipients, amounts)
 
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig), tokens, recipients, amounts)
+        cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), tokens, recipients, amounts)
 
 
 def test_transferBatch_rev_msgHash(cf):
-    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
-    sigData[0] += 1
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
+    sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
         cf.vault.transferBatch(sigData, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
 
 
 def test_transferBatch_rev_sig(cf):
-    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig)
-    sigData[1] += 1
+    callDataNoSig = cf.vault.transferBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
+    sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
         cf.vault.transferBatch(sigData, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])

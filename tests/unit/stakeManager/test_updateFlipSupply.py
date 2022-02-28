@@ -12,9 +12,9 @@ def test_updateFlipSupply(cf):
 
     stateChainBlockNumber = 1
 
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
     balanceBefore = cf.ALICE.balance()
-    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
+    tx = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
 
     # Balance should be MIN_STAKE plus the minted delta
@@ -26,9 +26,9 @@ def test_updateFlipSupply(cf):
 
     stateChainBlockNumber = 2
 
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), INIT_SUPPLY, stateChainBlockNumber)
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), INIT_SUPPLY, stateChainBlockNumber)
     balanceBefore2 = cf.ALICE.balance()
-    tx2 = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), INIT_SUPPLY, stateChainBlockNumber, cf.FR_ALICE)
+    tx2 = cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), INIT_SUPPLY, stateChainBlockNumber, cf.FR_ALICE)
     balanceAfter2 = cf.ALICE.balance()
 
     # Balance should be MIN_STAKE as we've just burned all the FLIP we minted
@@ -40,6 +40,6 @@ def test_updateFlipSupply(cf):
 
     # Should not let us update the flip supply with an old block number
     stateChainBlockNumber = 1
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(), INIT_SUPPLY, stateChainBlockNumber)
+    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(agg_null_sig(cf.keyManager.address, chain.id), INIT_SUPPLY, stateChainBlockNumber)
     with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
-        cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig), INIT_SUPPLY, stateChainBlockNumber, cf.FR_ALICE)
+        cf.stakeManager.updateFlipSupply(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), INIT_SUPPLY, stateChainBlockNumber, cf.FR_ALICE)

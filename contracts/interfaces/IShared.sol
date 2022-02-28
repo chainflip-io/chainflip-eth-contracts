@@ -1,4 +1,4 @@
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.0;
 
 
 /**
@@ -7,17 +7,6 @@ pragma solidity ^0.8.7;
 * @author   Quantaf1re (James Key)
 */
 interface IShared {
-
-    /**
-    * @dev  This is used to ensure that isValidSig can only accept the agg key
-    *       or gov key as opposed to any key, which would otherwise allow
-    *       anyone to call isValidSig without reverting and therefore change
-    *       _lastValidateTime without authorisation
-    */
-    enum KeyID {
-        Agg,
-        Gov
-    }
 
     /**
     * @dev  SchnorrSECP256K1 requires that each key has a public key part (x coordinate),
@@ -34,6 +23,8 @@ interface IShared {
     *       struct since they should always be used together
     */
     struct SigData {
+        address keyManAddr;
+        uint chainID;
         uint msgHash;
         uint sig;
         uint nonce;
