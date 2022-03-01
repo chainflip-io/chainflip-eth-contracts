@@ -95,6 +95,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _lastValidateTime = block.timestamp;
         _isNonceUsedByAggKey[sigData.nonce] = true;
 
+        // solhint-disable-next-line avoid-tx-origin
         emit SignatureAccepted(sigData, tx.origin);
 
         return true;
@@ -247,6 +248,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         // Need to make this an external call so that the msg.sender is the
         // address of this contract, otherwise calling setAggKeyWithAggKey
         // from any address would fail the whitelist check
+        // solhint-disable-next-line reason-string
         require(this.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }

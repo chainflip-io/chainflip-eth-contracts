@@ -31,6 +31,7 @@ contract StakeManager is
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private immutable _keyManager;
     /// @dev    The FLIP token
+    // solhint-disable-next-line var-name-mixedcase
     FLIP private immutable _FLIP;
     /// @dev    The last time that the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
@@ -86,8 +87,6 @@ contract StakeManager is
             address(this),
             flipTotalSupply
         );
-        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
-        _FLIP = flip;
 
         IERC1820Registry erc1820Reg = IERC1820Registry(
             0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24
@@ -97,6 +96,9 @@ contract StakeManager is
             TOKENS_RECIPIENT_INTERFACE_HASH,
             address(this)
         );
+
+        _FLIP = flip;
+        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
     }
 
     //////////////////////////////////////////////////////////////
@@ -207,6 +209,7 @@ contract StakeManager is
         emit ClaimExecuted(nodeID, claim.amount);
 
         // Send the tokens
+        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(claim.staker, claim.amount));
     }
 
@@ -278,6 +281,8 @@ contract StakeManager is
      * @param _data             data
      * @param _operatorData     operatorData
      */
+    
+    // solhint-disable no-unused-vars
     function tokensReceived(
         address _operator,
         address _from,
@@ -289,6 +294,7 @@ contract StakeManager is
         require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
         require(_operator == address(this), "StakeMan: not the operator");
     }
+    // solhint-enable no-unused-vars
 
     /**
      * @notice Can be used to suspend executions of claims - only executable by
@@ -315,6 +321,7 @@ contract StakeManager is
         require(suspended, "StakeMan: Not suspended");
         address to = _keyManager.getGovernanceKey();
         uint256 amount = _FLIP.balanceOf(address(this));
+        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(to, amount));
         emit GovernanceWithdrawal(to, amount);
     }
@@ -386,6 +393,7 @@ contract StakeManager is
         SigData calldata sigData,
         bytes32 contractMsgHash
     ) {
+        // solhint-disable-next-line reason-string
         require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }

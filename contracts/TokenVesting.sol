@@ -74,16 +74,16 @@ contract TokenVesting is ReentrancyGuard {
         bool canStake_,
         IStakeManager stakeManager_
     ) {
-        require(beneficiary_ != address(0), "TokenVesting: beneficiary_ is the zero address");
-        require(revoker_ != address(0), "TokenVesting: revoker_ is the zero address");
-        require(start_ > 0, "TokenVesting: start_ is 0");
-        // solhint-disable-next-line max-line-length
-        require(start_ < cliff_, "TokenVesting: start_ isn't before cliff_");
-        require(cliff_ <= end_, "TokenVesting: cliff_ after end_");
-        // solhint-disable-next-line max-line-length
-        require(end_ > block.timestamp, "TokenVesting: final time is before current time");
-        require(address(stakeManager_) != address(0), "TokenVesting: stakeManager_ is the zero address");
-        if (canStake_) require (cliff_ == end_ , "TokenVesting: invalid staking contract cliff");
+        // solhint-disable reason-string
+        require(beneficiary_ != address(0), "TokenVest: beneficiary_ is the zero address");
+        require(revoker_ != address(0), "TokenVest: revoker_ is the zero address");
+        require(start_ > 0, "TokenVest: start_ is 0");
+        require(start_ < cliff_, "TokenVest: start_ isn't before cliff_");
+        require(cliff_ <= end_, "TokenVest: cliff_ after end_");
+        require(end_ > block.timestamp, "TokenVest: final time is before current time");
+        require(address(stakeManager_) != address(0), "TokenVest: stakeManager_ is the zero address");
+        if (canStake_) require (cliff_ == end_ , "TokenVest: invalid staking contract cliff");
+        // solhint-enable reason-string
 
         beneficiary = beneficiary_;
         revoker = revoker_;
@@ -102,8 +102,8 @@ contract TokenVesting is ReentrancyGuard {
      * @param amount the amount to stake out of the current funds in this contract.
      */
     function stake(bytes32 nodeID, uint256 amount) external {
-        require(msg.sender == beneficiary, "TokenVesting: not the beneficiary");
-        require(canStake, "TokenVesting: cannot stake");
+        require(msg.sender == beneficiary, "TokenVest: not the beneficiary");
+        require(canStake, "TokenVest: cannot stake");
 
         stakeManager.stake(nodeID, amount, address(this));
     }
@@ -113,11 +113,11 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function release(IERC20 token) external nonReentrant {
-        require(msg.sender == beneficiary, "TokenVesting: not the beneficiary");
-        require(!canStake || !revoked[token], "TokenVesting: staked funds revoked");
+        require(msg.sender == beneficiary, "TokenVest: not the beneficiary");
+        require(!canStake || !revoked[token], "TokenVest: staked funds revoked");
 
         uint256 unreleased = _releasableAmount(token);
-        require(unreleased > 0, "TokenVesting: no tokens are due");
+        require(unreleased > 0, "TokenVest: no tokens are due");
 
         released[token] += unreleased;
         token.safeTransfer(beneficiary, unreleased);
@@ -134,10 +134,10 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external {
-        require(msg.sender == revoker, "TokenVesting: not the revoker");
-        require(revocable, "TokenVesting: cannot revoke");
-        require(!revoked[token], "TokenVesting: token already revoked");
-        require(block.timestamp <= end, "TokenVesting: vesting period expired");
+        require(msg.sender == revoker, "TokenVest: not the revoker");
+        require(revocable, "TokenVest: cannot revoke");
+        require(!revoked[token], "TokenVest: token already revoked");
+        require(block.timestamp <= end, "TokenVest: vesting expired");
 
         uint256 balance = token.balanceOf(address(this));
 
@@ -160,11 +160,11 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function retrieveRevokedFunds(IERC20 token) external {
-        require(msg.sender == revoker, "TokenVesting: not the revoker");
-        require(revocable, "TokenVesting: cannot revoke");
-        require(revoked[token], "TokenVesting: token not revoked");
+        require(msg.sender == revoker, "TokenVest: not the revoker");
+        require(revocable, "TokenVest: cannot revoke");
+        require(revoked[token], "TokenVest: token not revoked");
 
-        require(canStake, "TokenVesting: not retrievable");
+        require(canStake, "TokenVest: not retrievable");
 
         uint256 balance = token.balanceOf(address(this));
 

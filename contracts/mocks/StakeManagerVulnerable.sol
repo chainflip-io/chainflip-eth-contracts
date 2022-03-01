@@ -12,6 +12,7 @@ import "../FLIP.sol";
  */
 contract StakeManagerVulnerable is StakeManager {
     /// @dev    The FLIP token
+    // solhint-disable-next-line var-name-mixedcase
     FLIP private _FLIP;
 
     constructor(
@@ -20,7 +21,6 @@ contract StakeManagerVulnerable is StakeManager {
         uint256 flipTotalSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake
-    )
     ) StakeManager(keyManager, minStake, flipTotalSupply, numGenesisValidators, genesisStake) {}
 
     //
@@ -39,6 +39,7 @@ contract StakeManagerVulnerable is StakeManager {
      * @param amount    The amount of FLIP to send
      */
     function testSendFLIP(address receiver, uint256 amount) external {
+        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(receiver, amount));
     }
 }

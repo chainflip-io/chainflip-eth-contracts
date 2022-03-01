@@ -365,6 +365,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 contractMsgHash
     ) {
+        // solhint-disable-next-line reason-string
         require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }

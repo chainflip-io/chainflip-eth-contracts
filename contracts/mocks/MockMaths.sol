@@ -6,7 +6,6 @@ contract MockMaths {
     function simulateRelease(
         uint256 total,
         uint256 time,
-        uint256 start,
         uint256 end,
         uint256 cliff
     ) external pure returns (uint256) {
