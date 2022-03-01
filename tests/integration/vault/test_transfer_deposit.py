@@ -14,10 +14,9 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
     balanceBefore = cf.ALICE.balance()
     tx = cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
-    refunded = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert cf.vault.balance() == ONE_ETH + TEST_AMNT - refunded
+    assert cf.vault.balance() == ONE_ETH + TEST_AMNT
 
     # Transfer the eth out the vault
     ethStartBalVault = cf.vault.balance()
@@ -26,8 +25,6 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(cf, token, DepositE
     callDataNoSig = cf.vault.transfer.encode_input(agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.BOB, TEST_AMNT)
     # balanceAfter = cf.ALICE.balance()
     tx = cf.vault.transfer(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), ETH_ADDR, cf.BOB, TEST_AMNT, cf.FR_ALICE)
-    # balanceBefore = cf.ALICE.balance()
-    # refunded = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert cf.vault.balance() - ethStartBalVault == -TEST_AMNT
     assert cf.BOB.balance() - tokenStartBalRecipient == TEST_AMNT
@@ -76,11 +73,10 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(cf, token
     balanceBefore = cf.ALICE.balance()
     tx = cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
-    refunded = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
-    assert cf.vault.balance() == ONE_ETH + (3 * TEST_AMNT) - refunded
+    assert cf.vault.balance() == ONE_ETH + (3 * TEST_AMNT)
 
     # Transfer the eth out the vault
     ethStartBalVault = cf.vault.balance()
@@ -110,7 +106,6 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(cf, token
     balanceBefore = cf.ALICE.balance()
     tx = cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, [token, token], cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
-    txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == 3 * TEST_AMNT
@@ -142,7 +137,6 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     balanceBefore = cf.CHARLIE.balance()
     tx = cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, [token, token], cf.FR_CHARLIE)
     balanceAfter = cf.CHARLIE.balance()
-    refund = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == 3 * TEST_AMNT
@@ -158,7 +152,6 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     balanceBefore = cf.CHARLIE.balance()
     tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob], cf.FR_CHARLIE)
     balanceAfter = cf.CHARLIE.balance()
-    refund2 = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert token.balanceOf(cf.vault) - tokenStartBalVault == - amountAlice - amountBob
     assert token.balanceOf(cf.ALICE) - tokenStartBalAlice == amountAlice
@@ -175,17 +168,16 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH - refund - refund2
+    assert cf.vault.balance() == ONE_ETH
 
     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(agg_null_sig(cf.keyManager.address, chain.id), swapIDs)
     balanceBefore = cf.CHARLIE.balance()
     tx = cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, cf.FR_CHARLIE)
     balanceAfter = cf.CHARLIE.balance()
-    refund3 = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
-    assert cf.vault.balance() == ONE_ETH + (3 * TEST_AMNT) - refund - refund2 - refund3
+    assert cf.vault.balance() == ONE_ETH + (3 * TEST_AMNT)
 
     # Transfer the eth out the vault
     amountAlice = TEST_AMNT * 1.5
@@ -198,9 +190,8 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     balanceBefore = cf.CHARLIE.balance()
     tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), [ETH_ADDR, ETH_ADDR], [cf.ALICE, cf.BOB], [amountAlice, amountBob], cf.FR_CHARLIE)
     balanceAfter = cf.CHARLIE.balance()
-    refund = txRefundTest(balanceBefore, balanceAfter, tx)
 
-    assert cf.vault.balance() == ethStartBalVault - amountAlice - amountBob - refund
+    assert cf.vault.balance() == ethStartBalVault - amountAlice - amountBob
     assert cf.ALICE.balance() == ethStartBalAlice + amountAlice
     assert cf.BOB.balance() == ethStartBalBob + amountBob
 
@@ -220,7 +211,6 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
     balanceBefore = cf.CHARLIE.balance()
     tx = cf.vault.fetchDepositTokenBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, [token, token], cf.FR_CHARLIE)
     balanceAfter = cf.CHARLIE.balance()
-    refund = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == 3 * TEST_AMNT
@@ -236,7 +226,6 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
     balanceBefore = cf.CHARLIE.balance()
     tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob], cf.FR_CHARLIE)
     balanceAfter = cf.CHARLIE.balance()
-    refund2 = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert token.balanceOf(cf.vault) - tokenStartBalVault == - amountAlice - amountBob
     assert token.balanceOf(cf.ALICE) - tokenStartBalAlice == amountAlice
@@ -253,7 +242,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
     depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH - refund - refund2
+    assert cf.vault.balance() == ONE_ETH
 
     # Eth bals
     amountEthAlice = TEST_AMNT * 1.5
@@ -287,10 +276,9 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, DepositEth, De
         cf.FR_CHARLIE
     )
     balanceAfter = cf.CHARLIE.balance()
-    refund = txRefundTest(balanceBefore, balanceAfter, tx)
 
     # Eth bals
-    assert cf.vault.balance() == ethStartBalVault + (3 * TEST_AMNT) - amountEthAlice - amountEthBob - refund
+    assert cf.vault.balance() == ethStartBalVault + (3 * TEST_AMNT) - amountEthAlice - amountEthBob
     assert cf.ALICE.balance() == ethStartBalAlice + amountEthAlice
     assert cf.BOB.balance() == ethStartBalBob + amountEthBob
 

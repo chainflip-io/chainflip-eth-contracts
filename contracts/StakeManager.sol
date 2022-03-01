@@ -198,7 +198,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         SigData calldata sigData,
         uint newTotalSupply,
         uint stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish refundGas updatedValidSig(
+    ) external override nzUint(newTotalSupply) noFish updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(

@@ -56,23 +56,6 @@ def getValidTranIdxs(tokens, amounts, prevBal, tok):
 
     return validEthIdxs
 
-# We can't actually refund _everything_ because gas is so weird. But we can
-# refund most of it, so we should check here that the balance is above what we
-# would expect it to be if there was no refund, but below or equal to the
-# balanceBefore (we know the Validator has not got more than they should)
-def txRefundTest(balanceBefore, balanceAfter, tx):
-    base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
-
-    # this is set in the tests earlier, (deploy.py) but we might as well
-    # calculate it here so we only have to update it once
-    priority_fee = tx.gas_price - base_fee
-
-    ethUsed = (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)
-    totalRefunded = tx.events["Refunded"][0].values()[0]
-    assert balanceAfter <= balanceBefore
-    assert balanceAfter >= balanceBefore - ethUsed
-    return totalRefunded
-
 # Test with timestamp-1 because of an error where there's a difference of 1s
 # because the evm and local clock were out of sync or something... not 100% sure why,
 # but some tests occasionally fail for this reason even though they succeed most

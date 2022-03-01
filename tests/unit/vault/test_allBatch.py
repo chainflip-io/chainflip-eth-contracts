@@ -67,8 +67,7 @@ def test_allBatch(cf, token, token2, DepositToken, DepositEth, fetchAmounts, fet
         balanceBefore = sender.balance()
         tx = cf.vault.allBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
         balanceAfter = sender.balance()
-        refunded = txRefundTest(balanceBefore, balanceAfter, tx)
-        assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR] + ONE_ETH - refunded
+        assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR] + ONE_ETH
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
 

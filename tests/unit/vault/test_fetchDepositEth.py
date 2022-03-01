@@ -18,9 +18,8 @@ def test_fetchDepositEth(cf, DepositEth):
     balanceBefore = cf.ALICE.balance()
     tx = cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
-    refunded = txRefundTest(balanceBefore, balanceAfter, tx)
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert cf.vault.balance() == ONE_ETH + TEST_AMNT - refunded
+    assert cf.vault.balance() == ONE_ETH + TEST_AMNT
 
 
 def test_fetchDepositEth_rev_swapID(cf):

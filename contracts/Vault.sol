@@ -62,7 +62,7 @@ contract Vault is IVault, Shared {
         IERC20[] calldata tranTokens,
         address payable[] calldata tranRecipients,
         uint[] calldata tranAmounts
-    ) external override refundGas updatedValidSig(
+    ) external override updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -151,7 +151,7 @@ contract Vault is IVault, Shared {
         IERC20[] calldata tokens,
         address payable[] calldata recipients,
         uint[] calldata amounts
-    ) external override refundGas updatedValidSig(
+    ) external override updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -244,7 +244,7 @@ contract Vault is IVault, Shared {
     function fetchDepositEth(
         SigData calldata sigData,
         bytes32 swapID
-    ) external override nzBytes32(swapID) refundGas updatedValidSig(
+    ) external override nzBytes32(swapID) updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -269,7 +269,7 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(
         SigData calldata sigData,
         bytes32[] calldata swapIDs
-    ) external override refundGas updatedValidSig(
+    ) external override updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -298,7 +298,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         IERC20 token
-    ) external override nzBytes32(swapID) nzAddr(address(token)) refundGas updatedValidSig(
+    ) external override nzBytes32(swapID) nzAddr(address(token)) updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(
@@ -326,7 +326,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         IERC20[] calldata tokens
-    ) external override refundGas updatedValidSig(
+    ) external override updatedValidSig(
         sigData,
         keccak256(
             abi.encodeWithSelector(

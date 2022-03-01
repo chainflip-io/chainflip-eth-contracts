@@ -72,9 +72,8 @@ def test_setAggKeyByAggKey_allBatch(cfAW, token, token2, DepositToken, DepositEt
         balanceBefore = sender.balance()
         tx = cfAW.vault.allBatch(AGG_SIGNER_2.getSigData(callDataNoSig, cfAW.keyManager.address), fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts, {'from': sender})
         balanceAfter = sender.balance()
-        refund = txRefundTest(balanceBefore, balanceAfter, tx)
 
-        assert cfAW.vault.balance() == ethStartBalVault + (fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]) - refund
+        assert cfAW.vault.balance() == ethStartBalVault + (fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR])
         assert token.balanceOf(cfAW.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cfAW.vault) == fetchTotals[token2] - tranTotals[token2]
 

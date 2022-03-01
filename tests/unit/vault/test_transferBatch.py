@@ -27,7 +27,6 @@ def test_transferBatch(cf, token, token2, recipients, amounts, sender):
     balanceBefore = sender.balance()
     tx = cf.vault.transferBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), tokens, recipients, amounts, {'from': sender})
     balanceAfter = sender.balance()
-    txRefundTest(balanceBefore, balanceAfter, tx)
 
     for i in range(len(recipients)):
         if tokens[i] == ETH_ADDR:
