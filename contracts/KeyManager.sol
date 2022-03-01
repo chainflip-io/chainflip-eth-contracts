@@ -111,7 +111,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function setAggKeyWithAggKey(
         SigData calldata sigData,
         Key calldata newKey
-    ) external override nzKey(newKey) validAggKey(newKey) refundGas updatedValidSig(
+    ) external override nzKey(newKey) validAggKey(newKey) updatedValidSig(
         sigData,
         keccak256(abi.encodeWithSelector(
             this.setAggKeyWithAggKey.selector,

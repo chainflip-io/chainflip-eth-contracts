@@ -23,7 +23,6 @@ def setAggKeyWithAggKey_test(cf):
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    txRefundTest(balanceBefore, balanceAfter, tx)
     assert tx.events["AggKeySetByAggKey"][0].values() == [AGG_SIGNER_1.getPubDataWith0x(), AGG_SIGNER_2.getPubDataWith0x()]
 
 def setKey_rev_newPubKeyX_test(cf):

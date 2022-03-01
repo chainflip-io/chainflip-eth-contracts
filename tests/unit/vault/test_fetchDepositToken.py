@@ -36,9 +36,8 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
     balanceBefore = cf.ALICE.balance()
     tx = cf.vault.fetchDepositToken(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD, token, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
-    refunded = txRefundTest(balanceBefore, balanceAfter, tx)
 
-    assert cf.vault.balance() == TEST_AMNT + ONE_ETH - refunded
+    assert cf.vault.balance() == TEST_AMNT + ONE_ETH
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
 

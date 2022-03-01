@@ -17,10 +17,6 @@ abstract contract Shared is IShared {
     bytes32 constant internal _NULL = "";
     uint constant internal _E_18 = 1e18;
 
-    event Refunded (uint amount);
-    event RefundFailed(address indexed to, uint amount, uint currentBalance);
-
-
     /// @dev    Checks that a uint isn't zero/empty
     modifier nzUint(uint u) {
         require(u != 0, "Shared: uint input is empty");
@@ -43,27 +39,6 @@ abstract contract Shared is IShared {
     modifier nzKey(Key memory key) {
         require(key.pubKeyX != 0, "Shared: pubKeyX is empty");
         _;
-    }
-
-    /// @dev    Refunds (almost all) the gas spend to call this function
-    modifier refundGas {
-        uint gasStart = gasleft();
-        _;
-        uint gasSpent = gasStart - gasleft();
-        uint refundWei = gasSpent * block.basefee;
-
-        try this.refundEth(msg.sender, refundWei) {
-            emit Refunded(refundWei);
-        } catch (bytes memory lowLevelData) {
-            // There's not enough ETH in the contract to pay anyone
-            emit RefundFailed(msg.sender, refundWei, address(this).balance);
-        }
-    }
-
-    function refundEth(address to, uint amount) external {
-        // Hack this so that it's effectively an internal call
-        require(msg.sender == address(this));
-        payable(to).transfer(amount);
     }
 
 }

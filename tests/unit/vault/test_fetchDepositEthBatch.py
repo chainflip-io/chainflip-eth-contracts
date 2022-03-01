@@ -26,10 +26,9 @@ def test_fetchDepositEthBatch(cf, DepositEth, amounts, swapIDs):
     balanceBefore = cf.ALICE.balance()
     tx = cf.vault.fetchDepositEthBatch(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), swapIDs, cf.FR_ALICE)
     balanceAfter = cf.ALICE.balance()
-    refunded = txRefundTest(balanceBefore, balanceAfter, tx)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert cf.vault.balance() == sum(amounts) + ONE_ETH - refunded
+    assert cf.vault.balance() == sum(amounts) + ONE_ETH
 
 
 def test_fetchDepositEthBatch_rev_msgHash(cf):
