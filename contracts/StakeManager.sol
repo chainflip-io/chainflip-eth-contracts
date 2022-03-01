@@ -31,6 +31,7 @@ contract StakeManager is
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private immutable _keyManager;
     /// @dev    The FLIP token
+    // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     FLIP private immutable _FLIP;
     /// @dev    The last time that the State Chain updated the totalSupply
@@ -120,7 +121,7 @@ contract StakeManager is
         uint256 amount,
         address returnAddr
     ) external override nonReentrant nzBytes32(nodeID) nzAddr(returnAddr) noFish {
-        require(amount >= _minStake, "StakeMan: stake too small");
+        require(amount >= _minStake, "Staking: stake too small");
 
         // Store it in memory to save gas
         FLIP flip = _FLIP;
@@ -131,7 +132,7 @@ contract StakeManager is
         flip.operatorSend(msg.sender, address(this), amount, "", "stake");
         require(
             flip.balanceOf(address(this)) == balBefore + amount,
-            "StakeMan: token transfer failed"
+            "Staking: token transfer failed"
         );
 
         _totalStake += amount;
@@ -173,11 +174,11 @@ contract StakeManager is
         require(
             // Must be fresh or have been executed & deleted, or past the expiry
             block.timestamp > uint256(_pendingClaims[nodeID].expiryTime),
-            "StakeMan: a pending claim exists"
+            "Staking: a pending claim exists"
         );
 
         uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
-        require(expiryTime > startTime, "StakeMan: expiry time too soon");
+        require(expiryTime > startTime, "Staking: expiry time too soon");
 
         _pendingClaims[nodeID] = Claim(amount, staker, startTime, expiryTime);
         emit ClaimRegistered(nodeID, amount, staker, startTime, expiryTime);
@@ -195,12 +196,12 @@ contract StakeManager is
      * @param nodeID    The nodeID of the staker
      */
     function executeClaim(bytes32 nodeID) external override noFish {
-        require(!suspended, "StakeMan: suspended");
+        require(!suspended, "Staking: suspended");
         Claim memory claim = _pendingClaims[nodeID];
         require(
             uint256(block.timestamp) >= claim.startTime &&
                 uint256(block.timestamp) <= claim.expiryTime,
-            "StakeMan: early, late, or execd"
+            "Staking: early, late, or execd"
         );
 
         // Housekeeping
@@ -209,6 +210,7 @@ contract StakeManager is
         emit ClaimExecuted(nodeID, claim.amount);
 
         // Send the tokens
+        // Disable because it would revert inside the transfer providing a reason-string
         // solhint-disable-next-line reason-string
         require(_FLIP.transfer(claim.staker, claim.amount));
     }
@@ -238,7 +240,7 @@ contract StakeManager is
     {
         require(
             stateChainBlockNumber > _lastSupplyUpdateBlockNum,
-            "StakeMan: old FLIP supply update"
+            "Staking: old FLIP supply update"
         );
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
         FLIP flip = _FLIP;
@@ -281,7 +283,7 @@ contract StakeManager is
      * @param _data             data
      * @param _operatorData     operatorData
      */
-    
+    // Disable because tokensRecieved interface is a standard
     // solhint-disable no-unused-vars
     function tokensReceived(
         address _operator,
@@ -291,8 +293,8 @@ contract StakeManager is
         bytes calldata _data,
         bytes calldata _operatorData
     ) external override {
-        require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
-        require(_operator == address(this), "StakeMan: not the operator");
+        require(msg.sender == address(_FLIP), "Staking: non-FLIP token");
+        require(_operator == address(this), "Staking: not the operator");
     }
     // solhint-enable no-unused-vars
 
@@ -318,9 +320,10 @@ contract StakeManager is
      * with later.
      */
     function govWithdraw() external override isGovernor {
-        require(suspended, "StakeMan: Not suspended");
+        require(suspended, "Staking: Not suspended");
         address to = _keyManager.getGovernanceKey();
         uint256 amount = _FLIP.balanceOf(address(this));
+        // Disable because it would revert inside the transfer providing a reason-string
         // solhint-disable-next-line reason-string
         require(_FLIP.transfer(to, amount));
         emit GovernanceWithdrawal(to, amount);
@@ -393,6 +396,8 @@ contract StakeManager is
         SigData calldata sigData,
         bytes32 contractMsgHash
     ) {
+        // Disable check for reason-string because it should not trigger. The function
+        // inside should either revert or return true, never false. Require just seems healthy
         // solhint-disable-next-line reason-string
         require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
@@ -400,7 +405,7 @@ contract StakeManager is
 
     /// @notice Ensure that the caller is the KeyManager's governor address.
     modifier isGovernor() {
-        require(msg.sender == _keyManager.getGovernanceKey(), "StakeMan: not governor");
+        require(msg.sender == _keyManager.getGovernanceKey(), "Staking: not governor");
         _;
     }
 
@@ -409,6 +414,6 @@ contract StakeManager is
     modifier noFish() {
         _;
         // >= because someone could send some tokens to this contract and disable it if it was ==
-        require(_FLIP.balanceOf(address(this)) >= _totalStake, "StakeMan: something smells fishy");
+        require(_FLIP.balanceOf(address(this)) >= _totalStake, "Staking: something smells fishy");
     }
 }

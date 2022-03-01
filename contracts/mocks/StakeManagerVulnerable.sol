@@ -12,6 +12,7 @@ import "../FLIP.sol";
  */
 contract StakeManagerVulnerable is StakeManager {
     /// @dev    The FLIP token
+    // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     FLIP private _FLIP;
 
@@ -39,6 +40,7 @@ contract StakeManagerVulnerable is StakeManager {
      * @param amount    The amount of FLIP to send
      */
     function testSendFLIP(address receiver, uint256 amount) external {
+        // Disable because it would revert inside the transfer providing a reason-string
         // solhint-disable-next-line reason-string
         require(_FLIP.transfer(receiver, amount));
     }

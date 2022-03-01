@@ -95,6 +95,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _lastValidateTime = block.timestamp;
         _isNonceUsedByAggKey[sigData.nonce] = true;
 
+        // Disable because tx.origin is not being used in the logic
         // solhint-disable-next-line avoid-tx-origin
         emit SignatureAccepted(sigData, tx.origin);
 
@@ -248,6 +249,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         // Need to make this an external call so that the msg.sender is the
         // address of this contract, otherwise calling setAggKeyWithAggKey
         // from any address would fail the whitelist check
+        
+        // Disable check for reason-string because require should not fail. The function
+        // inside should either revert or return true, never false. Require just seems healthy
         // solhint-disable-next-line reason-string
         require(this.isUpdatedValidSig(sigData, contractMsgHash));
         _;

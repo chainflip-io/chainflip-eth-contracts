@@ -365,6 +365,8 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 contractMsgHash
     ) {
+        // Disable check for reason-string because require should not fail. The function
+        // inside should either revert or return true, never false. Require just seems healthy
         // solhint-disable-next-line reason-string
         require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
