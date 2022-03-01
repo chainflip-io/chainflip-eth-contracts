@@ -1,28 +1,26 @@
 pragma solidity ^0.8.0;
 
-
 import "../StakeManager.sol";
 import "../FLIP.sol";
 
-
 /**
-* @title    StakeManagerVulnerable
-* @dev      This is purely for testing `noFish` which requires adding
-*           adding a fcn to send FLIP outside the contract without
-*           calling `claim`
-* @author   Quantaf1re (James Key)
-*/
+ * @title    StakeManagerVulnerable
+ * @dev      This is purely for testing `noFish` which requires adding
+ *           adding a fcn to send FLIP outside the contract without
+ *           calling `claim`
+ * @author   Quantaf1re (James Key)
+ */
 contract StakeManagerVulnerable is StakeManager {
-
     /// @dev    The FLIP token
     FLIP private _FLIP;
 
     constructor(
         IKeyManager keyManager,
-        uint minStake,
-        uint flipTotalSupply,
-        uint numGenesisValidators,
-        uint genesisStake
+        uint256 minStake,
+        uint256 flipTotalSupply,
+        uint256 numGenesisValidators,
+        uint256 genesisStake
+    )
     ) StakeManager(keyManager, minStake, flipTotalSupply, numGenesisValidators, genesisStake) {}
 
     //
@@ -40,7 +38,7 @@ contract StakeManagerVulnerable is StakeManager {
      * @param receiver  The address to send the FLIP to
      * @param amount    The amount of FLIP to send
      */
-    function testSendFLIP(address receiver, uint amount) external {
+    function testSendFLIP(address receiver, uint256 amount) external {
         require(_FLIP.transfer(receiver, amount));
     }
 }

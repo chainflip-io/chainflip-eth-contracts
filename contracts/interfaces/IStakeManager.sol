@@ -1,32 +1,38 @@
 pragma solidity ^0.8.0;
 
-
 import "./IKeyManager.sol";
 import "./IFLIP.sol";
 import "./IShared.sol";
 
-
 /**
-* @title    StakeManager interface
-* @author   Quantaf1re (James Key)
-*/
+ * @title    StakeManager interface
+ * @author   Quantaf1re (James Key)
+ */
 interface IStakeManager is IShared {
-
-    event Staked(bytes32 indexed nodeID, uint amount, address staker, address indexed returnAddr);
+    event Staked(
+        bytes32 indexed nodeID,
+        uint256 amount,
+        address staker,
+        address indexed returnAddr
+    );
     event ClaimRegistered(
         bytes32 indexed nodeID,
-        uint amount,
+        uint256 amount,
         address indexed staker,
         uint48 startTime,
         uint48 expiryTime
     );
-    event ClaimExecuted(bytes32 indexed nodeID, uint amount);
-    event FlipSupplyUpdated(uint oldSupply, uint newSupply, uint stateChainBlockNumber);
-    event MinStakeChanged(uint oldMinStake, uint newMinStake);
-    event GovernanceWithdrawal(address to, uint amount);
+    event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
+    event FlipSupplyUpdated(
+        uint256 oldSupply,
+        uint256 newSupply,
+        uint256 stateChainBlockNumber
+    );
+    event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
+    event GovernanceWithdrawal(address to, uint256 amount);
 
     struct Claim {
-        uint amount;
+        uint256 amount;
         address staker;
         // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
         // into a single 256 bit slot
@@ -44,7 +50,7 @@ interface IStakeManager is IShared {
      */
     function stake(
         bytes32 nodeID,
-        uint amount,
+        uint256 amount,
         address returnAddr
     ) external;
 
@@ -63,7 +69,7 @@ interface IStakeManager is IShared {
     function registerClaim(
         SigData calldata sigData,
         bytes32 nodeID,
-        uint amount,
+        uint256 amount,
         address staker,
         uint48 expiryTime
     ) external;
@@ -90,8 +96,8 @@ interface IStakeManager is IShared {
      */
     function updateFlipSupply(
         SigData calldata sigData,
-        uint newTotalSupply,
-        uint stateChainBlockNumber
+        uint256 newTotalSupply,
+        uint256 stateChainBlockNumber
     ) external;
 
     /**
@@ -99,9 +105,7 @@ interface IStakeManager is IShared {
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
      */
-    function setMinStake(
-        uint newMinStake
-    ) external;
+    function setMinStake(uint256 newMinStake) external;
 
     /**
      * @notice      Pause claim executions on the contract, for the purpose of
@@ -143,14 +147,14 @@ interface IStakeManager is IShared {
      * @notice  Get the last state chain block number that the supply was updated at
      * @return  The state chain block number of the last update
      */
-    function getLastSupplyUpdateBlockNumber() external view returns (uint);
+    function getLastSupplyUpdateBlockNumber() external view returns (uint256);
 
     /**
      * @notice  Get the minimum amount of stake that's required for a bid
      *          attempt in the auction to be valid - used to prevent sybil attacks
      * @return  The minimum stake (uint)
      */
-    function getMinimumStake() external view returns (uint);
+    function getMinimumStake() external view returns (uint256);
 
     /**
      * @notice  Get the pending claim for the input nodeID. If there was never
@@ -159,5 +163,8 @@ interface IStakeManager is IShared {
      * @param nodeID    The nodeID which is has a pending claim
      * @return  The claim (Claim)
      */
-    function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
+    function getPendingClaim(bytes32 nodeID)
+        external
+        view
+        returns (Claim memory);
 }

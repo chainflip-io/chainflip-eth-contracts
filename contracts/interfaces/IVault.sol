@@ -1,27 +1,23 @@
 pragma solidity ^0.8.0;
 
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IShared.sol";
 import "./IKeyManager.sol";
 
-
 /**
-* @title    Vault interface
-* @notice   The interface for functions Vault implements
-* @author   Quantaf1re (James Key)
-*/
+ * @title    Vault interface
+ * @notice   The interface for functions Vault implements
+ * @author   Quantaf1re (James Key)
+ */
 interface IVault is IShared {
-
     function allBatch(
         SigData calldata sigData,
         bytes32[] calldata fetchSwapIDs,
         IERC20[] calldata fetchTokens,
         IERC20[] calldata tranTokens,
         address payable[] calldata tranRecipients,
-        uint[] calldata tranAmounts
+        uint256[] calldata tranAmounts
     ) external;
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -33,16 +29,15 @@ interface IVault is IShared {
         SigData calldata sigData,
         IERC20 token,
         address payable recipient,
-        uint amount
+        uint256 amount
     ) external;
 
     function transferBatch(
         SigData calldata sigData,
         IERC20[] calldata tokens,
         address payable[] calldata recipients,
-        uint[] calldata amounts
+        uint256[] calldata amounts
     ) external;
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -71,7 +66,6 @@ interface IVault is IShared {
         bytes32[] calldata swapIDs,
         IERC20[] calldata tokens
     ) external;
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
