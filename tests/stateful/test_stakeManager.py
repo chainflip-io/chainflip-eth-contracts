@@ -3,6 +3,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy
 from utils import *
 from hypothesis import strategies as hypStrat
+import pytest
 
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
@@ -18,6 +19,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
     # the amount of non-reverted txs there are, while also allowing for some reverts
     INIT_MIN_STAKE = 1000
     MAX_TEST_STAKE = 10**24
+    INIT_FLIP_SM = 25*10**22
 
     class StateMachine(BaseStateMachine):
 
@@ -46,20 +48,21 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
-            self.lastMintBlockNum = self.sm.tx.block_number
-            self.emissionPerBlock = EMISSION_PER_BLOCK
+            self.lastSupplyBlockNumber = 0
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
             self.allAddrs = self.stakers + [self.sm]
+            self.sm.setMinStake(INIT_MIN_STAKE)
+
+            # Workaround to refund deployer for gas spend on deployment and setMinStake
+            a[NUM_STAKERS].transfer(a[0], INIT_ETH_BAL - a[0].balance())
 
             # Eth bals shouldn't change in this test, but just to be sure...
-            self.ethBals = {addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs}
-            self.flipBals = {addr: INIT_STAKE if addr in self.stakers else 0 for addr in self.allAddrs}
+            self.ethBals = {addr: INIT_ETH_BAL if addr in a else (ONE_ETH if addr == self.sm  else 0) for addr in self.allAddrs}
+            self.flipBals = {addr: INIT_STAKE if addr in self.stakers else (INIT_FLIP_SM if addr == self.sm  else 0) for addr in self.allAddrs}
             self.pendingClaims = {nodeID: NULL_CLAIM for nodeID in range(NUM_STAKERS + 1)}
             self.numTxsTested = 0
-            self.nonces = {AGG: 0, GOV: 0}
-            callDataNoSig = self.sm.setMinStake.encode_input(null_sig(self.nonces[GOV]), INIT_MIN_STAKE)
-            self.sm.setMinStake(GOV_SIGNER_1.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), INIT_MIN_STAKE)
+            self.governor = cfDeploy.gov
 
 
         # Variables that will be a random value with each fcn/rule called
@@ -72,9 +75,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         st_amount = strategy("uint", max_value=MAX_TEST_STAKE)
         st_expiry_time_diff = strategy("uint", max_value=CLAIM_DELAY*10)
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
-        # This would be 10x the initial supply in 1 year, so is a reasonable max without
-        # uint overflowing
-        st_emission = strategy("uint", max_value=370 * E_18)
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minStake = strategy("uint", max_value=int(INIT_STAKE/2))
         # So there's a 1% chance of a bad sig to maximise useful txs
@@ -85,6 +85,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Stakes a random amount from a random staker to a random nodeID
         def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
+            self.numTxsTested+=1
             if st_nodeID == 0:
                 print('        NODEID rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_NZ_BYTES32):
@@ -108,38 +109,42 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(self, st_signer_agg, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff):
+            self.numTxsTested+=1
             args = (st_nodeID, st_amount, st_staker, chain.time() + st_expiry_time_diff)
-            callDataNoSig = self.sm.registerClaim.encode_input(null_sig(self.nonces[AGG]), *args)
+            callDataNoSig = self.sm.registerClaim.encode_input(agg_null_sig(self.km.address, chain.id), *args)
 
             if st_nodeID == 0:
                 print('        NODEID rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
+
             elif st_amount == 0:
                 print('        AMOUNT rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
             elif st_signer_agg != AGG_SIGNER_1:
                 print('        REV_MSG_SIG rule_registerClaim', *args)
                 with reverts(REV_MSG_SIG):
-                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
             elif chain.time() <= self.pendingClaims[st_nodeID][3]:
                 print('        REV_MSG_CLAIM_EXISTS rule_registerClaim', *args)
                 with reverts(REV_MSG_CLAIM_EXISTS):
-                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
             elif st_expiry_time_diff <= CLAIM_DELAY:
                 print('        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim', *args)
                 with reverts(REV_MSG_EXPIRY_TOO_SOON):
-                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
+                    self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
+
             else:
                 print('                    rule_registerClaim ', *args)
-                tx = self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, self.nonces, AGG), *args, {'from': st_sender})
+                tx = self.sm.registerClaim(st_signer_agg.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
 
                 self.pendingClaims[st_nodeID] = (st_amount, st_staker, tx.timestamp + CLAIM_DELAY, args[3])
 
 
         # Sleep for a random time so that executeClaim can be called without reverting
         def rule_sleep(self, st_sleep_time):
+            self.numTxsTested+=1
             print('                    rule_sleep', st_sleep_time)
             chain.sleep(st_sleep_time)
 
@@ -148,20 +153,21 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
+            self.numTxsTested+=1
             print('                    rule_sleep_2_days')
             chain.sleep(2 * DAY)
 
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
-            inflation = getInflation(self.lastMintBlockNum, web3.eth.block_number + 1, self.emissionPerBlock)
+            self.numTxsTested+=1
             claim = self.pendingClaims[st_nodeID]
 
             if not claim[2] <= chain.time() <= claim[3]:
                 print('        REV_MSG_NOT_ON_TIME rule_executeClaim', st_nodeID)
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
-            elif self.flipBals[self.sm] + inflation < claim[0]:
+            elif self.flipBals[self.sm] < claim[0]:
                 print('        REV_MSG_INTEGER_OVERFLOW rule_executeClaim', st_nodeID)
                 with reverts(REV_MSG_INTEGER_OVERFLOW):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
@@ -170,52 +176,27 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 tx = self.sm.executeClaim(st_nodeID, {'from': st_sender})
 
                 self.flipBals[claim[1]] += claim[0]
-                self.flipBals[self.sm] -= (claim[0] - inflation)
-                self.totalStake -= (claim[0] - inflation)
-                self.lastMintBlockNum = tx.block_number
+                self.flipBals[self.sm] -= (claim[0])
+                self.totalStake -= (claim[0])
+                # Using eth block number as a proxy for state chain block number
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
-
-
-        # Sets the emission rate as a random value, signs with a random (probability-weighted) sig,
-        # and sends the tx from a random address
-        def rule_setEmissionPerBlock(self, st_emission, st_signer_gov, st_sender):
-            callDataNoSig = self.sm.setEmissionPerBlock.encode_input(null_sig(self.nonces[GOV]), st_emission)
-
-            if st_emission == 0:
-                print('        REV_MSG_NZ_UINT rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
-                with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setEmissionPerBlock(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_emission, {'from': st_sender})
-            elif st_signer_gov != GOV_SIGNER_1:
-                print('        REV_MSG_SIG rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
-                with reverts(REV_MSG_SIG):
-                    self.sm.setEmissionPerBlock(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_emission, {'from': st_sender})
-            else:
-                print('                    rule_setEmissionPerBlock', st_emission, st_signer_gov, st_sender)
-                tx = self.sm.setEmissionPerBlock(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_emission, {'from': st_sender})
-
-                inflation = getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
-                self.flipBals[self.sm] += inflation
-                self.totalStake += inflation
-                self.lastMintBlockNum = tx.block_number
-                self.emissionPerBlock = st_emission
 
 
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
-        def rule_setMinStake(self, st_minStake, st_signer_gov, st_sender):
-            callDataNoSig = self.sm.setMinStake.encode_input(null_sig(self.nonces[GOV]), st_minStake)
-
+        def rule_setMinStake(self, st_minStake, st_sender):
+            self.numTxsTested+=1    
             if st_minStake == 0:
-                print('        REV_MSG_NZ_UINT rule_setMinstake', st_minStake, st_signer_gov, st_sender)
+                print('        REV_MSG_NZ_UINT rule_setMinstake', st_minStake, st_sender)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setMinStake(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_minStake, {'from': st_sender})
-            elif st_signer_gov != GOV_SIGNER_1:
-                print('        REV_MSG_SIG rule_setMinstake', st_minStake, st_signer_gov, st_sender)
-                with reverts(REV_MSG_SIG):
-                    self.sm.setMinStake(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_minStake, {'from': st_sender})
+                    self.sm.setMinStake(st_minStake, {'from': st_sender})
+            elif st_sender != self.governor:
+                print('        REV_MSG_SIG rule_setMinstake', st_minStake, st_sender)
+                with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+                    self.sm.setMinStake(st_minStake, {'from': st_sender})
             else:
-                print('                    rule_setMinstake', st_minStake, st_signer_gov, st_sender)
-                tx = self.sm.setMinStake(st_signer_gov.getSigDataWithNonces(callDataNoSig, self.nonces, GOV), st_minStake, {'from': st_sender})
+                print('                    rule_setMinstake', st_minStake, st_sender)
+                tx = self.sm.setMinStake(st_minStake, {'from': st_sender})
 
                 self.minStake = st_minStake
 
@@ -229,8 +210,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Check all the state variables that can be changed after every tx
         def invariant_state_vars(self):
-            assert self.sm.getLastMintBlockNum() == self.lastMintBlockNum
-            assert self.sm.getEmissionPerBlock() == self.emissionPerBlock
+            assert self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             assert self.sm.getMinimumStake() == self.minStake
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim
@@ -239,19 +219,10 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
             for addr in self.allAddrs:
-                assert addr.balance() == self.ethBals[addr]
+                ## Check approx amount (1%) and <= to take into consideration gas spendings
+                assert float(addr.balance()) == pytest.approx(self.ethBals[addr], rel=1e-3)
+                assert addr.balance() <= self.ethBals[addr]
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
-
-
-        # Check all the balances of every address are as they should be after every tx
-        def invariant_inflation_calcs(self):
-            self.numTxsTested += 1
-            # Test in present and future
-            assert self.sm.getInflationInFuture(0) == getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
-            assert self.sm.getInflationInFuture(100) == getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
-            assert self.sm.getTotalStakeInFuture(0) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number, self.emissionPerBlock)
-            assert self.sm.getTotalStakeInFuture(100) == self.totalStake + getInflation(self.lastMintBlockNum, web3.eth.block_number+100, self.emissionPerBlock)
-
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
