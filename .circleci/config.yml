@@ -81,7 +81,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install dependencies and test
+          name: Install dependencies
           command: |
             npm install
-      - run: solhint 'contracts/**/*.sol'
+      - run: npx solhint 'contracts/**/*.sol'
