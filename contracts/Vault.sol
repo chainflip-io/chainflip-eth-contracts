@@ -1,6 +1,5 @@
 pragma solidity ^0.8.0;
 
-
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
@@ -9,32 +8,27 @@ import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
 
-
 /**
-* @title    Vault contract
-* @notice   The vault for holding ETH/tokens and deploying contracts
-*           for fetching individual deposits
-* @author   Quantaf1re (James Key)
-*/
+ * @title    Vault contract
+ * @notice   The vault for holding ETH/tokens and deploying contracts
+ *           for fetching individual deposits
+ * @author   Quantaf1re (James Key)
+ */
 contract Vault is IVault, Shared {
-
     using SafeERC20 for IERC20;
 
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private immutable _keyManager;
 
-
     event TransferFailed(
         address payable indexed recipient,
-        uint amount,
+        uint256 amount,
         bytes lowLevelData
     );
-
 
     constructor(IKeyManager keyManager) {
         _keyManager = keyManager;
     }
-
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -80,13 +74,13 @@ contract Vault is IVault, Shared {
         // a 'stack too deep' error
         require(
             fetchSwapIDs.length == fetchTokens.length &&
-            tranTokens.length == tranRecipients.length &&
-            tranRecipients.length == tranAmounts.length,
+                tranTokens.length == tranRecipients.length &&
+                tranRecipients.length == tranAmounts.length,
             "Vault: arrays not same length"
         );
 
         // Fetch all deposits
-        for (uint i = 0; i < fetchSwapIDs.length; i++) {
+        for (uint256 i = 0; i < fetchSwapIDs.length; i++) {
             if (address(fetchTokens[i]) == _ETH_ADDR) {
                 new DepositEth{salt: fetchSwapIDs[i]}();
             } else {
@@ -97,7 +91,6 @@ contract Vault is IVault, Shared {
         // Send all transfers
         _transferBatch(tranTokens, tranRecipients, tranAmounts);
     }
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -118,7 +111,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         IERC20 token,
         address payable recipient,
-        uint amount
+        uint256 amount
     ) external override nzAddr(address(token)) nzAddr(recipient) nzUint(amount) updatedValidSig(
         sigData,
         keccak256(
@@ -150,7 +143,7 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         IERC20[] calldata tokens,
         address payable[] calldata recipients,
-        uint[] calldata amounts
+        uint256[] calldata amounts
     ) external override updatedValidSig(
         sigData,
         keccak256(
@@ -165,7 +158,7 @@ contract Vault is IVault, Shared {
     ) {
         require(
             tokens.length == recipients.length &&
-            recipients.length == amounts.length,
+                recipients.length == amounts.length,
             "Vault: arrays not same length"
         );
 
@@ -184,9 +177,9 @@ contract Vault is IVault, Shared {
     function _transferBatch(
         IERC20[] calldata tokens,
         address payable[] calldata recipients,
-        uint[] calldata amounts
+        uint256[] calldata amounts
     ) private {
-        for (uint i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             _transfer(tokens[i], recipients[i], amounts[i]);
         }
     }
@@ -213,18 +206,18 @@ contract Vault is IVault, Shared {
     function _transfer(
         IERC20 token,
         address payable recipient,
-        uint amount
+        uint256 amount
     ) private {
         if (address(token) == _ETH_ADDR) {
-            try this.sendEth{value: amount}(recipient) {
-            } catch (bytes memory lowLevelData) {
+            try this.sendEth{value: amount}(recipient) {} catch (
+                bytes memory lowLevelData
+            ) {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
             IERC20(token).safeTransfer(recipient, amount);
         }
     }
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -347,7 +340,6 @@ contract Vault is IVault, Shared {
         }
     }
 
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Getters                         //
@@ -362,19 +354,20 @@ contract Vault is IVault, Shared {
         return _keyManager;
     }
 
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Modifiers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-
     /// @dev    Calls isUpdatedValidSig in _keyManager
     modifier updatedValidSig(
         SigData calldata sigData,
         bytes32 contractMsgHash
     ) {
+        // Disable check for reason-string because require should not fail. The function
+        // inside should either revert or return true, never false. Require just seems healthy
+        // solhint-disable-next-line reason-string
         require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }

@@ -66,7 +66,7 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths)
         else:
             tx = tv.release(cf.flip, {'from': addrs.INVESTOR})
 
-            totalReleased = maths.simulateRelease(total, tx.timestamp, start, end, cliff)  if tx.timestamp < end else total
+            totalReleased = maths.simulateRelease(total, tx.timestamp, end, cliff)  if tx.timestamp < end else total
             newlyReleased = totalReleased - accomulatedReleases
 
             # Check release

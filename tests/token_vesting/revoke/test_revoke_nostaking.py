@@ -26,7 +26,7 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, sleepTime):
     else:
         tx = tv.revoke(cf.flip, {'from': addrs.REVOKER})
 
-        releasable = maths.simulateRelease(total, tx.timestamp, start, end, cliff) if tx.timestamp < end else total
+        releasable = maths.simulateRelease(total, tx.timestamp, end, cliff) if tx.timestamp < end else total
     
     
     revokedAmount = total - releasable

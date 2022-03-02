@@ -1,24 +1,24 @@
 pragma solidity ^0.8.0;
 
-
 import "../interfaces/IShared.sol";
 
-
 /**
-* @title    Shared contract
-* @notice   Holds constants and modifiers that are used in multiple contracts
-* @dev      It would be nice if this could be a library, but modifiers can't be exported :(
-* @author   Quantaf1re (James Key)
-*/
+ * @title    Shared contract
+ * @notice   Holds constants and modifiers that are used in multiple contracts
+ * @dev      It would be nice if this could be a library, but modifiers can't be exported :(
+ * @author   Quantaf1re (James Key)
+ */
+ 
 abstract contract Shared is IShared {
     /// @dev The address used to indicate whether transfer should send ETH or a token
-    address constant internal _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address constant internal _ZERO_ADDR = address(0);
-    bytes32 constant internal _NULL = "";
-    uint constant internal _E_18 = 1e18;
+    address internal constant _ETH_ADDR =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal constant _ZERO_ADDR = address(0);
+    bytes32 internal constant _NULL = "";
+    uint256 internal constant _E_18 = 1e18;
 
     /// @dev    Checks that a uint isn't zero/empty
-    modifier nzUint(uint u) {
+    modifier nzUint(uint256 u) {
         require(u != 0, "Shared: uint input is empty");
         _;
     }
@@ -40,5 +40,4 @@ abstract contract Shared is IShared {
         require(key.pubKeyX != 0, "Shared: pubKeyX is empty");
         _;
     }
-
 }

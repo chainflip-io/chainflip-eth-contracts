@@ -1,6 +1,5 @@
 pragma solidity ^0.8.0;
 
-
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
@@ -11,26 +10,32 @@ import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
-* @title    StakeManager contract
-* @notice   Manages the staking of FLIP. Validators on the FLIP state chain
-*           basically have full control of FLIP leaving the contract. Bidders
-*           send their bid to this contract via `stake` with their state chain
-*           nodeID.
-*
-*           This contract also handles the minting and burning of FLIP after the
-*           initial supply is minted during FLIP's creation. At any time, a
-*           valid aggragate signature can be submitted to the contract which
-*           updates the total supply by minting or burning the necessary FLIP.
-* @author   Quantaf1re (James Key)
-*/
-contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuard {
-
+ * @title    StakeManager contract
+ * @notice   Manages the staking of FLIP. Validators on the FLIP state chain
+ *           basically have full control of FLIP leaving the contract. Bidders
+ *           send their bid to this contract via `stake` with their state chain
+ *           nodeID.
+ *
+ *           This contract also handles the minting and burning of FLIP after the
+ *           initial supply is minted during FLIP's creation. At any time, a
+ *           valid aggragate signature can be submitted to the contract which
+ *           updates the total supply by minting or burning the necessary FLIP.
+ * @author   Quantaf1re (James Key)
+ */
+contract StakeManager is
+    Shared,
+    IStakeManager,
+    IERC777Recipient,
+    ReentrancyGuard
+{
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private immutable _keyManager;
     /// @dev    The FLIP token
+    // Disable because tokens are usually in caps
+    // solhint-disable-next-line var-name-mixedcase
     FLIP private immutable _FLIP;
     /// @dev    The last time that the State Chain updated the totalSupply
-    uint private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
+    uint256 private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
     /// @dev    Whether execution of claims is suspended. Used in emergencies.
     bool public suspended = false;
 
@@ -41,16 +46,16 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      *          isn't part of `claim`, then `noFish` should protect against it. Note that
      *          if someone is slashed, _totalStake will not be reduced.
      */
-    uint private _totalStake;
+    uint256 private _totalStake;
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
-    uint private _minStake;
+    uint256 private _minStake;
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(bytes32 => Claim) private _pendingClaims;
     /// @dev   Time after registerClaim required to wait before call to executeClaim
-    uint48 constant public CLAIM_DELAY = 2 days;
+    uint48 public constant CLAIM_DELAY = 2 days;
 
-    bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256('ERC777TokensRecipient');
-
+    bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH =
+        keccak256("ERC777TokensRecipient");
 
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
@@ -62,23 +67,40 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     //     uint48 expiryTime;
     // }
 
-
-    constructor(IKeyManager keyManager, uint minStake, uint flipTotalSupply, uint numGenesisValidators, uint genesisStake) {
+    constructor(
+        IKeyManager keyManager,
+        uint256 minStake,
+        uint256 flipTotalSupply,
+        uint256 numGenesisValidators,
+        uint256 genesisStake
+    ) {
         _keyManager = keyManager;
         _minStake = minStake;
 
         address[] memory operators = new address[](1);
         operators[0] = address(this);
-        uint genesisValidatorFlip = numGenesisValidators * genesisStake;
+        uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
-        FLIP flip = new FLIP("Chainflip", "FLIP", operators, address(this), flipTotalSupply);
-        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        FLIP flip = new FLIP(
+            "Chainflip",
+            "FLIP",
+            operators,
+            address(this),
+            flipTotalSupply
+        );
+
+        IERC1820Registry erc1820Reg = IERC1820Registry(
+            0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24
+        );
+        erc1820Reg.setInterfaceImplementer(
+            address(this),
+            TOKENS_RECIPIENT_INTERFACE_HASH,
+            address(this)
+        );
+
         _FLIP = flip;
-
-        IERC1820Registry erc1820Reg = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
-        erc1820Reg.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
+        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
     }
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -96,19 +118,22 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      */
     function stake(
         bytes32 nodeID,
-        uint amount,
+        uint256 amount,
         address returnAddr
     ) external override nonReentrant nzBytes32(nodeID) nzAddr(returnAddr) noFish {
-        require(amount >= _minStake, "StakeMan: stake too small");
+        require(amount >= _minStake, "Staking: stake too small");
 
         // Store it in memory to save gas
         FLIP flip = _FLIP;
 
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
-        uint balBefore = flip.balanceOf(address(this));
+        uint256 balBefore = flip.balanceOf(address(this));
         flip.operatorSend(msg.sender, address(this), amount, "", "stake");
-        require(flip.balanceOf(address(this)) == balBefore + amount, "StakeMan: token transfer failed");
+        require(
+            flip.balanceOf(address(this)) == balBefore + amount,
+            "Staking: token transfer failed"
+        );
 
         _totalStake += amount;
         emit Staked(nodeID, amount, msg.sender, returnAddr);
@@ -129,7 +154,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     function registerClaim(
         SigData calldata sigData,
         bytes32 nodeID,
-        uint amount,
+        uint256 amount,
         address staker,
         uint48 expiryTime
     ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish updatedValidSig(
@@ -142,17 +167,18 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 amount,
                 staker,
                 expiryTime
+                )
             )
         )
-    ) {
+    {
         require(
             // Must be fresh or have been executed & deleted, or past the expiry
-            block.timestamp > uint(_pendingClaims[nodeID].expiryTime),
-            "StakeMan: a pending claim exists"
+            block.timestamp > uint256(_pendingClaims[nodeID].expiryTime),
+            "Staking: a pending claim exists"
         );
 
         uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
-        require(expiryTime > startTime, "StakeMan: expiry time too soon");
+        require(expiryTime > startTime, "Staking: expiry time too soon");
 
         _pendingClaims[nodeID] = Claim(amount, staker, startTime, expiryTime);
         emit ClaimRegistered(nodeID, amount, staker, startTime, expiryTime);
@@ -170,12 +196,12 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @param nodeID    The nodeID of the staker
      */
     function executeClaim(bytes32 nodeID) external override noFish {
-        require(!suspended, "StakeMan: suspended");
+        require(!suspended, "Staking: suspended");
         Claim memory claim = _pendingClaims[nodeID];
         require(
-            uint(block.timestamp) >= claim.startTime &&
-            uint(block.timestamp) <= claim.expiryTime,
-            "StakeMan: early, late, or execd"
+            uint256(block.timestamp) >= claim.startTime &&
+                uint256(block.timestamp) <= claim.expiryTime,
+            "Staking: early, late, or execd"
         );
 
         // Housekeeping
@@ -184,6 +210,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         emit ClaimExecuted(nodeID, claim.amount);
 
         // Send the tokens
+        // Disable because it would revert inside the transfer providing a reason-string
+        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(claim.staker, claim.amount));
     }
 
@@ -196,8 +224,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      */
     function updateFlipSupply(
         SigData calldata sigData,
-        uint newTotalSupply,
-        uint stateChainBlockNumber
+        uint256 newTotalSupply,
+        uint256 stateChainBlockNumber
     ) external override nzUint(newTotalSupply) noFish updatedValidSig(
         sigData,
         keccak256(
@@ -206,23 +234,31 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
                 SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                 newTotalSupply,
                 stateChainBlockNumber
+                )
             )
         )
-    ) {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "StakeMan: old FLIP supply update");
+    {
+        require(
+            stateChainBlockNumber > _lastSupplyUpdateBlockNum,
+            "Staking: old FLIP supply update"
+        );
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
         FLIP flip = _FLIP;
-        uint oldSupply = flip.totalSupply();
+        uint256 oldSupply = flip.totalSupply();
         if (newTotalSupply < oldSupply) {
-            uint amount = oldSupply - newTotalSupply;
+            uint256 amount = oldSupply - newTotalSupply;
             flip.burn(amount, "");
             _totalStake -= amount;
         } else if (newTotalSupply > oldSupply) {
-            uint amount = newTotalSupply - oldSupply;
+            uint256 amount = newTotalSupply - oldSupply;
             flip.mint(address(this), amount, "", "");
             _totalStake += amount;
         }
-        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
+        emit FlipSupplyUpdated(
+            oldSupply,
+            newTotalSupply,
+            stateChainBlockNumber
+        );
     }
 
     /**
@@ -247,6 +283,8 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @param _data             data
      * @param _operatorData     operatorData
      */
+    // Disable because tokensRecieved interface is a standard
+    // solhint-disable no-unused-vars
     function tokensReceived(
         address _operator,
         address _from,
@@ -255,9 +293,10 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         bytes calldata _data,
         bytes calldata _operatorData
     ) external override {
-        require(msg.sender == address(_FLIP), "StakeMan: non-FLIP token");
-        require(_operator == address(this), "StakeMan: not the operator");
+        require(msg.sender == address(_FLIP), "Staking: non-FLIP token");
+        require(_operator == address(this), "Staking: not the operator");
     }
+    // solhint-enable no-unused-vars
 
     /**
      * @notice Can be used to suspend executions of claims - only executable by
@@ -281,9 +320,11 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * with later.
      */
     function govWithdraw() external override isGovernor {
-        require(suspended, "StakeMan: Not suspended");
+        require(suspended, "Staking: Not suspended");
         address to = _keyManager.getGovernanceKey();
-        uint amount = _FLIP.balanceOf(address(this));
+        uint256 amount = _FLIP.balanceOf(address(this));
+        // Disable because it would revert inside the transfer providing a reason-string
+        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(to, amount));
         emit GovernanceWithdrawal(to, amount);
     }
@@ -291,8 +332,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     /**
      *  @notice Allows this contract to receive ETH used to refund callers
      */
-    receive () external payable {}
-
+    receive() external payable {}
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -304,7 +344,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @notice  Get the KeyManager address/interface that's used to validate sigs
      * @return  The KeyManager (IKeyManager)
      */
-    function getKeyManager() external override view returns (IKeyManager) {
+    function getKeyManager() external view override returns (IKeyManager) {
         return _keyManager;
     }
 
@@ -312,7 +352,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
-    function getFLIP() external override view returns (IFLIP) {
+    function getFLIP() external view override returns (IFLIP) {
         return IFLIP(address(_FLIP));
     }
 
@@ -329,7 +369,7 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
      *          attempt in the auction to be valid - used to prevent sybil attacks
      * @return  The minimum stake (uint)
      */
-    function getMinimumStake() external override view returns (uint) {
+    function getMinimumStake() external view override returns (uint256) {
         return _minStake;
     }
 
@@ -356,13 +396,16 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
         SigData calldata sigData,
         bytes32 contractMsgHash
     ) {
+        // Disable check for reason-string because it should not trigger. The function
+        // inside should either revert or return true, never false. Require just seems healthy
+        // solhint-disable-next-line reason-string
         require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }
 
     /// @notice Ensure that the caller is the KeyManager's governor address.
-    modifier isGovernor () {
-        require(msg.sender == _keyManager.getGovernanceKey(), "StakeMan: not governor");
+    modifier isGovernor() {
+        require(msg.sender == _keyManager.getGovernanceKey(), "Staking: not governor");
         _;
     }
 
@@ -371,6 +414,6 @@ contract StakeManager is Shared, IStakeManager, IERC777Recipient, ReentrancyGuar
     modifier noFish() {
         _;
         // >= because someone could send some tokens to this contract and disable it if it was ==
-        require(_FLIP.balanceOf(address(this)) >= _totalStake, "StakeMan: something smells fishy");
+        require(_FLIP.balanceOf(address(this)) >= _totalStake, "Staking: something smells fishy");
     }
 }

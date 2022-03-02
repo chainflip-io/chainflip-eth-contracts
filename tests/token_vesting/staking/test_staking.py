@@ -43,7 +43,7 @@ def test_stake_rev_beneficiary(a, addrs, tokenVestingStaking):
 
     for ad in a:
         if ad != addrs.INVESTOR:
-            with reverts("TokenVesting: not the beneficiary"):    
+            with reverts(REV_MSG_NOT_BENEFICIARY):
                 tv.stake(5, 10, {'from': ad})
 
 
