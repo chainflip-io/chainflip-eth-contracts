@@ -19,9 +19,6 @@ def main():
 
     cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ)
 
-<<<<<<< HEAD
-    print(f'FLIP = {cf.stakeManager.getFLIP()}')
-=======
     print(f'KeyManager: {cf.keyManager.address}')
     print(f'StakeManager: {cf.stakeManager.address}')
     print(f'FLIP: {cf.stakeManager.getFLIPAddress()}')
@@ -44,4 +41,3 @@ def main():
         f = open(f'{dir_path}{DEPLOY_ARTEFACT_ID}.json', 'w')
         f.write(json_content)
         f.close()
->>>>>>> origin/master
