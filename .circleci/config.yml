@@ -86,4 +86,4 @@ jobs:
             npm install
       - run: npx solhint 'contracts/**/*.sol' | tee solhint_output.txt
       # Force a failure if there are warnings
-      - run: grep " warning "" solhint_output.txt; then exit 1; fi
+      - run: if grep -q " warning " solhint_output.txt; then exit 1; fi
