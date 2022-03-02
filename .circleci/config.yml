@@ -79,4 +79,9 @@ jobs:
       - image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
         auth: *dockerconfig
     steps:
+      - checkout
+      - run:
+          name: Install dependencies and test
+          command: |
+            npm install
       - run: solhint 'contracts/**/*.sol'
