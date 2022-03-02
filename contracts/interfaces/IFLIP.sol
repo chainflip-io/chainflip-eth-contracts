@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC777/IERC777.sol";
  */
 interface IFLIP is IERC777 {
     function mint(
-        address receiver,
+        address RECIEVER,
         uint256 amount,
         bytes memory userData,
         bytes memory operatorData
