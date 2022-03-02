@@ -84,4 +84,6 @@ jobs:
           name: Install dependencies
           command: |
             npm install
-      - run: npx solhint 'contracts/**/*.sol'
+      - run: npx solhint 'contracts/**/*.sol' | tee solhint_output.txt
+      # Force a failure if there are warnings
+      - run: grep " warning "" solhint_output.txt; then exit 1; fi
