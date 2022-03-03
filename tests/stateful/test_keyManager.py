@@ -42,6 +42,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         st_sender = strategy("address")
         st_sig_key_idx = strategy("uint", max_value=TOTAL_KEYS-1)
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS-1)
+        # KEYID_TO_NUM - 2 to only take AGG
         st_keyID_num = strategy("uint", max_value=len(KEYID_TO_NUM)-2)
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)

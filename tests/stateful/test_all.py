@@ -44,6 +44,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
     # the amount of non-reverted txs there are, while also allowing for some reverts
     INIT_MIN_STAKE = 1000
     MAX_TEST_STAKE = 10**24
+    INIT_FLIP_SM = 25*10**22
 
     class StateMachine(BaseStateMachine):
 
@@ -137,7 +138,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
             self.lastSupplyBlockNumber = 0
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
-            self.flipBals = {addr: INIT_STAKE if addr in self.stakers else 0 for addr in self.allAddrs}
+            self.flipBals = {addr: INIT_STAKE if addr in self.stakers else (INIT_FLIP_SM if addr == self.sm  else 0) for addr in self.allAddrs}
             self.pendingClaims = {nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)}
             self.numTxsTested = 0
 
@@ -164,7 +165,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
 
         st_sig_key_idx = strategy("uint", max_value=TOTAL_KEYS-1)
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS-1)
-        st_keyID_num = strategy("uint", max_value=len(KEYID_TO_NUM)-1)
+        # KEYID_TO_NUM - 2 to only take AGG
+        st_keyID_num = strategy("uint", max_value=len(KEYID_TO_NUM)-2)
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
 
@@ -173,7 +175,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
         st_staker = strategy("address", length=MAX_NUM_SENDERS)
         st_returnAddr = strategy("address")
         st_nodeID = strategy("uint", max_value=MAX_NUM_SENDERS)
-        st_stake = strategy("uint", max_value=MAX_TEST_STAKE)
+        st_amount = strategy("uint", max_value=MAX_TEST_STAKE)
         st_expiry_time_diff = strategy("uint", max_value=CLAIM_DELAY*10)
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minStake = strategy("uint", max_value=int(INIT_STAKE/2))
@@ -560,7 +562,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
                     self.km.setAggKeyWithGovKey(self.allKeys[st_new_key_idx].getPubData(), {'from': current_governor})
             elif current_governor != self.governor:
                 print('        REV_MSG_SIG rule_setAggKeyWithGovKey', st_sender, current_governor, st_new_key_idx)
-                with reverts(REV_MSG_SIG):
+                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.setAggKeyWithGovKey(self.allKeys[st_new_key_idx].getPubData(), {'from': current_governor})
             else:
                 print('                    rule_setAggKeyWithGovKey', st_sender, current_governor, st_new_key_idx)
@@ -572,41 +574,39 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
 
 
         # Stakes a random amount from a random staker to a random nodeID
-        def rule_stake(self, st_staker, st_nodeID, st_stake, st_returnAddr):
+        def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
             if st_nodeID == 0:
-                print('        REV_MSG_NZ_BYTES32 rule_stake', st_staker, st_nodeID, st_stake/E_18)
+                print('        REV_MSG_NZ_BYTES32 rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
-            elif st_stake < self.minStake:
-            # st_stake = MAX_TEST_STAKE - st_stake
-            # if st_stake < self.minStake:
-                print('        rule_stake MIN_STAKE', st_staker, st_nodeID, st_stake/E_18)
+                    self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
+            elif st_amount < self.minStake:
+                print('        rule_stake MIN_STAKE', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_MIN_STAKE):
-                    self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
-            elif st_stake > self.flipBals[st_staker]:
-                print('        rule_stake REV_MSG_ERC777_EXCEED_BAL', st_staker, st_nodeID, st_stake/E_18)
+                    self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
+            elif st_amount > self.flipBals[st_staker]:
+                print('        rule_stake REV_MSG_ERC777_EXCEED_BAL', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_ERC777_EXCEED_BAL):
-                    self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
+                    self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             else:
-                print('                    rule_stake ', st_staker, st_nodeID, st_stake/E_18)
-                tx = self.sm.stake(st_nodeID, st_stake, st_returnAddr, {'from': st_staker})
+                print('                    rule_stake ', st_amount, st_nodeID, st_amount/E_18)
+                tx = self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
 
-                self.flipBals[st_staker] -= st_stake
-                self.flipBals[self.sm] += st_stake
-                self.totalStake += st_stake
+                self.flipBals[st_staker] -= st_amount
+                self.flipBals[self.sm] += st_amount
+                self.totalStake += st_amount
 
 
         # Claims a random amount from a random nodeID to a random recipient
-        def rule_registerClaim(self, st_nodeID, st_staker, st_stake, st_sender, st_expiry_time_diff):
-            args = (st_nodeID, st_stake, st_staker, chain.time() + st_expiry_time_diff)
+        def rule_registerClaim(self, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff):
+            args = (st_nodeID, st_amount, st_staker, chain.time() + st_expiry_time_diff)
             callDataNoSig = self.sm.registerClaim.encode_input(agg_null_sig(self.km.address, chain.id), *args)
             signer = self._get_key_prob(AGG)
 
             if st_nodeID == 0:
-                print('        REV_MSG_NZ_BYTES32 rule_registerClaim', *args)
+                print('        NODEID rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_BYTES32):
                     self.sm.registerClaim(signer.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
-            elif st_stake == 0:
+            elif st_amount == 0:
                 print('        AMOUNT rule_registerClaim', *args)
                 with reverts(REV_MSG_NZ_UINT):
                     self.sm.registerClaim(signer.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
@@ -626,7 +626,7 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
                 print('                    rule_registerClaim ', *args)
                 tx = self.sm.registerClaim(signer.getSigDataWithNonces(callDataNoSig, nonces, AGG ,self.km.address), *args, {'from': st_sender})
 
-                self.pendingClaims[st_nodeID] = (st_stake, st_staker, tx.timestamp + CLAIM_DELAY, args[3])
+                self.pendingClaims[st_nodeID] = (st_amount, st_staker, tx.timestamp + CLAIM_DELAY, args[3])
                 self.lastValidateTime = tx.timestamp
 
 
@@ -640,6 +640,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             elif self.flipBals[self.sm] < claim[0]:
                 print('        REV_MSG_INTEGER_OVERFLOW rule_executeClaim', st_nodeID)
+                print (self.flipBals[self.sm])
+                print (self.f.balanceOf(self.sm))
                 with reverts(REV_MSG_INTEGER_OVERFLOW):
                     self.sm.executeClaim(st_nodeID, {'from': st_sender})
             else:
@@ -649,29 +651,25 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
                 self.flipBals[claim[1]] += claim[0]
                 self.flipBals[self.sm] -= (claim[0])
                 self.totalStake -= (claim[0])
-                self.lastMintBlockNum = tx.block_number
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
 
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setMinStake(self, st_minStake, st_sender):
-            callDataNoSig = self.sm.setMinStake.encode_input(agg_null_sig(self.km.address, chain.id), st_minStake)
-            signer = self._get_key_prob(GOV)
 
             if st_minStake == 0:
-                print('        rule_setMinstake REV_MSG_NZ_UINT', st_minStake, signer, st_sender)
+                print('        REV_MSG_NZ_UINT rule_setMinstake', st_minStake, st_sender)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setMinStake(signer.getSigDataWithNonces(callDataNoSig, nonces, GOV, self.km.address), st_minStake, {'from': st_sender})
-            elif signer != self.keyIDToCurKeys[GOV]:
-                print('        rule_setMinstake REV_MSG_SIG', st_minStake, signer, st_sender)
-                with reverts(REV_MSG_SIG):
-                    self.sm.setMinStake(signer.getSigDataWithNonces(callDataNoSig, nonces, GOV, self.km.address), st_minStake, {'from': st_sender})
+                    self.sm.setMinStake(st_minStake, {'from': st_sender})
+            elif st_sender != self.governor:
+                print('        REV_MSG_SIG rule_setMinstake', st_minStake, st_sender)
+                with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+                    self.sm.setMinStake(st_minStake, {'from': st_sender})
             else:
-                print('                    rule_setMinstake', st_minStake, signer, st_sender)
-                tx = self.sm.setMinStake(signer.getSigDataWithNonces(callDataNoSig, nonces, GOV, self.km.address), st_minStake, {'from': st_sender})
+                print('                    rule_setMinstake', st_minStake, st_sender)
+                tx = self.sm.setMinStake(st_minStake, {'from': st_sender})
 
                 self.minStake = st_minStake
-                self.lastValidateTime = tx.timestamp
 
 
         # Check all the balances of every address are as they should be after every tx

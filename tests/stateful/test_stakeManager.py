@@ -178,7 +178,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 self.flipBals[claim[1]] += claim[0]
                 self.flipBals[self.sm] -= (claim[0])
                 self.totalStake -= (claim[0])
-                # Using eth block number as a proxy for state chain block number
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
 
 
