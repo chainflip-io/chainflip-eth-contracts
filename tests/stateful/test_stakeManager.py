@@ -85,7 +85,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Stakes a random amount from a random staker to a random nodeID
         def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
-            self.numTxsTested+=1
             if st_nodeID == 0:
                 print('        NODEID rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_NZ_BYTES32):
@@ -109,7 +108,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(self, st_signer_agg, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff):
-            self.numTxsTested+=1
             args = (st_nodeID, st_amount, st_staker, chain.time() + st_expiry_time_diff)
             callDataNoSig = self.sm.registerClaim.encode_input(agg_null_sig(self.km.address, chain.id), *args)
 
@@ -144,7 +142,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Sleep for a random time so that executeClaim can be called without reverting
         def rule_sleep(self, st_sleep_time):
-            self.numTxsTested+=1
             print('                    rule_sleep', st_sleep_time)
             chain.sleep(st_sleep_time)
 
@@ -153,14 +150,12 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
-            self.numTxsTested+=1
             print('                    rule_sleep_2_days')
             chain.sleep(2 * DAY)
 
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
-            self.numTxsTested+=1
             claim = self.pendingClaims[st_nodeID]
 
             if not claim[2] <= chain.time() <= claim[3]:
@@ -184,7 +179,6 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setMinStake(self, st_minStake, st_sender):
-            self.numTxsTested+=1    
             if st_minStake == 0:
                 print('        REV_MSG_NZ_UINT rule_setMinstake', st_minStake, st_sender)
                 with reverts(REV_MSG_NZ_UINT):
@@ -203,6 +197,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Check variable(s) after every tx that shouldn't change since there's
         # no intentional way to
         def invariant_nonchangeable(self):
+            self.numTxsTested += 1
             assert self.sm.getKeyManager() == self.km.address
             assert self.sm.getFLIP() == self.f.address
 

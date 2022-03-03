@@ -354,7 +354,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, DepositEth, Deposit
         def invariant_bals(self):
             self.numTxsTested += 1
             for addr in self.allAddrs:
-                ## Check approx amount and <= to take into consideration gas spendings
+                ## Check approx amount (1%) and <= to take into consideration gas spendings
                 assert float(web3.eth.get_balance(addr)) == pytest.approx(self.ethBals[addr], rel=1e-3)
                 assert web3.eth.get_balance(addr) <= self.ethBals[addr]
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
