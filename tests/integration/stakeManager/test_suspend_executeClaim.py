@@ -68,5 +68,5 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
 	cf.stakeManager.resume({"from": cf.GOVERNOR})
 
 	# Attempt the execution, should fail because of balance in the Stake Manager
-	with reverts(REV_MSG_ERC777_EXCEED_BAL):
+	with reverts(REV_MSG_ERC20_EXCEED_BAL):
 		cf.stakeManager.executeClaim(JUNK_HEX)

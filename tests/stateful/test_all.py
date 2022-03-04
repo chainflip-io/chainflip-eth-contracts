@@ -584,8 +584,8 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
                 with reverts(REV_MSG_MIN_STAKE):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount > self.flipBals[st_staker]:
-                print('        rule_stake REV_MSG_ERC777_EXCEED_BAL', st_staker, st_nodeID, st_amount/E_18)
-                with reverts(REV_MSG_ERC777_EXCEED_BAL):
+                print('        rule_stake REV_MSG_ERC20_EXCEED_BAL', st_staker, st_nodeID, st_amount/E_18)
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             else:
                 print('                    rule_stake ', st_amount, st_nodeID, st_amount/E_18)

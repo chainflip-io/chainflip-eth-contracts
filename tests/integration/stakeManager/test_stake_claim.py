@@ -35,6 +35,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
     chain.sleep(CLAIM_DELAY + 5)
 
     # 1st stake
+    cf.flip.approve(cf.stakeManager.address, stakeAmount1, cf.FR_ALICE)
     stakeTx1 = cf.stakeManager.stake(nodeID1, stakeAmount1, NON_ZERO_ADDR, cf.FR_ALICE)
     stakeTest(
         cf,
@@ -59,6 +60,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
     # 2nd stake
+    cf.flip.approve(cf.stakeManager.address, stakeAmount2, cf.FR_BOB)
     stakeTx2 = cf.stakeManager.stake(nodeID2, stakeAmount2, NON_ZERO_ADDR, cf.FR_BOB)
 
     stakeTest(

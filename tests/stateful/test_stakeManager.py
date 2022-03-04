@@ -94,8 +94,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_MIN_STAKE):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount > self.flipBals[st_staker]:
-                print('        REV_MSG_ERC777_EXCEED_BAL rule_stake', st_staker, st_nodeID, st_amount/E_18)
-                with reverts(REV_MSG_ERC777_EXCEED_BAL):
+                print('        REV_MSG_ERC20_EXCEED_BAL rule_stake', st_staker, st_nodeID, st_amount/E_18)
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             else:
                 print('                    rule_stake', st_staker, st_nodeID, st_amount/E_18)
