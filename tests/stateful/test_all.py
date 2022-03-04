@@ -578,17 +578,21 @@ def test_all(BaseStateMachine, state_machine, a, cfDeployAllWhitelist, DepositEt
             if st_nodeID == 0:
                 print('        REV_MSG_NZ_BYTES32 rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_NZ_BYTES32):
+                    self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount < self.minStake:
                 print('        rule_stake MIN_STAKE', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_MIN_STAKE):
+                    self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount > self.flipBals[st_staker]:
                 print('        rule_stake REV_MSG_ERC20_EXCEED_BAL', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                    self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             else:
                 print('                    rule_stake ', st_amount, st_nodeID, st_amount/E_18)
+                self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                 tx = self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
 
                 self.flipBals[st_staker] -= st_amount
