@@ -48,14 +48,12 @@ class Signer():
 
     @classmethod
     def gen_key_hex(cls):
-        return bytes(cls.gen_key()).hex()
-
+        return cls.gen_key().to_secret_bytes().hex()
 
     @classmethod
     def gen_signer(cls, keyID, nonces):
         privKeyHex = cls.gen_key_hex()
-        kHex = bytes(SecretKey.random()).hex()
-        return cls(privKeyHex, kHex, keyID, nonces)
+        return cls(privKeyHex, keyID, nonces)
 
 
     def getPubData(self):

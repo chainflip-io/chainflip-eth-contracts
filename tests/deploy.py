@@ -37,7 +37,8 @@ def deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager
     else: govKey = GOV_SIGNER_1.getPubData()
 
     # `deployer` here is the governor
-    cf.keyManager = deployer.deploy(KeyManager, aggKey, deployer)
+    cf.gov = deployer
+    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov)
 
     numGenesisValidators = int(environment.get('NUM_GENESIS_VALIDATORS') or NUM_GENESIS_VALIDATORS)
 
@@ -45,7 +46,6 @@ def deploy_initial_Chainflip_contracts(deployer, KeyManager, Vault, StakeManager
 
     print(f'Deploying with AGG_KEY: {aggKey} and GOV_KEY: {govKey}')
 
-    #    cf.keyManager = deployer.deploy(KeyManager, aggKey, govKey)
     cf.vault = deployer.deploy(Vault, cf.keyManager)
     cf.stakeManager = deployer.deploy(StakeManager, cf.keyManager, MIN_STAKE, INIT_SUPPLY, numGenesisValidators, genesisStake)
     cf.flip = FLIP.at(cf.stakeManager.getFLIP())
