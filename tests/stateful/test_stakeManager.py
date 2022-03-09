@@ -13,13 +13,13 @@ settings = {"stateful_step_count": 100, "max_examples": 50}
 def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
     NUM_STAKERS = 5
-    INIT_STAKE = 10**25
+    INIT_STAKE = 10**7 * E_18
     # Setting this low because Brownie/Hypothesis 'shrinks' random
     # numbers so that they cluster near the minimum, and we want to maximise
     # the amount of non-reverted txs there are, while also allowing for some reverts
     INIT_MIN_STAKE = 1000
-    MAX_TEST_STAKE = 10**24
-    INIT_FLIP_SM = 25*10**22
+    MAX_TEST_STAKE = 10**6 * E_18
+    INIT_FLIP_SM = 25*10**4 * E_18
 
     class StateMachine(BaseStateMachine):
 
