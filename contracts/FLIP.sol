@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
@@ -11,28 +12,25 @@ import "./abstract/Shared.sol";
  *           trap fees with
  * @author   Quantaf1re (James Key)
  */
-contract FLIP is ERC777, Ownable, Shared {
+contract FLIP is ERC20, ERC20Burnable, Ownable, Shared {
     constructor(
         string memory name,
         string memory symbol,
-        address[] memory defaultOperators,
         address receiver,
         uint256 mintAmount
     )
-        ERC777(name, symbol, defaultOperators)
+        ERC20(name, symbol)
         Ownable()
         nzAddr(receiver)
         nzUint(mintAmount)
     {
-        _mint(receiver, mintAmount, "", "");
+        _mint(receiver, mintAmount);
     }
 
     function mint(
         address receiver,
-        uint256 amount,
-        bytes memory userData,
-        bytes memory operatorData
+        uint256 amount
     ) external nzAddr(receiver) nzUint(amount) onlyOwner {
-        _mint(receiver, amount, userData, operatorData);
+        _mint(receiver, amount);
     }
 }

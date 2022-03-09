@@ -102,6 +102,7 @@ def schnorrTest(cf, SchnorrSECP256K1Test):
 @pytest.fixture(scope="module")
 def stakedMin(cf):
     amount = MIN_STAKE
+    cf.flip.approve(cf.stakeManager.address, amount, {'from': cf.ALICE})
     return cf.stakeManager.stake(JUNK_HEX, amount, NON_ZERO_ADDR, {'from': cf.ALICE}), amount
 
 
@@ -166,6 +167,7 @@ def vulnerableStakedStakeMan(a, StakeManagerVulnerable, KeyManager, Vault, Stake
 
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it
+    flipVuln.approve(smVuln.address, MIN_STAKE, {'from': cf.ALICE})
     smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
 
     return cf, smVuln, flipVuln

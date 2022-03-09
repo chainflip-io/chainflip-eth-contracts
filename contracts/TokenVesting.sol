@@ -104,6 +104,7 @@ contract TokenVesting is ReentrancyGuard {
         require(msg.sender == beneficiary, "Vesting: not the beneficiary");
         require(canStake, "Vesting: cannot stake");
 
+        stakeManager.getFLIP().approve(address(stakeManager), amount);
         stakeManager.stake(nodeID, amount, address(this));
     }
 

@@ -31,7 +31,7 @@ def test_stake(addrs, tokenVestingStaking, nodeID, amount, cf):
         with reverts(REV_MSG_MIN_STAKE):
             tx = tv.stake(nodeID, amount, {'from': addrs.INVESTOR})
     elif amount > cf.flip.balanceOf(tv):
-        with reverts("ERC777: transfer amount exceeds balance"):
+        with reverts("ERC20: transfer amount exceeds balance"):
             tx = tv.stake(nodeID, amount, {'from': addrs.INVESTOR})        
     else:       
         tx = tv.stake(nodeID, amount, {'from': addrs.INVESTOR})

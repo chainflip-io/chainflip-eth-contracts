@@ -88,17 +88,21 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             if st_nodeID == 0:
                 print('        NODEID rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_NZ_BYTES32):
+                    self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount < self.minStake:
                 print('        REV_MSG_MIN_STAKE rule_stake', st_staker, st_nodeID, st_amount/E_18)
                 with reverts(REV_MSG_MIN_STAKE):
+                    self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             elif st_amount > self.flipBals[st_staker]:
-                print('        REV_MSG_ERC777_EXCEED_BAL rule_stake', st_staker, st_nodeID, st_amount/E_18)
-                with reverts(REV_MSG_ERC777_EXCEED_BAL):
+                print('        REV_MSG_ERC20_EXCEED_BAL rule_stake', st_staker, st_nodeID, st_amount/E_18)
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                    self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                     self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
             else:
                 print('                    rule_stake', st_staker, st_nodeID, st_amount/E_18)
+                self.f.approve(self.sm.address, st_amount , {'from': st_staker})
                 self.sm.stake(st_nodeID, st_amount, st_returnAddr, {'from': st_staker})
 
                 self.flipBals[st_staker] -= st_amount

@@ -18,6 +18,7 @@ def test_setMinStake_stake(cf):
     with reverts(REV_MSG_MIN_STAKE):
         cf.stakeManager.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, cf.FR_ALICE)
 
+    cf.flip.approve(cf.stakeManager.address, newMinStake, {'from': cf.ALICE})
     stakeTx = cf.stakeManager.stake(JUNK_HEX, newMinStake, NON_ZERO_ADDR, cf.FR_ALICE)
 
     stakeTest(

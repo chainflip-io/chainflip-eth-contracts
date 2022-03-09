@@ -135,7 +135,8 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
 )
 def test_retrieve_revoked_funds_and_rewards(addrs, cf, tokenVestingStaking, amount, rewards):
     tv, start, cliff, end, total = tokenVestingStaking
-    
+
+    cf.flip.approve(cf.stakeManager.address, amount, {'from': addrs.INVESTOR})
     tx = tv.stake(1, amount, {'from': addrs.INVESTOR})
     tx = tv.revoke(cf.flip, {'from': addrs.REVOKER})
 

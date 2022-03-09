@@ -5,6 +5,7 @@ from utils import *
 
 def test_updateFlipSupply(cf):
 
+    cf.flip.approve(cf.stakeManager.address, MIN_STAKE, {'from': cf.ALICE})
     cf.stakeManager.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
 
     assert cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + STAKEMANAGER_INITIAL_BALANCE

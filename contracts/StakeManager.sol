@@ -5,8 +5,7 @@ import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
 import "./FLIP.sol";
-import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
@@ -25,7 +24,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract StakeManager is
     Shared,
     IStakeManager,
-    IERC777Recipient,
     ReentrancyGuard
 {
     /// @dev    The KeyManager used to checks sigs used in functions here
@@ -54,9 +52,6 @@ contract StakeManager is
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
 
-    bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH =
-        keccak256("ERC777TokensRecipient");
-
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
     //     uint amount;
@@ -84,18 +79,8 @@ contract StakeManager is
         FLIP flip = new FLIP(
             "Chainflip",
             "FLIP",
-            operators,
             address(this),
             flipTotalSupply
-        );
-
-        IERC1820Registry erc1820Reg = IERC1820Registry(
-            0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24
-        );
-        erc1820Reg.setInterfaceImplementer(
-            address(this),
-            TOKENS_RECIPIENT_INTERFACE_HASH,
-            address(this)
         );
 
         _FLIP = flip;
@@ -120,7 +105,7 @@ contract StakeManager is
         bytes32 nodeID,
         uint256 amount,
         address returnAddr
-    ) external override nonReentrant nzBytes32(nodeID) nzAddr(returnAddr) noFish {
+    ) external override nzBytes32(nodeID) nzAddr(returnAddr) noFish {
         require(amount >= _minStake, "Staking: stake too small");
 
         // Store it in memory to save gas
@@ -129,7 +114,10 @@ contract StakeManager is
         // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
         // be necessary, but since this is mission critical, it's worth being paranoid
         uint256 balBefore = flip.balanceOf(address(this));
-        flip.operatorSend(msg.sender, address(this), amount, "", "stake");
+        // Assumption of set token allowance by the user
+        // Disable because it would revert inside the transfer providing a reason-string
+        // solhint-disable-next-line reason-string
+        require(_FLIP.transferFrom(msg.sender,address(this), amount));
         require(
             flip.balanceOf(address(this)) == balBefore + amount,
             "Staking: token transfer failed"
@@ -247,11 +235,11 @@ contract StakeManager is
         uint256 oldSupply = flip.totalSupply();
         if (newTotalSupply < oldSupply) {
             uint256 amount = oldSupply - newTotalSupply;
-            flip.burn(amount, "");
+            flip.burn(amount);
             _totalStake -= amount;
         } else if (newTotalSupply > oldSupply) {
             uint256 amount = newTotalSupply - oldSupply;
-            flip.mint(address(this), amount, "", "");
+            flip.mint(address(this), amount);
             _totalStake += amount;
         }
         emit FlipSupplyUpdated(
@@ -272,31 +260,6 @@ contract StakeManager is
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
     }
-
-    /**
-     * @notice      ERC1820 tokensReceived callback, doesn't do anything in our
-     *              contract.
-     * @param _operator         operator
-     * @param _from             from
-     * @param _to               to
-     * @param _amount           amount
-     * @param _data             data
-     * @param _operatorData     operatorData
-     */
-    // Disable because tokensRecieved interface is a standard
-    // solhint-disable no-unused-vars
-    function tokensReceived(
-        address _operator,
-        address _from,
-        address _to,
-        uint256 _amount,
-        bytes calldata _data,
-        bytes calldata _operatorData
-    ) external override {
-        require(msg.sender == address(_FLIP), "Staking: non-FLIP token");
-        require(_operator == address(this), "Staking: not the operator");
-    }
-    // solhint-enable no-unused-vars
 
     /**
      * @notice Can be used to suspend executions of claims - only executable by
