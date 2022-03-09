@@ -40,8 +40,6 @@ contract StakeManagerVulnerable is StakeManager {
      * @param amount    The amount of FLIP to send
      */
     function testSendFLIP(address receiver, uint256 amount) external {
-        // Disable because it would revert inside the transfer providing a reason-string
-        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(receiver, amount));
     }
 }

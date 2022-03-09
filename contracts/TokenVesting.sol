@@ -72,8 +72,6 @@ contract TokenVesting is ReentrancyGuard {
         bool canStake_,
         IStakeManager stakeManager_
     ) {
-        // Disable reason length - it can't be made short enough
-        // solhint-disable reason-string
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(revoker_ != address(0), "Vesting: revoker_ is the zero address");
         require(start_ > 0, "Vesting: start_ is 0");
@@ -82,7 +80,6 @@ contract TokenVesting is ReentrancyGuard {
         require(end_ > block.timestamp, "Vesting: final time is before current time");
         require(address(stakeManager_) != address(0), "Vesting: stakeManager_ is the zero address");
         if (canStake_) require (cliff_ == end_ , "Vesting: invalid staking contract cliff");
-        // solhint-enable reason-string
 
         beneficiary = beneficiary_;
         revoker = revoker_;
