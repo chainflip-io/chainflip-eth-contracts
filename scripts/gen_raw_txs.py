@@ -39,6 +39,6 @@ def gen_succeed_and_fail():
 
     from_acc = cf_accs[0]
     to_acc = cf_accs[2]
-    amount = 10**21
+    amount = 10**3 * E_18
     print(f"A reverting tx that will fail trying to send {amount / 10**18} ETH from {from_acc.address} to {to_acc.address}:")
     _gen_tx(from_acc, to_acc, amount)

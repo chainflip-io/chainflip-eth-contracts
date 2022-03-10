@@ -14,7 +14,7 @@ cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
 node_ids = []
 
-stake = 1000 * (10**18)
+stake = 10**3 * E_18
 return_addr = "0xffffffffffffffffffffffffffffffffffffffff"
 
 def main():
@@ -26,12 +26,12 @@ def main():
 	staker = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 	to_approve = stake * (len(node_ids) + 1)
 	tx = flip.approve(stakeManager, to_approve, {"from": staker, "required_confs": 0})
-	print(f'Approving {to_approve / 10**18} FLIP in tx {tx.txid}')
+	print(f'Approving {to_approve / E_18} FLIP in tx {tx.txid}')
 	for i, node_id in enumerate(node_ids):
-		to_stake = stake + (i * 10**18)
+		to_stake = stake + (i * E_18)
 		node_id = node_id.strip()
 		tx = stakeManager.stake(node_id, to_stake, return_addr, {"from": staker, "required_confs": 0})
-		print(f'Staking {to_stake / 10**18} FLIP to node {node_id} in tx {tx.txid}')
+		print(f'Staking {to_stake / E_18} FLIP to node {node_id} in tx {tx.txid}')
 
 def cleanHexStr(thing):
 	if isinstance(thing, int):
