@@ -1,4 +1,5 @@
 import os
 
+
 def main():
-  os.system('brownie test --gas')
+    os.system("brownie test --gas")

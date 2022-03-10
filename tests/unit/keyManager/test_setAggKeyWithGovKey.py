@@ -9,6 +9,7 @@ def test_setAggKeyWithGovKey(cfAW):
     chain.sleep(AGG_KEY_TIMEOUT)
     setAggKeyWithGovKey_test(cfAW)
 
+
 # def test_setAggKeyWithGovKey_rev_pubKeyX(cfAW):
 #     chain.sleep(AGG_KEY_TIMEOUT)
 #     setKey_rev_pubKeyX_test(cfAW, cfAW.keyManager.setAggKeyWithGovKey, GOV_SIGNER_1)

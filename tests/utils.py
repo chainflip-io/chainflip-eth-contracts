@@ -16,7 +16,16 @@ def cleanHexStrPad(thing):
 
 def getCreate2Addr(sender, saltHex, contractContainer, argsHex):
     deployByteCode = contractContainer.bytecode + argsHex
-    return web3.toChecksumAddress(web3.keccak(hexstr=("ff" + cleanHexStr(sender) + saltHex + cleanHexStr(web3.keccak(hexstr=deployByteCode))))[-20:].hex())
+    return web3.toChecksumAddress(
+        web3.keccak(
+            hexstr=(
+                "ff"
+                + cleanHexStr(sender)
+                + saltHex
+                + cleanHexStr(web3.keccak(hexstr=deployByteCode))
+            )
+        )[-20:].hex()
+    )
 
 
 def getInflation(prevBlockNum, curBlockNum, emissionRate):
@@ -56,9 +65,10 @@ def getValidTranIdxs(tokens, amounts, prevBal, tok):
 
     return validEthIdxs
 
+
 # Test with timestamp-1 because of an error where there's a difference of 1s
 # because the evm and local clock were out of sync or something... not 100% sure why,
 # but some tests occasionally fail for this reason even though they succeed most
 # of the time with no changes to the contract or test code
 def txTimeTest(time, tx):
-    assert time >= tx.timestamp and time <= (tx.timestamp+2)
+    assert time >= tx.timestamp and time <= (tx.timestamp + 2)

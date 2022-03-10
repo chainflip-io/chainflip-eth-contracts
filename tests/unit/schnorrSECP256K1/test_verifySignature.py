@@ -19,7 +19,9 @@ def test_verifySignature_rev_SigLessQ(cf, schnorrTest):
     sigData[3] = Signer.Q_INT
 
     with reverts(REV_MSG_SIG_LESS_Q):
-        schnorrTest.testVerifySignature(*sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5])
+        schnorrTest.testVerifySignature(
+            *sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5]
+        )
 
 
 def test_verifySignature_rev_nonceTimesGeneratorAddress_zero(cf, schnorrTest):
@@ -48,7 +50,9 @@ def test_verifySignature_rev_signature_zero(cf, schnorrTest):
     sigData[3] = 0
 
     with reverts(REV_MSG_INPUTS_0):
-        schnorrTest.testVerifySignature(*sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5])
+        schnorrTest.testVerifySignature(
+            *sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5]
+        )
 
 
 def test_verifySignature_rev_msgHash_zero(cf, schnorrTest):
@@ -56,4 +60,6 @@ def test_verifySignature_rev_msgHash_zero(cf, schnorrTest):
     sigData[2] = 0
 
     with reverts(REV_MSG_INPUTS_0):
-        schnorrTest.testVerifySignature(*sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5])
+        schnorrTest.testVerifySignature(
+            *sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5]
+        )

@@ -3,7 +3,6 @@ from consts import *
 from utils import *
 
 
-
 def test_fetchDepositEth(cf, DepositEth):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositEth, "")
@@ -12,26 +11,37 @@ def test_fetchDepositEth(cf, DepositEth):
     assert cf.vault.balance() == ONE_ETH
 
     # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD
+    )
 
     # Fetch the deposit
     balanceBefore = cf.ALICE.balance()
-    tx = cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), JUNK_HEX_PAD, cf.FR_ALICE)
+    tx = cf.vault.fetchDepositEth(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        JUNK_HEX_PAD,
+        cf.FR_ALICE,
+    )
     balanceAfter = cf.ALICE.balance()
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == ONE_ETH + TEST_AMNT
 
 
 def test_fetchDepositEth_rev_swapID(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), "")
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), ""
+    )
 
     with reverts(REV_MSG_NZ_BYTES32):
-        cf.vault.fetchDepositEth(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), "")
-
+        cf.vault.fetchDepositEth(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), ""
+        )
 
 
 def test_fetchDepositEth_rev_msgHash(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD
+    )
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[2] += 1
@@ -41,7 +51,9 @@ def test_fetchDepositEth_rev_msgHash(cf):
 
 
 def test_fetchDepositEth_rev_sig(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD)
+    callDataNoSig = cf.vault.fetchDepositEth.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD
+    )
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[3] += 1

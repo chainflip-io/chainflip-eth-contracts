@@ -10,4 +10,6 @@ def test_constructor(a, cf):
     assert cf.keyManager.canValidateSigSet() == True
     whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
     for addr in whitelisted + list(a):
-        assert cf.keyManager.canValidateSig(addr) == (True if addr in whitelisted else False)
+        assert cf.keyManager.canValidateSig(addr) == (
+            True if addr in whitelisted else False
+        )

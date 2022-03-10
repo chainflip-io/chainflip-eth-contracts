@@ -6,18 +6,18 @@ ZERO_ADDR_PACKED = "0000000000000000000000000000000000000000"
 ZERO_ADDR = "0x" + ZERO_ADDR_PACKED
 ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
-E_18 = 10**18
-TEST_AMNT = 10**17
+E_18 = 10 ** 18
+TEST_AMNT = 10 ** 17
 ONE_ETH = E_18
-JUNK_INT = 42069    # quantafire
+JUNK_INT = 42069  # quantafire
 JUNK_HEX = web3.toHex(JUNK_INT)
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
 AGG = "Agg"
 GOV = "Gov"
-KEYID_TO_NUM  = {AGG: 0, GOV: 1}
-NUM_TO_KEYID  = [AGG, GOV]
-INIT_TOKEN_SUPPLY = int(10**8 * E_18)
+KEYID_TO_NUM = {AGG: 0, GOV: 1}
+NUM_TO_KEYID = [AGG, GOV]
+INIT_TOKEN_SUPPLY = int(10 ** 8 * E_18)
 INIT_ETH_BAL = 10000 * E_18
 SECS_PER_BLOCK = 13
 
@@ -47,8 +47,15 @@ AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
 # This wouldn't be the case if a single uint was used to track the current nonce for
 # each agg and gov key tho
 nonces = {AGG: 0, GOV: 0}
-def agg_null_sig(kmAddr, chainId): return (kmAddr, chainId, 0, 0, nonces[AGG], ZERO_ADDR)
-def gov_null_sig(kmAddr, chainId): return (kmAddr, chainId, 0, 0, nonces[GOV], ZERO_ADDR)
+
+
+def agg_null_sig(kmAddr, chainId):
+    return (kmAddr, chainId, 0, 0, nonces[AGG], ZERO_ADDR)
+
+
+def gov_null_sig(kmAddr, chainId):
+    return (kmAddr, chainId, 0, 0, nonces[GOV], ZERO_ADDR)
+
 
 REV_MSG_DELAY = "KeyManager: not enough delay"
 
@@ -69,7 +76,7 @@ GOV_PRIV_HEX_2 = "6b357e74e81bd16c202e6406d0e1883f758f0495973f316be323daebec04ad
 GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV, nonces)
 
 NULL_KEY = (0, 0, ZERO_ADDR)
-BAD_AGG_KEY = [0xee2e4dc8797847d69a9e59c1b051e3ef2abd7a60aa7edc3100a69666df9ac525, 0x01]
+BAD_AGG_KEY = [0xEE2E4DC8797847D69A9E59C1B051E3EF2ABD7A60AA7EDC3100A69666DF9AC525, 0x01]
 
 # nzKey
 REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
@@ -90,7 +97,7 @@ REV_MSG_INPUTS_0 = "No zero inputs allowed"
 
 
 # -----FLIP-----
-INIT_SUPPLY = (9 * 10**7) * E_18
+INIT_SUPPLY = (9 * 10 ** 7) * E_18
 
 REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
 REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
@@ -100,8 +107,8 @@ REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
 NUM_GENESIS_VALIDATORS = 5
 GENESIS_STAKE = 50000 * E_18
 STAKEMANAGER_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
-NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
-NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
+NEW_TOTAL_SUPPLY_MINT = (10 * 10 ** 7) * E_18
+NEW_TOTAL_SUPPLY_BURN = (8 * 10 ** 7) * E_18
 MIN_STAKE = 40000 * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
 # 13292
@@ -137,9 +144,9 @@ REV_MSG_CANNOT_REVOKE = "Vesting: cannot revoke"
 REV_MSG_ALREADY_REVOKED = "Vesting: token already revoked"
 REV_MSG_CANNOT_STAKE = "Vesting: cannot stake"
 REV_MSG_VESTING_EXPIRED = "Vesting: vesting expired"
-REV_MSG_CANNOT_RETRIEVE =  "Vesting: not retrievable"
-REV_MSG_FUNDS_REVOKED =  "Vesting: staked funds revoked"
-REV_MSG_NOT_REVOKED =  "Vesting: token not revoked"
+REV_MSG_CANNOT_RETRIEVE = "Vesting: not retrievable"
+REV_MSG_FUNDS_REVOKED = "Vesting: staked funds revoked"
+REV_MSG_NOT_REVOKED = "Vesting: token not revoked"
 REV_MSG_NOT_BENEFICIARY = "Vesting: not the beneficiary"
 REV_MSG_INVALID_CLIFF = "Vesting: invalid staking contract cliff"
 REV_MSG_INVALID_BENEFICIARY = "Vesting: beneficiary_ is the zero address"

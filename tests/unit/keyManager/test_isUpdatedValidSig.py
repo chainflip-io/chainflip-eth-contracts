@@ -21,7 +21,9 @@ def test_isUpdatedValidSig_rev_msgHash(cfAW):
     # Fails because msgHash in sigData is a hash of JUNK_HEX_PAD, whereas JUNK_HEX_PAD
     # is used directly for contractMsgHash
     with reverts(REV_MSG_MSGHASH):
-        cfAW.keyManager.isUpdatedValidSig(AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address), JUNK_HEX_PAD)
+        cfAW.keyManager.isUpdatedValidSig(
+            AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address), JUNK_HEX_PAD
+        )
 
 
 def test_isUpdatedValidSig_rev_sig(cfAW):
@@ -31,7 +33,7 @@ def test_isUpdatedValidSig_rev_sig(cfAW):
         cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
 
 
-@given(addr=strategy('address'))
+@given(addr=strategy("address"))
 def test_isUpdatedValidSig_rev_keyManAddr(a, cfAW, addr):
     if addr != cfAW.keyManager:
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, addr)
@@ -39,7 +41,7 @@ def test_isUpdatedValidSig_rev_keyManAddr(a, cfAW, addr):
             cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
 
 
-@given(chainID=strategy('uint256'))
+@given(chainID=strategy("uint256"))
 def test_isUpdatedValidSig_rev_chainID(a, cfAW, chainID):
     if chainID != chain.id:
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
@@ -54,7 +56,9 @@ def test_isUpdatedValidSig_check_all(a, cf):
         if addr in whitelisted:
             sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
             cf.ALICE.transfer(to=addr, amount=ONE_ETH)
-            cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]), {'from': addr})
+            cf.keyManager.isUpdatedValidSig(
+                sigData, cleanHexStr(sigData[2]), {"from": addr}
+            )
         else:
             with reverts(REV_MSG_WHITELIST):
                 cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
