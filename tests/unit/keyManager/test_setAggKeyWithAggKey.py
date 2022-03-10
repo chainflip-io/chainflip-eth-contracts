@@ -6,15 +6,19 @@ from shared_tests import *
 def test_setAggKeyWithAggKey(cfAW):
     setAggKeyWithAggKey_test(cfAW)
 
+
 def test_setAggKeyWithAggKey_rev_newPubKeyX(cf):
     setKey_rev_newPubKeyX_test(cf)
+
 
 def test_setAggKeyWithAggKey_rev_pubKeyX(cfAW):
     setKey_rev_pubKeyX_test(cfAW, cfAW.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1)
 
 
 def test_setAggKeyWithAggKey_rev_nonceTimesGAddr(cfAW):
-    setKey_rev_nonceTimesGAddr_test(cfAW, cfAW.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1)
+    setKey_rev_nonceTimesGAddr_test(
+        cfAW, cfAW.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1
+    )
 
 
 def test_setAggKeyWithAggKey_rev_msgHash(cfAW):

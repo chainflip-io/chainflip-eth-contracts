@@ -45,7 +45,7 @@ workflows:
             - build-eth-brownie
           context:
             - ghcr-credentials
-      - run-solhint:
+      - run-lint:
           requires:
             - build-eth-brownie
           context:
@@ -74,7 +74,7 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry run brownie test --network hardhat --stateful false
 
-  run-solhint:
+  run-lint:
     docker:
       - image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
         auth: *dockerconfig
@@ -86,3 +86,5 @@ jobs:
             npm install
       # Force a failure if there are any warnings
       - run: npx solhint -w 0 'contracts/**/*.sol'
+      - run: poetry install --quiet
+      - run: poetry run black . --check

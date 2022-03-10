@@ -6,12 +6,11 @@ from py_ecc.secp256k1 import secp256k1
 
 # Fcns return a list instead of a tuple since they need to be modified
 # for some tests (e.g. to make them revert)
-class Signer():
+class Signer:
 
     Q = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
     Q_INT = int(Q, 16)
     HALF_Q_INT = (Q_INT >> 1) + 1
-
 
     def __init__(self, privKeyHex, keyID, nonces):
         self.privKeyHex = privKeyHex
@@ -29,13 +28,11 @@ class Signer():
         self.keyID = keyID
         self.nonces = nonces
 
-
     @classmethod
     def priv_key_to_pubX_int(cls, privKey):
         pubKey = privKey.public_key()
         pubKeyX = bytes(pubKey)[1:]
         return int(cleanHexStr(pubKeyX), 16)
-
 
     @classmethod
     def gen_key(cls):
@@ -44,7 +41,6 @@ class Signer():
             key = SecretKey.random()
 
         return key
-
 
     @classmethod
     def gen_key_hex(cls):
@@ -55,14 +51,11 @@ class Signer():
         privKeyHex = cls.gen_key_hex()
         return cls(privKeyHex, keyID, nonces)
 
-
     def getPubData(self):
         return [self.pubKeyXInt, self.pubKeyYPar]
 
-
     def getPubDataWith0x(self):
         return [self.pubKeyXInt, self.pubKeyYPar]
-
 
     def getSigData(self, msgToHash, keyManagerAddress):
         return self.getSigDataWithKeyID(msgToHash, self.keyID, keyManagerAddress)
@@ -70,16 +63,29 @@ class Signer():
     def getSigDataWithKeyID(self, msgToHash, keyID, keyManagerAddress):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
-        sigData = [keyManagerAddress, chain.id, int(msgHashHex, 16), s, self.nonces[keyID], nonceTimesGeneratorAddress]
+        sigData = [
+            keyManagerAddress,
+            chain.id,
+            int(msgHashHex, 16),
+            s,
+            self.nonces[keyID],
+            nonceTimesGeneratorAddress,
+        ]
 
         self.nonces[keyID] += 1
         return sigData
 
-
     def getSigDataWithNonces(self, msgToHash, nonces, keyID, keyManagerAddress):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
-        sigData = [keyManagerAddress, chain.id, int(msgHashHex, 16), s, nonces[keyID], nonceTimesGeneratorAddress]
+        sigData = [
+            keyManagerAddress,
+            chain.id,
+            int(msgHashHex, 16),
+            s,
+            nonces[keyID],
+            nonceTimesGeneratorAddress,
+        ]
 
         # Since nonces is passed by reference, it will be altered for all other signers too
         nonces[keyID] += 1
@@ -94,8 +100,8 @@ class Signer():
         # Get the x and y ordinate of our k*G value
         kTimesGXInt = kTimesG[0]
         kTimesGYInt = kTimesG[1]
-        kTimesGXBytes = (kTimesGXInt).to_bytes(32, byteorder='big')
-        kTimesGYParityBytes = (kTimesGYInt).to_bytes(32, byteorder='big')
+        kTimesGXBytes = (kTimesGXInt).to_bytes(32, byteorder="big")
+        kTimesGYParityBytes = (kTimesGYInt).to_bytes(32, byteorder="big")
         kTimesGConcat = kTimesGXBytes + kTimesGYParityBytes
 
         # Get the hash of the concatenated (uncompressed) key
@@ -104,7 +110,12 @@ class Signer():
         # Get the last 20 bytes of the hash, which is Ethereum Address format
         nonceTimesGeneratorAddress = web3.toChecksumAddress(cleanHexStr(k256)[-40:])
 
-        challengeEncodedPacked = cleanHexStrPad(self.pubKeyX) + self.pubKeyYParHex + cleanHexStr(msgHashHex) + cleanHexStr(nonceTimesGeneratorAddress)
+        challengeEncodedPacked = (
+            cleanHexStrPad(self.pubKeyX)
+            + self.pubKeyYParHex
+            + cleanHexStr(msgHashHex)
+            + cleanHexStr(nonceTimesGeneratorAddress)
+        )
 
         e = web3.keccak(hexstr=challengeEncodedPacked)
         eInt = int(cleanHexStr(e), 16)

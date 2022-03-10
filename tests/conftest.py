@@ -41,8 +41,8 @@ def cf(a, cfDeploy):
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
-    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
+    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
 
     return cf
 
@@ -52,7 +52,9 @@ def cf(a, cfDeploy):
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
     cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
-    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager, cf.keyManager] + list(a))
+    cf.keyManager.setCanValidateSig(
+        [cf.vault, cf.stakeManager, cf.keyManager] + list(a)
+    )
 
     return cf
 
@@ -80,8 +82,8 @@ def cfAW(a, cfDeployAllWhitelist):
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
-    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
-    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
+    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
 
     return cf
 
@@ -102,8 +104,11 @@ def schnorrTest(cf, SchnorrSECP256K1Test):
 @pytest.fixture(scope="module")
 def stakedMin(cf):
     amount = MIN_STAKE
-    cf.flip.approve(cf.stakeManager.address, amount, {'from': cf.ALICE})
-    return cf.stakeManager.stake(JUNK_HEX, amount, NON_ZERO_ADDR, {'from': cf.ALICE}), amount
+    cf.flip.approve(cf.stakeManager.address, amount, {"from": cf.ALICE})
+    return (
+        cf.stakeManager.stake(JUNK_HEX, amount, NON_ZERO_ADDR, {"from": cf.ALICE}),
+        amount,
+    )
 
 
 # Register a claim to use executeClaim with
@@ -113,8 +118,12 @@ def claimRegistered(cf, stakedMin):
     expiryTime = chain.time() + (2 * CLAIM_DELAY)
     args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
 
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(agg_null_sig(cf.keyManager.address, chain.id), *args)
-    tx = cf.stakeManager.registerClaim(AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args)
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    tx = cf.stakeManager.registerClaim(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args
+    )
 
     return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
 
@@ -136,7 +145,9 @@ def token2(cf, Token):
 # (with noFish) if FLIP was to be somehow siphoned out of the contract.
 # This also puts the minimum stake in it.
 @pytest.fixture(scope="module")
-def vulnerableStakedStakeMan(a, StakeManagerVulnerable, KeyManager, Vault, StakeManager, FLIP):
+def vulnerableStakedStakeMan(
+    a, StakeManagerVulnerable, KeyManager, Vault, StakeManager, FLIP
+):
     # Annoyingly, we have to redefine the deployment because we need to call
     # setCanValidateSig with the new smVuln
     cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
@@ -156,21 +167,29 @@ def vulnerableStakedStakeMan(a, StakeManagerVulnerable, KeyManager, Vault, Stake
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
-    smVuln = cf.DEPLOYER.deploy(StakeManagerVulnerable, cf.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
+    smVuln = cf.DEPLOYER.deploy(
+        StakeManagerVulnerable,
+        cf.keyManager,
+        MIN_STAKE,
+        INIT_SUPPLY,
+        NUM_GENESIS_VALIDATORS,
+        GENESIS_STAKE,
+    )
     flipVuln = FLIP.at(smVuln.getFLIP())
     cf.keyManager.setCanValidateSig([cf.vault, smVuln, cf.keyManager] + list(a))
 
     # Can't set _FLIP in the constructor because it's made in the constructor
     # of StakeManager and getFLIPAddress is external
     smVuln.testSetFLIP(flipVuln)
-    flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {'from': cf.DEPLOYER})
+    flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
 
     assert flipVuln.balanceOf(cf.CHARLIE) == 0
     # Need to stake 1st so that there's coins to hack out of it
-    flipVuln.approve(smVuln.address, MIN_STAKE, {'from': cf.ALICE})
-    smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {'from': cf.ALICE})
+    flipVuln.approve(smVuln.address, MIN_STAKE, {"from": cf.ALICE})
+    smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {"from": cf.ALICE})
 
     return cf, smVuln, flipVuln
+
 
 # Siphon some FLIP out of a StakeManagerVulnerable so that it
 # can be tested on post-siphon
@@ -183,7 +202,6 @@ def vulnerableR3ktStakeMan(vulnerableStakedStakeMan):
     assert flipVuln.balanceOf(cf.CHARLIE) == amount
 
     return cf, smVuln, flipVuln
-
 
 
 # Vesting
@@ -199,6 +217,7 @@ def addrs(a, TokenVesting):
 
     return addrs
 
+
 @pytest.fixture(scope="module")
 def maths(addrs, MockMaths):
     return addrs.DEPLOYER.deploy(MockMaths)
@@ -208,11 +227,11 @@ def maths(addrs, MockMaths):
 def tokenVestingNoStaking(addrs, cf, TokenVesting):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
-    # the tests, so we should use relative values instead of absolute ones
+    # the tests, so we should use relative values instead of absolute ones
     start = chain.time()
     cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
-    
+
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
@@ -222,24 +241,25 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         NON_STAKABLE,
-        cf.stakeManager
+        cf.stakeManager,
     )
 
     total = MAX_TEST_STAKE
- 
-    cf.flip.transfer(tv, total, {'from': addrs.DEPLOYER})
+
+    cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
     return tv, start, cliff, end, total
+
 
 @pytest.fixture(scope="module")
 def tokenVestingStaking(addrs, cf, TokenVesting):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
-    # the tests, so we should use relative values instead of absolute ones
+    # the tests, so we should use relative values instead of absolute ones
     start = chain.time()
     end = start + QUARTER_YEAR + YEAR
     cliff = end
-    
+
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
@@ -249,11 +269,11 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         STAKABLE,
-        cf.stakeManager
+        cf.stakeManager,
     )
 
     total = MAX_TEST_STAKE
- 
-    cf.flip.transfer(tv, total, {'from': addrs.DEPLOYER})
+
+    cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
     return tv, start, cliff, end, total

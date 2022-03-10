@@ -3,7 +3,7 @@ from brownie import reverts
 from brownie.test import given, strategy
 
 
-@given(newMinStake=strategy('uint256', exclude=0))
+@given(newMinStake=strategy("uint256", exclude=0))
 def test_setMinStake(cf, newMinStake):
     tx = cf.stakeManager.setMinStake(newMinStake, {"from": cf.GOVERNOR})
 
@@ -29,7 +29,7 @@ def test_setMinStake_rev_governor(cf):
 # intentionally no way to get FLIP out of the contract without calling `claim`,
 # so we have to use StakeManagerVulnerable which inherits StakeManager and
 # has `testSendFLIP` in it to simulate some kind of hack
-@given(amount=strategy('uint256', min_value=1, max_value=MIN_STAKE+1))
+@given(amount=strategy("uint256", min_value=1, max_value=MIN_STAKE + 1))
 def test_setMinStake_rev_noFish(cf, vulnerableR3ktStakeMan, FLIP, web3, amount):
     # smVuln = cfAW.DEPLOYER.deploy(StakeManagerVulnerable, cfAW.keyManager, MIN_STAKE, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE)
     # flipVuln = FLIP.at(smVuln.getFLIP())
@@ -44,7 +44,6 @@ def test_setMinStake_rev_noFish(cf, vulnerableR3ktStakeMan, FLIP, web3, amount):
     # # Somebody r3kts us somehow
     # smVuln.testSendFLIP(cfAW.CHARLIE, amount)
     # assert flipVuln.balanceOf(cfAW.CHARLIE) == amount
-
 
     cf, smVuln, _ = vulnerableR3ktStakeMan
 
