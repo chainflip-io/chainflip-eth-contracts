@@ -8,11 +8,10 @@ import "../interfaces/IShared.sol";
  * @dev      It would be nice if this could be a library, but modifiers can't be exported :(
  * @author   Quantaf1re (James Key)
  */
- 
+
 abstract contract Shared is IShared {
     /// @dev The address used to indicate whether transfer should send ETH or a token
-    address internal constant _ETH_ADDR =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal constant _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address internal constant _ZERO_ADDR = address(0);
     bytes32 internal constant _NULL = "";
     uint256 internal constant _E_18 = 1e18;

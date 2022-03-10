@@ -18,19 +18,11 @@ contract FLIP is ERC20, ERC20Burnable, Ownable, Shared {
         string memory symbol,
         address receiver,
         uint256 mintAmount
-    )
-        ERC20(name, symbol)
-        Ownable()
-        nzAddr(receiver)
-        nzUint(mintAmount)
-    {
+    ) ERC20(name, symbol) Ownable() nzAddr(receiver) nzUint(mintAmount) {
         _mint(receiver, mintAmount);
     }
 
-    function mint(
-        address receiver,
-        uint256 amount
-    ) external nzAddr(receiver) nzUint(amount) onlyOwner {
+    function mint(address receiver, uint256 amount) external nzAddr(receiver) nzUint(amount) onlyOwner {
         _mint(receiver, amount);
     }
 }

@@ -22,13 +22,6 @@ contract SchnorrSECP256K1Test is SchnorrSECP256K1 {
         uint8 pubKeyYParity,
         address nonceTimesGeneratorAddress
     ) external pure returns (bool) {
-        return
-            verifySignature(
-                msgHash,
-                signature,
-                signingPubKeyX,
-                pubKeyYParity,
-                nonceTimesGeneratorAddress
-            );
+        return verifySignature(msgHash, signature, signingPubKeyX, pubKeyYParity, nonceTimesGeneratorAddress);
     }
 }

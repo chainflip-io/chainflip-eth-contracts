@@ -21,11 +21,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is
-    Shared,
-    IStakeManager,
-    ReentrancyGuard
-{
+contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private immutable _keyManager;
     /// @dev    The FLIP token
@@ -76,12 +72,7 @@ contract StakeManager is
         operators[0] = address(this);
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
-        FLIP flip = new FLIP(
-            "Chainflip",
-            "FLIP",
-            address(this),
-            flipTotalSupply
-        );
+        FLIP flip = new FLIP("Chainflip", "FLIP", address(this), flipTotalSupply);
 
         _FLIP = flip;
         flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
@@ -115,11 +106,8 @@ contract StakeManager is
         // be necessary, but since this is mission critical, it's worth being paranoid
         uint256 balBefore = flip.balanceOf(address(this));
         // Assumption of set token allowance by the user
-        require(_FLIP.transferFrom(msg.sender,address(this), amount));
-        require(
-            flip.balanceOf(address(this)) == balBefore + amount,
-            "Staking: token transfer failed"
-        );
+        require(_FLIP.transferFrom(msg.sender, address(this), amount));
+        require(flip.balanceOf(address(this)) == balBefore + amount, "Staking: token transfer failed");
 
         _totalStake += amount;
         emit Staked(nodeID, amount, msg.sender, returnAddr);
@@ -143,16 +131,24 @@ contract StakeManager is
         uint256 amount,
         address staker,
         uint48 expiryTime
-    ) external override nonReentrant nzBytes32(nodeID) nzUint(amount) nzAddr(staker) noFish updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.registerClaim.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                nodeID,
-                amount,
-                staker,
-                expiryTime
+    )
+        external
+        override
+        nonReentrant
+        nzBytes32(nodeID)
+        nzUint(amount)
+        nzAddr(staker)
+        noFish
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.registerClaim.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    nodeID,
+                    amount,
+                    staker,
+                    expiryTime
                 )
             )
         )
@@ -185,8 +181,7 @@ contract StakeManager is
         require(!suspended, "Staking: suspended");
         Claim memory claim = _pendingClaims[nodeID];
         require(
-            uint256(block.timestamp) >= claim.startTime &&
-                uint256(block.timestamp) <= claim.expiryTime,
+            uint256(block.timestamp) >= claim.startTime && uint256(block.timestamp) <= claim.expiryTime,
             "Staking: early, late, or execd"
         );
 
@@ -210,22 +205,24 @@ contract StakeManager is
         SigData calldata sigData,
         uint256 newTotalSupply,
         uint256 stateChainBlockNumber
-    ) external override nzUint(newTotalSupply) noFish updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.updateFlipSupply.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                newTotalSupply,
-                stateChainBlockNumber
+    )
+        external
+        override
+        nzUint(newTotalSupply)
+        noFish
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.updateFlipSupply.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    newTotalSupply,
+                    stateChainBlockNumber
                 )
             )
         )
     {
-        require(
-            stateChainBlockNumber > _lastSupplyUpdateBlockNum,
-            "Staking: old FLIP supply update"
-        );
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
         FLIP flip = _FLIP;
         uint256 oldSupply = flip.totalSupply();
@@ -238,11 +235,7 @@ contract StakeManager is
             flip.mint(address(this), amount);
             _totalStake += amount;
         }
-        emit FlipSupplyUpdated(
-            oldSupply,
-            newTotalSupply,
-            stateChainBlockNumber
-        );
+        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
     }
 
     /**
@@ -250,9 +243,7 @@ contract StakeManager is
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
      */
-    function setMinStake(
-        uint newMinStake
-    ) external override nzUint(newMinStake) noFish isGovernor {
+    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) noFish isGovernor {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
     }
@@ -317,7 +308,7 @@ contract StakeManager is
      * @notice  Get the last state chain block number of the last supply update
      * @return  The state chain block number of the last supply update
      */
-    function getLastSupplyUpdateBlockNumber() external override view returns (uint) {
+    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
         return _lastSupplyUpdateBlockNum;
     }
 
@@ -336,10 +327,9 @@ contract StakeManager is
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
      * @return  The claim (Claim)
      */
-    function getPendingClaim(bytes32 nodeID) external override view returns (Claim memory) {
+    function getPendingClaim(bytes32 nodeID) external view override returns (Claim memory) {
         return _pendingClaims[nodeID];
     }
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -347,12 +337,8 @@ contract StakeManager is
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-
     /// @dev    Call isUpdatedValidSig in _keyManager
-    modifier updatedValidSig(
-        SigData calldata sigData,
-        bytes32 contractMsgHash
-    ) {
+    modifier updatedValidSig(SigData calldata sigData, bytes32 contractMsgHash) {
         // Disable check for reason-string because it should not trigger. The function
         // inside should either revert or return true, never false. Require just seems healthy
         // solhint-disable-next-line reason-string

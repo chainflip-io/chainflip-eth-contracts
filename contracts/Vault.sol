@@ -20,11 +20,7 @@ contract Vault is IVault, Shared {
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private immutable _keyManager;
 
-    event TransferFailed(
-        address payable indexed recipient,
-        uint256 amount,
-        bytes lowLevelData
-    );
+    event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
     constructor(IKeyManager keyManager) {
         _keyManager = keyManager;
@@ -55,21 +51,25 @@ contract Vault is IVault, Shared {
         IERC20[] calldata fetchTokens,
         IERC20[] calldata tranTokens,
         address payable[] calldata tranRecipients,
-        uint[] calldata tranAmounts
-    ) external override updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.allBatch.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                fetchSwapIDs,
-                fetchTokens,
-                tranTokens,
-                tranRecipients,
-                tranAmounts
+        uint256[] calldata tranAmounts
+    )
+        external
+        override
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.allBatch.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    fetchSwapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    tranRecipients,
+                    tranAmounts
+                )
             )
         )
-    ) {
+    {
         // Can't put these as modifiers annoyingly because it creates
         // a 'stack too deep' error
         require(
@@ -112,18 +112,25 @@ contract Vault is IVault, Shared {
         IERC20 token,
         address payable recipient,
         uint256 amount
-    ) external override nzAddr(address(token)) nzAddr(recipient) nzUint(amount) updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.transfer.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                token,
-                recipient,
-                amount
+    )
+        external
+        override
+        nzAddr(address(token))
+        nzAddr(recipient)
+        nzUint(amount)
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.transfer.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    token,
+                    recipient,
+                    amount
+                )
             )
         )
-    ) {
+    {
         _transfer(token, recipient, amount);
     }
 
@@ -144,21 +151,24 @@ contract Vault is IVault, Shared {
         IERC20[] calldata tokens,
         address payable[] calldata recipients,
         uint256[] calldata amounts
-    ) external override updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.transferBatch.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                tokens,
-                recipients,
-                amounts
+    )
+        external
+        override
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.transferBatch.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    tokens,
+                    recipients,
+                    amounts
+                )
             )
         )
-    ) {
+    {
         require(
-            tokens.length == recipients.length &&
-                recipients.length == amounts.length,
+            tokens.length == recipients.length && recipients.length == amounts.length,
             "Vault: arrays not same length"
         );
 
@@ -209,9 +219,7 @@ contract Vault is IVault, Shared {
         uint256 amount
     ) private {
         if (address(token) == _ETH_ADDR) {
-            try this.sendEth{value: amount}(recipient) {} catch (
-                bytes memory lowLevelData
-            ) {
+            try this.sendEth{value: amount}(recipient) {} catch (bytes memory lowLevelData) {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
@@ -234,19 +242,21 @@ contract Vault is IVault, Shared {
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32)
      */
-    function fetchDepositEth(
-        SigData calldata sigData,
-        bytes32 swapID
-    ) external override nzBytes32(swapID) updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.fetchDepositEth.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                swapID
+    function fetchDepositEth(SigData calldata sigData, bytes32 swapID)
+        external
+        override
+        nzBytes32(swapID)
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.fetchDepositEth.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    swapID
+                )
             )
         )
-    ) {
+    {
         new DepositEth{salt: swapID}();
     }
 
@@ -259,20 +269,21 @@ contract Vault is IVault, Shared {
      *                  sig over that hash (uint) from the aggregate key
      * @param swapIDs    The unique identifiers for this swap (bytes32)
      */
-    function fetchDepositEthBatch(
-        SigData calldata sigData,
-        bytes32[] calldata swapIDs
-    ) external override updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.fetchDepositEthBatch.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                swapIDs
+    function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
+        external
+        override
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.fetchDepositEthBatch.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    swapIDs
+                )
             )
         )
-    ) {
-        for (uint i; i < swapIDs.length; i++) {
+    {
+        for (uint256 i; i < swapIDs.length; i++) {
             new DepositEth{salt: swapIDs[i]}();
         }
     }
@@ -291,17 +302,23 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32 swapID,
         IERC20 token
-    ) external override nzBytes32(swapID) nzAddr(address(token)) updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.fetchDepositToken.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                swapID,
-                token
+    )
+        external
+        override
+        nzBytes32(swapID)
+        nzAddr(address(token))
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.fetchDepositToken.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    swapID,
+                    token
+                )
             )
         )
-    ) {
+    {
         new DepositToken{salt: swapID}(IERC20Lite(address(token)));
     }
 
@@ -319,23 +336,24 @@ contract Vault is IVault, Shared {
         SigData calldata sigData,
         bytes32[] calldata swapIDs,
         IERC20[] calldata tokens
-    ) external override updatedValidSig(
-        sigData,
-        keccak256(
-            abi.encodeWithSelector(
-                this.fetchDepositTokenBatch.selector,
-                SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                swapIDs,
-                tokens
+    )
+        external
+        override
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.fetchDepositTokenBatch.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    swapIDs,
+                    tokens
+                )
             )
         )
-    ) {
-        require(
-            swapIDs.length == tokens.length,
-            "Vault: arrays not same length"
-        );
+    {
+        require(swapIDs.length == tokens.length, "Vault: arrays not same length");
 
-        for (uint i; i < swapIDs.length; i++) {
+        for (uint256 i; i < swapIDs.length; i++) {
             new DepositToken{salt: swapIDs[i]}(IERC20Lite(address(tokens[i])));
         }
     }
@@ -361,10 +379,7 @@ contract Vault is IVault, Shared {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Calls isUpdatedValidSig in _keyManager
-    modifier updatedValidSig(
-        SigData calldata sigData,
-        bytes32 contractMsgHash
-    ) {
+    modifier updatedValidSig(SigData calldata sigData, bytes32 contractMsgHash) {
         require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
         _;
     }
