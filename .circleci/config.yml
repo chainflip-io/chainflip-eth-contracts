@@ -45,7 +45,7 @@ workflows:
             - build-eth-brownie
           context:
             - ghcr-credentials
-      - run-solhint:
+      - run-lint:
           requires:
             - build-eth-brownie
           context:
