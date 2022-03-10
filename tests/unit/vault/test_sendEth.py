@@ -19,7 +19,9 @@ def test_sendEth(cf):
     priority_fee = tx.gas_price - base_fee
     ethUsed = (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)
 
-    assert float(cf.vault.balance()) == float(TEST_AMNT + ONE_ETH - ethUsed)
+    vaultBalance = TEST_AMNT + ONE_ETH - ethUsed
+    # Compare values divided by E_18 as a workaround for python not properly comparing two big numbers
+    assert cf.vault.balance() / E_18 == vaultBalance / E_18 
     assert cf.DENICE.balance() == INIT_ETH_BAL + TEST_AMNT
 
 
