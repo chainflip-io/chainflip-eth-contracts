@@ -115,8 +115,6 @@ contract StakeManager is
         // be necessary, but since this is mission critical, it's worth being paranoid
         uint256 balBefore = flip.balanceOf(address(this));
         // Assumption of set token allowance by the user
-        // Disable because it would revert inside the transfer providing a reason-string
-        // solhint-disable-next-line reason-string
         require(_FLIP.transferFrom(msg.sender,address(this), amount));
         require(
             flip.balanceOf(address(this)) == balBefore + amount,
@@ -198,8 +196,6 @@ contract StakeManager is
         emit ClaimExecuted(nodeID, claim.amount);
 
         // Send the tokens
-        // Disable because it would revert inside the transfer providing a reason-string
-        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(claim.staker, claim.amount));
     }
 
@@ -286,8 +282,6 @@ contract StakeManager is
         require(suspended, "Staking: Not suspended");
         address to = _keyManager.getGovernanceKey();
         uint256 amount = _FLIP.balanceOf(address(this));
-        // Disable because it would revert inside the transfer providing a reason-string
-        // solhint-disable-next-line reason-string
         require(_FLIP.transfer(to, amount));
         emit GovernanceWithdrawal(to, amount);
     }
