@@ -9,12 +9,7 @@ import "./IShared.sol";
  * @author   Quantaf1re (James Key)
  */
 interface IStakeManager is IShared {
-    event Staked(
-        bytes32 indexed nodeID,
-        uint256 amount,
-        address staker,
-        address indexed returnAddr
-    );
+    event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
         uint256 amount,
@@ -23,11 +18,7 @@ interface IStakeManager is IShared {
         uint48 expiryTime
     );
     event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
-    event FlipSupplyUpdated(
-        uint256 oldSupply,
-        uint256 newSupply,
-        uint256 stateChainBlockNumber
-    );
+    event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
     event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
     event GovernanceWithdrawal(address to, uint256 amount);
 
@@ -163,8 +154,5 @@ interface IStakeManager is IShared {
      * @param nodeID    The nodeID which is has a pending claim
      * @return  The claim (Claim)
      */
-    function getPendingClaim(bytes32 nodeID)
-        external
-        view
-        returns (Claim memory);
+    function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
 }

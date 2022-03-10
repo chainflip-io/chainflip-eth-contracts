@@ -79,7 +79,7 @@ contract TokenVesting is ReentrancyGuard {
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
         require(address(stakeManager_) != address(0), "Vesting: stakeManager_ is the zero address");
-        if (canStake_) require (cliff_ == end_ , "Vesting: invalid staking contract cliff");
+        if (canStake_) require(cliff_ == end_, "Vesting: invalid staking contract cliff");
 
         beneficiary = beneficiary_;
         revoker = revoker_;
@@ -193,7 +193,7 @@ contract TokenVesting is ReentrancyGuard {
             // should never enter this if canStake == true, since cliff == end
             assert(!canStake);
             uint256 cliffAmount = totalBalance / CLIFF_DENOMINATOR;
-            return cliffAmount + (totalBalance - cliffAmount) * (block.timestamp - cliff) / (end - cliff);
+            return cliffAmount + ((totalBalance - cliffAmount) * (block.timestamp - cliff)) / (end - cliff);
         }
     }
 }

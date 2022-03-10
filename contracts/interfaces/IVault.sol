@@ -45,15 +45,9 @@ interface IVault is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function fetchDepositEth(
-        SigData calldata sigData,
-        bytes32 swapID
-    ) external;
+    function fetchDepositEth(SigData calldata sigData, bytes32 swapID) external;
 
-    function fetchDepositEthBatch(
-        SigData calldata sigData,
-        bytes32[] calldata swapIDs
-    ) external;
+    function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external;
 
     function fetchDepositToken(
         SigData calldata sigData,

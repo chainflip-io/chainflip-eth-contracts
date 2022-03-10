@@ -10,6 +10,6 @@ contract MockMaths {
         uint256 cliff
     ) external pure returns (uint256) {
         uint256 cliffAmount = total / 5;
-        return cliffAmount + (total - cliffAmount)  * (time - cliff) / (end - cliff);
+        return cliffAmount + ((total - cliffAmount) * (time - cliff)) / (end - cliff);
     }
 }

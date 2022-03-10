@@ -7,8 +7,5 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @author   Quantaf1re (James Key)
  */
 interface IFLIP is IERC20 {
-    function mint(
-        address receiver,
-        uint256 amount
-    ) external;
+    function mint(address receiver, uint256 amount) external;
 }

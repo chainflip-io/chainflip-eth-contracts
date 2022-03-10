@@ -1,16 +1,13 @@
 pragma solidity ^0.8.0;
 
-
 import "./IShared.sol";
 
-
 /**
-* @title    KeyManager interface
-* @notice   The interface for functions KeyManager implements
-* @author   Quantaf1re (James Key)
-*/
+ * @title    KeyManager interface
+ * @notice   The interface for functions KeyManager implements
+ * @author   Quantaf1re (James Key)
+ */
 interface IKeyManager is IShared {
-
     event AggKeySetByAggKey(Key oldKey, Key newKey);
     event AggKeySetByGovKey(Key oldKey, Key newKey);
     event GovKeySetByGovKey(address oldKey, address newKey);
@@ -22,28 +19,17 @@ interface IKeyManager is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function isUpdatedValidSig(
-        SigData memory sigData,
-        bytes32 contractMsgHash
-    ) external returns (bool);
+    function isUpdatedValidSig(SigData memory sigData, bytes32 contractMsgHash) external returns (bool);
 
-    function setAggKeyWithAggKey(
-        SigData memory sigData,
-        Key memory newKey
-    ) external;
+    function setAggKeyWithAggKey(SigData memory sigData, Key memory newKey) external;
 
-    function setAggKeyWithGovKey(
-        Key memory newKey
-    ) external;
+    function setAggKeyWithGovKey(Key memory newKey) external;
 
-    function setGovKeyWithGovKey(
-        address newKey
-    ) external;
+    function setGovKeyWithGovKey(address newKey) external;
 
     function canValidateSig(address addr) external view returns (bool);
 
     function canValidateSigSet() external view returns (bool);
-
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -55,7 +41,7 @@ interface IKeyManager is IShared {
 
     function getGovernanceKey() external view returns (address);
 
-    function getLastValidateTime() external view returns (uint);
+    function getLastValidateTime() external view returns (uint256);
 
-    function isNonceUsedByAggKey(uint nonce) external view returns (bool);
+    function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
 }
