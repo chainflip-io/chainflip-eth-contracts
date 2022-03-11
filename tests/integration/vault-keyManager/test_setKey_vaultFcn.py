@@ -57,9 +57,7 @@ def test_setAggKeyByAggKey_allBatch(
             )
             tok.transfer(depositAddr, am, {"from": cfAW.DEPLOYER})
 
-    # Commented out this assertion as the setAggKeyWithAggKey_test function above
-    # will cause a refund to the caller, which will decrease vault's balance
-    # assert cfAW.vault.balance() == ONE_ETH
+    assert cfAW.vault.balance() == 0
     assert token.balanceOf(cfAW.vault) == 0
     assert token2.balanceOf(cfAW.vault) == 0
 
@@ -72,7 +70,7 @@ def test_setAggKeyByAggKey_allBatch(
         for tok in tokensList
     }
     validEthIdxs = getValidTranIdxs(
-        tranTokens, tranAmounts, fetchTotals[ETH_ADDR] + ONE_ETH, ETH_ADDR
+        tranTokens, tranAmounts, fetchTotals[ETH_ADDR], ETH_ADDR
     )
     tranTotals[ETH_ADDR] = sum(
         [

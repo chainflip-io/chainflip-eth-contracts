@@ -36,7 +36,7 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH
+    assert cf.vault.balance() == 0
     assert token.balanceOf(cf.vault) == 0
 
     # Sign the tx without a msgHash or sig
@@ -54,7 +54,7 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
     )
     balanceAfter = cf.ALICE.balance()
 
-    assert cf.vault.balance() == TEST_AMNT + ONE_ETH
+    assert cf.vault.balance() == TEST_AMNT
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
 

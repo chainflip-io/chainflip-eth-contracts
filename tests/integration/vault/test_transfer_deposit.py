@@ -10,7 +10,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(
     depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH
+    assert cf.vault.balance() == 0
 
     callDataNoSig = cf.vault.fetchDepositEth.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD
@@ -24,7 +24,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(
     balanceAfter = cf.ALICE.balance()
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert cf.vault.balance() == ONE_ETH + TEST_AMNT
+    assert cf.vault.balance() == TEST_AMNT
 
     # Transfer the eth out the vault
     ethStartBalVault = cf.vault.balance()
@@ -105,7 +105,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(
     depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH
+    assert cf.vault.balance() == 0
 
     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), swapIDs
@@ -120,7 +120,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
-    assert cf.vault.balance() == ONE_ETH + (3 * TEST_AMNT)
+    assert cf.vault.balance() == 3 * TEST_AMNT
 
     # Transfer the eth out the vault
     ethStartBalVault = cf.vault.balance()
@@ -276,7 +276,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH
+    assert cf.vault.balance() == 0
 
     callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), swapIDs
@@ -291,7 +291,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
-    assert cf.vault.balance() == ONE_ETH + (3 * TEST_AMNT)
+    assert cf.vault.balance() == 3 * TEST_AMNT
 
     # Transfer the eth out the vault
     amountAlice = TEST_AMNT * 1.5
@@ -401,7 +401,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(
     depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH
+    assert cf.vault.balance() == 0
 
     # Eth bals
     amountEthAlice = TEST_AMNT * 1.5

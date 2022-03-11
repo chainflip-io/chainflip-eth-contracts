@@ -8,7 +8,7 @@ def test_fetchDepositEth(cf, DepositEth):
     depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
-    assert cf.vault.balance() == ONE_ETH
+    assert cf.vault.balance() == 0
 
     # Sign the tx without a msgHash or sig
     callDataNoSig = cf.vault.fetchDepositEth.encode_input(
@@ -24,7 +24,7 @@ def test_fetchDepositEth(cf, DepositEth):
     )
     balanceAfter = cf.ALICE.balance()
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert cf.vault.balance() == ONE_ETH + TEST_AMNT
+    assert cf.vault.balance() == TEST_AMNT
 
 
 def test_fetchDepositEth_rev_swapID(cf):
