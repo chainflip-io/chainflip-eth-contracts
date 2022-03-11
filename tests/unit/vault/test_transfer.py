@@ -52,21 +52,21 @@ def test_transfer_eth_fails_not_enough_eth(cf, token):
         agg_null_sig(cf.keyManager.address, chain.id),
         ETH_ADDR,
         cf.ALICE,
-        TEST_AMNT + ONE_ETH,
+        TEST_AMNT,
     )
     tx = cf.vault.transfer(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         ETH_ADDR,
         cf.ALICE,
-        TEST_AMNT + ONE_ETH,
+        TEST_AMNT,
     )
 
     assert tx.events["TransferFailed"][0].values() == [
         cf.ALICE,
-        TEST_AMNT + ONE_ETH,
+        TEST_AMNT,
         web3.toHex(0),
     ]
-    assert cf.vault.balance() == ONE_ETH
+    assert cf.vault.balance() == 0
     assert cf.ALICE.balance() == startBalRecipient
 
 

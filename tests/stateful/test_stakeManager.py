@@ -62,8 +62,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             # Eth bals shouldn't change in this test, but just to be sure...
             self.ethBals = {
-                addr: INIT_ETH_BAL if addr in a else (ONE_ETH if addr == self.sm else 0)
-                for addr in self.allAddrs
+                addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs
             }
             self.flipBals = {
                 addr: INIT_STAKE

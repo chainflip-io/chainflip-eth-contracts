@@ -62,22 +62,6 @@ def deploy_initial_Chainflip_contracts(
     )
     cf.flip = FLIP.at(cf.stakeManager.getFLIP())
 
-    # Now fund the contracts that we expect the Validators to interact with so
-    # that we can test the refund functionality
-    prefund_contracts = environment.get("PREFUND_CONTRACTS")
-
-    if (
-        prefund_contracts == "true"
-        or prefund_contracts == "True"
-        or prefund_contracts == None
-    ):
-        print("Prefunding the contracts with 1 ETH each.")
-        deployer.transfer(to=cf.keyManager, amount=ONE_ETH)
-        deployer.transfer(to=cf.vault, amount=ONE_ETH)
-        deployer.transfer(to=cf.stakeManager, amount=ONE_ETH)
-    else:
-        print("Contracts have not been prefunded.")
-
     return cf
 
 

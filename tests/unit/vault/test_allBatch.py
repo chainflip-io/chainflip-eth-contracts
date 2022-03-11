@@ -52,7 +52,7 @@ def test_allBatch(
             )
             tok.transfer(depositAddr, am, {"from": cf.DEPLOYER})
 
-    assert cf.vault.balance() == ONE_ETH  # starting balance
+    assert cf.vault.balance() == 0  # starting balance
     assert token.balanceOf(cf.vault) == 0
     assert token2.balanceOf(cf.vault) == 0
 
@@ -69,7 +69,7 @@ def test_allBatch(
     validEthIdxs = []
     for i in range(len(tranTokens)):
         if tranTokens[i] == ETH_ADDR:
-            if cumulEthTran + tranAmounts[i] <= fetchTotals[ETH_ADDR] + ONE_ETH:
+            if cumulEthTran + tranAmounts[i] <= fetchTotals[ETH_ADDR]:
                 validEthIdxs.append(i)
                 cumulEthTran += tranAmounts[i]
     tranTotals[ETH_ADDR] = sum(
@@ -118,9 +118,7 @@ def test_allBatch(
             {"from": sender},
         )
         balanceAfter = sender.balance()
-        assert (
-            cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR] + ONE_ETH
-        )
+        assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
 
