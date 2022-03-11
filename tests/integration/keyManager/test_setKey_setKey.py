@@ -37,23 +37,25 @@ def test_setAggKeyWithAggKey_setAggKeyWithAggKey(cfAW):
 
 
 def test_setGovKeyWithGovKey_setAggKeyWithGovKey(cfAW):
-    # Change the gov key
-    setGovKeyWithGovKey_test(cfAW)
-
     # Changing the agg key with the gov key should fail if the delay hasn't been long enough yet
+    # No time has passed since the constructor has set the first value of _lastValidateTime
     with reverts(REV_MSG_DELAY):
         cfAW.keyManager.setAggKeyWithGovKey(
             AGG_SIGNER_2.getPubData(), {"from": cfAW.GOVERNOR_2}
         )
 
     chain.sleep(AGG_KEY_TIMEOUT)
+
+    # Change the gov key
+    setGovKeyWithGovKey_test(cfAW)
+
     # Trying to change agg key with old gov key should revert
     with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
         cfAW.keyManager.setAggKeyWithGovKey(
             AGG_SIGNER_2.getPubData(), {"from": cfAW.GOVERNOR}
         )
 
-    # Change agg key with gov key
+    # Change agg key with gov key - should not revert - setGovKeyWithGovKey doesn't update _lastValidateTime
     tx = cfAW.keyManager.setAggKeyWithGovKey(
         AGG_SIGNER_2.getPubData(), {"from": cfAW.GOVERNOR_2}
     )
@@ -65,3 +67,30 @@ def test_setGovKeyWithGovKey_setAggKeyWithGovKey(cfAW):
     ]
     assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR_2
     # txTimeTest(cfAW.keyManager.getLastValidateTime(), tx)
+
+
+# Check that _setAggKeyWithAggKey updates the _lastValidateTime
+def test_setAggKeyWithGovKey_setAggKeyWithAggKey(cfAW):
+    # Changing the agg key with the gov key should fail if the delay hasn't been long enough yet
+    # No time has passed since the constructor has set the first value of _lastValidateTime
+    with reverts(REV_MSG_DELAY):
+        cfAW.keyManager.setAggKeyWithGovKey(
+            AGG_SIGNER_2.getPubData(), {"from": cfAW.GOVERNOR}
+        )
+
+    chain.sleep(AGG_KEY_TIMEOUT)
+
+    setAggKeyWithAggKey_test(cfAW)
+
+    # Reverts due to setAggKeyWithAggKey updating the _lastValidateTime
+    with reverts(REV_MSG_DELAY):
+        cfAW.keyManager.setAggKeyWithGovKey(
+            AGG_SIGNER_2.getPubData(), {"from": cfAW.GOVERNOR}
+        )
+
+    chain.sleep(AGG_KEY_TIMEOUT)
+
+    # Change agg key with gov key
+    tx = cfAW.keyManager.setAggKeyWithGovKey(
+        AGG_SIGNER_2.getPubData(), {"from": cfAW.GOVERNOR}
+    )
