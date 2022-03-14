@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "./interfaces/IFLIP.sol";
 import "./abstract/Shared.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @title    FLIP contract
@@ -73,8 +73,8 @@ contract FLIP is ERC20, ERC20Burnable, Ownable, Shared {
             )
         );
 
-        require(owner != address(0), "FLIP/invalid-address-0");
-        require(owner == ecrecover(digest, v, r, s), "FLIP/invalid-permit");
+        require(owner != address(0), "FLIP: invalid permit zero address");
+        require(owner == ecrecover(digest, v, r, s), "FLIP: invalid permit signature");
 
         _approve(owner, spender, value);
     }
