@@ -18,7 +18,7 @@ def test_release(addrs, cf, tokenVestingNoStaking, maths, sleepTime):
 
     chain.sleep(sleepTime)
 
-    if chain.time() < cliff:
+    if getChainTime() < cliff:
         release_revert(tv, cf, addrs.INVESTOR)
     else:
         tx = tv.release(cf.flip, {"from": addrs.INVESTOR})

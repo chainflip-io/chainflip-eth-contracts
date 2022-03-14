@@ -165,7 +165,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
 
         # Call setAggKeyWithGovKey with a random new key, signing key, and sender
         def rule_setAggKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            if chain.time() - self.lastValidateTime < AGG_KEY_TIMEOUT:
+            if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
                 print(
                     "        REV_MSG_DELAY rule_setAggKeyWithGovKey",
                     st_sender,

@@ -4,8 +4,6 @@ from brownie import reverts, chain
 
 
 def test_isValidSig_setAggKeyWithAggKey_validate(cfAW):
-    # txTimeTest(cfAW.keyManager.getLastValidateTime(), cfAW.keyManager.tx)
-
     # Should validate with current keys and revert with future keys
     isValidSig_test(cfAW, AGG_SIGNER_1)
     isValidSig_rev_test(cfAW, AGG_SIGNER_2)
@@ -19,8 +17,6 @@ def test_isValidSig_setAggKeyWithAggKey_validate(cfAW):
 
 
 def test_isValid_setGovKeyWithGovKey_isValid_setAggKeyWithGovKey_isValidSig(cfAW):
-    # txTimeTest(cfAW.keyManager.getLastValidateTime(), cfAW.keyManager.tx)
-
     # Should validate with current keys and revert with future keys
     isValidSig_test(cfAW, AGG_SIGNER_1)
     isValidSig_rev_test(cfAW, AGG_SIGNER_2)
@@ -48,7 +44,7 @@ def test_isValid_setGovKeyWithGovKey_isValid_setAggKeyWithGovKey_isValidSig(cfAW
 
     assert cfAW.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR_2
-    # txTimeTest(cfAW.keyManager.getLastValidateTime(), tx)
+
     assert tx.events["AggKeySetByGovKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
         AGG_SIGNER_2.getPubDataWith0x(),

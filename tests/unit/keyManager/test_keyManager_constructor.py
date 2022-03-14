@@ -6,7 +6,6 @@ from shared_tests import *
 def test_constructor(a, cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    # txTimeTest(cf.keyManager.getLastValidateTime(), cf.keyManager.tx)
     assert cf.keyManager.canValidateSigSet() == True
     whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
     for addr in whitelisted + list(a):

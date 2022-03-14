@@ -12,7 +12,7 @@ from brownie.test import given, strategy
     expiryTimeDiff=strategy("uint", min_value=5, max_value=365 * DAY),
 )
 def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryTimeDiff):
-    args = (JUNK_HEX, amount, staker, chain.time() + CLAIM_DELAY + expiryTimeDiff)
+    args = (JUNK_HEX, amount, staker, getChainTime() + CLAIM_DELAY + expiryTimeDiff)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
@@ -23,7 +23,7 @@ def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryTimeDiff
             )
     else:
         registerClaimTest(
-            cf, JUNK_HEX, MIN_STAKE, amount, staker, chain.time() + (2 * CLAIM_DELAY)
+            cf, JUNK_HEX, MIN_STAKE, amount, staker, getChainTime() + (2 * CLAIM_DELAY)
         )
 
 
@@ -32,13 +32,13 @@ def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryTimeDiff
 
 def test_registerClaim_min_expiryTime(cf, stakedMin):
     registerClaimTest(
-        cf, JUNK_HEX, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time() + CLAIM_DELAY + 5
+        cf, JUNK_HEX, MIN_STAKE, MIN_STAKE, cf.DENICE, getChainTime() + CLAIM_DELAY + 5
     )
 
 
 def test_registerClaim_rev_just_under_min_expiryTime(cf, stakedMin):
     _, amount = stakedMin
-    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY - 5)
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY - 5)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
@@ -51,7 +51,7 @@ def test_registerClaim_rev_just_under_min_expiryTime(cf, stakedMin):
 
 def test_registerClaim_claim_expired(cf, stakedMin):
     _, amount = stakedMin
-    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
@@ -61,13 +61,18 @@ def test_registerClaim_claim_expired(cf, stakedMin):
 
     chain.sleep(CLAIM_DELAY + 10)
     registerClaimTest(
-        cf, JUNK_HEX, MIN_STAKE, MIN_STAKE, cf.DENICE, chain.time() + (2 * CLAIM_DELAY)
+        cf,
+        JUNK_HEX,
+        MIN_STAKE,
+        MIN_STAKE,
+        cf.DENICE,
+        getChainTime() + (2 * CLAIM_DELAY),
     )
 
 
 def test_registerClaim_rev_claim_not_expired(cf, stakedMin):
     _, amount = stakedMin
-    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
@@ -87,7 +92,7 @@ def test_registerClaim_rev_claim_not_expired(cf, stakedMin):
 def test_registerClaim_rev_nodeID(cf, stakedMin):
     _, amount = stakedMin
     receiver = cf.DENICE
-    args = (0, amount, receiver, chain.time() + CLAIM_DELAY + 5)
+    args = (0, amount, receiver, getChainTime() + CLAIM_DELAY + 5)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
@@ -100,7 +105,7 @@ def test_registerClaim_rev_nodeID(cf, stakedMin):
 
 def test_registerClaim_rev_staker(cf, stakedMin):
     _, amount = stakedMin
-    args = (JUNK_HEX, amount, ZERO_ADDR, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, ZERO_ADDR, getChainTime() + CLAIM_DELAY + 5)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
@@ -114,7 +119,7 @@ def test_registerClaim_rev_staker(cf, stakedMin):
 def test_registerClaim_rev_msgHash(cf, stakedMin):
     _, amount = stakedMin
     receiver = cf.DENICE
-    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
@@ -128,7 +133,7 @@ def test_registerClaim_rev_msgHash(cf, stakedMin):
 def test_registerClaim_rev_sig(cf, stakedMin):
     _, amount = stakedMin
     receiver = cf.DENICE
-    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
@@ -146,7 +151,7 @@ def test_registerClaim_rev_sig(cf, stakedMin):
 @given(amount=strategy("uint256", min_value=1, max_value=MIN_STAKE + 1))
 def test_registerClaim_rev_noFish(vulnerableR3ktStakeMan, amount):
     cf, smVuln, _ = vulnerableR3ktStakeMan
-    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
 
     callDataNoSig = smVuln.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args

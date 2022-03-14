@@ -17,10 +17,10 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, sleepTime):
 
     chain.sleep(sleepTime)
 
-    if chain.time() < cliff:
+    if getChainTime() < cliff:
         tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
         releasable = 0
-    elif chain.time() >= end:
+    elif getChainTime() >= end:
         with reverts(REV_MSG_VESTING_EXPIRED):
             tv.revoke(cf.flip, {"from": addrs.REVOKER})
         return
