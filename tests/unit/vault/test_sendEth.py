@@ -1,11 +1,13 @@
 from consts import *
 from brownie import a, reverts, web3
 from utils import *
-
+import pytest
 
 # This test takes advantage of Brownie's ability to send transactions from accounts that
 # we don't have the private key for, like a contract, so this is impossible to do in reality,
-# just to test the sending logic
+# just to test the sending logic.
+# However, transactions sent from non-EOA accounts breaks brownie coverage - skip coverage
+@pytest.mark.skip_coverage
 def test_sendEth(cf):
     cf.DEPLOYER.transfer(cf.vault, 2 * TEST_AMNT)
 

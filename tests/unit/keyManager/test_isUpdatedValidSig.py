@@ -3,6 +3,7 @@ from consts import *
 from brownie import reverts, chain
 from shared_tests import *
 from brownie.test import given, strategy
+import pytest
 
 
 def test_isUpdatedValidSig(cfAW):
@@ -50,6 +51,8 @@ def test_isUpdatedValidSig_rev_chainID(a, cfAW, chainID):
             cfAW.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
 
 
+# Transactions sent from non-EOA accounts breaks brownie coverage - skip coverage
+@pytest.mark.skip_coverage
 def test_isUpdatedValidSig_check_all(a, cf):
     whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
     for addr in whitelisted + list(a):
@@ -60,5 +63,29 @@ def test_isUpdatedValidSig_check_all(a, cf):
                 sigData, cleanHexStr(sigData[2]), {"from": addr}
             )
         else:
+            sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
             with reverts(REV_MSG_WHITELIST):
                 cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
+
+
+# Split test_isUpdatedValidSig_check in two because brownie coverage crashes when
+# sending a transaction from a non-EOA address. Using whitelisted a[0] as workaround
+# instead of sending the transaction from Vault/KeyManager/StakeManager
+def test_isUpdatedValidSig_check_whitelisted(a, cfAW):
+    whitelisted = [cfAW.vault, cfAW.keyManager, cfAW.stakeManager] + list(a)
+    for addr in whitelisted:
+        if addr in whitelisted:
+            sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
+            cfAW.ALICE.transfer(to=addr, amount=ONE_ETH)
+            # Sending transaction from whitelisted non-EOA address as a workaround
+            cfAW.keyManager.isUpdatedValidSig(
+                sigData, cleanHexStr(sigData[2]), {"from": a[0]}
+            )
+
+
+def test_isUpdatedValidSig_check_nonwhitelisted(a, cf):
+    # Current whitelisted [cf.vault, cf.keyManager, cf.stakeManager]
+    for addr in list(a):
+        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
+        with reverts(REV_MSG_WHITELIST):
+            cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
