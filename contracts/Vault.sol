@@ -219,8 +219,10 @@ contract Vault is IVault, Shared {
         uint256 amount
     ) private {
         if (address(token) == _ETH_ADDR) {
-            try this.sendEth{value: amount}(recipient) {} catch (bytes memory lowLevelData) {
-                emit TransferFailed(recipient, amount, lowLevelData);
+            // We might need to add protection for reentrancy but I don't think so
+            (bool success, bytes memory data) = recipient.call{value: amount}("");
+            if (!success) {
+                emit TransferFailed(recipient, amount, data);
             }
         } else {
             IERC20(token).safeTransfer(recipient, amount);
