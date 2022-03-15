@@ -34,6 +34,12 @@ We use the `hardhat` EVM for testing, since we use EIP1559 opcodes.
 brownie test --network hardhat --stateful false
 ```
 
+Generate or update the coverage report.
+
+```bash
+brownie test --network hardhat --stateful false --coverage
+```
+
 ### Generating Docs
 
 Requires [Yarn](https://yarnpkg.com).

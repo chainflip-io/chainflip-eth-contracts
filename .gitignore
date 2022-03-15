@@ -2,7 +2,6 @@ __pycache__
 .history
 .hypothesis/
 build/
-reports/
 .idea/
 .vscode/
 node_modules/
