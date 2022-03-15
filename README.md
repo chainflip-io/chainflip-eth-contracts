@@ -34,11 +34,16 @@ We use the `hardhat` EVM for testing, since we use EIP1559 opcodes.
 brownie test --network hardhat --stateful false
 ```
 
-Generate or update the coverage report.
+Run tests with additional features:
 
 ```bash
-brownie test --network hardhat --stateful false --coverage
+brownie test --network hardhat --stateful <BOOL> --coverage --gas --hypothesis-seed <SEED>
 ```
+Flags:
+- `--stateful <BOOL>` - Runs (or not) stateful tests. Stateful tests might take several hours so it is recommended to set it to false.
+- `--gas` - generates a gas profile report
+- `--coverage` - generates and updates the test coverage report under reports/coverage.json
+- `--hypothesis-seed <SEED>` - Inputs a seed (int) to the hypothesis strategies. Useful to deterministically reproduce tests failures and for accurate gas comparisons when doing gas optimizations.
 
 ### Linter
 
