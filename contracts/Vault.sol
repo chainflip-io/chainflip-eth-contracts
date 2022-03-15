@@ -220,6 +220,7 @@ contract Vault is IVault, Shared {
     ) private {
         if (address(token) == _ETH_ADDR) {
             // We might need to add protection for reentrancy but I don't think so
+            // solhint-disable-next-line avoid-low-level-calls
             (bool success, bytes memory data) = recipient.call{value: amount}("");
             if (!success) {
                 emit TransferFailed(recipient, amount, data);
