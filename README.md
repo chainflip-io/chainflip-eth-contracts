@@ -40,6 +40,28 @@ Generate or update the coverage report.
 brownie test --network hardhat --stateful false --coverage
 ```
 
+### Linter
+
+We use solhint and prettier for the solidity code and black for the python code. A general check is performed also in CI.
+
+To locally do a general check on both solidity and python code:
+
+```bash
+yarn lint
+```
+
+Format the solidity code using solhint+prettier:
+
+```bash
+yarn format-sol
+```
+
+Format the python code using black:
+
+```bash
+yarn format-py
+```
+
 ### Generating Docs
 
 Requires [Yarn](https://yarnpkg.com).
