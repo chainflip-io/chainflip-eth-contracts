@@ -22,7 +22,7 @@ def test_executeClaim_rand(
         smStartBal = cf.flip.balanceOf(cf.stakeManager)
         stakerStartBal = cf.flip.balanceOf(staker)
 
-        expiryTime = chain.time() + expiryTimeDiff + 5
+        expiryTime = getChainTime() + expiryTimeDiff + 5
         args = (nodeID, amount, staker, expiryTime)
         callDataNoSig = cf.stakeManager.registerClaim.encode_input(
             agg_null_sig(cf.keyManager.address, chain.id), *args
@@ -43,7 +43,10 @@ def test_executeClaim_rand(
 
         chain.sleep(sleepTime)
 
-        if chain.time() < tx1.timestamp + CLAIM_DELAY - 1 or chain.time() > expiryTime:
+        if (
+            getChainTime() < tx1.timestamp + CLAIM_DELAY - 1
+            or getChainTime() > expiryTime
+        ):
             with reverts(REV_MSG_NOT_ON_TIME):
                 cf.stakeManager.executeClaim(nodeID)
         elif amount > maxValidAmount:
@@ -88,7 +91,7 @@ def test_executeClaim_max_delay(cf, claimRegistered):
 
     maxValidAmount = cf.flip.balanceOf(cf.stakeManager)
 
-    chain.sleep(claim[3] - chain.time() - 2)
+    chain.sleep(claim[3] - getChainTime() - 2)
     tx = cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Check things that should've changed
@@ -111,7 +114,7 @@ def test_executeClaim_rev_too_early(cf, claimRegistered):
 
 def test_executeClaim_rev_too_late(cf, claimRegistered):
     _, claim = claimRegistered
-    chain.sleep(claim[3] - chain.time() + 5)
+    chain.sleep(claim[3] - getChainTime() + 5)
 
     with reverts(REV_MSG_NOT_ON_TIME):
         cf.stakeManager.executeClaim(JUNK_HEX)
@@ -137,7 +140,7 @@ def test_executeClaim_rev_suspended(cf, claimRegistered):
 @given(amount=strategy("uint256", min_value=1, max_value=MIN_STAKE + 1))
 def test_executeClaim_rev_noFish(vulnerableR3ktStakeMan, amount):
     cf, smVuln, _ = vulnerableR3ktStakeMan
-    args = (JUNK_HEX, amount, cf.DENICE, chain.time() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
 
     callDataNoSig = smVuln.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args

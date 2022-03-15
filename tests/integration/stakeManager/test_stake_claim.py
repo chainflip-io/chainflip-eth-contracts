@@ -1,6 +1,7 @@
 from consts import *
 from shared_tests import *
 from brownie import reverts, web3, chain
+from utils import *
 
 
 def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
@@ -8,12 +9,12 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
 
     nodeID1 = web3.toHex(1)
     stakeAmount1 = MIN_STAKE * 3
-    expiryTime1 = chain.time() + (CLAIM_DELAY * 2)
+    expiryTime1 = getChainTime() + (CLAIM_DELAY * 2)
     claimAmount1 = 12345 * E_18
 
     nodeID2 = web3.toHex(2)
     stakeAmount2 = MIN_STAKE * 7
-    expiryTime2 = chain.time() + (CLAIM_DELAY * 3)
+    expiryTime2 = getChainTime() + (CLAIM_DELAY * 3)
     claimAmount2 = claimAmount1 * 2
 
     # Register claim

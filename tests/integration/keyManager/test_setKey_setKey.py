@@ -33,7 +33,6 @@ def test_setAggKeyWithAggKey_setAggKeyWithAggKey(cfAW):
         AGG_SIGNER_1.getPubDataWith0x(),
     ]
     assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR
-    # txTimeTest(cfAW.keyManager.getLastValidateTime(), tx)
 
 
 def test_setGovKeyWithGovKey_setAggKeyWithGovKey(cfAW):
@@ -66,7 +65,6 @@ def test_setGovKeyWithGovKey_setAggKeyWithGovKey(cfAW):
         AGG_SIGNER_2.getPubDataWith0x(),
     ]
     assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR_2
-    # txTimeTest(cfAW.keyManager.getLastValidateTime(), tx)
 
 
 # Check that _setAggKeyWithAggKey updates the _lastValidateTime

@@ -129,7 +129,6 @@ def setKey_rev_sig_test(cf, fcn, signer):
 def isValidSig_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
     tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
-    # txTimeTest(cf.keyManager.getLastValidateTime(), tx)
 
 
 def isValidSig_rev_test(cf, signer):

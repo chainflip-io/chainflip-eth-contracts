@@ -4,6 +4,7 @@ from deploy import deploy_initial_Chainflip_contracts
 from deploy import deploy_set_Chainflip_contracts
 from brownie import chain
 from brownie.network import priority_fee
+from utils import *
 
 
 # Test isolation
@@ -115,7 +116,7 @@ def stakedMin(cf):
 @pytest.fixture(scope="module")
 def claimRegistered(cf, stakedMin):
     _, amount = stakedMin
-    expiryTime = chain.time() + (2 * CLAIM_DELAY)
+    expiryTime = getChainTime() + (2 * CLAIM_DELAY)
     args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
 
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
@@ -228,7 +229,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
-    start = chain.time()
+    start = getChainTime()
     cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
 
@@ -256,7 +257,7 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
-    start = chain.time()
+    start = getChainTime()
     end = start + QUARTER_YEAR + YEAR
     cliff = end
 

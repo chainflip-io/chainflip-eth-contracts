@@ -153,7 +153,12 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             st_sender,
             st_expiry_time_diff,
         ):
-            args = (st_nodeID, st_amount, st_staker, chain.time() + st_expiry_time_diff)
+            args = (
+                st_nodeID,
+                st_amount,
+                st_staker,
+                getChainTime() + st_expiry_time_diff,
+            )
             callDataNoSig = self.sm.registerClaim.encode_input(
                 agg_null_sig(self.km.address, chain.id), *args
             )
@@ -189,7 +194,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                         *args,
                         {"from": st_sender},
                     )
-            elif chain.time() <= self.pendingClaims[st_nodeID][3]:
+            elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
                 print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *args)
                 with reverts(REV_MSG_CLAIM_EXISTS):
                     self.sm.registerClaim(
@@ -243,7 +248,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def rule_executeClaim(self, st_nodeID, st_sender):
             claim = self.pendingClaims[st_nodeID]
 
-            if not claim[2] <= chain.time() <= claim[3]:
+            if not claim[2] <= getChainTime() <= claim[3]:
                 print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})

@@ -20,7 +20,7 @@ def test_release(addrs, cf, tokenVestingStaking, maths, sleepTime):
 
     assert tv.cliff() == tv.end()
 
-    if chain.time() < end:
+    if getChainTime() < end:
         release_revert(tv, cf, addrs.INVESTOR)
     else:
         tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
@@ -84,7 +84,7 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths)
     for timestamp in timestamps:
 
         chain.sleep(timestamp - previousTimestamp)
-        if chain.time() < end:
+        if getChainTime() < end:
             release_revert(tv, cf, addrs.INVESTOR)
         else:
             tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
@@ -157,7 +157,7 @@ def test_release_around_cliff(addrs, cf, tokenVestingStaking, maths, sleepTime):
 
     chain.sleep(sleepTime)
 
-    if chain.time() >= cliff & cliff == end:
+    if getChainTime() >= cliff & cliff == end:
         tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
         # Check release
         check_released(tv, cf, tx, addrs.INVESTOR, total, total)

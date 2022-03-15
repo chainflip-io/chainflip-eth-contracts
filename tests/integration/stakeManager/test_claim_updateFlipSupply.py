@@ -1,6 +1,7 @@
 from consts import *
 from shared_tests import *
 from brownie import web3, chain
+from utils import *
 
 
 def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
@@ -9,7 +10,12 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
     receiver = cf.DENICE
 
     registerClaimTest(
-        cf, JUNK_HEX, MIN_STAKE, claimAmount, receiver, chain.time() + (2 * CLAIM_DELAY)
+        cf,
+        JUNK_HEX,
+        MIN_STAKE,
+        claimAmount,
+        receiver,
+        getChainTime() + (2 * CLAIM_DELAY),
     )
 
     stateChainBlockNumber = 1

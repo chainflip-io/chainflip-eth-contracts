@@ -1,4 +1,4 @@
-from brownie import web3
+from brownie import web3, chain
 
 
 def cleanHexStr(thing):
@@ -66,9 +66,9 @@ def getValidTranIdxs(tokens, amounts, prevBal, tok):
     return validEthIdxs
 
 
-# Test with timestamp-1 because of an error where there's a difference of 1s
-# because the evm and local clock were out of sync or something... not 100% sure why,
-# but some tests occasionally fail for this reason even though they succeed most
-# of the time with no changes to the contract or test code
-def txTimeTest(time, tx):
-    assert time >= tx.timestamp and time <= (tx.timestamp + 2)
+# EVM and local clock chain.time() are sometimes out of sync by 1, not sure
+# why. Some tests occasionally fail for this reason even though they succeed most
+# of the time with no changes to the contract or test code. Some testing seems to
+# show that transactions are mined 1 later - so using chain.time()+1 as chain time.
+def getChainTime():
+    return chain.time() + 1
