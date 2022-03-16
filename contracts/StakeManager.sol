@@ -68,8 +68,6 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
         _keyManager = keyManager;
         _minStake = minStake;
 
-        address[] memory operators = new address[](1);
-        operators[0] = address(this);
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _totalStake = genesisValidatorFlip;
         FLIP flip = new FLIP("Chainflip", "FLIP", address(this), flipTotalSupply);
