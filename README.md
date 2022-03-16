@@ -49,7 +49,7 @@ Flags:
 
 We use solhint and prettier for the solidity code and black for the python code. A general check is performed also in CI.
 
-To locally do a general check on both solidity and python code:
+To locally do a general check on both solidity and python code: (please ensure you have poetry installed)
 
 ```bash
 yarn lint
@@ -66,6 +66,15 @@ Format the python code using black:
 ```bash
 yarn format-py
 ```
+
+### Pre-commit hook
+
+Pre-commit is part of the poetry virtual environment. Therefore, ensure that poetry is installed when commiting.
+
+Current pre-commit hooks implemented:
+    -   lint
+
+To perform a commit without running the pre-commits, add the --no-verify flag to the git commit command. (not recommended) 
 
 ### Generating Docs
 
