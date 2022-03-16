@@ -72,7 +72,7 @@ yarn format-py
 Pre-commit is part of the poetry virtual environment. Therefore, ensure that poetry is installed when commiting.
 
 Current pre-commit hooks implemented:
-    -   lint
+- lint
 
 To perform a commit without running the pre-commits, add the --no-verify flag to the git commit command. (not recommended) 
 
