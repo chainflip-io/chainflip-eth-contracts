@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lint-sol-py
+        name: solhint-black-check
+        entry: bash -c 'yarn lint'
+        language: system
+        pass_filenames: false
