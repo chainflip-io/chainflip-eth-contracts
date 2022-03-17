@@ -79,19 +79,6 @@ interface IStakeManager is IShared {
     function executeClaim(bytes32 nodeID) external;
 
     /**
-     * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints new and burns as appropriate (to/from the StakeManager)
-     * @param sigData               signature over the abi-encoded function params
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber
-    ) external;
-
-    /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
@@ -133,13 +120,7 @@ interface IStakeManager is IShared {
      * @return  The address of FLIP
      */
     function getFLIP() external view returns (IFLIP);
-
-    /**
-     * @notice  Get the last state chain block number that the supply was updated at
-     * @return  The state chain block number of the last update
-     */
-    function getLastSupplyUpdateBlockNumber() external view returns (uint256);
-
+    
     /**
      * @notice  Get the minimum amount of stake that's required for a bid
      *          attempt in the auction to be valid - used to prevent sybil attacks
@@ -155,4 +136,6 @@ interface IStakeManager is IShared {
      * @return  The claim (Claim)
      */
     function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
+
+    function getTotalStake() external view returns (uint256);
 }

@@ -23,13 +23,12 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  */
 contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private immutable _keyManager;
+    IKeyManager private _keyManager;
     /// @dev    The FLIP token
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
-    FLIP private immutable _FLIP;
-    /// @dev    The last time that the State Chain updated the totalSupply
-    uint256 private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
+    FLIP private _FLIP;
+
     /// @dev    Whether execution of claims is suspended. Used in emergencies.
     bool public suspended = false;
 
@@ -59,21 +58,11 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     // }
 
     constructor(
-        IKeyManager keyManager,
-        uint256 minStake,
-        uint256 flipTotalSupply,
-        uint256 numGenesisValidators,
-        uint256 genesisStake
+        uint256 minStake
     ) {
-        _keyManager = keyManager;
         _minStake = minStake;
-
-        uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
-        _totalStake = genesisValidatorFlip;
-        FLIP flip = new FLIP("Chainflip", "FLIP", address(this), flipTotalSupply);
-
-        _FLIP = flip;
-        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        // Removed deployment of FLIP and initial mint
+        // Removed storaged reference to KeyManager
     }
 
     //////////////////////////////////////////////////////////////
@@ -192,49 +181,6 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
         require(_FLIP.transfer(claim.staker, claim.amount));
     }
 
-    /**
-     * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints and burns as appropriate
-     * @param sigData               signature over the abi-encoded function params
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber
-    )
-        external
-        override
-        nzUint(newTotalSupply)
-        noFish
-        updatedValidSig(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateFlipSupply.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newTotalSupply,
-                    stateChainBlockNumber
-                )
-            )
-        )
-    {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
-        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
-        FLIP flip = _FLIP;
-        uint256 oldSupply = flip.totalSupply();
-        if (newTotalSupply < oldSupply) {
-            uint256 amount = oldSupply - newTotalSupply;
-            flip.burn(amount);
-            _totalStake -= amount;
-        } else if (newTotalSupply > oldSupply) {
-            uint256 amount = newTotalSupply - oldSupply;
-            flip.mint(address(this), amount);
-            _totalStake += amount;
-        }
-        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
-    }
 
     /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
@@ -275,6 +221,61 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
         emit GovernanceWithdrawal(to, amount);
     }
 
+    function updateTotalStake(bool increase, uint256 amount) external {
+        require (msg.sender == address(_FLIP));
+        // Update _totalStake, adding or substracting depending on bool,
+    }
+
+        /**
+     * @notice  Update KeyManager reference
+                To be called right after deployment to set the key manager and when/if
+                updating the keyManager contract.
+     */
+    function updateKeyManager(
+        SigData calldata sigData,
+        IKeyManager keyManager
+    )
+        external
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.updateKeyManager.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    keyManager
+                )
+            )
+        )
+    {
+         _keyManager = keyManager;
+
+    }
+
+    /**
+     * @notice  Update FLIP reference. Do we even need this?
+                To be called right after deployment to set the flip address and when/if
+                updating the flip contract.
+                Do we even need this?
+     */
+    function updateFLIP(
+        SigData calldata sigData,
+        FLIP flip
+    )
+        external
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.updateKeyManager.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    flip
+                )
+            )
+        )
+    {
+         _FLIP = flip;
+    }
+
     /**
      *  @notice Allows this contract to receive ETH used to refund callers
      */
@@ -303,14 +304,6 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     }
 
     /**
-     * @notice  Get the last state chain block number of the last supply update
-     * @return  The state chain block number of the last supply update
-     */
-    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
-        return _lastSupplyUpdateBlockNum;
-    }
-
-    /**
      * @notice  Get the minimum amount of stake that's required for a bid
      *          attempt in the auction to be valid - used to prevent sybil attacks
      * @return  The minimum stake (uint)
@@ -327,6 +320,10 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
      */
     function getPendingClaim(bytes32 nodeID) external view override returns (Claim memory) {
         return _pendingClaims[nodeID];
+    }
+
+    function getTotalStake() external view returns (uint256) {
+        return _totalStake;
     }
 
     //////////////////////////////////////////////////////////////

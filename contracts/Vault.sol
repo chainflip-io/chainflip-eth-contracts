@@ -18,13 +18,9 @@ contract Vault is IVault, Shared {
     using SafeERC20 for IERC20;
 
     /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private immutable _keyManager;
+    IKeyManager private _keyManager;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
-
-    constructor(IKeyManager keyManager) {
-        _keyManager = keyManager;
-    }
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -356,6 +352,31 @@ contract Vault is IVault, Shared {
         for (uint256 i; i < swapIDs.length; i++) {
             new DepositToken{salt: swapIDs[i]}(IERC20Lite(address(tokens[i])));
         }
+    }
+
+    /**
+     * @notice  Update KeyManager reference
+                To be called right after deployment to set the key manager and when/if
+                updating the keyManager contract.
+     */
+    function updateKeyManager(
+        SigData calldata sigData,
+        IKeyManager keyManager
+    )
+        external
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.fetchDepositTokenBatch.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    keyManager
+                )
+            )
+        )
+    {
+         _keyManager = keyManager;
+
     }
 
     //////////////////////////////////////////////////////////////

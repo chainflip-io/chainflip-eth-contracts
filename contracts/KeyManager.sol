@@ -52,6 +52,26 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         }
     }
 
+    // Old whitelisted addresses will remain whitelisted. Used when updating other contracts
+    function addCanValidateSig(SigData calldata sigData, address[] calldata addrs) 
+        external
+        updatedValidSig(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.setAggKeyWithAggKey.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    addrs
+                )
+            )
+        ){
+        for (uint256 i = 0; i < addrs.length; i++) {
+            _canValidateSig[addrs[i]] = true;
+        }
+    }
+
+
+
     /**
      * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime
      * @dev     It would be nice to split this up, but these checks
