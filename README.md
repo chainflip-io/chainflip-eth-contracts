@@ -21,6 +21,7 @@ yarn
 poetry shell
 poetry install
 brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+pre-commit install
 ```
 
 Then, create a `.env` file using `.env.example` as a reference. ~~You will need an infura key to run the tests~~, and a seed to run the deploy script on a live network.
