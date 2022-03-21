@@ -1,15 +1,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IShared.sol";
-import "./IKeyManager.sol";
+import "./IValidator.sol";
 
 /**
  * @title    Vault interface
  * @notice   The interface for functions Vault implements
  * @author   Quantaf1re (James Key)
  */
-interface IVault is IShared {
+interface IVault is IValidator {
     function allBatch(
         SigData calldata sigData,
         bytes32[] calldata fetchSwapIDs,
@@ -60,12 +59,4 @@ interface IVault is IShared {
         bytes32[] calldata swapIDs,
         IERC20[] calldata tokens
     ) external;
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Getters                         //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    function getKeyManager() external returns (IKeyManager);
 }

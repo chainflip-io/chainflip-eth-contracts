@@ -1,12 +1,12 @@
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
-import "./abstract/Shared.sol";
 import "./FLIP.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./Validator.sol";
 
 /**
  * @title    StakeManager contract
@@ -21,9 +21,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
-    /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private _keyManager;
+contract StakeManager is IStakeManager, Validator, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -53,11 +51,10 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
         IKeyManager keyManager,
         uint256 minStake,
         FLIP flip
-    ) {
+    ) Validator(keyManager) {
         _minStake = minStake;
-        _keyManager = keyManager;
         // PROBLEM: StakeManager requires FLIP on constructor and FLIP requires reciever (StakeManager) on constructor
-        // Add a one-time callable function to set FLIP after constructor? or a keyManager gated update FLIP function?
+        // Add a one-time callable function to set FLIP after constructor? maybe gated by the keyManager?
         _FLIP = flip;
     }
 
@@ -198,34 +195,10 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
      */
     function govWithdraw() external override isGovernor {
         require(suspended, "Staking: Not suspended");
-        address to = _keyManager.getGovernanceKey();
+        address to = _getKeyManager().getGovernanceKey();
         uint256 amount = _FLIP.balanceOf(address(this));
         require(_FLIP.transfer(to, amount));
         emit GovernanceWithdrawal(to, amount);
-    }
-
-    /**
-     * @notice  Update KeyManager reference. Used if KeyManager contract is updated
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
-     * @param keyManager New KeyManager's address
-     */
-    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager)
-        external
-        nzAddr(address(keyManager))
-        updatedValidSig(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateKeyManager.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    keyManager
-                )
-            )
-        )
-    {
-        _keyManager = keyManager;
     }
 
     /**
@@ -238,14 +211,6 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the KeyManager address/interface that's used to validate sigs
-     * @return  The KeyManager (IKeyManager)
-     */
-    function getKeyManager() external view override returns (IKeyManager) {
-        return _keyManager;
-    }
 
     /**
      * @notice  Get the FLIP token address
@@ -280,18 +245,9 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Call isUpdatedValidSig in _keyManager
-    modifier updatedValidSig(SigData calldata sigData, bytes32 contractMsgHash) {
-        // Disable check for reason-string because it should not trigger. The function
-        // inside should either revert or return true, never false. Require just seems healthy
-        // solhint-disable-next-line reason-string
-        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
-        _;
-    }
-
     /// @notice Ensure that the caller is the KeyManager's governor address.
     modifier isGovernor() {
-        require(msg.sender == _keyManager.getGovernanceKey(), "Staking: not governor");
+        require(msg.sender == _getKeyManager().getGovernanceKey(), "Staking: not governor");
         _;
     }
 }

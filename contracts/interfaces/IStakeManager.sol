@@ -1,14 +1,13 @@
 pragma solidity ^0.8.0;
 
-import "./IKeyManager.sol";
 import "./IFLIP.sol";
-import "./IShared.sol";
+import "./IValidator.sol";
 
 /**
  * @title    StakeManager interface
  * @author   Quantaf1re (James Key)
  */
-interface IStakeManager is IShared {
+interface IStakeManager is IValidator {
     event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
@@ -107,12 +106,6 @@ interface IStakeManager is IShared {
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the KeyManager address/interface that's used to validate sigs
-     * @return  The KeyManager (IKeyManager)
-     */
-    function getKeyManager() external view returns (IKeyManager);
 
     /**
      * @notice  Get the FLIP token address
