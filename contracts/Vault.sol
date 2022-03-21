@@ -22,6 +22,10 @@ contract Vault is IVault, Shared {
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
+    constructor(IKeyManager keyManager) {
+        _keyManager = keyManager;
+    }
+
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
      *          deposits specified with fetchSwapIDs and fetchTokens (which are requried
@@ -355,28 +359,27 @@ contract Vault is IVault, Shared {
     }
 
     /**
-     * @notice  Update KeyManager reference
-                To be called right after deployment to set the key manager and when/if
-                updating the keyManager contract.
+     * @notice  Update KeyManager reference. Used if KeyManager contract is updated
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
+     *                  a hash over the calldata to the function with an empty sigData) and
+     *                  sig over that hash (uint) from the aggregate key
+     * @param keyManager New KeyManager's address
      */
-    function updateKeyManager(
-        SigData calldata sigData,
-        IKeyManager keyManager
-    )
+    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager)
         external
+        nzAddr(address(keyManager))
         updatedValidSig(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.fetchDepositTokenBatch.selector,
+                    this.updateKeyManager.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     keyManager
                 )
             )
         )
     {
-         _keyManager = keyManager;
-
+        _keyManager = keyManager;
     }
 
     //////////////////////////////////////////////////////////////

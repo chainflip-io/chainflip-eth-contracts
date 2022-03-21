@@ -23,6 +23,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /// @dev    Whitelist for who can call isValidSig
     mapping(address => bool) private _canValidateSig;
     bool private _canValidateSigSet;
+    uint256 private _numberWhitelistedAddresses;
 
     constructor(Key memory _aggKey, address _govKey) validAggKey(_aggKey) {
         aggKey = _aggKey;
@@ -48,29 +49,55 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _canValidateSigSet = true;
 
         for (uint256 i = 0; i < addrs.length; i++) {
+            // Avoid duplicated newAddrs. Otherwise we could brick the updateCanValidateSig
+            // since it relies on the _numberWhitelistedAddresses and it has this check
+            require(_canValidateSig[addrs[i]] == false, "KeyManager: Address already whitelisted");
             _canValidateSig[addrs[i]] = true;
         }
+
+        _numberWhitelistedAddresses = addrs.length;
     }
 
-    // Old whitelisted addresses will remain whitelisted. Used when updating other contracts
-    function addCanValidateSig(SigData calldata sigData, address[] calldata addrs) 
+    /**
+     * @notice  Replaces the specific addresses that can call isValidSig. To be used if
+     *          contracts are updated. Can delist addresses and can add an arbitrary number of new addresses.
+     * @param currentAddrs   List of current whitelisted addresses
+     * @param newAddrs   List of new addresses to whitelist
+     */
+    function updateCanValidateSig(
+        SigData calldata sigData,
+        address[] calldata currentAddrs,
+        address[] calldata newAddrs
+    )
         external
         updatedValidSig(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.setAggKeyWithAggKey.selector,
+                    this.updateCanValidateSig.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    addrs
+                    currentAddrs,
+                    newAddrs
                 )
             )
-        ){
-        for (uint256 i = 0; i < addrs.length; i++) {
-            _canValidateSig[addrs[i]] = true;
+        )
+    {
+        require(currentAddrs.length == _numberWhitelistedAddresses, "KeyMan: array incorrect length");
+
+        // Remove current whitelisted addresses
+        for (uint256 i = 0; i < currentAddrs.length; i++) {
+            require(_canValidateSig[currentAddrs[i]] == true, "KeyMan: address not whitelisted");
+            _canValidateSig[currentAddrs[i]] = false;
         }
+
+        //  Whitelist any number of new addresses
+        for (uint256 i = 0; i < newAddrs.length; i++) {
+            // Avoid duplicated newAddrs
+            require(_canValidateSig[newAddrs[i]] == false, "KeyMan: address already whitelisted");
+            _canValidateSig[newAddrs[i]] = true;
+        }
+        _numberWhitelistedAddresses = newAddrs.length;
     }
-
-
 
     /**
      * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime
@@ -213,6 +240,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     function canValidateSigSet() external view override returns (bool) {
         return _canValidateSigSet;
+    }
+
+    /**
+     * @notice  Get number of whitelisted addresses
+     * @return  The value of _numberWhitelistedAddresses
+     */
+    function getNumberWhitelistedAddresses() external view override returns (uint256) {
+        return _numberWhitelistedAddresses;
     }
 
     /**

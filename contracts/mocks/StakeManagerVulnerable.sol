@@ -19,10 +19,8 @@ contract StakeManagerVulnerable is StakeManager {
     constructor(
         IKeyManager keyManager,
         uint256 minStake,
-        uint256 flipTotalSupply,
-        uint256 numGenesisValidators,
-        uint256 genesisStake
-    ) StakeManager(keyManager, minStake, flipTotalSupply, numGenesisValidators, genesisStake) {}
+        FLIP flip
+    ) StakeManager(keyManager, minStake, flip) {}
 
     //
     /**

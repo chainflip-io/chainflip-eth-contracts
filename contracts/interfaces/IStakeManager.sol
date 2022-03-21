@@ -18,7 +18,6 @@ interface IStakeManager is IShared {
         uint48 expiryTime
     );
     event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
-    event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
     event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
     event GovernanceWithdrawal(address to, uint256 amount);
 
@@ -120,7 +119,7 @@ interface IStakeManager is IShared {
      * @return  The address of FLIP
      */
     function getFLIP() external view returns (IFLIP);
-    
+
     /**
      * @notice  Get the minimum amount of stake that's required for a bid
      *          attempt in the auction to be valid - used to prevent sybil attacks
@@ -136,6 +135,4 @@ interface IStakeManager is IShared {
      * @return  The claim (Claim)
      */
     function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
-
-    function getTotalStake() external view returns (uint256);
 }

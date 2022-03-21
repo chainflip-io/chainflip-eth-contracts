@@ -43,5 +43,7 @@ interface IKeyManager is IShared {
 
     function getLastValidateTime() external view returns (uint256);
 
+    function getNumberWhitelistedAddresses() external view returns (uint256);
+
     function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
 }
