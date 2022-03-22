@@ -1,14 +1,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IValidator.sol";
+import "./IAccessValidator.sol";
 
 /**
  * @title    Vault interface
  * @notice   The interface for functions Vault implements
  * @author   Quantaf1re (James Key)
  */
-interface IVault is IValidator {
+interface IVault is IAccessValidator {
     function allBatch(
         SigData calldata sigData,
         bytes32[] calldata fetchSwapIDs,

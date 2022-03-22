@@ -2,12 +2,13 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IShared.sol";
+import "./IAccessValidator.sol";
 
 /**
  * @title    FLIP interface for the FLIP utility token
  * @author   Quantaf1re (James Key)
  */
-interface IFLIP is IERC20, IShared {
+interface IFLIP is IERC20, IAccessValidator {
     event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
 
     //////////////////////////////////////////////////////////////

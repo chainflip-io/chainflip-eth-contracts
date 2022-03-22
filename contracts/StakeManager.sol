@@ -2,11 +2,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
-import "./Validator.sol";
+import "./AccessValidator.sol";
 
 /**
  * @title    StakeManager contract
@@ -21,7 +22,7 @@ import "./Validator.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, Validator, ReentrancyGuard {
+contract StakeManager is IStakeManager, AccessValidator, Ownable, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -47,15 +48,8 @@ contract StakeManager is IStakeManager, Validator, ReentrancyGuard {
     //     uint48 expiryTime;
     // }
 
-    constructor(
-        IKeyManager keyManager,
-        uint256 minStake,
-        FLIP flip
-    ) Validator(keyManager) {
+    constructor(IKeyManager keyManager, uint256 minStake) AccessValidator(keyManager) Ownable() {
         _minStake = minStake;
-        // PROBLEM: StakeManager requires FLIP on constructor and FLIP requires reciever (StakeManager) on constructor
-        // Add a one-time callable function to set FLIP after constructor? maybe gated by the keyManager?
-        _FLIP = flip;
     }
 
     //////////////////////////////////////////////////////////////
@@ -63,6 +57,19 @@ contract StakeManager is IStakeManager, Validator, ReentrancyGuard {
     //                  State-changing functions                //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
+     *          because FLIP contract requires this contract's address on deployment for minting.
+     *          First this contract is deployed, then the FLIP contract and finally setFLIP
+     *          should be called. OnlyOwner modifer for added security since tokens will be
+     *          minted to this contract before setFLIP.
+     * @param flip FLIP token address
+     */
+    function setFlip(FLIP flip) external onlyOwner nzAddr(address(flip)) {
+        require(address(_FLIP) == address(0), "Staking: Flip address already set");
+        _FLIP = flip;
+    }
 
     /**
      * @notice          Stake some FLIP and attribute it to a nodeID

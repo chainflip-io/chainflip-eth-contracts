@@ -1,22 +1,22 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IKeyManager.sol";
-import "./interfaces/IValidator.sol";
+import "./interfaces/IAccessValidator.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title    Validator contract
+ * @title    AccessValidator contract
  * @notice   Manages the reference to the KeyManager contract. The address
  *           is set in the constructor and can only be updated with a valid
  *           signature validated by the current KeyManager contract. This shall
  *           be done if the KeyManager contract is updated.
  * @author   albert-llimos (Albert Llimos)
  */
-contract Validator is Shared, IValidator {
+contract AccessValidator is Shared, IAccessValidator {
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
-    constructor(IKeyManager keyManager) {
+    constructor(IKeyManager keyManager) nzAddr(address(keyManager)) {
         _keyManager = keyManager;
     }
 
@@ -66,7 +66,8 @@ contract Validator is Shared, IValidator {
     }
 
     /**
-     * @notice  Get the KeyManager address/interface that's used to validate sigs
+     * @notice  Internal getter so child contracts can access the _keyManager reference
+     *          but cannot modify it as it is kept private.
      * @return  The KeyManager (IKeyManager)
      */
     function _getKeyManager() internal view returns (IKeyManager) {

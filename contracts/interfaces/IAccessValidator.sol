@@ -4,11 +4,11 @@ import "./IShared.sol";
 import "./IKeyManager.sol";
 
 /**
- * @title    Validator interface
+ * @title    AccessValidator interface
  * @author   albert-llimos (Albert Llimos)
  */
 
-interface IValidator is IShared {
+interface IAccessValidator is IShared {
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //

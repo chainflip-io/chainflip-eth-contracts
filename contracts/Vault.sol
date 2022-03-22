@@ -7,7 +7,7 @@ import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
-import "./Validator.sol";
+import "./AccessValidator.sol";
 
 /**
  * @title    Vault contract
@@ -15,12 +15,12 @@ import "./Validator.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, Validator {
+contract Vault is IVault, AccessValidator {
     using SafeERC20 for IERC20;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager) Validator(keyManager) {}
+    constructor(IKeyManager keyManager) AccessValidator(keyManager) {}
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all

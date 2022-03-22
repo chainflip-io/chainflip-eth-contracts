@@ -20,7 +20,7 @@ contract StakeManagerVulnerable is StakeManager {
         IKeyManager keyManager,
         uint256 minStake,
         FLIP flip
-    ) StakeManager(keyManager, minStake, flip) {}
+    ) StakeManager(keyManager, minStake) {}
 
     //
     /**

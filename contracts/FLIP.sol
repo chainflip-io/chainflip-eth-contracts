@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IFLIP.sol";
 import "./interfaces/IKeyManager.sol";
-import "./Validator.sol";
+import "./AccessValidator.sol";
 
 /**
  * @title    FLIP contract
@@ -11,7 +11,7 @@ import "./Validator.sol";
  *           trap fees with
  * @author   Quantaf1re (James Key)
  */
-contract FLIP is ERC20, Validator, IFLIP {
+contract FLIP is ERC20, AccessValidator, IFLIP {
     /// @dev    The last time that the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
 
@@ -23,13 +23,10 @@ contract FLIP is ERC20, Validator, IFLIP {
         uint256 genesisStake,
         address receiverGenesisValidatorFlip, // Stake Manager
         IKeyManager keyManager
-    ) ERC20(name, symbol) nzAddr(receiverGenesisValidatorFlip) nzUint(flipTotalSupply) Validator(keyManager) {
+    ) ERC20(name, symbol) nzAddr(receiverGenesisValidatorFlip) nzUint(flipTotalSupply) AccessValidator(keyManager) {
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
-        // Minting two times would save gas but there could be rounding errors in the substraction
-        _mint(address(this), flipTotalSupply);
-        _transfer(address(this), receiverGenesisValidatorFlip, genesisValidatorFlip);
-        // Transfer remainder (flipTotalSupply - genesisValidatorFlip)
-        _transfer(address(this), msg.sender, balanceOf(address(this)));
+        _mint(receiverGenesisValidatorFlip, genesisValidatorFlip);
+        _mint(msg.sender, flipTotalSupply - genesisValidatorFlip);
     }
 
     //////////////////////////////////////////////////////////////
