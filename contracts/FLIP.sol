@@ -16,14 +16,17 @@ contract FLIP is ERC20, AccessValidator, IFLIP {
     uint256 private _lastSupplyUpdateBlockNum = 0;
 
     constructor(
-        string memory name,
-        string memory symbol,
         uint256 flipTotalSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake,
         address receiverGenesisValidatorFlip, // Stake Manager
         IKeyManager keyManager
-    ) ERC20(name, symbol) nzAddr(receiverGenesisValidatorFlip) nzUint(flipTotalSupply) AccessValidator(keyManager) {
+    )
+        ERC20("Chainflip", "FLIP")
+        nzAddr(receiverGenesisValidatorFlip)
+        nzUint(flipTotalSupply)
+        AccessValidator(keyManager)
+    {
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _mint(receiverGenesisValidatorFlip, genesisValidatorFlip);
         _mint(msg.sender, flipTotalSupply - genesisValidatorFlip);

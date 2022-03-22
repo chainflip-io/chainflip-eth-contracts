@@ -54,7 +54,7 @@ def cf(a, cfDeploy):
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
     cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
     cf.keyManager.setCanValidateSig(
-        [cf.vault, cf.stakeManager, cf.keyManager] + list(a)
+        [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
     )
 
     return cf
@@ -168,20 +168,28 @@ def vulnerableStakedStakeMan(
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
+    # Deploy smVuln and Flip vulnerable - unused cf.flip and cf.stakeManager
     smVuln = cf.DEPLOYER.deploy(
         StakeManagerVulnerable,
         cf.keyManager,
         MIN_STAKE,
-        INIT_SUPPLY,
-        NUM_GENESIS_VALIDATORS,
-        GENESIS_STAKE,
     )
-    flipVuln = FLIP.at(smVuln.getFLIP())
-    cf.keyManager.setCanValidateSig([cf.vault, smVuln, cf.keyManager] + list(a))
 
-    # Can't set _FLIP in the constructor because it's made in the constructor
-    # of StakeManager and getFLIPAddress is external
-    smVuln.testSetFLIP(flipVuln)
+    flipVuln = cf.DEPLOYER.deploy(
+        FLIP,
+        INIT_SUPPLY,
+        cf.numGenesisValidators,
+        cf.genesisStake,
+        smVuln.address,
+        cf.keyManager,
+    )
+
+    smVuln.setFlip(flipVuln)
+
+    cf.keyManager.setCanValidateSig(
+        [cf.vault, smVuln, cf.keyManager, flipVuln] + list(a)
+    )
+
     flipVuln.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
 
     assert flipVuln.balanceOf(cf.CHARLIE) == 0

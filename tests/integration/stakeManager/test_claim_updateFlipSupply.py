@@ -20,15 +20,17 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
 
     stateChainBlockNumber = 1
 
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(
+    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
+        cf.stakeManager.address,
     )
-    tx = cf.stakeManager.updateFlipSupply(
+    tx = cf.flip.updateFlipSupply(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
+        cf.stakeManager.address,
         cf.FR_ALICE,
     )
 

@@ -11,26 +11,7 @@ import "../FLIP.sol";
  * @author   Quantaf1re (James Key)
  */
 contract StakeManagerVulnerable is StakeManager {
-    /// @dev    The FLIP token
-    // Disable because tokens are usually in caps
-    // solhint-disable-next-line var-name-mixedcase
-    FLIP private _FLIP;
-
-    constructor(
-        IKeyManager keyManager,
-        uint256 minStake,
-        FLIP flip
-    ) StakeManager(keyManager, minStake) {}
-
-    //
-    /**
-     * @notice  Can't set _FLIP in the constructor because it's made in the constructor
-     *          of StakeManager and getFLIP is external
-     * @param flip      The address of the FLIP contract
-     */
-    function testSetFLIP(FLIP flip) external {
-        _FLIP = flip;
-    }
+    constructor(IKeyManager keyManager, uint256 minStake) StakeManager(keyManager, minStake) {}
 
     /**
      * @notice  Transfers FLIP out the contract
@@ -38,6 +19,6 @@ contract StakeManagerVulnerable is StakeManager {
      * @param amount    The amount of FLIP to send
      */
     function testSendFLIP(address receiver, uint256 amount) external {
-        require(_FLIP.transfer(receiver, amount));
+        require(this.getFLIP().transfer(receiver, amount));
     }
 }

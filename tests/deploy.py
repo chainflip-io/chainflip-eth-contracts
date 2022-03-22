@@ -43,11 +43,11 @@ def deploy_initial_Chainflip_contracts(
     cf.gov = deployer
     cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov)
 
-    numGenesisValidators = int(
+    cf.numGenesisValidators = int(
         environment.get("NUM_GENESIS_VALIDATORS") or NUM_GENESIS_VALIDATORS
     )
 
-    genesisStake = int(environment.get("GENESIS_STAKE") or GENESIS_STAKE)
+    cf.genesisStake = int(environment.get("GENESIS_STAKE") or GENESIS_STAKE)
 
     print(f"Deploying with AGG_KEY: {aggKey} and GOV_KEY: {govKey}")
 
@@ -56,11 +56,17 @@ def deploy_initial_Chainflip_contracts(
         StakeManager,
         cf.keyManager,
         MIN_STAKE,
-        INIT_SUPPLY,
-        numGenesisValidators,
-        genesisStake,
     )
-    cf.flip = FLIP.at(cf.stakeManager.getFLIP())
+    cf.flip = deployer.deploy(
+        FLIP,
+        INIT_SUPPLY,
+        cf.numGenesisValidators,
+        cf.genesisStake,
+        cf.stakeManager.address,
+        cf.keyManager,
+    )
+
+    cf.stakeManager.setFlip(cf.flip)
 
     return cf
 
@@ -72,6 +78,6 @@ def deploy_set_Chainflip_contracts(
     cf = deploy_initial_Chainflip_contracts(
         deployer, KeyManager, Vault, StakeManager, FLIP, *args
     )
-    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager, cf.keyManager])
+    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager, cf.keyManager, cf.flip])
 
     return cf
