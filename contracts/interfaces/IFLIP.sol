@@ -8,4 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 interface IFLIP is IERC20 {
     function mint(address receiver, uint256 amount) external;
+
+    function burn(uint256 amount) external;
 }
