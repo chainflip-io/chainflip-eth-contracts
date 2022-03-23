@@ -1237,10 +1237,8 @@ def test_all(
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             elif self.flipBals[self.sm] < claim[0]:
-                print("        REV_MSG_INTEGER_OVERFLOW rule_executeClaim", st_nodeID)
-                print(self.flipBals[self.sm])
-                print(self.f.balanceOf(self.sm))
-                with reverts(REV_MSG_INTEGER_OVERFLOW):
+                print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
@@ -1299,9 +1297,7 @@ def test_all(
 
         # Check the intentionally changeable variables after every tx
         def invariant_state_vars(self):
-            assert (
-                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
-            )
+            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             assert self.sm.getMinimumStake() == self.minStake
             assert self.km.getLastValidateTime() == self.lastValidateTime
             for nodeID, claim in self.pendingClaims.items():
