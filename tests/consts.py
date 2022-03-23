@@ -116,7 +116,6 @@ CLAIM_DELAY = 2 * DAY
 NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
 
 REV_MSG_MIN_STAKE = "Staking: stake too small"
-REV_MSG_NO_FISH = "Staking: something smells fishy"
 REV_MSG_SM_ARR_LEN = "Staking: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
