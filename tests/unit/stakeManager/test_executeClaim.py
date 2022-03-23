@@ -131,21 +131,3 @@ def test_executeClaim_rev_suspended(cf, claimRegistered):
 
     with reverts(REV_MSG_STAKEMAN_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
-
-
-# Can't use the normal StakeManager to test this since there's obviously
-# intentionally no way to get FLIP out of the contract without calling `registerClaim`,
-# so we have to use StakeManagerVulnerable which inherits StakeManager and
-# has `testSendFLIP` in it to simulate some kind of hack
-@given(amount=strategy("uint256", min_value=1, max_value=MIN_STAKE + 1))
-def test_executeClaim_rev_noFish(vulnerableR3ktStakeMan, amount):
-    cf, smVuln, _ = vulnerableR3ktStakeMan
-    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
-
-    callDataNoSig = smVuln.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    with reverts(REV_MSG_NO_FISH):
-        smVuln.registerClaim(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args
-        )

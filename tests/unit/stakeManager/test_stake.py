@@ -36,16 +36,3 @@ def test_stake_rev_nodeID(cf):
         cf.stakeManager.stake(
             0, cf.stakeManager.getMinimumStake(), NON_ZERO_ADDR, {"from": cf.ALICE}
         )
-
-
-# Can't use the normal StakeManager to test this since there's obviously
-# intentionally no way to get FLIP out of the contract without calling `claim`,
-# so we have to use StakeManagerVulnerable which inherits StakeManager and
-# has `testSendFLIP` in it to simulate some kind of hack
-@given(amount=strategy("uint256", min_value=1, max_value=MIN_STAKE))
-def test_stake_rev_noFish(cf, vulnerableR3ktStakeMan, FLIP, amount):
-    cf, smVuln, flipVuln = vulnerableR3ktStakeMan
-
-    with reverts(REV_MSG_NO_FISH):
-        flipVuln.approve(smVuln.address, MIN_STAKE, {"from": cf.ALICE})
-        smVuln.stake(JUNK_HEX, MIN_STAKE, NON_ZERO_ADDR, {"from": cf.ALICE})
