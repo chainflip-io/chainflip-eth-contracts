@@ -54,9 +54,9 @@ def test_isUpdatedValidSig_rev_chainID(a, cfAW, chainID):
 # Transactions sent from non-EOA accounts breaks brownie coverage - skip coverage
 @pytest.mark.skip_coverage
 def test_isUpdatedValidSig_check_all(a, cf):
-    whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
-    for addr in whitelisted + list(a):
-        if addr in whitelisted:
+    cf.whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
+    for addr in cf.whitelisted + list(a):
+        if addr in cf.whitelisted:
             sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
             cf.ALICE.transfer(to=addr, amount=ONE_ETH)
             cf.keyManager.isUpdatedValidSig(
@@ -72,19 +72,20 @@ def test_isUpdatedValidSig_check_all(a, cf):
 # sending a transaction from a non-EOA address. Using whitelisted a[0] as workaround
 # instead of sending the transaction from Vault/KeyManager/StakeManager
 def test_isUpdatedValidSig_check_whitelisted(a, cfAW):
-    whitelisted = [cfAW.vault, cfAW.keyManager, cfAW.stakeManager] + list(a)
-    for addr in whitelisted:
-        if addr in whitelisted:
-            sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-            cfAW.ALICE.transfer(to=addr, amount=ONE_ETH)
-            # Sending transaction from whitelisted non-EOA address as a workaround
-            cfAW.keyManager.isUpdatedValidSig(
-                sigData, cleanHexStr(sigData[2]), {"from": a[0]}
-            )
+    for addr in cfAW.whitelisted:
+        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
+        # cfAW.ALICE.transfer(to=addr, amount=ONE_ETH)
+        # Sending transaction from whitelisted non-EOA address as a workaround
+        cfAW.keyManager.isUpdatedValidSig(
+            # sigData, cleanHexStr(sigData[2]), {"from": addr}
+            sigData,
+            cleanHexStr(sigData[2]),
+            {"from": a[0]},
+        )
 
 
 def test_isUpdatedValidSig_check_nonwhitelisted(a, cf):
-    # Current whitelisted [cf.vault, cf.keyManager, cf.stakeManager]
+    # Current whitelisted [cf.vault, cf.keyManager, cf.stakeManager, cf.flip]
     for addr in list(a):
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
         with reverts(REV_MSG_WHITELIST):

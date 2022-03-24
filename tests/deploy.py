@@ -78,6 +78,7 @@ def deploy_set_Chainflip_contracts(
     cf = deploy_initial_Chainflip_contracts(
         deployer, KeyManager, Vault, StakeManager, FLIP, *args
     )
-    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager, cf.keyManager, cf.flip])
+    cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip]
+    cf.keyManager.setCanValidateSig(cf.whitelisted)
 
     return cf

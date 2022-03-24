@@ -53,9 +53,8 @@ def cf(a, cfDeploy):
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
     cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
-    cf.keyManager.setCanValidateSig(
-        [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
-    )
+    cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
+    cf.keyManager.setCanValidateSig(cf.whitelisted)
 
     return cf
 
@@ -89,10 +88,10 @@ def cfAW(a, cfDeployAllWhitelist):
     return cf
 
 
-# Set the whitelist for isValidSig
-@pytest.fixture(scope="module")
-def whitelist(a, cf):
-    cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager])
+# # Set the whitelist for isValidSig
+# @pytest.fixture(scope="module")
+# def whitelist(a, cf):
+#     cf.keyManager.setCanValidateSig([cf.vault, cf.stakeManager])
 
 
 # Deploys SchnorrSECP256K1Test to enable testing of SchnorrSECP256K1

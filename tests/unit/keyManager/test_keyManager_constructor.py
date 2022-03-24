@@ -7,8 +7,26 @@ def test_constructor(a, cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
     assert cf.keyManager.canValidateSigSet() == True
-    whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
-    for addr in whitelisted + list(a):
+    cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip]
+    for addr in cf.whitelisted + list(a):
         assert cf.keyManager.canValidateSig(addr) == (
-            True if addr in whitelisted else False
+            True if addr in cf.whitelisted else False
         )
+
+    assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
+
+
+def test_constructor_AW(a, cfAW):
+    assert cfAW.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR
+    assert cfAW.keyManager.canValidateSigSet() == True
+    cfAW.whitelisted = [
+        cfAW.vault,
+        cfAW.keyManager,
+        cfAW.stakeManager,
+        cfAW.flip,
+    ] + list(a)
+    for addr in cfAW.whitelisted:
+        assert cfAW.keyManager.canValidateSig(addr) == True
+
+    assert cfAW.keyManager.getNumberWhitelistedAddresses() == len(cfAW.whitelisted)

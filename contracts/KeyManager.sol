@@ -51,7 +51,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         for (uint256 i = 0; i < addrs.length; i++) {
             // Avoid duplicated newAddrs. Otherwise we could brick the updateCanValidateSig
             // since it relies on the _numberWhitelistedAddresses and it has this check
-            require(_canValidateSig[addrs[i]] == false, "KeyManager: Address already whitelisted");
+            require(_canValidateSig[addrs[i]] == false, "KeyManager: address already whitelisted");
             _canValidateSig[addrs[i]] = true;
         }
 
@@ -82,21 +82,22 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             )
         )
     {
-        require(currentAddrs.length == _numberWhitelistedAddresses, "KeyMan: array incorrect length");
+        require(currentAddrs.length == _numberWhitelistedAddresses, "KeyManager: array incorrect length");
 
         // Remove current whitelisted addresses
         for (uint256 i = 0; i < currentAddrs.length; i++) {
-            require(_canValidateSig[currentAddrs[i]] == true, "KeyMan: address not whitelisted");
+            require(_canValidateSig[currentAddrs[i]] == true, "KeyManager: cannot dewhitelist");
             _canValidateSig[currentAddrs[i]] = false;
         }
 
         //  Whitelist any number of new addresses
         for (uint256 i = 0; i < newAddrs.length; i++) {
             // Avoid duplicated newAddrs
-            require(_canValidateSig[newAddrs[i]] == false, "KeyMan: address already whitelisted");
+            require(_canValidateSig[newAddrs[i]] == false, "KeyManager: address already whitelisted");
             _canValidateSig[newAddrs[i]] = true;
         }
         _numberWhitelistedAddresses = newAddrs.length;
+        // require (_canValidateSig[address(this)]==True) to make sure we never brick this functionality?
     }
 
     /**
