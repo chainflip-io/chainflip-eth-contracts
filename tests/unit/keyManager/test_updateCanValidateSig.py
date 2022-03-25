@@ -12,26 +12,15 @@ from brownie.test import given, strategy
 def test_updateCanValidateSig_rev_length(a, cf, currentAddrs, newAddrs):
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
 
-    callDataNoSig = cf.keyManager.updateCanValidateSig.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), currentAddrs, newAddrs
-    )
-
     if len(currentAddrs) != cf.keyManager.getNumberWhitelistedAddresses():
         with reverts(REV_MSG_LENGTH):
-            cf.keyManager.updateCanValidateSig(
-                AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-                currentAddrs,
-                newAddrs,
-            )
+            updateCanValidateSig(cf, currentAddrs, newAddrs)
+
     # will never match the actual whitelisted addresses since addresses
     # are chosen among a, and the whitelist has newly deployed contracts
     else:
         with reverts(REV_MSG_NOT_DEWHITELISTED):
-            cf.keyManager.updateCanValidateSig(
-                AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-                currentAddrs,
-                newAddrs,
-            )
+            updateCanValidateSig(cf, currentAddrs, newAddrs)
 
 
 @given(
@@ -40,24 +29,15 @@ def test_updateCanValidateSig_rev_length(a, cf, currentAddrs, newAddrs):
 def test_updateCanValidateSig_rev_duplicate(a, cf, newAddrs):
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
 
-    callDataNoSig = cf.keyManager.updateCanValidateSig.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), cf.whitelisted, newAddrs
-    )
     unique = len(set(newAddrs)) == len(newAddrs)
 
     if unique == False:
         with reverts(REV_MSG_DUPLICATE):
-            cf.keyManager.updateCanValidateSig(
-                AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-                cf.whitelisted,
-                newAddrs,
-            )
+            updateCanValidateSig(cf, cf.whitelisted, newAddrs)
+
     else:
-        tx = cf.keyManager.updateCanValidateSig(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            cf.whitelisted,
-            newAddrs,
-        )
+        updateCanValidateSig(cf, cf.whitelisted, newAddrs)
+
         # Removed previous whitelisted addresses
         for addr in cf.whitelisted:
             assert cf.keyManager.canValidateSig(addr) == False
@@ -85,15 +65,7 @@ def test_updateCanValidateSig_multiple(a, cf, addrsList1, addrsList2):
 
     for newAddrs in listAddresses:
 
-        callDataNoSig = cf.keyManager.updateCanValidateSig.encode_input(
-            agg_null_sig(cf.keyManager.address, chain.id), currentAddrs, newAddrs
-        )
-
-        cf.keyManager.updateCanValidateSig(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            currentAddrs,
-            newAddrs,
-        )
+        updateCanValidateSig(cf, currentAddrs, newAddrs)
 
         # Removed previous whitelisted addresses that are not whitelisted again
         for addr in currentAddrs:
@@ -113,26 +85,9 @@ def test_updateCanValidateSig_noKeyManager(a, cf):
     # Using [:] to create a copy of the list (instead of reference)
     listAddresses = cf.whitelisted[:]
     listAddresses.remove(cf.keyManager)
-    print(cf.whitelisted)
-    print(listAddresses)
 
-    callDataNoSig = cf.keyManager.updateCanValidateSig.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), cf.whitelisted, listAddresses
-    )
-    cf.keyManager.updateCanValidateSig(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        cf.whitelisted,
-        listAddresses,
-    )
+    updateCanValidateSig(cf, cf.whitelisted, listAddresses)
 
-    callDataNoSig = cf.keyManager.updateCanValidateSig.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), listAddresses, list(a)
-    )
-
-    # updateCanValidateSig has been bricked since KeyManager itself is not whitelisted
+    # updateCanValidateSig is bricked since KeyManager itself is not whitelisted
     with reverts(REV_MSG_WHITELIST):
-        cf.keyManager.updateCanValidateSig(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            listAddresses,
-            list(a),
-        )
+        updateCanValidateSig(cf, listAddresses, list(a))

@@ -193,3 +193,15 @@ def registerClaimTest(cf, nodeID, minStake, amount, receiver, expiryTime):
     assert cf.flip.balanceOf(receiver) == prevReceiverBal
     assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
     assert cf.stakeManager.getMinimumStake() == minStake
+
+
+def updateCanValidateSig(cf, currentAddrs, newAddrs):
+    callDataNoSig = cf.keyManager.updateCanValidateSig.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), currentAddrs, newAddrs
+    )
+
+    cf.keyManager.updateCanValidateSig(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        currentAddrs,
+        newAddrs,
+    )
