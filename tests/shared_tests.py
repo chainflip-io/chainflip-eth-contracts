@@ -205,3 +205,13 @@ def updateCanValidateSig(cf, currentAddrs, newAddrs):
         currentAddrs,
         newAddrs,
     )
+
+
+def updateKeyManager(cf, accessValidator, keyManager):
+    callDataNoSig = accessValidator.updateKeyManager.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), keyManager
+    )
+
+    accessValidator.updateKeyManager(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), keyManager
+    )
