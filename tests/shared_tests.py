@@ -203,18 +203,20 @@ def stakeTest(cf, prevTotal, nodeID, minStake, tx, amount, returnAddr):
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
-def registerClaimTest(cf, nodeID, minStake, amount, receiver, expiryTime):
+def registerClaimTest(
+    cf, deployedStakeManager, nodeID, minStake, amount, receiver, expiryTime
+):
     prevReceiverBal = cf.flip.balanceOf(receiver)
-    prevStakeManBal = cf.flip.balanceOf(cf.stakeManager)
+    prevStakeManBal = cf.flip.balanceOf(deployedStakeManager)
 
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
+    callDataNoSig = deployedStakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
         nodeID,
         amount,
         receiver,
         expiryTime,
     )
-    tx = cf.stakeManager.registerClaim(
+    tx = deployedStakeManager.registerClaim(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         nodeID,
         amount,
@@ -224,7 +226,7 @@ def registerClaimTest(cf, nodeID, minStake, amount, receiver, expiryTime):
 
     startTime = tx.timestamp + CLAIM_DELAY
     # Check things that should've changed
-    assert cf.stakeManager.getPendingClaim(nodeID) == (
+    assert deployedStakeManager.getPendingClaim(nodeID) == (
         amount,
         receiver,
         startTime,
@@ -239,8 +241,8 @@ def registerClaimTest(cf, nodeID, minStake, amount, receiver, expiryTime):
     )
     # Check things that shouldn't have changed
     assert cf.flip.balanceOf(receiver) == prevReceiverBal
-    assert cf.flip.balanceOf(cf.stakeManager) == prevStakeManBal
-    assert cf.stakeManager.getMinimumStake() == minStake
+    assert cf.flip.balanceOf(deployedStakeManager) == prevStakeManBal
+    assert deployedStakeManager.getMinimumStake() == minStake
 
 
 def updateCanValidateSig(keyManager, currentAddrs, newAddrs):

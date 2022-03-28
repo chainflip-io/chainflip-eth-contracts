@@ -23,7 +23,13 @@ def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryTimeDiff
             )
     else:
         registerClaimTest(
-            cf, JUNK_HEX, MIN_STAKE, amount, staker, getChainTime() + (2 * CLAIM_DELAY)
+            cf,
+            cf.stakeManager,
+            JUNK_HEX,
+            MIN_STAKE,
+            amount,
+            staker,
+            getChainTime() + (2 * CLAIM_DELAY),
         )
 
 
@@ -32,7 +38,13 @@ def test_registerClaim_amount_rand(cf, stakedMin, amount, staker, expiryTimeDiff
 
 def test_registerClaim_min_expiryTime(cf, stakedMin):
     registerClaimTest(
-        cf, JUNK_HEX, MIN_STAKE, MIN_STAKE, cf.DENICE, getChainTime() + CLAIM_DELAY + 5
+        cf,
+        cf.stakeManager,
+        JUNK_HEX,
+        MIN_STAKE,
+        MIN_STAKE,
+        cf.DENICE,
+        getChainTime() + CLAIM_DELAY + 5,
     )
 
 
@@ -62,6 +74,7 @@ def test_registerClaim_claim_expired(cf, stakedMin):
     chain.sleep(CLAIM_DELAY + 10)
     registerClaimTest(
         cf,
+        cf.stakeManager,
         JUNK_HEX,
         MIN_STAKE,
         MIN_STAKE,

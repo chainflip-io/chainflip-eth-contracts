@@ -174,3 +174,104 @@ def test_upgrade_Vault(cf, Vault, DepositEth):
     fetchDepositEth(cf, newVault, DepositEth)
     transfer_eth(cf, newVault, cf.ALICE, TEST_AMNT)
     assert newVault.balance() == totalFunds
+
+
+## Update processs StakeManager:
+# Deploy new StakeManager and whitelist it(and begin witnessing any new stakes)
+# Pause all register claim signature generation on the State Chain (~7days)
+# Wait 7 days for all currently pending claims to expire or be executed
+# At some point stop witnessing stake calls to old StakeManager (on state chain)
+# Generate a special claim sig to move all FLIP to the new Stake Manager and register it
+# After the CLAIM_DELAY, execute the special claim sig - all FLIP is transfered
+# Dewhilist old StakeManager
+@given(
+    # adding extra +5 to make up for differences between time.time() and chain time
+    expiryTimeDiff=strategy("uint", min_value=CLAIM_DELAY + 5, max_value=7 * DAY),
+)
+def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
+    newStakeManager = cf.DEPLOYER.deploy(
+        StakeManager,
+        cf.keyManager,
+        MIN_STAKE,
+    )
+    newStakeManager.setFlip(cf.flip)
+
+    # Keep old StakeManager whitelisted
+    currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
+    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newStakeManager]
+    updateCanValidateSig(cf.keyManager, currentWhitelist, toWhitelist)
+
+    # Last register claim before stopping state's chain claim signature registry
+    nodeID = web3.toHex(1)
+    stakeAmount = MIN_STAKE * 3
+    expiryTime = getChainTime() + (expiryTimeDiff)
+    claimAmount = 123 * E_18
+    registerClaimTest(
+        cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, cf.DENICE, expiryTime
+    )
+
+    chain.sleep(CLAIM_DELAY)
+
+    # Execute pending claim
+    cf.stakeManager.executeClaim(nodeID)
+    assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
+
+    chain.sleep(7 * DAY - CLAIM_DELAY)
+
+    # Generate claim to move all FLIP to new stakeManager
+    totalFLIPstaked = cf.flip.balanceOf(cf.stakeManager)
+    stakeAmount = MIN_STAKE
+    expiryTime = getChainTime() + (CLAIM_DELAY * 2)
+    claimAmount = totalFLIPstaked
+    registerClaimTest(
+        cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, newStakeManager, expiryTime
+    )
+
+    chain.sleep(CLAIM_DELAY)
+
+    assert cf.flip.balanceOf(newStakeManager) == 0
+    assert cf.flip.balanceOf(cf.stakeManager) == totalFLIPstaked
+    cf.stakeManager.executeClaim(nodeID)
+    assert cf.flip.balanceOf(newStakeManager) == totalFLIPstaked
+    assert cf.flip.balanceOf(cf.stakeManager) == 0
+
+    # Dewhitelist old StakeManager
+    currentWhitelist = [
+        cf.vault,
+        cf.stakeManager,
+        cf.flip,
+        cf.keyManager,
+        newStakeManager,
+    ]
+    toWhitelist = [cf.vault, newStakeManager, cf.flip, cf.keyManager]
+    updateCanValidateSig(cf.keyManager, currentWhitelist, toWhitelist)
+
+    # Check that claims cannot be registered in old StakeManager
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id),
+        nodeID,
+        claimAmount,
+        cf.DENICE,
+        expiryTime,
+    )
+    with reverts(REV_MSG_WHITELIST):
+        cf.stakeManager.registerClaim(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            nodeID,
+            claimAmount,
+            cf.DENICE,
+            expiryTime,
+        )
+
+    # Check that claims can be registered and executed in the new StakeManager
+    registerClaimTest(
+        cf,
+        newStakeManager,
+        nodeID,
+        MIN_STAKE,
+        claimAmount,
+        cf.DENICE,
+        getChainTime() + (CLAIM_DELAY * 2),
+    )
+    chain.sleep(CLAIM_DELAY)
+    newStakeManager.executeClaim(nodeID)
