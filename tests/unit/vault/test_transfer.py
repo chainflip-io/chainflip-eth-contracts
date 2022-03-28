@@ -1,25 +1,11 @@
 from consts import *
+from shared_tests import *
 from brownie import reverts
 
 
 def test_transfer_eth(cf):
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
-
-    startBalVault = cf.vault.balance()
-    startBalRecipient = cf.ALICE.balance()
-
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT
-    )
-    cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        ETH_ADDR,
-        cf.ALICE,
-        TEST_AMNT,
-    )
-
-    assert cf.vault.balance() - startBalVault == -TEST_AMNT
-    assert cf.ALICE.balance() - startBalRecipient == TEST_AMNT
+    transfer_eth(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
 
 # token doesn't have a fallback function for receiving eth, so should fail

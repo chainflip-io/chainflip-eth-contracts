@@ -14,13 +14,13 @@ def test_updateCanValidateSig_rev_length(a, cf, currentAddrs, newAddrs):
 
     if len(currentAddrs) != cf.keyManager.getNumberWhitelistedAddresses():
         with reverts(REV_MSG_LENGTH):
-            updateCanValidateSig(cf, currentAddrs, newAddrs)
+            updateCanValidateSig(cf.keyManager, currentAddrs, newAddrs)
 
     # will never match the actual whitelisted addresses since addresses
     # are chosen among a, and the whitelist has newly deployed contracts
     else:
         with reverts(REV_MSG_NOT_DEWHITELISTED):
-            updateCanValidateSig(cf, currentAddrs, newAddrs)
+            updateCanValidateSig(cf.keyManager, currentAddrs, newAddrs)
 
 
 @given(
@@ -33,10 +33,10 @@ def test_updateCanValidateSig_rev_duplicate(a, cf, newAddrs):
 
     if unique == False:
         with reverts(REV_MSG_DUPLICATE):
-            updateCanValidateSig(cf, cf.whitelisted, newAddrs)
+            updateCanValidateSig(cf.keyManager, cf.whitelisted, newAddrs)
 
     else:
-        updateCanValidateSig(cf, cf.whitelisted, newAddrs)
+        updateCanValidateSig(cf.keyManager, cf.whitelisted, newAddrs)
 
         # Removed previous whitelisted addresses
         for addr in cf.whitelisted:
@@ -65,7 +65,7 @@ def test_updateCanValidateSig_multiple(a, cf, addrsList1, addrsList2):
 
     for newAddrs in listAddresses:
 
-        updateCanValidateSig(cf, currentAddrs, newAddrs)
+        updateCanValidateSig(cf.keyManager, currentAddrs, newAddrs)
 
         # Removed previous whitelisted addresses that are not whitelisted again
         for addr in currentAddrs:
@@ -86,8 +86,8 @@ def test_updateCanValidateSig_noKeyManager(a, cf):
     listAddresses = cf.whitelisted[:]
     listAddresses.remove(cf.keyManager)
 
-    updateCanValidateSig(cf, cf.whitelisted, listAddresses)
+    updateCanValidateSig(cf.keyManager, cf.whitelisted, listAddresses)
 
     # updateCanValidateSig is bricked since KeyManager itself is not whitelisted
     with reverts(REV_MSG_WHITELIST):
-        updateCanValidateSig(cf, listAddresses, list(a))
+        updateCanValidateSig(cf.keyManager, listAddresses, list(a))

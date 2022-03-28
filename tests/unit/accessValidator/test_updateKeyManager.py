@@ -21,5 +21,5 @@ def test_updateKeyManager(cf, KeyManager):
     )
 
     for accessValidator in accessValidators:
-        updateKeyManager(cf, accessValidator, newKeyManager)
+        updateKeyManager(accessValidator, cf.keyManager, newKeyManager)
         assert accessValidator.getKeyManager() == newKeyManager

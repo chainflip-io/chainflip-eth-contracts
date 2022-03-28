@@ -4,6 +4,54 @@ from utils import *
 
 # ----------Vault----------
 
+
+def fetchDepositEth(cf, deployedVault, DepositEth):
+    # Get the address to deposit to and deposit
+    depositAddr = getCreate2Addr(deployedVault.address, JUNK_HEX_PAD, DepositEth, "")
+    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+
+    balanceVaultBefore = deployedVault.balance()
+
+    # Sign the tx without a msgHash or sig
+    callDataNoSig = deployedVault.fetchDepositEth.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD
+    )
+
+    # Fetch the deposit
+    balanceBefore = cf.ALICE.balance()
+    assert balanceBefore >= TEST_AMNT
+    tx = deployedVault.fetchDepositEth(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        JUNK_HEX_PAD,
+        {"from": cf.ALICE},
+    )
+    balanceAfter = cf.ALICE.balance()
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert deployedVault.balance() == balanceVaultBefore + TEST_AMNT
+
+
+# Test transfer function from a vault with funds
+def transfer_eth(cf, deployedVault, receiver, amount):
+    startBalVault = deployedVault.balance()
+    assert startBalVault >= amount
+    startBalRecipient = receiver.balance()
+
+    callDataNoSig = deployedVault.transfer.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, receiver, amount
+    )
+    deployedVault.transfer(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        ETH_ADDR,
+        receiver,
+        amount,
+    )
+
+    assert deployedVault.balance() - startBalVault == -amount
+    assert receiver.balance() - startBalRecipient == amount
+
+
+# ----------KeyManager----------
+
 # Set keys
 
 
@@ -195,23 +243,23 @@ def registerClaimTest(cf, nodeID, minStake, amount, receiver, expiryTime):
     assert cf.stakeManager.getMinimumStake() == minStake
 
 
-def updateCanValidateSig(cf, currentAddrs, newAddrs):
-    callDataNoSig = cf.keyManager.updateCanValidateSig.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), currentAddrs, newAddrs
+def updateCanValidateSig(keyManager, currentAddrs, newAddrs):
+    callDataNoSig = keyManager.updateCanValidateSig.encode_input(
+        agg_null_sig(keyManager.address, chain.id), currentAddrs, newAddrs
     )
 
-    cf.keyManager.updateCanValidateSig(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+    keyManager.updateCanValidateSig(
+        AGG_SIGNER_1.getSigData(callDataNoSig, keyManager.address),
         currentAddrs,
         newAddrs,
     )
 
 
-def updateKeyManager(cf, accessValidator, keyManager):
+def updateKeyManager(accessValidator, currentkeyManager, newkeyManager):
     callDataNoSig = accessValidator.updateKeyManager.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), keyManager
+        agg_null_sig(currentkeyManager.address, chain.id), newkeyManager
     )
 
     accessValidator.updateKeyManager(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), keyManager
+        AGG_SIGNER_1.getSigData(callDataNoSig, currentkeyManager.address), newkeyManager
     )
