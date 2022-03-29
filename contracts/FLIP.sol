@@ -14,6 +14,7 @@ import "./AccessValidator.sol";
 contract FLIP is ERC20, AccessValidator, IFLIP {
     /// @dev    The last time that the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
+
     constructor(
         uint256 flipTotalSupply,
         uint256 numGenesisValidators,
@@ -93,9 +94,5 @@ contract FLIP is ERC20, AccessValidator, IFLIP {
      */
     function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
         return _lastSupplyUpdateBlockNum;
-    }
-
-    function burn(uint256 amount) external nzUint(amount) onlyOwner {
-        _burn(msg.sender, amount);
     }
 }
