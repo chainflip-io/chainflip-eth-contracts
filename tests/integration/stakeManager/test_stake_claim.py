@@ -18,7 +18,9 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
     claimAmount2 = claimAmount1 * 2
 
     # Register claim
-    registerClaimTest(cf, nodeID1, MIN_STAKE, claimAmount1, cf.DENICE, expiryTime1)
+    registerClaimTest(
+        cf, cf.stakeManager, nodeID1, MIN_STAKE, claimAmount1, cf.DENICE, expiryTime1
+    )
 
     # Claiming before enough time passed should revert
     with reverts(REV_MSG_NOT_ON_TIME):
@@ -65,7 +67,9 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
         cf.stakeManager.executeClaim(nodeID1)
 
     # Register 2nd claim
-    registerClaimTest(cf, nodeID2, MIN_STAKE, claimAmount2, cf.DENICE, expiryTime2)
+    registerClaimTest(
+        cf, cf.stakeManager, nodeID2, MIN_STAKE, claimAmount2, cf.DENICE, expiryTime2
+    )
 
     chain.sleep(CLAIM_DELAY + 5)
 

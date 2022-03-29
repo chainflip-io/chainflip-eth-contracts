@@ -11,6 +11,7 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
 
     registerClaimTest(
         cf,
+        cf.stakeManager,
         JUNK_HEX,
         MIN_STAKE,
         claimAmount,
