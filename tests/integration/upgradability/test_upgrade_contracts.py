@@ -12,8 +12,6 @@ from brownie.test import given, strategy
 # (whitelisting before updating references to ensure contracts can always validate)
 # Update all keyManager references
 # Dewhitelist contracts in old KeyManager
-
-
 def test_upgrade_keyManager(cf, KeyManager):
 
     # Try initial transfer to later test a replay attack on the newly deployed keyManager
@@ -78,7 +76,7 @@ def test_upgrade_keyManager(cf, KeyManager):
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == True
 
 
-## Update processs Vault:
+## Update process Vault:
 # Deploy new Vault
 # Whitelist new Vault. Old vault still needs to be active to be able to fetch active swaps
 # Transfer tokens from old Vault to new Vault.
@@ -176,7 +174,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth):
     assert newVault.balance() == totalFunds
 
 
-## Update processs StakeManager:
+## Update process StakeManager:
 # Deploy new StakeManager and whitelist it(and begin witnessing any new stakes)
 # Pause all register claim signature generation on the State Chain (~7days)
 # Wait 7 days for all currently pending claims to expire or be executed
