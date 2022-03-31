@@ -51,7 +51,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         for (uint256 i = 0; i < addrs.length; i++) {
             // Avoid duplicated newAddrs. Otherwise we could brick the updateCanConsumeKeyNonce
             // since it relies on the _numberWhitelistedAddresses and it has this check
-            require(_canConsumeKeyNonce[addrs[i]] == false, "KeyManager: address already whitelisted");
+            require(!_canConsumeKeyNonce[addrs[i]], "KeyManager: address already whitelisted");
             _canConsumeKeyNonce[addrs[i]] = true;
         }
 
