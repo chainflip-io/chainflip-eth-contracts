@@ -25,7 +25,7 @@ def main():
         node_ids = f.readlines()
         f.close()
     staker = cf_accs[DEPLOYER_ACCOUNT_INDEX]
-    to_approve = (stake * (len(node_ids) + 1)) + ((len(node_ids) / 2) * len(node_ids) + 1) # add the sum of the series
+    to_approve = flip.balanceOf(staker)
     tx = flip.approve(stakeManager, to_approve, {"from": staker, "required_confs": 0})
     print(f"Approving {to_approve / E_18} FLIP in tx {tx.txid}")
     for i, node_id in enumerate(node_ids):
