@@ -83,15 +83,16 @@ REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
 REV_MSG_NONCETIMESGADDR = "Shared: nonceTimesGAddr is empty"
 REV_MSG_NONCETIMESGADDR_EMPTY = "No zero inputs allowed"
 
-# setCanValidateSig
+# setCanConsumeNonce
 REV_MSG_SET = "KeyManager: already set"
 REV_MSG_DUPLICATE = "KeyManager: address already whitelisted"
 
-# updateCanValidateSig
+# updateCanConsumeNonce
 REV_MSG_LENGTH = "KeyManager: array incorrect length"
 REV_MSG_NOT_DEWHITELISTED = "KeyManager: cannot dewhitelist"
+REV_MSG_KEYMANAGER_WHITELIST = "KeyManager: KeyManager not whitelisted"
 
-# isUpdatedValidSig
+# consumeKeyNonce
 REV_MSG_WHITELIST = "KeyManager: not whitelisted"
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
@@ -132,7 +133,7 @@ REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "Staking: old FLIP supply update"
 REV_MSG_STAKEMAN_GOVERNOR = "Staking: not governor"
 REV_MSG_STAKEMAN_SUSPENDED = "Staking: suspended"
 REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: Not suspended"
-
+REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
 # -----KeyManager-----
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 

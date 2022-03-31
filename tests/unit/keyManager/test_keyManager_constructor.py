@@ -6,10 +6,10 @@ from shared_tests import *
 def test_constructor(a, cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.canValidateSigSet() == True
+    assert cf.keyManager.canConsumeNonceSet() == True
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip]
     for addr in cf.whitelisted + list(a):
-        assert cf.keyManager.canValidateSig(addr) == (
+        assert cf.keyManager.canConsumeNonce(addr) == (
             True if addr in cf.whitelisted else False
         )
 
@@ -19,7 +19,7 @@ def test_constructor(a, cf):
 def test_constructor_AW(a, cfAW):
     assert cfAW.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR
-    assert cfAW.keyManager.canValidateSigSet() == True
+    assert cfAW.keyManager.canConsumeNonceSet() == True
     cfAW.whitelisted = [
         cfAW.vault,
         cfAW.keyManager,
@@ -27,6 +27,6 @@ def test_constructor_AW(a, cfAW):
         cfAW.flip,
     ] + list(a)
     for addr in cfAW.whitelisted:
-        assert cfAW.keyManager.canValidateSig(addr) == True
+        assert cfAW.keyManager.canConsumeNonce(addr) == True
 
     assert cfAW.keyManager.getNumberWhitelistedAddresses() == len(cfAW.whitelisted)

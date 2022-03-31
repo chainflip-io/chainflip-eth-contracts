@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IFLIP.sol";
 import "./interfaces/IKeyManager.sol";
-import "./AccessValidator.sol";
+import "./AggKeyNonceConsumer.sol";
 
 /**
  * @title    FLIP contract
@@ -11,7 +11,7 @@ import "./AccessValidator.sol";
  *           trap fees with
  * @author   Quantaf1re (James Key)
  */
-contract FLIP is ERC20, AccessValidator, IFLIP {
+contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
     /// @dev    The last time that the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
 
@@ -25,7 +25,7 @@ contract FLIP is ERC20, AccessValidator, IFLIP {
         ERC20("Chainflip", "FLIP")
         nzAddr(receiverGenesisValidatorFlip)
         nzUint(flipTotalSupply)
-        AccessValidator(keyManager)
+        AggKeyNonceConsumer(keyManager)
     {
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _mint(receiverGenesisValidatorFlip, genesisValidatorFlip);
@@ -56,7 +56,7 @@ contract FLIP is ERC20, AccessValidator, IFLIP {
         override
         nzUint(newTotalSupply)
         nzAddr(staker)
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(

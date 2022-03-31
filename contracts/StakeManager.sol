@@ -2,12 +2,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
-import "./AccessValidator.sol";
+import "./AggKeyNonceConsumer.sol";
 
 /**
  * @title    StakeManager contract
@@ -22,7 +21,7 @@ import "./AccessValidator.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, AccessValidator, Ownable, ReentrancyGuard {
+contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -37,6 +36,8 @@ contract StakeManager is IStakeManager, AccessValidator, Ownable, ReentrancyGuar
     mapping(bytes32 => Claim) private _pendingClaims;
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
+    /// @dev   Deployer address that can call setFlip
+    address private immutable deployer;
 
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
@@ -48,8 +49,9 @@ contract StakeManager is IStakeManager, AccessValidator, Ownable, ReentrancyGuar
     //     uint48 expiryTime;
     // }
 
-    constructor(IKeyManager keyManager, uint256 minStake) AccessValidator(keyManager) Ownable() {
+    constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
         _minStake = minStake;
+        deployer = msg.sender;
     }
 
     //////////////////////////////////////////////////////////////
@@ -62,11 +64,11 @@ contract StakeManager is IStakeManager, AccessValidator, Ownable, ReentrancyGuar
      * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
      *          because FLIP contract requires this contract's address on deployment for minting.
      *          First this contract is deployed, then the FLIP contract and finally setFLIP
-     *          should be called. OnlyOwner modifer for added security since tokens will be
-     *          minted to this contract before setFLIP.
+     *          should be called. OnlyDeployer modifer for added security since tokens will be
+     *          minted to this contract before calling setFLIP.
      * @param flip FLIP token address
      */
-    function setFlip(FLIP flip) external onlyOwner nzAddr(address(flip)) {
+    function setFlip(FLIP flip) external onlyDeployer nzAddr(address(flip)) {
         require(address(_FLIP) == address(0), "Staking: Flip address already set");
         _FLIP = flip;
     }
@@ -115,7 +117,7 @@ contract StakeManager is IStakeManager, AccessValidator, Ownable, ReentrancyGuar
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -255,6 +257,12 @@ contract StakeManager is IStakeManager, AccessValidator, Ownable, ReentrancyGuar
     /// @notice Ensure that the caller is the KeyManager's governor address.
     modifier isGovernor() {
         require(msg.sender == _getKeyManager().getGovernanceKey(), "Staking: not governor");
+        _;
+    }
+
+    /// @notice Ensure that the caller is the deployer address.
+    modifier onlyDeployer() {
+        require(msg.sender == deployer, "Staking: not deployer");
         _;
     }
 }

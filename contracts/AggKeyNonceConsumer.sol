@@ -1,18 +1,18 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IKeyManager.sol";
-import "./interfaces/IAccessValidator.sol";
+import "./interfaces/IAggKeyNonceConsumer.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title    AccessValidator contract
+ * @title    AggKeyNonceConsumer contract
  * @notice   Manages the reference to the KeyManager contract. The address
  *           is set in the constructor and can only be updated with a valid
  *           signature validated by the current KeyManager contract. This shall
  *           be done if the KeyManager contract is updated.
  * @author   albert-llimos (Albert Llimos)
  */
-contract AccessValidator is Shared, IAccessValidator {
+contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
@@ -37,7 +37,7 @@ contract AccessValidator is Shared, IAccessValidator {
         external
         override
         nzAddr(address(keyManager))
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -80,9 +80,9 @@ contract AccessValidator is Shared, IAccessValidator {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Calls isUpdatedValidSig in _keyManager
-    modifier updatedValidSig(SigData calldata sigData, bytes32 contractMsgHash) {
-        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
+    /// @dev    Calls consumeKeyNonce in _keyManager
+    modifier consumerKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
+        require(_keyManager.consumeKeyNonce(sigData, contractMsgHash));
         _;
     }
 }

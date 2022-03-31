@@ -48,7 +48,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
 
-        # Checks if isUpdatedValidSig returns the correct value when called with a random sender,
+        # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
         def rule_isValidSig(self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data):
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
@@ -65,7 +65,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                     st_keyID_num,
                     st_msg_data,
                 )
-                tx = self.km.isUpdatedValidSig(
+                tx = self.km.consumeKeyNonce(
                     sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                 )
                 self.lastValidateTime = tx.timestamp
@@ -78,7 +78,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         st_keyID_num,
                         st_msg_data,
                     )
-                    self.km.isUpdatedValidSig(
+                    self.km.consumeKeyNonce(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                     )
 

@@ -4,11 +4,11 @@ import "./IShared.sol";
 import "./IKeyManager.sol";
 
 /**
- * @title    AccessValidator interface
+ * @title    AggKeyNonceConsumer interface
  * @author   albert-llimos (Albert Llimos)
  */
 
-interface IAccessValidator is IShared {
+interface IAggKeyNonceConsumer is IShared {
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //

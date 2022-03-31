@@ -174,15 +174,15 @@ def setKey_rev_sig_test(cf, fcn, signer):
         fcn(sigData, AGG_SIGNER_2.getPubData())
 
 
-def isValidSig_test(cf, signer):
+def canConsumeNonce_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
+    tx = cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
-def isValidSig_rev_test(cf, signer):
+def canConsumeNonce_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
     with reverts(REV_MSG_SIG):
-        tx = cf.keyManager.isUpdatedValidSig(sigData, cleanHexStr(sigData[2]))
+        tx = cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
@@ -245,23 +245,23 @@ def registerClaimTest(
     assert deployedStakeManager.getMinimumStake() == minStake
 
 
-def updateCanValidateSig(keyManager, currentAddrs, newAddrs):
-    callDataNoSig = keyManager.updateCanValidateSig.encode_input(
+def updateCanConsumeNonce(keyManager, currentAddrs, newAddrs):
+    callDataNoSig = keyManager.updateCanConsumeNonce.encode_input(
         agg_null_sig(keyManager.address, chain.id), currentAddrs, newAddrs
     )
 
-    keyManager.updateCanValidateSig(
+    keyManager.updateCanConsumeNonce(
         AGG_SIGNER_1.getSigData(callDataNoSig, keyManager.address),
         currentAddrs,
         newAddrs,
     )
 
 
-def updateKeyManager(accessValidator, currentkeyManager, newkeyManager):
-    callDataNoSig = accessValidator.updateKeyManager.encode_input(
+def updateKeyManager(aggKeyNonceConsumer, currentkeyManager, newkeyManager):
+    callDataNoSig = aggKeyNonceConsumer.updateKeyManager.encode_input(
         agg_null_sig(currentkeyManager.address, chain.id), newkeyManager
     )
 
-    accessValidator.updateKeyManager(
+    aggKeyNonceConsumer.updateKeyManager(
         AGG_SIGNER_1.getSigData(callDataNoSig, currentkeyManager.address), newkeyManager
     )

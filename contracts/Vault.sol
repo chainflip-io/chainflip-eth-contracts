@@ -7,7 +7,7 @@ import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
-import "./AccessValidator.sol";
+import "./AggKeyNonceConsumer.sol";
 
 /**
  * @title    Vault contract
@@ -15,12 +15,12 @@ import "./AccessValidator.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, AccessValidator {
+contract Vault is IVault, AggKeyNonceConsumer {
     using SafeERC20 for IERC20;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager) AccessValidator(keyManager) {}
+    constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -51,7 +51,7 @@ contract Vault is IVault, AccessValidator {
     )
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -114,7 +114,7 @@ contract Vault is IVault, AccessValidator {
         nzAddr(address(token))
         nzAddr(recipient)
         nzUint(amount)
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -150,7 +150,7 @@ contract Vault is IVault, AccessValidator {
     )
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -242,7 +242,7 @@ contract Vault is IVault, AccessValidator {
         external
         override
         nzBytes32(swapID)
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -268,7 +268,7 @@ contract Vault is IVault, AccessValidator {
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -303,7 +303,7 @@ contract Vault is IVault, AccessValidator {
         override
         nzBytes32(swapID)
         nzAddr(address(token))
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -335,7 +335,7 @@ contract Vault is IVault, AccessValidator {
     )
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
