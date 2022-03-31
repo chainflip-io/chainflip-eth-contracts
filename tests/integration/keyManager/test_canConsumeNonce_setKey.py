@@ -3,30 +3,32 @@ from shared_tests import *
 from brownie import reverts, chain
 
 
-def test_canConsumeNonce_setAggKeyWithAggKey_validate(cfAW):
+def test_canConsumeKeyNonce_setAggKeyWithAggKey_validate(cfAW):
     # Should validate with current keys and revert with future keys
-    canConsumeNonce_test(cfAW, AGG_SIGNER_1)
-    canConsumeNonce_rev_test(cfAW, AGG_SIGNER_2)
+    canConsumeKeyNonce_test(cfAW, AGG_SIGNER_1)
+    canConsumeKeyNonce_rev_test(cfAW, AGG_SIGNER_2)
 
     # Should change key successfully
     setAggKeyWithAggKey_test(cfAW)
 
     # Should validate with current keys and revert with past keys
-    canConsumeNonce_rev_test(cfAW, AGG_SIGNER_1)
-    canConsumeNonce_test(cfAW, AGG_SIGNER_2)
+    canConsumeKeyNonce_rev_test(cfAW, AGG_SIGNER_1)
+    canConsumeKeyNonce_test(cfAW, AGG_SIGNER_2)
 
 
-def test_isValid_setGovKeyWithGovKey_isValid_setAggKeyWithGovKey_canConsumeNonce(cfAW):
+def test_isValid_setGovKeyWithGovKey_isValid_setAggKeyWithGovKey_canConsumeKeyNonce(
+    cfAW,
+):
     # Should validate with current keys and revert with future keys
-    canConsumeNonce_test(cfAW, AGG_SIGNER_1)
-    canConsumeNonce_rev_test(cfAW, AGG_SIGNER_2)
+    canConsumeKeyNonce_test(cfAW, AGG_SIGNER_1)
+    canConsumeKeyNonce_rev_test(cfAW, AGG_SIGNER_2)
 
     # Should change key successfully
     setGovKeyWithGovKey_test(cfAW)
 
     # Should validate with current keys and revert with past and future keys
-    canConsumeNonce_test(cfAW, AGG_SIGNER_1)
-    canConsumeNonce_rev_test(cfAW, AGG_SIGNER_2)
+    canConsumeKeyNonce_test(cfAW, AGG_SIGNER_1)
+    canConsumeKeyNonce_rev_test(cfAW, AGG_SIGNER_2)
 
     # Should change key successfully
     assert cfAW.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
@@ -51,5 +53,5 @@ def test_isValid_setGovKeyWithGovKey_isValid_setAggKeyWithGovKey_canConsumeNonce
     ]
 
     # Should validate with current keys and revert with past keys
-    canConsumeNonce_rev_test(cfAW, AGG_SIGNER_1)
-    canConsumeNonce_test(cfAW, AGG_SIGNER_2)
+    canConsumeKeyNonce_rev_test(cfAW, AGG_SIGNER_1)
+    canConsumeKeyNonce_test(cfAW, AGG_SIGNER_2)

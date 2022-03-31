@@ -9,44 +9,44 @@ from brownie.test import given, strategy
     currentAddrs=strategy("address[]", unique=False),
     newAddrs=strategy("address[]", unique=False),
 )
-def test_updateCanConsumeNonce_rev_length(a, cf, currentAddrs, newAddrs):
+def test_updateCanConsumeKeyNonce_rev_length(a, cf, currentAddrs, newAddrs):
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
 
     if len(currentAddrs) != cf.keyManager.getNumberWhitelistedAddresses():
         with reverts(REV_MSG_LENGTH):
-            updateCanConsumeNonce(cf.keyManager, currentAddrs, newAddrs)
+            updateCanConsumeKeyNonce(cf.keyManager, currentAddrs, newAddrs)
 
     # will never match the actual whitelisted addresses since addresses
     # are chosen among a, and the whitelist has newly deployed contracts
     else:
         with reverts(REV_MSG_NOT_DEWHITELISTED):
-            updateCanConsumeNonce(cf.keyManager, currentAddrs, newAddrs)
+            updateCanConsumeKeyNonce(cf.keyManager, currentAddrs, newAddrs)
 
 
 @given(
     newAddrs=strategy("address[]"),
 )
-def test_updateCanConsumeNonce_rev_duplicate(a, cf, newAddrs):
+def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, newAddrs):
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
 
     unique = len(set(newAddrs)) == len(newAddrs)
 
     if unique == False:
         with reverts(REV_MSG_DUPLICATE):
-            updateCanConsumeNonce(cf.keyManager, cf.whitelisted, newAddrs)
+            updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, newAddrs)
 
     else:
         newAddrs = newAddrs + [cf.keyManager]
-        updateCanConsumeNonce(cf.keyManager, cf.whitelisted, newAddrs)
+        updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, newAddrs)
 
         # Removed previous whitelisted addresses
         for addr in cf.whitelisted:
             if addr not in newAddrs:
-                assert cf.keyManager.canConsumeNonce(addr) == False
+                assert cf.keyManager.canConsumeKeyNonce(addr) == False
 
         # Whitelisted new addresses
         for addr in newAddrs:
-            assert cf.keyManager.canConsumeNonce(addr) == True
+            assert cf.keyManager.canConsumeKeyNonce(addr) == True
 
         assert cf.keyManager.getNumberWhitelistedAddresses() == len(newAddrs)
 
@@ -55,7 +55,7 @@ def test_updateCanConsumeNonce_rev_duplicate(a, cf, newAddrs):
     addrsList1=strategy("address[]", unique=True),
     addrsList2=strategy("address[]", unique=True),
 )
-def test_updateCanConsumeNonce_multiple(a, cf, addrsList1, addrsList2):
+def test_updateCanConsumeKeyNonce_multiple(a, cf, addrsList1, addrsList2):
     # Add the keyManager address to the whitelist so it can keep being updated
     if cf.keyManager.address not in addrsList1:
         addrsList1 += [cf.keyManager.address]
@@ -67,26 +67,26 @@ def test_updateCanConsumeNonce_multiple(a, cf, addrsList1, addrsList2):
 
     for newAddrs in listAddresses:
 
-        updateCanConsumeNonce(cf.keyManager, currentAddrs, newAddrs)
+        updateCanConsumeKeyNonce(cf.keyManager, currentAddrs, newAddrs)
 
         # Removed previous whitelisted addresses that are not whitelisted again
         for addr in currentAddrs:
             if addr not in newAddrs:
-                assert cf.keyManager.canConsumeNonce(addr) == False
+                assert cf.keyManager.canConsumeKeyNonce(addr) == False
 
         # Whitelisted new addresses
         for addr in newAddrs:
-            assert cf.keyManager.canConsumeNonce(addr) == True
+            assert cf.keyManager.canConsumeKeyNonce(addr) == True
 
         assert cf.keyManager.getNumberWhitelistedAddresses() == len(newAddrs)
         currentAddrs = newAddrs
 
 
-def test_updateCanConsumeNonce_noKeyManager(a, cf):
+def test_updateCanConsumeKeyNonce_noKeyManager(a, cf):
 
     # Using [:] to create a copy of the list (instead of reference)
     listAddresses = cf.whitelisted[:]
     listAddresses.remove(cf.keyManager)
 
     with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-        updateCanConsumeNonce(cf.keyManager, cf.whitelisted, listAddresses)
+        updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, listAddresses)

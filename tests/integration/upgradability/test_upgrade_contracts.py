@@ -31,7 +31,7 @@ def test_upgrade_keyManager(cf, KeyManager):
         KeyManager, cf.keyManager.getAggregateKey(), cf.gov
     )
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newKeyManager]
-    newKeyManager.setCanConsumeNonce(toWhitelist)
+    newKeyManager.setCanConsumeKeyNonce(toWhitelist)
 
     accessValidators = [cf.vault, cf.stakeManager, cf.flip]
     for accessValidator in accessValidators:
@@ -41,9 +41,9 @@ def test_upgrade_keyManager(cf, KeyManager):
     # Remove all whitelist
     # Reverts if keyManager is not whitelisted
     with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-        updateCanConsumeNonce(cf.keyManager, cf.whitelisted, [])
+        updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, [])
 
-    updateCanConsumeNonce(cf.keyManager, cf.whitelisted, [cf.keyManager])
+    updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, [cf.keyManager])
 
     for accessValidator in accessValidators:
         # Check that messages signed with old keyManager's address revert in the new one
@@ -110,7 +110,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth):
     # Keep old Vault whitelisted
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newVault]
-    updateCanConsumeNonce(cf.keyManager, currentWhitelist, toWhitelist)
+    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist)
 
     # Vault can now validate and fetch but it has zero balance so it can't transfer
     callDataNoSig = newVault.transfer.encode_input(
@@ -156,7 +156,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth):
 
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newVault]
     toWhitelist = [newVault, cf.stakeManager, cf.flip, cf.keyManager]
-    updateCanConsumeNonce(cf.keyManager, currentWhitelist, toWhitelist)
+    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist)
 
     # Old Vault cannot validate Signatures anymore
     callDataNoSig = cf.vault.transfer.encode_input(
@@ -202,7 +202,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
     # Keep old StakeManager whitelisted
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newStakeManager]
-    updateCanConsumeNonce(cf.keyManager, currentWhitelist, toWhitelist)
+    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist)
 
     # Last register claim before stopping state's chain claim signature registry
     nodeID = web3.toHex(1)
@@ -247,7 +247,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
         newStakeManager,
     ]
     toWhitelist = [cf.vault, newStakeManager, cf.flip, cf.keyManager]
-    updateCanConsumeNonce(cf.keyManager, currentWhitelist, toWhitelist)
+    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist)
 
     # Check that claims cannot be registered in old StakeManager
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(

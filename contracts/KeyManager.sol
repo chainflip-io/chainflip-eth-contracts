@@ -21,8 +21,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     uint256 private _lastValidateTime;
     mapping(uint256 => bool) private _isNonceUsedByAggKey;
     /// @dev    Whitelist for who can call isValidSig
-    mapping(address => bool) private _canConsumeNonce;
-    bool private _canConsumeNonceSet;
+    mapping(address => bool) private _canConsumeKeyNonce;
+    bool private _canConsumeKeyNonceSet;
     uint256 private _numberWhitelistedAddresses;
 
     constructor(Key memory _aggKey, address _govKey) validAggKey(_aggKey) {
@@ -44,19 +44,19 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *          needs to be set up successfully once, which is trivial
      * @param addrs   The addresses to whitelist
      */
-    function setCanConsumeNonce(address[] calldata addrs) external {
-        require(!_canConsumeNonceSet, "KeyManager: already set");
-        _canConsumeNonceSet = true;
+    function setCanConsumeKeyNonce(address[] calldata addrs) external {
+        require(!_canConsumeKeyNonceSet, "KeyManager: already set");
+        _canConsumeKeyNonceSet = true;
 
         for (uint256 i = 0; i < addrs.length; i++) {
-            // Avoid duplicated newAddrs. Otherwise we could brick the updateCanConsumeNonce
+            // Avoid duplicated newAddrs. Otherwise we could brick the updateCanConsumeKeyNonce
             // since it relies on the _numberWhitelistedAddresses and it has this check
-            require(_canConsumeNonce[addrs[i]] == false, "KeyManager: address already whitelisted");
-            _canConsumeNonce[addrs[i]] = true;
+            require(_canConsumeKeyNonce[addrs[i]] == false, "KeyManager: address already whitelisted");
+            _canConsumeKeyNonce[addrs[i]] = true;
         }
 
         // To make sure we never brick this contract
-        require(_canConsumeNonce[address(this)], "KeyManager: KeyManager not whitelisted");
+        require(_canConsumeKeyNonce[address(this)], "KeyManager: KeyManager not whitelisted");
 
         _numberWhitelistedAddresses = addrs.length;
     }
@@ -67,7 +67,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param currentAddrs   List of current whitelisted addresses
      * @param newAddrs   List of new addresses to whitelist
      */
-    function updateCanConsumeNonce(
+    function updateCanConsumeKeyNonce(
         SigData calldata sigData,
         address[] calldata currentAddrs,
         address[] calldata newAddrs
@@ -77,7 +77,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.updateCanConsumeNonce.selector,
+                    this.updateCanConsumeKeyNonce.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     currentAddrs,
                     newAddrs
@@ -89,19 +89,19 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
         // Remove current whitelisted addresses
         for (uint256 i = 0; i < currentAddrs.length; i++) {
-            require(_canConsumeNonce[currentAddrs[i]], "KeyManager: cannot dewhitelist");
-            _canConsumeNonce[currentAddrs[i]] = false;
+            require(_canConsumeKeyNonce[currentAddrs[i]], "KeyManager: cannot dewhitelist");
+            _canConsumeKeyNonce[currentAddrs[i]] = false;
         }
 
         //  Whitelist any number of new addresses
         for (uint256 i = 0; i < newAddrs.length; i++) {
             // Avoid duplicated newAddrs
-            require(!_canConsumeNonce[newAddrs[i]], "KeyManager: address already whitelisted");
-            _canConsumeNonce[newAddrs[i]] = true;
+            require(!_canConsumeKeyNonce[newAddrs[i]], "KeyManager: address already whitelisted");
+            _canConsumeKeyNonce[newAddrs[i]] = true;
         }
 
         // To make sure we never brick this contract
-        require(_canConsumeNonce[address(this)], "KeyManager: KeyManager not whitelisted");
+        require(_canConsumeKeyNonce[address(this)], "KeyManager: KeyManager not whitelisted");
 
         _numberWhitelistedAddresses = newAddrs.length;
     }
@@ -120,7 +120,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return          Bool used by caller to be absolutely sure that the function hasn't reverted
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) public override returns (bool) {
-        require(_canConsumeNonce[msg.sender], "KeyManager: not whitelisted");
+        require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
         Key memory key = aggKey;
         // We require the msgHash param in the sigData is equal to the contract
         // message hash (the rules coded into the contract)
@@ -236,17 +236,17 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param addr  The address to check
      * @return  Whether or not addr is whitelisted or not
      */
-    function canConsumeNonce(address addr) external view override returns (bool) {
-        return _canConsumeNonce[addr];
+    function canConsumeKeyNonce(address addr) external view override returns (bool) {
+        return _canConsumeKeyNonce[addr];
     }
 
     /**
-     * @notice  Get whether or not _canConsumeNonce has already been set, which
+     * @notice  Get whether or not _canConsumeKeyNonce has already been set, which
      *          prevents it from being set again
-     * @return  The value of _canConsumeNonceSet
+     * @return  The value of _canConsumeKeyNonceSet
      */
-    function canConsumeNonceSet() external view override returns (bool) {
-        return _canConsumeNonceSet;
+    function canConsumeKeyNonceSet() external view override returns (bool) {
+        return _canConsumeKeyNonceSet;
     }
 
     /**

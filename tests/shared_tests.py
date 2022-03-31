@@ -174,12 +174,12 @@ def setKey_rev_sig_test(cf, fcn, signer):
         fcn(sigData, AGG_SIGNER_2.getPubData())
 
 
-def canConsumeNonce_test(cf, signer):
+def canConsumeKeyNonce_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
     tx = cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
-def canConsumeNonce_rev_test(cf, signer):
+def canConsumeKeyNonce_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
     with reverts(REV_MSG_SIG):
         tx = cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
@@ -245,12 +245,12 @@ def registerClaimTest(
     assert deployedStakeManager.getMinimumStake() == minStake
 
 
-def updateCanConsumeNonce(keyManager, currentAddrs, newAddrs):
-    callDataNoSig = keyManager.updateCanConsumeNonce.encode_input(
+def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs):
+    callDataNoSig = keyManager.updateCanConsumeKeyNonce.encode_input(
         agg_null_sig(keyManager.address, chain.id), currentAddrs, newAddrs
     )
 
-    keyManager.updateCanConsumeNonce(
+    keyManager.updateCanConsumeKeyNonce(
         AGG_SIGNER_1.getSigData(callDataNoSig, keyManager.address),
         currentAddrs,
         newAddrs,

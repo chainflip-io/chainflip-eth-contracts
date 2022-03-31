@@ -83,11 +83,11 @@ REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
 REV_MSG_NONCETIMESGADDR = "Shared: nonceTimesGAddr is empty"
 REV_MSG_NONCETIMESGADDR_EMPTY = "No zero inputs allowed"
 
-# setCanConsumeNonce
+# setCanConsumeKeyNonce
 REV_MSG_SET = "KeyManager: already set"
 REV_MSG_DUPLICATE = "KeyManager: address already whitelisted"
 
-# updateCanConsumeNonce
+# updateCanConsumeKeyNonce
 REV_MSG_LENGTH = "KeyManager: array incorrect length"
 REV_MSG_NOT_DEWHITELISTED = "KeyManager: cannot dewhitelist"
 REV_MSG_KEYMANAGER_WHITELIST = "KeyManager: KeyManager not whitelisted"

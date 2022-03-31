@@ -27,9 +27,9 @@ interface IKeyManager is IShared {
 
     function setGovKeyWithGovKey(address newKey) external;
 
-    function canConsumeNonce(address addr) external view returns (bool);
+    function canConsumeKeyNonce(address addr) external view returns (bool);
 
-    function canConsumeNonceSet() external view returns (bool);
+    function canConsumeKeyNonceSet() external view returns (bool);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
