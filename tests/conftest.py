@@ -88,12 +88,6 @@ def cfAW(a, cfDeployAllWhitelist):
     return cf
 
 
-# # Set the whitelist for isValidSig
-# @pytest.fixture(scope="module")
-# def whitelist(a, cf):
-#     cf.keyManager.setCanConsumeKeyNonce([cf.vault, cf.stakeManager])
-
-
 # Deploys SchnorrSECP256K1Test to enable testing of SchnorrSECP256K1
 @pytest.fixture(scope="module")
 def schnorrTest(cf, SchnorrSECP256K1Test):
