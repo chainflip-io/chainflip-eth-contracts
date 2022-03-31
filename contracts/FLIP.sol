@@ -69,7 +69,7 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
             )
         )
     {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "FLIP: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
         uint256 oldSupply = totalSupply();
         if (newTotalSupply < oldSupply) {
