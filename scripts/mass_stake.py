@@ -1,5 +1,5 @@
 from os import environ
-from brownie import accounts, StakeManager, FLIP
+from brownie import accounts, StakeManager, FLIP, network
 
 FLIP_ADDRESS = environ['FLIP_ADDRESS']
 STAKE_MANAGER_ADDRESS = environ['STAKE_MANAGER_ADDRESS']
@@ -9,6 +9,9 @@ AUTONOMY_SEED = environ['SEED']
 NODE_ID_FILE = environ['NODE_ID_FILE']
 
 DEPLOYER_ACCOUNT_INDEX = int(environ.get('DEPLOYER_ACCOUNT_INDEX') or 0)
+
+# Set the priority fee for all transactions
+network.priority_fee("1 gwei")
 
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
