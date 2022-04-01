@@ -90,16 +90,3 @@ def test_updateCanConsumeKeyNonce_rev_noKeyManager(a, cf):
 
     with reverts(REV_MSG_KEYMANAGER_WHITELIST):
         updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, listAddresses)
-
-
-def test_updateCanConsumeKeyNonce_rev_sig(a, cf):
-
-    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), [], [cf.ALICE, cf.BOB]
-    )
-    with reverts(REV_MSG_MSGHASH):
-        cf.keyManager.updateCanConsumeKeyNonce(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            [cf.ALICE, cf.BOB],
-            [cf.ALICE, cf.BOB],
-        )

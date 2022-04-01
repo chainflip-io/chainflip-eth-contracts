@@ -58,8 +58,6 @@ def gov_null_sig(kmAddr, chainId):
     return (kmAddr, chainId, 0, 0, nonces[GOV], ZERO_ADDR)
 
 
-REV_MSG_DELAY = "KeyManager: not enough delay"
-
 # Keys for use in tests
 
 # Original keys in the constructor
@@ -93,7 +91,8 @@ REV_MSG_SIG = "KeyManager: Sig invalid"
 REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
 REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
 REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
-# isGovernor
+# modifiers
+REV_MSG_DELAY = "KeyManager: not enough delay"
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 
 
