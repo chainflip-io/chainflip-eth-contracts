@@ -6,8 +6,8 @@ ZERO_ADDR_PACKED = "0000000000000000000000000000000000000000"
 ZERO_ADDR = "0x" + ZERO_ADDR_PACKED
 ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
-E_18 = 10 ** 18
-TEST_AMNT = 10 ** 17
+E_18 = 10**18
+TEST_AMNT = 10**17
 ONE_ETH = E_18
 JUNK_INT = 42069  # quantafire
 JUNK_HEX = web3.toHex(JUNK_INT)
@@ -17,7 +17,7 @@ AGG = "Agg"
 GOV = "Gov"
 KEYID_TO_NUM = {AGG: 0, GOV: 1}
 NUM_TO_KEYID = [AGG, GOV]
-INIT_TOKEN_SUPPLY = int(10 ** 8 * E_18)
+INIT_TOKEN_SUPPLY = int(10**8 * E_18)
 INIT_ETH_BAL = 10000 * E_18
 SECS_PER_BLOCK = 13
 
@@ -98,6 +98,7 @@ REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
 REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
 REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
+REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
 
 # SchnorrSECP256K1
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"
@@ -106,7 +107,8 @@ REV_MSG_INPUTS_0 = "No zero inputs allowed"
 
 
 # -----FLIP-----
-INIT_SUPPLY = (9 * 10 ** 7) * E_18
+INIT_SUPPLY = (9 * 10**7) * E_18
+REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "FLIP: old FLIP supply update"
 
 REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
 REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
@@ -116,8 +118,8 @@ REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
 NUM_GENESIS_VALIDATORS = 5
 GENESIS_STAKE = 50000 * E_18
 STAKEMANAGER_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
-NEW_TOTAL_SUPPLY_MINT = (10 * 10 ** 7) * E_18
-NEW_TOTAL_SUPPLY_BURN = (8 * 10 ** 7) * E_18
+NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
+NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
 MIN_STAKE = 40000 * E_18
 MAX_TEST_STAKE = INIT_SUPPLY / 9
 # 13292
@@ -129,7 +131,6 @@ REV_MSG_SM_ARR_LEN = "Staking: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "Staking: early, late, or execd"
-REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "FLIP: old FLIP supply update"
 REV_MSG_STAKEMAN_GOVERNOR = "Staking: not governor"
 REV_MSG_STAKEMAN_SUSPENDED = "Staking: suspended"
 REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: Not suspended"

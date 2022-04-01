@@ -27,10 +27,6 @@ def test_allBatch(
     sender,
 ):
 
-    # Allowing this breaks the refund test
-    if sender in tranRecipients:
-        return
-
     # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([fetchAmounts, fetchSwapIDs])
     tokensList = [ETH_ADDR, token, token2]
@@ -196,7 +192,7 @@ def test_allBatch_rev_fetch_array_length(
     sender=strategy("address"),
     randK=strategy("uint", min_value=1, max_value=100),
 )
-def test_allBatch_rev_transfer_array_length(
+def test_allBatch_rev_transfer_tokenArray_length(
     cf,
     token,
     token2,
@@ -210,7 +206,7 @@ def test_allBatch_rev_transfer_array_length(
 ):
     # Make sure the lengths are always different somewhere
     tokensList = [ETH_ADDR, token, token2]
-    fetchTokens = choices(tokensList, k=len(fetchSwapIDs) + randK)
+    fetchTokens = choices(tokensList, k=len(fetchSwapIDs))
 
     tranMinLen = trimToShortest([tranRecipients, tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen + randK)
@@ -232,6 +228,53 @@ def test_allBatch_rev_transfer_array_length(
             tranTokens,
             tranRecipients,
             tranAmounts,
+            {"from": sender},
+        )
+
+
+@given(
+    fetchSwapIDs=strategy("bytes32[]"),
+    tranRecipients=strategy("address[]", unique=True),
+    tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
+    sender=strategy("address"),
+    randK=strategy("uint", min_value=1, max_value=100),
+)
+def test_allBatch_rev_transfer_amountsArray_length(
+    cf,
+    token,
+    token2,
+    DepositToken,
+    DepositEth,
+    fetchSwapIDs,
+    tranRecipients,
+    tranAmounts,
+    sender,
+    randK,
+):
+    # Make sure the lengths are always different somewhere
+    tokensList = [ETH_ADDR, token, token2]
+    fetchTokens = choices(tokensList, k=len(fetchSwapIDs))
+
+    tranTokens = choices(tokensList, k=len(tranRecipients))
+    tranAmountsModif = choices(tranAmounts, k=len(tranRecipients) + randK)
+
+    callDataNoSig = cf.vault.allBatch.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id),
+        fetchSwapIDs,
+        fetchTokens,
+        tranTokens,
+        tranRecipients,
+        tranAmountsModif,
+    )
+
+    with reverts(REV_MSG_V_ARR_LEN):
+        cf.vault.allBatch(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            fetchSwapIDs,
+            fetchTokens,
+            tranTokens,
+            tranRecipients,
+            tranAmountsModif,
             {"from": sender},
         )
 

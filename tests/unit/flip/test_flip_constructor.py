@@ -51,7 +51,7 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
         "uint", min_value=NUM_GENESIS_VALIDATORS, max_value=NUM_GENESIS_VALIDATORS * 10
     ),
     genesisStake=strategy(
-        "uint", min_value=GENESIS_STAKE, max_value=GENESIS_STAKE * 10 ** 4
+        "uint", min_value=GENESIS_STAKE, max_value=GENESIS_STAKE * 10**4
     ),
 )
 def test_flip_constructor_minting(

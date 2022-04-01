@@ -27,7 +27,7 @@ def test_vault(
     MAX_ETH_SEND = E_18
     # The max amount of tokens for a 'user' to send to a deposit address, so that
     # the same user can send many more times without running out
-    MAX_TOKEN_SEND = 10 ** 5 * E_18
+    MAX_TOKEN_SEND = 10**5 * E_18
     # The max amount of tokens for a 'user' to send to a deposit address, so that
     # the same user can send many more times without running out
     INIT_TOKEN_AMNT = MAX_TOKEN_SEND * 100
