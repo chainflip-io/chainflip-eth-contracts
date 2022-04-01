@@ -28,10 +28,11 @@ MONTH = 30 * DAY
 YEAR = 365 * DAY
 QUARTER_YEAR = int(YEAR / 4)
 
+# -----Shared-----
 REV_MSG_NZ_UINT = "Shared: uint input is empty"
 REV_MSG_NZ_ADDR = "Shared: address input is empty"
 REV_MSG_NZ_BYTES32 = "Shared: bytes32 input is empty"
-
+REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
 
 # -----KeyManager-----
 # 2 days
@@ -78,20 +79,13 @@ GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV, nonces)
 NULL_KEY = (0, 0, ZERO_ADDR)
 BAD_AGG_KEY = [0xEE2E4DC8797847D69A9E59C1B051E3EF2ABD7A60AA7EDC3100A69666DF9AC525, 0x01]
 
-# nzKey
-REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
-REV_MSG_NONCETIMESGADDR = "Shared: nonceTimesGAddr is empty"
-REV_MSG_NONCETIMESGADDR_EMPTY = "No zero inputs allowed"
-
 # setCanConsumeKeyNonce
 REV_MSG_SET = "KeyManager: already set"
 REV_MSG_DUPLICATE = "KeyManager: address already whitelisted"
-
 # updateCanConsumeKeyNonce
 REV_MSG_LENGTH = "KeyManager: array incorrect length"
 REV_MSG_NOT_DEWHITELISTED = "KeyManager: cannot dewhitelist"
 REV_MSG_KEYMANAGER_WHITELIST = "KeyManager: KeyManager not whitelisted"
-
 # consumeKeyNonce
 REV_MSG_WHITELIST = "KeyManager: not whitelisted"
 REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
@@ -99,8 +93,11 @@ REV_MSG_SIG = "KeyManager: Sig invalid"
 REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
 REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
 REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
+# isGovernor
+REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 
-# SchnorrSECP256K1
+
+# -----SchnorrSECP256K1-----
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"
 REV_MSG_SIG_LESS_Q = "Sig must be reduced modulo Q"
 REV_MSG_INPUTS_0 = "No zero inputs allowed"
@@ -135,18 +132,15 @@ REV_MSG_STAKEMAN_GOVERNOR = "Staking: not governor"
 REV_MSG_STAKEMAN_SUSPENDED = "Staking: suspended"
 REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: Not suspended"
 REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
-# -----KeyManager-----
-REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
+
 
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
 
 # -----Vesting-----
-REVOCABLE = True
-NON_REVOCABLE = False
-STAKABLE = True
-NON_STAKABLE = False
+REVOCABLE = STAKABLE = True
+NON_REVOCABLE = NON_STAKABLE = False
 REV_MSG_NO_TOKENS = "Vesting: no tokens are due"
 REV_MSG_NOT_REVOKER = "Vesting: not the revoker"
 REV_MSG_CANNOT_REVOKE = "Vesting: cannot revoke"

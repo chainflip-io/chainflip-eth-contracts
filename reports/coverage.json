@@ -94,7 +94,7 @@
         ],
         "KeyManager.setCanConsumeKeyNonce": [
           3,
-          2,
+          3,
           3
         ],
         "KeyManager.setGovKeyWithGovKey": [
@@ -151,7 +151,7 @@
       "totals": {
         "branches": [
           19,
-          16,
+          17,
           25
         ],
         "statements": [
@@ -475,7 +475,7 @@
           [
             2578,
             2612,
-            "yellow",
+            "green",
             ""
           ],
           [
