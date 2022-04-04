@@ -10,27 +10,22 @@ def test_setAggKeyWithGovKey(cfAW):
     setAggKeyWithGovKey_test(cfAW)
 
 
-# def test_setAggKeyWithGovKey_rev_pubKeyX(cfAW):
-#     chain.sleep(AGG_KEY_TIMEOUT)
-#     setKey_rev_pubKeyX_test(cfAW, cfAW.keyManager.setAggKeyWithGovKey, GOV_SIGNER_1)
-
-# def test_setAggKeyWithGovKey_rev_nonceTimesGAddr(cfAW):
-#     chain.sleep(AGG_KEY_TIMEOUT)
-#     setKey_rev_nonceTimesGAddr_test(cfAW, cfAW.keyManager.setAggKeyWithGovKey, GOV_SIGNER_1)
-
-# def test_setAggKeyWithGovKey_rev_msgHash(cfAW):
-#     chain.sleep(AGG_KEY_TIMEOUT)
-#     setKey_rev_msgHash_test(cfAW, cfAW.keyManager.setAggKeyWithGovKey, GOV_SIGNER_1)
+def test_setAggKeyWithGovKey_rev_time(cf):
+    with reverts(REV_MSG_DELAY):
+        cf.keyManager.setAggKeyWithGovKey(
+            cf.keyManager.getAggregateKey(), {"from": cf.GOVERNOR}
+        )
 
 
-# def test_setAggKeyWithGovKey_rev_sig(cfAW):
-#     chain.sleep(AGG_KEY_TIMEOUT)
-#     setKey_rev_sig_test(cfAW, cfAW.keyManager.setAggKeyWithGovKey, GOV_SIGNER_1)
+def test_setAggKeyWithGovKey_rev_governor(cf):
+    chain.sleep(AGG_KEY_TIMEOUT)
+    with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+        cf.keyManager.setAggKeyWithGovKey(
+            cf.keyManager.getAggregateKey(), {"from": cf.ALICE}
+        )
 
 
-# @given(delay=strategy('uint256', max_value=AGG_KEY_TIMEOUT-1))
-# def test_setAggKeyWithGovKey_rev_delay(cfAW, delay):
-#     chain.sleep(delay)
-#     callDataNoSig = cfAW.keyManager.setAggKeyWithGovKey.encode_input(gov_null_sig(cfAW.keyManager.address, chain.id), AGG_SIGNER_2.getPubData())
-#     with reverts(REV_MSG_DELAY):
-#         cfAW.keyManager.setAggKeyWithGovKey(GOV_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address), AGG_SIGNER_2.getPubData())
+def test_setAggKeyWithGovKey_rev_nz(cf):
+    chain.sleep(AGG_KEY_TIMEOUT)
+    with reverts(REV_MSG_PUBKEYX):
+        cf.keyManager.setAggKeyWithGovKey(NULL_KEY, {"from": cf.GOVERNOR})
