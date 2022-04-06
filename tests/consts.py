@@ -98,6 +98,7 @@ REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
 REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
 REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
+REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
 
 # SchnorrSECP256K1
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"

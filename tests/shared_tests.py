@@ -245,6 +245,10 @@ def registerClaimTest(
     assert deployedStakeManager.getMinimumStake() == minStake
 
 
+# Update Whitelisted addresses in the KeyManager - addreses that can consume Nonces
+# It requires a list of the current whitelisted addresses and a list of the new ones to whitelist.
+# Current whitelist must contain all the whitelisted addresses
+# New whitelist must contain the keyManager itself.
 def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs):
     callDataNoSig = keyManager.updateCanConsumeKeyNonce.encode_input(
         agg_null_sig(keyManager.address, chain.id), currentAddrs, newAddrs
@@ -257,11 +261,22 @@ def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs):
     )
 
 
-def updateKeyManager(aggKeyNonceConsumer, currentkeyManager, newkeyManager):
+# Updates the aggKeyNonceConsumer's reference to the KeyManager. TO be used if the keyManager
+# contract is redeployed
+def updateKeyManager(aggKeyNonceConsumer, currentkeyManagerAddress, newkeyManager):
     callDataNoSig = aggKeyNonceConsumer.updateKeyManager.encode_input(
-        agg_null_sig(currentkeyManager.address, chain.id), newkeyManager
+        agg_null_sig(currentkeyManagerAddress, chain.id), newkeyManager
     )
 
     aggKeyNonceConsumer.updateKeyManager(
-        AGG_SIGNER_1.getSigData(callDataNoSig, currentkeyManager.address), newkeyManager
+        AGG_SIGNER_1.getSigData(callDataNoSig, currentkeyManagerAddress), newkeyManager
+    )
+
+
+# Check that Key Agg Nonce consumer can consume nonce
+def checkNonceConsumerCanConsume(aggKeyNonceConsumer):
+    updateKeyManager(
+        aggKeyNonceConsumer,
+        aggKeyNonceConsumer.getKeyManager(),
+        aggKeyNonceConsumer.getKeyManager(),
     )
