@@ -95,7 +95,6 @@ REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
 REV_MSG_DELAY = "KeyManager: not enough delay"
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 
-
 # -----SchnorrSECP256K1-----
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"
 REV_MSG_SIG_LESS_Q = "Sig must be reduced modulo Q"

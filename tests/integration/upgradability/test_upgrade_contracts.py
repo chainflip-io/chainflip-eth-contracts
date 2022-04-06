@@ -38,10 +38,10 @@ def test_upgrade_keyManager(cf, KeyManager):
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newKeyManager]
     newKeyManager.setCanConsumeKeyNonce(toWhitelist)
 
-    accessValidators = [cf.vault, cf.stakeManager, cf.flip]
-    for accessValidator in accessValidators:
-        updateKeyManager(accessValidator, cf.keyManager, newKeyManager)
-        assert accessValidator.getKeyManager() == newKeyManager
+    aggKeyNonceConsumers = [cf.vault, cf.stakeManager, cf.flip]
+    for aggKeyNonceConsumer in aggKeyNonceConsumers:
+        updateKeyManager(aggKeyNonceConsumer, cf.keyManager.address, newKeyManager)
+        assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
     # Remove all whitelist
     # Reverts if keyManager is not whitelisted
@@ -50,12 +50,12 @@ def test_upgrade_keyManager(cf, KeyManager):
 
     updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, [cf.keyManager])
 
-    for accessValidator in accessValidators:
+    for aggKeyNonceConsumer in aggKeyNonceConsumers:
         # Check that messages signed with old keyManager's address revert in the new one
         with reverts(REV_MSG_WRONG_KEYMANADDR):
-            updateKeyManager(accessValidator, cf.keyManager, NON_ZERO_ADDR)
+            updateKeyManager(aggKeyNonceConsumer, cf.keyManager.address, NON_ZERO_ADDR)
         # Try one validation per contract to check that they can validate
-        updateKeyManager(accessValidator, newKeyManager, newKeyManager)
+        checkNonceConsumerCanConsume(aggKeyNonceConsumer)
 
     # Try replay attack using transaction called on the previous keyManager
     # nonce is available on the new keyManager so it relies on signing over the keyManager address
@@ -73,13 +73,23 @@ def test_upgrade_keyManager(cf, KeyManager):
     callDataNoSig = cf.vault.transfer.encode_input(
         agg_null_sig(newKeyManager, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT
     )
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, newKeyManager)
     cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, newKeyManager),
+        sigData,
         ETH_ADDR,
         cf.ALICE,
         TEST_AMNT,
     )
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == True
+
+    # Try another replay attack
+    with reverts(REV_MSG_KEYMANAGER_NONCE):
+        cf.vault.transfer(
+            sigData,
+            ETH_ADDR,
+            cf.ALICE,
+            TEST_AMNT,
+        )
 
 
 ## Update process Vault:
@@ -210,7 +220,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
     updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist)
 
     # Last register claim before stopping state's chain claim signature registry
-    nodeID = web3.toHex(1)
+    nodeID = JUNK_HEX
     stakeAmount = MIN_STAKE * 3
     expiryTime = getChainTime() + (expiryTimeDiff)
     claimAmount = 123 * E_18
@@ -221,16 +231,19 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
     chain.sleep(CLAIM_DELAY)
 
     # Execute pending claim
+    initialFlipBalance = cf.flip.balanceOf(cf.DENICE)
     cf.stakeManager.executeClaim(nodeID)
+    finalFlipBalance = cf.flip.balanceOf(cf.DENICE)
+    assert finalFlipBalance - initialFlipBalance == claimAmount
     assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
 
     chain.sleep(7 * DAY - CLAIM_DELAY)
 
     # Generate claim to move all FLIP to new stakeManager
-    totalFLIPstaked = cf.flip.balanceOf(cf.stakeManager)
+    totalFlipstaked = cf.flip.balanceOf(cf.stakeManager)
     stakeAmount = MIN_STAKE
     expiryTime = getChainTime() + (CLAIM_DELAY * 2)
-    claimAmount = totalFLIPstaked
+    claimAmount = totalFlipstaked
     registerClaimTest(
         cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, newStakeManager, expiryTime
     )
@@ -238,9 +251,9 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
     chain.sleep(CLAIM_DELAY)
 
     assert cf.flip.balanceOf(newStakeManager) == 0
-    assert cf.flip.balanceOf(cf.stakeManager) == totalFLIPstaked
+    assert cf.flip.balanceOf(cf.stakeManager) == totalFlipstaked
     cf.stakeManager.executeClaim(nodeID)
-    assert cf.flip.balanceOf(newStakeManager) == totalFLIPstaked
+    assert cf.flip.balanceOf(newStakeManager) == totalFlipstaked
     assert cf.flip.balanceOf(cf.stakeManager) == 0
 
     # Dewhitelist old StakeManager
