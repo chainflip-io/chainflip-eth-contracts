@@ -935,7 +935,7 @@ def test_all(
             samples = ([self.keyIDToCurKeys[keyID]] * 100) + self.allKeys
             return choice(samples)
 
-        # Checks if isUpdatedValidSig returns the correct value when called with a random sender,
+        # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
         def rule_isValidSig(self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data):
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
@@ -953,7 +953,7 @@ def test_all(
                     st_keyID_num,
                     st_msg_data,
                 )
-                tx = self.km.isUpdatedValidSig(
+                tx = self.km.consumeKeyNonce(
                     sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                 )
                 self.lastValidateTime = tx.timestamp
@@ -966,7 +966,7 @@ def test_all(
                         st_keyID_num,
                         st_msg_data,
                     )
-                    self.km.isUpdatedValidSig(
+                    self.km.consumeKeyNonce(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                     )
 
@@ -1237,10 +1237,8 @@ def test_all(
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             elif self.flipBals[self.sm] < claim[0]:
-                print("        REV_MSG_INTEGER_OVERFLOW rule_executeClaim", st_nodeID)
-                print(self.flipBals[self.sm])
-                print(self.f.balanceOf(self.sm))
-                with reverts(REV_MSG_INTEGER_OVERFLOW):
+                print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
@@ -1299,9 +1297,7 @@ def test_all(
 
         # Check the intentionally changeable variables after every tx
         def invariant_state_vars(self):
-            assert (
-                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
-            )
+            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             assert self.sm.getMinimumStake() == self.minStake
             assert self.km.getLastValidateTime() == self.lastValidateTime
             for nodeID, claim in self.pendingClaims.items():

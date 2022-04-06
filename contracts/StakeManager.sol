@@ -1,12 +1,12 @@
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
-import "./abstract/Shared.sol";
 import "./FLIP.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./AggKeyNonceConsumer.sol";
 
 /**
  * @title    StakeManager contract
@@ -21,32 +21,23 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
-    /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private immutable _keyManager;
-    /// @dev    The FLIP token
+contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
+    /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
-    FLIP private immutable _FLIP;
-    /// @dev    The last time that the State Chain updated the totalSupply
-    uint256 private _lastSupplyUpdateBlockNum = 0; // initialise to never updated
+    FLIP private _FLIP;
+
     /// @dev    Whether execution of claims is suspended. Used in emergencies.
     bool public suspended = false;
 
-    /**
-     * @dev     This tracks the amount of FLIP that should be in this contract currently. It's
-     *          equal to the total staked - total claimed + total minted (above initial
-     *          supply). If there's some bug that drains FLIP from this contract that
-     *          isn't part of `claim`, then `noFish` should protect against it. Note that
-     *          if someone is slashed, _totalStake will not be reduced.
-     */
-    uint256 private _totalStake;
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     uint256 private _minStake;
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(bytes32 => Claim) private _pendingClaims;
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
+    /// @dev   Deployer address that can call setFlip
+    address private immutable deployer;
 
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
@@ -58,22 +49,9 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     //     uint48 expiryTime;
     // }
 
-    constructor(
-        IKeyManager keyManager,
-        uint256 minStake,
-        uint256 flipTotalSupply,
-        uint256 numGenesisValidators,
-        uint256 genesisStake
-    ) {
-        _keyManager = keyManager;
+    constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
         _minStake = minStake;
-
-        uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
-        _totalStake = genesisValidatorFlip;
-        FLIP flip = new FLIP("Chainflip", "FLIP", address(this), flipTotalSupply);
-
-        _FLIP = flip;
-        flip.transfer(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        deployer = msg.sender;
     }
 
     //////////////////////////////////////////////////////////////
@@ -81,6 +59,19 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     //                  State-changing functions                //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
+     *          because FLIP contract requires this contract's address on deployment for minting.
+     *          First this contract is deployed, then the FLIP contract and finally setFLIP
+     *          should be called. OnlyDeployer modifer for added security since tokens will be
+     *          minted to this contract before calling setFLIP.
+     * @param flip FLIP token address
+     */
+    function setFlip(FLIP flip) external onlyDeployer nzAddr(address(flip)) {
+        require(address(_FLIP) == address(0), "Staking: Flip address already set");
+        _FLIP = flip;
+    }
 
     /**
      * @notice          Stake some FLIP and attribute it to a nodeID
@@ -94,20 +85,10 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
         bytes32 nodeID,
         uint256 amount,
         address returnAddr
-    ) external override nzBytes32(nodeID) nzAddr(returnAddr) noFish {
+    ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
         require(amount >= _minStake, "Staking: stake too small");
-
-        // Store it in memory to save gas
-        FLIP flip = _FLIP;
-
-        // Ensure FLIP is transferred and update _totalStake. Technically this `require` shouldn't
-        // be necessary, but since this is mission critical, it's worth being paranoid
-        uint256 balBefore = flip.balanceOf(address(this));
         // Assumption of set token allowance by the user
         require(_FLIP.transferFrom(msg.sender, address(this), amount));
-        require(flip.balanceOf(address(this)) == balBefore + amount, "Staking: token transfer failed");
-
-        _totalStake += amount;
         emit Staked(nodeID, amount, msg.sender, returnAddr);
     }
 
@@ -136,8 +117,7 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
-        noFish
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -175,7 +155,7 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(bytes32 nodeID) external override noFish {
+    function executeClaim(bytes32 nodeID) external override {
         require(!suspended, "Staking: suspended");
         Claim memory claim = _pendingClaims[nodeID];
         require(
@@ -185,7 +165,6 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
 
         // Housekeeping
         delete _pendingClaims[nodeID];
-        _totalStake -= claim.amount;
         emit ClaimExecuted(nodeID, claim.amount);
 
         // Send the tokens
@@ -193,55 +172,11 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     }
 
     /**
-     * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints and burns as appropriate
-     * @param sigData               signature over the abi-encoded function params
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber
-    )
-        external
-        override
-        nzUint(newTotalSupply)
-        noFish
-        updatedValidSig(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateFlipSupply.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newTotalSupply,
-                    stateChainBlockNumber
-                )
-            )
-        )
-    {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
-        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
-        FLIP flip = _FLIP;
-        uint256 oldSupply = flip.totalSupply();
-        if (newTotalSupply < oldSupply) {
-            uint256 amount = oldSupply - newTotalSupply;
-            flip.burn(amount);
-            _totalStake -= amount;
-        } else if (newTotalSupply > oldSupply) {
-            uint256 amount = newTotalSupply - oldSupply;
-            flip.mint(address(this), amount);
-            _totalStake += amount;
-        }
-        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
-    }
-
-    /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
      */
-    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) noFish isGovernor {
+    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) isGovernor {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
     }
@@ -269,7 +204,7 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
      */
     function govWithdraw() external override isGovernor {
         require(suspended, "Staking: Not suspended");
-        address to = _keyManager.getGovernanceKey();
+        address to = _getKeyManager().getGovernanceKey();
         uint256 amount = _FLIP.balanceOf(address(this));
         require(_FLIP.transfer(to, amount));
         emit GovernanceWithdrawal(to, amount);
@@ -287,27 +222,11 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Get the KeyManager address/interface that's used to validate sigs
-     * @return  The KeyManager (IKeyManager)
-     */
-    function getKeyManager() external view override returns (IKeyManager) {
-        return _keyManager;
-    }
-
-    /**
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
     function getFLIP() external view override returns (IFLIP) {
         return IFLIP(address(_FLIP));
-    }
-
-    /**
-     * @notice  Get the last state chain block number of the last supply update
-     * @return  The state chain block number of the last supply update
-     */
-    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
-        return _lastSupplyUpdateBlockNum;
     }
 
     /**
@@ -335,26 +254,15 @@ contract StakeManager is Shared, IStakeManager, ReentrancyGuard {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Call isUpdatedValidSig in _keyManager
-    modifier updatedValidSig(SigData calldata sigData, bytes32 contractMsgHash) {
-        // Disable check for reason-string because it should not trigger. The function
-        // inside should either revert or return true, never false. Require just seems healthy
-        // solhint-disable-next-line reason-string
-        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
-        _;
-    }
-
     /// @notice Ensure that the caller is the KeyManager's governor address.
     modifier isGovernor() {
-        require(msg.sender == _keyManager.getGovernanceKey(), "Staking: not governor");
+        require(msg.sender == _getKeyManager().getGovernanceKey(), "Staking: not governor");
         _;
     }
 
-    /// @notice Ensure that FLIP can only be withdrawn via `claim`
-    ///         and not any other method
-    modifier noFish() {
+    /// @notice Ensure that the caller is the deployer address.
+    modifier onlyDeployer() {
+        require(msg.sender == deployer, "Staking: not deployer");
         _;
-        // >= because someone could send some tokens to this contract and disable it if it was ==
-        require(_FLIP.balanceOf(address(this)) >= _totalStake, "Staking: something smells fishy");
     }
 }

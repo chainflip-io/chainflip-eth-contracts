@@ -19,7 +19,7 @@ interface IKeyManager is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function isUpdatedValidSig(SigData memory sigData, bytes32 contractMsgHash) external returns (bool);
+    function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external returns (bool);
 
     function setAggKeyWithAggKey(SigData memory sigData, Key memory newKey) external;
 
@@ -27,9 +27,9 @@ interface IKeyManager is IShared {
 
     function setGovKeyWithGovKey(address newKey) external;
 
-    function canValidateSig(address addr) external view returns (bool);
+    function canConsumeKeyNonce(address addr) external view returns (bool);
 
-    function canValidateSigSet() external view returns (bool);
+    function canConsumeKeyNonceSet() external view returns (bool);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -42,6 +42,8 @@ interface IKeyManager is IShared {
     function getGovernanceKey() external view returns (address);
 
     function getLastValidateTime() external view returns (uint256);
+
+    function getNumberWhitelistedAddresses() external view returns (uint256);
 
     function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
 }

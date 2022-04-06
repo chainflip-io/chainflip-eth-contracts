@@ -1,14 +1,13 @@
 pragma solidity ^0.8.0;
 
-import "./IKeyManager.sol";
 import "./IFLIP.sol";
-import "./IShared.sol";
+import "./IAggKeyNonceConsumer.sol";
 
 /**
  * @title    StakeManager interface
  * @author   Quantaf1re (James Key)
  */
-interface IStakeManager is IShared {
+interface IStakeManager is IAggKeyNonceConsumer {
     event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
@@ -18,7 +17,6 @@ interface IStakeManager is IShared {
         uint48 expiryTime
     );
     event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
-    event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
     event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
     event GovernanceWithdrawal(address to, uint256 amount);
 
@@ -79,19 +77,6 @@ interface IStakeManager is IShared {
     function executeClaim(bytes32 nodeID) external;
 
     /**
-     * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints new and burns as appropriate (to/from the StakeManager)
-     * @param sigData               signature over the abi-encoded function params
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber
-    ) external;
-
-    /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
@@ -123,22 +108,10 @@ interface IStakeManager is IShared {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Get the KeyManager address/interface that's used to validate sigs
-     * @return  The KeyManager (IKeyManager)
-     */
-    function getKeyManager() external view returns (IKeyManager);
-
-    /**
      * @notice  Get the FLIP token address
      * @return  The address of FLIP
      */
     function getFLIP() external view returns (IFLIP);
-
-    /**
-     * @notice  Get the last state chain block number that the supply was updated at
-     * @return  The state chain block number of the last update
-     */
-    function getLastSupplyUpdateBlockNumber() external view returns (uint256);
 
     /**
      * @notice  Get the minimum amount of stake that's required for a bid

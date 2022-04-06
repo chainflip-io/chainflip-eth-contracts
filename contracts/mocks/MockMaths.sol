@@ -12,4 +12,13 @@ contract MockMaths {
         uint256 cliffAmount = total / 5;
         return cliffAmount + ((total - cliffAmount) * (time - cliff)) / (end - cliff);
     }
+
+    function calculateFlipGenesis(
+        uint256 flipTotalSupply,
+        uint256 numGenesisValidators,
+        uint256 genesisStake
+    ) external pure returns (uint256 genesisValidatorFlip, uint256 remainder) {
+        genesisValidatorFlip = numGenesisValidators * genesisStake;
+        remainder = flipTotalSupply - genesisValidatorFlip;
+    }
 }

@@ -7,6 +7,7 @@ import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
+import "./AggKeyNonceConsumer.sol";
 
 /**
  * @title    Vault contract
@@ -14,17 +15,12 @@ import "./DepositToken.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, Shared {
+contract Vault is IVault, AggKeyNonceConsumer {
     using SafeERC20 for IERC20;
-
-    /// @dev    The KeyManager used to checks sigs used in functions here
-    IKeyManager private immutable _keyManager;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager) {
-        _keyManager = keyManager;
-    }
+    constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -55,7 +51,7 @@ contract Vault is IVault, Shared {
     )
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -118,7 +114,7 @@ contract Vault is IVault, Shared {
         nzAddr(address(token))
         nzAddr(recipient)
         nzUint(amount)
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -154,7 +150,7 @@ contract Vault is IVault, Shared {
     )
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -246,7 +242,7 @@ contract Vault is IVault, Shared {
         external
         override
         nzBytes32(swapID)
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -272,7 +268,7 @@ contract Vault is IVault, Shared {
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -307,7 +303,7 @@ contract Vault is IVault, Shared {
         override
         nzBytes32(swapID)
         nzAddr(address(token))
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -339,7 +335,7 @@ contract Vault is IVault, Shared {
     )
         external
         override
-        updatedValidSig(
+        consumerKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -356,32 +352,6 @@ contract Vault is IVault, Shared {
         for (uint256 i; i < swapIDs.length; i++) {
             new DepositToken{salt: swapIDs[i]}(IERC20Lite(address(tokens[i])));
         }
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Getters                         //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the KeyManager address/interface that's used to validate sigs
-     * @return  The KeyManager (IKeyManager)
-     */
-    function getKeyManager() external view override returns (IKeyManager) {
-        return _keyManager;
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Modifiers                       //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev    Calls isUpdatedValidSig in _keyManager
-    modifier updatedValidSig(SigData calldata sigData, bytes32 contractMsgHash) {
-        require(_keyManager.isUpdatedValidSig(sigData, contractMsgHash));
-        _;
     }
 
     //////////////////////////////////////////////////////////////
