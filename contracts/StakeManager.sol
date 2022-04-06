@@ -88,7 +88,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
     ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
         require(amount >= _minStake, "Staking: stake too small");
         // Assumption of set token allowance by the user
-        require(_FLIP.transferFrom(msg.sender, address(this), amount));
+        _FLIP.transferFrom(msg.sender, address(this), amount);
         emit Staked(nodeID, amount, msg.sender, returnAddr);
     }
 
@@ -168,7 +168,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
         emit ClaimExecuted(nodeID, claim.amount);
 
         // Send the tokens
-        require(_FLIP.transfer(claim.staker, claim.amount));
+        _FLIP.transfer(claim.staker, claim.amount);
     }
 
     /**
@@ -206,7 +206,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
         require(suspended, "Staking: Not suspended");
         address to = _getKeyManager().getGovernanceKey();
         uint256 amount = _FLIP.balanceOf(address(this));
-        require(_FLIP.transfer(to, amount));
+        _FLIP.transfer(to, amount);
         emit GovernanceWithdrawal(to, amount);
     }
 

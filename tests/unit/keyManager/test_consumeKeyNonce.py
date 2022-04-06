@@ -14,7 +14,6 @@ def test_consumeKeyNonce(cfAW):
     tx = cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
     assert nonce == sigData[4]
-    assert tx.return_value == True
     assert cfAW.keyManager.isNonceUsedByAggKey(sigData[4])
 
 
