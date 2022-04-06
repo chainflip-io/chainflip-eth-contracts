@@ -215,7 +215,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
     updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist)
 
     # Last register claim before stopping state's chain claim signature registry
-    nodeID = web3.toHex(JUNK_HEX)
+    nodeID = JUNK_HEX
     stakeAmount = MIN_STAKE * 3
     expiryTime = getChainTime() + (expiryTimeDiff)
     claimAmount = 123 * E_18
