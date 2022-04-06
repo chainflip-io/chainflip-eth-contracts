@@ -30,6 +30,11 @@ def test_upgrade_keyManager(cf, KeyManager):
     newKeyManager = cf.DEPLOYER.deploy(
         KeyManager, cf.keyManager.getAggregateKey(), cf.gov
     )
+
+    # Reverts if keyManager is not whitelisted
+    with reverts(REV_MSG_KEYMANAGER_WHITELIST):
+        newKeyManager.setCanConsumeKeyNonce([])
+
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newKeyManager]
     newKeyManager.setCanConsumeKeyNonce(toWhitelist)
 

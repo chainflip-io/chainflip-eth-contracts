@@ -90,3 +90,18 @@ def test_consumeKeyNonce_check_nonwhitelisted(a, cf):
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
         with reverts(REV_MSG_WHITELIST):
             cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+
+
+def test_consumeKeyNonce_rev_used_nonce(a, cfAW):
+    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
+    cfAW.keyManager.consumeKeyNonce(
+        sigData,
+        cleanHexStr(sigData[2]),
+    )
+
+    # Replay attack
+    with reverts(REV_MSG_KEYMANAGER_NONCE):
+        cfAW.keyManager.consumeKeyNonce(
+            sigData,
+            cleanHexStr(sigData[2]),
+        )
