@@ -144,7 +144,7 @@ def setKey_rev_nonceTimesGAddr_test(cf, fcn, signer):
     callDataNoSig = fcn.encode_input(nullSig, newKey)
     sigData = signer.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[3] = ZERO_ADDR
-    with reverts(REV_MSG_NONCETIMESGADDR_EMPTY):
+    with reverts(REV_MSG_INPUTS_0):
         fcn(sigData, newKey)
 
 

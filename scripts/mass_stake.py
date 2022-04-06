@@ -14,7 +14,7 @@ cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
 node_ids = []
 
-stake = 10 ** 3 * E_18
+stake = 10**3 * E_18
 return_addr = "0xffffffffffffffffffffffffffffffffffffffff"
 
 

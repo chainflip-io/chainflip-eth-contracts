@@ -92,3 +92,89 @@ def test_updateFlipSupply(cf):
             cf.stakeManager.address,
             cf.FR_ALICE,
         )
+
+
+def test_updateFlipSupply_unchangedSupply(cf):
+
+    stakeManagerBalanceBefore = cf.flip.balanceOf(cf.stakeManager)
+    deployerBalanceBefore = cf.flip.balanceOf(cf.DEPLOYER)
+    totalSupplyBefore = cf.flip.totalSupply()
+
+    assert stakeManagerBalanceBefore == STAKEMANAGER_INITIAL_BALANCE
+    assert cf.flip.getLastSupplyUpdateBlockNumber() == 0
+
+    stateChainBlockNumber = 1
+
+    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id),
+        cf.flip.totalSupply(),
+        stateChainBlockNumber,
+        cf.stakeManager.address,
+    )
+
+    tx = cf.flip.updateFlipSupply(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        cf.flip.totalSupply(),
+        stateChainBlockNumber,
+        cf.stakeManager.address,
+        cf.FR_ALICE,
+    )
+
+    stakeManagerBalanceAfter = cf.flip.balanceOf(cf.stakeManager)
+    deployerBalanceAfter = cf.flip.balanceOf(cf.DEPLOYER)
+    totalSupplyAfter = cf.flip.totalSupply()
+
+    assert stakeManagerBalanceAfter == stakeManagerBalanceBefore
+    assert deployerBalanceAfter == deployerBalanceBefore
+    assert totalSupplyAfter == totalSupplyBefore
+
+
+def test_updateFlipSupply_rev(cf):
+    stateChainBlockNumber = 1
+
+    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id),
+        0,
+        stateChainBlockNumber,
+        cf.stakeManager.address,
+    )
+    with reverts(REV_MSG_NZ_UINT):
+        tx = cf.flip.updateFlipSupply(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            0,
+            stateChainBlockNumber,
+            cf.stakeManager.address,
+            cf.FR_ALICE,
+        )
+
+    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id),
+        NEW_TOTAL_SUPPLY_MINT,
+        stateChainBlockNumber,
+        ZERO_ADDR,
+    )
+
+    with reverts(REV_MSG_NZ_ADDR):
+        tx = cf.flip.updateFlipSupply(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            NEW_TOTAL_SUPPLY_MINT,
+            stateChainBlockNumber,
+            ZERO_ADDR,
+            cf.FR_ALICE,
+        )
+
+    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id),
+        2,
+        stateChainBlockNumber,
+        cf.stakeManager.address,
+    )
+
+    with reverts(REV_MSG_MSGHASH):
+        tx = cf.flip.updateFlipSupply(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            NEW_TOTAL_SUPPLY_MINT,
+            stateChainBlockNumber,
+            cf.stakeManager.address,
+            cf.FR_ALICE,
+        )
