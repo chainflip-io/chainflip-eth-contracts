@@ -55,7 +55,7 @@ def test_transferBatch(cf, token, token2, recipients, amounts, sender):
     sender=strategy("address"),
     randK=strategy("uint", min_value=1, max_value=100),
 )
-def test_transferBatch_rev_array_length(
+def test_transferBatch_rev_tokensArray_length(
     cf, token, token2, recipients, amounts, sender, randK
 ):
     # Make sure the lengths are always different somewhere
@@ -71,6 +71,32 @@ def test_transferBatch_rev_array_length(
             tokens,
             recipients,
             amounts,
+        )
+
+
+@given(
+    recipients=strategy("address[]", unique=True),
+    amounts=strategy("uint[]", max_value=TEST_AMNT),
+    sender=strategy("address"),
+    randK=strategy("uint", min_value=1, max_value=100),
+)
+def test_transferBatch_rev_amountsArray_length(
+    cf, token, token2, recipients, amounts, sender, randK
+):
+    # Make sure the lengths are always different somewhere
+    k = len(recipients)
+    tokens = choices([ETH_ADDR, token, token2], k=k)
+    amountsModif = choices(amounts, k=k + randK)
+    callDataNoSig = cf.vault.transferBatch.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), tokens, recipients, amountsModif
+    )
+
+    with reverts(REV_MSG_V_ARR_LEN):
+        cf.vault.transferBatch(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            tokens,
+            recipients,
+            amountsModif,
         )
 
 

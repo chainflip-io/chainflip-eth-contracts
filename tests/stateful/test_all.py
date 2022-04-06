@@ -36,7 +36,7 @@ def test_all(
     MAX_ETH_SEND = E_18
     # The max amount of tokens for a 'user' to send to a deposit address, so that
     # the same user can send many more times without running out
-    MAX_TOKEN_SEND = 10 ** 5 * E_18
+    MAX_TOKEN_SEND = 10**5 * E_18
     # The max amount of tokens for a 'user' to send to a deposit address, so that
     # the same user can send many more times without running out
     INIT_TOKEN_AMNT = MAX_TOKEN_SEND * 100
@@ -46,13 +46,13 @@ def test_all(
     TOTAL_KEYS = 4
 
     # StakeManager
-    INIT_STAKE = 10 ** 25
+    INIT_STAKE = 10**25
     # Setting this low because Brownie/Hypothesis 'shrinks' random
     # numbers so that they cluster near the minimum, and we want to maximise
     # the amount of non-reverted txs there are, while also allowing for some reverts
     INIT_MIN_STAKE = 1000
-    MAX_TEST_STAKE = 10 ** 6 * E_18
-    INIT_FLIP_SM = 25 * 10 ** 4 * E_18
+    MAX_TEST_STAKE = 10**6 * E_18
+    INIT_FLIP_SM = 25 * 10**4 * E_18
 
     class StateMachine(BaseStateMachine):
 

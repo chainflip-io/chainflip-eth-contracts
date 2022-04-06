@@ -82,7 +82,7 @@ def test_updateCanConsumeKeyNonce_multiple(a, cf, addrsList1, addrsList2):
         currentAddrs = newAddrs
 
 
-def test_updateCanConsumeKeyNonce_noKeyManager(a, cf):
+def test_updateCanConsumeKeyNonce_rev_noKeyManager(a, cf):
 
     # Using [:] to create a copy of the list (instead of reference)
     listAddresses = cf.whitelisted[:]
