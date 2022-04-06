@@ -19,7 +19,7 @@ interface IKeyManager is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external returns (bool);
+    function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
 
     function setAggKeyWithAggKey(SigData memory sigData, Key memory newKey) external;
 
