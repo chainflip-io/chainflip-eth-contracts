@@ -14,9 +14,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     uint256 private constant _AGG_KEY_TIMEOUT = 2 days;
 
     /// @dev    The current (schnorr) aggregate key.
-    Key public aggKey;
+    Key private aggKey;
     /// @dev    The current governance key.
-    address public govKey;
+    address private govKey;
     /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint256 private _lastValidateTime;
     mapping(uint256 => bool) private _isNonceUsedByAggKey;
@@ -207,6 +207,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the governance key
      */
     function getGovernanceKey() external view override returns (address) {
+        return _getGovernanceKey();
+    }
+
+    function _getGovernanceKey() internal view returns (address) {
         return govKey;
     }
 
@@ -255,7 +259,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
-     *  @notice Allows this contract to receive ETH used to refund callers
+     *  @notice Allows this contract to receive ETH
      */
     receive() external payable {}
 
@@ -279,16 +283,17 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _;
     }
 
+    /// @dev    Check that the sender is the governance address
     modifier isGovernor() {
-        require(msg.sender == this.getGovernanceKey(), "KeyManager: not governor");
+        require(msg.sender == _getGovernanceKey(), "KeyManager: not governor");
         _;
     }
 
     /// @dev    Call consumeKeyNonce
     modifier consumerKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
         // Need to make this an external call so that the msg.sender is the
-        // address of this contract, otherwise calling setAggKeyWithAggKey
-        // from any address would fail the whitelist check
+        // address of this contract, otherwise calling a function with this
+        // modifier from any address would fail the whitelist check
         this.consumeKeyNonce(sigData, contractMsgHash);
         _;
     }
