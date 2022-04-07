@@ -9,8 +9,6 @@ def test_constructor(cf):
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         assert aggKeyNonceConsumer.getKeyManager() == cf.keyManager
 
-    whitelist = (strategy("address[]", unique=True),)
-
 
 def test_updateKeyManager(cf, KeyManager):
     aggKeyNonceConsumers = [cf.flip, cf.stakeManager, cf.vault]
