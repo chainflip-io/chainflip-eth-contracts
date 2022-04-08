@@ -1295,57 +1295,75 @@ def test_all(
         # FLIP
 
         # Updates Flip Supply minting/burning stakeManager tokens
-        def rule_updateFlipSupply(
-            self, st_staker, st_sender, st_amount_supply, st_returnAddr
-        ):
-
-            signer = self._get_key_prob(AGG)
+        def rule_updateFlipSupply(self, st_sender, st_amount_supply):
 
             sm_inibalance = self.f.balanceOf(self.sm)
             new_total_supply = self.f.totalSupply() + st_amount_supply
 
             newSupplyBlockNumber = self.lastSupplyBlockNumber + 1
 
-            if sm_inibalance + st_amount_supply < 0:
-                with reverts(REV_MSG_BURN_BALANCE):
-                    callDataNoSig = self.f.updateFlipSupply.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        new_total_supply,
-                        newSupplyBlockNumber,
-                        self.sm.address,
-                    )
+            args = (
+                new_total_supply,
+                newSupplyBlockNumber,
+                self.sm.address,
+            )
+
+            callDataNoSig = self.f.updateFlipSupply.encode_input(
+                agg_null_sig(self.km.address, chain.id), *args
+            )
+
+            signer = self._get_key_prob(AGG)
+
+            if signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_updateFlipSupply",
+                    st_amount_supply,
+                    st_sender,
+                )
+                with reverts(REV_MSG_SIG):
                     self.f.updateFlipSupply(
                         signer.getSigDataWithNonces(
                             callDataNoSig, nonces, AGG, self.km.address
                         ),
-                        new_total_supply,
-                        newSupplyBlockNumber,
-                        self.sm.address,
+                        *args,
                         {"from": st_sender},
                     )
             else:
-                callDataNoSig = self.f.updateFlipSupply.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    new_total_supply,
-                    newSupplyBlockNumber,
-                    self.sm.address,
-                )
-                tx = self.f.updateFlipSupply(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    new_total_supply,
-                    newSupplyBlockNumber,
-                    self.sm.address,
-                    {"from": st_sender},
-                )
+                if sm_inibalance + st_amount_supply < 0:
+                    with reverts(REV_MSG_BURN_BALANCE):
+                        print(
+                            "        REV_MSG_BURN_BALANCE rule_updateFlipSupply",
+                            st_amount_supply,
+                            st_sender,
+                        )
 
-                assert self.f.totalSupply() == new_total_supply
-                assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
+                        self.f.updateFlipSupply(
+                            signer.getSigDataWithNonces(
+                                callDataNoSig, nonces, AGG, self.km.address
+                            ),
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    print(
+                        "                    rule_updateFlipSupply",
+                        st_amount_supply,
+                        st_sender,
+                    )
+                    tx = self.f.updateFlipSupply(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
 
-                self.flipBals[self.sm] += st_amount_supply
-                self.lastSupplyBlockNumber = newSupplyBlockNumber
-                self.lastValidateTime = tx.timestamp
+                    assert self.f.totalSupply() == new_total_supply
+                    assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
+
+                    self.flipBals[self.sm] += st_amount_supply
+                    self.lastSupplyBlockNumber = newSupplyBlockNumber
+                    self.lastValidateTime = tx.timestamp
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
