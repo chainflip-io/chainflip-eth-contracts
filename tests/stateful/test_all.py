@@ -190,7 +190,6 @@ def test_all(
             )
 
             # StakeManager
-            self.lastSupplyBlockNumber = 0
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
             self.flipBals = {
@@ -203,6 +202,9 @@ def test_all(
                 nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
             }
             self.numTxsTested = 0
+
+            # Flip
+            self.lastSupplyBlockNumber = 0
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -240,6 +242,11 @@ def test_all(
         st_expiry_time_diff = strategy("uint", max_value=CLAIM_DELAY * 10)
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minStake = strategy("uint", max_value=int(INIT_STAKE / 2))
+
+        # FLIP
+        st_amount_supply = strategy(
+            "int", min_value=-MAX_TOKEN_SEND, max_value=MAX_TOKEN_SEND
+        )
 
         # Vault
 
@@ -1268,6 +1275,77 @@ def test_all(
                 tx = self.sm.setMinStake(st_minStake, {"from": st_sender})
 
                 self.minStake = st_minStake
+
+        # Tries to set the FLIP address. It should have been set right after the deployment.
+        def rule_setFlip(self, st_sender, st_returnAddr):
+            # a[0] == deployer
+            if st_sender != a[0]:
+                print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
+                with reverts(REV_MSG_STAKEMAN_DEPLOYER):
+                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
+            else:
+                print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
+                with reverts(REV_MSG_NZ_ADDR):
+                    self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
+
+                print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
+                with reverts(REV_MSG_FLIP_ADDRESS):
+                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
+
+        # FLIP
+
+        # Updates Flip Supply minting/burning stakeManager tokens
+        def rule_updateFlipSupply(
+            self, st_staker, st_sender, st_amount_supply, st_returnAddr
+        ):
+
+            signer = self._get_key_prob(AGG)
+
+            sm_inibalance = self.f.balanceOf(self.sm)
+            new_total_supply = self.f.totalSupply() + st_amount_supply
+
+            newSupplyBlockNumber = self.lastSupplyBlockNumber + 1
+
+            if sm_inibalance + st_amount_supply < 0:
+                with reverts(REV_MSG_BURN_BALANCE):
+                    callDataNoSig = self.f.updateFlipSupply.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        new_total_supply,
+                        newSupplyBlockNumber,
+                        self.sm.address,
+                    )
+                    self.f.updateFlipSupply(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        new_total_supply,
+                        newSupplyBlockNumber,
+                        self.sm.address,
+                        {"from": st_sender},
+                    )
+            else:
+                callDataNoSig = self.f.updateFlipSupply.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
+                    new_total_supply,
+                    newSupplyBlockNumber,
+                    self.sm.address,
+                )
+                tx = self.f.updateFlipSupply(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    new_total_supply,
+                    newSupplyBlockNumber,
+                    self.sm.address,
+                    {"from": st_sender},
+                )
+
+                assert self.f.totalSupply() == new_total_supply
+                assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
+
+                self.flipBals[self.sm] += st_amount_supply
+                self.lastSupplyBlockNumber = newSupplyBlockNumber
+                self.lastValidateTime = tx.timestamp
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
