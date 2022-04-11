@@ -107,7 +107,7 @@ REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "FLIP: old FLIP supply update"
 
 REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
 REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
-
+REV_MSG_BURN_BALANCE = "ERC20: burn amount exceeds balance"
 
 # -----StakeManager-----
 NUM_GENESIS_VALIDATORS = 5
@@ -130,7 +130,7 @@ REV_MSG_STAKEMAN_GOVERNOR = "Staking: not governor"
 REV_MSG_STAKEMAN_SUSPENDED = "Staking: suspended"
 REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: Not suspended"
 REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
-
+REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
