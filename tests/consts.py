@@ -102,7 +102,7 @@ REV_MSG_INPUTS_0 = "No zero inputs allowed"
 
 
 # -----FLIP-----
-INIT_SUPPLY = (9 * 10**7) * E_18
+INIT_SUPPLY = 9 * 10**7 * E_18
 REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "FLIP: old FLIP supply update"
 
 REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
@@ -116,7 +116,10 @@ STAKEMANAGER_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
 NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
 NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
 MIN_STAKE = 40000 * E_18
-MAX_TEST_STAKE = INIT_SUPPLY / 9
+# MAX_TEST_STAKE == INIT_SUPPLY / 9
+# Not doing the division because it causes issues when comparing numbers in the tests
+MAX_TEST_STAKE = 1 * 10**7 * E_18
+
 # 13292
 CLAIM_DELAY = 2 * DAY
 NULL_CLAIM = (0, ZERO_ADDR, 0, 0)

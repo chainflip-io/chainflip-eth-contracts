@@ -4,7 +4,6 @@ from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
-import pytest
 import random
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
@@ -104,9 +103,6 @@ def test_all(
                     {"from": a[0]},
                 )
 
-            # Workaround to refund deployer for gas spend on deployment and tokenTransfer
-            a[MAX_NUM_SENDERS].transfer(a[0], INIT_ETH_BAL - a[0].balance())
-
             cls.create2EthAddrs = [
                 getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "")
                 for swapID in range(MAX_SWAPID + 1)
@@ -167,7 +163,9 @@ def test_all(
             tx = self.sm.setMinStake(INIT_MIN_STAKE, {"from": self.governor})
 
             self.ethBals = {
-                addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs
+                # Accounts within "a" will have INIT_ETH_BAL - gas spent in setup/deployment
+                addr: web3.eth.get_balance(str(addr)) if addr in a else 0
+                for addr in self.allAddrs
             }
 
             # Set intial balances of remaining contracts
@@ -175,6 +173,11 @@ def test_all(
             self.allAddrs += contracts
             for index in range(len(contracts)):
                 self.ethBals[contracts[index]] = self.initialBalancesContracts[index]
+
+            # Store initial transaction number for each of the accounts to later calculate gas spendings
+            self.iniTransactionNumber = {}
+            for addr in self.allAddrs:
+                self.iniTransactionNumber[addr] = len(history.filter(sender=addr))
 
             # Vault
             self.tokenABals = {
@@ -1393,11 +1396,9 @@ def test_all(
         def invariant_bals(self):
             self.numTxsTested += 1
             for addr in self.allAddrs:
-                ## Check approx amount (1%) and <= to take into consideration gas spendings
-                assert float(web3.eth.get_balance(str(addr))) == pytest.approx(
-                    self.ethBals[addr], rel=1e-3
-                )
-                assert web3.eth.get_balance(str(addr)) <= self.ethBals[addr]
+                assert web3.eth.get_balance(str(addr)) == self.ethBals[
+                    addr
+                ] - calculateGasSpent(addr, self.iniTransactionNumber[addr])
 
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]

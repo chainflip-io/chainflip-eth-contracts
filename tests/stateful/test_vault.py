@@ -1,9 +1,9 @@
+from ctypes import addressof
 from consts import *
 from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from hypothesis import strategies as hypStrat
 from random import choices
-import pytest
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -69,8 +69,8 @@ def test_vault(
                     {"from": a[0]},
                 )
 
-            # Workaround to refund deployer for gas spend on deployment and tokenTransfer
-            a[MAX_NUM_SENDERS].transfer(a[0], INIT_ETH_BAL - a[0].balance())
+            # # Workaround to refund deployer for gas spend on deployment and tokenTransfer
+            # a[MAX_NUM_SENDERS].transfer(a[0], INIT_ETH_BAL - a[0].balance())
 
             cls.create2EthAddrs = [
                 getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "")
@@ -108,7 +108,8 @@ def test_vault(
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             self.ethBals = {
-                addr: INIT_ETH_BAL
+                # Accounts within "a" will have INIT_ETH_BAL - gas spent in setup/deployment
+                addr: web3.eth.get_balance(addr)
                 if addr in a
                 else (self.initialVaultBalance if addr == self.v.address else 0)
                 for addr in self.allAddrs
@@ -119,6 +120,11 @@ def test_vault(
             self.tokenBBals = {
                 addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs
             }
+            # Store initial transaction number for each of the accounts to later calculate gas spendings
+            self.iniTransactionNumber = {}
+            for addr in self.allAddrs:
+                self.iniTransactionNumber[addr] = len(history.filter(sender=addr))
+
             self.numTxsTested = 0
 
         # Variables that will be a random value with each fcn/rule called
@@ -699,11 +705,9 @@ def test_vault(
         def invariant_bals(self):
             self.numTxsTested += 1
             for addr in self.allAddrs:
-                ## Check approx amount (1%) and <= to take into consideration gas spendings
-                assert float(web3.eth.get_balance(addr)) == pytest.approx(
-                    self.ethBals[addr], rel=1e-3
-                )
-                assert web3.eth.get_balance(addr) <= self.ethBals[addr]
+                assert web3.eth.get_balance(addr) == self.ethBals[
+                    addr
+                ] - calculateGasSpent(addr, self.iniTransactionNumber[addr])
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
 
