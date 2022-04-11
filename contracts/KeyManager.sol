@@ -173,7 +173,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param newKey    The new aggregate key to be set. The x component of the pubkey (uint256),
      *                  the parity of the y component (uint8)
      */
-    function setAggKeyWithGovKey(Key calldata newKey) external override nzKey(newKey) validTime isGovernor {
+    function setAggKeyWithGovKey(Key calldata newKey)
+        external
+        override
+        nzKey(newKey)
+        validAggKey(newKey)
+        validTime
+        isGovernor
+    {
         emit AggKeySetByGovKey(aggKey, newKey);
         aggKey = newKey;
     }
