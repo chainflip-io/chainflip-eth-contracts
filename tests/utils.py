@@ -76,7 +76,7 @@ def getChainTime():
 
 # Calculate gas spent by a particular address from the initialTransactionNumber onwards
 # Not using all history because we might now want to include deployment/setup transactions
-# Also, when testing with Rinkeby or a private blockchain, there might be previous 
+# Also, when testing with Rinkeby or a private blockchain, there might be previous
 # transactions (that is not an issue when a local hardhat node is span every time)
 def calculateGasSpent(address, initialTransactionNumber):
     transactionList = history.filter(sender=address)[initialTransactionNumber:]
