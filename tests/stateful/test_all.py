@@ -54,6 +54,8 @@ def test_all(
     MAX_TEST_STAKE = 10**6 * E_18
     INIT_FLIP_SM = 25 * 10**4 * E_18
 
+    SUPPLY_BLOCK_NUMBER_RANGE = 10
+
     class StateMachine(BaseStateMachine):
 
         """
@@ -246,6 +248,12 @@ def test_all(
         # FLIP
         st_amount_supply = strategy(
             "int", min_value=-MAX_TOKEN_SEND, max_value=MAX_TOKEN_SEND
+        )
+
+        blockNumber_incr = strategy(
+            "int",
+            min_value=-SUPPLY_BLOCK_NUMBER_RANGE,
+            max_value=SUPPLY_BLOCK_NUMBER_RANGE * 10,
         )
 
         # Vault
@@ -1295,12 +1303,13 @@ def test_all(
         # FLIP
 
         # Updates Flip Supply minting/burning stakeManager tokens
-        def rule_updateFlipSupply(self, st_sender, st_amount_supply):
+        def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
 
             sm_inibalance = self.f.balanceOf(self.sm)
             new_total_supply = self.f.totalSupply() + st_amount_supply
 
-            newSupplyBlockNumber = self.lastSupplyBlockNumber + 1
+            # Avoid newSupplyBlockNumber being a negative number
+            newSupplyBlockNumber = max(self.lastSupplyBlockNumber + blockNumber_incr, 0)
 
             args = (
                 new_total_supply,
@@ -1314,7 +1323,22 @@ def test_all(
 
             signer = self._get_key_prob(AGG)
 
-            if signer != self.keyIDToCurKeys[AGG]:
+            if newSupplyBlockNumber <= self.lastSupplyBlockNumber:
+                print(
+                    "        REV_MSG_BLOCK rule_updateFlipSupply",
+                    st_amount_supply,
+                    st_sender,
+                )
+                with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
+                    self.f.updateFlipSupply(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+
+            elif signer != self.keyIDToCurKeys[AGG]:
                 print(
                     "        REV_MSG_SIG rule_updateFlipSupply",
                     st_amount_supply,
