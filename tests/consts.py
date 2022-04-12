@@ -116,8 +116,6 @@ STAKEMANAGER_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
 NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
 NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
 MIN_STAKE = 40000 * E_18
-# MAX_TEST_STAKE == INIT_SUPPLY / 9
-# Not doing the division because it causes issues when comparing numbers in the tests
 MAX_TEST_STAKE = 1 * 10**7 * E_18
 
 # 13292
