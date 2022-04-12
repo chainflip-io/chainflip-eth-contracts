@@ -69,9 +69,6 @@ def test_vault(
                     {"from": a[0]},
                 )
 
-            # # Workaround to refund deployer for gas spend on deployment and tokenTransfer
-            # a[MAX_NUM_SENDERS].transfer(a[0], INIT_ETH_BAL - a[0].balance())
-
             cls.create2EthAddrs = [
                 getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "")
                 for swapID in range(1, MAX_SWAPID + 1)
