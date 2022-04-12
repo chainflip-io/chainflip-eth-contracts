@@ -305,9 +305,9 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
             for addr in self.allAddrs:
-                assert addr.balance() == self.ethBals[addr] - calculateGasSpent(
-                    addr, self.iniTransactionNumber[addr]
-                )
+                assert addr.balance() == self.ethBals[
+                    addr
+                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
 
         # Print how many rules were executed at the end of each run

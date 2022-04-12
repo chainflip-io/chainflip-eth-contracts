@@ -704,7 +704,7 @@ def test_vault(
             for addr in self.allAddrs:
                 assert web3.eth.get_balance(addr) == self.ethBals[
                     addr
-                ] - calculateGasSpent(addr, self.iniTransactionNumber[addr])
+                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
 
