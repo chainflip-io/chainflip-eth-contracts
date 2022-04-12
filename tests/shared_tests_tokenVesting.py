@@ -12,13 +12,10 @@ def release_revert(tv, cf, address):
 
 
 def check_released(tv, cf, tx, address, totalReleased, recentlyReleased):
-    # Using float conversion and pytest bc of python comparison limitations w big numbers
-    assert float(cf.flip.balanceOf(address)) == float(totalReleased)
-    assert float(tv.released(cf.flip)) == float(totalReleased)
+    assert cf.flip.balanceOf(address) == totalReleased
+    assert tv.released(cf.flip) == totalReleased
     assert tx.events["TokensReleased"][0].values()[0] == cf.flip
-    assert float(tx.events["TokensReleased"][0].values()[1]) == pytest.approx(
-        recentlyReleased
-    )
+    assert tx.events["TokensReleased"][0].values()[1] == recentlyReleased
 
 
 def check_state(
@@ -38,22 +35,18 @@ def check_state(
 
 
 def check_revoked(tv, cf, tx, address, revokedAmount, amountLeft):
-    # Using float conversion and pytest bc of python comparison limitations w big numbers
-    assert float(cf.flip.balanceOf(address)) == pytest.approx(revokedAmount)
-    assert float(cf.flip.balanceOf(tv)) == pytest.approx(amountLeft)
+    assert cf.flip.balanceOf(address) == revokedAmount
+    assert cf.flip.balanceOf(tv) == amountLeft
     assert tx.events["TokenVestingRevoked"][0].values() == [cf.flip]
 
 
 def retrieve_revoked_and_check(tv, cf, address, retrievedAmount):
-    # Using float conversion and pytest bc of python comparison limitations w big numbers
     initialBalance = cf.flip.balanceOf(address)
     tx = tv.retrieveRevokedFunds(cf.flip, {"from": address})
     finalBalance = cf.flip.balanceOf(address)
 
     assert retrievedAmount == finalBalance - initialBalance
 
-    assert float(cf.flip.balanceOf(address)) == pytest.approx(
-        initialBalance + retrievedAmount
-    )
-    assert float(cf.flip.balanceOf(tv)) == pytest.approx(0)
+    assert cf.flip.balanceOf(address) == initialBalance + retrievedAmount
+    assert cf.flip.balanceOf(tv) == 0
     assert tx.events["Transfer"][0].values() == (tv, address, retrievedAmount)

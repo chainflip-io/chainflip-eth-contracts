@@ -17,9 +17,7 @@ def test_sendEth(cf):
     tx = cf.vault.sendEth(cf.DENICE, {"from": cf.vault, "value": TEST_AMNT})
     # Since this test is spoofing access to the vault account, we also have to
     # account for the gas that was used by the tx when checking the balance
-    base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
-    priority_fee = tx.gas_price - base_fee
-    ethUsed = (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)
+    ethUsed = calculateGasTransaction(tx)
 
     assert cf.vault.balance() == TEST_AMNT - ethUsed
     assert cf.DENICE.balance() == INIT_ETH_BAL + TEST_AMNT

@@ -3,7 +3,6 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy
 from utils import *
 from hypothesis import strategies as hypStrat
-import pytest
 
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
@@ -57,12 +56,11 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.allAddrs = self.stakers + [self.sm]
             self.sm.setMinStake(INIT_MIN_STAKE)
 
-            # Workaround to refund deployer for gas spend on deployment and setMinStake
-            a[NUM_STAKERS].transfer(a[0], INIT_ETH_BAL - a[0].balance())
-
             # Eth bals shouldn't change in this test, but just to be sure...
             self.ethBals = {
-                addr: INIT_ETH_BAL if addr in a else 0 for addr in self.allAddrs
+                # Accounts within "a" will have INIT_ETH_BAL - gas spent in setup/deployment
+                addr: addr.balance() if addr in a else 0
+                for addr in self.allAddrs
             }
             self.flipBals = {
                 addr: INIT_STAKE
@@ -73,6 +71,12 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.pendingClaims = {
                 nodeID: NULL_CLAIM for nodeID in range(NUM_STAKERS + 1)
             }
+
+            # Store initial transaction number for each of the accounts to later calculate gas spendings
+            self.iniTransactionNumber = {}
+            for addr in self.allAddrs:
+                self.iniTransactionNumber[addr] = len(history.filter(sender=addr))
+
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
 
@@ -301,11 +305,9 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
             for addr in self.allAddrs:
-                ## Check approx amount (1%) and <= to take into consideration gas spendings
-                assert float(addr.balance()) == pytest.approx(
-                    self.ethBals[addr], rel=1e-3
-                )
-                assert addr.balance() <= self.ethBals[addr]
+                assert addr.balance() == self.ethBals[
+                    addr
+                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
 
         # Print how many rules were executed at the end of each run

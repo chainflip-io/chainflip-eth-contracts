@@ -1,4 +1,4 @@
-from brownie import web3, chain
+from brownie import web3, chain, history
 
 
 def cleanHexStr(thing):
@@ -72,3 +72,21 @@ def getValidTranIdxs(tokens, amounts, prevBal, tok):
 # show that transactions are mined 1 later - so using chain.time()+1 as chain time.
 def getChainTime():
     return chain.time() + 1
+
+
+# Calculate gas spent by a particular address from the initialTransactionNumber onwards
+# Not using all history because we might not want to include deployment/setup transactions
+# Also, when testing with Rinkeby or a private blockchain, there might be previous
+# transactions (that is not an issue when a local hardhat node is span every time)
+def calculateGasSpentByAddress(address, initialTransactionNumber):
+    transactionList = history.filter(sender=address)[initialTransactionNumber:]
+    ethUsed = 0
+    for tx in transactionList:
+        ethUsed += calculateGasTransaction(tx)
+    return ethUsed
+
+
+def calculateGasTransaction(tx):
+    base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
+    priority_fee = tx.gas_price - base_fee
+    return (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)

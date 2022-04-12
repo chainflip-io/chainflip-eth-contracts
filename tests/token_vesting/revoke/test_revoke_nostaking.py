@@ -35,7 +35,6 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, sleepTime):
 
     revokedAmount = total - releasable
 
-    # using approx due to comparison limitations with big numbers
     check_revoked(tv, cf, tx, addrs.REVOKER, revokedAmount, total - revokedAmount)
 
     # Shouldn't've changed
