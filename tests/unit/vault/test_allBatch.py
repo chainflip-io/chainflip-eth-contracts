@@ -1,5 +1,5 @@
 from consts import *
-from brownie import reverts, web3
+from brownie import reverts, web3, history
 from brownie.test import given, strategy
 from random import choices
 from utils import *
@@ -26,11 +26,6 @@ def test_allBatch(
     tranAmounts,
     sender,
 ):
-
-    # Allowing this breaks the refund test
-    if sender in tranRecipients:
-        return
-
     # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([fetchAmounts, fetchSwapIDs])
     tokensList = [ETH_ADDR, token, token2]
@@ -84,6 +79,10 @@ def test_allBatch(
     tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in tranRecipients]
 
+    # Account for gas expenditure if sender is in transRecipients - storing initial transaction number
+    if sender in tranRecipients:
+        iniTransactionNumberSender = len(history.filter(sender=sender))
+
     callDataNoSig = cf.vault.allBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
         fetchSwapIDs,
@@ -117,7 +116,7 @@ def test_allBatch(
             tranAmounts,
             {"from": sender},
         )
-        balanceAfter = sender.balance()
+
         assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
@@ -125,10 +124,13 @@ def test_allBatch(
         for i in range(len(tranRecipients)):
             if tranTokens[i] == ETH_ADDR:
                 if i in validEthIdxs:
-                    assert (
-                        web3.eth.get_balance(str(tranRecipients[i]))
-                        == ethBals[i] + tranAmounts[i]
-                    )
+                    finalEthBals = ethBals[i] + tranAmounts[i]
+                    # Account for gas expenditure if sender is in transRecipients
+                    if tranRecipients[i] == sender:
+                        finalEthBals -= calculateGasSpentByAddress(
+                            tranRecipients[i], iniTransactionNumberSender
+                        )
+                    assert web3.eth.get_balance(str(tranRecipients[i])) == finalEthBals
             elif tranTokens[i] == token:
                 assert (
                     token.balanceOf(tranRecipients[i]) == tokenBals[i] + tranAmounts[i]
