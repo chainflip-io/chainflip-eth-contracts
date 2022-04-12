@@ -45,6 +45,8 @@ workflows:
           stateful: "false"
           requires:
             - build-eth-brownie
+          context:
+            - ghcr-credentials
       - run-tests:
           name: Run Stateful Tests
           stateful: "true"
