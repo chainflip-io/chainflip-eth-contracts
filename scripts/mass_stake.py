@@ -32,7 +32,10 @@ def main():
         to_stake = stake + (i * E_18)
         node_id = node_id.strip()
         tx = stakeManager.stake(
-            node_id, to_stake, return_addr, {"from": staker, "required_confs": 0}
+            node_id,
+            to_stake,
+            return_addr,
+            {"from": staker, "required_confs": 0, "gas_limit": 1000000},
         )
         print(f"Staking {to_stake / E_18} FLIP to node {node_id} in tx {tx.txid}")
 
