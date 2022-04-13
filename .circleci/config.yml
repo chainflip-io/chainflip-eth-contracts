@@ -41,10 +41,23 @@ workflows:
           context:
             - ghcr-credentials
       - run-tests:
+          name: Run Stateless Tests
+          stateful: "false"
           requires:
             - build-eth-brownie
           context:
             - ghcr-credentials
+      - run-tests:
+          name: Run Stateful Tests
+          stateful: "true"
+          requires:
+            - build-eth-brownie
+          context:
+            - ghcr-credentials
+          filters:
+            branches:
+              only:
+                - master
       - run-lint:
           requires:
             - build-eth-brownie
@@ -60,6 +73,9 @@ jobs:
       DOCKERFILE: Dockerfile.eth-brownie
 
   run-tests:
+    parameters:
+      stateful:
+        type: string
     docker:
       - image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
         auth: *dockerconfig
@@ -72,7 +88,7 @@ jobs:
             npm install
       - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-      - run: poetry run brownie test --network hardhat --stateful false
+      - run: poetry run brownie test --network hardhat --stateful <<parameters.stateful>>
 
   run-lint:
     docker:
