@@ -254,7 +254,7 @@ def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs):
         agg_null_sig(keyManager.address, chain.id), currentAddrs, newAddrs
     )
 
-    keyManager.updateCanConsumeKeyNonce(
+    return keyManager.updateCanConsumeKeyNonce(
         AGG_SIGNER_1.getSigData(callDataNoSig, keyManager.address),
         currentAddrs,
         newAddrs,
