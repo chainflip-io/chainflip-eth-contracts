@@ -76,11 +76,15 @@ contract Vault is IVault, AggKeyNonceConsumer {
         );
 
         // Fetch all deposits
-        for (uint256 i = 0; i < fetchSwapIDs.length; i++) {
+        uint256 length = fetchSwapIDs.length;
+        for (uint256 i = 0; i < length; ) {
             if (address(fetchTokens[i]) == _ETH_ADDR) {
                 new DepositEth{salt: fetchSwapIDs[i]}();
             } else {
                 new DepositToken{salt: fetchSwapIDs[i]}(IERC20Lite(address(fetchTokens[i])));
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -185,8 +189,12 @@ contract Vault is IVault, AggKeyNonceConsumer {
         address payable[] calldata recipients,
         uint256[] calldata amounts
     ) private {
-        for (uint256 i = 0; i < tokens.length; i++) {
+        uint256 length = tokens.length;
+        for (uint256 i = 0; i < length; ) {
             _transfer(tokens[i], recipients[i], amounts[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -279,8 +287,12 @@ contract Vault is IVault, AggKeyNonceConsumer {
             )
         )
     {
-        for (uint256 i; i < swapIDs.length; i++) {
+        uint256 length = swapIDs.length;
+        for (uint256 i; i < length; ) {
             new DepositEth{salt: swapIDs[i]}();
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -349,8 +361,12 @@ contract Vault is IVault, AggKeyNonceConsumer {
     {
         require(swapIDs.length == tokens.length, "Vault: arrays not same length");
 
-        for (uint256 i; i < swapIDs.length; i++) {
+        uint256 length = swapIDs.length;
+        for (uint256 i; i < length; ) {
             new DepositToken{salt: swapIDs[i]}(IERC20Lite(address(tokens[i])));
+            unchecked {
+                ++i;
+            }
         }
     }
 
