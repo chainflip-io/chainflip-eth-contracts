@@ -1683,8 +1683,8 @@ def test_all(
                 assert self.tokenA.balanceOf(self.v) == 0
                 assert self.tokenB.balanceOf(self.v) == 0
 
-                assert self.tokenA.balanceOf(self.v) == initTokenABalance
-                assert self.tokenB.balanceOf(self.v) == iniTokenBBalance
+                assert self.tokenA.balanceOf(newVault) == initTokenABalance
+                assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
 
                 self._updateBalancesOnUpgrade(self.v, newVault)
 
