@@ -42,7 +42,7 @@ workflows:
             - ghcr-credentials
       - run-tests:
           name: Run Stateless Tests
-          stateful: "false"
+          stateful: "true"
           requires:
             - build-eth-brownie
           context:

@@ -983,7 +983,7 @@ def test_all(
 
                 self.lastValidateTime = tx.timestamp
 
-        # KeyManager
+        # # KeyManager
 
         # Get the key that is probably what we want, but also has a low chance of choosing
         # the 'wrong' key which will cause a revert and tests the full range. Maximises useful
@@ -1512,7 +1512,7 @@ def test_all(
 
                         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
-                    self.updateBalancesOnUpgrade(self.km, newKeyManager)
+                    self._updateBalancesOnUpgrade(self.km, newKeyManager)
                     self.km = newKeyManager
                     self.lastValidateTime = self.km.tx.timestamp
 
@@ -1592,7 +1592,7 @@ def test_all(
                     web3.toHex(0),
                 ]
 
-                # Transfer from oldVault to new Vault - unclear if we want to transfer all the balance
+                # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
                 startBalVault = self.v.balance()
                 assert startBalVault >= st_vault_transfer_amount
                 startBalRecipient = newVault.balance()
@@ -1619,7 +1619,7 @@ def test_all(
 
                 chain.sleep(st_sleep_time)
 
-                # Transfer all the remaining funds to new Vault and dewhitelist
+                # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
                 startBalVault = self.v.balance()
                 startBalRecipient = newVault.balance()
 
@@ -1653,31 +1653,40 @@ def test_all(
                     st_sender,
                     st_vault_transfer_amount,
                 )
-                # Transfer all the remainding balance
-                amountToTransfer = startBalVault
-                callDataNoSig = self.v.transfer.encode_input(
+
+                iniEthBalance = startBalVault
+                initTokenABalance = self.tokenA.balanceOf(self.v)
+                iniTokenBBalance = self.tokenB.balanceOf(self.v)
+
+                amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
+                tokens = [ETH_ADDR, self.tokenA, self.tokenB]
+                recipients = [newVault, newVault, newVault]
+
+                callDataNoSig = self.v.transferBatch.encode_input(
                     agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    newVault,
-                    amountToTransfer,
+                    tokens,
+                    recipients,
+                    amountsToTransfer,
                 )
-                self.v.transfer(
+
+                self.v.transferBatch(
                     signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
-                    ETH_ADDR,
-                    newVault,
-                    amountToTransfer,
+                    tokens,
+                    recipients,
+                    amountsToTransfer,
                 )
-                callDataNoSig = self.v.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    newVault,
-                    amountToTransfer,
-                )
-                assert self.v.balance() - startBalVault == -amountToTransfer
-                assert newVault.balance() - startBalRecipient == amountToTransfer
+
+                # Check that all balances have been transferred
                 assert self.v.balance() == 0
+                assert self.tokenA.balanceOf(self.v) == 0
+                assert self.tokenB.balanceOf(self.v) == 0
+
+                assert self.tokenA.balanceOf(self.v) == initTokenABalance
+                assert self.tokenB.balanceOf(self.v) == iniTokenBBalance
+
+                self._updateBalancesOnUpgrade(self.v, newVault)
 
                 # Dewhitelist old Vault
                 currentWhitelist = [
@@ -1708,7 +1717,6 @@ def test_all(
                     toWhitelist,
                 )
 
-                self.updateBalancesOnUpgrade(self.v, newVault)
                 self.v = newVault
                 self.lastValidateTime = tx.timestamp
 
@@ -1739,16 +1747,10 @@ def test_all(
                 ]
 
                 for swapID in range(MAX_SWAPID + 1):
-                    # No need to update balances but we need to add the keys to the bals dictionaries so we reuse this
-                    self.updateBalancesOnUpgrade(
-                        self.create2EthAddrs[swapID], newCreate2EthAddrs[swapID]
-                    )
-                    self.updateBalancesOnUpgrade(
-                        self.create2TokenAAddrs[swapID], newCreate2TokenAAddrs[swapID]
-                    )
-                    self.updateBalancesOnUpgrade(
-                        self.create2TokenBAddrs[swapID], newCreate2TokenBAddrs[swapID]
-                    )
+                    # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
+                    self._addNewAddress(newCreate2EthAddrs[swapID])
+                    self._addNewAddress(newCreate2TokenAAddrs[swapID])
+                    self._addNewAddress(newCreate2TokenBAddrs[swapID])
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(
@@ -1876,9 +1878,13 @@ def test_all(
                     toWhitelist,
                 )
 
-                self.updateBalancesOnUpgrade(self.sm, newStakeManager)
+                self._updateBalancesOnUpgrade(self.sm, newStakeManager)
                 self.sm = newStakeManager
                 self.lastValidateTime = tx.timestamp
+                # Reset all pending claims
+                self.pendingClaims = {
+                    nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
+                }
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
@@ -1933,8 +1939,8 @@ def test_all(
             print(f"Total rules executed = {self.numTxsTested-1}")
 
         # Update balances when a contract has been upgraded
-        def updateBalancesOnUpgrade(self, oldContract, newContract):
-            self.allAddrs += [newContract]
+        def _updateBalancesOnUpgrade(self, oldContract, newContract):
+            self._addNewAddress(newContract)
 
             self.ethBals[newContract] = self.ethBals[oldContract]
             self.ethBals[oldContract] = 0
@@ -1948,8 +1954,16 @@ def test_all(
             self.flipBals[newContract] = self.flipBals[oldContract]
             self.flipBals[oldContract] = 0
 
-            # V, KM and SM should not have any gas expenditure - just initialize key
-            self.iniTransactionNumber[newContract] = 0
+        # Update balances when a contract has been upgraded
+        def _addNewAddress(self, newAddress):
+            self.allAddrs += [newAddress]
+            # Initialize Key - no need to take account gas expenditure in newly deployed addresses since we only perform transactions from accounts within "a"
+            self.iniTransactionNumber[newAddress] = 0
+            # Initialize balances
+            self.ethBals[newAddress] = 0
+            self.tokenABals[newAddress] = 0
+            self.tokenBBals[newAddress] = 0
+            self.flipBals[newAddress] = 0
 
     state_machine(
         StateMachine,

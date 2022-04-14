@@ -31,14 +31,20 @@ def test_upgradability(
             super().__init__(cls, a, cf)
             cls.totalFlipstaked = cf.flip.balanceOf(cf.stakeManager)
 
+            # Store original contracts to be able to test upgradability
+            cls.orig_sm = cls.sm
+            cls.orig_v = cls.v
+            cls.orig_km = cls.km
+
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
+            # Set original contracts to be able to test upgradability
+            self.sm = self.orig_sm
+            self.v = self.orig_v
+            self.km = self.orig_km
+
             self.lastValidateTime = self.km.tx.timestamp
             self.numTxsTested = 0
-
-            self.current_km = self.km
-            self.current_sm = self.sm
-            self.current_v = self.v
 
             # StakeManager
             self.lastSupplyBlockNumber = 0
@@ -54,18 +60,18 @@ def test_upgradability(
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.f, self.current_sm, self.current_v]
+            aggKeyNonceConsumers = [self.f, self.sm, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = st_sender.deploy(
-                KeyManager, self.current_km.getAggregateKey(), st_sender
+                KeyManager, self.km.getAggregateKey(), st_sender
             )
 
-            keyManagerAddress = random.choice([newKeyManager, self.current_km])
+            keyManagerAddress = random.choice([newKeyManager, self.km])
 
-            toWhitelist = [self.current_v, self.current_sm, self.f, keyManagerAddress]
+            toWhitelist = [self.v, self.sm, self.f, keyManagerAddress]
 
-            if keyManagerAddress == self.current_km:
+            if keyManagerAddress == self.km:
                 with reverts(REV_MSG_KEYMANAGER_WHITELIST):
                     print(
                         "        REV_MSG_SIG rule_upgrade_keyManager",
@@ -84,53 +90,53 @@ def test_upgradability(
                 newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
                 for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                    assert aggKeyNonceConsumer.getKeyManager() == self.current_km
+                    assert aggKeyNonceConsumer.getKeyManager() == self.km
 
                     callDataNoSig = aggKeyNonceConsumer.updateKeyManager.encode_input(
-                        agg_null_sig(self.current_km, chain.id), newKeyManager
+                        agg_null_sig(self.km, chain.id), newKeyManager
                     )
 
                     aggKeyNonceConsumer.updateKeyManager(
-                        AGG_SIGNER_1.getSigData(callDataNoSig, self.current_km),
+                        AGG_SIGNER_1.getSigData(callDataNoSig, self.km),
                         newKeyManager,
                     )
                     assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
-                self.current_km = newKeyManager
-                self.lastValidateTime = self.current_km.tx.timestamp
+                self.km = newKeyManager
+                self.lastValidateTime = self.km.tx.timestamp
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
         def rule_upgrade_Vault(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
 
-            newVault = st_sender.deploy(Vault, self.current_km)
+            newVault = st_sender.deploy(Vault, self.km)
 
             # Keep old Vault whitelisted
             currentWhitelist = [
-                self.current_v,
-                self.current_sm,
+                self.v,
+                self.sm,
                 self.f,
-                self.current_km,
+                self.km,
             ]
             toWhitelist = [
-                self.current_v,
-                self.current_sm,
+                self.v,
+                self.sm,
                 self.f,
-                self.current_km,
+                self.km,
                 newVault,
             ]
-            updateCanConsumeKeyNonce(self.current_km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
             callDataNoSig = newVault.transfer.encode_input(
-                agg_null_sig(self.current_km.address, chain.id),
+                agg_null_sig(self.km.address, chain.id),
                 ETH_ADDR,
                 st_sender,
                 st_vault_transfer_amount,
             )
             tx = newVault.transfer(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.current_km.address),
+                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
                 ETH_ADDR,
                 st_sender,
                 st_vault_transfer_amount,
@@ -142,46 +148,46 @@ def test_upgradability(
             ]
 
             # Transfer from oldVault to new Vault - unclear if we want to transfer all the balance
-            startBalVault = self.current_v.balance()
+            startBalVault = self.v.balance()
             assert startBalVault >= st_vault_transfer_amount
             startBalRecipient = newVault.balance()
 
-            callDataNoSig = self.current_v.transfer.encode_input(
-                agg_null_sig(self.current_km.address, chain.id),
+            callDataNoSig = self.v.transfer.encode_input(
+                agg_null_sig(self.km.address, chain.id),
                 ETH_ADDR,
                 newVault,
                 st_vault_transfer_amount,
             )
-            self.current_v.transfer(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.current_km.address),
+            self.v.transfer(
+                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
                 ETH_ADDR,
                 newVault,
                 st_vault_transfer_amount,
             )
 
-            assert self.current_v.balance() - startBalVault == -st_vault_transfer_amount
+            assert self.v.balance() - startBalVault == -st_vault_transfer_amount
             assert newVault.balance() - startBalRecipient == st_vault_transfer_amount
 
             chain.sleep(st_sleep_time)
 
             # Transfer all the remaining funds to new Vault and dewhitelist
-            startBalVault = self.current_v.balance()
+            startBalVault = self.v.balance()
             startBalRecipient = newVault.balance()
 
-            if st_vault_transfer_amount > self.current_v.balance():
+            if st_vault_transfer_amount > self.v.balance():
                 print(
                     "        TRANSF_FAIL rule_upgrade_vault",
                     st_sender,
                     st_vault_transfer_amount,
                 )
-                callDataNoSig = self.current_v.transfer.encode_input(
-                    agg_null_sig(self.current_km.address, chain.id),
+                callDataNoSig = self.v.transfer.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
                     ETH_ADDR,
                     newVault,
                     st_vault_transfer_amount,
                 )
-                tx = self.current_v.transfer(
-                    AGG_SIGNER_1.getSigData(callDataNoSig, self.current_km.address),
+                tx = self.v.transfer(
+                    AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
                     ETH_ADDR,
                     newVault,
                     st_vault_transfer_amount,
@@ -197,41 +203,36 @@ def test_upgradability(
                 st_vault_transfer_amount,
             )
             # Transfer all the remainding balance
-            amountToTransfer = self.current_v.balance()
-            callDataNoSig = self.current_v.transfer.encode_input(
-                agg_null_sig(self.current_km.address, chain.id),
+            amountToTransfer = self.v.balance()
+            callDataNoSig = self.v.transfer.encode_input(
+                agg_null_sig(self.km.address, chain.id),
                 ETH_ADDR,
                 newVault,
                 amountToTransfer,
             )
-            self.current_v.transfer(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.current_km.address),
+            self.v.transfer(
+                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
                 ETH_ADDR,
                 newVault,
                 amountToTransfer,
             )
-            callDataNoSig = self.current_v.transfer.encode_input(
-                agg_null_sig(self.current_km.address, chain.id),
-                ETH_ADDR,
-                newVault,
-                amountToTransfer,
-            )
-            assert self.current_v.balance() - startBalVault == -amountToTransfer
+
+            assert self.v.balance() - startBalVault == -amountToTransfer
             assert newVault.balance() - startBalRecipient == amountToTransfer
             assert newVault.balance() == self.TOTAL_FUNDS
 
             # Dewhitelist old Vault
             currentWhitelist = [
-                self.current_v,
-                self.current_sm,
+                self.v,
+                self.sm,
                 self.f,
-                self.current_km,
+                self.km,
                 newVault,
             ]
-            toWhitelist = [self.current_sm, self.f, self.current_km, newVault]
-            updateCanConsumeKeyNonce(self.current_km, currentWhitelist, toWhitelist)
+            toWhitelist = [self.sm, self.f, self.km, newVault]
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
 
-            self.current_v = newVault
+            self.v = newVault
             self.lastValidateTime = tx.timestamp
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
@@ -240,7 +241,7 @@ def test_upgradability(
         ):
             newStakeManager = st_sender.deploy(
                 StakeManager,
-                self.current_km,
+                self.km,
                 MIN_STAKE,
             )
 
@@ -248,19 +249,19 @@ def test_upgradability(
 
             # Keep old StakeManager whitelisted
             currentWhitelist = [
-                self.current_v,
-                self.current_sm,
+                self.v,
+                self.sm,
                 self.f,
-                self.current_km,
+                self.km,
             ]
             toWhitelist = [
-                self.current_v,
-                self.current_sm,
+                self.v,
+                self.sm,
                 self.f,
-                self.current_km,
+                self.km,
                 newStakeManager,
             ]
-            updateCanConsumeKeyNonce(self.current_km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
 
             chain.sleep(st_sleep_time)
 
@@ -269,15 +270,15 @@ def test_upgradability(
             expiryTime = getChainTime() + (CLAIM_DELAY * 10)
             claimAmount = self.totalFlipstaked
             # Register Claim to transfer all flip
-            callDataNoSig = self.current_sm.registerClaim.encode_input(
-                agg_null_sig(self.current_km.address, chain.id),
+            callDataNoSig = self.sm.registerClaim.encode_input(
+                agg_null_sig(self.km.address, chain.id),
                 JUNK_HEX,
                 claimAmount,
                 newStakeManager,
                 expiryTime,
             )
-            tx = self.current_sm.registerClaim(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.current_km.address),
+            tx = self.sm.registerClaim(
+                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
                 JUNK_HEX,
                 claimAmount,
                 newStakeManager,
@@ -290,64 +291,59 @@ def test_upgradability(
                     print(
                         "        REV_MSG_SIG rule_upgrade_stakeManager", st_sleep_time
                     )
-                    self.current_sm.executeClaim(JUNK_HEX)
+                    self.sm.executeClaim(JUNK_HEX)
 
             chain.sleep(CLAIM_DELAY * 2)
 
             print("                   rule_executeClaim", newStakeManager.address)
             assert self.f.balanceOf(newStakeManager) == 0
-            assert self.f.balanceOf(self.current_sm) == self.totalFlipstaked
+            assert self.f.balanceOf(self.sm) == self.totalFlipstaked
 
-            self.current_sm.executeClaim(JUNK_HEX, {"from": st_sender})
+            self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
             assert self.f.balanceOf(newStakeManager) == self.totalFlipstaked
-            assert self.f.balanceOf(self.current_sm) == 0
+            assert self.f.balanceOf(self.sm) == 0
 
             # Dewhitelist old StakeManager
             currentWhitelist = [
-                self.current_v,
-                self.current_sm,
+                self.v,
+                self.sm,
                 self.f,
-                self.current_km,
+                self.km,
                 newStakeManager,
             ]
-            toWhitelist = [self.current_v, newStakeManager, self.f, self.current_km]
-            updateCanConsumeKeyNonce(self.current_km, currentWhitelist, toWhitelist)
+            toWhitelist = [self.v, newStakeManager, self.f, self.km]
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
 
-            self.current_sm = newStakeManager
+            self.sm = newStakeManager
 
         # Check that all the funds (ETH and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):
             self.numTxsTested += 1
-            assert self.current_v.balance() == self.TOTAL_FUNDS
-            assert self.f.balanceOf(self.current_sm) == self.totalFlipstaked
+            assert self.v.balance() == self.TOTAL_FUNDS
+            assert self.f.balanceOf(self.sm) == self.totalFlipstaked
 
         # KeyManager might have changed but references must be updated
         # FLIP contract should have remained the same
         def invariant_state_vars(self):
-            assert self.current_v.getKeyManager() == self.current_km.address
-            assert self.current_sm.getKeyManager() == self.current_km.address
-            assert self.f.getKeyManager() == self.current_km.address
+            assert self.v.getKeyManager() == self.km.address
+            assert self.sm.getKeyManager() == self.km.address
+            assert self.f.getKeyManager() == self.km.address
 
-            assert self.current_sm.getFLIP() == self.f.address
+            assert self.sm.getFLIP() == self.f.address
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
 
         def invariant_keyManager_whitelist(self):
             aggKeyNonceConsumers = [
-                self.current_km,
-                self.current_v,
+                self.km,
+                self.v,
                 self.f,
-                self.current_sm,
+                self.sm,
             ]
-            assert self.current_km.getNumberWhitelistedAddresses() == len(
-                aggKeyNonceConsumers
-            )
+            assert self.km.getNumberWhitelistedAddresses() == len(aggKeyNonceConsumers)
 
             for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                assert (
-                    self.current_km.canConsumeKeyNonce(aggKeyNonceConsumer.address)
-                    == True
-                )
+                assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer.address) == True
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
