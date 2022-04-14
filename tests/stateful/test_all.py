@@ -1880,6 +1880,7 @@ def test_all(
 
                 self._updateBalancesOnUpgrade(self.sm, newStakeManager)
                 self.sm = newStakeManager
+                self.minStake = INIT_MIN_STAKE
                 self.lastValidateTime = tx.timestamp
                 # Reset all pending claims
                 self.pendingClaims = {
