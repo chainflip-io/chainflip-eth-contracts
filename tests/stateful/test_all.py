@@ -1475,7 +1475,7 @@ def test_all(
                         keyManagerAddress.address,
                     )
                     # Use the first aggKeyNonceConsumer for simplicity
-                    callDataNoSig = aggKeyNonceConsumer[
+                    callDataNoSig = aggKeyNonceConsumers[
                         0
                     ].updateKeyManager.encode_input(
                         agg_null_sig(self.km, chain.id), newKeyManager
