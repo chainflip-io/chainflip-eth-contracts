@@ -85,7 +85,7 @@ def cfAW(a, cfDeployAllWhitelist):
     cf.DENICE = a[4]
     cf.FR_DENICE = {"from": cf.DENICE}
 
-    # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh 
+    # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh
     cf.GOVERNOR = cfDeployAllWhitelist.gov
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
