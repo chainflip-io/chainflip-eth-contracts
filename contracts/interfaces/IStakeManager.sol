@@ -2,13 +2,13 @@ pragma solidity ^0.8.0;
 
 import "./IFLIP.sol";
 import "./IAggKeyNonceConsumer.sol";
-import "./ICommunityOverriden.sol";
+import "./ICommunityGuarded.sol";
 
 /**
  * @title    StakeManager interface
  * @author   Quantaf1re (James Key)
  */
-interface IStakeManager is IAggKeyNonceConsumer, ICommunityOverriden {
+interface IStakeManager is IAggKeyNonceConsumer, ICommunityGuarded {
     event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,

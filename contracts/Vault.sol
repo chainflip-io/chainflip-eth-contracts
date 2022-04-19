@@ -8,7 +8,7 @@ import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
 import "./AggKeyNonceConsumer.sol";
-import "./CommunityOverriden.sol";
+import "./CommunityGuarded.sol";
 
 /**
  * @title    Vault contract
@@ -16,14 +16,14 @@ import "./CommunityOverriden.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, AggKeyNonceConsumer, CommunityOverriden {
+contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
     using SafeERC20 for IERC20;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
     constructor(IKeyManager keyManager, address communityKey)
         AggKeyNonceConsumer(keyManager)
-        CommunityOverriden(communityKey)
+        CommunityGuarded(communityKey)
     {}
 
     /**
@@ -379,7 +379,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityOverriden {
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      * @param tokens    The addresses of the tokens to be transferred
      */
-    function govWithdraw(IERC20[] calldata tokens) external override isGovernor isNotCommunityOverriden {
+    function govWithdraw(IERC20[] calldata tokens) external override isGovernor isCommunityGuardDisabled {
         // msg.sender == Governor address
         address payable recipient = payable(msg.sender);
 

@@ -7,7 +7,7 @@ import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
 import "./AggKeyNonceConsumer.sol";
-import "./CommunityOverriden.sol";
+import "./CommunityGuarded.sol";
 
 /**
  * @title    StakeManager contract
@@ -22,7 +22,7 @@ import "./CommunityOverriden.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityOverriden, ReentrancyGuard {
+contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityGuarded, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -54,7 +54,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityOverriden,
         IKeyManager keyManager,
         uint256 minStake,
         address communityKey
-    ) AggKeyNonceConsumer(keyManager) CommunityOverriden(communityKey) {
+    ) AggKeyNonceConsumer(keyManager) CommunityGuarded(communityKey) {
         _minStake = minStake;
         deployer = msg.sender;
     }
@@ -205,7 +205,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityOverriden,
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
-    function govWithdraw() external override isGovernor isNotCommunityOverriden {
+    function govWithdraw() external override isGovernor isCommunityGuardDisabled {
         require(suspended, "Staking: Not suspended");
         uint256 amount = _FLIP.balanceOf(address(this));
 

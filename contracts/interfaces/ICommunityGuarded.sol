@@ -3,21 +3,21 @@ pragma solidity ^0.8.0;
 import "./IShared.sol";
 
 /**
- * @title    AggKeyNonceConsumer interface
+ * @title    CommunityGuarded interface
  * @author   albert-llimos (Albert Llimos)
  */
 
-interface ICommunityOverriden is IShared {
+interface ICommunityGuarded is IShared {
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
     //                                                          //
     //////////////////////////////////////////////////////////////
     /**
-     * @notice  Set the Community Key override Action
-     * @param overrideAction   New Override action
+     * @notice  Set the Community Guard state
+     * @param communityGuardDisabled   New Community Guard state
      */
-    function setOverrideAction(bool overrideAction) external;
+    function setCommunityGuard(bool communityGuardDisabled) external;
 
     /**
      * @notice  Update the Community Key. Can only be called by the current Community Key.
@@ -32,14 +32,14 @@ interface ICommunityOverriden is IShared {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Get the Community Key that can override governor actions
+     * @notice  Get the Community Key
      * @return  The CommunityKey
      */
     function getCommunityKey() external view returns (address);
 
     /**
-     * @notice  Get the Community Key override's Action state
-     * @return  The CommunityKey override's Action state
+     * @notice  Get the Community Guard state
+     * @return  The Community Guard state
      */
-    function getCommunityKeyOverride() external view returns (bool);
+    function getCommunityGuard() external view returns (bool);
 }

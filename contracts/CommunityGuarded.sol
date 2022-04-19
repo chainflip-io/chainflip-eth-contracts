@@ -1,21 +1,21 @@
 pragma solidity ^0.8.0;
 
-import "./interfaces/ICommunityOverriden.sol";
+import "./interfaces/ICommunityGuarded.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title    CommunityOverriden contract
- * @notice   Allows for community to override governor actions. The community
- *           address is set in the constructor and can only be updated by the
- *           community address itself.
+ * @title    CommunityGuarded contract
+ * @notice   Allows for community to guard functions, preventing the governor
+ *           from calling them. The community address is set in the constructor 
+ *           and can only be updated by the community address itself.
  * @author   albert-llimos (Albert Llimos)
  */
-contract CommunityOverriden is Shared, ICommunityOverriden {
+contract CommunityGuarded is Shared, ICommunityGuarded {
     /// @dev    Community key - address
     address private _communityKey;
 
-    /// @dev    Override governor action
-    bool private _overrideAction = true;
+    /// @dev    Community Guard Disabled
+    bool private _communityGuardDisabled;
 
     constructor(address communityKey) nzAddr(communityKey) {
         _communityKey = communityKey;
@@ -28,11 +28,11 @@ contract CommunityOverriden is Shared, ICommunityOverriden {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Set the Community Key override Action
-     * @param overrideAction   New Override action
+     * @notice  Set the Community Guard state
+     * @param communityGuardDisabled   New Community Guard state
      */
-    function setOverrideAction(bool overrideAction) external override isCommunityKey {
-        _overrideAction = overrideAction;
+    function setCommunityGuard(bool communityGuardDisabled) external override isCommunityKey {
+        _communityGuardDisabled = communityGuardDisabled;
     }
 
     /**
@@ -50,7 +50,7 @@ contract CommunityOverriden is Shared, ICommunityOverriden {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Get the Community Key that can override governor actions
+     * @notice  Get the Community Key
      * @return  The CommunityKey
      */
     function getCommunityKey() external view override returns (address) {
@@ -58,11 +58,11 @@ contract CommunityOverriden is Shared, ICommunityOverriden {
     }
 
     /**
-     * @notice  Get the Community Key override's Action state
-     * @return  The CommunityKey override's Action state
+     * @notice  Get the Community Guard state
+     * @return  The Community Guard state
      */
-    function getCommunityKeyOverride() external view override returns (bool) {
-        return _overrideAction;
+    function getCommunityGuard() external view override returns (bool) {
+        return _communityGuardDisabled;
     }
 
     //////////////////////////////////////////////////////////////
@@ -77,9 +77,9 @@ contract CommunityOverriden is Shared, ICommunityOverriden {
         _;
     }
 
-    /// @dev    Check that community doesn't override the function call.
-    modifier isNotCommunityOverriden() {
-        require(!_overrideAction, "Community: overriden by community");
+    /// @dev    Check that community has disabled the community guard.
+    modifier isCommunityGuardDisabled() {
+        require(_communityGuardDisabled, "Community: guard not disabled by community");
         _;
     }
 }
