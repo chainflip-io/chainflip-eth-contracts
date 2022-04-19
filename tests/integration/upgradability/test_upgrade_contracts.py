@@ -106,7 +106,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth):
     # Replicate a vault with funds - 1000 ETH
     cf.DENICE.transfer(cf.vault, totalFunds)
 
-    newVault = cf.DEPLOYER.deploy(Vault, cf.keyManager)
+    newVault = cf.DEPLOYER.deploy(Vault, cf.keyManager, cf.COMMUNITY_KEY)
 
     # Check that newly deployed Vault can't validate signatures (not whitelisted yet)
     # Technically we could precomute the deployed address and whitelist it before deployment
@@ -204,9 +204,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth):
 )
 def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff):
     newStakeManager = cf.DEPLOYER.deploy(
-        StakeManager,
-        cf.keyManager,
-        MIN_STAKE,
+        StakeManager, cf.keyManager, MIN_STAKE, cf.COMMUNITY_KEY
     )
 
     with reverts(REV_MSG_STAKEMAN_DEPLOYER):

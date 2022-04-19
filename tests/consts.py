@@ -18,7 +18,7 @@ GOV = "Gov"
 KEYID_TO_NUM = {AGG: 0, GOV: 1}
 NUM_TO_KEYID = [AGG, GOV]
 INIT_TOKEN_SUPPLY = int(10**8 * E_18)
-INIT_ETH_BAL = 10000 * E_18
+INIT_ETH_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
 
 # Time in seconds
@@ -136,6 +136,13 @@ REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
+REV_MSG_VAULT_GOVERNOR = "Vault: not governor"
+
+# -----CommunityGuarded-----
+ENABLE_COMMUNITY_GUARD = False
+DISABLE_COMMUNITY_GUARD = True
+REV_MSG_COMMUNITY_GUARD = "Community: guard not disabled by community"
+REV_MSG_NOT_COMMUNITY = "Community: not Community Key"
 
 # -----Vesting-----
 REVOCABLE = STAKABLE = True

@@ -6,7 +6,7 @@ import "./abstract/Shared.sol";
 /**
  * @title    CommunityGuarded contract
  * @notice   Allows for community to guard functions, preventing the governor
- *           from calling them. The community address is set in the constructor 
+ *           from calling them. The community address is set in the constructor
  *           and can only be updated by the community address itself.
  * @author   albert-llimos (Albert Llimos)
  */
