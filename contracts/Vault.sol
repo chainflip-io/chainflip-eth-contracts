@@ -8,6 +8,7 @@ import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
 import "./AggKeyNonceConsumer.sol";
+import "./CommunityOverriden.sol";
 
 /**
  * @title    Vault contract
@@ -15,12 +16,15 @@ import "./AggKeyNonceConsumer.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, AggKeyNonceConsumer {
+contract Vault is IVault, AggKeyNonceConsumer, CommunityOverriden {
     using SafeERC20 for IERC20;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
+    constructor(IKeyManager keyManager, address communityKey)
+        AggKeyNonceConsumer(keyManager)
+        CommunityOverriden(communityKey)
+    {}
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -368,6 +372,37 @@ contract Vault is IVault, AggKeyNonceConsumer {
                 ++i;
             }
         }
+    }
+
+    /**
+     * @notice Withdraw all funds to governance address in case of emergency. This withdrawal needs
+     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
+     * @param tokens    The addresses of the tokens to be transferred
+     */
+    function govWithdraw(IERC20[] calldata tokens) external override isGovernor isNotCommunityOverriden {
+        // msg.sender == Governor address
+        address payable recipient = payable(msg.sender);
+
+        // Transfer all ETH and ERC20 Tokens
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (address(tokens[i]) == _ETH_ADDR) {
+                _transfer(IERC20(_ETH_ADDR), recipient, address(this).balance);
+            } else {
+                _transfer(tokens[i], recipient, tokens[i].balanceOf(address(this)));
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Modifiers                       //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Ensure that the caller is the KeyManager's governor address.
+    modifier isGovernor() {
+        require(msg.sender == _getKeyManager().getGovernanceKey(), "Vault: not governor");
+        _;
     }
 
     //////////////////////////////////////////////////////////////

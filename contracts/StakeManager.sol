@@ -7,6 +7,7 @@ import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
 import "./AggKeyNonceConsumer.sol";
+import "./CommunityOverriden.sol";
 
 /**
  * @title    StakeManager contract
@@ -21,7 +22,7 @@ import "./AggKeyNonceConsumer.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
+contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityOverriden, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -49,7 +50,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
     //     uint48 expiryTime;
     // }
 
-    constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
+    constructor(
+        IKeyManager keyManager,
+        uint256 minStake,
+        address communityKey
+    ) AggKeyNonceConsumer(keyManager) CommunityOverriden(communityKey) {
         _minStake = minStake;
         deployer = msg.sender;
     }
@@ -197,17 +202,16 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
     }
 
     /**
-     * @notice In the event of fraudulent claims being accepted, the contract is
-     * effectively useless. This function allows governance to admit that by
-     * withdrawing all the FLIP to their address. From where it will be dealt
-     * with later.
+     * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
+     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
-    function govWithdraw() external override isGovernor {
+    function govWithdraw() external override isGovernor isNotCommunityOverriden {
         require(suspended, "Staking: Not suspended");
-        address to = _getKeyManager().getGovernanceKey();
         uint256 amount = _FLIP.balanceOf(address(this));
-        _FLIP.transfer(to, amount);
-        emit GovernanceWithdrawal(to, amount);
+
+        // msg.sender == Governor address
+        _FLIP.transfer(msg.sender, amount);
+        emit GovernanceWithdrawal(msg.sender, amount);
     }
 
     /**

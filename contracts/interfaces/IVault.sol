@@ -2,13 +2,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IAggKeyNonceConsumer.sol";
+import "./ICommunityOverriden.sol";
 
 /**
  * @title    Vault interface
  * @notice   The interface for functions Vault implements
  * @author   Quantaf1re (James Key)
  */
-interface IVault is IAggKeyNonceConsumer {
+interface IVault is IAggKeyNonceConsumer, ICommunityOverriden {
     function allBatch(
         SigData calldata sigData,
         bytes32[] calldata fetchSwapIDs,
@@ -59,4 +60,6 @@ interface IVault is IAggKeyNonceConsumer {
         bytes32[] calldata swapIDs,
         IERC20[] calldata tokens
     ) external;
+
+    function govWithdraw(IERC20[] calldata tokens) external;
 }

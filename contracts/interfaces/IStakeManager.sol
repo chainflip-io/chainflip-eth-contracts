@@ -2,12 +2,13 @@ pragma solidity ^0.8.0;
 
 import "./IFLIP.sol";
 import "./IAggKeyNonceConsumer.sol";
+import "./ICommunityOverriden.sol";
 
 /**
  * @title    StakeManager interface
  * @author   Quantaf1re (James Key)
  */
-interface IStakeManager is IAggKeyNonceConsumer {
+interface IStakeManager is IAggKeyNonceConsumer, ICommunityOverriden {
     event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
@@ -95,9 +96,8 @@ interface IStakeManager is IAggKeyNonceConsumer {
     function resume() external;
 
     /**
-     * @notice      Withdraw all FLIP to governance address, only if suspended.
-     *              Used to rectify an emergency. Chainflip network is likely
-     *              to be compromised if this is necessary, it is a last resort.
+     * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
+     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
     function govWithdraw() external;
 
