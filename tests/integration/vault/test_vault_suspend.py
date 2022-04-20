@@ -4,7 +4,7 @@ from brownie.test import given, strategy
 
 
 @given(st_amount=strategy("uint"), st_reciever=strategy("address"))
-def test_suspend(cf, st_reciever, st_amount):
+def test_vault_suspend(cf, st_reciever, st_amount):
 
     # Suspend the Vault contract
     cf.vault.suspend({"from": cf.GOVERNOR})
