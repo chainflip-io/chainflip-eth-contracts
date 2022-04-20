@@ -127,22 +127,21 @@ REV_MSG_SM_ARR_LEN = "Staking: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "Staking: early, late, or execd"
-REV_MSG_STAKEMAN_GOVERNOR = "Staking: not governor"
-REV_MSG_STAKEMAN_SUSPENDED = "Staking: suspended"
-REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: not suspended"
 REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
 REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 
 # -----Vault-----
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
-REV_MSG_VAULT_GOVERNOR = "Vault: not governor"
 
 # -----GovernanceCommunityGuarded-----
 ENABLE_COMMUNITY_GUARD = False
 DISABLE_COMMUNITY_GUARD = True
-REV_MSG_COMMUNITY_GUARD = "Community: guard not disabled by community"
-REV_MSG_NOT_COMMUNITY = "Community: not Community Key"
+REV_MSG_GOV_GUARD = "Governance: guard not disabled by community"
+REV_MSG_GOV_NOT_COMMUNITY = "Governance: not Community Key"
+REV_MSG_GOV_GOVERNOR = "Governance: not governor"
+REV_MSG_GOV_SUSPENDED = "Governance: suspended"
+REV_MSG_GOV_NOT_SUSPENDED = "Governance: not suspended"
 
 # -----Vesting-----
 REVOCABLE = STAKABLE = True

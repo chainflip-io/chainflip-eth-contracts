@@ -170,7 +170,7 @@ def test_registerClaim_rev_suspended(cf, stakedMin, st_sender):
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.registerClaim(
             AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
             *args,

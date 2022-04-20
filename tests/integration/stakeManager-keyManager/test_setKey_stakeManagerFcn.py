@@ -10,7 +10,7 @@ def test_setGovKeyWithGovKey_setMinStake(cfAW):
     newMinStake = int(MIN_STAKE * 1.5)
 
     # Changing minStake with old key should revert
-    with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+    with reverts(REV_MSG_GOV_GOVERNOR):
         cfAW.stakeManager.setMinStake(newMinStake, {"from": cfAW.GOVERNOR})
 
     # Change minStake with new key

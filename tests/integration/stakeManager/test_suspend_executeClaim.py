@@ -20,7 +20,7 @@ def test_suspend_executeClaim(cf, claimRegistered):
     chain.sleep(CLAIM_DELAY)
 
     # Test that attempting to execute the claim fails
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Resume the StakeManager
@@ -53,7 +53,7 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
     chain.sleep(CLAIM_DELAY)
 
     # Test that attempting to execute the claim fails
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Withdraw FLIP via governance motion
@@ -73,7 +73,7 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
     ]
 
     # Sanity check that we're still suspended
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Resume the StakeManager

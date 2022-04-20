@@ -14,7 +14,7 @@ def test_govWithdraw(cf, stakedMin):
     # Ensure that we're not dealing with zero
     assert stakeManagerFlipBalance != 0
 
-    with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+    with reverts(REV_MSG_GOV_GOVERNOR):
         cf.stakeManager.govWithdraw({"from": cf.ALICE})
 
     with reverts(REV_MSG_COMMUNITY_GUARD):
@@ -24,13 +24,13 @@ def test_govWithdraw(cf, stakedMin):
         DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY}
     )
 
-    with reverts(REV_MSG_STAKEMAN_NOT_SUSPENDED):
+    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
         cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
 
     cf.stakeManager.suspend({"from": cf.GOVERNOR})
 
     # Ensure that an external address cannot withdraw funds after removing guard
-    with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+    with reverts(REV_MSG_GOV_GOVERNOR):
         cf.stakeManager.govWithdraw({"from": cf.ALICE})
 
     tx = cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})

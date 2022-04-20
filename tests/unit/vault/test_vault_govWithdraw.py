@@ -41,7 +41,7 @@ def test_govWithdraw(cf, token, token2, ethAmount, tokenAmount, token2Amount):
 
     tokenList = [ETH_ADDR, token, token2]
 
-    with reverts(REV_MSG_VAULT_GOVERNOR):
+    with reverts(REV_MSG_GOV_GOVERNOR):
         cf.vault.govWithdraw(tokenList, {"from": cf.ALICE})
 
     with reverts(REV_MSG_COMMUNITY_GUARD):
@@ -50,7 +50,7 @@ def test_govWithdraw(cf, token, token2, ethAmount, tokenAmount, token2Amount):
     cf.vault.setCommunityGuard(DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})
 
     # Ensure that an external address cannot withdraw funds after removing guard
-    with reverts(REV_MSG_VAULT_GOVERNOR):
+    with reverts(REV_MSG_GOV_GOVERNOR):
         cf.vault.govWithdraw(tokenList, {"from": cf.ALICE})
 
     cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})

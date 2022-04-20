@@ -19,14 +19,16 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     transfer_eth(cf, cf.vault, st_sender, TEST_AMNT)
 
     # Withdraw all Vault balance
+    cf.vault.suspend({"from": cf.GOVERNOR})
     cf.vault.setCommunityGuard(DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})
-
     cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
+    cf.vault.resume({"from": cf.GOVERNOR})
 
     assert cf.vault.balance() == 0
     # Receiver balance do not change because no funds can be transferred
     minAmount = 1
     iniEthBal = st_sender.balance()
+    iniTransactionNumber = len(history.filter(sender=st_sender))
     callDataNoSig = cf.vault.transfer.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, st_sender, minAmount
     )
@@ -37,15 +39,23 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
         minAmount,
         {"from": st_sender},
     )
-    assert st_sender.balance() == iniEthBal - calculateGasTransaction(tx)
+    assert st_sender.balance() == iniEthBal - calculateGasSpentByAddress(
+        st_sender, iniTransactionNumber
+    )
 
-    # Vault can fetch still fetch amounts even after govWithdrawal - pending/old swaps
+    # Vault can still fetch amounts even after govWithdrawal - pending/old swaps
     fetchDepositEth(cf, cf.vault, DepositEth)
     # GovWithdraw amounts recently fetched
     iniEthBalGov = cf.GOVERNOR.balance()
+    iniTransactionNumber = len(history.filter(sender=cf.GOVERNOR))
+    cf.vault.suspend({"from": cf.GOVERNOR})
     tx = cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
-    assert cf.GOVERNOR.balance() == iniEthBalGov + TEST_AMNT - calculateGasTransaction(
-        tx
+    cf.vault.resume({"from": cf.GOVERNOR})
+    assert (
+        cf.GOVERNOR.balance()
+        == iniEthBalGov
+        + TEST_AMNT
+        - calculateGasSpentByAddress(cf.GOVERNOR, iniTransactionNumber)
     )
 
     cf.vault.setCommunityGuard(ENABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})

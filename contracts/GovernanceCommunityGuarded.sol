@@ -6,14 +6,14 @@ import "./abstract/Shared.sol";
 
 /**
  * @title    GovernanceCommunityGuarded contract
- * @notice   Allows the governor to perform certain actions for the procotol's safety.
- *           It allows the governor to suspend execution in case of emergency. This shall
- *           stop the execution of functions that require an AggKey signature in the child's
- *           contract. Notice that this contract inherits from AggKeyNonceConsumer, so it
- *           allows the child's contract to validate signatures.
- *           Finally, it provides the child's contract to have the ability to safeguard
- *           certain functions, allowing the governor to execute them iff the community
- *           key allows it.
+ * @notice   Allows the governor to perform certain actions for the procotol's safety in
+ *           case of emergency.
+ *           The aim is to allow the governor to suspend execution of functions that
+ *           require an AggKey signature in the child's contract. Notice that this contract
+ *           inherits from AggKeyNonceConsumer, so it allows the child's contract to
+ *           validate signatures.
+ *           Finally, it provides the CommunityKey the ability to safeguard certain
+ *           functions, allowing the governor to execute them iff the communityKey allows it
  *
  * @author   albert-llimos (Albert Llimos)
  */
@@ -106,31 +106,31 @@ contract GovernanceCommunityGuarded is AggKeyNonceConsumer, IGovernanceCommunity
 
     /// @dev    Ensure that the caller is the Community Key address.
     modifier isCommunityKey() {
-        require(msg.sender == _communityKey, "Community: not Community Key");
+        require(msg.sender == _communityKey, "Governance: not Community Key");
         _;
     }
 
     /// @dev    Check that community has disabled the community guard.
     modifier isCommunityGuardDisabled() {
-        require(_communityGuardDisabled, "Community: guard not disabled by community");
+        require(_communityGuardDisabled, "Governance: guard not disabled by community");
         _;
     }
 
     /// @notice Ensure that the caller is the KeyManager's governor address.
     modifier isGovernor() {
-        require(msg.sender == _getKeyManager().getGovernanceKey(), "Staking: not governor");
+        require(msg.sender == _getKeyManager().getGovernanceKey(), "Governance: not governor");
         _;
     }
 
     // @notice Check execution is suspended
     modifier isSuspended() {
-        require(_suspended, "Staking: not suspended");
+        require(_suspended, "Governance: not suspended");
         _;
     }
 
     // @notice Check execution is not suspended
     modifier isNotSuspended() {
-        require(!_suspended, "Staking: suspended");
+        require(!_suspended, "Governance: suspended");
         _;
     }
 }
