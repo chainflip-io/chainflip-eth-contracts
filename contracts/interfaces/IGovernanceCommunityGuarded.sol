@@ -8,7 +8,7 @@ import "./IAggKeyNonceConsumer.sol";
  * @author   albert-llimos (Albert Llimos)
  */
 
-interface IGovernanceCommunityGuarded is IAggKeyNonceConsumer {
+interface IGovernanceCommunityGuarded is IShared {
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //

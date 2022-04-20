@@ -7,17 +7,14 @@ import "./abstract/Shared.sol";
 /**
  * @title    GovernanceCommunityGuarded contract
  * @notice   Allows the governor to perform certain actions for the procotol's safety in
- *           case of emergency.
- *           The aim is to allow the governor to suspend execution of functions that
- *           require an AggKey signature in the child's contract. Notice that this contract
- *           inherits from AggKeyNonceConsumer, so it allows the child's contract to
- *           validate signatures.
- *           Finally, it provides the CommunityKey the ability to safeguard certain
- *           functions, allowing the governor to execute them iff the communityKey allows it
+ *           case of emergency. The aim is to allow the governor to suspend execution of
+ *           critical functions.
+ *           Also, it allows the CommunityKey to safeguard certain functions so the
+ *           governor can execute them iff the communityKey allows it.
  *
  * @author   albert-llimos (Albert Llimos)
  */
-contract GovernanceCommunityGuarded is AggKeyNonceConsumer, IGovernanceCommunityGuarded {
+abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuarded {
     /// @dev    Community key - address
     address private _communityKey;
 
@@ -27,7 +24,7 @@ contract GovernanceCommunityGuarded is AggKeyNonceConsumer, IGovernanceCommunity
     /// @dev    Whether execution is suspended
     bool private _suspended = false;
 
-    constructor(IKeyManager keyManager, address communityKey) nzAddr(communityKey) AggKeyNonceConsumer(keyManager) {
+    constructor(address communityKey) nzAddr(communityKey) {
         _communityKey = communityKey;
     }
 
@@ -98,6 +95,13 @@ contract GovernanceCommunityGuarded is AggKeyNonceConsumer, IGovernanceCommunity
         return _suspended;
     }
 
+    /**
+     * @notice  Get the governor's address. To be overriden depending on the
+     *          contract's implementation
+     * @return  The governor's address
+     */
+    function getGovernor() internal view virtual returns (address);
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                         Modifiers                        //
@@ -118,7 +122,7 @@ contract GovernanceCommunityGuarded is AggKeyNonceConsumer, IGovernanceCommunity
 
     /// @notice Ensure that the caller is the KeyManager's governor address.
     modifier isGovernor() {
-        require(msg.sender == _getKeyManager().getGovernanceKey(), "Governance: not governor");
+        require(msg.sender == getGovernor(), "Governance: not governor");
         _;
     }
 

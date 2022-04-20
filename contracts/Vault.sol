@@ -8,6 +8,7 @@ import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
 import "./GovernanceCommunityGuarded.sol";
+import "./AggKeyNonceConsumer.sol";
 
 /**
  * @title    Vault contract
@@ -15,14 +16,17 @@ import "./GovernanceCommunityGuarded.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, GovernanceCommunityGuarded {
+contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager, address communityKey) GovernanceCommunityGuarded(keyManager, communityKey) {}
+    constructor(IKeyManager keyManager, address communityKey)
+        AggKeyNonceConsumer(keyManager)
+        GovernanceCommunityGuarded(communityKey)
+    {}
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -405,6 +409,16 @@ contract Vault is IVault, GovernanceCommunityGuarded {
                 _transfer(tokens[i], recipient, tokens[i].balanceOf(address(this)));
             }
         }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Getters                         //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function getGovernor() internal view override returns (address) {
+        return _getKeyManager().getGovernanceKey();
     }
 
     //////////////////////////////////////////////////////////////

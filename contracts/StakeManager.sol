@@ -7,6 +7,7 @@ import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
 import "./GovernanceCommunityGuarded.sol";
+import "./AggKeyNonceConsumer.sol";
 
 /**
  * @title    StakeManager contract
@@ -21,7 +22,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, GovernanceCommunityGuarded, ReentrancyGuard {
+contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -50,7 +51,7 @@ contract StakeManager is IStakeManager, GovernanceCommunityGuarded, ReentrancyGu
         IKeyManager keyManager,
         uint256 minStake,
         address communityKey
-    ) GovernanceCommunityGuarded(keyManager, communityKey) {
+    ) AggKeyNonceConsumer(keyManager) GovernanceCommunityGuarded(communityKey) {
         _minStake = minStake;
         deployer = msg.sender;
     }
@@ -204,6 +205,14 @@ contract StakeManager is IStakeManager, GovernanceCommunityGuarded, ReentrancyGu
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Get the governor's address from the Key Manager.
+     * @return  The governor's address
+     */
+    function getGovernor() internal view override returns (address) {
+        return _getKeyManager().getGovernanceKey();
+    }
 
     /**
      * @notice  Get the FLIP token address
