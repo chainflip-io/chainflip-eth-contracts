@@ -1,0 +1,17 @@
+name: Package repo
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  stateful-tests:
+    container:
+      image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.CHAINFLIP_BOT_GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
