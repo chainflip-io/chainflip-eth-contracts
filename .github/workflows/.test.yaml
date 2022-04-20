@@ -7,10 +7,15 @@ on:
       runs_on:
         required: true
         type: string
+      timeout_minutes:
+        required: false
+        type: number
+        default: 360
     
 jobs:
   test:
     runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
     container:
       image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
       credentials:

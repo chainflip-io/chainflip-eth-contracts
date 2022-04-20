@@ -15,3 +15,4 @@ jobs:
     with:
       stateful: true
       runs_on: self-hosted
+      timeout_minutes: 3600
