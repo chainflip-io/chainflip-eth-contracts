@@ -1,0 +1,13 @@
+name: Main Pipeline
+on: push
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: "${{ github.repository }}/eth-brownie"
+
+jobs:
+  build:
+    name: Build Brownie ETH
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.docker-build.yaml@main
+
+
