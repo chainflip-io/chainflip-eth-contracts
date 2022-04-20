@@ -18,6 +18,8 @@ import "./GovernanceCommunityGuarded.sol";
 contract Vault is IVault, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
+    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
+
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
     constructor(IKeyManager keyManager, address communityKey) GovernanceCommunityGuarded(keyManager, communityKey) {}
@@ -379,10 +381,19 @@ contract Vault is IVault, GovernanceCommunityGuarded {
 
     /**
      * @notice Withdraw all funds to governance address in case of emergency. This withdrawal needs
-     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
+     *         to be approved by the Community and it can only be executed if no nonce from the
+     *         current AggKey had been consumed in _AGG_KEY_TIMEOUT time. Itt is a last resort and
+     *         can be used to rectify an emergency.
      * @param tokens    The addresses of the tokens to be transferred
      */
-    function govWithdraw(IERC20[] calldata tokens) external override isGovernor isCommunityGuardDisabled isSuspended {
+    function govWithdraw(IERC20[] calldata tokens)
+        external
+        override
+        isGovernor
+        isCommunityGuardDisabled
+        isSuspended
+        validTime
+    {
         // msg.sender == Governor address
         address payable recipient = payable(msg.sender);
 
@@ -394,6 +405,21 @@ contract Vault is IVault, GovernanceCommunityGuarded {
                 _transfer(tokens[i], recipient, tokens[i].balanceOf(address(this)));
             }
         }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Modifiers                       //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev    Check that no nonce of the current AggKey has been consumed in the last 14 days - emergency
+    modifier validTime() {
+        require(
+            block.timestamp - _getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
+            "Vault: not enough delay"
+        );
+        _;
     }
 
     //////////////////////////////////////////////////////////////
