@@ -1,10 +1,6 @@
 name: Main Pipeline
 on: push
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   build:
     permissions:

@@ -1,10 +1,6 @@
 on:
   workflow_call:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/eth-brownie
-
 jobs:
   build:
     name: Build Docker Image
@@ -26,7 +22,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie
           tags: latest
 
       - name: Login to DockerHub
