@@ -7,15 +7,15 @@ env:
 
 jobs:
   build:
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.docker-build.yaml@chore/build-docker-on-gha
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.docker-build.yaml@main
 
   lint:
     needs: build
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@chore/build-docker-on-gha
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@main
 
   run-tests:
     needs: build
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@chore/build-docker-on-gha
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@main
     with:
       stateful: false
       runs_on: ubuntu-latest
