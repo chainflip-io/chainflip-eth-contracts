@@ -19,6 +19,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     transfer_eth(cf, cf.vault, st_sender, TEST_AMNT)
 
     # Withdraw all Vault balance
+    chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
     cf.vault.suspend({"from": cf.GOVERNOR})
     cf.vault.setCommunityGuard(DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})
     cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
@@ -46,6 +47,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     # Vault can still fetch amounts even after govWithdrawal - pending/old swaps
     fetchDepositEth(cf, cf.vault, DepositEth)
     # GovWithdraw amounts recently fetched
+    chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
     iniEthBalGov = cf.GOVERNOR.balance()
     iniTransactionNumber = len(history.filter(sender=cf.GOVERNOR))
     cf.vault.suspend({"from": cf.GOVERNOR})
@@ -62,7 +64,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
 
     fetchDepositEth(cf, cf.vault, DepositEth)
     # Governance cannot withdraw again since community Guard is enabled again
-    with reverts(REV_MSG_COMMUNITY_GUARD):
+    with reverts(REV_MSG_GOV_GUARD):
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
 
     # Vault has funds so it can transfer again

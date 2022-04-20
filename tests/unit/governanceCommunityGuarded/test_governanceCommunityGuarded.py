@@ -23,7 +23,7 @@ def test_constructor_deploy(cf, Vault, StakeManager):
 def test_setCommunityGuard(cf):
     governanceCommunityGuardedList = getgovernanceCommunityGuardedList(cf)
     for governanceCommunityGuarded in governanceCommunityGuardedList:
-        with reverts(REV_MSG_NOT_COMMUNITY):
+        with reverts(REV_MSG_GOV_NOT_COMMUNITY):
             governanceCommunityGuarded.setCommunityGuard(
                 DISABLE_COMMUNITY_GUARD, {"from": cf.ALICE}
             )
@@ -50,7 +50,7 @@ def test_setCommunityGuard(cf):
 def test_updateCommunityKey(cf):
     governanceCommunityGuardedList = getgovernanceCommunityGuardedList(cf)
     for governanceCommunityGuarded in governanceCommunityGuardedList:
-        with reverts(REV_MSG_NOT_COMMUNITY):
+        with reverts(REV_MSG_GOV_NOT_COMMUNITY):
             governanceCommunityGuarded.updateCommunityKey(ZERO_ADDR, {"from": cf.ALICE})
         with reverts(REV_MSG_NZ_ADDR):
             governanceCommunityGuarded.updateCommunityKey(
@@ -63,7 +63,7 @@ def test_updateCommunityKey(cf):
         assert governanceCommunityGuarded.getCommunityGuard() == ENABLE_COMMUNITY_GUARD
 
         # Ensure that new community address can disable community Guard and the old one cannot
-        with reverts(REV_MSG_NOT_COMMUNITY):
+        with reverts(REV_MSG_GOV_NOT_COMMUNITY):
             governanceCommunityGuarded.setCommunityGuard(
                 DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY}
             )

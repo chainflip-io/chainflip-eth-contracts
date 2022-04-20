@@ -1,6 +1,6 @@
 from consts import *
 from brownie import reverts
-from test_governanceCommuityGuarded import getgovernanceCommunityGuardedList
+from test_governanceCommunityGuarded import getgovernanceCommunityGuardedList
 
 
 def test_suspend(cf):

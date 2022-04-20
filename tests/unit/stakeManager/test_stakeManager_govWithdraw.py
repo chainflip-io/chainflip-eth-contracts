@@ -17,7 +17,7 @@ def test_govWithdraw(cf, stakedMin):
     with reverts(REV_MSG_GOV_GOVERNOR):
         cf.stakeManager.govWithdraw({"from": cf.ALICE})
 
-    with reverts(REV_MSG_COMMUNITY_GUARD):
+    with reverts(REV_MSG_GOV_GUARD):
         cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
 
     cf.stakeManager.setCommunityGuard(

@@ -131,8 +131,10 @@ REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
 REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 
 # -----Vault-----
+AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
+REV_MSG_VAULT_DELAY = "Vault: not enough delay"
 
 # -----GovernanceCommunityGuarded-----
 ENABLE_COMMUNITY_GUARD = False
