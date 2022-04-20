@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IAggKeyNonceConsumer.sol";
 import "./ICommunityGuarded.sol";
 
 /**
@@ -9,7 +8,7 @@ import "./ICommunityGuarded.sol";
  * @notice   The interface for functions Vault implements
  * @author   Quantaf1re (James Key)
  */
-interface IVault is IAggKeyNonceConsumer, ICommunityGuarded {
+interface IVault is ICommunityGuarded {
     function allBatch(
         SigData calldata sigData,
         bytes32[] calldata fetchSwapIDs,

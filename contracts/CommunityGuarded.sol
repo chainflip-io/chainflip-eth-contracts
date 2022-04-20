@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/ICommunityGuarded.sol";
+import "./AggKeyNonceConsumer.sol";
 import "./abstract/Shared.sol";
 
 /**
@@ -10,14 +11,17 @@ import "./abstract/Shared.sol";
  *           and can only be updated by the community address itself.
  * @author   albert-llimos (Albert Llimos)
  */
-contract CommunityGuarded is Shared, ICommunityGuarded {
+abstract contract CommunityGuarded is AggKeyNonceConsumer, ICommunityGuarded {
     /// @dev    Community key - address
     address private _communityKey;
 
     /// @dev    Community Guard Disabled
     bool private _communityGuardDisabled;
 
-    constructor(address communityKey) nzAddr(communityKey) {
+    /// @dev    Whether execution is suspended
+    bool private _suspended = false;
+
+    constructor(IKeyManager keyManager, address communityKey) nzAddr(communityKey) AggKeyNonceConsumer(keyManager) {
         _communityKey = communityKey;
     }
 
@@ -43,6 +47,21 @@ contract CommunityGuarded is Shared, ICommunityGuarded {
         _communityKey = newCommunityKey;
     }
 
+    /**
+     * @notice Can be used to suspend contract execution - only executable by
+     * governance and only to be used in case of emergency.
+     */
+    function suspend() external override isGovernor isNotSuspended {
+        _suspended = true;
+    }
+
+    /**
+     * @notice      Resume contract execution
+     */
+    function resume() external override isGovernor isSuspended {
+        _suspended = false;
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Getters                         //
@@ -65,6 +84,14 @@ contract CommunityGuarded is Shared, ICommunityGuarded {
         return _communityGuardDisabled;
     }
 
+    /**
+     * @notice  Get suspended state
+     * @return  The suspended state
+     */
+    function getSuspendedState() external view override returns (bool) {
+        return _suspended;
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                         Modifiers                        //
@@ -80,6 +107,24 @@ contract CommunityGuarded is Shared, ICommunityGuarded {
     /// @dev    Check that community has disabled the community guard.
     modifier isCommunityGuardDisabled() {
         require(_communityGuardDisabled, "Community: guard not disabled by community");
+        _;
+    }
+
+    /// @notice Ensure that the caller is the KeyManager's governor address.
+    modifier isGovernor() {
+        require(msg.sender == _getKeyManager().getGovernanceKey(), "Staking: not governor");
+        _;
+    }
+
+    // @notice Check execution is suspended
+    modifier isSuspended() {
+        require(_suspended, "Staking: not suspended");
+        _;
+    }
+
+    // @notice Check execution is not suspended
+    modifier isNotSuspended() {
+        require(!_suspended, "Staking: suspended");
         _;
     }
 }

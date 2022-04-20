@@ -1,13 +1,14 @@
 pragma solidity ^0.8.0;
 
 import "./IShared.sol";
+import "./IAggKeyNonceConsumer.sol";
 
 /**
  * @title    CommunityGuarded interface
  * @author   albert-llimos (Albert Llimos)
  */
 
-interface ICommunityGuarded is IShared {
+interface ICommunityGuarded is IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
@@ -24,6 +25,17 @@ interface ICommunityGuarded is IShared {
      * @param newCommunityKey   New Community key address.
      */
     function updateCommunityKey(address newCommunityKey) external;
+
+    /**
+     * @notice  Can be used to suspend contract execution - only executable by
+     *          governance and only to be used in case of emergency.
+     */
+    function suspend() external;
+
+    /**
+     * @notice      Resume contract execution
+     */
+    function resume() external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -42,4 +54,10 @@ interface ICommunityGuarded is IShared {
      * @return  The Community Guard state
      */
     function getCommunityGuard() external view returns (bool);
+
+    /**
+     * @notice  Get suspended state
+     * @return  The suspended state
+     */
+    function getSuspendedState() external view returns (bool);
 }

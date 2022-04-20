@@ -6,7 +6,6 @@ import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
-import "./AggKeyNonceConsumer.sol";
 import "./CommunityGuarded.sol";
 
 /**
@@ -22,14 +21,11 @@ import "./CommunityGuarded.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityGuarded, ReentrancyGuard {
+contract StakeManager is IStakeManager, CommunityGuarded, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     FLIP private _FLIP;
-
-    /// @dev    Whether execution of claims is suspended. Used in emergencies.
-    bool public suspended = false;
 
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     uint256 private _minStake;
@@ -54,7 +50,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityGuarded, R
         IKeyManager keyManager,
         uint256 minStake,
         address communityKey
-    ) AggKeyNonceConsumer(keyManager) CommunityGuarded(communityKey) {
+    ) CommunityGuarded(keyManager, communityKey) {
         _minStake = minStake;
         deployer = msg.sender;
     }
@@ -119,6 +115,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityGuarded, R
         external
         override
         nonReentrant
+        isNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
@@ -160,8 +157,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityGuarded, R
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(bytes32 nodeID) external override {
-        require(!suspended, "Staking: suspended");
+    function executeClaim(bytes32 nodeID) external override isNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
         require(
             uint256(block.timestamp) >= claim.startTime && uint256(block.timestamp) <= claim.expiryTime,
@@ -187,26 +183,10 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityGuarded, R
     }
 
     /**
-     * @notice Can be used to suspend executions of claims - only executable by
-     * governance and should only be used if fraudulent claim is suspected.
-     */
-    function suspend() external override isGovernor {
-        suspended = true;
-    }
-
-    /**
-     * @notice Can be used by governance to resume the execution of claims.
-     */
-    function resume() external override isGovernor {
-        suspended = false;
-    }
-
-    /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
-    function govWithdraw() external override isGovernor isCommunityGuardDisabled {
-        require(suspended, "Staking: Not suspended");
+    function govWithdraw() external override isGovernor isCommunityGuardDisabled isSuspended {
         uint256 amount = _FLIP.balanceOf(address(this));
 
         // msg.sender == Governor address
@@ -257,12 +237,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, CommunityGuarded, R
     //                          Modifiers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /// @notice Ensure that the caller is the KeyManager's governor address.
-    modifier isGovernor() {
-        require(msg.sender == _getKeyManager().getGovernanceKey(), "Staking: not governor");
-        _;
-    }
 
     /// @notice Ensure that the caller is the deployer address.
     modifier onlyDeployer() {

@@ -129,7 +129,7 @@ REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "Staking: early, late, or execd"
 REV_MSG_STAKEMAN_GOVERNOR = "Staking: not governor"
 REV_MSG_STAKEMAN_SUSPENDED = "Staking: suspended"
-REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: Not suspended"
+REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: not suspended"
 REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
 REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 

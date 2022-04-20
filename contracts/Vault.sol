@@ -7,7 +7,6 @@ import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
-import "./AggKeyNonceConsumer.sol";
 import "./CommunityGuarded.sol";
 
 /**
@@ -16,15 +15,12 @@ import "./CommunityGuarded.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
+contract Vault is IVault, CommunityGuarded {
     using SafeERC20 for IERC20;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager, address communityKey)
-        AggKeyNonceConsumer(keyManager)
-        CommunityGuarded(communityKey)
-    {}
+    constructor(IKeyManager keyManager, address communityKey) CommunityGuarded(keyManager, communityKey) {}
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -55,6 +51,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
     )
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -119,6 +116,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
     )
         external
         override
+        isNotSuspended
         nzAddr(address(token))
         nzAddr(recipient)
         nzUint(amount)
@@ -158,6 +156,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
     )
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -254,6 +253,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
         external
         override
         nzBytes32(swapID)
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -280,6 +280,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -317,6 +318,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
     )
         external
         override
+        isNotSuspended
         nzBytes32(swapID)
         nzAddr(address(token))
         consumerKeyNonce(
@@ -351,6 +353,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
     )
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -379,7 +382,7 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      * @param tokens    The addresses of the tokens to be transferred
      */
-    function govWithdraw(IERC20[] calldata tokens) external override isGovernor isCommunityGuardDisabled {
+    function govWithdraw(IERC20[] calldata tokens) external override isGovernor isCommunityGuardDisabled isSuspended {
         // msg.sender == Governor address
         address payable recipient = payable(msg.sender);
 
@@ -391,18 +394,6 @@ contract Vault is IVault, AggKeyNonceConsumer, CommunityGuarded {
                 _transfer(tokens[i], recipient, tokens[i].balanceOf(address(this)));
             }
         }
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Modifiers                       //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Ensure that the caller is the KeyManager's governor address.
-    modifier isGovernor() {
-        require(msg.sender == _getKeyManager().getGovernanceKey(), "Vault: not governor");
-        _;
     }
 
     //////////////////////////////////////////////////////////////

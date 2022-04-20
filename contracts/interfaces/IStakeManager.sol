@@ -1,14 +1,13 @@
 pragma solidity ^0.8.0;
 
 import "./IFLIP.sol";
-import "./IAggKeyNonceConsumer.sol";
 import "./ICommunityGuarded.sol";
 
 /**
  * @title    StakeManager interface
  * @author   Quantaf1re (James Key)
  */
-interface IStakeManager is IAggKeyNonceConsumer, ICommunityGuarded {
+interface IStakeManager is ICommunityGuarded {
     event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
@@ -83,17 +82,6 @@ interface IStakeManager is IAggKeyNonceConsumer, ICommunityGuarded {
      * @param newMinStake   The new minimum stake
      */
     function setMinStake(uint256 newMinStake) external;
-
-    /**
-     * @notice      Pause claim executions on the contract, for the purpose of
-     *              allowing governance to intervene in an emergency.
-     */
-    function suspend() external;
-
-    /**
-     * @notice      Resume claim executions on the contract.
-     */
-    function resume() external;
 
     /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
