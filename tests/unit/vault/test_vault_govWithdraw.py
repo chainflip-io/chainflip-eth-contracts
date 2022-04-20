@@ -10,9 +10,9 @@ from brownie.test import given, strategy
     token2Amount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
 )
 def test_govWithdraw(cf, token, token2, ethAmount, tokenAmount, token2Amount):
+
     # Fund Vault contract. Using non-deployer to transfer ETH because the deployer
     # doesn't have INIT_ETH_BAL - gas spent deploying contracts
-
     cf.DENICE.transfer(cf.vault, ethAmount)
     token.transfer(cf.vault, tokenAmount, {"from": cf.DEPLOYER})
     token2.transfer(cf.vault, token2Amount, {"from": cf.DEPLOYER})
@@ -49,6 +49,7 @@ def test_govWithdraw(cf, token, token2, ethAmount, tokenAmount, token2Amount):
 
     cf.vault.setCommunityGuard(DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})
 
+    # Ensure that an external address cannot withdraw funds after removing guard
     with reverts(REV_MSG_VAULT_GOVERNOR):
         cf.vault.govWithdraw(tokenList, {"from": cf.ALICE})
 

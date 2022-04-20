@@ -29,6 +29,7 @@ def test_govWithdraw(cf, stakedMin):
 
     cf.stakeManager.suspend({"from": cf.GOVERNOR})
 
+    # Ensure that an external address cannot withdraw funds after removing guard
     with reverts(REV_MSG_STAKEMAN_GOVERNOR):
         cf.stakeManager.govWithdraw({"from": cf.ALICE})
 

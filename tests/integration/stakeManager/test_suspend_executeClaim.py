@@ -57,7 +57,14 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Withdraw FLIP via governance motion
+    with reverts(REV_MSG_COMMUNITY_GUARD):
+        cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
+
+    cf.stakeManager.setCommunityGuard(
+        DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY}
+    )
     tx = cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
+
     assert cf.flip.balanceOf(cf.stakeManager) == 0
     # [to, amount]
     assert tx.events["GovernanceWithdrawal"][0].values() == [
