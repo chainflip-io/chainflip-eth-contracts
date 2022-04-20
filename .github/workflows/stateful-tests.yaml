@@ -1,0 +1,16 @@
+name: Stateful Test
+on: 
+  push:
+    branches:
+      - master
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  run-tests:
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@chore/build-docker-on-gha
+    with:
+      stateful: true
+      runs_on: self-hosted

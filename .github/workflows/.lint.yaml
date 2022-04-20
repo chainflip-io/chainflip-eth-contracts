@@ -1,0 +1,18 @@
+on:
+  workflow_call:
+    
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - run: npm install
+      - run: npx solhint -w 0 'contracts/**/*.sol'
+      - run: poetry install --quiet
+      - run: poetry run black . --check

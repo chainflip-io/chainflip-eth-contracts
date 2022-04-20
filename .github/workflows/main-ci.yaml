@@ -1,0 +1,21 @@
+name: Main Pipeline
+on: push
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.docker-build.yaml@chore/build-docker-on-gha
+
+  lint:
+    needs: build
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@chore/build-docker-on-gha
+
+  run-tests:
+    needs: build
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@chore/build-docker-on-gha
+    with:
+      stateful: false
+      runs_on: ubuntu-latest
