@@ -7,6 +7,9 @@ env:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      packages: write
     name: Build Brownie ETH
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.docker-build.yaml@ci/migrate-stateful-tests-to-gha
 
