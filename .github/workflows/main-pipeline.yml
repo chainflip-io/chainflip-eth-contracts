@@ -3,11 +3,10 @@ on: push
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: "${{ github.repository }}/eth-brownie"
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
     name: Build Brownie ETH
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.docker-build.yaml@ci/migrate-stateful-tests-to-gha
-
 

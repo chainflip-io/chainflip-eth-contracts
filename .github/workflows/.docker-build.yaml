@@ -27,10 +27,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=long,prefix=,
+          tags: latest
 
       - name: Login to DockerHub
         uses: docker/login-action@v1
