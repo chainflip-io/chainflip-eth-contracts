@@ -1,6 +1,8 @@
 name: Package repo
 on:
   push:
+    branches:
+        - master
 
 jobs:
   stateful-tests:
