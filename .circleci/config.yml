@@ -70,8 +70,7 @@ jobs:
     environment:
       IMAGE: chainflip-io/chainflip-eth-contracts/eth-brownie
       TAG: latest
-      DOCKERFILE: Dockerfile.eth-brownie
-
+      DOCKERFILE: Dockerfile
   run-tests:
     parameters:
       stateful:

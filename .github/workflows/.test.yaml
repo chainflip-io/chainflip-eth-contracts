@@ -1,0 +1,25 @@
+on:
+  workflow_call:
+    inputs:
+      stateful:
+        required: true
+        type: boolean
+      runs_on:
+        required: true
+        type: string
+    
+jobs:
+  test:
+    runs-on: ${{ inputs.runs_on }}
+    container:
+      image: ghcr.io/chainflip-io/chainflip-eth-contracts/eth-brownie:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - run: npm install
+      - run: poetry install --quiet
+      - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+      - run: poetry run brownie test --network hardhat --stateful  ${{ inputs.stateful }}
