@@ -1,8 +1,7 @@
 name: Package repo
 on:
   push:
-    # branches:
-    #   - master
+
 jobs:
   stateful-tests:
     runs-on: self-hosted
