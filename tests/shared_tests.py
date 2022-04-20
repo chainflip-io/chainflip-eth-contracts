@@ -25,7 +25,6 @@ def fetchDepositEth(cf, deployedVault, DepositEth):
         JUNK_HEX_PAD,
         {"from": cf.ALICE},
     )
-    balanceAfter = cf.ALICE.balance()
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert deployedVault.balance() == balanceVaultBefore + TEST_AMNT
 
@@ -39,7 +38,7 @@ def transfer_eth(cf, deployedVault, receiver, amount):
     callDataNoSig = deployedVault.transfer.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, receiver, amount
     )
-    deployedVault.transfer(
+    tx = deployedVault.transfer(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         ETH_ADDR,
         receiver,
@@ -47,7 +46,10 @@ def transfer_eth(cf, deployedVault, receiver, amount):
     )
 
     assert deployedVault.balance() - startBalVault == -amount
-    assert receiver.balance() - startBalRecipient == amount
+
+    # Take into account gas transfer if receiver is the address sending the transfer call (a[0]==cf.DEPLOYER)
+    gasSpent = calculateGasTransaction(tx) if receiver == cf.DEPLOYER else 0
+    assert receiver.balance() - startBalRecipient == amount - gasSpent
 
 
 # ----------KeyManager----------

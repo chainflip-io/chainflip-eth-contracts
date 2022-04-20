@@ -5,18 +5,18 @@ from brownie import reverts
 from brownie.test import given, strategy
 
 
-def test_govWithdraw_transfer(cf, token, token2, DepositEth):
-
+@given(st_sender=strategy("address"))
+def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     # Funding Vault with some arbitrary funds
     amountTest = TEST_AMNT * 10
-    cf.DENICE.transfer(cf.vault, amountTest)
+    st_sender.transfer(cf.vault, amountTest)
     token.transfer(cf.vault, amountTest, {"from": cf.DEPLOYER})
     token2.transfer(cf.vault, amountTest, {"from": cf.DEPLOYER})
     tokenList = [ETH_ADDR, token, token2]
 
     # Test vault functioning
     fetchDepositEth(cf, cf.vault, DepositEth)
-    transfer_eth(cf, cf.vault, cf.DENICE, TEST_AMNT)
+    transfer_eth(cf, cf.vault, st_sender, TEST_AMNT)
 
     # Withdraw all Vault balance
     cf.vault.setCommunityGuard(DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})
@@ -26,17 +26,18 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth):
     assert cf.vault.balance() == 0
     # Receiver balance do not change because no funds can be transferred
     minAmount = 1
-    iniEthBal = cf.DENICE.balance()
+    iniEthBal = st_sender.balance()
     callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.DENICE, minAmount
+        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, st_sender, minAmount
     )
-    cf.vault.transfer(
+    tx = cf.vault.transfer(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         ETH_ADDR,
-        cf.DENICE,
+        st_sender,
         minAmount,
+        {"from": st_sender},
     )
-    assert cf.DENICE.balance() == iniEthBal
+    assert st_sender.balance() == iniEthBal - calculateGasTransaction(tx)
 
     # Vault can fetch still fetch amounts even after govWithdrawal - pending/old swaps
     fetchDepositEth(cf, cf.vault, DepositEth)
@@ -55,4 +56,4 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth):
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
 
     # Vault has funds so it can transfer again
-    transfer_eth(cf, cf.vault, cf.DENICE, TEST_AMNT)
+    transfer_eth(cf, cf.vault, st_sender, TEST_AMNT)
