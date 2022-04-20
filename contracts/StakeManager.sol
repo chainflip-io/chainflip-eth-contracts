@@ -6,8 +6,8 @@ import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
-import "./GovernanceCommunityGuarded.sol";
 import "./AggKeyNonceConsumer.sol";
+import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    StakeManager contract

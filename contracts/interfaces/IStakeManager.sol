@@ -1,8 +1,8 @@
 pragma solidity ^0.8.0;
 
 import "./IFLIP.sol";
-import "./IGovernanceCommunityGuarded.sol";
 import "./IAggKeyNonceConsumer.sol";
+import "./IGovernanceCommunityGuarded.sol";
 
 /**
  * @title    StakeManager interface

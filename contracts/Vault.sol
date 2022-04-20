@@ -7,8 +7,8 @@ import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
-import "./GovernanceCommunityGuarded.sol";
 import "./AggKeyNonceConsumer.sol";
+import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    Vault contract
