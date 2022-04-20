@@ -4,11 +4,11 @@ import "./IShared.sol";
 import "./IAggKeyNonceConsumer.sol";
 
 /**
- * @title    CommunityGuarded interface
+ * @title    GovernanceCommunityGuarded interface
  * @author   albert-llimos (Albert Llimos)
  */
 
-interface ICommunityGuarded is IAggKeyNonceConsumer {
+interface IGovernanceCommunityGuarded is IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //

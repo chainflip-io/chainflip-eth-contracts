@@ -6,7 +6,7 @@ import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
-import "./CommunityGuarded.sol";
+import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    StakeManager contract
@@ -21,7 +21,7 @@ import "./CommunityGuarded.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, CommunityGuarded, ReentrancyGuard {
+contract StakeManager is IStakeManager, GovernanceCommunityGuarded, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -50,7 +50,7 @@ contract StakeManager is IStakeManager, CommunityGuarded, ReentrancyGuard {
         IKeyManager keyManager,
         uint256 minStake,
         address communityKey
-    ) CommunityGuarded(keyManager, communityKey) {
+    ) GovernanceCommunityGuarded(keyManager, communityKey) {
         _minStake = minStake;
         deployer = msg.sender;
     }

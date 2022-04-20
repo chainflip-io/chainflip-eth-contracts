@@ -7,7 +7,7 @@ import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
-import "./CommunityGuarded.sol";
+import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    Vault contract
@@ -15,12 +15,12 @@ import "./CommunityGuarded.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, CommunityGuarded {
+contract Vault is IVault, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager, address communityKey) CommunityGuarded(keyManager, communityKey) {}
+    constructor(IKeyManager keyManager, address communityKey) GovernanceCommunityGuarded(keyManager, communityKey) {}
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all

@@ -1,17 +1,23 @@
 pragma solidity ^0.8.0;
 
-import "./interfaces/ICommunityGuarded.sol";
+import "./interfaces/IGovernanceCommunityGuarded.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title    CommunityGuarded contract
- * @notice   Allows for community to guard functions, preventing the governor
- *           from calling them. The community address is set in the constructor
- *           and can only be updated by the community address itself.
+ * @title    GovernanceCommunityGuarded contract
+ * @notice   Allows the governor to perform certain actions for the procotol's safety.
+ *           It allows the governor to suspend execution in case of emergency. This shall
+ *           stop the execution of functions that require an AggKey signature in the child's
+ *           contract. Notice that this contract inherits from AggKeyNonceConsumer, so it
+ *           allows the child's contract to validate signatures.
+ *           Finally, it provides the child's contract to have the ability to safeguard
+ *           certain functions, allowing the governor to execute them iff the community
+ *           key allows it.
+ *
  * @author   albert-llimos (Albert Llimos)
  */
-abstract contract CommunityGuarded is AggKeyNonceConsumer, ICommunityGuarded {
+contract GovernanceCommunityGuarded is AggKeyNonceConsumer, IGovernanceCommunityGuarded {
     /// @dev    Community key - address
     address private _communityKey;
 

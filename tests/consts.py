@@ -138,7 +138,7 @@ REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
 REV_MSG_VAULT_GOVERNOR = "Vault: not governor"
 
-# -----CommunityGuarded-----
+# -----GovernanceCommunityGuarded-----
 ENABLE_COMMUNITY_GUARD = False
 DISABLE_COMMUNITY_GUARD = True
 REV_MSG_COMMUNITY_GUARD = "Community: guard not disabled by community"
