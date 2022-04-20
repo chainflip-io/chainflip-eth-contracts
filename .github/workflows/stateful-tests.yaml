@@ -10,6 +10,7 @@ env:
 
 jobs:
   run-tests:
+    name: Stateful Tests
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: true
