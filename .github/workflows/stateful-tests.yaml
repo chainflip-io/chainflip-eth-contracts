@@ -10,7 +10,7 @@ env:
 
 jobs:
   run-tests:
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@main
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: true
       runs_on: self-hosted
