@@ -9,7 +9,7 @@ jobs:
   stateless-tests:
     name: Stateless Tests
     needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@fix/poetry
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: false
 
