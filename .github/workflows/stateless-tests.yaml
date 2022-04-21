@@ -1,4 +1,4 @@
-name: Lint and Stateless Tests
+name: Stateless Tests
 on: push
 
 jobs:
