@@ -21,5 +21,5 @@ def test_setMinStake_rev_amount(cf):
 
 
 def test_setMinStake_rev_governor(cf):
-    with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+    with reverts(REV_MSG_GOV_GOVERNOR):
         cf.stakeManager.setMinStake(1, {"from": cf.ALICE})

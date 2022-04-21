@@ -155,3 +155,24 @@ def test_registerClaim_rev_sig(cf, stakedMin):
 
     with reverts(REV_MSG_SIG):
         cf.stakeManager.registerClaim(sigData, *args)
+
+
+@given(
+    st_sender=strategy("address"),
+)
+def test_registerClaim_rev_suspended(cf, stakedMin, st_sender):
+    _, amount = stakedMin
+
+    cf.stakeManager.suspend({"from": cf.GOVERNOR})
+
+    args = (JUNK_HEX, amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
+
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    with reverts(REV_MSG_GOV_SUSPENDED):
+        cf.stakeManager.registerClaim(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            *args,
+            {"from": st_sender}
+        )

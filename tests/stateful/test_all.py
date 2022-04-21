@@ -1318,7 +1318,7 @@ def test_all(
                     self.sm.setMinStake(st_minStake, {"from": st_sender})
             elif st_sender != self.governor:
                 print("        REV_MSG_SIG rule_setMinstake", st_minStake, st_sender)
-                with reverts(REV_MSG_STAKEMAN_GOVERNOR):
+                with reverts(REV_MSG_GOV_GOVERNOR):
                     self.sm.setMinStake(st_minStake, {"from": st_sender})
             else:
                 print("                    rule_setMinstake", st_minStake, st_sender)

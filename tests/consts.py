@@ -18,7 +18,7 @@ GOV = "Gov"
 KEYID_TO_NUM = {AGG: 0, GOV: 1}
 NUM_TO_KEYID = [AGG, GOV]
 INIT_TOKEN_SUPPLY = int(10**8 * E_18)
-INIT_ETH_BAL = 10000 * E_18
+INIT_ETH_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
 
 # Time in seconds
@@ -127,15 +127,21 @@ REV_MSG_SM_ARR_LEN = "Staking: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "Staking: early, late, or execd"
-REV_MSG_STAKEMAN_GOVERNOR = "Staking: not governor"
-REV_MSG_STAKEMAN_SUSPENDED = "Staking: suspended"
-REV_MSG_STAKEMAN_NOT_SUSPENDED = "Staking: Not suspended"
 REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
 REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 
 # -----Vault-----
+AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
 REV_MSG_V_ARR_LEN = "Vault: arrays not same length"
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
+REV_MSG_VAULT_DELAY = "Vault: not enough delay"
+
+# -----GovernanceCommunityGuarded-----
+REV_MSG_GOV_GUARD = "Governance: guard not disabled by community"
+REV_MSG_GOV_NOT_COMMUNITY = "Governance: not Community Key"
+REV_MSG_GOV_GOVERNOR = "Governance: not governor"
+REV_MSG_GOV_SUSPENDED = "Governance: suspended"
+REV_MSG_GOV_NOT_SUSPENDED = "Governance: not suspended"
 
 # -----Vesting-----
 REVOCABLE = STAKABLE = True

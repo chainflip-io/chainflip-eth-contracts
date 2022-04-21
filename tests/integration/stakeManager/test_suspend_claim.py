@@ -1,5 +1,6 @@
 from consts import *
 from brownie import reverts
+from brownie.test import given, strategy
 
 
 def test_suspend_executeClaim(cf, claimRegistered):
@@ -20,7 +21,7 @@ def test_suspend_executeClaim(cf, claimRegistered):
     chain.sleep(CLAIM_DELAY)
 
     # Test that attempting to execute the claim fails
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Resume the StakeManager
@@ -53,11 +54,16 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
     chain.sleep(CLAIM_DELAY)
 
     # Test that attempting to execute the claim fails
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Withdraw FLIP via governance motion
+    with reverts(REV_MSG_GOV_GUARD):
+        cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
+
+    cf.stakeManager.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
     tx = cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
+
     assert cf.flip.balanceOf(cf.stakeManager) == 0
     # [to, amount]
     assert tx.events["GovernanceWithdrawal"][0].values() == [
@@ -66,7 +72,7 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
     ]
 
     # Sanity check that we're still suspended
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
     # Resume the StakeManager
@@ -75,3 +81,20 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
     # Attempt the execution, should fail because of balance in the Stake Manager
     with reverts(REV_MSG_ERC20_EXCEED_BAL):
         cf.stakeManager.executeClaim(JUNK_HEX)
+
+
+@given(st_eth_amount=strategy("uint"))
+def test_suspend_registerClaim(cf, st_eth_amount):
+
+    # Suspend the StakeManager contract
+    cf.stakeManager.suspend({"from": cf.GOVERNOR})
+
+    args = (JUNK_HEX, st_eth_amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
+
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    with reverts(REV_MSG_GOV_SUSPENDED):
+        cf.stakeManager.registerClaim(
+            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args
+        )

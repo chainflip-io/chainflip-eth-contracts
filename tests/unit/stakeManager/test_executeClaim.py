@@ -129,5 +129,5 @@ def test_executeClaim_rev_suspended(cf, claimRegistered):
     # Suspend the stakemananger via governance
     cf.stakeManager.suspend({"from": cf.GOVERNOR})
 
-    with reverts(REV_MSG_STAKEMAN_SUSPENDED):
+    with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)

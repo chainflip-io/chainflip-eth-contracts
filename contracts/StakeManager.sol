@@ -7,6 +7,7 @@ import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./FLIP.sol";
 import "./AggKeyNonceConsumer.sol";
+import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    StakeManager contract
@@ -21,14 +22,11 @@ import "./AggKeyNonceConsumer.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  * @author   Quantaf1re (James Key)
  */
-contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
+contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     FLIP private _FLIP;
-
-    /// @dev    Whether execution of claims is suspended. Used in emergencies.
-    bool public suspended = false;
 
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     uint256 private _minStake;
@@ -49,9 +47,20 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
     //     uint48 expiryTime;
     // }
 
-    constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
+    constructor(
+        IKeyManager keyManager,
+        uint256 minStake,
+        address communityKey
+    ) AggKeyNonceConsumer(keyManager) GovernanceCommunityGuarded(communityKey) {
         _minStake = minStake;
         deployer = msg.sender;
+    }
+
+    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function getGovernor() internal view override returns (address) {
+        return _getKeyManager().getGovernanceKey();
     }
 
     //////////////////////////////////////////////////////////////
@@ -114,6 +123,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
         external
         override
         nonReentrant
+        isNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
@@ -155,8 +165,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(bytes32 nodeID) external override {
-        require(!suspended, "Staking: suspended");
+    function executeClaim(bytes32 nodeID) external override isNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
         require(
             uint256(block.timestamp) >= claim.startTime && uint256(block.timestamp) <= claim.expiryTime,
@@ -182,32 +191,15 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
     }
 
     /**
-     * @notice Can be used to suspend executions of claims - only executable by
-     * governance and should only be used if fraudulent claim is suspected.
+     * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
+     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
-    function suspend() external override isGovernor {
-        suspended = true;
-    }
-
-    /**
-     * @notice Can be used by governance to resume the execution of claims.
-     */
-    function resume() external override isGovernor {
-        suspended = false;
-    }
-
-    /**
-     * @notice In the event of fraudulent claims being accepted, the contract is
-     * effectively useless. This function allows governance to admit that by
-     * withdrawing all the FLIP to their address. From where it will be dealt
-     * with later.
-     */
-    function govWithdraw() external override isGovernor {
-        require(suspended, "Staking: Not suspended");
-        address to = _getKeyManager().getGovernanceKey();
+    function govWithdraw() external override isGovernor isCommunityGuardDisabled isSuspended {
         uint256 amount = _FLIP.balanceOf(address(this));
-        _FLIP.transfer(to, amount);
-        emit GovernanceWithdrawal(to, amount);
+
+        // msg.sender == Governor address
+        _FLIP.transfer(msg.sender, amount);
+        emit GovernanceWithdrawal(msg.sender, amount);
     }
 
     /**
@@ -253,12 +245,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, ReentrancyGuard {
     //                          Modifiers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /// @notice Ensure that the caller is the KeyManager's governor address.
-    modifier isGovernor() {
-        require(msg.sender == _getKeyManager().getGovernanceKey(), "Staking: not governor");
-        _;
-    }
 
     /// @notice Ensure that the caller is the deployer address.
     modifier onlyDeployer() {

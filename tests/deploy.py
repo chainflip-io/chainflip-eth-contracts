@@ -5,7 +5,7 @@ from brownie import network
 
 
 def deploy_initial_Chainflip_contracts(
-    deployer, KeyManager, Vault, StakeManager, FLIP, *args
+    deployer, communityKey, KeyManager, Vault, StakeManager, FLIP, *args
 ):
 
     # Set the priority fee for all transactions
@@ -41,6 +41,7 @@ def deploy_initial_Chainflip_contracts(
 
     # `deployer` here is the governor
     cf.gov = deployer
+    cf.communityKey = communityKey
     cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov)
 
     cf.numGenesisValidators = int(
@@ -51,11 +52,12 @@ def deploy_initial_Chainflip_contracts(
 
     print(f"Deploying with AGG_KEY: {aggKey} and GOV_KEY: {govKey}")
 
-    cf.vault = deployer.deploy(Vault, cf.keyManager)
+    cf.vault = deployer.deploy(Vault, cf.keyManager, cf.communityKey)
     cf.stakeManager = deployer.deploy(
         StakeManager,
         cf.keyManager,
         MIN_STAKE,
+        cf.communityKey,
     )
     cf.flip = deployer.deploy(
         FLIP,
@@ -73,10 +75,10 @@ def deploy_initial_Chainflip_contracts(
 
 # This should be used over deploy_initial_Chainflip_contracts for actual deployments
 def deploy_set_Chainflip_contracts(
-    deployer, KeyManager, Vault, StakeManager, FLIP, *args
+    deployer, communityKey, KeyManager, Vault, StakeManager, FLIP, *args
 ):
     cf = deploy_initial_Chainflip_contracts(
-        deployer, KeyManager, Vault, StakeManager, FLIP, *args
+        deployer, communityKey, KeyManager, Vault, StakeManager, FLIP, *args
     )
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip]
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)

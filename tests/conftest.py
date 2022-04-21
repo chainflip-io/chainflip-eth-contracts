@@ -16,7 +16,9 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
-    return deploy_set_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    return deploy_set_Chainflip_contracts(
+        a[0], a[6], KeyManager, Vault, StakeManager, FLIP
+    )
 
 
 # Deploy the contracts and set up common test environment
@@ -37,10 +39,14 @@ def cf(a, cfDeploy):
     cf.DENICE = a[4]
     cf.FR_DENICE = {"from": cf.DENICE}
 
-    # It's the same as DEPLOYER but shouldn't cause confusion tbh
-    cf.GOVERNOR = a[0]
+    # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh
+    cf.GOVERNOR = cfDeploy.gov
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
+
+    # Set Community Key addresses for tests - a[6] & a[7]
+    cf.COMMUNITY_KEY = cfDeploy.communityKey
+    cf.COMMUNITY_KEY_2 = a[7]
 
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
@@ -52,7 +58,9 @@ def cf(a, cfDeploy):
 # all addresses whitelisted
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
-    cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    cf = deploy_initial_Chainflip_contracts(
+        a[0], a[6], KeyManager, Vault, StakeManager, FLIP
+    )
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
 
@@ -77,10 +85,14 @@ def cfAW(a, cfDeployAllWhitelist):
     cf.DENICE = a[4]
     cf.FR_DENICE = {"from": cf.DENICE}
 
-    # It's the same as DEPLOYER but shouldn't cause confusion tbh
-    cf.GOVERNOR = a[0]
+    # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh
+    cf.GOVERNOR = cfDeployAllWhitelist.gov
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
+
+    # Set Community Key addresses for tests - a[6] & a[7]
+    cf.COMMUNITY_KEY = cfDeployAllWhitelist.communityKey
+    cf.COMMUNITY_KEY_2 = a[7]
 
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.DEPLOYER})

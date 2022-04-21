@@ -8,6 +8,7 @@ import "./abstract/Shared.sol";
 import "./DepositEth.sol";
 import "./DepositToken.sol";
 import "./AggKeyNonceConsumer.sol";
+import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    Vault contract
@@ -15,12 +16,30 @@ import "./AggKeyNonceConsumer.sol";
  *           for fetching individual deposits
  * @author   Quantaf1re (James Key)
  */
-contract Vault is IVault, AggKeyNonceConsumer {
+contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
+
+    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
+    constructor(IKeyManager keyManager, address communityKey)
+        AggKeyNonceConsumer(keyManager)
+        GovernanceCommunityGuarded(communityKey)
+    {}
+
+    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function getGovernor() internal view override returns (address) {
+        return _getKeyManager().getGovernanceKey();
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Transfer and Fetch                      //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
@@ -51,6 +70,7 @@ contract Vault is IVault, AggKeyNonceConsumer {
     )
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -115,6 +135,7 @@ contract Vault is IVault, AggKeyNonceConsumer {
     )
         external
         override
+        isNotSuspended
         nzAddr(address(token))
         nzAddr(recipient)
         nzUint(amount)
@@ -154,6 +175,7 @@ contract Vault is IVault, AggKeyNonceConsumer {
     )
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -250,6 +272,7 @@ contract Vault is IVault, AggKeyNonceConsumer {
         external
         override
         nzBytes32(swapID)
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -276,6 +299,7 @@ contract Vault is IVault, AggKeyNonceConsumer {
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -313,6 +337,7 @@ contract Vault is IVault, AggKeyNonceConsumer {
     )
         external
         override
+        isNotSuspended
         nzBytes32(swapID)
         nzAddr(address(token))
         consumerKeyNonce(
@@ -347,6 +372,7 @@ contract Vault is IVault, AggKeyNonceConsumer {
     )
         external
         override
+        isNotSuspended
         consumerKeyNonce(
             sigData,
             keccak256(
@@ -368,6 +394,49 @@ contract Vault is IVault, AggKeyNonceConsumer {
                 ++i;
             }
         }
+    }
+
+    /**
+     * @notice Withdraw all funds to governance address in case of emergency. This withdrawal needs
+     *         to be approved by the Community and it can only be executed if no nonce from the
+     *         current AggKey had been consumed in _AGG_KEY_TIMEOUT time. It is a last resort and
+     *         can be used to rectify an emergency.
+     * @param tokens    The addresses of the tokens to be transferred
+     */
+    function govWithdraw(IERC20[] calldata tokens)
+        external
+        override
+        isGovernor
+        isCommunityGuardDisabled
+        isSuspended
+        validTime
+    {
+        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        address payable recipient = payable(_getKeyManager().getGovernanceKey());
+
+        // Transfer all ETH and ERC20 Tokens
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (address(tokens[i]) == _ETH_ADDR) {
+                _transfer(IERC20(_ETH_ADDR), recipient, address(this).balance);
+            } else {
+                _transfer(tokens[i], recipient, tokens[i].balanceOf(address(this)));
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Modifiers                       //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev    Check that no nonce of the current AggKey has been consumed in the last 14 days - emergency
+    modifier validTime() {
+        require(
+            block.timestamp - _getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
+            "Vault: not enough delay"
+        );
+        _;
     }
 
     //////////////////////////////////////////////////////////////
