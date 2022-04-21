@@ -8,9 +8,7 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
-      # - run: apt-get update && apt-get install -y curl
       # - run: apt install -y python3.8-venv
-      # - run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3 -
       - uses: actions/setup-python@v2
         with:
           python-version: 3.x
@@ -21,6 +19,7 @@ jobs:
           cache: npm
       - run: npm install --global ganache-cli && ganache-cli --version
       - run: npm install
+      - run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3 -
       - run: export PATH="$HOME/.poetry/bin:$PATH"
       - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
