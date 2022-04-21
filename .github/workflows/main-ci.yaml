@@ -8,12 +8,10 @@ env:
 jobs:
   lint:
     name: Linting
-    needs: build
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
 
   run-tests:
     name: Stateless Tests
-    needs: build
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: false
