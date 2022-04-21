@@ -13,10 +13,7 @@ jobs:
         with:
           python-version: 3.x
           architecture: x64
-      - uses: actions/setup-node@v2
-        with:
-          node-version: ${{steps.get-versions.outputs.node}}
-          cache: npm
+      - run: curl -fsSL https://deb.nodesource.com/setup_14.x | sh - && apt-get install -y nodejs
       - run: npm install --global ganache-cli && ganache-cli --version
       - run: npm install
       - uses: Gr1N/setup-poetry@v7
