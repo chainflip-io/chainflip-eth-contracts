@@ -386,7 +386,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /**
      * @notice Withdraw all funds to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community and it can only be executed if no nonce from the
-     *         current AggKey had been consumed in _AGG_KEY_TIMEOUT time. Itt is a last resort and
+     *         current AggKey had been consumed in _AGG_KEY_TIMEOUT time. It is a last resort and
      *         can be used to rectify an emergency.
      * @param tokens    The addresses of the tokens to be transferred
      */
