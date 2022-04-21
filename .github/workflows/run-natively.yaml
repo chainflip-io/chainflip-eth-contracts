@@ -1,5 +1,7 @@
 name: Run Directly on Machine
 on: push
+env:
+  PATH: $PATH:$HOME/.poetry/bin
 
 jobs:
   run-all:
