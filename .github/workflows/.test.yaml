@@ -22,12 +22,12 @@ jobs:
       with:
         node-version: '14'
         cache: npm
-    - uses: actions/setup-python@v3
-      with:
-        python-version: '3.9.7'
-    - uses: snok/install-poetry@v1
-    - run: npm install --global ganache-cli
+    # - uses: actions/setup-python@v3
+    #   with:
+    #     python-version: '3.9.7'
+    # - uses: snok/install-poetry@v1
+    # - run: npm install --global ganache-cli
     - run: npm install
     - run: poetry install --quiet
-    - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+    # - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
     - run: poetry run brownie test --network hardhat --stateful ${{inputs.stateful}}
