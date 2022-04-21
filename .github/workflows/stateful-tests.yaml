@@ -5,8 +5,13 @@ on:
       - master
 
 jobs:
-  run-tests:
+  lint:
+    name: Linting
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
+
+  stateful-tests:
     name: Stateful Tests
+    needs: lint
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: true

@@ -8,7 +8,10 @@ on:
         required: false
         type: number
         default: 360
-    
+
+env:
+  FORCE_COLOR: 1
+
 jobs:
   test:
     runs-on: self-hosted
