@@ -9,7 +9,11 @@ module.exports = {
             initialBaseFeePerGas: 1000000000,
             // brownie expects calls and transactions to throw on revert
             throwOnTransactionFailures: true,
-            throwOnCallFailures: true
-       }
+            throwOnCallFailures: true,
+            mining: {
+                auto: false,
+                interval: 500
+            }
+        }
     }
 }
