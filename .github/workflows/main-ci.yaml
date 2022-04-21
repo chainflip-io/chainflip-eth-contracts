@@ -1,17 +1,11 @@
-name: master Pipeline
-on: 
-  push:
-    branches-ignore: ci/run-tests-natively-on-machine
+name: Lint and Stateless Tests
+on: push
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
-    name: Build Docker Image
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.docker-build.yaml@master
-
   lint:
     name: Linting
     needs: build
@@ -23,4 +17,4 @@ jobs:
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: false
-      runs_on: ubuntu-latest
+

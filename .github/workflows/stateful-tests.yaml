@@ -1,12 +1,8 @@
-name: Stateful Test
+name: Stateful Tests
 on: 
   push:
     branches:
       - master
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   run-tests:
@@ -14,5 +10,4 @@ jobs:
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: true
-      runs_on: self-hosted
       timeout_minutes: 3600
