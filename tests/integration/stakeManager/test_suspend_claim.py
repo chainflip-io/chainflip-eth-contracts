@@ -61,9 +61,7 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
     with reverts(REV_MSG_GOV_GUARD):
         cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
 
-    cf.stakeManager.setCommunityGuard(
-        DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY}
-    )
+    cf.stakeManager.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
     tx = cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
 
     assert cf.flip.balanceOf(cf.stakeManager) == 0

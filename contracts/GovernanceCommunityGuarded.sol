@@ -28,6 +28,16 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
         _communityKey = communityKey;
     }
 
+    /**
+     * @notice  Get the governor's address. The contracts inheriting this (StakeManager and Vault)
+     *          get the governor's address from the KeyManager through the AggKeyNonceConsumer's
+     *          inheritance. Therefore, the implementation of this function must be left
+     *          to the children. This is a workaround since the isGovernor modifier can't be
+     *          made virtual. This contract needs to be marked as abstract.
+     * @return  The governor's address
+     */
+    function getGovernor() internal view virtual returns (address);
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
@@ -35,11 +45,17 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Set the Community Guard state
-     * @param communityGuardDisabled   New Community Guard state
+     * @notice  Enable Community Guard
      */
-    function setCommunityGuard(bool communityGuardDisabled) external override isCommunityKey {
-        _communityGuardDisabled = communityGuardDisabled;
+    function enableCommunityGuard() external override isCommunityKey {
+        _communityGuardDisabled = false;
+    }
+
+    /**
+     * @notice  Disable Community Guard
+     */
+    function disableCommunityGuard() external override isCommunityKey {
+        _communityGuardDisabled = true;
     }
 
     /**
@@ -95,13 +111,6 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
         return _suspended;
     }
 
-    /**
-     * @notice  Get the governor's address. To be overriden depending on the
-     *          contract's implementation
-     * @return  The governor's address
-     */
-    function getGovernor() internal view virtual returns (address);
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                         Modifiers                        //
@@ -120,7 +129,8 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
         _;
     }
 
-    /// @notice Ensure that the caller is the KeyManager's governor address.
+    /// @notice Ensure that the caller is the governor address. Calls the getGovernor
+    ///         function which is implemented by the children.
     modifier isGovernor() {
         require(msg.sender == getGovernor(), "Governance: not governor");
         _;

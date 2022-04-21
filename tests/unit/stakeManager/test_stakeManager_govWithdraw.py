@@ -20,9 +20,7 @@ def test_govWithdraw(cf, stakedMin):
     with reverts(REV_MSG_GOV_GUARD):
         cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})
 
-    cf.stakeManager.setCommunityGuard(
-        DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY}
-    )
+    cf.stakeManager.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
 
     with reverts(REV_MSG_GOV_NOT_SUSPENDED):
         cf.stakeManager.govWithdraw({"from": cf.GOVERNOR})

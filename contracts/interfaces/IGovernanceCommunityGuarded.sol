@@ -15,10 +15,15 @@ interface IGovernanceCommunityGuarded is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
     /**
-     * @notice  Set the Community Guard state
-     * @param communityGuardDisabled   New Community Guard state
+     * @notice  Enable Community Guard
      */
-    function setCommunityGuard(bool communityGuardDisabled) external;
+
+    function enableCommunityGuard() external;
+
+    /**
+     * @notice  Disable Community Guard
+     */
+    function disableCommunityGuard() external;
 
     /**
      * @notice  Update the Community Key. Can only be called by the current Community Key.

@@ -56,6 +56,13 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         deployer = msg.sender;
     }
 
+    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function getGovernor() internal view override returns (address) {
+        return _getKeyManager().getGovernanceKey();
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
@@ -205,14 +212,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the governor's address from the Key Manager.
-     * @return  The governor's address
-     */
-    function getGovernor() internal view override returns (address) {
-        return _getKeyManager().getGovernanceKey();
-    }
 
     /**
      * @notice  Get the FLIP token address

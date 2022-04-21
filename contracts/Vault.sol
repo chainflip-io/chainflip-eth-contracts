@@ -28,6 +28,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         GovernanceCommunityGuarded(communityKey)
     {}
 
+    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function getGovernor() internal view override returns (address) {
+        return _getKeyManager().getGovernanceKey();
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Transfer and Fetch                      //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
      *          deposits specified with fetchSwapIDs and fetchTokens (which are requried
@@ -398,8 +411,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         isSuspended
         validTime
     {
-        // msg.sender == Governor address
-        address payable recipient = payable(msg.sender);
+        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        address payable recipient = payable(_getKeyManager().getGovernanceKey());
 
         // Transfer all ETH and ERC20 Tokens
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -409,16 +422,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 _transfer(tokens[i], recipient, tokens[i].balanceOf(address(this)));
             }
         }
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Getters                         //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    function getGovernor() internal view override returns (address) {
-        return _getKeyManager().getGovernanceKey();
     }
 
     //////////////////////////////////////////////////////////////

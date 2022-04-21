@@ -21,7 +21,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     # Withdraw all Vault balance
     chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
     cf.vault.suspend({"from": cf.GOVERNOR})
-    cf.vault.setCommunityGuard(DISABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})
+    cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
     cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
     cf.vault.resume({"from": cf.GOVERNOR})
 
@@ -60,7 +60,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
         - calculateGasSpentByAddress(cf.GOVERNOR, iniTransactionNumber)
     )
 
-    cf.vault.setCommunityGuard(ENABLE_COMMUNITY_GUARD, {"from": cf.COMMUNITY_KEY})
+    cf.vault.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
 
     fetchDepositEth(cf, cf.vault, DepositEth)
     # Governance cannot withdraw again since community Guard is enabled again
