@@ -14,9 +14,10 @@ jobs:
           python-version: 3.x
           architecture: x64
       - run: curl -fsSL https://deb.nodesource.com/setup_14.x | sh - && apt-get install -y nodejs
+      - run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3 -
+      - run: echo /root/.poetry/bin >> $GITHUB_PATH
       - run: npm install --global ganache-cli && ganache-cli --version
       - run: npm install
-      - uses: Gr1N/setup-poetry@v7
       - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry run brownie test --network hardhat --stateful false
