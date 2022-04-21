@@ -28,6 +28,7 @@ jobs:
     # - uses: snok/install-poetry@v1
     # - run: npm install --global ganache-cli
     - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
     - run: poetry install --quiet
     # - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
     - run: poetry run brownie test --network hardhat --stateful ${{inputs.stateful}}
