@@ -1,5 +1,7 @@
 name: master Pipeline
-on: push
+on: 
+  push:
+    branches-ignore: ci/run-tests-natively-on-machine
 
 env:
   REGISTRY: ghcr.io
