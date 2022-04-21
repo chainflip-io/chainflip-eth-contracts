@@ -21,6 +21,7 @@ jobs:
           cache: npm
       - run: npm install --global ganache-cli && ganache-cli --version
       - run: npm install
+      - run: export PATH="$HOME/.poetry/bin:$PATH"
       - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry run brownie test --network hardhat --stateful false
