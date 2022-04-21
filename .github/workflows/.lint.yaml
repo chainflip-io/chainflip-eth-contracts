@@ -1,6 +1,9 @@
 on:
   workflow_call:
-    
+
+env:
+  FORCE_COLOR: 1
+
 jobs:
   lint:
     runs-on: ubuntu-latest

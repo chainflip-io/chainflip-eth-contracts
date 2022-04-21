@@ -1,10 +1,6 @@
 name: Lint and Stateless Tests
 on: push
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   lint:
     name: Linting
