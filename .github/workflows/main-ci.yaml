@@ -10,8 +10,9 @@ jobs:
     name: Linting
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
 
-  run-tests:
+  stateless-tests:
     name: Stateless Tests
+    needs: lint
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: false
