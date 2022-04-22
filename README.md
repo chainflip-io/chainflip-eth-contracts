@@ -102,6 +102,8 @@ Inside the poetry shell:
 ```bash
 # if you haven't already started a hardhat node
 npx hardhat node
+# Instead, to run with interval mining - so the node continues mining blocks periodically
+npx hardhat node --config hardhat-interval-mining.config.js
 # deploy the contracts - they will be deployed by acct #1 on the hardhat pre-seeded accounts
 brownie run deploy_and
 ```

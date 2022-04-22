@@ -75,29 +75,27 @@ def all_stakeManager_events():
 
     new_min_stake = int(MIN_STAKE / 3)
     print(f"\n💰 Denice sets the minimum stake to {new_min_stake}\n")
-    print("This transaction will emit RefundFailed")
     cf.stakeManager.setMinStake(new_min_stake, {"from": GOVERNOR})
-
-    print("Fund contract so that a refund will fire in the next transaction")
-    ALICE.transfer(to=cf.stakeManager, amount=ONE_ETH)
 
     stateChainBlockNumber = 100
     print(
         f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block {stateChainBlockNumber}\n"
     )
-    callDataNoSig = cf.stakeManager.updateFlipSupply.encode_input(
+    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
+        cf.stakeManager.address,
     )
-    cf.stakeManager.updateFlipSupply(
+    cf.flip.updateFlipSupply(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
+        cf.stakeManager.address,
         {"from": DENICE},
     )
 
-    print(f"\n🔐 Governnace suspends execution of claims\n")
+    print(f"\n🔐 Governance suspends execution of claims\n")
     cf.stakeManager.suspend({"from": GOVERNOR})
 
     print(f"\n💸 Governance withdraws all FLIP\n")
@@ -116,7 +114,6 @@ def all_keyManager_events():
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n🔑 Aggregate Key sets the new Aggregate Key 🔑\n")
-    print("This transaction will emit RefundFailed")
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_2.getPubData()
     )
@@ -126,9 +123,6 @@ def all_keyManager_events():
     )
 
     chain.sleep(CLAIM_DELAY)
-
-    print("Fund contract so that a refund event will fire in the next transaction")
-    ALICE.transfer(to=cf.keyManager, amount=ONE_ETH)
 
     print(f"\n🔑 Aggregate Key sets the new Aggregate Key 🔑\n")
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
