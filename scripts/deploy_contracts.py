@@ -18,12 +18,12 @@ def main():
     print(f"DEPLOYER = {DEPLOYER}")
 
     cf = deploy_set_Chainflip_contracts(
-        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
+        DEPLOYER, DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
     )
 
     print(f"KeyManager: {cf.keyManager.address}")
     print(f"StakeManager: {cf.stakeManager.address}")
-    print(f"FLIP: {cf.stakeManager.getFLIPAddress()}")
+    print(f"FLIP: {cf.flip.address}")
     print(f"Vault: {cf.vault.address}")
 
     if DEPLOY_ARTEFACT_ID:
