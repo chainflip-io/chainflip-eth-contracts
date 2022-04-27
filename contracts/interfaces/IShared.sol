@@ -26,6 +26,6 @@ interface IShared {
         uint256 msgHash;
         uint256 sig;
         uint256 nonce;
-        address kTimesGAddr;
+        address kTimesGAddress;
     }
 }
