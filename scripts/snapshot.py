@@ -30,19 +30,22 @@ from web3._utils.contracts import encode_abi
 # This will continue logging at the end of the previous log (running .INFO for development purposes)
 logname = "airdrop.log"
 
-logging.basicConfig(filename=logname, level=logging.INFO)
-# In the end probably do this to log also all RPC calls
+logging.basicConfig(filename=logname, level=logging.level)
+# In the end probably do this to log also all RPC calls but that will make it very unreadable
 # logging.basicConfig(filename='airdrop.log', level=logging.DEBUG)
 # So brownie can run a snapshot separately from airdrop
 
-rinkeby_flip_deployed = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
-rinkeby_sm_deployed = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
+rinkeby_old_flip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
+rinkeby_old_stakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
 oldFlipSnapshotFilename = "snapshot_old_flip.csv"
 newFlipSnapshotFilename = "snapshot_new_flip.csv"
 oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
 
 
 def main():
+    # Using latest block for now as snapshot block
+    snapshot_blocknumber = web3.eth.block_number
+
     parsedLog = []
     # Start parsing log
     file = open(logname, "r")
@@ -56,33 +59,40 @@ def main():
         "=========================   Running snapshot and airdrop script  =========================="
     )
 
+    # Alternative way to handle assertions - for now we go with the other one.
     # try:
     #     assert chain.id == 4, "Wrong chain"
     # except AssertionError:
     #     logging.error ("Wrong chain")
     #     raise
 
+    # Do oldFlip snapshot if it is has not been logged or if the snapshot csv doesn't exist
     if (not "Snapshot completed in " + oldFlipSnapshotFilename in parsedLog) or (
         not os.path.exists(oldFlipSnapshotFilename)
     ):
         assert chain.id == 4, logging.error("Wrong chain. Should be running in Rinkeby")
         logging.info("Old FLIP snapshot not taken previously")
         # Using latest block for now as snapshot block
-        snapshot(web3.eth.block_number, rinkeby_flip_deployed, oldFlipSnapshotFilename)
+        snapshot(snapshot_blocknumber, rinkeby_old_flip, oldFlipSnapshotFilename)
     else:
         logging.info("Skipped old FLIP snapshot - snapshop already taken")
 
+    # TODO: this is for development purposes to do the Airdrop in hardhat. To be removed
     assert chain.id > 10, logging.error(
         "Wrong chain. Should be running in local hardhat tesnet"
     )
 
-    # Skip airdrop if it is logged as succesfully. However, when failed we should check transaction by transaction in case brownie has emited the transaction but not received the receipt back
-    airdrop(oldFlipSnapshotFilename, parsedLog)
+    if not "😎  Airdrop completed! 😎" in parsedLog:
+        # Skip airdrop if it is logged as succesfully. However, call Airdrop if it has failed at any point before the succesful logging
+        # so we do all the checking of sent transactions and do the remaining aidrop transfers (if any)
+        airdrop(oldFlipSnapshotFilename, parsedLog)
+    else:
+        logging.info("Skipped Airdrop")
 
 
 def snapshot(
     snapshot_blocknumber=web3.eth.block_number,
-    rinkeby_flip_deployed="0xbFf4044285738049949512Bd46B42056Ce5dD59b",
+    rinkeby_old_flip="0xbFf4044285738049949512Bd46B42056Ce5dD59b",
     filename="snapshot.csv",
 ):
     logging.info("Taking snapshot in " + filename)
@@ -92,7 +102,7 @@ def snapshot(
         info_json = json.load(f)
     abi = info_json["abi"]
 
-    flipContract = web3.eth.contract(address=rinkeby_flip_deployed, abi=abi)
+    flipContract = web3.eth.contract(address=rinkeby_old_flip, abi=abi)
 
     # It will throw an error if there are more than 10.000 events (Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
@@ -246,41 +256,62 @@ def airdrop(snapshot_csv, parsedLog):
         logging.info("FLIP address:" + newFlip)
         logging.info("KeyManager address:" + newKeyManager)
     else:
-        # This should never happen twice so we can parse it like this
+        # In the log there should never be more than one set of deployments (either all logged succesfully or none)
+        # So we can just use the index of the message string and parse the following lines. Added assertion for safety.
         index = parsedLog.index("New set of contracts deployed")
+        # Parse contract addresses
+        assert (
+            parsedLog[index + 1].split(":")[0] == "StakeManager address"
+        ), logging.error(
+            "Something is wrong in the logging of the deployed StakeManager address"
+        )
         newStakeManager = parsedLog[index + 1].split(":")[1]
+        assert parsedLog[index + 2].split(":")[0] == "Vault address", logging.error(
+            "Something is wrong in the logging of the deployed Vault address"
+        )
         newVault = parsedLog[index + 2].split(":")[1]
+        assert parsedLog[index + 3].split(":")[0] == "FLIP address", logging.error(
+            "Something is wrong in the logging of the deployed FLIP address"
+        )
         newFlip = parsedLog[index + 3].split(":")[1]
+        assert (
+            parsedLog[index + 4].split(":")[0] == "KeyManager address"
+        ), logging.error(
+            "Something is wrong in the logging of the deployed KeyManager address"
+        )
         newKeyManager = parsedLog[index + 4].split(":")[1]
 
-        # Get all previous pending transactions and check that they have been completed
+        # Get all previous sent transactions (if any) from the log and check that they have been included in a block and we get a receipt back
+        previouslySentTxList = []
+        for line in parsedLog:
+            parsedLine = line.split("Airdrop sent Tx Hash:")
+            if len(parsedLine) > 1:
+                previouslySentTxList.append(parsedLine[1])
+        for tx in previouslySentTxList:
+            receipt = web3.eth.wait_for_transaction_receipt(tx)
+            # Logging these only if running in debug level
+            logging.debug(
+                "Previous transaction succesfully included in a block. Hash and receipt:"
+            )
+            logging.debug(receipt)
 
-        # TO DO: This should probably be parsed for all lines, there could be transactions in different parts of the log
-
-        # Remove square parenthesis
-        strOfTxx = parsedLog[index + 5][1:-1]
-        listOfTx = strOfTxx.split(", ")
-        for i in range(len(listOfTx)):
-            # Remove surrounding commas
-            listOfTx[i] = listOfTx[i][1:-1]
-            # Check that they have been completed before continuing
-            web3.eth.wait_for_transaction_receipt(listOfTx[i])
-
-        # TO DO: Remove this, only used for development purposes
-        logging.info(listOfTx)
-
-    # OldFlipSupply is greater than new FLIP INIT Supply. For the airdrop we will airdrop tokens to all non-stakeManager accounts and
+    # OldFlipSupply is greater than new NewFlipINISupply. For the airdrop we will airdrop tokens to all the accounts
+    # except the oldStakeManager
     # get to a state where newStakeManager's new flip balance is lower than oldStakeManager's old flip balance.
     # The difference can be minted by the state chain via updateTokenSupply.
 
-    # Do Airdrop
+
+
+    # To make sure no holder is Airdropped twice we get all the newFLIP transfer events
+    # Doing this instead of parsing logged transactions because brownie might potentially fail
+    # after sending a transaction and before logging it. Also, when it comes to airdropping
+    # protection against airdropping twice, we cannot rely on a log file.
 
     with open("build/contracts/FLIP.json") as f:
         info_json = json.load(f)
     abi = info_json["abi"]
 
     newFlipContract = web3.eth.contract(address=newFlip, abi=abi)
-    # To check if transaction has already been made before, even if brownie has not caught it.
     events = list(
         fetch_events(
             newFlipContract.events.Transfer,
@@ -289,45 +320,51 @@ def airdrop(snapshot_csv, parsedLog):
         )
     )
 
-    skip_receivers = []
     print(
         "Got",
         len(events),
-        "transfers already performed from airdropper to old FLIP holders",
+        "new FLIP transfers",
     )
 
-    # Get list of unique addresses that have recieved new FLIP from the airdropper
-    # This will contain newly deployed stakeManager, the airdropper itself and receivers from this script previously been run.
-    # Technically there could be transactions pending in the mempool - should we instead keep track of sent transactions? Then we have issues if tx's are not mined
+    # Craft list of unique addresses that should not receive new FLIP
+    # Skip following receivers: airdropper, newStakeManager, oldStakeManager and oldFlipDeployer
+    # oldFlipDeployer can be the same as airdropper, that's fine.
+    skip_receivers_list = [
+        airdropper,
+        newStakeManager,
+        rinkeby_old_stakeManager,
+        oldFlipDeployer,
+    ]
+
+    # Add to the skip receiver list the addresses that have already received a transfer from the airdropper from previous script runs
     for event in events:
         toAddress = event.args.to
         fromAddress = event.args["from"]
-        # Should already be unique but just in case
-        if toAddress not in skip_receivers:
-            skip_receivers.append(toAddress)
-
-    # Skip receivers contain airdropper, newStakeManager and any address that has already received it.
-    # Also, do not transfer to: oldStakeManager and oldFlipDeployer
-    # even if Airdropper == oldFlipDeployer it can be skipped, since airdropper will keep remaining tokens
-    skip_receivers.append(rinkeby_sm_deployed)
-    skip_receivers.append(oldFlipDeployer)
+        # Addresses should be unique but just in case
+        if (fromAddress == airdropper) and (toAddress not in skip_receivers_list):
+            skip_receivers_list.append(toAddress)
 
     listOfTxSent = []
     for i in range(len(holderAccountsOldFlip)):
         # When in rinkeby we should add .transact() and wait for a receipt? Or send all transactions and then check them afterwards
         receiverNewFlip = holderAccountsOldFlip[i]
-        if receiverNewFlip not in skip_receivers:
-            # When sending a public transaction we need transact and it requires a string as the address sender (not account)
+        if receiverNewFlip not in skip_receivers_list:
+            # When sending a public transaction we need transact() and it requires a string as the address sender (not account)
             tx = newFlipContract.functions.transfer(
                 receiverNewFlip, int(holderBalancesOldFlip[i])
             ).transact({"from": str(airdropper)})
-            # # Waiting for the receipt - will be slower but in case we need to rerun it we won't have to wait for mempool transactions
-            # web3.eth.wait_for_transaction_receipt(tx)
-            # print ("Transfer to " + receiverNewFlip +" completed")
+            # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
+            logging.info("Airdrop sent Tx Hash:" + tx.hex())
+            # Keeping a list of txHashes to wait afterwards. Not waiting every after transaction because it has no benefit and it would take long
             listOfTxSent.append(tx.hex())
 
-    if len(listOfTxSent) != 0:
-        logging.info(listOfTxSent)
+
+    # After all tx's have been send wait for the receipts. This could break (or could have broken before) so extra safety mechanism added when rerunning script
+    for txSent in listOfTxSent:
+        web3.eth.wait_for_transaction_receipt(txSent)
+
+    print("😎  Airdrop completed! 😎 \n")
+    logging.info("😎  Airdrop completed! 😎")
 
     return newFlip, newStakeManager
 
