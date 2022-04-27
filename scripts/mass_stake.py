@@ -1,4 +1,9 @@
-from os import environ
+import sys
+from os import environ, path
+
+sys.path.append(path.abspath("tests"))
+from consts import *
+
 from brownie import accounts, StakeManager, FLIP
 
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
