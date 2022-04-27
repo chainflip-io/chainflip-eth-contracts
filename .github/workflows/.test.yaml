@@ -1,0 +1,28 @@
+on:
+  workflow_call:
+    inputs:
+      stateful:
+        required: true
+        type: boolean
+      timeout_minutes:
+        required: false
+        type: number
+        default: 360
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  test:
+    runs-on: self-hosted
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie test --network hardhat --stateful ${{inputs.stateful}}
