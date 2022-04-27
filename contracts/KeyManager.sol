@@ -125,7 +125,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         // message hash (the rules coded into the contract)
         require(sigData.msgHash == uint256(contractMsgHash), "KeyManager: invalid msgHash");
         require(
-            verifySignature(sigData.msgHash, sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddr),
+            verifySignature(sigData.msgHash, sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddress),
             "KeyManager: Sig invalid"
         );
         require(!_isNonceUsedByAggKey[sigData.nonce], "KeyManager: nonce already used");
