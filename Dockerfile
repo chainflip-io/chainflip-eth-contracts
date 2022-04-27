@@ -3,7 +3,7 @@ FROM python:3.9.7-bullseye
 USER root
 
 RUN apt-get update -y \
-    && apt-get install curl
+    && apt-get install -y curl
 
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
 
