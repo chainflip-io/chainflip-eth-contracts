@@ -11,7 +11,7 @@ interface IKeyManager is IShared {
     event AggKeySetByAggKey(Key oldKey, Key newKey);
     event AggKeySetByGovKey(Key oldKey, Key newKey);
     event GovKeySetByGovKey(address oldKey, address newKey);
-    event SignatureAccepted(SigData sigData, address broadcaster);
+    event SignatureAccepted(SigData sigData, address signer);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
