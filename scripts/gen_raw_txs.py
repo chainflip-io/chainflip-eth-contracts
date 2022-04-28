@@ -1,6 +1,10 @@
-from brownie import accounts, web3
+import sys
 import os
 
+sys.path.append(os.path.abspath("tests"))
+from consts import *
+
+from brownie import accounts, web3
 
 CHAINFLIP_SEED = os.environ["CHAINFLIP_SEED"]
 # Annoyingly you need to use cf_accs in order to access the private keys directly,
