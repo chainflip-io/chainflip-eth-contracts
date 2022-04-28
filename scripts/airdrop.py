@@ -349,6 +349,15 @@ def airdrop(snapshot_csv, parsedLog):
         airdropper, newFlipContract, newStakeManager
     )
 
+    # Check that the airdropper has the balance to airdrop for the loop airdrop transfer
+    assert (
+        airdropperBalance
+        >= oldFliptotalSupply - oldStakeManagerBalance - oldFlipDeployerBalance
+    )
+    # Assertion for extra check in our particular case - just before we start all the airdrop
+    newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
+    assert newFlipToBeMinted > 0
+
     # Full list of addresses to skip
     skip_receivers_list += listAirdropTXs
 
@@ -380,18 +389,28 @@ def airdrop(snapshot_csv, parsedLog):
             logging.debug("Skipping receiver:" + str(receiverNewFlip))
             skip_counter += 1
 
-    # TODO: Make an extra transfer to StakeManager if needed
-    # oldFlipTotalSupply might be bigger than newFLIP
-    print("Amount to be minted so newSupply matches oldSupply")
-    newFlipToBeMinted = int(oldFliptotalSupply) - INIT_SUPPLY
-    # Calculate amount that the newStakeManager requires
-    #
+    # Ensure that newStakeManager and oldStakeManager end up with the same balance. If new Stake Manager has less balance than the old one
+    # and the difference is bigger than the supply difference, we need to make an extra transfer from airdropper to the new Stake Manager.
+    # This should be the case in this airdrop.
 
-    print(int(oldFliptotalSupply) - INIT_SUPPLY)
-    print(
-        "Amount that newStakeManager needs to receive to match oldStakeManager balance"
-    )
-    print(int(oldStakeManagerBalance) - int(newStakeManagerBalance))
+    # Technically it could be the case where tokens would need to be airdropped to the stakeManager to be burnt, or that some of newSupply
+    # tokens that will be minted would have to go to the airdroper, but that won't be the case in this airdrop (and probably never)
+    stakeManagerBalanceDifference = oldStakeManagerBalance - newStakeManagerBalance
+    if (
+        stakeManagerBalanceDifference > 0
+        and stakeManagerBalanceDifference > newFlipToBeMinted
+    ):
+        print("Do extra transfer from airdropper to StakeManager")
+        # Transfer the difference between the stakeManager difference and the newFlipTobeMinted later on by the State chain
+        # Also should work if newFlipToBeMinted < 0. We need to transfer that extra amount so the stateChain can burn it later
+        amountToTransfer = stakeManagerBalanceDifference - newFlipToBeMinted
+        # Check that the airdropper has the balance to airdrop
+        assert airdropperBalance >= amountToTransfer
+        tx = newFlipContract.functions.transfer(
+            newStakeManager, amountToTransfer
+        ).transact({"from": str(airdropper)})
+        logging.info("Airdrop transaction Tx Hash:" + tx.hex())
+        listOfTxSent.append(tx.hex())
 
     logging.info("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
     logging.info(
@@ -450,9 +469,9 @@ def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
     return (
         holderAccounts,
         holderBalances,
-        totalSupply,
-        stakeManagerBalance,
-        deployerBalance,
+        int(totalSupply),
+        int(stakeManagerBalance),
+        int(deployerBalance),
     )
 
 
@@ -467,13 +486,17 @@ def getTXsAndBalancesFromTransferEvents(airdropper, flipContract, stakeManager):
 
     listAirdropTXs = []
     initialMintTXs = []
-    # Get all transfer events from the airdropper and the initial minting
+    airdropedAmountToStakeManager = 0
+    # Get all transfer events from the airdropper and the initial minting.
     for event in events:
         toAddress = event.args.to
         fromAddress = event.args["from"]
         amount = event.args.value
+        # If there has been an airdrop to the stakeManager do not include it (just account for the amount) - makes checking easier
+        if fromAddress == airdropper and toAddress == stakeManager:
+            airdropedAmountToStakeManager = amount
         # Addresses should be unique but just in case
-        if fromAddress == airdropper and (toAddress not in listAirdropTXs):
+        elif fromAddress == airdropper and (toAddress not in listAirdropTXs):
             listAirdropTXs.append([toAddress, amount])
         elif fromAddress == ZERO_ADDR:
             initialMintTXs.append([toAddress, amount])
@@ -484,17 +507,17 @@ def getTXsAndBalancesFromTransferEvents(airdropper, flipContract, stakeManager):
     assert initialMintTXs[0][0] == stakeManager, logging.error(
         "First mint receiver should be the new Stake Manager"
     )
-    stakeManagerMintReceived = initialMintTXs[0][1]
+    stakeManagerBalance = initialMintTXs[0][1] + airdropedAmountToStakeManager
     assert initialMintTXs[1][0] == airdropper, logging.error(
         "First mint receiver should be the airdropper"
     )
-    airdropperMintReceived = initialMintTXs[1][1]
+    airdropperBalance = initialMintTXs[1][1] - airdropedAmountToStakeManager
 
     return (
         initialMintTXs,
         listAirdropTXs,
-        stakeManagerMintReceived,
-        airdropperMintReceived,
+        int(stakeManagerBalance),
+        int(airdropperBalance),
     )
 
 
@@ -541,8 +564,8 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
     # Sanity check
     assert len(listAirdropTXs) == len(oldFlipHolderAccounts)
 
-    # We cannot tell which order the transactions will be mined so we can't compare element by element
-    # However, accounts should be unique in the list
+    # We cannot tell which order the transactions will be mined so we can't compare element by element.
+    # However, accounts must be unique in the list, otherwise something has gone wrong in the airdrop and this will break.
     for airdropTx in listAirdropTXs:
         receiver = airdropTx[0]
         amountAirdropped = airdropTx[1]
@@ -557,36 +580,32 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
     assert len(oldFlipHolderAccounts) == 0
     assert len(oldFlipholderBalances) == 0
 
-    # No need to call it in a specific block since airdroper should have airdrop the total amount
+    # No need to call it in a specific block since airdroper should have completed all airdrop transactions. Not really necessary but why not.
     airdropperRealBalance = newFlipContract.functions.balanceOf(str(airdropper)).call()
     assert airdropperBalance == airdropperRealBalance
 
     # Old StakeManager has more tokens than the INITIAL amount minted
     # Problem: Looks like NewStakeManager needs more FLIP than what we can mint to match the old Supply
-    print("Old StakeManager old FLIP balance", int(oldStakeManagerBalance))
-    print("New StakeManager new FLIP balance", int(newStakeManagerBalance))
+    print("Old StakeManager old FLIP balance", oldStakeManagerBalance)
+    print("New StakeManager new FLIP balance", newStakeManagerBalance)
 
-    # TODO: Remov this. This is just for testing purposes (since it could be that someone stakes right away and messes the check)
+    #########################################################
+    # TODO: Remove this. This is just for testing purposes (since it could be that someone stakes right away and messes the check)
     newStakeManagerRealBalance = newFlipContract.functions.balanceOf(
         str(newStakeManager)
     ).call()
     assert newStakeManagerRealBalance == int(newStakeManagerBalance)
+    #########################################################
 
-    print("Amount to be minted so newSupply matches oldSupply")
-    print(int(oldFliptotalSupply) - INIT_SUPPLY)
-    print(
-        "Amount that newStakeManager needs to receive to match oldStakeManager balance"
-    )
-    print(int(oldStakeManagerBalance) - int(newStakeManagerBalance))
+    # Do final checking of stakeManager and airdropper balances
+    newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
+    stakeManagerBalanceDifference = oldStakeManagerBalance - newStakeManagerBalance
 
-    # print (int(airdropperBalance) - int(oldFlipDeployerBalance))
-    # print(int(oldStakeManagerBalance))
-    # print(int(oldFlipDeployerBalance))
-
-    # Extra amount of FLIP that stateChain will have to mint to the StakeManager
-
-    # TODO: Check that new StakeManager balance + amount that stateChain will need to mint ends up making sense
-    # TODO: After doing that, oldFLIP from oldFLIP deployer should match airdropper's supply
+    # Check that when updateFlipSupply mints the remaining supply to the StakeManager the balances match.
+    # Again, it could be the case where tokens would need to be airdropper to the stakeManager to be burnt, or that some of newSupply
+    # tokens that will be minted would have to go to the airdroper, but that won't be the case in this airdrop (and probably never)
+    assert newStakeManagerBalance + newFlipToBeMinted == oldStakeManagerBalance
+    assert oldFlipDeployerBalance == airdropperBalance
 
 
 def getAndCheckDeployedAddresses(parsedLog):
