@@ -24,8 +24,6 @@ from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 from web3._utils.contracts import encode_abi
 
-# from .airdrop import airdrop
-
 
 # This will continue logging at the end of the previous log (running .INFO for development purposes)
 logname = "airdrop.log"
@@ -79,6 +77,7 @@ def main():
         logging.info("Old FLIP snapshot not taken previously")
         snapshot(snapshot_blocknumber, rinkeby_old_flip, oldFlipSnapshotFilename)
     else:
+        print("Skipped old FLIP snapshot - snapshop already taken")
         logging.info("Skipped old FLIP snapshot - snapshop already taken")
 
     # TODO: this is for development purposes to do the Airdrop in hardhat. To be removed
@@ -87,8 +86,20 @@ def main():
     )
 
     if not "😎  Airdrop completed! 😎" in parsedLog:
-        # Skip airdrop if it is logged as succesfully. However, call Airdrop if it has failed at any point before the succesful logging
-        # so we do all the checking of sent transactions and do the remaining aidrop transfers (if any)
+        # Inform the user if we are starting or continuing the airdrop and allow the user to only do a snapshot
+        # without having to perform the airdrop
+        if "Doing airdrop of new FLIP" in parsedLog:
+            inputString = (
+                "Do you want to continue the previously started airdrop? (Y)/N : "
+            )
+        else:
+            inputString = "Do you want to start the airdrop? (Y)/N : "
+        doAirdrop = input(inputString)
+        if doAirdrop not in ["", "Y", "yes", "Yes"]:
+            print("Script stopped")
+            return False
+        # Skip airdrop if it is logged as succesfully. However, call Airdrop if it has failed at any point before the
+        # succesful logging so we do all the checking of sent transactions and do the remaining aidrop transfers (if any)
         (newStakeManager, newVault, newFlip, newKeyManager) = airdrop(
             oldFlipSnapshotFilename, parsedLog
         )
@@ -102,12 +113,15 @@ def main():
             newKeyManager,
         ) = getAndCheckDeployedAddresses(parsedLog)
 
+    ##############################################################
+    # TODO:Remove this, just to be able to visually look at it
+    # Problem is if someone transfers the airdropped FLIP after airdrop and before snaphsot.
+    ##############################################################
     if (not "Snapshot completed in " + newFlipSnapshotFilename in parsedLog) or (
         not os.path.exists(newFlipSnapshotFilename)
     ):
-        # TODO: Problem. What if someone transfers the airdropped FLIP after airdrop and before snaphsot?
-        # Remove this, just to be able to visually look at it
         snapshot(web3.eth.block_number, newFlip, newFlipSnapshotFilename)
+    ##############################################################
 
     # Always verify Airdrop even if we have already runed it before.
     verifyAirdrop(oldFlipSnapshotFilename, newFlip, newStakeManager)
@@ -122,16 +136,15 @@ def snapshot(
 
     # It will throw an error if there are more than 10.000 events (Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
-    flipContract = getContractFromAddress(rinkeby_old_flip)
+    oldFlipContract = getContractFromAddress(rinkeby_old_flip)
     events = list(
         fetch_events(
-            flipContract.events.Transfer, from_block=0, to_block=snapshot_blocknumber
+            oldFlipContract.events.Transfer, from_block=0, to_block=snapshot_blocknumber
         )
     )
 
     # Get list of unique addresses that have recieved FLIP
     receiver_list = []
-
     for event in events:
         toAddress = event.args.to
         if toAddress not in receiver_list:
@@ -142,7 +155,7 @@ def snapshot(
     # Get balances of receivers and check if they are holders
     holder_list = []
     for holder in receiver_list:
-        holderBalance = flipContract.functions.balanceOf(holder).call(
+        holderBalance = oldFlipContract.functions.balanceOf(holder).call(
             block_identifier=snapshot_blocknumber
         )
         # HolderBalance>0 already filters out the zero address (when tokens are burnt)
@@ -153,7 +166,7 @@ def snapshot(
 
     # Health check
     assert len(holder_list) == len(holder_balances)
-    totalSupply = flipContract.functions.totalSupply().call(
+    totalSupply = oldFlipContract.functions.totalSupply().call(
         block_identifier=snapshot_blocknumber
     )
     assert totalSupply == totalBalance
@@ -261,10 +274,12 @@ def airdrop(snapshot_csv, parsedLog):
     logging.info("Doing airdrop of new FLIP")
 
     (
-        holderAccountsOldFlip,
-        holderBalancesOldFlip,
-        totalSupplyOldFlip,
-    ) = readCSVSnapshotChecksum(snapshot_csv)
+        oldFlipHolderAccounts,
+        oldFlipholderBalances,
+        oldFliptotalSupply,
+        oldStakeManagerBalance,
+        oldFlipDeployerBalance,
+    ) = readCSVSnapshotChecksum(snapshot_csv, rinkeby_old_stakeManager, oldFlipDeployer)
 
     ## If we have deployed some but not all we better redeploy them all. If all have been deployed, get their addresses.
     ## TODO: What communityKey should we set here?
@@ -314,16 +329,9 @@ def airdrop(snapshot_csv, parsedLog):
     # protection against airdropping twice, we cannot rely on a log file.
     newFlipContract = getContractFromAddress(newFlip)
 
-    events = list(
-        fetch_events(
-            newFlipContract.events.Transfer,
-            from_block=0,
-            to_block=web3.eth.block_number,
-        )
-    )
-
-    # Craft list of unique addresses that should be skipped when aidropping
+    # Craft list of addresses that should be skipped when aidropping.
     # Skip following receivers: airdropper, newStakeManager, oldStakeManager and oldFlipDeployer.
+    # Also skip receivers that have already received their airdrop
     # OldFlipDeployer can be the same as airdropper, that's fine.
     skip_receivers_list = [
         airdropper,
@@ -332,19 +340,23 @@ def airdrop(snapshot_csv, parsedLog):
         oldFlipDeployer,
     ]
 
-    # Get all transfer events from the airdropper
-    for event in events:
-        toAddress = event.args.to
-        fromAddress = event.args["from"]
-        # Addresses should be unique but just in case
-        if (fromAddress == airdropper) and (toAddress not in skip_receivers_list):
-            skip_receivers_list.append(toAddress)
+    (
+        initialMintTXs,
+        listAirdropTXs,
+        newStakeManagerBalance,
+        airdropperBalance,
+    ) = getTXsAndBalancesFromTransferEvents(
+        airdropper, newFlipContract, newStakeManager
+    )
+
+    # Full list of addresses to skip
+    skip_receivers_list += listAirdropTXs
 
     listOfTxSent = []
     skip_counter = 0
-    for i in range(len(holderAccountsOldFlip)):
+    for i in range(len(oldFlipHolderAccounts)):
         # When in rinkeby we should add .transact() and wait for a receipt? Or send all transactions and then check them afterwards
-        receiverNewFlip = holderAccountsOldFlip[i]
+        receiverNewFlip = oldFlipHolderAccounts[i]
         if receiverNewFlip not in skip_receivers_list:
 
             # Health check (not required)
@@ -357,7 +369,7 @@ def airdrop(snapshot_csv, parsedLog):
 
             # When sending a public transaction we need transact() and it requires a string as the address sender (not account)
             tx = newFlipContract.functions.transfer(
-                receiverNewFlip, int(holderBalancesOldFlip[i])
+                receiverNewFlip, int(oldFlipholderBalances[i])
             ).transact({"from": str(airdropper)})
             # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
             logging.info("Airdrop transaction Tx Hash:" + tx.hex())
@@ -368,8 +380,23 @@ def airdrop(snapshot_csv, parsedLog):
             logging.debug("Skipping receiver:" + str(receiverNewFlip))
             skip_counter += 1
 
+    # TODO: Make an extra transfer to StakeManager if needed
+    # oldFlipTotalSupply might be bigger than newFLIP
+    print("Amount to be minted so newSupply matches oldSupply")
+    newFlipToBeMinted = int(oldFliptotalSupply) - INIT_SUPPLY
+    # Calculate amount that the newStakeManager requires
+    #
+
+    print(int(oldFliptotalSupply) - INIT_SUPPLY)
+    print(
+        "Amount that newStakeManager needs to receive to match oldStakeManager balance"
+    )
+    print(int(oldStakeManagerBalance) - int(newStakeManagerBalance))
+
     logging.info("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
-    logging.info("Skiped a total of " + str(skip_counter))
+    logging.info(
+        "Skipped number of transfers: " + str(skip_counter) + " should skip at least 2"
+    )
 
     print("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
     print("Skiped a total of " + str(skip_counter))
@@ -384,12 +411,12 @@ def airdrop(snapshot_csv, parsedLog):
     return (newStakeManager, newVault, newFlip, newKeyManager)
 
 
-def readCSVSnapshotChecksum(snapshot_csv):
+def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
     # Read csv file
     read_snapshot_csv = open(snapshot_csv, "r")
     holderAccounts = []
     holderBalances = []
-    totalBalance = 0
+    totalSupply = 0
 
     # Split columns while reading
     for a, b in csv.reader(read_snapshot_csv, delimiter=","):
@@ -397,20 +424,78 @@ def readCSVSnapshotChecksum(snapshot_csv):
             # Append each variable to a separate list
             holderAccounts.append(a)
             holderBalances.append(b)
-            totalBalance += int(b)
+            totalSupply += int(b)
         else:
             # Checksum in the last row
             print("Checksum verification")
             numberHolders = a.split(":")
             assert int(numberHolders[1]) == len(holderAccounts)
-            assert totalBalance == int(b)
+            assert totalSupply == int(b)
 
     # Printing for visibility purposes - amount has been checked
     print(snapshot_csv)
-    print(totalBalance)
+    print(totalSupply)
     print(len(holderAccounts))
 
-    return (holderAccounts, holderBalances, totalBalance)
+    # Assumption that we get the events in order, so first two events should be the initial mints
+    assert holderAccounts[0] == stakeManager, logging.error(
+        "First holder should be the Stake Manager"
+    )
+    stakeManagerBalance = holderBalances[0]
+    assert holderAccounts[1] == deployer, logging.error(
+        "Second holder should be the deployer"
+    )
+    deployerBalance = holderBalances[1]
+
+    return (
+        holderAccounts,
+        holderBalances,
+        totalSupply,
+        stakeManagerBalance,
+        deployerBalance,
+    )
+
+
+def getTXsAndBalancesFromTransferEvents(airdropper, flipContract, stakeManager):
+    events = list(
+        fetch_events(
+            flipContract.events.Transfer,
+            from_block=0,
+            to_block=web3.eth.block_number,
+        )
+    )
+
+    listAirdropTXs = []
+    initialMintTXs = []
+    # Get all transfer events from the airdropper and the initial minting
+    for event in events:
+        toAddress = event.args.to
+        fromAddress = event.args["from"]
+        amount = event.args.value
+        # Addresses should be unique but just in case
+        if fromAddress == airdropper and (toAddress not in listAirdropTXs):
+            listAirdropTXs.append([toAddress, amount])
+        elif fromAddress == ZERO_ADDR:
+            initialMintTXs.append([toAddress, amount])
+
+    # Check amounts against the newFlipDeployer(airdropper) and the newStakeManager
+    assert len(initialMintTXs) == 2, logging.error("Minted more times than expected")
+
+    assert initialMintTXs[0][0] == stakeManager, logging.error(
+        "First mint receiver should be the new Stake Manager"
+    )
+    stakeManagerMintReceived = initialMintTXs[0][1]
+    assert initialMintTXs[1][0] == airdropper, logging.error(
+        "First mint receiver should be the airdropper"
+    )
+    airdropperMintReceived = initialMintTXs[1][1]
+
+    return (
+        initialMintTXs,
+        listAirdropTXs,
+        stakeManagerMintReceived,
+        airdropperMintReceived,
+    )
 
 
 def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
@@ -423,60 +508,31 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
     totalSupplyNewFlip = newFlipContract.functions.totalSupply().call(
         block_identifier=web3.eth.block_number
     )
+
     assert totalSupplyNewFlip == INIT_SUPPLY
 
-    events = list(
-        fetch_events(
-            newFlipContract.events.Transfer,
-            from_block=0,
-            to_block=web3.eth.block_number,
-        )
+    (
+        initialMintTXs,
+        listAirdropTXs,
+        newStakeManagerBalance,
+        airdropperBalance,
+    ) = getTXsAndBalancesFromTransferEvents(
+        airdropper, newFlipContract, newStakeManager
     )
-
-    listAirdropTXs = []
-    initialMint = []
-    # Get all transfer events from the airdropper and the initial minting
-    for event in events:
-        toAddress = event.args.to
-        fromAddress = event.args["from"]
-        amount = event.args.value
-        # Addresses should be unique but just in case
-        if fromAddress == airdropper:
-            listAirdropTXs.append([toAddress, amount])
-        elif fromAddress == ZERO_ADDR:
-            initialMint.append([toAddress, amount])
 
     # Check list of receivers and amounts against old FLIP snapshot csv file
     (
         oldFlipHolderAccounts,
         oldFlipholderBalances,
-        oldFliptotalBalance,
-    ) = readCSVSnapshotChecksum(initalSnapshot)
+        oldFliptotalSupply,
+        oldStakeManagerBalance,
+        oldFlipDeployerBalance,
+    ) = readCSVSnapshotChecksum(
+        initalSnapshot, rinkeby_old_stakeManager, oldFlipDeployer
+    )
 
     # Minus two oldFlipHolders - we don't airdrop to neither oldStakeManager nor oldFlipDeployer (could be same as airdropper)
     assert len(listAirdropTXs) == len(oldFlipHolderAccounts) - 2
-
-    # Assumption that we get the events in order, so first two events should be the initial mint of oldFLIP
-    assert oldFlipHolderAccounts[0] == rinkeby_old_stakeManager, logging.error(
-        "First holder should be the oldStakeManager"
-    )
-    oldStakeManagerBalance = oldFlipholderBalances[0]
-    assert oldFlipHolderAccounts[1] == oldFlipDeployer, logging.error(
-        "Second holder should be the oldFlipDeployer"
-    )
-    oldFlipDeployerBalance = oldFlipholderBalances[1]
-
-    # Check amounts against the newFlipDeployer(airdropper) and the newStakeManager
-    assert len(initialMint) == 2, logging.error("Minted more times than expected")
-
-    assert initialMint[0][0] == newStakeManager, logging.error(
-        "First mint receiver should be the new Stake Manager"
-    )
-    newStakeManagerBalance = initialMint[0][1]
-    assert initialMint[1][0] == airdropper, logging.error(
-        "First mint receiver should be the airdropper"
-    )
-    airdropperBalance = initialMint[1][1]
 
     # Remove oldStakeManager and oldFliperDeployer
     del oldFlipHolderAccounts[0:2]
@@ -507,8 +563,17 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
 
     # Old StakeManager has more tokens than the INITIAL amount minted
     # Problem: Looks like NewStakeManager needs more FLIP than what we can mint to match the old Supply
-    print("Amount to be minted")
-    print(int(oldFliptotalBalance) - INIT_SUPPLY)
+    print("Old StakeManager old FLIP balance", int(oldStakeManagerBalance))
+    print("New StakeManager new FLIP balance", int(newStakeManagerBalance))
+
+    # TODO: Remov this. This is just for testing purposes (since it could be that someone stakes right away and messes the check)
+    newStakeManagerRealBalance = newFlipContract.functions.balanceOf(
+        str(newStakeManager)
+    ).call()
+    assert newStakeManagerRealBalance == int(newStakeManagerBalance)
+
+    print("Amount to be minted so newSupply matches oldSupply")
+    print(int(oldFliptotalSupply) - INIT_SUPPLY)
     print(
         "Amount that newStakeManager needs to receive to match oldStakeManager balance"
     )
