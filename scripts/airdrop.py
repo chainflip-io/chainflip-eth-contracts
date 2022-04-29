@@ -24,18 +24,16 @@ from web3._utils.filters import construct_event_filter_params
 # This will continue logging at the end of the previous log (running .INFO for development purposes)
 logname = "airdrop.log"
 
-# TODO: Try to log at the same time on console and .log
 logging.basicConfig(filename=logname, level=logging.INFO)
-# logging.basicConfig(level=logging.INFO,handlers=[logging.FileHandler(logname), logging.StreamHandler()])
-
-# In the end probably do this to log also all RPC calls but that will make it very unreadable
-# logging.basicConfig(filename='airdrop.log', level=logging.DEBUG)
-# So brownie can run a snapshot separately from airdrop
 
 rinkeby_old_stakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
 oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
 rinkeby_old_flip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
 oldFlipSnapshotFilename = "snapshot_old_flip.csv"
+
+snapshotSuccessMessage = "Snapshot taken and succesfully stored in "
+contractDeploymentSuccessMessage = "New set of contracts deployed succesfully"
+airdropSuccessMessage = "😎  Airdrop completed! 😎"
 
 
 def main():
@@ -45,7 +43,6 @@ def main():
     DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
-    # print(f"DEPLOYER = {DEPLOYER}")
 
     # Acccount running this script should receive the newFLIP amount necessary to do the airdrop
     if chain.id == 4:
@@ -74,23 +71,22 @@ def main():
     )
 
     # Do oldFlip snapshot if it is has not been logged or if the snapshot csv doesn't exist
-    if (not "Snapshot completed in " + oldFlipSnapshotFilename in parsedLog) or (
+    if (not snapshotSuccessMessage + oldFlipSnapshotFilename in parsedLog) or (
         not os.path.exists(oldFlipSnapshotFilename)
     ):
         assert chain.id == 4, logging.error("Wrong chain. Should be running in Rinkeby")
-        logging.info("Old FLIP snapshot not taken previously")
+        printAndLog("Old FLIP snapshot not taken previously")
         snapshot(snapshot_blocknumber, rinkeby_old_flip, oldFlipSnapshotFilename)
     else:
-        print("Skipped old FLIP snapshot - snapshot already taken")
-        logging.info("Skipped old FLIP snapshot - snapshot already taken")
+        printAndLog("Skipped old FLIP snapshot - snapshot already taken")
 
-    ## If we have deployed some but not all we better redeploy them all. If all have been deployed, get their addresses.
-    if "New set of contracts deployed" not in parsedLog:
-        doAirdrop = input(
-            "Do you want to procced and deploy the new contracts? (Y)/N : "
-        )
-        if doAirdrop not in ["", "Y", "yes", "Yes"]:
-            print("Script stopped")
+    # If we have deployed some contracts but not all we better redeploy them all - something fishy has happened
+    # If all have been deployed, get their addresses.
+    if contractDeploymentSuccessMessage not in parsedLog:
+        printAndLog("Deployer account: " + str(airdropper))
+        deployContracts = input("Deploy the new contracts? (Y)/N : ")
+        if deployContracts not in ["", "Y", "yes", "Yes"]:
+            print("Script stopped by user")
             return False
         (
             newStakeManager,
@@ -99,12 +95,10 @@ def main():
             newKeyManager,
         ) = deployNewContracts(airdropper)
     else:
-        logging.info(
+        printAndLog(
             "Skipped deployment of new contracts - contracts already deployed succesfully"
         )
-        print(
-            "Skipped deployment of new contracts - contracts already deployed succesfully"
-        )
+
         # Ensure that contracts have been deployed and addresses are in the log
         (
             newStakeManager,
@@ -118,9 +112,10 @@ def main():
 
     # Skip airdrop if it is logged as succesfully. However, call Airdrop if it has failed at any point before the
     # succesful logging so we do all the checking of sent transactions and do the remaining airdrop transfers (if any)
-    if not "😎  Airdrop completed! 😎" in parsedLog:
+    if not airdropSuccessMessage in parsedLog:
         # Inform the user if we are starting or continuing the airdrop and allow the user to only do a snapshot
         # without having to perform the airdrop
+        printAndLog("Airdropper account: " + str(airdropper))
         if "Doing airdrop of new FLIP" in parsedLog:
             inputString = (
                 "Do you want to continue the previously started airdrop? (Y)/N : "
@@ -134,7 +129,7 @@ def main():
 
         airdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStakeManager)
     else:
-        logging.info("Skipped Airdrop - already completed succesfully")
+        printAndLog("Skipped Airdrop - already completed succesfully")
 
     # Always verify Airdrop even if we have already run it before.
     verifyAirdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStakeManager)
@@ -145,7 +140,7 @@ def snapshot(
     rinkeby_old_flip="0xbFf4044285738049949512Bd46B42056Ce5dD59b",
     filename="snapshot.csv",
 ):
-    logging.info("Taking snapshot in " + filename)
+    printAndLog("Taking snapshot of " + rinkeby_old_flip)
 
     # It will throw an error if there are more than 10.000 events (Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
@@ -185,39 +180,37 @@ def snapshot(
     )
     assert totalSupply == totalBalance
 
-    # Can be checked in Etherscan that the values match
-    print(totalSupply)
-    print(len(holder_list))
+    # Can be checked against Etherscan that the values match
+    printAndLog(
+        "Old Flip total supply: "
+        + str(totalSupply)
+        + ". Should match Etherscan for block number: "
+        + str(snapshot_blocknumber)
+    )
+    printAndLog(
+        "Number of Old Flip holders: "
+        + str(len(holder_list))
+        + ". Should match Etherscan for block number: "
+        + str(snapshot_blocknumber)
+    )
 
     # Add checksum for security purposes
     holder_list.append("TotalNumberHolders:" + str(len(holder_list)))
     holder_balances.append(totalBalance)
     rows = zip(holder_list, holder_balances)
 
+    printAndLog("Writing data into csv file")
     with open(filename, "w") as f:
         writer = csv.writer(f)
         for row in rows:
             writer.writerow(row)
 
-    print("Snapshot completed")
-    logging.info("Snapshot completed in " + filename)
-
-
-def getContractFromAddress(flip_address):
-    with open("build/contracts/FLIP.json") as f:
-        info_json = json.load(f)
-    abi = info_json["abi"]
-
-    # Object to get the event interface from
-    flipContractObject = web3.eth.contract(address=flip_address, abi=abi)
-
-    # Flip Contract to make the calls to
-    flipContract = FLIP.at(flip_address)
-
-    return flipContract, flipContractObject
+    printAndLog(snapshotSuccessMessage + filename)
 
 
 def deployNewContracts(airdropper):
+    printAndLog("Deploying new contracts")
+
     ## TODO: What communityKey should we set here?
     cf = deploy_set_Chainflip_contracts(
         airdropper, airdropper, KeyManager, Vault, StakeManager, FLIP, os.environ
@@ -230,18 +223,17 @@ def deployNewContracts(airdropper):
 
     listOfTx = []
 
-    logging.info("New set of contracts deployed")
     logging.info("StakeManager address:" + newStakeManager)
     logging.info("Vault address:" + newVault)
     logging.info("FLIP address:" + newFlip)
     logging.info("KeyManager address:" + newKeyManager)
+    logging.info(contractDeploymentSuccessMessage)
 
     return (newStakeManager, newVault, newFlip, newKeyManager)
 
 
 def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
-
-    logging.info("Doing airdrop of new FLIP")
+    printAndLog("Starting airdrop process")
 
     (
         oldFlipHolderAccounts,
@@ -290,6 +282,8 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
     for airdropTx in listAirdropTXs:
         skip_receivers_list.append(airdropTx[0])
 
+    printAndLog("Starting airdrop of new FLIP")
+
     listOfTxSent = []
     skip_counter = 0
     for i in range(len(oldFlipHolderAccounts)):
@@ -331,7 +325,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
         stakeManagerBalanceDifference > 0
         and stakeManagerBalanceDifference > newFlipToBeMinted
     ):
-        print("Do extra transfer from airdropper to StakeManager")
+        printAndLog("Do extra transfer from airdropper to StakeManager")
         # Transfer the difference between the stakeManager difference and the newFlipTobeMinted later on by the State chain
         # Also should work if newFlipToBeMinted < 0. We need to transfer that extra amount so the stateChain can burn it later
         amountToTransfer = stakeManagerBalanceDifference - newFlipToBeMinted
@@ -343,28 +337,24 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
         logging.info("Airdrop transaction Tx Hash:" + tx.txid)
         listOfTxSent.append(tx.txid)
 
-    logging.info("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
-    logging.info(
+    printAndLog("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
+    printAndLog(
         "Skipped number of transfers: "
         + str(skip_counter)
         + ". Should have skipped at least 2 (oldStakeManager and oldFlipDeployer)"
     )
 
-    print("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
-    print("Skipped a total of " + str(skip_counter))
-
     # After all tx's have been send wait for the receipts. This could break (or could have broken before) so extra safety mechanism added when rerunning script
-    print("Waiting for airdrop transactions to be confirmed")
+    printAndLog("Waiting for airdrop transactions to be confirmed..")
     for txSent in listOfTxSent:
         web3.eth.wait_for_transaction_receipt(txSent)
 
-    print("😎  Airdrop completed! 😎 \n")
-    logging.info("😎  Airdrop completed! 😎")
+    printAndLog(airdropSuccessMessage)
 
 
 def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
 
-    logging.info("Verifying airdrop")
+    printAndLog("Verifying airdrop")
 
     newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
@@ -426,7 +416,6 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
 
     # Do final checking of stakeManager and airdropper balances
     newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
-    stakeManagerBalanceDifference = oldStakeManagerBalance - newStakeManagerBalance
 
     # Check that when updateFlipSupply mints the remaining supply to the StakeManager the balances match.
     # Again, it could be the case where tokens would need to be airdropper to the stakeManager to be burnt, or that some of newSupply
@@ -434,11 +423,33 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
     assert newStakeManagerBalance + newFlipToBeMinted == oldStakeManagerBalance
     assert oldFlipDeployerBalance == airdropperBalance
 
+    printAndLog("😎  Airdrop verified succesfully! 😎")
+
 
 # ---------------------------- Utility functions ---------------------------- #
 
 
+def printAndLog(text):
+    print(text)
+    logging.info(text)
+
+
+def getContractFromAddress(flip_address):
+    with open("build/contracts/FLIP.json") as f:
+        info_json = json.load(f)
+    abi = info_json["abi"]
+
+    # Object to get the event interface from
+    flipContractObject = web3.eth.contract(address=flip_address, abi=abi)
+
+    # Flip Contract to make the calls to
+    flipContract = FLIP.at(flip_address)
+
+    return flipContract, flipContractObject
+
+
 def getTXsAndBalancesFromTransferEvents(airdropper, flipContractObject, stakeManager):
+    printAndLog("Getting all transfer events")
     events = list(
         fetch_events(
             flipContractObject.events.Transfer,
@@ -538,12 +549,12 @@ def fetch_events(
 
 
 def waitForLogTXsToComplete(parsedLog):
+    printAndLog("Waiting for sent transactions to complete...")
     # Get all previous sent transactions (if any) from the log and check that they have been included in a block and we get a receipt back
     previouslySentTxList = []
     for line in parsedLog:
         parsedLine = line.split("Airdrop transaction Tx Hash:")
         if len(parsedLine) > 1:
-            print("Waiting for TX to complete")
             tx = parsedLine[1]
             receipt = web3.eth.wait_for_transaction_receipt(tx)
             # Logging these only if running in debug level
@@ -559,36 +570,36 @@ def getAndCheckDeployedAddresses(parsedLog):
     index = parsedLog.index("New set of contracts deployed")
     # Parse contract addresses
     # Stake Manager
-    assert parsedLog[index + 1].split(":")[0] == "StakeManager address", logging.error(
+    assert parsedLog[index - 4].split(":")[0] == "StakeManager address", logging.error(
         "Something is wrong in the logging of the deployed StakeManager address"
     )
-    newStakeManager = parsedLog[index + 1].split(":")[1]
+    newStakeManager = parsedLog[index - 4].split(":")[1]
     assert newStakeManager != ZERO_ADDR, logging.error(
         "Something is wrong with the deployed StakeManager's address"
     )
     # Vault
-    assert parsedLog[index + 2].split(":")[0] == "Vault address", logging.error(
+    assert parsedLog[index - 3].split(":")[0] == "Vault address", logging.error(
         "Something is wrong in the logging of the deployed Vault address"
     )
-    newVault = parsedLog[index + 2].split(":")[1]
+    newVault = parsedLog[index - 3].split(":")[1]
     assert newVault != ZERO_ADDR, logging.error(
         "Something is wrong with the deployed Vault's address"
     )
 
     # FLIP
-    assert parsedLog[index + 3].split(":")[0] == "FLIP address", logging.error(
+    assert parsedLog[index - 2].split(":")[0] == "FLIP address", logging.error(
         "Something is wrong in the logging of the deployed FLIP address"
     )
-    newFlip = parsedLog[index + 3].split(":")[1]
+    newFlip = parsedLog[index - 2].split(":")[1]
     assert newFlip != ZERO_ADDR, logging.error(
         "Something is wrong with the deployed FLIP's address"
     )
 
     # Key Manager
-    assert parsedLog[index + 4].split(":")[0] == "KeyManager address", logging.error(
+    assert parsedLog[index - 1].split(":")[0] == "KeyManager address", logging.error(
         "Something is wrong in the logging of the deployed KeyManager address"
     )
-    newKeyManager = parsedLog[index + 4].split(":")[1]
+    newKeyManager = parsedLog[index - 1].split(":")[1]
     assert newKeyManager != ZERO_ADDR, logging.error(
         "Something is wrong with the deployed KeyManager's address"
     )
@@ -597,6 +608,8 @@ def getAndCheckDeployedAddresses(parsedLog):
 
 
 def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
+    printAndLog("Reading snapshot from file: " + snapshot_csv)
+
     # Read csv file
     read_snapshot_csv = open(snapshot_csv, "r")
     holderAccounts = []
@@ -616,11 +629,6 @@ def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
             numberHolders = a.split(":")
             assert int(numberHolders[1]) == len(holderAccounts)
             assert totalSupply == int(b)
-
-    # Printing for visibility purposes - amount has been checked
-    print(snapshot_csv)
-    print(totalSupply)
-    print(len(holderAccounts))
 
     # Assumption that we get the events in order, so first two events should be the initial mints
     assert holderAccounts[0] == stakeManager, logging.error(
