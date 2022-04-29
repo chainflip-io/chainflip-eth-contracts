@@ -78,10 +78,10 @@ def main():
         print("Skipped old FLIP snapshot - snapshop already taken")
         logging.info("Skipped old FLIP snapshot - snapshop already taken")
 
-    # TODO: this is for development purposes to do the Airdrop in hardhat. To be removed
-    assert chain.id > 10, logging.error(
-        "Wrong chain. Should be running in local hardhat tesnet"
-    )
+    # # TODO: this is for development purposes to do the Airdrop in hardhat. To be removed
+    # assert chain.id > 10, logging.error(
+    #     "Wrong chain. Should be running in local hardhat tesnet"
+    # )
 
     if not "😎  Airdrop completed! 😎" in parsedLog:
         # Inform the user if we are starting or continuing the airdrop and allow the user to only do a snapshot
@@ -111,7 +111,7 @@ def main():
             newKeyManager,
         ) = getAndCheckDeployedAddresses(parsedLog)
 
-    # Always verify Airdrop even if we have already runed it before.
+    # Always verify Airdrop even if we have already run it before.
     verifyAirdrop(oldFlipSnapshotFilename, newFlip, newStakeManager)
 
 
@@ -351,6 +351,9 @@ def airdrop(snapshot_csv, parsedLog):
     for airdropTx in listAirdropTXs:
         skip_receivers_list.append(airdropTx[0])
 
+    # Hackish - would need to do it inside getContractFromAddress and fix other stuff
+    newFlipContract = FLIP.at(newFlip)
+
     listOfTxSent = []
     skip_counter = 0
     for i in range(len(oldFlipHolderAccounts)):
@@ -366,14 +369,16 @@ def airdrop(snapshot_csv, parsedLog):
                 oldFlipDeployer,
             ]
 
-            # When sending a public transaction we need transact()
-            tx = newFlipContract.functions.transfer(
-                receiverNewFlip, int(oldFlipholderBalances[i])
-            ).transact({"from": str(airdropper)})
+            # Send all the airdrop transfers without waiting for confirmation. We will wait for all the confirmations afterwards.
+            tx = newFlipContract.transfer(
+                receiverNewFlip,
+                int(oldFlipholderBalances[i]),
+                {"from": airdropper, "required_confs": 0},
+            )
             # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
-            logging.info("Airdrop transaction Tx Hash:" + tx.hex())
+            logging.info("Airdrop transaction Tx Hash:" + tx.txid)
             # Keeping a list of txHashes to wait afterwards. Not waiting every after transaction because it has no benefit and it would take long
-            listOfTxSent.append(tx.hex())
+            listOfTxSent.append(tx.txid)
         else:
             # Logging only in debug level
             logging.debug("Skipping receiver:" + str(receiverNewFlip))
@@ -396,11 +401,11 @@ def airdrop(snapshot_csv, parsedLog):
         amountToTransfer = stakeManagerBalanceDifference - newFlipToBeMinted
         # Check that the airdropper has the balance to airdrop
         assert airdropperBalance >= amountToTransfer
-        tx = newFlipContract.functions.transfer(
-            newStakeManager, amountToTransfer
-        ).transact({"from": str(airdropper)})
-        logging.info("Airdrop transaction Tx Hash:" + tx.hex())
-        listOfTxSent.append(tx.hex())
+        tx = newFlipContract.transfer(
+            newStakeManager, amountToTransfer, {"from": airdropper, "required_confs": 0}
+        )
+        logging.info("Airdrop transaction Tx Hash:" + tx.txid)
+        listOfTxSent.append(tx.txid)
 
     logging.info("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
     logging.info(
