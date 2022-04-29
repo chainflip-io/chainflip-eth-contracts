@@ -360,7 +360,7 @@ def airdrop(snapshot_csv, parsedLog):
 
             # Health check (not required)
             assert receiverNewFlip not in [
-                airdropper,
+                str(airdropper),
                 newStakeManager,
                 rinkeby_old_stakeManager,
                 oldFlipDeployer,
@@ -483,10 +483,10 @@ def getTXsAndBalancesFromTransferEvents(airdropper, flipContract, stakeManager):
         fromAddress = event.args["from"]
         amount = event.args.value
         # If there has been an airdrop to the stakeManager do not include it (just account for the amount) - makes checking easier
-        if fromAddress == airdropper and toAddress == stakeManager:
+        if fromAddress == str(airdropper) and toAddress == stakeManager:
             airdropedAmountToStakeManager = amount
         # Addresses should be unique but just in case
-        elif fromAddress == airdropper and (toAddress not in listAirdropTXs):
+        elif fromAddress == str(airdropper) and (toAddress not in listAirdropTXs):
             listAirdropTXs.append([toAddress, amount])
         elif fromAddress == ZERO_ADDR:
             initialMintTXs.append([toAddress, amount])
@@ -499,7 +499,7 @@ def getTXsAndBalancesFromTransferEvents(airdropper, flipContract, stakeManager):
         "First mint receiver should be the new Stake Manager"
     )
     stakeManagerBalance = initialMintTXs[0][1] + airdropedAmountToStakeManager
-    assert initialMintTXs[1][0] == airdropper, logging.error(
+    assert initialMintTXs[1][0] == str(airdropper), logging.error(
         "First mint receiver should be the airdropper"
     )
     airdropperBalance = initialMintTXs[1][1] - airdropedAmountToStakeManager
