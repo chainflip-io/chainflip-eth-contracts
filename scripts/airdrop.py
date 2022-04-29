@@ -315,6 +315,7 @@ def airdrop(snapshot_csv, parsedLog):
             parsedLine = line.split("Airdrop transaction Tx Hash:")
             if len(parsedLine) > 1:
                 previouslySentTxList.append(parsedLine[1])
+
         for tx in previouslySentTxList:
             receipt = web3.eth.wait_for_transaction_receipt(tx)
             # Logging these only if running in debug level
@@ -334,7 +335,7 @@ def airdrop(snapshot_csv, parsedLog):
     # Also skip receivers that have already received their airdrop
     # OldFlipDeployer can be the same as airdropper, that's fine.
     skip_receivers_list = [
-        airdropper,
+        str(airdropper),
         newStakeManager,
         rinkeby_old_stakeManager,
         oldFlipDeployer,
@@ -358,8 +359,9 @@ def airdrop(snapshot_csv, parsedLog):
     newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
     assert newFlipToBeMinted > 0
 
-    # Full list of addresses to skip
-    skip_receivers_list += listAirdropTXs
+    # Full list of addresses to skip - add already airdropped accounts
+    for airdropTx in listAirdropTXs:
+        skip_receivers_list.append(airdropTx[0])
 
     listOfTxSent = []
     skip_counter = 0
@@ -504,6 +506,7 @@ def getTXsAndBalancesFromTransferEvents(airdropper, flipContract, stakeManager):
     # Check amounts against the newFlipDeployer(airdropper) and the newStakeManager
     assert len(initialMintTXs) == 2, logging.error("Minted more times than expected")
 
+    # This should always apply so long as the FLIP contract has been deployed
     assert initialMintTXs[0][0] == stakeManager, logging.error(
         "First mint receiver should be the new Stake Manager"
     )
@@ -554,6 +557,8 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
         initalSnapshot, rinkeby_old_stakeManager, oldFlipDeployer
     )
 
+    print(len(listAirdropTXs))
+    print(len(oldFlipHolderAccounts) - 2)
     # Minus two oldFlipHolders - we don't airdrop to neither oldStakeManager nor oldFlipDeployer (could be same as airdropper)
     assert len(listAirdropTXs) == len(oldFlipHolderAccounts) - 2
 
@@ -583,11 +588,6 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
     # No need to call it in a specific block since airdroper should have completed all airdrop transactions. Not really necessary but why not.
     airdropperRealBalance = newFlipContract.functions.balanceOf(str(airdropper)).call()
     assert airdropperBalance == airdropperRealBalance
-
-    # Old StakeManager has more tokens than the INITIAL amount minted
-    # Problem: Looks like NewStakeManager needs more FLIP than what we can mint to match the old Supply
-    print("Old StakeManager old FLIP balance", oldStakeManagerBalance)
-    print("New StakeManager new FLIP balance", newStakeManagerBalance)
 
     #########################################################
     # TODO: Remove this. This is just for testing purposes (since it could be that someone stakes right away and messes the check)
