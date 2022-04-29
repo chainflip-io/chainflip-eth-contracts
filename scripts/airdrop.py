@@ -17,6 +17,7 @@ from brownie import (
     FLIP,
     history,
     web3,
+    Contract,
 )
 from deploy import deploy_set_Chainflip_contracts
 from web3._utils.abi import get_constructor_abi, merge_args_and_kwargs
@@ -40,13 +41,6 @@ rinkeby_old_stakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
 oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
 rinkeby_old_flip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
 oldFlipSnapshotFilename = "snapshot_old_flip.csv"
-
-# Alternative way to handle assertions - for now we go with the other one.
-# try:
-#     assert chain.id == 4, "Wrong chain"
-# except AssertionError:
-#     logging.error ("Wrong chain")
-#     raise
 
 
 def main():
@@ -75,8 +69,8 @@ def main():
         logging.info("Old FLIP snapshot not taken previously")
         snapshot(snapshot_blocknumber, rinkeby_old_flip, oldFlipSnapshotFilename)
     else:
-        print("Skipped old FLIP snapshot - snapshop already taken")
-        logging.info("Skipped old FLIP snapshot - snapshop already taken")
+        print("Skipped old FLIP snapshot - snapshot already taken")
+        logging.info("Skipped old FLIP snapshot - snapshot already taken")
 
     # # TODO: this is for development purposes to do the Airdrop in hardhat. To be removed
     # assert chain.id > 10, logging.error(
@@ -124,10 +118,12 @@ def snapshot(
 
     # It will throw an error if there are more than 10.000 events (Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
-    oldFlipContract = getContractFromAddress(rinkeby_old_flip)
+    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(rinkeby_old_flip)
     events = list(
         fetch_events(
-            oldFlipContract.events.Transfer, from_block=0, to_block=snapshot_blocknumber
+            oldFlipContractObject.events.Transfer,
+            from_block=0,
+            to_block=snapshot_blocknumber,
         )
     )
 
@@ -143,10 +139,9 @@ def snapshot(
     # Get balances of receivers and check if they are holders
     holder_list = []
     for holder in receiver_list:
-        holderBalance = oldFlipContract.functions.balanceOf(holder).call(
-            block_identifier=snapshot_blocknumber
+        holderBalance = oldFlipContract.balanceOf.call(
+            holder, block_identifier=snapshot_blocknumber
         )
-        # HolderBalance>0 already filters out the zero address (when tokens are burnt)
         if holderBalance > 0:
             totalBalance += holderBalance
             holder_balances.append(holderBalance)
@@ -154,7 +149,7 @@ def snapshot(
 
     # Health check
     assert len(holder_list) == len(holder_balances)
-    totalSupply = oldFlipContract.functions.totalSupply().call(
+    totalSupply = oldFlipContract.totalSupply.call(
         block_identifier=snapshot_blocknumber
     )
     assert totalSupply == totalBalance
@@ -182,8 +177,13 @@ def getContractFromAddress(flip_address):
         info_json = json.load(f)
     abi = info_json["abi"]
 
-    flipContract = web3.eth.contract(address=flip_address, abi=abi)
-    return flipContract
+    # Object to get the event interface from
+    flipContractObject = web3.eth.contract(address=flip_address, abi=abi)
+
+    # Flip Contract to make the calls to
+    flipContract = FLIP.at(flip_address)
+
+    return flipContract, flipContractObject
 
 
 def fetch_events(
@@ -316,7 +316,7 @@ def airdrop(snapshot_csv, parsedLog):
     # Doing this instead of parsing logged transactions because brownie might potentially fail
     # after sending a transaction and before logging it. Also, when it comes to airdropping
     # protection against airdropping twice, we cannot rely on a log file.
-    newFlipContract = getContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
     # Craft list of addresses that should be skipped when aidropping.
     # Skip following receivers: airdropper, newStakeManager, oldStakeManager and oldFlipDeployer.
@@ -335,7 +335,7 @@ def airdrop(snapshot_csv, parsedLog):
         newStakeManagerBalance,
         airdropperBalance,
     ) = getTXsAndBalancesFromTransferEvents(
-        airdropper, newFlipContract, newStakeManager
+        airdropper, newFlipContractObject, newStakeManager
     )
 
     # Check that the airdropper has the balance to airdrop for the loop airdrop transfer
@@ -350,9 +350,6 @@ def airdrop(snapshot_csv, parsedLog):
     # Full list of addresses to skip - add already airdropped accounts
     for airdropTx in listAirdropTXs:
         skip_receivers_list.append(airdropTx[0])
-
-    # Hackish - would need to do it inside getContractFromAddress and fix other stuff
-    newFlipContract = FLIP.at(newFlip)
 
     listOfTxSent = []
     skip_counter = 0
@@ -470,10 +467,10 @@ def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
     )
 
 
-def getTXsAndBalancesFromTransferEvents(airdropper, flipContract, stakeManager):
+def getTXsAndBalancesFromTransferEvents(airdropper, flipContractObject, stakeManager):
     events = list(
         fetch_events(
-            flipContract.events.Transfer,
+            flipContractObject.events.Transfer,
             from_block=0,
             to_block=web3.eth.block_number,
         )
@@ -522,9 +519,9 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
     logging.info("Verifying airdrop")
     airdropper = getAirdropper()
 
-    newFlipContract = getContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
-    totalSupplyNewFlip = newFlipContract.functions.totalSupply().call(
+    totalSupplyNewFlip = newFlipContract.totalSupply.call(
         block_identifier=web3.eth.block_number
     )
 
@@ -536,7 +533,7 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
         newStakeManagerBalance,
         airdropperBalance,
     ) = getTXsAndBalancesFromTransferEvents(
-        airdropper, newFlipContract, newStakeManager
+        airdropper, newFlipContractObject, newStakeManager
     )
 
     # Check list of receivers and amounts against old FLIP snapshot csv file
@@ -577,7 +574,7 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
     assert len(oldFlipholderBalances) == 0
 
     # No need to call it in a specific block since airdroper should have completed all airdrop transactions. Not really necessary but why not.
-    airdropperRealBalance = newFlipContract.functions.balanceOf(str(airdropper)).call()
+    airdropperRealBalance = newFlipContract.balanceOf.call(str(airdropper))
     assert airdropperBalance == airdropperRealBalance
 
     # Do final checking of stakeManager and airdropper balances
