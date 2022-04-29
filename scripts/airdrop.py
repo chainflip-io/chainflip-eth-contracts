@@ -3,7 +3,6 @@ import os
 import json
 import csv
 import logging
-import time
 import os.path
 
 sys.path.append(os.path.abspath("tests"))
@@ -15,15 +14,11 @@ from brownie import (
     Vault,
     StakeManager,
     FLIP,
-    history,
     web3,
-    Contract,
 )
 from deploy import deploy_set_Chainflip_contracts
-from web3._utils.abi import get_constructor_abi, merge_args_and_kwargs
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
-from web3._utils.contracts import encode_abi
 
 
 # This will continue logging at the end of the previous log (running .INFO for development purposes)
@@ -58,7 +53,7 @@ def main():
             parsedLog.append(infoMessage[1])
 
     logging.info(
-        "=========================   Running snapshot and airdrop script  =========================="
+        "=========================   Running airdrop.py script  =========================="
     )
 
     # Do oldFlip snapshot if it is has not been logged or if the snapshot csv doesn't exist
@@ -71,11 +66,6 @@ def main():
     else:
         print("Skipped old FLIP snapshot - snapshot already taken")
         logging.info("Skipped old FLIP snapshot - snapshot already taken")
-
-    # # TODO: this is for development purposes to do the Airdrop in hardhat. To be removed
-    # assert chain.id > 10, logging.error(
-    #     "Wrong chain. Should be running in local hardhat tesnet"
-    # )
 
     if not "😎  Airdrop completed! 😎" in parsedLog:
         # Inform the user if we are starting or continuing the airdrop and allow the user to only do a snapshot
@@ -406,7 +396,9 @@ def airdrop(snapshot_csv, parsedLog):
 
     logging.info("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
     logging.info(
-        "Skipped number of transfers: " + str(skip_counter) + " should skip at least 2"
+        "Skipped number of transfers: "
+        + str(skip_counter)
+        + ". Should have skipped at least 2 (oldStakeManager and oldFlipDeployer)"
     )
 
     print("Total number of Airdrop transfers: " + str(len(listOfTxSent)))
