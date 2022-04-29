@@ -40,8 +40,6 @@ rinkeby_old_stakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
 oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
 rinkeby_old_flip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
 oldFlipSnapshotFilename = "snapshot_old_flip.csv"
-newFlipSnapshotFilename = "snapshot_new_flip.csv"
-
 
 # Alternative way to handle assertions - for now we go with the other one.
 # try:
@@ -112,16 +110,6 @@ def main():
             newFlip,
             newKeyManager,
         ) = getAndCheckDeployedAddresses(parsedLog)
-
-    ##############################################################
-    # TODO:Remove this, just to be able to visually look at it
-    # Problem is if someone transfers the airdropped FLIP after airdrop and before snaphsot.
-    ##############################################################
-    if (not "Snapshot completed in " + newFlipSnapshotFilename in parsedLog) or (
-        not os.path.exists(newFlipSnapshotFilename)
-    ):
-        snapshot(web3.eth.block_number, newFlip, newFlipSnapshotFilename)
-    ##############################################################
 
     # Always verify Airdrop even if we have already runed it before.
     verifyAirdrop(oldFlipSnapshotFilename, newFlip, newStakeManager)
@@ -378,7 +366,7 @@ def airdrop(snapshot_csv, parsedLog):
                 oldFlipDeployer,
             ]
 
-            # When sending a public transaction we need transact() and it requires a string as the address sender (not account)
+            # When sending a public transaction we need transact()
             tx = newFlipContract.functions.transfer(
                 receiverNewFlip, int(oldFlipholderBalances[i])
             ).transact({"from": str(airdropper)})
@@ -557,8 +545,6 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
         initalSnapshot, rinkeby_old_stakeManager, oldFlipDeployer
     )
 
-    print(len(listAirdropTXs))
-    print(len(oldFlipHolderAccounts) - 2)
     # Minus two oldFlipHolders - we don't airdrop to neither oldStakeManager nor oldFlipDeployer (could be same as airdropper)
     assert len(listAirdropTXs) == len(oldFlipHolderAccounts) - 2
 
@@ -588,14 +574,6 @@ def verifyAirdrop(initalSnapshot, newFlip, newStakeManager):
     # No need to call it in a specific block since airdroper should have completed all airdrop transactions. Not really necessary but why not.
     airdropperRealBalance = newFlipContract.functions.balanceOf(str(airdropper)).call()
     assert airdropperBalance == airdropperRealBalance
-
-    #########################################################
-    # TODO: Remove this. This is just for testing purposes (since it could be that someone stakes right away and messes the check)
-    newStakeManagerRealBalance = newFlipContract.functions.balanceOf(
-        str(newStakeManager)
-    ).call()
-    assert newStakeManagerRealBalance == int(newStakeManagerBalance)
-    #########################################################
 
     # Do final checking of stakeManager and airdropper balances
     newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
