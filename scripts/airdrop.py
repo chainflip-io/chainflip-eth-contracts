@@ -21,9 +21,7 @@ from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 
 
-# This will continue logging at the end of the previous log (running .INFO for development purposes)
 logname = "airdrop.log"
-
 logging.basicConfig(filename=logname, level=logging.INFO)
 
 rinkeby_old_stakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
@@ -33,7 +31,7 @@ oldFlipSnapshotFilename = "snapshot_old_flip.csv"
 
 snapshotSuccessMessage = "Snapshot taken and succesfully stored in "
 contractDeploymentSuccessMessage = "New set of contracts deployed succesfully"
-airdropSuccessMessage = "😎  Airdrop completed! 😎"
+airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
 
 
 def main():
@@ -317,7 +315,6 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
     # Ensure that newStakeManager and oldStakeManager end up with the same balance. If new Stake Manager has less balance than the old one
     # and the difference is bigger than the supply difference, we need to make an extra transfer from airdropper to the new Stake Manager.
     # This should be the case in this airdrop.
-
     # Technically it could be the case where tokens would need to be airdropped to the stakeManager to be burnt, or that some of newSupply
     # tokens that will be minted would have to go to the airdroper, but that won't be the case in this airdrop (and probably never)
     stakeManagerBalanceDifference = oldStakeManagerBalance - newStakeManagerBalance
@@ -567,7 +564,7 @@ def waitForLogTXsToComplete(parsedLog):
 def getAndCheckDeployedAddresses(parsedLog):
     # In the log there should never be more than one set of deployments (either all logged succesfully or none)
     # So we can just use the index of the message string and parse the following lines. Added assertion for safety.
-    index = parsedLog.index("New set of contracts deployed")
+    index = parsedLog.index(contractDeploymentSuccessMessage)
     # Parse contract addresses
     # Stake Manager
     assert parsedLog[index - 4].split(":")[0] == "StakeManager address", logging.error(
