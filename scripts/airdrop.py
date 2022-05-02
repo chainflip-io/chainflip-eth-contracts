@@ -24,22 +24,21 @@ from web3._utils.filters import construct_event_filter_params
 logname = "airdrop.log"
 logging.basicConfig(filename=logname, level=logging.INFO)
 
-rinkeby_old_stakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
+rinkebyOldStakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
 oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
-rinkeby_old_flip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
-oldFlipSnapshotFilename = "snapshot_old_flip.csv"
+rinkebyOldFlip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
+oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 
 snapshotSuccessMessage = "Snapshot taken and succesfully stored in "
 contractDeploymentSuccessMessage = "New set of contracts deployed succesfully"
 airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
 
-
+# Set SNAPSHOT_BLOCKNUMBER environment variable if we want to take the snapshot on a particular block
 def main():
     AUTONOMY_SEED = os.environ["SEED"]
     DEPLOY_ARTEFACT_ID = os.environ.get("DEPLOY_ARTEFACT_ID")
     cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
     DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
-
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
     # Acccount running this script (airdropper) should receive the newFLIP amount necessary to do the airdrop
@@ -50,11 +49,11 @@ def main():
     else:
         airdropper = accounts[0]
 
-    # --------------------------- Start of the script logic  ----------------------------
+    # If using Infura it will break if snapshot_blocknumber < latestblock-100 due to free-plan limitation
+    # Use alchemy when running the old flip snapshot function
+    snapshot_blocknumber = int(os.environ.get("SNAPSHOT_BLOCKNUMBER"))
 
-    # Using latest block for now as snapshot block
-    # It will break if snapshot_blocknumber < latestblock-100 due to infura free-plan limitation
-    snapshot_blocknumber = web3.eth.block_number
+    # --------------------------- Start of the script logic  ----------------------------
 
     parsedLog = []
     # Start parsing log
@@ -74,8 +73,24 @@ def main():
         not os.path.exists(oldFlipSnapshotFilename)
     ):
         assert chain.id == 4, logging.error("Wrong chain. Should be running in Rinkeby")
-        printAndLog("Old FLIP snapshot not taken previously")
-        snapshot(snapshot_blocknumber, rinkeby_old_flip, oldFlipSnapshotFilename)
+        printAndLog(
+            "Old FLIP snapshot not taken previously. Snapshot Blocknumber set to "
+            + str(snapshot_blocknumber)
+        )
+        # if snapshot blocknumber not set, take it on the latest block
+        if snapshot_blocknumber == None:
+            snapshot_blocknumber = web3.eth.block_number
+            printAndLog(
+                "Latest block is "
+                + str(snapshot_blocknumber)
+                + ". Use it as snapshot block number."
+            )
+        printAndLog("Address of token set to " + rinkebyOldFlip)
+        takeSnapshot = input("Take snapshot? (y)/n : ")
+        if takeSnapshot not in ["", "y", "Y", "yes", "Yes"]:
+            printAndLog("Script stopped by user")
+            return False
+        snapshot(snapshot_blocknumber, rinkebyOldFlip, oldFlipSnapshotFilename)
     else:
         printAndLog("Skipped old FLIP snapshot - snapshot already taken")
 
@@ -83,9 +98,9 @@ def main():
     # If all have been deployed, get their addresses.
     if contractDeploymentSuccessMessage not in parsedLog:
         printAndLog("Deployer account: " + str(airdropper))
-        deployContracts = input("Deploy the new contracts? (Y)/N : ")
-        if deployContracts not in ["", "Y", "yes", "Yes"]:
-            print("Script stopped by user")
+        deployContracts = input("Deploy the new contracts? (y)/n : ")
+        if deployContracts not in ["", "y", "Y", "yes", "Yes"]:
+            printAndLog("Script stopped by user")
             return False
         (
             newStakeManager,
@@ -116,13 +131,13 @@ def main():
         printAndLog("Airdropper account: " + str(airdropper))
         if "Doing airdrop of new FLIP" in parsedLog:
             inputString = (
-                "Do you want to continue the previously started airdrop? (Y)/N : "
+                "Do you want to continue the previously started airdrop? (y)/n : "
             )
         else:
-            inputString = "Do you want to start the airdrop? (Y)/N : "
+            inputString = "Do you want to start the airdrop? (y)/n : "
         doAirdrop = input(inputString)
-        if doAirdrop not in ["", "Y", "yes", "Yes"]:
-            print("Script stopped")
+        if doAirdrop not in ["", "y", "Y", "yes", "Yes"]:
+            printAndLog("Script stopped by user")
             return False
 
         airdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStakeManager)
@@ -137,14 +152,14 @@ def main():
 # csv file. Last line is used as a checksum stating the total number of holders and the total balance
 def snapshot(
     snapshot_blocknumber,
-    rinkeby_old_flip,
+    rinkebyOldFlip,
     filename,
 ):
-    printAndLog("Taking snapshot of " + rinkeby_old_flip)
+    printAndLog("Taking snapshot of " + rinkebyOldFlip)
 
     # It will throw an error if there are more than 10.000 events (free Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
-    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(rinkeby_old_flip)
+    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(rinkebyOldFlip)
     events = list(
         fetch_events(
             oldFlipContractObject.events.Transfer,
@@ -256,7 +271,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
         oldFliptotalSupply,
         oldStakeManagerBalance,
         oldFlipDeployerBalance,
-    ) = readCSVSnapshotChecksum(snapshot_csv, rinkeby_old_stakeManager, oldFlipDeployer)
+    ) = readCSVSnapshotChecksum(snapshot_csv, rinkebyOldStakeManager, oldFlipDeployer)
 
     newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
@@ -266,7 +281,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
     skip_receivers_list = [
         str(airdropper),
         newStakeManager,
-        rinkeby_old_stakeManager,
+        rinkebyOldStakeManager,
         oldFlipDeployer,
     ]
 
@@ -305,7 +320,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
             assert receiverNewFlip not in [
                 str(airdropper),
                 newStakeManager,
-                rinkeby_old_stakeManager,
+                rinkebyOldStakeManager,
                 oldFlipDeployer,
             ]
 
@@ -396,9 +411,7 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
         oldFliptotalSupply,
         oldStakeManagerBalance,
         oldFlipDeployerBalance,
-    ) = readCSVSnapshotChecksum(
-        initalSnapshot, rinkeby_old_stakeManager, oldFlipDeployer
-    )
+    ) = readCSVSnapshotChecksum(initalSnapshot, rinkebyOldStakeManager, oldFlipDeployer)
 
     # Minus two oldFlipHolders - we don't airdrop to neither oldStakeManager nor oldFlipDeployer (could be same as airdropper)
     assert len(listAirdropTXs) == len(oldFlipHolderAccounts) - 2
