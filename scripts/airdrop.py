@@ -42,14 +42,15 @@ def main():
 
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
-    # Acccount running this script should receive the newFLIP amount necessary to do the airdrop
+    # Acccount running this script (airdropper) should receive the newFLIP amount necessary to do the airdrop
+    # Airdropper should also have enough ETH to pay for all the airdrop transactions
+    # In the local hardhat net use one of the accounts created - the account from the SEED has no eth
     if chain.id == 4:
         airdropper = DEPLOYER
     else:
-        # In the local hardhat net use one of the accounts created - the account from the SEED has no eth
         airdropper = accounts[0]
 
-    ############################ Start of the script logic  ############################
+    # --------------------------- Start of the script logic  ----------------------------
 
     # Using latest block for now as snapshot block
     # It will break if snapshot_blocknumber < latestblock-100 due to infura free-plan limitation
@@ -108,11 +109,10 @@ def main():
         # Wait for previously sent transactions to complete (from a potential previous run)
         waitForLogTXsToComplete(parsedLog)
 
-    # Skip airdrop if it is logged as succesfully. However, call Airdrop if it has failed at any point before the
-    # succesful logging so we do all the checking of sent transactions and do the remaining airdrop transfers (if any)
+    # Skip airdrop if it is logged succesfully. However, call Airdrop if it has failed at any point before the
+    # succesful logging so all sent transactions are checked and we do the remaining airdrop transfers (if any)
     if not airdropSuccessMessage in parsedLog:
-        # Inform the user if we are starting or continuing the airdrop and allow the user to only do a snapshot
-        # without having to perform the airdrop
+        # Inform the user if we are starting or continuing the airdrop
         printAndLog("Airdropper account: " + str(airdropper))
         if "Doing airdrop of new FLIP" in parsedLog:
             inputString = (
@@ -129,18 +129,20 @@ def main():
     else:
         printAndLog("Skipped Airdrop - already completed succesfully")
 
-    # Always verify Airdrop even if we have already run it before.
+    # Always verify Airdrop even if we have already run it before
     verifyAirdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStakeManager)
 
 
+# Take a snapshot of all token holders and their balances at a certain block number. Store the data in a
+# csv file. Last line is used as a checksum stating the total number of holders and the total balance
 def snapshot(
-    snapshot_blocknumber=web3.eth.block_number,
-    rinkeby_old_flip="0xbFf4044285738049949512Bd46B42056Ce5dD59b",
-    filename="snapshot.csv",
+    snapshot_blocknumber,
+    rinkeby_old_flip,
+    filename,
 ):
     printAndLog("Taking snapshot of " + rinkeby_old_flip)
 
-    # It will throw an error if there are more than 10.000 events (Infura Limitation)
+    # It will throw an error if there are more than 10.000 events (free Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
     (oldFlipContract, oldFlipContractObject) = getContractFromAddress(rinkeby_old_flip)
     events = list(
@@ -160,7 +162,8 @@ def snapshot(
     holder_balances = []
     totalBalance = 0
 
-    # Get balances of receivers and check if they are holders
+    # Get balances of receivers and check if they are holders. Balances need to be obtained at
+    # the same snapshot block number
     holder_list = []
     for holder in receiver_list:
         holderBalance = oldFlipContract.balanceOf.call(
@@ -206,6 +209,8 @@ def snapshot(
     printAndLog(snapshotSuccessMessage + filename)
 
 
+# Deploy all the new contracts needed. Print all newly deployed contract addresses for user visibility
+# and log them for future runs.
 def deployNewContracts(airdropper):
     printAndLog("Deploying new contracts")
 
@@ -230,6 +235,18 @@ def deployNewContracts(airdropper):
     return (newStakeManager, newVault, newFlip, newKeyManager)
 
 
+# --- Airdrop process ----
+# 1- Craft a list of addresses that should not receive an airdrop or that have already receieved it.
+# To make sure no holder is Airdropped twice we check all the newFLIP airdrop transfer events.
+# Doing this instead of parsing logged transactions because brownie could have failed
+# after sending a transaction and before logging it. Also, we cannot rely on a log file as
+# a protection against airdropping twice.
+# 2- Loop through the oldFLIP holders list and airdrop them if they are not in the list of addresses to skip.
+# 3- Log every transaction id for traceability and for future runs.
+# 4- Check if there is a need to do ain airdrop to the newStakeManager due to totalSupply differences between old and new.
+# 5- Check that all transactions have been confirmed.
+# 6- Log succesful airdrop message.
+# -----------------------
 def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
     printAndLog("Starting airdrop process")
 
@@ -241,16 +258,11 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
         oldFlipDeployerBalance,
     ) = readCSVSnapshotChecksum(snapshot_csv, rinkeby_old_stakeManager, oldFlipDeployer)
 
-    # To make sure no holder is Airdropped twice we get all the newFLIP transfer events
-    # Doing this instead of parsing logged transactions because brownie might potentially fail
-    # after sending a transaction and before logging it. Also, when it comes to airdropping
-    # protection against airdropping twice, we cannot rely on a log file.
     newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
-    # Craft list of addresses that should be skipped when aidropping.
-    # Skip following receivers: airdropper, newStakeManager, oldStakeManager and oldFlipDeployer.
-    # Also skip receivers that have already received their airdrop
-    # OldFlipDeployer can be the same as airdropper, that's fine.
+    # Craft list of addresses that should be skipped when aidropping. Skip following receivers: airdropper,
+    # newStakeManager, oldStakeManager and oldFlipDeployer. Also skip receivers that have already received
+    # their airdrop. OldFlipDeployer can be the same as airdropper, that should be fine.
     skip_receivers_list = [
         str(airdropper),
         newStakeManager,
@@ -263,7 +275,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
         listAirdropTXs,
         newStakeManagerBalance,
         airdropperBalance,
-    ) = getTXsAndBalancesFromTransferEvents(
+    ) = getTXsAndMintBalancesFromTransferEvents(
         airdropper, newFlipContractObject, newStakeManager
     )
 
@@ -285,7 +297,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
     listOfTxSent = []
     skip_counter = 0
     for i in range(len(oldFlipHolderAccounts)):
-        # When in rinkeby we should add .transact() and wait for a receipt? Or send all transactions and then check them afterwards
+
         receiverNewFlip = oldFlipHolderAccounts[i]
         if receiverNewFlip not in skip_receivers_list:
 
@@ -305,18 +317,19 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
             )
             # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
             logging.info("Airdrop transaction Tx Hash:" + tx.txid)
-            # Keeping a list of txHashes to wait afterwards. Not waiting every after transaction because it has no benefit and it would take long
+            # Keeping a list of txHashes and wait for all their receipts afterwards
             listOfTxSent.append(tx.txid)
         else:
             # Logging only in debug level
             logging.debug("Skipping receiver:" + str(receiverNewFlip))
             skip_counter += 1
 
-    # Ensure that newStakeManager and oldStakeManager end up with the same balance. If new Stake Manager has less balance than the old one
-    # and the difference is bigger than the supply difference, we need to make an extra transfer from airdropper to the new Stake Manager.
-    # This should be the case in this airdrop.
-    # Technically it could be the case where tokens would need to be airdropped to the stakeManager to be burnt, or that some of newSupply
-    # tokens that will be minted would have to go to the airdroper, but that won't be the case in this airdrop (and probably never)
+    # OldFLIP supply is most likely different than the new initial flip supply (INIT_SUPPLY). We need to ensure that when minting the
+    # supply difference the newStakeManager and oldStakeManager qwill end up with the same balance. If new Stake Manager has less balance
+    # than the old one and the difference is bigger than the supply difference, we need to make an extra transfer from airdropper to the
+    # new Stake Manager. This should be the case in this airdrop.
+    # Technically it could be the case where some of newSupply tokens that will be minted would have to go to the airdroper, but that won't
+    # be the case in this airdrop (and probably never).
     stakeManagerBalanceDifference = oldStakeManagerBalance - newStakeManagerBalance
     if (
         stakeManagerBalanceDifference > 0
@@ -341,7 +354,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
         + ". Should have skipped at least 2 (oldStakeManager and oldFlipDeployer)"
     )
 
-    # After all tx's have been send wait for the receipts. This could break (or could have broken before) so extra safety mechanism added when rerunning script
+    # After all tx's have been send wait for the receipts. This could break (or could have broken before) so extra safety mechanism is added when rerunning script
     printAndLog("Waiting for airdrop transactions to be confirmed..")
     for txSent in listOfTxSent:
         web3.eth.wait_for_transaction_receipt(txSent)
@@ -349,6 +362,12 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
     printAndLog(airdropSuccessMessage)
 
 
+# --- Verify Airdrop process ----
+# 1- Read snapshot oldFLIP
+# 2- Get all the airdrop transfer events
+# 3- Compare transfer events to the snapshot holders balances
+# 4- Check that the difference in supplies will be fixed when the newSupply is minted to the stakeManager
+# -------------------------------
 def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
 
     printAndLog("Verifying airdrop")
@@ -366,7 +385,7 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
         listAirdropTXs,
         newStakeManagerBalance,
         airdropperBalance,
-    ) = getTXsAndBalancesFromTransferEvents(
+    ) = getTXsAndMintBalancesFromTransferEvents(
         airdropper, newFlipContractObject, newStakeManager
     )
 
@@ -445,7 +464,14 @@ def getContractFromAddress(flip_address):
     return flipContract, flipContractObject
 
 
-def getTXsAndBalancesFromTransferEvents(airdropper, flipContractObject, stakeManager):
+# ---------------------------------------
+# Get all confirmed newFLIP transfer events from the airdropper to other addresses. Also get the mint events.
+# Then calculate the stakeManager and airdropper balance after mint. Account for a potential airdrop to the
+# stakeManager to make up for the totalSupply difference - to make all the later checking easier.
+# ---------------------------------------
+def getTXsAndMintBalancesFromTransferEvents(
+    airdropper, flipContractObject, stakeManager
+):
     printAndLog("Getting all transfer events")
     events = list(
         fetch_events(
@@ -463,12 +489,13 @@ def getTXsAndBalancesFromTransferEvents(airdropper, flipContractObject, stakeMan
         toAddress = event.args.to
         fromAddress = event.args["from"]
         amount = event.args.value
-        # If there has been an airdrop to the stakeManager do not include it (just account for the amount) - makes checking easier
+        # If there has been an airdrop to the stakeManager just account for the amount to make checking easier
         if fromAddress == str(airdropper) and toAddress == stakeManager:
             airdropedAmountToStakeManager = amount
         # Addresses should be unique but just in case
         elif fromAddress == str(airdropper) and (toAddress not in listAirdropTXs):
             listAirdropTXs.append([toAddress, amount])
+        # Mint events
         elif fromAddress == ZERO_ADDR:
             initialMintTXs.append([toAddress, amount])
 
@@ -479,17 +506,17 @@ def getTXsAndBalancesFromTransferEvents(airdropper, flipContractObject, stakeMan
     assert initialMintTXs[0][0] == stakeManager, logging.error(
         "First mint receiver should be the new Stake Manager"
     )
-    stakeManagerBalance = initialMintTXs[0][1] + airdropedAmountToStakeManager
+    stakeManagerMintBalance = initialMintTXs[0][1] + airdropedAmountToStakeManager
     assert initialMintTXs[1][0] == str(airdropper), logging.error(
         "First mint receiver should be the airdropper"
     )
-    airdropperBalance = initialMintTXs[1][1] - airdropedAmountToStakeManager
+    airdropperMintBalance = initialMintTXs[1][1] - airdropedAmountToStakeManager
 
     return (
         initialMintTXs,
         listAirdropTXs,
-        int(stakeManagerBalance),
-        int(airdropperBalance),
+        int(stakeManagerMintBalance),
+        int(airdropperMintBalance),
     )
 
 
