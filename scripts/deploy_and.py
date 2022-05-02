@@ -98,6 +98,9 @@ def all_stakeManager_events():
     print(f"\n🔐 Governance suspends execution of claims\n")
     cf.stakeManager.suspend({"from": GOVERNOR})
 
+    print(f"\n🔐 Community disables guard\n")
+    cf.stakeManager.disableCommunityGuard({"from": cf.communityKey})
+
     print(f"\n💸 Governance withdraws all FLIP\n")
     cf.stakeManager.govWithdraw({"from": GOVERNOR})
 

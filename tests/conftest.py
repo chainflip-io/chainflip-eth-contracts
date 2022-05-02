@@ -16,9 +16,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
-    return deploy_set_Chainflip_contracts(
-        a[0], a[6], KeyManager, Vault, StakeManager, FLIP
-    )
+    return deploy_set_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
 
 
 # Deploy the contracts and set up common test environment
@@ -44,7 +42,7 @@ def cf(a, cfDeploy):
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
-    # Set Community Key addresses for tests - a[6] & a[7]
+    # Set Community Key addresses for tests - deployer & a[7]
     cf.COMMUNITY_KEY = cfDeploy.communityKey
     cf.COMMUNITY_KEY_2 = a[7]
 
@@ -58,9 +56,7 @@ def cf(a, cfDeploy):
 # all addresses whitelisted
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
-    cf = deploy_initial_Chainflip_contracts(
-        a[0], a[6], KeyManager, Vault, StakeManager, FLIP
-    )
+    cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
 
@@ -90,7 +86,7 @@ def cfAW(a, cfDeployAllWhitelist):
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
-    # Set Community Key addresses for tests - a[6] & a[7]
+    # Set Community Key addresses for tests - deployer & a[7]
     cf.COMMUNITY_KEY = cfDeployAllWhitelist.communityKey
     cf.COMMUNITY_KEY_2 = a[7]
 
