@@ -42,7 +42,7 @@ def cf(a, cfDeploy):
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
-    # Set Community Key addresses for tests - deployer & a[7]
+    # Set Community Key addresses for tests - a[6] & a[7]
     cf.COMMUNITY_KEY = cfDeploy.communityKey
     cf.COMMUNITY_KEY_2 = a[7]
 
@@ -86,7 +86,7 @@ def cfAW(a, cfDeployAllWhitelist):
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
 
-    # Set Community Key addresses for tests - deployer & a[7]
+    # Set Community Key addresses for tests - a[6] & a[7]
     cf.COMMUNITY_KEY = cfDeployAllWhitelist.communityKey
     cf.COMMUNITY_KEY_2 = a[7]
 
