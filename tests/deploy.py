@@ -1,7 +1,7 @@
 from os import environ
 from consts import *
 from web3.auto import w3
-from brownie import network
+from brownie import network, accounts
 
 
 def deploy_initial_Chainflip_contracts(
@@ -37,9 +37,11 @@ def deploy_initial_Chainflip_contracts(
 
     communityKey = environment.get("COMM_KEY")
     if communityKey:
+        # We should set the env variable when deploying to live network
         cf.communityKey = communityKey
     else:
-        cf.communityKey = deployer
+        # This should be only for testing purposes on local testnet (hardhat)
+        cf.communityKey = accounts[6]
 
     cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov)
 
