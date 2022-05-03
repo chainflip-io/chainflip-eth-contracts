@@ -1521,7 +1521,7 @@ def test_all(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
 
-            newVault = st_sender.deploy(Vault, self.km)
+            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
 
             # Keep old Vault whitelisted
             currentWhitelist = [
@@ -1760,6 +1760,7 @@ def test_all(
                 StakeManager,
                 self.km,
                 INIT_MIN_STAKE,
+                self.communityKey,
             )
 
             newStakeManager.setFlip(self.f, {"from": st_sender})
@@ -1934,6 +1935,21 @@ def test_all(
             assert self.km.getLastValidateTime() == self.lastValidateTime
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim
+
+        def invariant_governanceCommunityGuard(self):
+            assert (
+                self.governor
+                == self.km.getGovernanceKey()
+                == self.sm.getGovernor()
+                == self.v.getGovernor()
+            )
+
+            assert self.sm_communityKey == self.sm.getCommunityKey()
+            assert self.sm_guard == self.sm.getCommunityGuard()
+            assert self.sm_suspended == self.sm.getSuspendedState()
+            assert self.v_communityKey == self.v.getCommunityKey()
+            assert self.v_guard == self.v.getCommunityGuard()
+            assert self.v_suspended == self.v.getSuspendedState()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):

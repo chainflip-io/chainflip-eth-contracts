@@ -137,7 +137,8 @@ REV_MSG_SENDER = "Vault: only Vault can send ETH"
 REV_MSG_VAULT_DELAY = "Vault: not enough delay"
 
 # -----GovernanceCommunityGuarded-----
-REV_MSG_GOV_GUARD = "Governance: guard not disabled by community"
+REV_MSG_GOV_ENABLED_GUARD = "Governance: community guard enabled"
+REV_MSG_GOV_DISABLED_GUARD = "Governance: community guard disabled"
 REV_MSG_GOV_NOT_COMMUNITY = "Governance: not Community Key"
 REV_MSG_GOV_GOVERNOR = "Governance: not governor"
 REV_MSG_GOV_SUSPENDED = "Governance: suspended"

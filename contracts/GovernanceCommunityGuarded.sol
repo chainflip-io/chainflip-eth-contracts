@@ -47,14 +47,14 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     /**
      * @notice  Enable Community Guard
      */
-    function enableCommunityGuard() external override isCommunityKey {
+    function enableCommunityGuard() external override isCommunityKey isCommunityGuardDisabled {
         _communityGuardDisabled = false;
     }
 
     /**
      * @notice  Disable Community Guard
      */
-    function disableCommunityGuard() external override isCommunityKey {
+    function disableCommunityGuard() external override isCommunityKey isCommunityGuardEnabled{
         _communityGuardDisabled = true;
     }
 
@@ -125,7 +125,13 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
 
     /// @dev    Check that community has disabled the community guard.
     modifier isCommunityGuardDisabled() {
-        require(_communityGuardDisabled, "Governance: guard not disabled by community");
+        require(_communityGuardDisabled, "Governance: community guard not disabled");
+        _;
+    }
+
+    /// @dev    Check that community has disabled the community guard.
+    modifier isCommunityGuardEnabled() {
+        require(!_communityGuardDisabled, "Governance: community guard disabled");
         _;
     }
 

@@ -48,9 +48,15 @@ def test_upgradability(
 
             # StakeManager
             self.lastSupplyBlockNumber = 0
+            self.sm_communityKey = self.sm.getCommunityKey()
+            self.sm_guard = self.sm.getCommunityGuard()
+            self.sm_suspended = self.sm.getSuspendedState()
 
             # Vault - initialize with some funds
             a[3].transfer(self.v, self.TOTAL_FUNDS)
+            self.v_communityKey = self.v.getCommunityKey()
+            self.v_guard = self.v.getCommunityGuard()
+            self.v_suspended = self.v.getSuspendedState()
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -110,7 +116,7 @@ def test_upgradability(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
 
-            newVault = st_sender.deploy(Vault, self.km)
+            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
 
             # Keep old Vault whitelisted
             currentWhitelist = [
@@ -234,6 +240,9 @@ def test_upgradability(
 
             self.v = newVault
             self.lastValidateTime = tx.timestamp
+            self.v_communityKey = self.communityKey
+            self.v_guard = False
+            self.v_suspended = False
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(
@@ -243,6 +252,7 @@ def test_upgradability(
                 StakeManager,
                 self.km,
                 MIN_STAKE,
+                cf.communityKey,
             )
 
             newStakeManager.setFlip(self.f, {"from": st_sender})
@@ -316,6 +326,9 @@ def test_upgradability(
             updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
 
             self.sm = newStakeManager
+            self.sm_communityKey = self.communityKey
+            self.sm_guard = False
+            self.sm_suspended = False
 
         # Check that all the funds (ETH and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):
@@ -332,6 +345,14 @@ def test_upgradability(
 
             assert self.sm.getFLIP() == self.f.address
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+
+        def invariant_governanceCommunityGuard(self):
+            assert self.v_communityKey == self.v.getCommunityKey()
+            assert self.v_guard == self.v.getCommunityGuard()
+            assert self.v_suspended == self.v.getSuspendedState()
+            assert self.sm_communityKey == self.sm.getCommunityKey()
+            assert self.sm_guard == self.sm.getCommunityGuard()
+            assert self.sm_suspended == self.sm.getSuspendedState()
 
         def invariant_keyManager_whitelist(self):
             aggKeyNonceConsumers = [

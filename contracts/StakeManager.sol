@@ -197,9 +197,10 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     function govWithdraw() external override isGovernor isCommunityGuardDisabled isSuspended {
         uint256 amount = _FLIP.balanceOf(address(this));
 
-        // msg.sender == Governor address
-        _FLIP.transfer(msg.sender, amount);
-        emit GovernanceWithdrawal(msg.sender, amount);
+        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        address recipient = _getKeyManager().getGovernanceKey();
+        _FLIP.transfer(recipient, amount);
+        emit GovernanceWithdrawal(recipient, amount);
     }
 
     /**

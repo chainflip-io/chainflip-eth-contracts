@@ -3,6 +3,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy
 from utils import *
 from hypothesis import strategies as hypStrat
+import random
 
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
@@ -79,6 +80,10 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
+
+            self.current_communityKey = self.sm.getCommunityKey()
+            self.communityGuard = self.sm.getCommunityGuard()
+            self.suspended = self.sm.getSuspendedState()
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -288,6 +293,59 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
                 self.minStake = st_minStake
 
+        # Suspends the stake Manager if st_sender matches the governor address. It has
+        # has a 1/20 chance of being the governor - don't want to suspend it too often.
+        def rule_suspend(self, st_sender):
+            if st_sender == self.governor:
+                if self.suspended:
+                    with reverts(REV_MSG_GOV_SUSPENDED):
+                        self.sm.suspend({"from": st_sender})
+                else:
+                    self.sm.suspend({"from": st_sender})
+                    self.suspended = True
+            else:
+                with reverts(REV_MSG_GOV_GOVERNOR):
+                    self.sm.suspend({"from": st_sender})
+
+        # Resumes the stake Manager if it is suspended. We always resume it to avoid
+        # having the stakeManager suspended too often
+        def rule_resume(self, st_sender):
+            if self.suspended:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.sm.resume({"from": st_sender})
+                # Always resume
+                self.sm.resume({"from": self.governor})
+                self.suspended = False
+            else:
+                with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                    self.sm.resume({"from": self.governor})
+
+        # Updates community Key - happens with low probability - 1/20
+        def rule_updateCommunityKey(self, st_sender):
+            newCommunityKey = random.choice(
+                self.current_communityKey, self.communityKey_2
+            )
+            if st_sender == self.current_communityKey:
+                self.sm.updateCommunityKey(newCommunityKey, {"from": self.st_sender})
+                self.current_communityKey = newCommunityKey
+            else:
+                with reverts(REV_MSG_GOV_GOVERNOR):
+                    self.sm.updateCommunityKey(
+                        newCommunityKey, {"from": self.st_sender}
+                    )
+
+        # Enable community Guard
+        # def rule_enableCommunityGuard(self):
+        #     if self.communityGuard:
+        #         with reverts():
+        #     else:
+        #         self.sm.enableCommunityGuard({"from": self.current_communityKey})
+        #         self.communityGuard = True
+
+        # def rule_disableCommunityGuard(self):
+        # def rule_govWithdrawal(self):
+
         # Check variable(s) after every tx that shouldn't change since there's
         # no intentional way to
         def invariant_nonchangeable(self):
@@ -309,6 +367,11 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     addr
                 ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
+
+        def invariant_governanceCommunityGuard(self):
+            assert self.current_communityKey == self.sm.getCommunityKey()
+            assert self.communityGuard == self.sm.getCommunityGuard()
+            assert self.suspended == self.sm.getSuspendedState()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
