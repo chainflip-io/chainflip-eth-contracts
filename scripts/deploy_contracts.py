@@ -23,7 +23,7 @@ def main():
 
     print(f"KeyManager: {cf.keyManager.address}")
     print(f"StakeManager: {cf.stakeManager.address}")
-    print(f"FLIP: {cf.stakeManager.getFLIPAddress()}")
+    print(f"FLIP: {cf.flip.address}")
     print(f"Vault: {cf.vault.address}")
 
     if DEPLOY_ARTEFACT_ID:

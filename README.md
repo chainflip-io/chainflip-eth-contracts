@@ -118,6 +118,7 @@ export SEED=<your seed phrase>
 # Set an aggregate or governance key that you would like to use (optional)
 export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
 export GOV_KEY<gov key with leading parity byte, hex format, no leading 0x>
+export COMM_KEY<comm address, hex format, with leading 0x>
 export GENESIS_STAKE=<the stake each node should have at genesis> (default = 500000000000000000000000)
 export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
 
