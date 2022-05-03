@@ -3,8 +3,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy
 from utils import *
 from hypothesis import strategies as hypStrat
-import random
-
+from random import choice
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -82,7 +81,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.governor = cfDeploy.gov
 
             self.current_communityKey = self.sm.getCommunityKey()
-            self.communityGuard = self.sm.getCommunityGuard()
+            self.communityGuardDisabled = self.sm.getCommunityGuard()
             self.suspended = self.sm.getSuspendedState()
 
         # Variables that will be a random value with each fcn/rule called
@@ -172,6 +171,18 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 agg_null_sig(self.km.address, chain.id), *args
             )
 
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _registerClaim")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.sm.registerClaim(
+                        st_signer_agg.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+                return
+
             if st_nodeID == 0:
                 print("        NODEID rule_registerClaim", *args)
                 with reverts(REV_MSG_NZ_BYTES32):
@@ -255,6 +266,12 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _executeClaim")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                return
+
             claim = self.pendingClaims[st_nodeID]
 
             if not claim[2] <= getChainTime() <= claim[3]:
@@ -298,12 +315,15 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def rule_suspend(self, st_sender):
             if st_sender == self.governor:
                 if self.suspended:
+                    print("        REV_MSG_GOV_SUSPENDED _suspend")
                     with reverts(REV_MSG_GOV_SUSPENDED):
                         self.sm.suspend({"from": st_sender})
                 else:
+                    print("                    rule_suspend", st_sender)
                     self.sm.suspend({"from": st_sender})
                     self.suspended = True
             else:
+                print("        REV_MSG_GOV_GOVERNOR _suspend")
                 with reverts(REV_MSG_GOV_GOVERNOR):
                     self.sm.suspend({"from": st_sender})
 
@@ -315,36 +335,87 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     with reverts(REV_MSG_GOV_GOVERNOR):
                         self.sm.resume({"from": st_sender})
                 # Always resume
+                print("                    rule_resume", st_sender)
                 self.sm.resume({"from": self.governor})
                 self.suspended = False
             else:
+                print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
                     self.sm.resume({"from": self.governor})
 
         # Updates community Key - happens with low probability - 1/20
         def rule_updateCommunityKey(self, st_sender):
-            newCommunityKey = random.choice(
-                self.current_communityKey, self.communityKey_2
-            )
+            newCommunityKey = choice([self.communityKey, self.communityKey_2])
             if st_sender == self.current_communityKey:
-                self.sm.updateCommunityKey(newCommunityKey, {"from": self.st_sender})
+                print("                    rule_updateCommunityKey", st_sender)
+                self.sm.updateCommunityKey(newCommunityKey, {"from": st_sender})
                 self.current_communityKey = newCommunityKey
             else:
-                with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.sm.updateCommunityKey(
-                        newCommunityKey, {"from": self.st_sender}
-                    )
+                print(
+                    "        REV_MSG_GOV_NOT_COMMUNITY _updateCommunityKey", st_sender
+                )
+                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                    self.sm.updateCommunityKey(newCommunityKey, {"from": st_sender})
 
         # Enable community Guard
-        # def rule_enableCommunityGuard(self):
-        #     if self.communityGuard:
-        #         with reverts():
-        #     else:
-        #         self.sm.enableCommunityGuard({"from": self.current_communityKey})
-        #         self.communityGuard = True
+        def rule_enableCommunityGuard(self, st_sender):
+            if self.communityGuardDisabled:
+                if st_sender != self.current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.sm.enableCommunityGuard({"from": st_sender})
+                # Always enable
+                print("                    rule_enableCommunityGuard", st_sender)
+                self.sm.enableCommunityGuard({"from": self.current_communityKey})
+                self.communityGuardDisabled = False
+            else:
+                print(
+                    "        REV_MSG_GOV_ENABLED_GUARD _enableCommunityGuard", st_sender
+                )
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.sm.enableCommunityGuard({"from": self.current_communityKey})
 
-        # def rule_disableCommunityGuard(self):
-        # def rule_govWithdrawal(self):
+        # Enable community Guard
+        def rule_disableCommunityGuard(self, st_sender):
+            if not self.communityGuardDisabled:
+                if st_sender != self.current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.sm.disableCommunityGuard({"from": st_sender})
+                # Always disable
+                print("                    rule_disableCommunityGuard", st_sender)
+                self.sm.disableCommunityGuard({"from": self.current_communityKey})
+                self.communityGuardDisabled = True
+            else:
+                print(
+                    "        REV_MSG_GOV_DISABLED_GUARD _disableCommunityGuard",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_DISABLED_GUARD):
+                    self.sm.disableCommunityGuard({"from": self.current_communityKey})
+
+        # Governance attemps to withdraw FLIP in case of emergency
+        def rule_govWithdrawal(self, st_sender):
+            if self.communityGuardDisabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.sm.govWithdraw({"from": st_sender})
+
+                if self.suspended:
+                    flipBalsSm = self.f.balanceOf(self.sm)
+                    flipBalsGov = self.f.balanceOf(self.governor)
+                    print("                    rule_govWithdrawal", st_sender)
+                    self.sm.govWithdraw({"from": self.governor})
+                    # Governor has all the FLIP - do the checking and return the tokens for the invariant check
+                    assert self.f.balanceOf(self.governor) == flipBalsGov + flipBalsSm
+                    assert self.f.balanceOf(self.sm) == 0
+                    self.f.transfer(self.sm, flipBalsSm, {"from": self.governor})
+                else:
+                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
+                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                        self.sm.govWithdraw({"from": self.governor})
+            else:
+                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.sm.govWithdraw({"from": self.governor})
 
         # Check variable(s) after every tx that shouldn't change since there's
         # no intentional way to
@@ -370,7 +441,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         def invariant_governanceCommunityGuard(self):
             assert self.current_communityKey == self.sm.getCommunityKey()
-            assert self.communityGuard == self.sm.getCommunityGuard()
+            assert self.communityGuardDisabled == self.sm.getCommunityGuard()
             assert self.suspended == self.sm.getSuspendedState()
 
         # Print how many rules were executed at the end of each run

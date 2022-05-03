@@ -3,7 +3,7 @@ from consts import *
 from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from hypothesis import strategies as hypStrat
-from random import choices
+from random import choice, choices
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -123,6 +123,11 @@ def test_vault(
                 self.iniTransactionNumber[addr] = len(history.filter(sender=addr))
 
             self.numTxsTested = 0
+            self.governor = cfDeploy.gov
+
+            self.current_communityKey = self.v.getCommunityKey()
+            self.communityGuardDisabled = self.v.getCommunityGuard()
+            self.suspended = self.v.getSuspendedState()
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -206,6 +211,22 @@ def test_vault(
                 st_recips,
                 st_eth_amounts,
             )
+
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _allBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.allBatch(
+                        AGG_SIGNER_1.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                        {"from": st_sender},
+                    )
+                return
 
             if (
                 tranTotals[self.tokenA] - fetchTokenATotal
@@ -307,6 +328,20 @@ def test_vault(
                 st_eth_amount,
             )
 
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.transfer(
+                        AGG_SIGNER_1.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+                return
+
             if st_eth_amount == 0:
                 print(
                     "        REV_MSG_NZ_UINT _vault_transfer",
@@ -407,6 +442,19 @@ def test_vault(
                 st_recips,
                 st_eth_amounts,
             )
+
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.transferBatch(
+                        AGG_SIGNER_1.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+                return
 
             if (
                 tranTotals[self.tokenA] > self.tokenABals[self.v.address]
@@ -527,6 +575,17 @@ def test_vault(
                 agg_null_sig(self.km.address, chain.id), st_swapID
             )
 
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositEth(
+                        AGG_SIGNER_1.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                    )
+                return
+
             if st_swapID == 0:
                 print(
                     "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
@@ -566,6 +625,16 @@ def test_vault(
             callDataNoSig = self.v.fetchDepositEthBatch.encode_input(
                 agg_null_sig(self.km.address, chain.id), st_swapIDs
             )
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositEthBatch(
+                        AGG_SIGNER_1.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                    )
+                return
             print(
                 "                    rule_fetchDepositEthBatch", st_sender, st_swapIDs
             )
@@ -585,6 +654,18 @@ def test_vault(
             callDataNoSig = self.v.fetchDepositToken.encode_input(
                 agg_null_sig(self.km.address, chain.id), st_swapID, token
             )
+
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositToken(
+                        AGG_SIGNER_1.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                        token,
+                    )
+                return
 
             if st_swapID == 0:
                 print(
@@ -644,6 +725,21 @@ def test_vault(
             minLen = min(map(len, [st_swapIDs, st_tokens]))
             maxLen = max(map(len, [st_swapIDs, st_tokens]))
 
+            callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
+                agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
+            )
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositTokenBatch(
+                        AGG_SIGNER_1.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        st_tokens,
+                    )
+                return
+
             if minLen == 3 and minLen != maxLen:
                 callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
                     agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
@@ -698,6 +794,141 @@ def test_vault(
                     else:
                         assert False, "Panicc"
 
+        # Sleep AGG_KEY_EMERGENCY_TIMEOUT
+        def rule_sleep_14_days(self):
+            print("                    rule_sleep_14_days")
+            chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
+
+        # Suspends the stake Manager if st_sender matches the governor address. It has
+        # has a 1/20 chance of being the governor - don't want to suspend it too often.
+        def rule_suspend(self, st_sender):
+            if st_sender == self.governor:
+                if self.suspended:
+                    print("        REV_MSG_GOV_SUSPENDED _suspend")
+                    with reverts(REV_MSG_GOV_SUSPENDED):
+                        self.v.suspend({"from": st_sender})
+                else:
+                    print("                    rule_suspend", st_sender)
+                    self.v.suspend({"from": st_sender})
+                    self.suspended = True
+            else:
+                print("        REV_MSG_GOV_GOVERNOR _suspend")
+                with reverts(REV_MSG_GOV_GOVERNOR):
+                    self.v.suspend({"from": st_sender})
+
+        # Resumes the stake Manager if it is suspended. We always resume it to avoid
+        # having the stakeManager suspended too often
+        def rule_resume(self, st_sender):
+            if self.suspended:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.v.resume({"from": st_sender})
+                # Always resume
+                print("                    rule_resume", st_sender)
+                self.v.resume({"from": self.governor})
+                self.suspended = False
+            else:
+                print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
+                with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                    self.v.resume({"from": self.governor})
+
+        # Updates community Key - happens with low probability - 1/20
+        def rule_updateCommunityKey(self, st_sender):
+            newCommunityKey = choice([self.communityKey, self.communityKey_2])
+            if st_sender == self.current_communityKey:
+                print("                    rule_updateCommunityKey", st_sender)
+                self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
+                self.current_communityKey = newCommunityKey
+            else:
+                print(
+                    "        REV_MSG_GOV_NOT_COMMUNITY _updateCommunityKey", st_sender
+                )
+                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                    self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
+
+        # Enable community Guard
+        def rule_enableCommunityGuard(self, st_sender):
+            if self.communityGuardDisabled:
+                if st_sender != self.current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.v.enableCommunityGuard({"from": st_sender})
+                # Always enable
+                print("                    rule_enableCommunityGuard", st_sender)
+                self.v.enableCommunityGuard({"from": self.current_communityKey})
+                self.communityGuardDisabled = False
+            else:
+                print(
+                    "        REV_MSG_GOV_ENABLED_GUARD _enableCommunityGuard", st_sender
+                )
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.v.enableCommunityGuard({"from": self.current_communityKey})
+
+        # Enable community Guard
+        def rule_disableCommunityGuard(self, st_sender):
+            if not self.communityGuardDisabled:
+                if st_sender != self.current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.v.disableCommunityGuard({"from": st_sender})
+                # Always disable
+                print("                    rule_disableCommunityGuard", st_sender)
+                self.v.disableCommunityGuard({"from": self.current_communityKey})
+                self.communityGuardDisabled = True
+            else:
+                print(
+                    "        REV_MSG_GOV_DISABLED_GUARD _disableCommunityGuard",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_DISABLED_GUARD):
+                    self.v.disableCommunityGuard({"from": self.current_communityKey})
+
+        # Governance attemps to withdraw FLIP in case of emergency
+        def rule_govWithdrawal(self, st_sender):
+            # Withdraw all tokens - except ETH to make the checking easier due to gas expenditure
+            tokenstoWithdraw = self.tokensList[1:]
+            if self.communityGuardDisabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": st_sender})
+
+                if self.suspended:
+                    if (
+                        self.km.getLastValidateTime() + AGG_KEY_EMERGENCY_TIMEOUT
+                        < getChainTime()
+                    ):
+                        print("        REV_MSG_VAULT_DELAY _govWithdrawal")
+                        with reverts(REV_MSG_VAULT_DELAY):
+                            self.v.govWithdraw(
+                                tokenstoWithdraw, {"from": self.governor}
+                            )
+                    else:
+                        governorBals = {
+                            token: token.balanceOf(self.governor)
+                            for token in tokenstoWithdraw
+                        }
+                        vaultBals = {
+                            token: token.balanceOf(self.v) for token in tokenstoWithdraw
+                        }
+                        print("                    rule_govWithdrawal", st_sender)
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+                        # Governor has all the FLIP - do the checking and return the tokens for the invariant check
+                        for token in tokenstoWithdraw:
+                            assert (
+                                token.balanceOf(self.governor)
+                                == governorBals[token] + vaultBals[token]
+                            )
+                            assert token.balanceOf(self.v) == 0
+                            token.transfer(
+                                self.v, vaultBals[token], {"from": self.governor}
+                            )
+                else:
+                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
+                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+            else:
+                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
             self.numTxsTested += 1
@@ -712,6 +943,11 @@ def test_vault(
         # no intentional way to
         def invariant_nonchangeable(self):
             assert self.v.getKeyManager() == self.km.address
+
+        def invariant_governanceCommunityGuard(self):
+            assert self.current_communityKey == self.v.getCommunityKey()
+            assert self.communityGuardDisabled == self.v.getCommunityGuard()
+            assert self.suspended == self.v.getSuspendedState()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):

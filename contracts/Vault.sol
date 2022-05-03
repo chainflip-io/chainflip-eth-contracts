@@ -271,8 +271,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function fetchDepositEth(SigData calldata sigData, bytes32 swapID)
         external
         override
-        nzBytes32(swapID)
         isNotSuspended
+        nzBytes32(swapID)
         consumerKeyNonce(
             sigData,
             keccak256(
