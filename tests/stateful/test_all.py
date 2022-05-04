@@ -1123,8 +1123,6 @@ def test_all(
                 print(
                     "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
                     st_sender,
-                    self.currentWhitelist,
-                    toWhitelist,
                 )
                 self._updateCanConsumeKeyNonce(
                     self.currentWhitelist, toWhitelist, st_sender
@@ -1133,8 +1131,6 @@ def test_all(
                 print(
                     "                    rule_updateCanConsumeKeyNonce_whitelist",
                     st_sender,
-                    self.currentWhitelist,
-                    toWhitelist,
                 )
                 tx = self._updateCanConsumeKeyNonce(
                     self.currentWhitelist, toWhitelist, st_sender
@@ -1860,6 +1856,8 @@ def test_all(
                     {"from": st_sender},
                 )
 
+                self.currentWhitelist = toWhitelist
+
                 # Vault can now validate and fetch but it has zero balance so it can't transfer
                 callDataNoSig = newVault.transfer.encode_input(
                     agg_null_sig(self.km.address, chain.id),
@@ -2115,6 +2113,8 @@ def test_all(
                     currentWhitelist,
                     toWhitelist,
                 )
+
+                self.currentWhitelist = toWhitelist
 
                 chain.sleep(st_sleep_time)
 

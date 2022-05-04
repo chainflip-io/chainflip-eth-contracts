@@ -892,8 +892,8 @@ def test_vault(
 
                 if self.suspended:
                     if (
-                        self.km.getLastValidateTime() + AGG_KEY_EMERGENCY_TIMEOUT
-                        < getChainTime()
+                        getChainTime() - self.km.getLastValidateTime()
+                        < AGG_KEY_EMERGENCY_TIMEOUT
                     ):
                         print("        REV_MSG_VAULT_DELAY _govWithdrawal")
                         with reverts(REV_MSG_VAULT_DELAY):
