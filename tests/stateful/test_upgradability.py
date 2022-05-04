@@ -132,7 +132,7 @@ def test_upgradability(
                 self.km,
                 newVault,
             ]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
             callDataNoSig = newVault.transfer.encode_input(
@@ -236,7 +236,7 @@ def test_upgradability(
                 newVault,
             ]
             toWhitelist = [self.sm, self.f, self.km, newVault]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             self.v = newVault
             self.lastValidateTime = tx.timestamp
@@ -271,7 +271,7 @@ def test_upgradability(
                 self.km,
                 newStakeManager,
             ]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             chain.sleep(st_sleep_time)
 
@@ -323,7 +323,7 @@ def test_upgradability(
                 newStakeManager,
             ]
             toWhitelist = [self.v, newStakeManager, self.f, self.km]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             self.sm = newStakeManager
             self.sm_communityKey = self.communityKey

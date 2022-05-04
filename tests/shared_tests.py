@@ -251,7 +251,7 @@ def registerClaimTest(
 # It requires a list of the current whitelisted addresses and a list of the new ones to whitelist.
 # Current whitelist must contain all the whitelisted addresses
 # New whitelist must contain the keyManager itself.
-def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs):
+def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs, st_sender):
     callDataNoSig = keyManager.updateCanConsumeKeyNonce.encode_input(
         agg_null_sig(keyManager.address, chain.id), currentAddrs, newAddrs
     )
@@ -260,6 +260,7 @@ def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs):
         AGG_SIGNER_1.getSigData(callDataNoSig, keyManager.address),
         currentAddrs,
         newAddrs,
+        {"from": st_sender},
     )
 
 

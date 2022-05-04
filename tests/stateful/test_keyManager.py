@@ -1,8 +1,9 @@
 from consts import *
 from brownie import reverts, chain, web3
 from brownie.test import strategy
+from shared_tests import *
 from utils import *
-import random
+from random import choice
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -37,10 +38,13 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             )
             self.numTxsTested = 0
             self.governor = cfDeployAllWhitelist.gov
+            self.currentWhitelist = cfDeployAllWhitelist.whitelisted
+            self.eoaWhitelisted = a[4]
 
         # Variables that will be a random value with each fcn/rule called
 
         st_sender = strategy("address")
+        st_addrs = strategy("address[]", min_length=1)
         st_sig_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         # KEYID_TO_NUM - 2 to only take AGG
@@ -48,9 +52,82 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
 
+        # Updates the list of addresses that are nonce consumers
+        def rule_updateRandomCanConsumeKeyNonce(self, st_sender, st_addrs):
+            # st_addrs will never be equal to whitelist (since whitelist contains contract addresses)
+            currentWhitelist = choice([st_addrs, self.currentWhitelist])
+            # st_addr will never contain self.km so add a chance for it to have it. Also add an extra EOA
+            # for calls, which will always be whitelisted (both index 1 and 2 contain it - index 0 update will fail)
+            newWhitelist = choice(
+                [
+                    st_addrs,
+                    st_addrs + [self.km, self.eoaWhitelisted],
+                    self.currentWhitelist,
+                ]
+            )
+
+            currentWhitelistUnique = len(set(currentWhitelist)) == len(currentWhitelist)
+            newWhitelistUnique = len(set(newWhitelist)) == len(newWhitelist)
+
+            if len(currentWhitelist) != self.km.getNumberWhitelistedAddresses():
+                with reverts(REV_MSG_LENGTH):
+                    self._updateCanConsumeKeyNonce_sigNonce(
+                        currentWhitelist, newWhitelist, st_sender
+                    )
+            else:
+                # Check current whitelist
+                for address in currentWhitelist:
+                    if not self.km.canConsumeKeyNonce(address):
+                        with reverts(REV_MSG_CANNOT_DEWHITELIST):
+                            self._updateCanConsumeKeyNonce_sigNonce(
+                                currentWhitelist, newWhitelist, st_sender
+                            )
+                        return
+                if not currentWhitelistUnique:
+                    with reverts(REV_MSG_CANNOT_DEWHITELIST):
+                        self._updateCanConsumeKeyNonce_sigNonce(
+                            currentWhitelist, newWhitelist, st_sender
+                        )
+                    return
+                # Check new whitelist
+                if not newWhitelistUnique:
+                    with reverts(REV_MSG_DUPLICATE):
+                        self._updateCanConsumeKeyNonce_sigNonce(
+                            currentWhitelist, newWhitelist, st_sender
+                        )
+                else:
+                    if not self.km in newWhitelist:
+                        with reverts(REV_MSG_KEYMANAGER_WHITELIST):
+                            self._updateCanConsumeKeyNonce_sigNonce(
+                                currentWhitelist, newWhitelist, st_sender
+                            )
+                    else:
+                        tx = self._updateCanConsumeKeyNonce_sigNonce(
+                            currentWhitelist, newWhitelist, st_sender
+                        )
+                        self.currentWhitelist = newWhitelist
+                        self.lastValidateTime = tx.timestamp
+
+        def _updateCanConsumeKeyNonce_sigNonce(
+            self, currentWhitelist, newWhitelist, st_sender
+        ):
+            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                agg_null_sig(self.km.address, chain.id), currentWhitelist, newWhitelist
+            )
+            return self.km.updateCanConsumeKeyNonce(
+                self.keyIDToCurKeys[AGG].getSigDataWithNonces(
+                    callDataNoSig, nonces, AGG, self.km.address
+                ),
+                currentWhitelist,
+                newWhitelist,
+                {"from": st_sender},
+            )
+
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
-        def rule_isValidSig(self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data):
+        def rule_consumeKeyNonce(
+            self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data
+        ):
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                 st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
             )
@@ -59,12 +136,20 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
             ):
                 print(
-                    "                    rule_isValidSig",
+                    "                    rule_consumeKeyNonce",
                     st_sender,
                     st_sig_key_idx,
                     st_keyID_num,
                     st_msg_data,
                 )
+                if not st_sender in self.currentWhitelist:
+                    with reverts(REV_MSG_WHITELIST):
+                        tx = self.km.consumeKeyNonce(
+                            sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                        )
+                    # EOA will always be whitelisted
+                    st_sender = self.eoaWhitelisted
+
                 tx = self.km.consumeKeyNonce(
                     sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                 )
@@ -72,12 +157,20 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             else:
                 with reverts(REV_MSG_SIG):
                     print(
-                        "        REV_MSG_SIG rule_isValidSig",
+                        "        REV_MSG_SIG rule_consumeKeyNonce",
                         st_sender,
                         st_sig_key_idx,
                         st_keyID_num,
                         st_msg_data,
                     )
+                    if not st_sender in self.currentWhitelist:
+                        with reverts(REV_MSG_WHITELIST):
+                            tx = self.km.consumeKeyNonce(
+                                sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                            )
+                        # EOA will always be whitelisted
+                        st_sender = self.eoaWhitelisted
+
                     self.km.consumeKeyNonce(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                     )
@@ -127,7 +220,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
 
         # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
         def _set_same_key_gov(self, st_sender, fcn):
-            current_governor = random.choice([st_sender, self.governor])
+            current_governor = choice([st_sender, self.governor])
 
             if current_governor == self.governor:
                 print(f"                    {fcn}", st_sender, self.governor)
@@ -194,6 +287,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         def invariant_lastValidateTime(self):
             self.numTxsTested += 1
             assert self.km.getLastValidateTime() == self.lastValidateTime
+
+        def invariant_whitelist(self):
+            assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)
+            for address in self.currentWhitelist:
+                assert self.km.canConsumeKeyNonce(address) == True
+            assert self.km.canConsumeKeyNonce(self.km) == True
 
         # Check the keys are correct after every tx
         def invariant_keys(self):

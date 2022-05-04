@@ -82,7 +82,7 @@ REV_MSG_SET = "KeyManager: already set"
 REV_MSG_DUPLICATE = "KeyManager: address already whitelisted"
 # updateCanConsumeKeyNonce
 REV_MSG_LENGTH = "KeyManager: array incorrect length"
-REV_MSG_NOT_DEWHITELISTED = "KeyManager: cannot dewhitelist"
+REV_MSG_CANNOT_DEWHITELIST = "KeyManager: cannot dewhitelist"
 REV_MSG_KEYMANAGER_WHITELIST = "KeyManager: KeyManager not whitelisted"
 # consumeKeyNonce
 REV_MSG_WHITELIST = "KeyManager: not whitelisted"
