@@ -39,12 +39,11 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             self.numTxsTested = 0
             self.governor = cfDeployAllWhitelist.gov
             self.currentWhitelist = cfDeployAllWhitelist.whitelisted
-            self.eoaWhitelisted = a[4]
 
         # Variables that will be a random value with each fcn/rule called
 
         st_sender = strategy("address")
-        st_addrs = strategy("address[]", min_length=1)
+        st_addrs = strategy("address[]")
         st_sig_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         # KEYID_TO_NUM - 2 to only take AGG
@@ -53,15 +52,14 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
 
         # Updates the list of addresses that are nonce consumers
-        def rule_updateRandomCanConsumeKeyNonce(self, st_sender, st_addrs):
+        def rule_updateCanConsumeKeyNonce(self, st_sender, st_addrs):
             # st_addrs will never be equal to whitelist (since whitelist contains contract addresses)
             currentWhitelist = choice([st_addrs, self.currentWhitelist])
-            # st_addr will never contain self.km so add a chance for it to have it. Also add an extra EOA
-            # for calls, which will always be whitelisted (both index 1 and 2 contain it - index 0 update will fail)
+            # st_addr will never contain self.km so add a chance for it to have it.
             newWhitelist = choice(
                 [
                     st_addrs,
-                    st_addrs + [self.km, self.eoaWhitelisted],
+                    st_addrs + [self.km],
                     self.currentWhitelist,
                 ]
             )
@@ -70,6 +68,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             newWhitelistUnique = len(set(newWhitelist)) == len(newWhitelist)
 
             if len(currentWhitelist) != self.km.getNumberWhitelistedAddresses():
+                print(
+                    "        REV_MSG_LENGTH rule_updateCanConsumeKeyNonce",
+                    st_sender,
+                    currentWhitelist,
+                    newWhitelist,
+                )
                 with reverts(REV_MSG_LENGTH):
                     self._updateCanConsumeKeyNonce_sigNonce(
                         currentWhitelist, newWhitelist, st_sender
@@ -78,12 +82,24 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 # Check current whitelist
                 for address in currentWhitelist:
                     if not self.km.canConsumeKeyNonce(address):
+                        print(
+                            "        REV_MSG_CANNOT_DEWHITELIST rule_updateCanConsumeKeyNonce",
+                            st_sender,
+                            currentWhitelist,
+                            newWhitelist,
+                        )
                         with reverts(REV_MSG_CANNOT_DEWHITELIST):
                             self._updateCanConsumeKeyNonce_sigNonce(
                                 currentWhitelist, newWhitelist, st_sender
                             )
                         return
                 if not currentWhitelistUnique:
+                    print(
+                        "        REV_MSG_CANNOT_DEWHITELIST rule_updateCanConsumeKeyNonce",
+                        st_sender,
+                        currentWhitelist,
+                        newWhitelist,
+                    )
                     with reverts(REV_MSG_CANNOT_DEWHITELIST):
                         self._updateCanConsumeKeyNonce_sigNonce(
                             currentWhitelist, newWhitelist, st_sender
@@ -91,17 +107,35 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                     return
                 # Check new whitelist
                 if not newWhitelistUnique:
+                    print(
+                        "        REV_MSG_DUPLICATE rule_updateCanConsumeKeyNonce",
+                        st_sender,
+                        currentWhitelist,
+                        newWhitelist,
+                    )
                     with reverts(REV_MSG_DUPLICATE):
                         self._updateCanConsumeKeyNonce_sigNonce(
                             currentWhitelist, newWhitelist, st_sender
                         )
                 else:
                     if not self.km in newWhitelist:
+                        print(
+                            "        REV_MSG_KEYMANAGER_WHITELIST rule_updateCanConsumeKeyNonce",
+                            st_sender,
+                            currentWhitelist,
+                            newWhitelist,
+                        )
                         with reverts(REV_MSG_KEYMANAGER_WHITELIST):
                             self._updateCanConsumeKeyNonce_sigNonce(
                                 currentWhitelist, newWhitelist, st_sender
                             )
                     else:
+                        print(
+                            "                    rule_updateCanConsumeKeyNonce",
+                            st_sender,
+                            currentWhitelist,
+                            newWhitelist,
+                        )
                         tx = self._updateCanConsumeKeyNonce_sigNonce(
                             currentWhitelist, newWhitelist, st_sender
                         )
@@ -131,7 +165,13 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                 st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
             )
-            if (
+
+            if not st_sender in self.currentWhitelist:
+                with reverts(REV_MSG_WHITELIST):
+                    tx = self.km.consumeKeyNonce(
+                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                    )
+            elif (
                 self.allKeys[st_sig_key_idx]
                 == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
             ):
@@ -147,13 +187,11 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         tx = self.km.consumeKeyNonce(
                             sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                         )
-                    # EOA will always be whitelisted
-                    st_sender = self.eoaWhitelisted
-
-                tx = self.km.consumeKeyNonce(
-                    sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-                )
-                self.lastValidateTime = tx.timestamp
+                else:
+                    tx = self.km.consumeKeyNonce(
+                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                    )
+                    self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print(
@@ -163,13 +201,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         st_keyID_num,
                         st_msg_data,
                     )
-                    if not st_sender in self.currentWhitelist:
-                        with reverts(REV_MSG_WHITELIST):
-                            tx = self.km.consumeKeyNonce(
-                                sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-                            )
-                        # EOA will always be whitelisted
-                        st_sender = self.eoaWhitelisted
 
                     self.km.consumeKeyNonce(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}

@@ -36,7 +36,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      *          made virtual. This contract needs to be marked as abstract.
      * @return  The governor's address
      */
-    function getGovernor() internal view virtual returns (address);
+    function _getGovernor() internal view virtual returns (address);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -111,6 +111,14 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
         return _suspended;
     }
 
+    /**
+     * @notice  Get governor address
+     * @return  The governor address
+     */
+    function getGovernor() external view override returns (address) {
+        return _getGovernor();
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                         Modifiers                        //
@@ -138,7 +146,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     /// @notice Ensure that the caller is the governor address. Calls the getGovernor
     ///         function which is implemented by the children.
     modifier isGovernor() {
-        require(msg.sender == getGovernor(), "Governance: not governor");
+        require(msg.sender == _getGovernor(), "Governance: not governor");
         _;
     }
 

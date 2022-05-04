@@ -59,7 +59,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
-    function getGovernor() internal view override returns (address) {
+    function _getGovernor() internal view override returns (address) {
         return _getKeyManager().getGovernanceKey();
     }
 
