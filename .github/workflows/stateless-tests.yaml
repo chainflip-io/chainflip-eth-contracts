@@ -11,5 +11,5 @@ jobs:
     needs: lint
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
-      stateful: false
+      stateful: true
 
