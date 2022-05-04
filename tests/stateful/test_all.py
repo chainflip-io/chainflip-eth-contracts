@@ -1148,8 +1148,6 @@ def test_all(
                 print(
                     "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
                     st_sender,
-                    self.currentWhitelist,
-                    toWhitelist,
                 )
                 self._updateCanConsumeKeyNonce(
                     self.currentWhitelist, toWhitelist, st_sender
@@ -1158,8 +1156,6 @@ def test_all(
                 print(
                     "                    rule_updateCanConsumeKeyNonce_whitelist",
                     st_sender,
-                    self.currentWhitelist,
-                    toWhitelist,
                 )
                 tx = self._updateCanConsumeKeyNonce(
                     self.currentWhitelist, toWhitelist, st_sender
@@ -1856,8 +1852,6 @@ def test_all(
                     {"from": st_sender},
                 )
 
-                self.currentWhitelist = toWhitelist
-
                 # Vault can now validate and fetch but it has zero balance so it can't transfer
                 callDataNoSig = newVault.transfer.encode_input(
                     agg_null_sig(self.km.address, chain.id),
@@ -2006,6 +2000,7 @@ def test_all(
 
                 self.v = newVault
                 self.lastValidateTime = tx.timestamp
+                self.currentWhitelist = toWhitelist
 
                 # Create new addresses for the new Vault and initialize Balances
                 newCreate2EthAddrs = [
@@ -2114,8 +2109,6 @@ def test_all(
                     toWhitelist,
                 )
 
-                self.currentWhitelist = toWhitelist
-
                 chain.sleep(st_sleep_time)
 
                 # Generate claim to move all FLIP to new stakeManager
@@ -2188,6 +2181,8 @@ def test_all(
                 self.sm = newStakeManager
                 self.minStake = INIT_MIN_STAKE
                 self.lastValidateTime = tx.timestamp
+                self.currentWhitelist = toWhitelist
+
                 # Reset all pending claims
                 self.pendingClaims = {
                     nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
