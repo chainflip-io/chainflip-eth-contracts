@@ -1,5 +1,4 @@
 import argparse
-from unittest.util import _MAX_LENGTH
 from consts import *
 from shared_tests import *
 from brownie import reverts, chain, web3
@@ -1113,7 +1112,8 @@ def test_all(
             print(list(a))
             print(len(a))
             print(len(list(a)))
-            if st_sender != list(a)[randint(0, _MAX_LENGTH - 2)]:
+            randint = randint(0, MAX_NUM_SENDERS - 1)
+            if st_sender != list(a)[randint]:
                 return
 
             toWhitelist = [self.km] + st_addrs
