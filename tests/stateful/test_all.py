@@ -1114,6 +1114,12 @@ def test_all(
 
             toWhitelist = [self.km] + st_addrs
 
+            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                self.currentWhitelist,
+                toWhitelist,
+            )
+
             signer = self._get_key_prob(AGG)
             if signer != self.keyIDToCurKeys[AGG]:
                 print(
@@ -1121,17 +1127,28 @@ def test_all(
                     st_sender,
                     st_addrs,
                 )
-                self._updateCanConsumeKeyNonce(
-                    self.currentWhitelist, toWhitelist, st_sender
-                )
+                with reverts(REV_MSG_SIG):
+                    self.km.updateCanConsumeKeyNonce(
+                        self.keyIDToCurKeys[AGG].getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        self.currentWhitelist,
+                        toWhitelist,
+                        {"from": st_sender},
+                    )
             else:
                 print(
                     "                    rule_updateCanConsumeKeyNonce_dewhitelist",
                     st_sender,
                     st_addrs,
                 )
-                tx = self._updateCanConsumeKeyNonce(
-                    self.currentWhitelist, toWhitelist, st_sender
+                tx = self.km.updateCanConsumeKeyNonce(
+                    self.keyIDToCurKeys[AGG].getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                    {"from": st_sender},
                 )
                 self.currentWhitelist = toWhitelist
                 self.lastValidateTime = tx.timestamp
@@ -1141,39 +1158,45 @@ def test_all(
             # Regardless of what is whitelisted, whitelist the current contracts
             toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
 
+            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                self.currentWhitelist,
+                toWhitelist,
+            )
             signer = self._get_key_prob(AGG)
             if signer != self.keyIDToCurKeys[AGG]:
                 print(
                     "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
                     st_sender,
                 )
-                self._updateCanConsumeKeyNonce(
-                    self.currentWhitelist, toWhitelist, st_sender
+                # Why does this not revert??
+                ## with reverts(REV_MSG_SIG):
+                tx = self.km.updateCanConsumeKeyNonce(
+                    self.keyIDToCurKeys[AGG].getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                    {"from": st_sender},
                 )
+                self.currentWhitelist = toWhitelist
+                self.lastValidateTime = tx.timestamp
+
             else:
                 print(
                     "                    rule_updateCanConsumeKeyNonce_whitelist",
                     st_sender,
                 )
-                tx = self._updateCanConsumeKeyNonce(
-                    self.currentWhitelist, toWhitelist, st_sender
+                tx = self.km.updateCanConsumeKeyNonce(
+                    self.keyIDToCurKeys[AGG].getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                    {"from": st_sender},
                 )
                 self.currentWhitelist = toWhitelist
                 self.lastValidateTime = tx.timestamp
-
-        def _updateCanConsumeKeyNonce(self, currentWhitelist, toWhitelist, st_sender):
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id), currentWhitelist, toWhitelist
-            )
-
-            return self.km.updateCanConsumeKeyNonce(
-                self.keyIDToCurKeys[AGG].getSigDataWithNonces(
-                    callDataNoSig, nonces, AGG, self.km.address
-                ),
-                currentWhitelist,
-                toWhitelist,
-                {"from": st_sender},
-            )
 
         # Get the key that is probably what we want, but also has a low chance of choosing
         # the 'wrong' key which will cause a revert and tests the full range. Maximises useful
@@ -1689,17 +1712,12 @@ def test_all(
 
             keyManagerAddress = choice([newKeyManager, self.km])
 
-            toWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                keyManagerAddress,
-            ] + list(a)
+            toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
 
             if keyManagerAddress == self.km:
-                with reverts(REV_MSG_KEYMANAGER_WHITELIST):
+                with reverts(REV_MSG_DUPLICATE):
                     print(
-                        "        REV_MSG_KEYMANAGER_WHITELIST rule_upgrade_keyManager",
+                        "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
                         st_sender,
                         keyManagerAddress.address,
                     )
@@ -1793,21 +1811,9 @@ def test_all(
             newVault = st_sender.deploy(Vault, self.km, self.communityKey)
 
             # Keep old Vault whitelisted
-            currentWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                self.km,
-            ] + list(a)
-            toWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                self.km,
-                newVault,
-            ] + list(a)
+            toWhitelist = self.currentWhitelist.copy() + [newVault]
 
-            args = (currentWhitelist, toWhitelist)
+            args = (self.currentWhitelist, toWhitelist)
 
             callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
                 agg_null_sig(self.km.address, chain.id), *args
@@ -1815,19 +1821,27 @@ def test_all(
 
             signer = self._get_key_prob(AGG)
 
-            if not self.km in self.currentWhitelist:
+            # if old vault is now whitelisted it will fail later
+            if not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_upgrade_Vault",
                     st_sender,
                     st_vault_transfer_amount,
                 )
                 with reverts(REV_MSG_WHITELIST):
-                    self.km.updateCanConsumeKeyNonce(
+                    callDataNoSig = self.v.transfer.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+                    self.v.transfer(
                         signer.getSigDataWithNonces(
                             callDataNoSig, nonces, AGG, self.km.address
                         ),
-                        *args,
-                        {"from": st_sender},
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
                 print(
@@ -1845,7 +1859,7 @@ def test_all(
                     )
 
             else:
-                ## UpdateCanConsumeKeyNonce
+                # UpdateCanConsumeKeyNonce
                 self.km.updateCanConsumeKeyNonce(
                     signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
@@ -1853,6 +1867,8 @@ def test_all(
                     *args,
                     {"from": st_sender},
                 )
+
+                self.currentWhitelist = toWhitelist.copy()
 
                 # Vault can now validate and fetch but it has zero balance so it can't transfer
                 callDataNoSig = newVault.transfer.encode_input(
@@ -1972,31 +1988,20 @@ def test_all(
                 self._updateBalancesOnUpgrade(self.v, newVault)
 
                 # Dewhitelist old Vault
-                currentWhitelist = [
-                    self.v,
-                    self.sm,
-                    self.f,
-                    self.km,
-                    newVault,
-                ] + list(a)
-                toWhitelist = [
-                    self.sm,
-                    self.f,
-                    self.km,
-                    newVault,
-                ] + list(a)
+                toWhitelist = self.currentWhitelist.copy()
+                toWhitelist.remove(self.v)
 
                 # UpdateCanConsumeKeyNonce
                 callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
                     agg_null_sig(self.km.address, chain.id),
-                    currentWhitelist,
+                    self.currentWhitelist,
                     toWhitelist,
                 )
                 tx = self.km.updateCanConsumeKeyNonce(
                     signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
-                    currentWhitelist,
+                    self.currentWhitelist,
                     toWhitelist,
                 )
 
@@ -2050,43 +2055,42 @@ def test_all(
             newStakeManager.setFlip(self.f, {"from": st_sender})
 
             # Keep old StakeManager whitelisted
-            currentWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                self.km,
-            ] + list(a)
-            toWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                self.km,
-                newStakeManager,
-            ] + list(a)
+            toWhitelist = self.currentWhitelist.copy() + [newStakeManager]
 
             callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id), currentWhitelist, toWhitelist
+                agg_null_sig(self.km.address, chain.id),
+                self.currentWhitelist,
+                toWhitelist,
             )
 
             signer = self._get_key_prob(AGG)
 
-            if not self.km in self.currentWhitelist:
+            # If old stakeManager is not whitelisted it will revert later on
+            if not self.sm in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
                     st_sender,
                     st_vault_transfer_amount,
                 )
                 with reverts(REV_MSG_WHITELIST):
-                    self.km.updateCanConsumeKeyNonce(
+                    callDataNoSig = self.sm.registerClaim.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
+                    )
+                    tx = self.sm.registerClaim(
                         signer.getSigDataWithNonces(
                             callDataNoSig, nonces, AGG, self.km.address
                         ),
-                        currentWhitelist,
-                        toWhitelist,
-                        {"from": st_sender},
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
                     )
 
-            if signer != self.keyIDToCurKeys[AGG]:
+            elif signer != self.keyIDToCurKeys[AGG]:
                 print(
                     "        REV_MSG_SIG rule_upgrade_stakeManager",
                     st_sender,
@@ -2097,7 +2101,7 @@ def test_all(
                         signer.getSigDataWithNonces(
                             callDataNoSig, nonces, AGG, self.km.address
                         ),
-                        currentWhitelist,
+                        self.currentWhitelist,
                         toWhitelist,
                         {"from": st_sender},
                     )
@@ -2107,9 +2111,11 @@ def test_all(
                     signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
-                    currentWhitelist,
+                    self.currentWhitelist,
                     toWhitelist,
                 )
+
+                self.currentWhitelist = toWhitelist.copy()
 
                 chain.sleep(st_sleep_time)
 
@@ -2156,26 +2162,20 @@ def test_all(
                 assert self.f.balanceOf(self.sm) == 0
 
                 # Dewhitelist old StakeManager
-                currentWhitelist = [
-                    self.v,
-                    self.sm,
-                    self.f,
-                    self.km,
-                    newStakeManager,
-                ] + list(a)
-                toWhitelist = [self.v, newStakeManager, self.f, self.km] + list(a)
+                toWhitelist = self.currentWhitelist.copy()
+                toWhitelist.remove(self.sm)
 
                 # UpdateCanConsumeKeyNonce
                 callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
                     agg_null_sig(self.km.address, chain.id),
-                    currentWhitelist,
+                    self.currentWhitelist,
                     toWhitelist,
                 )
                 tx = self.km.updateCanConsumeKeyNonce(
                     signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
-                    currentWhitelist,
+                    self.currentWhitelist,
                     toWhitelist,
                 )
 
