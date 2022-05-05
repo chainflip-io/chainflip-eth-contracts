@@ -82,7 +82,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
 
     /// @dev    Calls consumeKeyNonce in _keyManager
     modifier consumerKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
-        _keyManager.consumeKeyNonce(sigData, contractMsgHash);
+        _getKeyManager().consumeKeyNonce(sigData, contractMsgHash);
         _;
     }
 }

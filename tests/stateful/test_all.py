@@ -1108,12 +1108,7 @@ def test_all(
         # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
         def rule_updateCanConsumeKeyNonce_dewhitelist(self, st_sender, st_addrs):
             # So dewhitelisting only happens 1/MAX_LENGTH times (20%)
-            print(a)
-            print(list(a))
-            print(len(a))
-            print(len(list(a)))
             randomIndex = randint(0, MAX_NUM_SENDERS - 1)
-            print(randomIndex)
             if st_sender != list(a)[randomIndex]:
                 return
 
@@ -1130,7 +1125,7 @@ def test_all(
                 )
             else:
                 print(
-                    "                    rule_updateCanConsumeKeyNonce_whitelist",
+                    "                    rule_updateCanConsumeKeyNonce_dewhitelist",
                     st_sender,
                 )
                 tx = self._updateCanConsumeKeyNonce(
@@ -1715,27 +1710,31 @@ def test_all(
 
                 signer = self._get_key_prob(AGG)
 
-                if not aggKeyNonceConsumers[0] in self.currentWhitelist:
-                    with reverts(REV_MSG_WHITELIST):
-                        print(
-                            "        REV_MSG_WHITELIST rule_upgrade_keyManager",
-                            st_sender,
-                            keyManagerAddress.address,
-                        )
-                        # Use the first aggKeyNonceConsumer for simplicity
-                        callDataNoSig = aggKeyNonceConsumers[
-                            0
-                        ].updateKeyManager.encode_input(
-                            agg_null_sig(self.km, chain.id), newKeyManager
-                        )
+                # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
+                for aggKeyNonceConsumer in aggKeyNonceConsumers:
+                    if not aggKeyNonceConsumer in self.currentWhitelist:
                         with reverts(REV_MSG_WHITELIST):
-                            aggKeyNonceConsumers[0].updateKeyManager(
-                                signer.getSigDataWithNonces(
-                                    callDataNoSig, nonces, AGG, self.km.address
-                                ),
-                                newKeyManager,
+                            print(
+                                "        REV_MSG_WHITELIST rule_upgrade_keyManager",
+                                st_sender,
+                                keyManagerAddress.address,
                             )
-                elif signer != self.keyIDToCurKeys[AGG]:
+                            callDataNoSig = (
+                                aggKeyNonceConsumer.updateKeyManager.encode_input(
+                                    agg_null_sig(self.km, chain.id), newKeyManager
+                                )
+                            )
+                            with reverts(REV_MSG_WHITELIST):
+                                aggKeyNonceConsumer.updateKeyManager(
+                                    signer.getSigDataWithNonces(
+                                        callDataNoSig, nonces, AGG, self.km.address
+                                    ),
+                                    newKeyManager,
+                                )
+                        return
+
+                # All whitelisted
+                if signer != self.keyIDToCurKeys[AGG]:
                     print(
                         "        REV_MSG_SIG rule_upgrade_keyManager",
                         st_sender,
