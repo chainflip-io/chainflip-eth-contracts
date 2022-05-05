@@ -111,8 +111,11 @@ brownie run deploy_and
 ### Live Test network
 
 ```bash
-# get this id from Infura
+# to import all network configurations
+brownie networks import ./network-config.yaml
+# get this id from Infura and/or Alchemy
 export WEB3_INFURA_PROJECT_ID=<Infura project id>
+export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED=<your seed phrase>
 # Set an aggregate or governance key that you would like to use (optional)
@@ -124,6 +127,8 @@ export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you
 
 # deploy the contracts to rinkeby.
 brownie run deploy_contracts --network rinkeby
+# default configuratin uses Infura. To use Alchemy instead
+brownie run deploy_contracts --network rinkeby-alchemy
 ```
 
 ## Useful commands
