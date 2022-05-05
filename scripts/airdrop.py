@@ -29,6 +29,7 @@ oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
 rinkebyOldFlip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
 oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 
+userInputConfirm = ["", "y", "Y", "yes", "Yes", "YES"]
 snapshotSuccessMessage = "Snapshot taken and succesfully stored in "
 contractDeploymentSuccessMessage = "New set of contracts deployed succesfully"
 airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
@@ -87,7 +88,7 @@ def main():
             )
         printAndLog("Address of token set to " + rinkebyOldFlip)
         takeSnapshot = input("Take snapshot? (y)/n : ")
-        if takeSnapshot not in ["", "y", "Y", "yes", "Yes"]:
+        if takeSnapshot not in userInputConfirm:
             printAndLog("Script stopped by user")
             return False
         snapshot(snapshot_blocknumber, rinkebyOldFlip, oldFlipSnapshotFilename)
@@ -99,7 +100,7 @@ def main():
     if contractDeploymentSuccessMessage not in parsedLog:
         printAndLog("Deployer account: " + str(airdropper))
         deployContracts = input("Deploy the new contracts? (y)/n : ")
-        if deployContracts not in ["", "y", "Y", "yes", "Yes"]:
+        if deployContracts not in userInputConfirm:
             printAndLog("Script stopped by user")
             return False
         (
@@ -229,9 +230,8 @@ def snapshot(
 def deployNewContracts(airdropper):
     printAndLog("Deploying new contracts")
 
-    ## TODO: What communityKey should we set here?
     cf = deploy_set_Chainflip_contracts(
-        airdropper, airdropper, KeyManager, Vault, StakeManager, FLIP, os.environ
+        airdropper, KeyManager, Vault, StakeManager, FLIP, os.environ
     )
 
     newStakeManager = cf.stakeManager.address
@@ -340,7 +340,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
             skip_counter += 1
 
     # OldFLIP supply is most likely different than the new initial flip supply (INIT_SUPPLY). We need to ensure that when minting the
-    # supply difference the newStakeManager and oldStakeManager qwill end up with the same balance. If new Stake Manager has less balance
+    # supply difference the newStakeManager and oldStakeManager will end up with the same balance. If new Stake Manager has less balance
     # than the old one and the difference is bigger than the supply difference, we need to make an extra transfer from airdropper to the
     # new Stake Manager. This should be the case in this airdrop.
     # Technically it could be the case where some of newSupply tokens that will be minted would have to go to the airdroper, but that won't
