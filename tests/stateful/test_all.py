@@ -2210,17 +2210,11 @@ def test_all(
 
             assert self.sm.getFLIP() == self.f.address
 
-        def invariant_keyManager_whitelist(self):
-            aggKeyNonceConsumers = [
-                self.km,
-                self.v,
-                self.f,
-                self.sm,
-            ] + list(a)
-            assert self.km.getNumberWhitelistedAddresses() == len(aggKeyNonceConsumers)
-
-            for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer.address) == True
+        def invariant_whitelist(self):
+            assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)
+            for address in self.currentWhitelist:
+                assert self.km.canConsumeKeyNonce(address) == True
+            assert self.km.canConsumeKeyNonce(self.km) == True
 
         # Check the keys are correct after every tx
         def invariant_keys(self):
@@ -2252,12 +2246,6 @@ def test_all(
             # assert self.v_communityKey == self.v.getCommunityKey()
             # assert self.v_guard == self.v.getCommunityGuard()
             # assert self.v_suspended == self.v.getSuspendedState()
-
-        def invariant_whitelist(self):
-            assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)
-            for address in self.currentWhitelist:
-                assert self.km.canConsumeKeyNonce(address) == True
-            assert self.km.canConsumeKeyNonce(self.km) == True
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
