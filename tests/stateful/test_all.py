@@ -1119,6 +1119,7 @@ def test_all(
                 print(
                     "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
                     st_sender,
+                    st_addrs,
                 )
                 self._updateCanConsumeKeyNonce(
                     self.currentWhitelist, toWhitelist, st_sender
@@ -1127,6 +1128,7 @@ def test_all(
                 print(
                     "                    rule_updateCanConsumeKeyNonce_dewhitelist",
                     st_sender,
+                    st_addrs,
                 )
                 tx = self._updateCanConsumeKeyNonce(
                     self.currentWhitelist, toWhitelist, st_sender
@@ -1713,6 +1715,7 @@ def test_all(
                 # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
                 for aggKeyNonceConsumer in aggKeyNonceConsumers:
                     if not aggKeyNonceConsumer in self.currentWhitelist:
+                        assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
                         with reverts(REV_MSG_WHITELIST):
                             print(
                                 "        REV_MSG_WHITELIST rule_upgrade_keyManager",
@@ -1724,13 +1727,12 @@ def test_all(
                                     agg_null_sig(self.km, chain.id), newKeyManager
                                 )
                             )
-                            with reverts(REV_MSG_WHITELIST):
-                                aggKeyNonceConsumer.updateKeyManager(
-                                    signer.getSigDataWithNonces(
-                                        callDataNoSig, nonces, AGG, self.km.address
-                                    ),
-                                    newKeyManager,
-                                )
+                            aggKeyNonceConsumer.updateKeyManager(
+                                signer.getSigDataWithNonces(
+                                    callDataNoSig, nonces, AGG, self.km.address
+                                ),
+                                newKeyManager,
+                            )
                         return
 
                 # All whitelisted
