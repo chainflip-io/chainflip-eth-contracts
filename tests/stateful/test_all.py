@@ -1112,8 +1112,9 @@ def test_all(
             print(list(a))
             print(len(a))
             print(len(list(a)))
-            randint = randint(0, MAX_NUM_SENDERS - 1)
-            if st_sender != list(a)[randint]:
+            randomIndex = randint(0, MAX_NUM_SENDERS - 1)
+            print(randomIndex)
+            if st_sender != list(a)[randomIndex]:
                 return
 
             toWhitelist = [self.km] + st_addrs
