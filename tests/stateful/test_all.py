@@ -1899,8 +1899,25 @@ def test_all(
 
             signer = self._get_key_prob(AGG)
 
-            # if old vault is now whitelisted it will fail later
-            if not self.v in self.currentWhitelist:
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    callDataNoSig = self.v.transfer.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+            # if old vault is not whitelisted it will fail later
+            elif not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_upgrade_Vault",
                     st_sender,
@@ -2143,8 +2160,27 @@ def test_all(
 
             signer = self._get_key_prob(AGG)
 
+            if self.sm_suspended:
+                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    callDataNoSig = self.sm.registerClaim.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
+                    )
+                    tx = self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
+                    )
             # If old stakeManager is not whitelisted it will revert later on
-            if not self.sm in self.currentWhitelist:
+            elif not self.sm in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
                     st_sender,
