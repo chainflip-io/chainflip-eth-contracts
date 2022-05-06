@@ -42,17 +42,11 @@ def main():
     DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
-    # Acccount running this script (airdropper) should receive the newFLIP amount necessary to do the airdrop
-    # Airdropper should also have enough ETH to pay for all the airdrop transactions
-    # In the local hardhat net use one of the accounts created - the account from the SEED has no eth
-    if chain.id == 4:
-        airdropper = DEPLOYER
-    else:
-        airdropper = accounts[0]
+    airdropper = DEPLOYER
 
     # If using Infura it will break if snapshot_blocknumber < latestblock-100 due to free-plan limitation
     # Use alchemy when running the old flip snapshot function
-    snapshot_blocknumber = int(os.environ.get("SNAPSHOT_BLOCKNUMBER"))
+    snapshot_blocknumber = os.environ.get("SNAPSHOT_BLOCKNUMBER")
 
     # --------------------------- Start of the script logic  ----------------------------
 
@@ -91,7 +85,7 @@ def main():
         if takeSnapshot not in userInputConfirm:
             printAndLog("Script stopped by user")
             return False
-        snapshot(snapshot_blocknumber, rinkebyOldFlip, oldFlipSnapshotFilename)
+        snapshot(int(snapshot_blocknumber), rinkebyOldFlip, oldFlipSnapshotFilename)
     else:
         printAndLog("Skipped old FLIP snapshot - snapshot already taken")
 
