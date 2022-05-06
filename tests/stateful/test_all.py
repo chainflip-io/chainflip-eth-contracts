@@ -2435,8 +2435,8 @@ def test_all(
             assert self.v_suspended == self.v.getSuspendedState()
 
         # Print how many rules were executed at the end of each run
-        def teardown(self):
-            print(f"Total rules executed = {self.numTxsTested-1}")
+        # def teardown(self):
+        #     print(f"Total rules executed = {self.numTxsTested-1}")
 
         # Update balances when a contract has been upgraded
         def _updateBalancesOnUpgrade(self, oldContract, newContract):
