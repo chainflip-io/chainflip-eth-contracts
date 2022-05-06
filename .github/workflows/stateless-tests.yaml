@@ -17,6 +17,6 @@ jobs:
   stateful-tests:
     name: Stateful Tests
     needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@feat/update-stateful-tests
     with:
       stateful: true
