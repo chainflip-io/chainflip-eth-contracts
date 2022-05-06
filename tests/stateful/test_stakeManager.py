@@ -181,9 +181,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                         *args,
                         {"from": st_sender},
                     )
-                return
-
-            if st_nodeID == 0:
+            elif st_nodeID == 0:
                 print("        NODEID rule_registerClaim", *args)
                 with reverts(REV_MSG_NZ_BYTES32):
                     self.sm.registerClaim(

@@ -222,6 +222,9 @@ def test_all(
             self.tokenBBals = {
                 addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs
             }
+            self.v_current_communityKey = self.v.getCommunityKey()
+            self.v_communityGuardDisabled = self.v.getCommunityGuard()
+            self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
             self.lastValidateTime = self.km.tx.timestamp
@@ -244,6 +247,10 @@ def test_all(
                 nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
             }
             self.numTxsTested = 0
+
+            self.sm_current_communityKey = self.sm.getCommunityKey()
+            self.sm_communityGuardDisabled = self.sm.getCommunityGuard()
+            self.sm_suspended = self.sm.getSuspendedState()
 
             # Flip
             self.lastSupplyBlockNumber = 0
@@ -369,7 +376,21 @@ def test_all(
                 st_recips,
                 st_eth_amounts,
             )
-            if not self.v in self.currentWhitelist:
+
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _allBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_allBatch",
                     signer,
@@ -516,7 +537,19 @@ def test_all(
             )
             signer = self._get_key_prob(AGG)
 
-            if st_eth_amount == 0:
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+            elif st_eth_amount == 0:
                 print(
                     "        REV_MSG_NZ_UINT _vault_transfer",
                     tokenAddr,
@@ -662,7 +695,18 @@ def test_all(
                 else:
                     assert False, "Unknown asset"
 
-            if not self.v in self.currentWhitelist:
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_vault_transferBatch",
                     signer,
@@ -820,7 +864,16 @@ def test_all(
             )
             signer = self._get_key_prob(AGG)
 
-            if st_swapID == 0:
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositEth(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                    )
+            elif st_swapID == 0:
                 print(
                     "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
                     st_sender,
@@ -895,7 +948,16 @@ def test_all(
                 agg_null_sig(self.km.address, chain.id), st_swapIDs
             )
 
-            if not self.v in self.currentWhitelist:
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositEthBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                    )
+            elif not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_fetchDepositEthBatch",
                     st_sender,
@@ -949,7 +1011,17 @@ def test_all(
             )
             signer = self._get_key_prob(AGG)
 
-            if st_swapID == 0:
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositToken(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                        token,
+                    )
+            elif st_swapID == 0:
                 print(
                     "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
                     st_sender,
@@ -1036,7 +1108,17 @@ def test_all(
                 agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
             )
 
-            if not self.v in self.currentWhitelist:
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositTokenBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        st_tokens,
+                    )
+            elif not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_fetchDepositTokenBatch",
                     st_sender,
@@ -1107,9 +1189,8 @@ def test_all(
 
         # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
         def rule_updateCanConsumeKeyNonce_dewhitelist(self, st_sender, st_addrs):
-            # So dewhitelisting only happens 1/MAX_LENGTH times (20%)
-            randomIndex = randint(0, MAX_NUM_SENDERS - 1)
-            if st_sender != list(a)[randomIndex]:
+            # So dewhitelisting only happens 10% of the times
+            if self._probability_perc(90):
                 return
 
             toWhitelist = [self.km] + st_addrs
@@ -1440,7 +1521,17 @@ def test_all(
             )
             signer = self._get_key_prob(AGG)
 
-            if st_nodeID == 0:
+            if self.sm_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _registerClaim")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif st_nodeID == 0:
                 print("        NODEID rule_registerClaim", *args)
                 with reverts(REV_MSG_NZ_BYTES32):
                     self.sm.registerClaim(
@@ -1520,6 +1611,12 @@ def test_all(
 
         # Executes a random claim
         def rule_executeClaim(self, st_nodeID, st_sender):
+            if self.sm_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _executeClaim")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                return
+
             claim = self.pendingClaims[st_nodeID]
 
             if not claim[2] <= getChainTime() <= claim[3]:
@@ -2170,6 +2267,80 @@ def test_all(
                     nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
                 }
 
+        # Suspend and Resume calls
+
+        # Suspends the stake Manager if st_sender matches the governor address. It has
+        # has a 1/20 chance of being the governor - don't want to suspend it too often.
+        def rule_suspend_stakeManager(self, st_sender):
+            if st_sender == self.governor:
+                if self.sm_suspended:
+                    print("        REV_MSG_GOV_SUSPENDED _suspend")
+                    with reverts(REV_MSG_GOV_SUSPENDED):
+                        self.sm.suspend({"from": st_sender})
+                else:
+                    print("                    rule_suspend", st_sender)
+                    self.sm.suspend({"from": st_sender})
+                    self.sm_suspended = True
+            else:
+                print("        REV_MSG_GOV_GOVERNOR _suspend")
+                with reverts(REV_MSG_GOV_GOVERNOR):
+                    self.sm.suspend({"from": st_sender})
+
+        # Resumes the stake Manager if it is suspended. We always resume it to avoid
+        # having the stakeManager suspended too often
+        def rule_resume_stakeManager(self, st_sender):
+            if self.sm_suspended:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.sm.resume({"from": st_sender})
+                # Always resume
+                print("                    rule_resume", st_sender)
+                self.sm.resume({"from": self.governor})
+                self.sm_suspended = False
+            else:
+                print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
+                with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                    self.sm.resume({"from": self.governor})
+
+        # Suspends the stake Manager if st_sender matches the governor address. It has
+        # has a 1/20 chance of being the governor - don't want to suspend it too often.
+        def rule_suspend(self, st_sender):
+            if st_sender == self.governor:
+                if self.v_suspended:
+                    print("        REV_MSG_GOV_SUSPENDED _suspend")
+                    with reverts(REV_MSG_GOV_SUSPENDED):
+                        self.v.suspend({"from": st_sender})
+                else:
+                    print("                    rule_suspend", st_sender)
+                    self.v.suspend({"from": st_sender})
+                    self.v_suspended = True
+            else:
+                print("        REV_MSG_GOV_GOVERNOR _suspend")
+                with reverts(REV_MSG_GOV_GOVERNOR):
+                    self.v.suspend({"from": st_sender})
+
+        # Resumes the stake Manager if it is suspended. We always resume it to avoid
+        # having the stakeManager suspended too often
+        def rule_resume_vault(self, st_sender):
+            if self.v_suspended:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.v.resume({"from": st_sender})
+                # Always resume
+                print("                    rule_resume", st_sender)
+                self.v.resume({"from": self.governor})
+                self.v_suspended = False
+            else:
+                print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
+                with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                    self.v.resume({"from": self.governor})
+
+        def _probability_perc(self, percentatge):
+            randomNumber = randint(0, 100)
+            return percentatge <= randomNumber
+
+        # Add communityKeyGuarded calls - enable, disable and govWithdrawal? - TODO?
+
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
         def invariant_bals(self):
@@ -2219,14 +2390,12 @@ def test_all(
                 == self.sm.getGovernor()
                 == self.v.getGovernor()
             )
-
-            # To add community key tests, suspend, govwithdrawals
-            # assert self.sm_communityKey == self.sm.getCommunityKey()
-            # assert self.sm_guard == self.sm.getCommunityGuard()
-            # assert self.sm_suspended == self.sm.getSuspendedState()
-            # assert self.v_communityKey == self.v.getCommunityKey()
-            # assert self.v_guard == self.v.getCommunityGuard()
-            # assert self.v_suspended == self.v.getSuspendedState()
+            assert self.sm_current_communityKey == self.sm.getCommunityKey()
+            assert self.sm_communityGuardDisabled == self.sm.getCommunityGuard()
+            assert self.sm_suspended == self.sm.getSuspendedState()
+            assert self.v_current_communityKey == self.v.getCommunityKey()
+            assert self.v_communityGuardDisabled == self.v.getCommunityGuard()
+            assert self.v_suspended == self.v.getSuspendedState()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):

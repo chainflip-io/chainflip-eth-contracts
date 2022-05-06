@@ -226,9 +226,7 @@ def test_vault(
                         st_eth_amounts,
                         {"from": st_sender},
                     )
-                return
-
-            if (
+            elif (
                 tranTotals[self.tokenA] - fetchTokenATotal
                 > self.tokenABals[self.v.address]
                 or tranTotals[self.tokenB] - fetchTokenBTotal
@@ -340,9 +338,7 @@ def test_vault(
                         st_eth_amount,
                         {"from": st_sender},
                     )
-                return
-
-            if st_eth_amount == 0:
+            elif st_eth_amount == 0:
                 print(
                     "        REV_MSG_NZ_UINT _vault_transfer",
                     tokenAddr,
@@ -454,9 +450,7 @@ def test_vault(
                         st_recips,
                         st_eth_amounts,
                     )
-                return
-
-            if (
+            elif (
                 tranTotals[self.tokenA] > self.tokenABals[self.v.address]
                 or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]
             ):
@@ -584,9 +578,7 @@ def test_vault(
                         ),
                         st_swapID,
                     )
-                return
-
-            if st_swapID == 0:
+            elif st_swapID == 0:
                 print(
                     "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
                     st_sender,
@@ -665,9 +657,7 @@ def test_vault(
                         st_swapID,
                         token,
                     )
-                return
-
-            if st_swapID == 0:
+            elif st_swapID == 0:
                 print(
                     "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
                     token.address,
@@ -738,9 +728,7 @@ def test_vault(
                         st_swapIDs,
                         st_tokens,
                     )
-                return
-
-            if minLen == 3 and minLen != maxLen:
+            elif minLen == 3 and minLen != maxLen:
                 callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
                     agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
                 )
