@@ -142,6 +142,7 @@ def test_vault(
         # txs occurring from the same address is greatly increased while still
         # ensuring diversity in senders
         st_sender = strategy("address", length=MAX_NUM_SENDERS)
+        st_sender_any = strategy("address")
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
 
@@ -789,20 +790,20 @@ def test_vault(
 
         # Suspends the stake Manager if st_sender matches the governor address. It has
         # has a 1/20 chance of being the governor - don't want to suspend it too often.
-        def rule_suspend(self, st_sender):
-            if st_sender == self.governor:
+        def rule_suspend(self, st_sender_any):
+            if st_sender_any == self.governor:
                 if self.suspended:
                     print("        REV_MSG_GOV_SUSPENDED _suspend")
                     with reverts(REV_MSG_GOV_SUSPENDED):
-                        self.v.suspend({"from": st_sender})
+                        self.v.suspend({"from": st_sender_any})
                 else:
-                    print("                    rule_suspend", st_sender)
-                    self.v.suspend({"from": st_sender})
+                    print("                    rule_suspend", st_sender_any)
+                    self.v.suspend({"from": st_sender_any})
                     self.suspended = True
             else:
                 print("        REV_MSG_GOV_GOVERNOR _suspend")
                 with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.v.suspend({"from": st_sender})
+                    self.v.suspend({"from": st_sender_any})
 
         # Resumes the stake Manager if it is suspended. We always resume it to avoid
         # having the stakeManager suspended too often
