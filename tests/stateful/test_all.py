@@ -5,7 +5,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
-from random import choice, choices, randint
+from random import choice, choices
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -1189,9 +1189,11 @@ def test_all(
         # KeyManager
 
         # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
-        def rule_updateCanConsumeKeyNonce_dewhitelist(self, st_sender, st_addrs):
-            # So dewhitelisting only happens 10% of the times
-            if self._probability_perc(90):
+        def rule_updateCanConsumeKeyNonce_dewhitelist(
+            self, st_sender, st_addrs, st_sender_any
+        ):
+            # So dewhitelisting only happens 1/20 of the times
+            if not st_sender_any == self.governor:
                 return
 
             toWhitelist = [self.km] + st_addrs
@@ -2304,7 +2306,7 @@ def test_all(
                     nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
                 }
 
-        # Suspend and Resume calls
+        # Suspend and resume Vault and StakeManager
 
         # Suspends the stake Manager if st_sender matches the governor address. It has
         # has a 1/20 chance of being the governor - don't want to suspend it too often.
@@ -2372,11 +2374,9 @@ def test_all(
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
                     self.v.resume({"from": self.governor})
 
-        def _probability_perc(self, percentatge):
-            randomNumber = randint(0, 100)
-            return percentatge <= randomNumber
-
-        # Add communityKeyGuarded calls - enable, disable and govWithdrawal? - TODO?
+        # CommunityKeyGuard calls to Vault and stakeManager
+        # update, enable, disable and govWithdrawal? - TODO?
+        # Do we need to rename self.governor and self.current_governor for clarity?
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
