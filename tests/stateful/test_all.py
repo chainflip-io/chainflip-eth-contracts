@@ -1268,23 +1268,7 @@ def test_all(
                 agg_null_sig(self.km.address, chain.id),
                 self.allKeys[st_new_key_idx].getPubData(),
             )
-            if not self.v in self.currentWhitelist:
-                with reverts(REV_MSG_WHITELIST):
-                    print(
-                        f"        REV_MSG_WHITELIST {fcn}",
-                        st_sender,
-                        keyID,
-                        st_sig_key_idx,
-                        st_new_key_idx,
-                    )
-                    fcn(
-                        self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        self.allKeys[st_new_key_idx].getPubData(),
-                        {"from": st_sender},
-                    )
-            elif self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
+            if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
                 print(
                     f"                    {fcn}",
                     st_sender,
@@ -1325,7 +1309,7 @@ def test_all(
 
             if current_governor == self.governor:
                 print(f"                    {fcn}", st_sender, self.governor)
-                tx = fcn(st_sender, {"from": current_governor})
+                fcn(st_sender, {"from": current_governor})
                 self.governor = st_sender
             else:
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
