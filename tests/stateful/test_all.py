@@ -1127,20 +1127,15 @@ def test_all(
                     st_sender,
                     st_addrs,
                 )
-
-                # Why does this not revert??
-                # with reverts(REV_MSG_SIG):
-                tx = self.km.updateCanConsumeKeyNonce(
-                    self.keyIDToCurKeys[AGG].getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                    {"from": st_sender},
-                )
-                # Remove this if we get the transaction to revert
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
+                with reverts(REV_MSG_SIG):
+                    self.km.updateCanConsumeKeyNonce(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        self.currentWhitelist,
+                        toWhitelist,
+                        {"from": st_sender},
+                    )
             else:
                 print(
                     "                    rule_updateCanConsumeKeyNonce_dewhitelist",
@@ -1148,7 +1143,7 @@ def test_all(
                     st_addrs,
                 )
                 tx = self.km.updateCanConsumeKeyNonce(
-                    self.keyIDToCurKeys[AGG].getSigDataWithNonces(
+                    signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
                     self.currentWhitelist,
@@ -1174,27 +1169,22 @@ def test_all(
                     "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
                     st_sender,
                 )
-                # Why does this not revert??
-                ## with reverts(REV_MSG_SIG):
-                tx = self.km.updateCanConsumeKeyNonce(
-                    self.keyIDToCurKeys[AGG].getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                    {"from": st_sender},
-                )
-                # Remove this if we get the transaction to revert
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
-
+                with reverts(REV_MSG_SIG):
+                    tx = self.km.updateCanConsumeKeyNonce(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        self.currentWhitelist,
+                        toWhitelist,
+                        {"from": st_sender},
+                    )
             else:
                 print(
                     "                    rule_updateCanConsumeKeyNonce_whitelist",
                     st_sender,
                 )
                 tx = self.km.updateCanConsumeKeyNonce(
-                    self.keyIDToCurKeys[AGG].getSigDataWithNonces(
+                    signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
                     self.currentWhitelist,
