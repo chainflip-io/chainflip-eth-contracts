@@ -1379,8 +1379,7 @@ def test_all(
 
         # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
         def _set_same_key_gov(self, st_sender, fcn):
-            # current_governor = choice([st_sender, self.governor])
-            current_governor = self.governor
+            current_governor = choice([st_sender, self.governor])
 
             if current_governor == self.governor:
                 print(f"                    {fcn}", st_sender, self.governor)
@@ -1414,8 +1413,7 @@ def test_all(
         # Call setAggKeyWithGovKey with a random new key, signing key, and sender
         def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
 
-            #            current_governor = choice([st_sender, self.governor])
-            current_governor = self.governor
+            current_governor = choice([st_sender, self.governor])
 
             if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
                 print(
@@ -1792,8 +1790,7 @@ def test_all(
                 KeyManager, self.km.getAggregateKey(), self.governor
             )
 
-            #            keyManagerAddress = choice([newKeyManager, self.km])
-            keyManagerAddress = newKeyManager
+            keyManagerAddress = choice([newKeyManager, self.km])
 
             toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
 
