@@ -5,8 +5,8 @@ from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
-import pytest
 import random
+import time
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -369,6 +369,9 @@ def test_upgradability(
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
+            # Add time.sleep due to brownie bug that kills virtual machine too quick
+            # https://github.com/smartcontractkit/full-blockchain-solidity-course-py/issues/173
+            time.sleep(5)
 
     state_machine(
         StateMachine,
