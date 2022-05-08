@@ -8,7 +8,6 @@ from hypothesis import strategies as hypStrat
 from random import choice, choices
 
 
-
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
 @settings(stateful_step_count=100, max_examples=50, deadline=500)
 def test_all(
