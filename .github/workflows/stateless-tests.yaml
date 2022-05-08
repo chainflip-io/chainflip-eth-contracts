@@ -20,4 +20,4 @@ jobs:
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@feat/update-stateful-tests
     with:
       stateful: true
-      timeout_minutes: 3600
+      timeout_minutes: 10800
