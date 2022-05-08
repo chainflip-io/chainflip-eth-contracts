@@ -7,9 +7,9 @@ from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
 
+settings = {"stateful_step_count": 100, "max_examples": 50}
 
 # Stateful test for all functions in the Vault, KeyManager, and StakeManager
-@settings(stateful_step_count=100, max_examples=50, deadline=500)
 def test_all(
     BaseStateMachine,
     state_machine,
@@ -1187,95 +1187,95 @@ def test_all(
 
         # KeyManager
 
-        # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
-        def rule_updateCanConsumeKeyNonce_dewhitelist(
-            self, st_sender, st_addrs, st_sender_any
-        ):
-            # So dewhitelisting only happens 1/20 of the times
-            if not st_sender_any == self.governor:
-                return
+        # # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
+        # def rule_updateCanConsumeKeyNonce_dewhitelist(
+        #     self, st_sender, st_addrs, st_sender_any
+        # ):
+        #     # So dewhitelisting only happens 1/20 of the times
+        #     if not st_sender_any == self.governor:
+        #         return
 
-            toWhitelist = [self.km] + st_addrs
+        #     toWhitelist = [self.km] + st_addrs
 
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                self.currentWhitelist,
-                toWhitelist,
-            )
+        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #         agg_null_sig(self.km.address, chain.id),
+        #         self.currentWhitelist,
+        #         toWhitelist,
+        #     )
 
-            signer = self._get_key_prob(AGG)
-            if signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
-                    st_sender,
-                    st_addrs,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.km.updateCanConsumeKeyNonce(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        self.currentWhitelist,
-                        toWhitelist,
-                        {"from": st_sender},
-                    )
-            else:
-                print(
-                    "                    rule_updateCanConsumeKeyNonce_dewhitelist",
-                    st_sender,
-                    st_addrs,
-                )
-                tx = self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                    {"from": st_sender},
-                )
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
+        #     signer = self._get_key_prob(AGG)
+        #     if signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
+        #             st_sender,
+        #             st_addrs,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.km.updateCanConsumeKeyNonce(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 self.currentWhitelist,
+        #                 toWhitelist,
+        #                 {"from": st_sender},
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_updateCanConsumeKeyNonce_dewhitelist",
+        #             st_sender,
+        #             st_addrs,
+        #         )
+        #         tx = self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #             {"from": st_sender},
+        #         )
+        #         self.currentWhitelist = toWhitelist
+        #         self.lastValidateTime = tx.timestamp
 
-        # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
-        def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
-            # Regardless of what is whitelisted, whitelist the current contracts
-            toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
+        # # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
+        # def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
+        #     # Regardless of what is whitelisted, whitelist the current contracts
+        #     toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
 
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                self.currentWhitelist,
-                toWhitelist,
-            )
-            signer = self._get_key_prob(AGG)
-            if signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
-                    st_sender,
-                )
-                with reverts(REV_MSG_SIG):
-                    tx = self.km.updateCanConsumeKeyNonce(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        self.currentWhitelist,
-                        toWhitelist,
-                        {"from": st_sender},
-                    )
-            else:
-                print(
-                    "                    rule_updateCanConsumeKeyNonce_whitelist",
-                    st_sender,
-                )
-                tx = self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                    {"from": st_sender},
-                )
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
+        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #         agg_null_sig(self.km.address, chain.id),
+        #         self.currentWhitelist,
+        #         toWhitelist,
+        #     )
+        #     signer = self._get_key_prob(AGG)
+        #     if signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
+        #             st_sender,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             tx = self.km.updateCanConsumeKeyNonce(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 self.currentWhitelist,
+        #                 toWhitelist,
+        #                 {"from": st_sender},
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_updateCanConsumeKeyNonce_whitelist",
+        #             st_sender,
+        #         )
+        #         tx = self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #             {"from": st_sender},
+        #         )
+        #         self.currentWhitelist = toWhitelist
+        #         self.lastValidateTime = tx.timestamp
 
         # Get the key that is probably what we want, but also has a low chance of choosing
         # the 'wrong' key which will cause a revert and tests the full range. Maximises useful
@@ -2305,73 +2305,73 @@ def test_all(
                     nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
                 }
 
-        # Suspend and resume Vault and StakeManager
+        # # Suspend and resume Vault and StakeManager
 
-        # Suspends the stake Manager if st_sender matches the governor address. It has
-        # has a 1/20 chance of being the governor - don't want to suspend it too often.
-        def rule_suspend_stakeManager(self, st_sender_any):
-            if st_sender_any == self.governor:
-                if self.sm_suspended:
-                    print("        REV_MSG_GOV_SUSPENDED _suspend")
-                    with reverts(REV_MSG_GOV_SUSPENDED):
-                        self.sm.suspend({"from": st_sender_any})
-                else:
-                    print("                    rule_suspend", st_sender_any)
-                    self.sm.suspend({"from": st_sender_any})
-                    self.sm_suspended = True
-            else:
-                print("        REV_MSG_GOV_GOVERNOR _suspend")
-                with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.sm.suspend({"from": st_sender_any})
+        # # Suspends the stake Manager if st_sender matches the governor address. It has
+        # # has a 1/20 chance of being the governor - don't want to suspend it too often.
+        # def rule_suspend_stakeManager(self, st_sender_any):
+        #     if st_sender_any == self.governor:
+        #         if self.sm_suspended:
+        #             print("        REV_MSG_GOV_SUSPENDED _suspend")
+        #             with reverts(REV_MSG_GOV_SUSPENDED):
+        #                 self.sm.suspend({"from": st_sender_any})
+        #         else:
+        #             print("                    rule_suspend", st_sender_any)
+        #             self.sm.suspend({"from": st_sender_any})
+        #             self.sm_suspended = True
+        #     else:
+        #         print("        REV_MSG_GOV_GOVERNOR _suspend")
+        #         with reverts(REV_MSG_GOV_GOVERNOR):
+        #             self.sm.suspend({"from": st_sender_any})
 
-        # Resumes the stake Manager if it is suspended. We always resume it to avoid
-        # having the stakeManager suspended too often
-        def rule_resume_stakeManager(self, st_sender):
-            if self.sm_suspended:
-                if st_sender != self.governor:
-                    with reverts(REV_MSG_GOV_GOVERNOR):
-                        self.sm.resume({"from": st_sender})
-                # Always resume
-                print("                    rule_resume", st_sender)
-                self.sm.resume({"from": self.governor})
-                self.sm_suspended = False
-            else:
-                print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
-                with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                    self.sm.resume({"from": self.governor})
+        # # Resumes the stake Manager if it is suspended. We always resume it to avoid
+        # # having the stakeManager suspended too often
+        # def rule_resume_stakeManager(self, st_sender):
+        #     if self.sm_suspended:
+        #         if st_sender != self.governor:
+        #             with reverts(REV_MSG_GOV_GOVERNOR):
+        #                 self.sm.resume({"from": st_sender})
+        #         # Always resume
+        #         print("                    rule_resume", st_sender)
+        #         self.sm.resume({"from": self.governor})
+        #         self.sm_suspended = False
+        #     else:
+        #         print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
+        #         with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+        #             self.sm.resume({"from": self.governor})
 
-        # Suspends the stake Manager if st_sender matches the governor address. It has
-        # has a 1/20 chance of being the governor - don't want to suspend it too often.
-        def rule_suspend(self, st_sender_any):
-            if st_sender_any == self.governor:
-                if self.v_suspended:
-                    print("        REV_MSG_GOV_SUSPENDED _suspend")
-                    with reverts(REV_MSG_GOV_SUSPENDED):
-                        self.v.suspend({"from": st_sender_any})
-                else:
-                    print("                    rule_suspend", st_sender_any)
-                    self.v.suspend({"from": st_sender_any})
-                    self.v_suspended = True
-            else:
-                print("        REV_MSG_GOV_GOVERNOR _suspend")
-                with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.v.suspend({"from": st_sender_any})
+        # # Suspends the stake Manager if st_sender matches the governor address. It has
+        # # has a 1/20 chance of being the governor - don't want to suspend it too often.
+        # def rule_suspend(self, st_sender_any):
+        #     if st_sender_any == self.governor:
+        #         if self.v_suspended:
+        #             print("        REV_MSG_GOV_SUSPENDED _suspend")
+        #             with reverts(REV_MSG_GOV_SUSPENDED):
+        #                 self.v.suspend({"from": st_sender_any})
+        #         else:
+        #             print("                    rule_suspend", st_sender_any)
+        #             self.v.suspend({"from": st_sender_any})
+        #             self.v_suspended = True
+        #     else:
+        #         print("        REV_MSG_GOV_GOVERNOR _suspend")
+        #         with reverts(REV_MSG_GOV_GOVERNOR):
+        #             self.v.suspend({"from": st_sender_any})
 
-        # Resumes the stake Manager if it is suspended. We always resume it to avoid
-        # having the stakeManager suspended too often
-        def rule_resume_vault(self, st_sender):
-            if self.v_suspended:
-                if st_sender != self.governor:
-                    with reverts(REV_MSG_GOV_GOVERNOR):
-                        self.v.resume({"from": st_sender})
-                # Always resume
-                print("                    rule_resume", st_sender)
-                self.v.resume({"from": self.governor})
-                self.v_suspended = False
-            else:
-                print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
-                with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                    self.v.resume({"from": self.governor})
+        # # Resumes the stake Manager if it is suspended. We always resume it to avoid
+        # # having the stakeManager suspended too often
+        # def rule_resume_vault(self, st_sender):
+        #     if self.v_suspended:
+        #         if st_sender != self.governor:
+        #             with reverts(REV_MSG_GOV_GOVERNOR):
+        #                 self.v.resume({"from": st_sender})
+        #         # Always resume
+        #         print("                    rule_resume", st_sender)
+        #         self.v.resume({"from": self.governor})
+        #         self.v_suspended = False
+        #     else:
+        #         print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
+        #         with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+        #             self.v.resume({"from": self.governor})
 
         # CommunityKeyGuard calls to Vault and stakeManager
         # update, enable, disable and govWithdrawal? - TODO?
