@@ -26,58 +26,58 @@ jobs:
     - run: echo /root/.local/bin >> $GITHUB_PATH
     - run: poetry install --quiet
     - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}}
-  testUpgdrad:
-    runs-on: self-hosted
-    timeout-minutes: ${{ inputs.timeout_minutes }}
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_upgradability.py --network hardhat --stateful ${{inputs.stateful}}
+  # testUpgdrad:
+  #   runs-on: self-hosted
+  #   timeout-minutes: ${{ inputs.timeout_minutes }}
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-node@v3
+  #     with:
+  #       node-version: '14'
+  #       cache: npm
+  #   - run: npm install
+  #   - run: echo /root/.local/bin >> $GITHUB_PATH
+  #   - run: poetry install --quiet
+  #   - run: poetry run brownie test tests/stateful/test_upgradability.py --network hardhat --stateful ${{inputs.stateful}}
   
-  testVault:
-    runs-on: self-hosted
-    timeout-minutes: ${{ inputs.timeout_minutes }}
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful ${{inputs.stateful}}
+  # testVault:
+  #   runs-on: self-hosted
+  #   timeout-minutes: ${{ inputs.timeout_minutes }}
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-node@v3
+  #     with:
+  #       node-version: '14'
+  #       cache: npm
+  #   - run: npm install
+  #   - run: echo /root/.local/bin >> $GITHUB_PATH
+  #   - run: poetry install --quiet
+  #   - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful ${{inputs.stateful}}
 
-  testKeyMan:
-    runs-on: self-hosted
-    timeout-minutes: ${{ inputs.timeout_minutes }}
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_keyManager.py --network hardhat --stateful ${{inputs.stateful}}
+  # testKeyMan:
+  #   runs-on: self-hosted
+  #   timeout-minutes: ${{ inputs.timeout_minutes }}
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-node@v3
+  #     with:
+  #       node-version: '14'
+  #       cache: npm
+  #   - run: npm install
+  #   - run: echo /root/.local/bin >> $GITHUB_PATH
+  #   - run: poetry install --quiet
+  #   - run: poetry run brownie test tests/stateful/test_keyManager.py --network hardhat --stateful ${{inputs.stateful}}
 
-  testStakeMan:
-    runs-on: self-hosted
-    timeout-minutes: ${{ inputs.timeout_minutes }}
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_stakeMan.py --network hardhat --stateful ${{inputs.stateful}}
+  # testStakeMan:
+  #   runs-on: self-hosted
+  #   timeout-minutes: ${{ inputs.timeout_minutes }}
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-node@v3
+  #     with:
+  #       node-version: '14'
+  #       cache: npm
+  #   - run: npm install
+  #   - run: echo /root/.local/bin >> $GITHUB_PATH
+  #   - run: poetry install --quiet
+  #   - run: poetry run brownie test tests/stateful/test_stakeManager.py --network hardhat --stateful ${{inputs.stateful}}
