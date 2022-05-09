@@ -5,6 +5,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
+from random import choice, choices
 import time
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
@@ -309,222 +310,221 @@ def test_all(
 
         # Vault
 
-        # def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
+        def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
+            fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
+            fetchEthTotal = sum(
+                self.ethBals[
+                    getCreate2Addr(
+                        self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositEth, ""
+                    )
+                ]
+                for i, x in enumerate(fetchTokens)
+                if x == ETH_ADDR
+            )
+            fetchTokenATotal = sum(
+                self.tokenABals[
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapIDs[i]),
+                        DepositToken,
+                        cleanHexStrPad(self.tokenA.address),
+                    )
+                ]
+                for i, x in enumerate(fetchTokens)
+                if x == self.tokenA
+            )
+            fetchTokenBTotal = sum(
+                self.tokenBBals[
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapIDs[i]),
+                        DepositToken,
+                        cleanHexStrPad(self.tokenB.address),
+                    )
+                ]
+                for i, x in enumerate(fetchTokens)
+                if x == self.tokenB
+            )
 
-        #     fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
-        #     fetchEthTotal = sum(
-        #         self.ethBals[
-        #             getCreate2Addr(
-        #                 self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositEth, ""
-        #             )
-        #         ]
-        #         for i, x in enumerate(fetchTokens)
-        #         if x == ETH_ADDR
-        #     )
-        #     fetchTokenATotal = sum(
-        #         self.tokenABals[
-        #             getCreate2Addr(
-        #                 self.v.address,
-        #                 cleanHexStrPad(st_swapIDs[i]),
-        #                 DepositToken,
-        #                 cleanHexStrPad(self.tokenA.address),
-        #             )
-        #         ]
-        #         for i, x in enumerate(fetchTokens)
-        #         if x == self.tokenA
-        #     )
-        #     fetchTokenBTotal = sum(
-        #         self.tokenBBals[
-        #             getCreate2Addr(
-        #                 self.v.address,
-        #                 cleanHexStrPad(st_swapIDs[i]),
-        #                 DepositToken,
-        #                 cleanHexStrPad(self.tokenB.address),
-        #             )
-        #         ]
-        #         for i, x in enumerate(fetchTokens)
-        #         if x == self.tokenB
-        #     )
+            tranMinLen = trimToShortest([st_recips, st_eth_amounts])
+            tranTokens = choices(self.tokensList, k=tranMinLen)
+            tranTotals = {
+                tok: sum(
+                    [st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
+                )
+                for tok in self.tokensList
+            }
+            validEthIdxs = getValidTranIdxs(
+                tranTokens,
+                st_eth_amounts,
+                self.ethBals[self.v] + fetchEthTotal,
+                ETH_ADDR,
+            )
+            tranTotals[ETH_ADDR] = sum(
+                [
+                    st_eth_amounts[i]
+                    for i, x in enumerate(tranTokens)
+                    if x == ETH_ADDR and i in validEthIdxs
+                ]
+            )
 
-        #     tranMinLen = trimToShortest([st_recips, st_eth_amounts])
-        #     tranTokens = choices(self.tokensList, k=tranMinLen)
-        #     tranTotals = {
-        #         tok: sum(
-        #             [st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
-        #         )
-        #         for tok in self.tokensList
-        #     }
-        #     validEthIdxs = getValidTranIdxs(
-        #         tranTokens,
-        #         st_eth_amounts,
-        #         self.ethBals[self.v] + fetchEthTotal,
-        #         ETH_ADDR,
-        #     )
-        #     tranTotals[ETH_ADDR] = sum(
-        #         [
-        #             st_eth_amounts[i]
-        #             for i, x in enumerate(tranTokens)
-        #             if x == ETH_ADDR and i in validEthIdxs
-        #         ]
-        #     )
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.v.allBatch.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                st_swapIDs,
+                fetchTokens,
+                tranTokens,
+                st_recips,
+                st_eth_amounts,
+            )
 
-        #     signer = self._get_key_prob(AGG)
-        #     callDataNoSig = self.v.allBatch.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         st_swapIDs,
-        #         fetchTokens,
-        #         tranTokens,
-        #         st_recips,
-        #         st_eth_amounts,
-        #     )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _allBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif (
+                tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v]
+                or tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v]
+            ):
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                with reverts():
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            else:
+                print(
+                    "                    rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                tx = self.v.allBatch(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    {"from": st_sender},
+                )
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _allBatch")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.allBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 fetchTokens,
-        #                 tranTokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.allBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 fetchTokens,
-        #                 tranTokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.allBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 fetchTokens,
-        #                 tranTokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif (
-        #         tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v]
-        #         or tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v]
-        #     ):
-        #         print(
-        #             "        NOT ENOUGH TOKENS IN VAULT rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         with reverts():
-        #             self.v.allBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 fetchTokens,
-        #                 tranTokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         tx = self.v.allBatch(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             {"from": st_sender},
-        #         )
+                self.lastValidateTime = tx.timestamp
 
-        #         self.lastValidateTime = tx.timestamp
+                # Alter bals from the fetch
+                for swapID, tok in zip(st_swapIDs, fetchTokens):
+                    if tok == ETH_ADDR:
+                        addr = getCreate2Addr(
+                            self.v.address, cleanHexStrPad(swapID), DepositEth, ""
+                        )
+                        self.ethBals[self.v] += self.ethBals[addr]
+                        self.ethBals[addr] = 0
+                    else:
+                        addr = getCreate2Addr(
+                            self.v.address,
+                            cleanHexStrPad(swapID),
+                            DepositToken,
+                            cleanHexStrPad(tok.address),
+                        )
+                        if tok == self.tokenA:
+                            self.tokenABals[self.v] += self.tokenABals[addr]
+                            self.tokenABals[addr] = 0
+                        elif tok == self.tokenB:
+                            self.tokenBBals[self.v] += self.tokenBBals[addr]
+                            self.tokenBBals[addr] = 0
+                        else:
+                            assert False, "Panicc"
 
-        #         # Alter bals from the fetch
-        #         for swapID, tok in zip(st_swapIDs, fetchTokens):
-        #             if tok == ETH_ADDR:
-        #                 addr = getCreate2Addr(
-        #                     self.v.address, cleanHexStrPad(swapID), DepositEth, ""
-        #                 )
-        #                 self.ethBals[self.v] += self.ethBals[addr]
-        #                 self.ethBals[addr] = 0
-        #             else:
-        #                 addr = getCreate2Addr(
-        #                     self.v.address,
-        #                     cleanHexStrPad(swapID),
-        #                     DepositToken,
-        #                     cleanHexStrPad(tok.address),
-        #                 )
-        #                 if tok == self.tokenA:
-        #                     self.tokenABals[self.v] += self.tokenABals[addr]
-        #                     self.tokenABals[addr] = 0
-        #                 elif tok == self.tokenB:
-        #                     self.tokenBBals[self.v] += self.tokenBBals[addr]
-        #                     self.tokenBBals[addr] = 0
-        #                 else:
-        #                     assert False, "Panicc"
-
-        #         # Alter bals from the transfers
-        #         for i, (tok, rec, am) in enumerate(
-        #             zip(tranTokens, st_recips, st_eth_amounts)
-        #         ):
-        #             if tok == ETH_ADDR:
-        #                 if i in validEthIdxs:
-        #                     self.ethBals[rec] += am
-        #                     self.ethBals[self.v] -= am
-        #             elif tok == self.tokenA:
-        #                 self.tokenABals[rec] += am
-        #                 self.tokenABals[self.v] -= am
-        #             elif tok == self.tokenB:
-        #                 self.tokenBBals[rec] += am
-        #                 self.tokenBBals[self.v] -= am
-        #             else:
-        #                 assert False, "Panic"
+                # Alter bals from the transfers
+                for i, (tok, rec, am) in enumerate(
+                    zip(tranTokens, st_recips, st_eth_amounts)
+                ):
+                    if tok == ETH_ADDR:
+                        if i in validEthIdxs:
+                            self.ethBals[rec] += am
+                            self.ethBals[self.v] -= am
+                    elif tok == self.tokenA:
+                        self.tokenABals[rec] += am
+                        self.tokenABals[self.v] -= am
+                    elif tok == self.tokenB:
+                        self.tokenBBals[rec] += am
+                        self.tokenBBals[self.v] -= am
+                    else:
+                        assert False, "Panic"
 
         # Transfers ETH or tokens out the vault. Want this to be called by rule_vault_transfer_eth
         # etc individually and not directly since they're all the same just with a different tokenAddr
@@ -668,135 +668,135 @@ def test_all(
         # Send any combination of eth/tokenA/tokenB out of the vault. Using st_eth_amounts
         # for both eth amounts and token amounts here because its max is within the bounds of
         # both eth and tokens.
-        # def rule_vault_transferBatch(self, st_sender, st_recips, st_eth_amounts):
-        #     signer = self._get_key_prob(AGG)
-        #     minLen = trimToShortest([st_recips, st_eth_amounts])
-        #     tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
-        #     callDataNoSig = self.v.transferBatch.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         tokens,
-        #         st_recips,
-        #         st_eth_amounts,
-        #     )
+        def rule_vault_transferBatch(self, st_sender, st_recips, st_eth_amounts):
+            signer = self._get_key_prob(AGG)
+            minLen = trimToShortest([st_recips, st_eth_amounts])
+            tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
+            callDataNoSig = self.v.transferBatch.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                tokens,
+                st_recips,
+                st_eth_amounts,
+            )
 
-        #     totalEth = 0
-        #     totalTokenA = 0
-        #     totalTokenB = 0
-        #     validEthIdxs = getValidTranIdxs(
-        #         tokens, st_eth_amounts, self.ethBals[self.v], ETH_ADDR
-        #     )
-        #     for i, (tok, am) in enumerate(zip(tokens, st_eth_amounts)):
-        #         if tok == ETH_ADDR:
-        #             if i in validEthIdxs:
-        #                 totalEth += am
-        #         elif tok == self.tokenA:
-        #             totalTokenA += am
-        #         elif tok == self.tokenB:
-        #             totalTokenB += am
-        #         else:
-        #             assert False, "Unknown asset"
+            totalEth = 0
+            totalTokenA = 0
+            totalTokenB = 0
+            validEthIdxs = getValidTranIdxs(
+                tokens, st_eth_amounts, self.ethBals[self.v], ETH_ADDR
+            )
+            for i, (tok, am) in enumerate(zip(tokens, st_eth_amounts)):
+                if tok == ETH_ADDR:
+                    if i in validEthIdxs:
+                        totalEth += am
+                elif tok == self.tokenA:
+                    totalTokenA += am
+                elif tok == self.tokenB:
+                    totalTokenB += am
+                else:
+                    assert False, "Unknown asset"
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.transferBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.transferBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.transferBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif (
-        #         totalEth > self.ethBals[self.v]
-        #         or totalTokenA > self.tokenABals[self.v]
-        #         or totalTokenB > self.tokenBBals[self.v]
-        #     ):
-        #         print(
-        #             "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         with reverts():
-        #             self.v.transferBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         tx = self.v.transferBatch(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif (
+                totalEth > self.ethBals[self.v]
+                or totalTokenA > self.tokenABals[self.v]
+                or totalTokenB > self.tokenBBals[self.v]
+            ):
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                with reverts():
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            else:
+                print(
+                    "                    rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                tx = self.v.transferBatch(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
 
-        #         self.lastValidateTime = tx.timestamp
-        #         for i in range(len(st_recips)):
-        #             if tokens[i] == ETH_ADDR:
-        #                 if i in validEthIdxs:
-        #                     self.ethBals[st_recips[i]] += st_eth_amounts[i]
-        #                     self.ethBals[self.v] -= st_eth_amounts[i]
-        #             elif tokens[i] == self.tokenA:
-        #                 self.tokenABals[st_recips[i]] += st_eth_amounts[i]
-        #                 self.tokenABals[self.v] -= st_eth_amounts[i]
-        #             elif tokens[i] == self.tokenB:
-        #                 self.tokenBBals[st_recips[i]] += st_eth_amounts[i]
-        #                 self.tokenBBals[self.v] -= st_eth_amounts[i]
-        #             else:
-        #                 assert False, "Panic"
+                self.lastValidateTime = tx.timestamp
+                for i in range(len(st_recips)):
+                    if tokens[i] == ETH_ADDR:
+                        if i in validEthIdxs:
+                            self.ethBals[st_recips[i]] += st_eth_amounts[i]
+                            self.ethBals[self.v] -= st_eth_amounts[i]
+                    elif tokens[i] == self.tokenA:
+                        self.tokenABals[st_recips[i]] += st_eth_amounts[i]
+                        self.tokenABals[self.v] -= st_eth_amounts[i]
+                    elif tokens[i] == self.tokenB:
+                        self.tokenBBals[st_recips[i]] += st_eth_amounts[i]
+                        self.tokenBBals[self.v] -= st_eth_amounts[i]
+                    else:
+                        assert False, "Panic"
 
         # Transfers ETH from a user/sender to one of the depositEth create2 addresses
         def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
@@ -1283,7 +1283,7 @@ def test_all(
         # results whilst still testing the full range.
         def _get_key_prob(self, keyID):
             samples = ([self.keyIDToCurKeys[keyID]] * 100) + self.allKeys
-            return self.keyIDToCurKeys[keyID]
+            return choice(samples)
 
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
@@ -1379,13 +1379,15 @@ def test_all(
 
         # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
         def _set_same_key_gov(self, st_sender, fcn):
-            if st_sender != self.governor:
-                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
-                    fcn(st_sender, {"from": st_sender})
+            current_governor = choice([st_sender, self.governor])
 
-            print(f"                    {fcn}", st_sender, self.governor)
-            fcn(st_sender, {"from": self.governor})
-            self.governor = st_sender
+            if current_governor == self.governor:
+                print(f"                    {fcn}", st_sender, self.governor)
+                fcn(st_sender, {"from": current_governor})
+                self.governor = st_sender
+            else:
+                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+                    fcn(st_sender, {"from": current_governor})
 
         # Call setAggKeyWithAggKey with a random new key, signing key, and sender
         def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
@@ -1411,7 +1413,7 @@ def test_all(
         # Call setAggKeyWithGovKey with a random new key, signing key, and sender
         def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
 
-            current_governor = self.governor
+            current_governor = choice([st_sender, self.governor])
 
             if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
                 print(
@@ -1788,7 +1790,7 @@ def test_all(
                 KeyManager, self.km.getAggregateKey(), self.governor
             )
 
-            keyManagerAddress = newKeyManager
+            keyManagerAddress = choice([newKeyManager, self.km])
 
             toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
 
