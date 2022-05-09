@@ -2105,6 +2105,9 @@ def test_all(
                 self.v = newVault
                 self.lastValidateTime = tx.timestamp
                 self.currentWhitelist = toWhitelist
+                self.v_communityGuardDisabled = False
+                self.v_current_communityKey = self.communityKey
+                self.v_suspended = False
 
                 # Create new addresses for the new Vault and initialize Balances
                 newCreate2EthAddrs = [
@@ -2300,6 +2303,9 @@ def test_all(
                 self.minStake = INIT_MIN_STAKE
                 self.lastValidateTime = tx.timestamp
                 self.currentWhitelist = toWhitelist
+                self.sm_communityGuardDisabled = False
+                self.sm_current_communityKey = self.communityKey
+                self.sm_suspended = False
 
                 # Reset all pending claims
                 self.pendingClaims = {
