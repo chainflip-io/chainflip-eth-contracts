@@ -2374,9 +2374,110 @@ def test_all(
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
                     self.v.resume({"from": self.governor})
 
-        # CommunityKeyGuard calls to Vault and stakeManager
-        # update, enable, disable and govWithdrawal? - TODO?
-        # Do we need to rename self.governor and self.current_governor for clarity?
+        # TODO: Add gov Withdrawal or no need?
+
+        # Updates community Key - happens with low probability - 1/20
+        def rule_sm_updateCommunityKey(self, st_sender):
+            newCommunityKey = choice([self.communityKey, self.communityKey_2])
+            if st_sender == self.sm_current_communityKey:
+                print("                    rule_sm_updateCommunityKey", st_sender)
+                self.sm.updateCommunityKey(newCommunityKey, {"from": st_sender})
+                self.sm_current_communityKey = newCommunityKey
+            else:
+                print(
+                    "        REV_MSG_GOV_NOT_COMMUNITY _sm_updateCommunityKey",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                    self.sm.updateCommunityKey(newCommunityKey, {"from": st_sender})
+
+        # Enable community Guard
+        def rule_sm_enableCommunityGuard(self, st_sender):
+            if self.sm_communityGuardDisabled:
+                if st_sender != self.sm_current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.sm.enableCommunityGuard({"from": st_sender})
+                # Always enable
+                print("                    rule_sm_enableCommunityGuard", st_sender)
+                self.sm.enableCommunityGuard({"from": self.sm_current_communityKey})
+                self.sm_communityGuardDisabled = False
+            else:
+                print(
+                    "        REV_MSG_GOV_ENABLED_GUARD _sm_enableCommunityGuard",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.sm.enableCommunityGuard({"from": self.sm_current_communityKey})
+
+        # Enable community Guard
+        def rule_sm_disableCommunityGuard(self, st_sender):
+            if not self.sm_communityGuardDisabled:
+                if st_sender != self.sm_current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.sm.disableCommunityGuard({"from": st_sender})
+                # Always disable
+                print("                    rule_sm_disableCommunityGuard", st_sender)
+                self.sm.disableCommunityGuard({"from": self.sm_current_communityKey})
+                self.sm_communityGuardDisabled = True
+            else:
+                print(
+                    "        REV_MSG_GOV_DISABLED_GUARD _sm_disableCommunityGuard",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_DISABLED_GUARD):
+                    self.sm.disableCommunityGuard(
+                        {"from": self.sm_current_communityKey}
+                    )
+
+        # Updates community Key - happens with low probability - 1/20
+        def rule_vault_updateCommunityKey(self, st_sender):
+            newCommunityKey = choice([self.communityKey, self.communityKey_2])
+            if st_sender == self.v_current_communityKey:
+                print("                    rule_v_updateCommunityKey", st_sender)
+                self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
+                self.v_current_communityKey = newCommunityKey
+            else:
+                print(
+                    "        REV_MSG_GOV_NOT_COMMUNITY _v_updateCommunityKey", st_sender
+                )
+                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                    self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
+
+        # Enable community Guard
+        def rule_vault_enableCommunityGuard(self, st_sender):
+            if self.v_communityGuardDisabled:
+                if st_sender != self.v_current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.v.enableCommunityGuard({"from": st_sender})
+                # Always enable
+                print("                    rule_v_enableCommunityGuard", st_sender)
+                self.v.enableCommunityGuard({"from": self.v_current_communityKey})
+                self.v_communityGuardDisabled = False
+            else:
+                print(
+                    "        REV_MSG_GOV_ENABLED_GUARD _v_enableCommunityGuard",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.v.enableCommunityGuard({"from": self.v_current_communityKey})
+
+        # Enable community Guard
+        def rule_vault_disableCommunityGuard(self, st_sender):
+            if not self.v_communityGuardDisabled:
+                if st_sender != self.v_current_communityKey:
+                    with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                        self.v.disableCommunityGuard({"from": st_sender})
+                # Always disable
+                print("                    rule_v_disableCommunityGuard", st_sender)
+                self.v.disableCommunityGuard({"from": self.v_current_communityKey})
+                self.v_communityGuardDisabled = True
+            else:
+                print(
+                    "        REV_MSG_GOV_DISABLED_GUARD _v_disableCommunityGuard",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_DISABLED_GUARD):
+                    self.v.disableCommunityGuard({"from": self.v_current_communityKey})
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
