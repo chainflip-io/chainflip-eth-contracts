@@ -2548,6 +2548,9 @@ def test_all(
             # https://github.com/smartcontractkit/full-blockchain-solidity-course-py/issues/173
             time.sleep(5)
 
+        def teardown_final(self):
+            time.sleep(30)
+
         # Update balances when a contract has been upgraded
         def _updateBalancesOnUpgrade(self, oldContract, newContract):
             self._addNewAddress(newContract)
