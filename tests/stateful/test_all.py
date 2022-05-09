@@ -455,17 +455,17 @@ def test_all(
                     st_eth_amounts,
                     st_sender,
                 )
-                with reverts():
-                    self.v.allBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        fetchTokens,
-                        tranTokens,
-                        st_recips,
-                        st_eth_amounts,
-                    )
+                # with reverts():
+                #     self.v.allBatch(
+                #         signer.getSigDataWithNonces(
+                #             callDataNoSig, nonces, AGG, self.km.address
+                #         ),
+                #         st_swapIDs,
+                #         fetchTokens,
+                #         tranTokens,
+                #         st_recips,
+                #         st_eth_amounts,
+                #     )
             else:
                 print(
                     "                    rule_allBatch",
@@ -584,16 +584,16 @@ def test_all(
                     st_eth_amount,
                     signer,
                 )
-                with reverts():
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
-                    )
+                # with reverts():
+                #     self.v.transfer(
+                #         signer.getSigDataWithNonces(
+                #             callDataNoSig, nonces, AGG, self.km.address
+                #         ),
+                #         tokenAddr,
+                #         st_recip,
+                #         st_eth_amount,
+                #         {"from": st_sender},
+                #     )
             elif not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST _vault_transfer",
@@ -762,15 +762,15 @@ def test_all(
                     st_recips,
                     st_eth_amounts,
                 )
-                with reverts():
-                    self.v.transferBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokens,
-                        st_recips,
-                        st_eth_amounts,
-                    )
+                # with reverts():
+                #     self.v.transferBatch(
+                #         signer.getSigDataWithNonces(
+                #             callDataNoSig, nonces, AGG, self.km.address
+                #         ),
+                #         tokens,
+                #         st_recips,
+                #         st_eth_amounts,
+                #     )
             else:
                 print(
                     "                    rule_vault_transferBatch",
