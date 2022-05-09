@@ -18,7 +18,7 @@ def main():
     print(f"DEPLOYER = {DEPLOYER}")
 
     cf = deploy_set_Chainflip_contracts(
-        DEPLOYER, DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
+        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
     )
 
     print(f"KeyManager: {cf.keyManager.address}")
