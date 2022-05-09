@@ -12,7 +12,7 @@ from hypothesis import Verbosity
 settings = {
     "stateful_step_count": 100,
     "max_examples": 50,
-    "deadline": 500,
+    "deadline": None,
     "verbosity": Verbosity.verbose,
 }
 
