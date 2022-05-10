@@ -574,25 +574,6 @@ def test_all(
                         st_eth_amount,
                         {"from": st_sender},
                     )
-            elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
-                print(
-                    "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                    signer,
-                )
-                with reverts():
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
-                    )
             elif not self.v in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST _vault_transfer",
@@ -622,6 +603,25 @@ def test_all(
                     signer,
                 )
                 with reverts(REV_MSG_SIG):
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+            elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
+                    tokenAddr,
+                    st_sender,
+                    st_recip,
+                    st_eth_amount,
+                    signer,
+                )
+                with reverts():
                     self.v.transfer(
                         signer.getSigDataWithNonces(
                             callDataNoSig, nonces, AGG, self.km.address
