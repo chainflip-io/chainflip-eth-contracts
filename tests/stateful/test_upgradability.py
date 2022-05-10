@@ -370,7 +370,6 @@ def test_upgradability(
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
             # Add time.sleep due to brownie bug that kills virtual machine too quick
-            # https://github.com/smartcontractkit/full-blockchain-solidity-course-py/issues/173
             time.sleep(5)
 
     state_machine(
