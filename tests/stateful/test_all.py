@@ -1194,95 +1194,95 @@ def test_all(
 
         # KeyManager
 
-        # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
-        def rule_updateCanConsumeKeyNonce_dewhitelist(
-            self, st_sender, st_addrs, st_sender_any
-        ):
-            # So dewhitelisting only happens 1/20 of the times
-            if not st_sender_any == self.governor:
-                return
+        # # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
+        # def rule_updateCanConsumeKeyNonce_dewhitelist(
+        #     self, st_sender, st_addrs, st_sender_any
+        # ):
+        #     # So dewhitelisting only happens 1/20 of the times
+        #     if not st_sender_any == self.governor:
+        #         return
 
-            toWhitelist = [self.km] + st_addrs
+        #     toWhitelist = [self.km] + st_addrs
 
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                self.currentWhitelist,
-                toWhitelist,
-            )
+        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #         agg_null_sig(self.km.address, chain.id),
+        #         self.currentWhitelist,
+        #         toWhitelist,
+        #     )
 
-            signer = self._get_key_prob(AGG)
-            if signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
-                    st_sender,
-                    st_addrs,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.km.updateCanConsumeKeyNonce(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        self.currentWhitelist,
-                        toWhitelist,
-                        {"from": st_sender},
-                    )
-            else:
-                print(
-                    "                    rule_updateCanConsumeKeyNonce_dewhitelist",
-                    st_sender,
-                    st_addrs,
-                )
-                tx = self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                    {"from": st_sender},
-                )
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
+        #     signer = self._get_key_prob(AGG)
+        #     if signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
+        #             st_sender,
+        #             st_addrs,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.km.updateCanConsumeKeyNonce(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 self.currentWhitelist,
+        #                 toWhitelist,
+        #                 {"from": st_sender},
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_updateCanConsumeKeyNonce_dewhitelist",
+        #             st_sender,
+        #             st_addrs,
+        #         )
+        #         tx = self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #             {"from": st_sender},
+        #         )
+        #         self.currentWhitelist = toWhitelist
+        #         self.lastValidateTime = tx.timestamp
 
-        # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
-        def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
-            # Regardless of what is whitelisted, whitelist the current contracts
-            toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
+        # # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
+        # def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
+        #     # Regardless of what is whitelisted, whitelist the current contracts
+        #     toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
 
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                self.currentWhitelist,
-                toWhitelist,
-            )
-            signer = self._get_key_prob(AGG)
-            if signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
-                    st_sender,
-                )
-                with reverts(REV_MSG_SIG):
-                    tx = self.km.updateCanConsumeKeyNonce(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        self.currentWhitelist,
-                        toWhitelist,
-                        {"from": st_sender},
-                    )
-            else:
-                print(
-                    "                    rule_updateCanConsumeKeyNonce_whitelist",
-                    st_sender,
-                )
-                tx = self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                    {"from": st_sender},
-                )
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
+        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #         agg_null_sig(self.km.address, chain.id),
+        #         self.currentWhitelist,
+        #         toWhitelist,
+        #     )
+        #     signer = self._get_key_prob(AGG)
+        #     if signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
+        #             st_sender,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             tx = self.km.updateCanConsumeKeyNonce(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 self.currentWhitelist,
+        #                 toWhitelist,
+        #                 {"from": st_sender},
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_updateCanConsumeKeyNonce_whitelist",
+        #             st_sender,
+        #         )
+        #         tx = self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #             {"from": st_sender},
+        #         )
+        #         self.currentWhitelist = toWhitelist
+        #         self.lastValidateTime = tx.timestamp
 
         # Get the key that is probably what we want, but also has a low chance of choosing
         # the 'wrong' key which will cause a revert and tests the full range. Maximises useful
