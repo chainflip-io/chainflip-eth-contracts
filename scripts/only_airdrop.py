@@ -28,7 +28,7 @@ logging.basicConfig(filename=logname, level=logging.INFO)
 airdropReceiversFilename = "airdrop_receivers.csv"
 amountToSend = 1000 * E_18
 ## TODO: Update this
-newFlip = "0x23Fe11D10b6Db053Df8e316302D6fe7F675Bd2CC"
+newFlip = "0x7A5D37112bCcf915540240581eE8ce58aC53aeCB"
 
 userInputConfirm = ["", "y", "Y", "yes", "Yes", "YES"]
 airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
@@ -298,11 +298,11 @@ def waitForLogTXsToComplete(parsedLog):
             logging.debug(receipt)
 
 
-def readCSV(csv):
-    printAndLog("Reading data from file: " + csv)
+def readCSV(csv_filename):
+    printAndLog("Reading data from file: " + csv_filename)
 
     # Read csv file
-    read_csv = open(csv, "r")
+    read_csv = open(csv_filename, "r")
     receiverAccounts = []
 
     # Split columns while reading
