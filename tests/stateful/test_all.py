@@ -1791,536 +1791,536 @@ def test_all(
         # AggKeyNonceConsumer - upgradability
 
         # Deploys a new keyManager and updates all the references to it
-        def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.f, self.sm, self.v]
+        # def rule_upgrade_keyManager(self, st_sender):
+        #     aggKeyNonceConsumers = [self.f, self.sm, self.v]
 
-            # Reusing current keyManager aggregateKey for simplicity
-            newKeyManager = st_sender.deploy(
-                KeyManager, self.km.getAggregateKey(), self.governor
-            )
+        #     # Reusing current keyManager aggregateKey for simplicity
+        #     newKeyManager = st_sender.deploy(
+        #         KeyManager, self.km.getAggregateKey(), self.governor
+        #     )
 
-            #            keyManagerAddress = choice([newKeyManager, self.km])
-            keyManagerAddress = newKeyManager
+        #     #            keyManagerAddress = choice([newKeyManager, self.km])
+        #     keyManagerAddress = newKeyManager
 
-            toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
+        #     toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
 
-            if keyManagerAddress == self.km:
-                with reverts(REV_MSG_DUPLICATE):
-                    print(
-                        "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
-                        st_sender,
-                        keyManagerAddress.address,
-                    )
-                    newKeyManager.setCanConsumeKeyNonce(
-                        toWhitelist, {"from": st_sender}
-                    )
-            else:
+        #     if keyManagerAddress == self.km:
+        #         with reverts(REV_MSG_DUPLICATE):
+        #             print(
+        #                 "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
+        #                 st_sender,
+        #                 keyManagerAddress.address,
+        #             )
+        #             newKeyManager.setCanConsumeKeyNonce(
+        #                 toWhitelist, {"from": st_sender}
+        #             )
+        #     else:
 
-                newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
+        #         newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
-                signer = self._get_key_prob(AGG)
+        #         signer = self._get_key_prob(AGG)
 
-                # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
-                for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                    if not aggKeyNonceConsumer in self.currentWhitelist:
-                        assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
-                        with reverts(REV_MSG_WHITELIST):
-                            print(
-                                "        REV_MSG_WHITELIST rule_upgrade_keyManager",
-                                st_sender,
-                                keyManagerAddress.address,
-                            )
-                            callDataNoSig = (
-                                aggKeyNonceConsumer.updateKeyManager.encode_input(
-                                    agg_null_sig(self.km, chain.id), newKeyManager
-                                )
-                            )
-                            aggKeyNonceConsumer.updateKeyManager(
-                                signer.getSigDataWithNonces(
-                                    callDataNoSig, nonces, AGG, self.km.address
-                                ),
-                                newKeyManager,
-                            )
-                        return
+        #         # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
+        #         for aggKeyNonceConsumer in aggKeyNonceConsumers:
+        #             if not aggKeyNonceConsumer in self.currentWhitelist:
+        #                 assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
+        #                 with reverts(REV_MSG_WHITELIST):
+        #                     print(
+        #                         "        REV_MSG_WHITELIST rule_upgrade_keyManager",
+        #                         st_sender,
+        #                         keyManagerAddress.address,
+        #                     )
+        #                     callDataNoSig = (
+        #                         aggKeyNonceConsumer.updateKeyManager.encode_input(
+        #                             agg_null_sig(self.km, chain.id), newKeyManager
+        #                         )
+        #                     )
+        #                     aggKeyNonceConsumer.updateKeyManager(
+        #                         signer.getSigDataWithNonces(
+        #                             callDataNoSig, nonces, AGG, self.km.address
+        #                         ),
+        #                         newKeyManager,
+        #                     )
+        #                 return
 
-                # All whitelisted
-                if signer != self.keyIDToCurKeys[AGG]:
-                    print(
-                        "        REV_MSG_SIG rule_upgrade_keyManager",
-                        st_sender,
-                        keyManagerAddress.address,
-                    )
-                    # Use the first aggKeyNonceConsumer for simplicity
-                    callDataNoSig = aggKeyNonceConsumers[
-                        0
-                    ].updateKeyManager.encode_input(
-                        agg_null_sig(self.km, chain.id), newKeyManager
-                    )
-                    with reverts(REV_MSG_SIG):
-                        aggKeyNonceConsumers[0].updateKeyManager(
-                            signer.getSigDataWithNonces(
-                                callDataNoSig, nonces, AGG, self.km.address
-                            ),
-                            newKeyManager,
-                        )
-                else:
-                    print(
-                        "                    rule_upgrade_keyManager",
-                        st_sender,
-                        keyManagerAddress.address,
-                    )
+        #         # All whitelisted
+        #         if signer != self.keyIDToCurKeys[AGG]:
+        #             print(
+        #                 "        REV_MSG_SIG rule_upgrade_keyManager",
+        #                 st_sender,
+        #                 keyManagerAddress.address,
+        #             )
+        #             # Use the first aggKeyNonceConsumer for simplicity
+        #             callDataNoSig = aggKeyNonceConsumers[
+        #                 0
+        #             ].updateKeyManager.encode_input(
+        #                 agg_null_sig(self.km, chain.id), newKeyManager
+        #             )
+        #             with reverts(REV_MSG_SIG):
+        #                 aggKeyNonceConsumers[0].updateKeyManager(
+        #                     signer.getSigDataWithNonces(
+        #                         callDataNoSig, nonces, AGG, self.km.address
+        #                     ),
+        #                     newKeyManager,
+        #                 )
+        #         else:
+        #             print(
+        #                 "                    rule_upgrade_keyManager",
+        #                 st_sender,
+        #                 keyManagerAddress.address,
+        #             )
 
-                    for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                        assert aggKeyNonceConsumer.getKeyManager() == self.km
+        #             for aggKeyNonceConsumer in aggKeyNonceConsumers:
+        #                 assert aggKeyNonceConsumer.getKeyManager() == self.km
 
-                        callDataNoSig = (
-                            aggKeyNonceConsumer.updateKeyManager.encode_input(
-                                agg_null_sig(self.km, chain.id), newKeyManager
-                            )
-                        )
+        #                 callDataNoSig = (
+        #                     aggKeyNonceConsumer.updateKeyManager.encode_input(
+        #                         agg_null_sig(self.km, chain.id), newKeyManager
+        #                     )
+        #                 )
 
-                        aggKeyNonceConsumer.updateKeyManager(
-                            signer.getSigDataWithNonces(
-                                callDataNoSig, nonces, AGG, self.km.address
-                            ),
-                            newKeyManager,
-                        )
+        #                 aggKeyNonceConsumer.updateKeyManager(
+        #                     signer.getSigDataWithNonces(
+        #                         callDataNoSig, nonces, AGG, self.km.address
+        #                     ),
+        #                     newKeyManager,
+        #                 )
 
-                        assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
+        #                 assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
-                    self._updateBalancesOnUpgrade(self.km, newKeyManager)
-                    self.km = newKeyManager
-                    self.lastValidateTime = self.km.tx.timestamp
-                    self.currentWhitelist = toWhitelist
+        #             self._updateBalancesOnUpgrade(self.km, newKeyManager)
+        #             self.km = newKeyManager
+        #             self.lastValidateTime = self.km.tx.timestamp
+        #             self.currentWhitelist = toWhitelist
 
-        # Deploys a new Vault and transfers the funds from the old Vault to the new one
-        def rule_upgrade_Vault(
-            self, st_sender, st_vault_transfer_amount, st_sleep_time
-        ):
+        # # Deploys a new Vault and transfers the funds from the old Vault to the new one
+        # def rule_upgrade_Vault(
+        #     self, st_sender, st_vault_transfer_amount, st_sleep_time
+        # ):
 
-            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
+        #     newVault = st_sender.deploy(Vault, self.km, self.communityKey)
 
-            # Keep old Vault whitelisted
-            toWhitelist = self.currentWhitelist.copy() + [newVault]
+        #     # Keep old Vault whitelisted
+        #     toWhitelist = self.currentWhitelist.copy() + [newVault]
 
-            args = (self.currentWhitelist, toWhitelist)
+        #     args = (self.currentWhitelist, toWhitelist)
 
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id), *args
-            )
+        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #         agg_null_sig(self.km.address, chain.id), *args
+        #     )
 
-            signer = self._get_key_prob(AGG)
+        #     signer = self._get_key_prob(AGG)
 
-            if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    callDataNoSig = self.v.transfer.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-            # if old vault is not whitelisted it will fail later
-            elif not self.v in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST rule_upgrade_Vault",
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    callDataNoSig = self.v.transfer.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_upgrade_Vault",
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.km.updateCanConsumeKeyNonce(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
+        #     if self.v_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             callDataNoSig = self.v.transfer.encode_input(
+        #                 agg_null_sig(self.km.address, chain.id),
+        #                 ETH_ADDR,
+        #                 newVault,
+        #                 st_vault_transfer_amount,
+        #             )
+        #             self.v.transfer(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 ETH_ADDR,
+        #                 newVault,
+        #                 st_vault_transfer_amount,
+        #             )
+        #     # if old vault is not whitelisted it will fail later
+        #     elif not self.v in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST rule_upgrade_Vault",
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             callDataNoSig = self.v.transfer.encode_input(
+        #                 agg_null_sig(self.km.address, chain.id),
+        #                 ETH_ADDR,
+        #                 newVault,
+        #                 st_vault_transfer_amount,
+        #             )
+        #             self.v.transfer(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 ETH_ADDR,
+        #                 newVault,
+        #                 st_vault_transfer_amount,
+        #             )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_upgrade_Vault",
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.km.updateCanConsumeKeyNonce(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
 
-            else:
-                # UpdateCanConsumeKeyNonce
-                self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    *args,
-                    {"from": st_sender},
-                )
+        #     else:
+        #         # UpdateCanConsumeKeyNonce
+        #         self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             *args,
+        #             {"from": st_sender},
+        #         )
 
-                self.currentWhitelist = toWhitelist.copy()
+        #         self.currentWhitelist = toWhitelist.copy()
 
-                # Vault can now validate and fetch but it has zero balance so it can't transfer
-                callDataNoSig = newVault.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                tx = newVault.transfer(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    ETH_ADDR,
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                assert tx.events["TransferFailed"][0].values() == [
-                    st_sender,
-                    st_vault_transfer_amount,
-                    web3.toHex(0),
-                ]
+        #         # Vault can now validate and fetch but it has zero balance so it can't transfer
+        #         callDataNoSig = newVault.transfer.encode_input(
+        #             agg_null_sig(self.km.address, chain.id),
+        #             ETH_ADDR,
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #         )
+        #         tx = newVault.transfer(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             ETH_ADDR,
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #         )
+        #         assert tx.events["TransferFailed"][0].values() == [
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #             web3.toHex(0),
+        #         ]
 
-                # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
-                startBalVault = self.v.balance()
-                assert startBalVault >= st_vault_transfer_amount
-                startBalRecipient = newVault.balance()
+        #         # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
+        #         startBalVault = self.v.balance()
+        #         assert startBalVault >= st_vault_transfer_amount
+        #         startBalRecipient = newVault.balance()
 
-                callDataNoSig = self.v.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
-                )
-                self.v.transfer(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
-                )
+        #         callDataNoSig = self.v.transfer.encode_input(
+        #             agg_null_sig(self.km.address, chain.id),
+        #             ETH_ADDR,
+        #             newVault,
+        #             st_vault_transfer_amount,
+        #         )
+        #         self.v.transfer(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             ETH_ADDR,
+        #             newVault,
+        #             st_vault_transfer_amount,
+        #         )
 
-                assert self.v.balance() - startBalVault == -st_vault_transfer_amount
-                assert (
-                    newVault.balance() - startBalRecipient == st_vault_transfer_amount
-                )
+        #         assert self.v.balance() - startBalVault == -st_vault_transfer_amount
+        #         assert (
+        #             newVault.balance() - startBalRecipient == st_vault_transfer_amount
+        #         )
 
-                chain.sleep(st_sleep_time)
+        #         chain.sleep(st_sleep_time)
 
-                # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
-                startBalVault = self.v.balance()
-                startBalRecipient = newVault.balance()
+        #         # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
+        #         startBalVault = self.v.balance()
+        #         startBalRecipient = newVault.balance()
 
-                if st_vault_transfer_amount > startBalVault:
-                    print(
-                        "        TRANSF_FAIL rule_upgrade_vault",
-                        st_sender,
-                        st_vault_transfer_amount,
-                    )
-                    callDataNoSig = self.v.transfer.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    tx = self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    assert tx.events["TransferFailed"][0].values() == [
-                        newVault.address,
-                        st_vault_transfer_amount,
-                        web3.toHex(0),
-                    ]
-                print(
-                    "                    rule_upgrade_vault",
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
+        #         if st_vault_transfer_amount > startBalVault:
+        #             print(
+        #                 "        TRANSF_FAIL rule_upgrade_vault",
+        #                 st_sender,
+        #                 st_vault_transfer_amount,
+        #             )
+        #             callDataNoSig = self.v.transfer.encode_input(
+        #                 agg_null_sig(self.km.address, chain.id),
+        #                 ETH_ADDR,
+        #                 newVault,
+        #                 st_vault_transfer_amount,
+        #             )
+        #             tx = self.v.transfer(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 ETH_ADDR,
+        #                 newVault,
+        #                 st_vault_transfer_amount,
+        #             )
+        #             assert tx.events["TransferFailed"][0].values() == [
+        #                 newVault.address,
+        #                 st_vault_transfer_amount,
+        #                 web3.toHex(0),
+        #             ]
+        #         print(
+        #             "                    rule_upgrade_vault",
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #         )
 
-                iniEthBalance = startBalVault
-                initTokenABalance = self.tokenA.balanceOf(self.v)
-                iniTokenBBalance = self.tokenB.balanceOf(self.v)
+        #         iniEthBalance = startBalVault
+        #         initTokenABalance = self.tokenA.balanceOf(self.v)
+        #         iniTokenBBalance = self.tokenB.balanceOf(self.v)
 
-                amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
-                tokens = [ETH_ADDR, self.tokenA, self.tokenB]
-                recipients = [newVault, newVault, newVault]
+        #         amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
+        #         tokens = [ETH_ADDR, self.tokenA, self.tokenB]
+        #         recipients = [newVault, newVault, newVault]
 
-                callDataNoSig = self.v.transferBatch.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    tokens,
-                    recipients,
-                    amountsToTransfer,
-                )
+        #         callDataNoSig = self.v.transferBatch.encode_input(
+        #             agg_null_sig(self.km.address, chain.id),
+        #             tokens,
+        #             recipients,
+        #             amountsToTransfer,
+        #         )
 
-                self.v.transferBatch(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    tokens,
-                    recipients,
-                    amountsToTransfer,
-                )
+        #         self.v.transferBatch(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             tokens,
+        #             recipients,
+        #             amountsToTransfer,
+        #         )
 
-                # Check that all balances have been transferred
-                assert self.v.balance() == 0
-                assert self.tokenA.balanceOf(self.v) == 0
-                assert self.tokenB.balanceOf(self.v) == 0
+        #         # Check that all balances have been transferred
+        #         assert self.v.balance() == 0
+        #         assert self.tokenA.balanceOf(self.v) == 0
+        #         assert self.tokenB.balanceOf(self.v) == 0
 
-                assert self.tokenA.balanceOf(newVault) == initTokenABalance
-                assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
+        #         assert self.tokenA.balanceOf(newVault) == initTokenABalance
+        #         assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
 
-                self._updateBalancesOnUpgrade(self.v, newVault)
+        #         self._updateBalancesOnUpgrade(self.v, newVault)
 
-                # Dewhitelist old Vault
-                toWhitelist = self.currentWhitelist.copy()
-                toWhitelist.remove(self.v)
+        #         # Dewhitelist old Vault
+        #         toWhitelist = self.currentWhitelist.copy()
+        #         toWhitelist.remove(self.v)
 
-                # UpdateCanConsumeKeyNonce
-                callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    self.currentWhitelist,
-                    toWhitelist,
-                )
-                tx = self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                )
+        #         # UpdateCanConsumeKeyNonce
+        #         callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #             agg_null_sig(self.km.address, chain.id),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #         )
+        #         tx = self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #         )
 
-                self.v = newVault
-                self.lastValidateTime = tx.timestamp
-                self.currentWhitelist = toWhitelist
-                self.v_communityGuardDisabled = False
-                self.v_current_communityKey = self.communityKey
-                self.v_suspended = False
+        #         self.v = newVault
+        #         self.lastValidateTime = tx.timestamp
+        #         self.currentWhitelist = toWhitelist
+        #         self.v_communityGuardDisabled = False
+        #         self.v_current_communityKey = self.communityKey
+        #         self.v_suspended = False
 
-                # Create new addresses for the new Vault and initialize Balances
-                newCreate2EthAddrs = [
-                    getCreate2Addr(
-                        self.v.address, cleanHexStrPad(swapID), DepositEth, ""
-                    )
-                    for swapID in range(MAX_SWAPID + 1)
-                ]
-                newCreate2TokenAAddrs = [
-                    getCreate2Addr(
-                        self.v.address,
-                        cleanHexStrPad(swapID),
-                        DepositToken,
-                        cleanHexStrPad(self.tokenA.address),
-                    )
-                    for swapID in range(MAX_SWAPID + 1)
-                ]
-                newCreate2TokenBAddrs = [
-                    getCreate2Addr(
-                        self.v.address,
-                        cleanHexStrPad(swapID),
-                        DepositToken,
-                        cleanHexStrPad(self.tokenB.address),
-                    )
-                    for swapID in range(MAX_SWAPID + 1)
-                ]
+        #         # Create new addresses for the new Vault and initialize Balances
+        #         newCreate2EthAddrs = [
+        #             getCreate2Addr(
+        #                 self.v.address, cleanHexStrPad(swapID), DepositEth, ""
+        #             )
+        #             for swapID in range(MAX_SWAPID + 1)
+        #         ]
+        #         newCreate2TokenAAddrs = [
+        #             getCreate2Addr(
+        #                 self.v.address,
+        #                 cleanHexStrPad(swapID),
+        #                 DepositToken,
+        #                 cleanHexStrPad(self.tokenA.address),
+        #             )
+        #             for swapID in range(MAX_SWAPID + 1)
+        #         ]
+        #         newCreate2TokenBAddrs = [
+        #             getCreate2Addr(
+        #                 self.v.address,
+        #                 cleanHexStrPad(swapID),
+        #                 DepositToken,
+        #                 cleanHexStrPad(self.tokenB.address),
+        #             )
+        #             for swapID in range(MAX_SWAPID + 1)
+        #         ]
 
-                for swapID in range(MAX_SWAPID + 1):
-                    # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
-                    self._addNewAddress(newCreate2EthAddrs[swapID])
-                    self._addNewAddress(newCreate2TokenAAddrs[swapID])
-                    self._addNewAddress(newCreate2TokenBAddrs[swapID])
+        #         for swapID in range(MAX_SWAPID + 1):
+        #             # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
+        #             self._addNewAddress(newCreate2EthAddrs[swapID])
+        #             self._addNewAddress(newCreate2TokenAAddrs[swapID])
+        #             self._addNewAddress(newCreate2TokenBAddrs[swapID])
 
-        # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
-        def rule_upgrade_stakeManager(
-            self, st_sender, st_vault_transfer_amount, st_sleep_time
-        ):
-            newStakeManager = st_sender.deploy(
-                StakeManager,
-                self.km,
-                INIT_MIN_STAKE,
-                self.communityKey,
-            )
+        # # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
+        # def rule_upgrade_stakeManager(
+        #     self, st_sender, st_vault_transfer_amount, st_sleep_time
+        # ):
+        #     newStakeManager = st_sender.deploy(
+        #         StakeManager,
+        #         self.km,
+        #         INIT_MIN_STAKE,
+        #         self.communityKey,
+        #     )
 
-            newStakeManager.setFlip(self.f, {"from": st_sender})
+        #     newStakeManager.setFlip(self.f, {"from": st_sender})
 
-            # Keep old StakeManager whitelisted
-            toWhitelist = self.currentWhitelist.copy() + [newStakeManager]
+        #     # Keep old StakeManager whitelisted
+        #     toWhitelist = self.currentWhitelist.copy() + [newStakeManager]
 
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                self.currentWhitelist,
-                toWhitelist,
-            )
+        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #         agg_null_sig(self.km.address, chain.id),
+        #         self.currentWhitelist,
+        #         toWhitelist,
+        #     )
 
-            signer = self._get_key_prob(AGG)
+        #     signer = self._get_key_prob(AGG)
 
-            if self.sm_suspended:
-                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    callDataNoSig = self.sm.registerClaim.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        JUNK_HEX,
-                        1,
-                        newStakeManager,
-                        1,
-                    )
-                    tx = self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        JUNK_HEX,
-                        1,
-                        newStakeManager,
-                        1,
-                    )
-            # If old stakeManager is not whitelisted it will revert later on
-            elif not self.sm in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    callDataNoSig = self.sm.registerClaim.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        JUNK_HEX,
-                        1,
-                        newStakeManager,
-                        1,
-                    )
-                    tx = self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        JUNK_HEX,
-                        1,
-                        newStakeManager,
-                        1,
-                    )
+        #     if self.sm_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             callDataNoSig = self.sm.registerClaim.encode_input(
+        #                 agg_null_sig(self.km.address, chain.id),
+        #                 JUNK_HEX,
+        #                 1,
+        #                 newStakeManager,
+        #                 1,
+        #             )
+        #             tx = self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 JUNK_HEX,
+        #                 1,
+        #                 newStakeManager,
+        #                 1,
+        #             )
+        #     # If old stakeManager is not whitelisted it will revert later on
+        #     elif not self.sm in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             callDataNoSig = self.sm.registerClaim.encode_input(
+        #                 agg_null_sig(self.km.address, chain.id),
+        #                 JUNK_HEX,
+        #                 1,
+        #                 newStakeManager,
+        #                 1,
+        #             )
+        #             tx = self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 JUNK_HEX,
+        #                 1,
+        #                 newStakeManager,
+        #                 1,
+        #             )
 
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_upgrade_stakeManager",
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.km.updateCanConsumeKeyNonce(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        self.currentWhitelist,
-                        toWhitelist,
-                        {"from": st_sender},
-                    )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_upgrade_stakeManager",
+        #             st_sender,
+        #             st_vault_transfer_amount,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.km.updateCanConsumeKeyNonce(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 self.currentWhitelist,
+        #                 toWhitelist,
+        #                 {"from": st_sender},
+        #             )
 
-            else:
-                self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                )
+        #     else:
+        #         self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #         )
 
-                self.currentWhitelist = toWhitelist.copy()
+        #         self.currentWhitelist = toWhitelist.copy()
 
-                chain.sleep(st_sleep_time)
+        #         chain.sleep(st_sleep_time)
 
-                # Generate claim to move all FLIP to new stakeManager
-                stakeAmount = INIT_MIN_STAKE
-                expiryTime = getChainTime() + (CLAIM_DELAY * 10)
-                claimAmount = self.flipBals[self.sm]
-                # Register Claim to transfer all flip
-                callDataNoSig = self.sm.registerClaim.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    JUNK_HEX,
-                    claimAmount,
-                    newStakeManager,
-                    expiryTime,
-                )
-                tx = self.sm.registerClaim(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    JUNK_HEX,
-                    claimAmount,
-                    newStakeManager,
-                    expiryTime,
-                )
+        #         # Generate claim to move all FLIP to new stakeManager
+        #         stakeAmount = INIT_MIN_STAKE
+        #         expiryTime = getChainTime() + (CLAIM_DELAY * 10)
+        #         claimAmount = self.flipBals[self.sm]
+        #         # Register Claim to transfer all flip
+        #         callDataNoSig = self.sm.registerClaim.encode_input(
+        #             agg_null_sig(self.km.address, chain.id),
+        #             JUNK_HEX,
+        #             claimAmount,
+        #             newStakeManager,
+        #             expiryTime,
+        #         )
+        #         tx = self.sm.registerClaim(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             JUNK_HEX,
+        #             claimAmount,
+        #             newStakeManager,
+        #             expiryTime,
+        #         )
 
-                chain.sleep(st_sleep_time)
-                if st_sleep_time < CLAIM_DELAY:
-                    with reverts(REV_MSG_NOT_ON_TIME):
-                        print(
-                            "        REV_MSG_SIG rule_upgrade_stakeManager",
-                            st_sleep_time,
-                        )
-                        self.sm.executeClaim(JUNK_HEX)
+        #         chain.sleep(st_sleep_time)
+        #         if st_sleep_time < CLAIM_DELAY:
+        #             with reverts(REV_MSG_NOT_ON_TIME):
+        #                 print(
+        #                     "        REV_MSG_SIG rule_upgrade_stakeManager",
+        #                     st_sleep_time,
+        #                 )
+        #                 self.sm.executeClaim(JUNK_HEX)
 
-                chain.sleep(CLAIM_DELAY * 2)
+        #         chain.sleep(CLAIM_DELAY * 2)
 
-                print("                   rule_executeClaim", newStakeManager.address)
-                assert self.f.balanceOf(newStakeManager) == 0
-                assert self.f.balanceOf(self.sm) == self.flipBals[self.sm]
+        #         print("                   rule_executeClaim", newStakeManager.address)
+        #         assert self.f.balanceOf(newStakeManager) == 0
+        #         assert self.f.balanceOf(self.sm) == self.flipBals[self.sm]
 
-                self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
+        #         self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
-                assert self.f.balanceOf(newStakeManager) == self.flipBals[self.sm]
-                assert self.f.balanceOf(self.sm) == 0
+        #         assert self.f.balanceOf(newStakeManager) == self.flipBals[self.sm]
+        #         assert self.f.balanceOf(self.sm) == 0
 
-                # Dewhitelist old StakeManager
-                toWhitelist = self.currentWhitelist.copy()
-                toWhitelist.remove(self.sm)
+        #         # Dewhitelist old StakeManager
+        #         toWhitelist = self.currentWhitelist.copy()
+        #         toWhitelist.remove(self.sm)
 
-                # UpdateCanConsumeKeyNonce
-                callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    self.currentWhitelist,
-                    toWhitelist,
-                )
-                tx = self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                )
+        #         # UpdateCanConsumeKeyNonce
+        #         callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+        #             agg_null_sig(self.km.address, chain.id),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #         )
+        #         tx = self.km.updateCanConsumeKeyNonce(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.currentWhitelist,
+        #             toWhitelist,
+        #         )
 
-                self._updateBalancesOnUpgrade(self.sm, newStakeManager)
-                self.sm = newStakeManager
-                self.minStake = INIT_MIN_STAKE
-                self.lastValidateTime = tx.timestamp
-                self.currentWhitelist = toWhitelist
-                self.sm_communityGuardDisabled = False
-                self.sm_current_communityKey = self.communityKey
-                self.sm_suspended = False
+        #         self._updateBalancesOnUpgrade(self.sm, newStakeManager)
+        #         self.sm = newStakeManager
+        #         self.minStake = INIT_MIN_STAKE
+        #         self.lastValidateTime = tx.timestamp
+        #         self.currentWhitelist = toWhitelist
+        #         self.sm_communityGuardDisabled = False
+        #         self.sm_current_communityKey = self.communityKey
+        #         self.sm_suspended = False
 
-                # Reset all pending claims
-                self.pendingClaims = {
-                    nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
-                }
+        #         # Reset all pending claims
+        #         self.pendingClaims = {
+        #             nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
+        #         }
 
         # Suspend and resume Vault and StakeManager
 
