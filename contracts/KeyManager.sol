@@ -229,10 +229,38 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
+     * @notice  Set a new community key. Requires a signature from the current aggregate key
+     * @param sigData   The keccak256 hash over the msg (uint256) (which is the calldata
+     *                  for this function with empty msgHash and sig) and sig over that hash
+     *                  from the current aggregate key (uint256)
+     * @param newCommKey The new community key to be set.
+
+     */
+    function setCommKeyWithAggKey(SigData calldata sigData, address newCommKey)
+        external
+        override
+        nzAddr(newCommKey)
+        consumerKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.setAggKeyWithAggKey.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    newCommKey
+                )
+            )
+        )
+    {
+        emit CommKeySetByAggKey(_commKey, newCommKey);
+        _commKey = newCommKey;
+    }
+
+    /**
      * @notice  Update the Community Key. Can only be called by the current Community Key.
      * @param newCommKey   New Community key address.
      */
-    function updateCommunityKey(address newCommKey) external override isCommunityKey nzAddr(newCommKey) {
+    function setCommKeyWithCommKey(address newCommKey) external override isCommunityKey nzAddr(newCommKey) {
+        emit CommKeySetByCommKey(_commKey, newCommKey);
         _commKey = newCommKey;
     }
 

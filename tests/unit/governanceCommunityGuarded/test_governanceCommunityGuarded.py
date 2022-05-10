@@ -33,14 +33,14 @@ def test_CommunityGuard(cf):
         assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY
 
 
-def test_updateCommunityKey(cf):
+def test_setCommKeyWithCommKey(cf):
     governanceCommunityGuardedList = getgovernanceCommunityGuardedList(cf)
 
     with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
-        cf.keyManager.updateCommunityKey(ZERO_ADDR, {"from": cf.ALICE})
+        cf.keyManager.setCommKeyWithCommKey(ZERO_ADDR, {"from": cf.ALICE})
     with reverts(REV_MSG_NZ_ADDR):
-        cf.keyManager.updateCommunityKey(ZERO_ADDR, {"from": cf.COMMUNITY_KEY})
-    cf.keyManager.updateCommunityKey(cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY})
+        cf.keyManager.setCommKeyWithCommKey(ZERO_ADDR, {"from": cf.COMMUNITY_KEY})
+    cf.keyManager.setCommKeyWithCommKey(cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY})
 
     for governanceCommunityGuarded in governanceCommunityGuardedList:
         assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY_2

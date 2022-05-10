@@ -2385,20 +2385,20 @@ def test_all(
         # TODO: Add gov Withdrawal or no need?
 
         # Updates community Key - happens with low probability - 1/20
-        def rule_sm_updateCommunityKey(self, st_sender):
+        def rule_sm_setCommKeyWithCommKey(self, st_sender):
             #            newCommunityKey = choice([self.communityKey, self.communityKey_2])
             newCommunityKey = self.communityKey
             if st_sender == self.sm_current_communityKey:
-                print("                    rule_sm_updateCommunityKey", st_sender)
-                self.sm.updateCommunityKey(newCommunityKey, {"from": st_sender})
+                print("                    rule_sm_setCommKeyWithCommKey", st_sender)
+                self.sm.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
                 self.sm_current_communityKey = newCommunityKey
             else:
                 print(
-                    "        REV_MSG_GOV_NOT_COMMUNITY _sm_updateCommunityKey",
+                    "        REV_MSG_GOV_NOT_COMMUNITY _sm_setCommKeyWithCommKey",
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                    self.sm.updateCommunityKey(newCommunityKey, {"from": st_sender})
+                    self.sm.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
 
         # Enable community Guard
         def rule_sm_enableCommunityGuard(self, st_sender):
@@ -2439,19 +2439,20 @@ def test_all(
                     )
 
         # Updates community Key - happens with low probability - 1/20
-        def rule_vault_updateCommunityKey(self, st_sender):
+        def rule_vault_setCommKeyWithCommKey(self, st_sender):
             #            newCommunityKey = choice([self.communityKey, self.communityKey_2])
             newCommunityKey = self.communityKey
             if st_sender == self.v_current_communityKey:
-                print("                    rule_v_updateCommunityKey", st_sender)
-                self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
+                print("                    rule_v_setCommKeyWithCommKey", st_sender)
+                self.v.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
                 self.v_current_communityKey = newCommunityKey
             else:
                 print(
-                    "        REV_MSG_GOV_NOT_COMMUNITY _v_updateCommunityKey", st_sender
+                    "        REV_MSG_GOV_NOT_COMMUNITY _v_setCommKeyWithCommKey",
+                    st_sender,
                 )
                 with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                    self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
+                    self.v.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
 
         # Enable community Guard
         def rule_vault_enableCommunityGuard(self, st_sender):
