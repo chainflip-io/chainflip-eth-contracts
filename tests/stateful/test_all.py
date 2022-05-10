@@ -1292,501 +1292,501 @@ def test_all(
             # return choice(samples)
             return self.keyIDToCurKeys[keyID]
 
-        # Checks if consumeKeyNonce returns the correct value when called with a random sender,
-        # signing key, random keyID that the signing key is supposed to be, and random msgData
-        def rule_consumeKeyNonce(
-            self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data
-        ):
-            sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
-            )
+        # # Checks if consumeKeyNonce returns the correct value when called with a random sender,
+        # # signing key, random keyID that the signing key is supposed to be, and random msgData
+        # def rule_consumeKeyNonce(
+        #     self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data
+        # ):
+        #     sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
+        #         st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
+        #     )
 
-            if not st_sender in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST rule_consumeKeyNonce",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_keyID_num,
-                    st_msg_data,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    self.km.consumeKeyNonce(
-                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-                    )
-            elif (
-                self.allKeys[st_sig_key_idx]
-                == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
-            ):
-                print(
-                    "                    rule_consumeKeyNonce",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_keyID_num,
-                    st_msg_data,
-                )
-                tx = self.km.consumeKeyNonce(
-                    sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-                )
-                self.lastValidateTime = tx.timestamp
-            else:
-                with reverts(REV_MSG_SIG):
-                    print(
-                        "        REV_MSG_SIG rule_consumeKeyNonce",
-                        st_sender,
-                        st_sig_key_idx,
-                        st_keyID_num,
-                        st_msg_data,
-                    )
-                    self.km.consumeKeyNonce(
-                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-                    )
+        #     if not st_sender in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST rule_consumeKeyNonce",
+        #             st_sender,
+        #             st_sig_key_idx,
+        #             st_keyID_num,
+        #             st_msg_data,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.km.consumeKeyNonce(
+        #                 sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+        #             )
+        #     elif (
+        #         self.allKeys[st_sig_key_idx]
+        #         == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
+        #     ):
+        #         print(
+        #             "                    rule_consumeKeyNonce",
+        #             st_sender,
+        #             st_sig_key_idx,
+        #             st_keyID_num,
+        #             st_msg_data,
+        #         )
+        #         tx = self.km.consumeKeyNonce(
+        #             sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+        #         )
+        #         self.lastValidateTime = tx.timestamp
+        #     else:
+        #         with reverts(REV_MSG_SIG):
+        #             print(
+        #                 "        REV_MSG_SIG rule_consumeKeyNonce",
+        #                 st_sender,
+        #                 st_sig_key_idx,
+        #                 st_keyID_num,
+        #                 st_msg_data,
+        #             )
+        #             self.km.consumeKeyNonce(
+        #                 sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+        #             )
 
-        # Replace a key with a random key - setAggKeyWithAggKey
-        def _set_same_key_agg(
-            self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx
-        ):
-            callDataNoSig = fcn.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                self.allKeys[st_new_key_idx].getPubData(),
-            )
-            if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
-                print(
-                    f"                    {fcn}",
-                    st_sender,
-                    keyID,
-                    st_sig_key_idx,
-                    st_new_key_idx,
-                )
-                tx = fcn(
-                    self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.allKeys[st_new_key_idx].getPubData(),
-                    {"from": st_sender},
-                )
+        # # Replace a key with a random key - setAggKeyWithAggKey
+        # def _set_same_key_agg(
+        #     self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx
+        # ):
+        #     callDataNoSig = fcn.encode_input(
+        #         agg_null_sig(self.km.address, chain.id),
+        #         self.allKeys[st_new_key_idx].getPubData(),
+        #     )
+        #     if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
+        #         print(
+        #             f"                    {fcn}",
+        #             st_sender,
+        #             keyID,
+        #             st_sig_key_idx,
+        #             st_new_key_idx,
+        #         )
+        #         tx = fcn(
+        #             self.allKeys[st_sig_key_idx].getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             self.allKeys[st_new_key_idx].getPubData(),
+        #             {"from": st_sender},
+        #         )
 
-                self.keyIDToCurKeys[keyID] = self.allKeys[st_new_key_idx]
-                self.lastValidateTime = tx.timestamp
-            else:
-                with reverts(REV_MSG_SIG):
-                    print(
-                        f"        REV_MSG_SIG {fcn}",
-                        st_sender,
-                        keyID,
-                        st_sig_key_idx,
-                        st_new_key_idx,
-                    )
-                    fcn(
-                        self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        self.allKeys[st_new_key_idx].getPubData(),
-                        {"from": st_sender},
-                    )
+        #         self.keyIDToCurKeys[keyID] = self.allKeys[st_new_key_idx]
+        #         self.lastValidateTime = tx.timestamp
+        #     else:
+        #         with reverts(REV_MSG_SIG):
+        #             print(
+        #                 f"        REV_MSG_SIG {fcn}",
+        #                 st_sender,
+        #                 keyID,
+        #                 st_sig_key_idx,
+        #                 st_new_key_idx,
+        #             )
+        #             fcn(
+        #                 self.allKeys[st_sig_key_idx].getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 self.allKeys[st_new_key_idx].getPubData(),
+        #                 {"from": st_sender},
+        #             )
 
-        # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
-        def _set_same_key_gov(self, st_sender, fcn):
-            #            current_governor = choice([st_sender, self.governor])
-            current_governor = self.governor
+        # # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
+        # def _set_same_key_gov(self, st_sender, fcn):
+        #     #            current_governor = choice([st_sender, self.governor])
+        #     current_governor = self.governor
 
-            if current_governor == self.governor:
-                print(f"                    {fcn}", st_sender, self.governor)
-                fcn(st_sender, {"from": current_governor})
-                self.governor = st_sender
-            else:
-                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
-                    fcn(st_sender, {"from": current_governor})
+        #     if current_governor == self.governor:
+        #         print(f"                    {fcn}", st_sender, self.governor)
+        #         fcn(st_sender, {"from": current_governor})
+        #         self.governor = st_sender
+        #     else:
+        #         with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+        #             fcn(st_sender, {"from": current_governor})
 
-        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
-        def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            self._set_same_key_agg(
-                st_sender,
-                self.km.setAggKeyWithAggKey,
-                AGG,
-                st_sig_key_idx,
-                st_new_key_idx,
-            )
+        # # Call setAggKeyWithAggKey with a random new key, signing key, and sender
+        # def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+        #     self._set_same_key_agg(
+        #         st_sender,
+        #         self.km.setAggKeyWithAggKey,
+        #         AGG,
+        #         st_sig_key_idx,
+        #         st_new_key_idx,
+        #     )
 
-        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
-        def rule_setGovKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            self._set_same_key_gov(st_sender, self.km.setGovKeyWithGovKey)
+        # # Call setAggKeyWithAggKey with a random new key, signing key, and sender
+        # def rule_setGovKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+        #     self._set_same_key_gov(st_sender, self.km.setGovKeyWithGovKey)
 
-        # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
-        # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
-        # in itself, since Hypothesis usually picks small values as part of shrinking
-        def rule_sleep_2_days(self):
-            print("                    rule_sleep_2_days")
-            chain.sleep(2 * DAY)
+        # # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
+        # # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
+        # # in itself, since Hypothesis usually picks small values as part of shrinking
+        # def rule_sleep_2_days(self):
+        #     print("                    rule_sleep_2_days")
+        #     chain.sleep(2 * DAY)
 
-        # Call setAggKeyWithGovKey with a random new key, signing key, and sender
-        def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
+        # # Call setAggKeyWithGovKey with a random new key, signing key, and sender
+        # def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
 
-            # current_governor = choice([st_sender, self.governor])
-            current_governor = self.governor
+        #     # current_governor = choice([st_sender, self.governor])
+        #     current_governor = self.governor
 
-            if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
-                print(
-                    "        REV_MSG_DELAY rule_setAggKeyWithGovKey",
-                    st_sender,
-                    current_governor,
-                    st_new_key_idx,
-                )
-                with reverts(REV_MSG_DELAY):
-                    self.km.setAggKeyWithGovKey(
-                        self.allKeys[st_new_key_idx].getPubData(),
-                        {"from": current_governor},
-                    )
-            elif current_governor != self.governor:
-                print(
-                    "        REV_MSG_SIG rule_setAggKeyWithGovKey",
-                    st_sender,
-                    current_governor,
-                    st_new_key_idx,
-                )
-                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
-                    self.km.setAggKeyWithGovKey(
-                        self.allKeys[st_new_key_idx].getPubData(),
-                        {"from": current_governor},
-                    )
-            else:
-                print(
-                    "                    rule_setAggKeyWithGovKey",
-                    st_sender,
-                    current_governor,
-                    st_new_key_idx,
-                )
-                tx = self.km.setAggKeyWithGovKey(
-                    self.allKeys[st_new_key_idx].getPubData(),
-                    {"from": current_governor},
-                )
+        #     if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
+        #         print(
+        #             "        REV_MSG_DELAY rule_setAggKeyWithGovKey",
+        #             st_sender,
+        #             current_governor,
+        #             st_new_key_idx,
+        #         )
+        #         with reverts(REV_MSG_DELAY):
+        #             self.km.setAggKeyWithGovKey(
+        #                 self.allKeys[st_new_key_idx].getPubData(),
+        #                 {"from": current_governor},
+        #             )
+        #     elif current_governor != self.governor:
+        #         print(
+        #             "        REV_MSG_SIG rule_setAggKeyWithGovKey",
+        #             st_sender,
+        #             current_governor,
+        #             st_new_key_idx,
+        #         )
+        #         with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+        #             self.km.setAggKeyWithGovKey(
+        #                 self.allKeys[st_new_key_idx].getPubData(),
+        #                 {"from": current_governor},
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_setAggKeyWithGovKey",
+        #             st_sender,
+        #             current_governor,
+        #             st_new_key_idx,
+        #         )
+        #         tx = self.km.setAggKeyWithGovKey(
+        #             self.allKeys[st_new_key_idx].getPubData(),
+        #             {"from": current_governor},
+        #         )
 
-                self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
+        #         self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
 
-        # StakeManager
+        # # StakeManager
 
-        # Stakes a random amount from a random staker to a random nodeID
-        def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
-            if st_nodeID == 0:
-                print(
-                    "        REV_MSG_NZ_BYTES32 rule_stake",
-                    st_staker,
-                    st_nodeID,
-                    st_amount / E_18,
-                )
-                with reverts(REV_MSG_NZ_BYTES32):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-                    )
-            elif st_amount < self.minStake:
-                print(
-                    "        rule_stake MIN_STAKE",
-                    st_staker,
-                    st_nodeID,
-                    st_amount / E_18,
-                )
-                with reverts(REV_MSG_MIN_STAKE):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-                    )
-            elif st_amount > self.flipBals[st_staker]:
-                print(
-                    "        rule_stake REV_MSG_ERC20_EXCEED_BAL",
-                    st_staker,
-                    st_nodeID,
-                    st_amount / E_18,
-                )
-                with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-                    )
-            else:
-                print(
-                    "                    rule_stake ",
-                    st_amount,
-                    st_nodeID,
-                    st_amount / E_18,
-                )
-                self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                tx = self.sm.stake(
-                    st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-                )
+        # # Stakes a random amount from a random staker to a random nodeID
+        # def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
+        #     if st_nodeID == 0:
+        #         print(
+        #             "        REV_MSG_NZ_BYTES32 rule_stake",
+        #             st_staker,
+        #             st_nodeID,
+        #             st_amount / E_18,
+        #         )
+        #         with reverts(REV_MSG_NZ_BYTES32):
+        #             self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+        #             self.sm.stake(
+        #                 st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+        #             )
+        #     elif st_amount < self.minStake:
+        #         print(
+        #             "        rule_stake MIN_STAKE",
+        #             st_staker,
+        #             st_nodeID,
+        #             st_amount / E_18,
+        #         )
+        #         with reverts(REV_MSG_MIN_STAKE):
+        #             self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+        #             self.sm.stake(
+        #                 st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+        #             )
+        #     elif st_amount > self.flipBals[st_staker]:
+        #         print(
+        #             "        rule_stake REV_MSG_ERC20_EXCEED_BAL",
+        #             st_staker,
+        #             st_nodeID,
+        #             st_amount / E_18,
+        #         )
+        #         with reverts(REV_MSG_ERC20_EXCEED_BAL):
+        #             self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+        #             self.sm.stake(
+        #                 st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_stake ",
+        #             st_amount,
+        #             st_nodeID,
+        #             st_amount / E_18,
+        #         )
+        #         self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+        #         tx = self.sm.stake(
+        #             st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+        #         )
 
-                self.flipBals[st_staker] -= st_amount
-                self.flipBals[self.sm] += st_amount
-                self.totalStake += st_amount
+        #         self.flipBals[st_staker] -= st_amount
+        #         self.flipBals[self.sm] += st_amount
+        #         self.totalStake += st_amount
 
-        # Claims a random amount from a random nodeID to a random recipient
-        def rule_registerClaim(
-            self, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff
-        ):
-            args = (
-                st_nodeID,
-                st_amount,
-                st_staker,
-                getChainTime() + st_expiry_time_diff,
-            )
-            callDataNoSig = self.sm.registerClaim.encode_input(
-                agg_null_sig(self.km.address, chain.id), *args
-            )
-            signer = self._get_key_prob(AGG)
+        # # Claims a random amount from a random nodeID to a random recipient
+        # def rule_registerClaim(
+        #     self, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff
+        # ):
+        #     args = (
+        #         st_nodeID,
+        #         st_amount,
+        #         st_staker,
+        #         getChainTime() + st_expiry_time_diff,
+        #     )
+        #     callDataNoSig = self.sm.registerClaim.encode_input(
+        #         agg_null_sig(self.km.address, chain.id), *args
+        #     )
+        #     signer = self._get_key_prob(AGG)
 
-            if self.sm_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _registerClaim")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            elif st_nodeID == 0:
-                print("        NODEID rule_registerClaim", *args)
-                with reverts(REV_MSG_NZ_BYTES32):
-                    self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            elif st_amount == 0:
-                print("        AMOUNT rule_registerClaim", *args)
-                with reverts(REV_MSG_NZ_UINT):
-                    self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            elif not self.sm in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_registerClaim", *args)
-                with reverts(REV_MSG_WHITELIST):
-                    self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_registerClaim", *args)
-                with reverts(REV_MSG_SIG):
-                    self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
-                print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *args)
-                with reverts(REV_MSG_CLAIM_EXISTS):
-                    self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            elif st_expiry_time_diff <= CLAIM_DELAY:
-                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *args)
-                with reverts(REV_MSG_EXPIRY_TOO_SOON):
-                    self.sm.registerClaim(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            else:
-                print("                    rule_registerClaim ", *args)
-                tx = self.sm.registerClaim(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    *args,
-                    {"from": st_sender},
-                )
+        #     if self.sm_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED _registerClaim")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     elif st_nodeID == 0:
+        #         print("        NODEID rule_registerClaim", *args)
+        #         with reverts(REV_MSG_NZ_BYTES32):
+        #             self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     elif st_amount == 0:
+        #         print("        AMOUNT rule_registerClaim", *args)
+        #         with reverts(REV_MSG_NZ_UINT):
+        #             self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     elif not self.sm in self.currentWhitelist:
+        #         print("        REV_MSG_WHITELIST rule_registerClaim", *args)
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print("        REV_MSG_SIG rule_registerClaim", *args)
+        #         with reverts(REV_MSG_SIG):
+        #             self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
+        #         print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *args)
+        #         with reverts(REV_MSG_CLAIM_EXISTS):
+        #             self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     elif st_expiry_time_diff <= CLAIM_DELAY:
+        #         print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *args)
+        #         with reverts(REV_MSG_EXPIRY_TOO_SOON):
+        #             self.sm.registerClaim(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     else:
+        #         print("                    rule_registerClaim ", *args)
+        #         tx = self.sm.registerClaim(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             *args,
+        #             {"from": st_sender},
+        #         )
 
-                self.pendingClaims[st_nodeID] = (
-                    st_amount,
-                    st_staker,
-                    tx.timestamp + CLAIM_DELAY,
-                    args[3],
-                )
-                self.lastValidateTime = tx.timestamp
+        #         self.pendingClaims[st_nodeID] = (
+        #             st_amount,
+        #             st_staker,
+        #             tx.timestamp + CLAIM_DELAY,
+        #             args[3],
+        #         )
+        #         self.lastValidateTime = tx.timestamp
 
-        # Executes a random claim
-        def rule_executeClaim(self, st_nodeID, st_sender):
-            if self.sm_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _executeClaim")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
-                return
+        # # Executes a random claim
+        # def rule_executeClaim(self, st_nodeID, st_sender):
+        #     if self.sm_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED _executeClaim")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             self.sm.executeClaim(st_nodeID, {"from": st_sender})
+        #         return
 
-            claim = self.pendingClaims[st_nodeID]
+        #     claim = self.pendingClaims[st_nodeID]
 
-            if not claim[2] <= getChainTime() <= claim[3]:
-                print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
-                with reverts(REV_MSG_NOT_ON_TIME):
-                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
-            elif self.flipBals[self.sm] < claim[0]:
-                print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
-                with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
-            else:
-                print("                    rule_executeClaim", st_nodeID)
-                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
+        #     if not claim[2] <= getChainTime() <= claim[3]:
+        #         print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
+        #         with reverts(REV_MSG_NOT_ON_TIME):
+        #             self.sm.executeClaim(st_nodeID, {"from": st_sender})
+        #     elif self.flipBals[self.sm] < claim[0]:
+        #         print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
+        #         with reverts(REV_MSG_ERC20_EXCEED_BAL):
+        #             self.sm.executeClaim(st_nodeID, {"from": st_sender})
+        #     else:
+        #         print("                    rule_executeClaim", st_nodeID)
+        #         tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
-                self.flipBals[claim[1]] += claim[0]
-                self.flipBals[self.sm] -= claim[0]
-                self.totalStake -= claim[0]
-                self.pendingClaims[st_nodeID] = NULL_CLAIM
+        #         self.flipBals[claim[1]] += claim[0]
+        #         self.flipBals[self.sm] -= claim[0]
+        #         self.totalStake -= claim[0]
+        #         self.pendingClaims[st_nodeID] = NULL_CLAIM
 
-        # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
-        # and sends the tx from a random address
-        def rule_setMinStake(self, st_minStake, st_sender):
+        # # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
+        # # and sends the tx from a random address
+        # def rule_setMinStake(self, st_minStake, st_sender):
 
-            if st_minStake == 0:
-                print(
-                    "        REV_MSG_NZ_UINT rule_setMinstake", st_minStake, st_sender
-                )
-                with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setMinStake(st_minStake, {"from": st_sender})
-            elif st_sender != self.governor:
-                print("        REV_MSG_SIG rule_setMinstake", st_minStake, st_sender)
-                with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.sm.setMinStake(st_minStake, {"from": st_sender})
-            else:
-                print("                    rule_setMinstake", st_minStake, st_sender)
-                tx = self.sm.setMinStake(st_minStake, {"from": st_sender})
+        #     if st_minStake == 0:
+        #         print(
+        #             "        REV_MSG_NZ_UINT rule_setMinstake", st_minStake, st_sender
+        #         )
+        #         with reverts(REV_MSG_NZ_UINT):
+        #             self.sm.setMinStake(st_minStake, {"from": st_sender})
+        #     elif st_sender != self.governor:
+        #         print("        REV_MSG_SIG rule_setMinstake", st_minStake, st_sender)
+        #         with reverts(REV_MSG_GOV_GOVERNOR):
+        #             self.sm.setMinStake(st_minStake, {"from": st_sender})
+        #     else:
+        #         print("                    rule_setMinstake", st_minStake, st_sender)
+        #         tx = self.sm.setMinStake(st_minStake, {"from": st_sender})
 
-                self.minStake = st_minStake
+        #         self.minStake = st_minStake
 
-        # Tries to set the FLIP address. It should have been set right after the deployment.
-        def rule_setFlip(self, st_sender, st_returnAddr):
-            deployer = self.sm.tx.sender
+        # # Tries to set the FLIP address. It should have been set right after the deployment.
+        # def rule_setFlip(self, st_sender, st_returnAddr):
+        #     deployer = self.sm.tx.sender
 
-            if st_sender != deployer:
-                print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
-                with reverts(REV_MSG_STAKEMAN_DEPLOYER):
-                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
-            else:
-                print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
-                with reverts(REV_MSG_NZ_ADDR):
-                    self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
+        #     if st_sender != deployer:
+        #         print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
+        #         with reverts(REV_MSG_STAKEMAN_DEPLOYER):
+        #             self.sm.setFlip(st_returnAddr, {"from": st_sender})
+        #     else:
+        #         print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
+        #         with reverts(REV_MSG_NZ_ADDR):
+        #             self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
 
-                print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
-                with reverts(REV_MSG_FLIP_ADDRESS):
-                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
+        #         print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
+        #         with reverts(REV_MSG_FLIP_ADDRESS):
+        #             self.sm.setFlip(st_returnAddr, {"from": st_sender})
 
-        # FLIP
+        # # FLIP
 
-        # Updates Flip Supply minting/burning stakeManager tokens
-        def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
+        # # Updates Flip Supply minting/burning stakeManager tokens
+        # def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
 
-            sm_inibalance = self.f.balanceOf(self.sm)
-            new_total_supply = self.f.totalSupply() + st_amount_supply
+        #     sm_inibalance = self.f.balanceOf(self.sm)
+        #     new_total_supply = self.f.totalSupply() + st_amount_supply
 
-            # Avoid newSupplyBlockNumber being a negative number
-            newSupplyBlockNumber = max(self.lastSupplyBlockNumber + blockNumber_incr, 0)
+        #     # Avoid newSupplyBlockNumber being a negative number
+        #     newSupplyBlockNumber = max(self.lastSupplyBlockNumber + blockNumber_incr, 0)
 
-            args = (
-                new_total_supply,
-                newSupplyBlockNumber,
-                self.sm.address,
-            )
+        #     args = (
+        #         new_total_supply,
+        #         newSupplyBlockNumber,
+        #         self.sm.address,
+        #     )
 
-            callDataNoSig = self.f.updateFlipSupply.encode_input(
-                agg_null_sig(self.km.address, chain.id), *args
-            )
+        #     callDataNoSig = self.f.updateFlipSupply.encode_input(
+        #         agg_null_sig(self.km.address, chain.id), *args
+        #     )
 
-            signer = self._get_key_prob(AGG)
+        #     signer = self._get_key_prob(AGG)
 
-            if not self.f in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST rule_updateFlipSupply",
-                    st_amount_supply,
-                    st_sender,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    self.f.updateFlipSupply(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_updateFlipSupply",
-                    st_amount_supply,
-                    st_sender,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.f.updateFlipSupply(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
+        #     if not self.f in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST rule_updateFlipSupply",
+        #             st_amount_supply,
+        #             st_sender,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.f.updateFlipSupply(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_updateFlipSupply",
+        #             st_amount_supply,
+        #             st_sender,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.f.updateFlipSupply(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
 
-            elif newSupplyBlockNumber <= self.lastSupplyBlockNumber:
-                print(
-                    "        REV_MSG_BLOCK rule_updateFlipSupply",
-                    st_amount_supply,
-                    st_sender,
-                )
-                with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
-                    self.f.updateFlipSupply(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
-            else:
-                if sm_inibalance + st_amount_supply < 0:
-                    with reverts(REV_MSG_BURN_BALANCE):
-                        print(
-                            "        REV_MSG_BURN_BALANCE rule_updateFlipSupply",
-                            st_amount_supply,
-                            st_sender,
-                        )
+        #     elif newSupplyBlockNumber <= self.lastSupplyBlockNumber:
+        #         print(
+        #             "        REV_MSG_BLOCK rule_updateFlipSupply",
+        #             st_amount_supply,
+        #             st_sender,
+        #         )
+        #         with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
+        #             self.f.updateFlipSupply(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
+        #     else:
+        #         if sm_inibalance + st_amount_supply < 0:
+        #             with reverts(REV_MSG_BURN_BALANCE):
+        #                 print(
+        #                     "        REV_MSG_BURN_BALANCE rule_updateFlipSupply",
+        #                     st_amount_supply,
+        #                     st_sender,
+        #                 )
 
-                        self.f.updateFlipSupply(
-                            signer.getSigDataWithNonces(
-                                callDataNoSig, nonces, AGG, self.km.address
-                            ),
-                            *args,
-                            {"from": st_sender},
-                        )
-                else:
-                    print(
-                        "                    rule_updateFlipSupply",
-                        st_amount_supply,
-                        st_sender,
-                    )
-                    tx = self.f.updateFlipSupply(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        *args,
-                        {"from": st_sender},
-                    )
+        #                 self.f.updateFlipSupply(
+        #                     signer.getSigDataWithNonces(
+        #                         callDataNoSig, nonces, AGG, self.km.address
+        #                     ),
+        #                     *args,
+        #                     {"from": st_sender},
+        #                 )
+        #         else:
+        #             print(
+        #                 "                    rule_updateFlipSupply",
+        #                 st_amount_supply,
+        #                 st_sender,
+        #             )
+        #             tx = self.f.updateFlipSupply(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 *args,
+        #                 {"from": st_sender},
+        #             )
 
-                    assert self.f.totalSupply() == new_total_supply
-                    assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
+        #             assert self.f.totalSupply() == new_total_supply
+        #             assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
 
-                    self.flipBals[self.sm] += st_amount_supply
-                    self.lastSupplyBlockNumber = newSupplyBlockNumber
-                    self.lastValidateTime = tx.timestamp
+        #             self.flipBals[self.sm] += st_amount_supply
+        #             self.lastSupplyBlockNumber = newSupplyBlockNumber
+        #             self.lastValidateTime = tx.timestamp
 
         # AggKeyNonceConsumer - upgradability
 
