@@ -25,4 +25,8 @@ jobs:
     - run: npm install
     - run: echo /root/.local/bin >> $GITHUB_PATH
     - run: poetry install --quiet
-    - run: poetry run brownie test --network hardhat --stateful ${{inputs.stateful}}
+    - run: poetry run brownie test tests/stateful/test_keyManager.py --network hardhat --stateful ${{inputs.stateful}}
+    - run: poetry run brownie test tests/stateful/test_stakeManager.py --network hardhat --stateful ${{inputs.stateful}}
+    - run: poetry run brownie test tests/stateful/test_upgradability.py --network hardhat --stateful ${{inputs.stateful}}
+    - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful ${{inputs.stateful}}
+    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}}
