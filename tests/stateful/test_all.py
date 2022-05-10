@@ -5,8 +5,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
-
-# from random import choice, choices
+from random import choice, choices
 import time
 from hypothesis import Verbosity
 
@@ -316,2011 +315,2004 @@ def test_all(
 
         # Vault
 
-        # def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
-        #     fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
-        #     fetchEthTotal = sum(
-        #         self.ethBals[
-        #             getCreate2Addr(
-        #                 self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositEth, ""
-        #             )
-        #         ]
-        #         for i, x in enumerate(fetchTokens)
-        #         if x == ETH_ADDR
-        #     )
-        #     fetchTokenATotal = sum(
-        #         self.tokenABals[
-        #             getCreate2Addr(
-        #                 self.v.address,
-        #                 cleanHexStrPad(st_swapIDs[i]),
-        #                 DepositToken,
-        #                 cleanHexStrPad(self.tokenA.address),
-        #             )
-        #         ]
-        #         for i, x in enumerate(fetchTokens)
-        #         if x == self.tokenA
-        #     )
-        #     fetchTokenBTotal = sum(
-        #         self.tokenBBals[
-        #             getCreate2Addr(
-        #                 self.v.address,
-        #                 cleanHexStrPad(st_swapIDs[i]),
-        #                 DepositToken,
-        #                 cleanHexStrPad(self.tokenB.address),
-        #             )
-        #         ]
-        #         for i, x in enumerate(fetchTokens)
-        #         if x == self.tokenB
-        #     )
+        def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
+            fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
+            fetchEthTotal = sum(
+                self.ethBals[
+                    getCreate2Addr(
+                        self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositEth, ""
+                    )
+                ]
+                for i, x in enumerate(fetchTokens)
+                if x == ETH_ADDR
+            )
+            fetchTokenATotal = sum(
+                self.tokenABals[
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapIDs[i]),
+                        DepositToken,
+                        cleanHexStrPad(self.tokenA.address),
+                    )
+                ]
+                for i, x in enumerate(fetchTokens)
+                if x == self.tokenA
+            )
+            fetchTokenBTotal = sum(
+                self.tokenBBals[
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapIDs[i]),
+                        DepositToken,
+                        cleanHexStrPad(self.tokenB.address),
+                    )
+                ]
+                for i, x in enumerate(fetchTokens)
+                if x == self.tokenB
+            )
 
-        #     tranMinLen = trimToShortest([st_recips, st_eth_amounts])
-        #     tranTokens = choices(self.tokensList, k=tranMinLen)
-        #     tranTotals = {
-        #         tok: sum(
-        #             [st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
-        #         )
-        #         for tok in self.tokensList
-        #     }
-        #     validEthIdxs = getValidTranIdxs(
-        #         tranTokens,
-        #         st_eth_amounts,
-        #         self.ethBals[self.v] + fetchEthTotal,
-        #         ETH_ADDR,
-        #     )
-        #     tranTotals[ETH_ADDR] = sum(
-        #         [
-        #             st_eth_amounts[i]
-        #             for i, x in enumerate(tranTokens)
-        #             if x == ETH_ADDR and i in validEthIdxs
-        #         ]
-        #     )
+            tranMinLen = trimToShortest([st_recips, st_eth_amounts])
+            tranTokens = choices(self.tokensList, k=tranMinLen)
+            tranTotals = {
+                tok: sum(
+                    [st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
+                )
+                for tok in self.tokensList
+            }
+            validEthIdxs = getValidTranIdxs(
+                tranTokens,
+                st_eth_amounts,
+                self.ethBals[self.v] + fetchEthTotal,
+                ETH_ADDR,
+            )
+            tranTotals[ETH_ADDR] = sum(
+                [
+                    st_eth_amounts[i]
+                    for i, x in enumerate(tranTokens)
+                    if x == ETH_ADDR and i in validEthIdxs
+                ]
+            )
 
-        #     signer = self._get_key_prob(AGG)
-        #     callDataNoSig = self.v.allBatch.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         st_swapIDs,
-        #         fetchTokens,
-        #         tranTokens,
-        #         st_recips,
-        #         st_eth_amounts,
-        #     )
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.v.allBatch.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                st_swapIDs,
+                fetchTokens,
+                tranTokens,
+                st_recips,
+                st_eth_amounts,
+            )
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _allBatch")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.allBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 fetchTokens,
-        #                 tranTokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.allBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 fetchTokens,
-        #                 tranTokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.allBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 fetchTokens,
-        #                 tranTokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif (
-        #         tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v]
-        #         or tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v]
-        #     ):
-        #         print(
-        #             "        NOT ENOUGH TOKENS IN VAULT rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         # with reverts():
-        #         #     self.v.allBatch(
-        #         #         signer.getSigDataWithNonces(
-        #         #             callDataNoSig, nonces, AGG, self.km.address
-        #         #         ),
-        #         #         st_swapIDs,
-        #         #         fetchTokens,
-        #         #         tranTokens,
-        #         #         st_recips,
-        #         #         st_eth_amounts,
-        #         #     )
-        #     else:
-        #         print(
-        #             "                    rule_allBatch",
-        #             signer,
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             st_sender,
-        #         )
-        #         tx = self.v.allBatch(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             st_swapIDs,
-        #             fetchTokens,
-        #             tranTokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #             {"from": st_sender},
-        #         )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _allBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif (
+                tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v]
+                or tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v]
+            ):
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                with reverts():
+                    self.v.allBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        fetchTokens,
+                        tranTokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            else:
+                print(
+                    "                    rule_allBatch",
+                    signer,
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    st_sender,
+                )
+                tx = self.v.allBatch(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    st_swapIDs,
+                    fetchTokens,
+                    tranTokens,
+                    st_recips,
+                    st_eth_amounts,
+                    {"from": st_sender},
+                )
 
-        #         self.lastValidateTime = tx.timestamp
+                self.lastValidateTime = tx.timestamp
 
-        #         # Alter bals from the fetch
-        #         for swapID, tok in zip(st_swapIDs, fetchTokens):
-        #             if tok == ETH_ADDR:
-        #                 addr = getCreate2Addr(
-        #                     self.v.address, cleanHexStrPad(swapID), DepositEth, ""
-        #                 )
-        #                 self.ethBals[self.v] += self.ethBals[addr]
-        #                 self.ethBals[addr] = 0
-        #             else:
-        #                 addr = getCreate2Addr(
-        #                     self.v.address,
-        #                     cleanHexStrPad(swapID),
-        #                     DepositToken,
-        #                     cleanHexStrPad(tok.address),
-        #                 )
-        #                 if tok == self.tokenA:
-        #                     self.tokenABals[self.v] += self.tokenABals[addr]
-        #                     self.tokenABals[addr] = 0
-        #                 elif tok == self.tokenB:
-        #                     self.tokenBBals[self.v] += self.tokenBBals[addr]
-        #                     self.tokenBBals[addr] = 0
-        #                 else:
-        #                     assert False, "Panicc"
+                # Alter bals from the fetch
+                for swapID, tok in zip(st_swapIDs, fetchTokens):
+                    if tok == ETH_ADDR:
+                        addr = getCreate2Addr(
+                            self.v.address, cleanHexStrPad(swapID), DepositEth, ""
+                        )
+                        self.ethBals[self.v] += self.ethBals[addr]
+                        self.ethBals[addr] = 0
+                    else:
+                        addr = getCreate2Addr(
+                            self.v.address,
+                            cleanHexStrPad(swapID),
+                            DepositToken,
+                            cleanHexStrPad(tok.address),
+                        )
+                        if tok == self.tokenA:
+                            self.tokenABals[self.v] += self.tokenABals[addr]
+                            self.tokenABals[addr] = 0
+                        elif tok == self.tokenB:
+                            self.tokenBBals[self.v] += self.tokenBBals[addr]
+                            self.tokenBBals[addr] = 0
+                        else:
+                            assert False, "Panicc"
 
-        #         # Alter bals from the transfers
-        #         for i, (tok, rec, am) in enumerate(
-        #             zip(tranTokens, st_recips, st_eth_amounts)
-        #         ):
-        #             if tok == ETH_ADDR:
-        #                 if i in validEthIdxs:
-        #                     self.ethBals[rec] += am
-        #                     self.ethBals[self.v] -= am
-        #             elif tok == self.tokenA:
-        #                 self.tokenABals[rec] += am
-        #                 self.tokenABals[self.v] -= am
-        #             elif tok == self.tokenB:
-        #                 self.tokenBBals[rec] += am
-        #                 self.tokenBBals[self.v] -= am
-        #             else:
-        #                 assert False, "Panic"
+                # Alter bals from the transfers
+                for i, (tok, rec, am) in enumerate(
+                    zip(tranTokens, st_recips, st_eth_amounts)
+                ):
+                    if tok == ETH_ADDR:
+                        if i in validEthIdxs:
+                            self.ethBals[rec] += am
+                            self.ethBals[self.v] -= am
+                    elif tok == self.tokenA:
+                        self.tokenABals[rec] += am
+                        self.tokenABals[self.v] -= am
+                    elif tok == self.tokenB:
+                        self.tokenBBals[rec] += am
+                        self.tokenBBals[self.v] -= am
+                    else:
+                        assert False, "Panic"
 
         # Transfers ETH or tokens out the vault. Want this to be called by rule_vault_transfer_eth
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
-        # def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-        #     callDataNoSig = self.v.transfer.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         tokenAddr,
-        #         st_recip,
-        #         st_eth_amount,
-        #     )
-        #     signer = self._get_key_prob(AGG)
+        def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
+            callDataNoSig = self.v.transfer.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                tokenAddr,
+                st_recip,
+                st_eth_amount,
+            )
+            signer = self._get_key_prob(AGG)
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.transfer(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokenAddr,
-        #                 st_recip,
-        #                 st_eth_amount,
-        #                 {"from": st_sender},
-        #             )
-        #     elif st_eth_amount == 0:
-        #         print(
-        #             "        REV_MSG_NZ_UINT _vault_transfer",
-        #             tokenAddr,
-        #             st_sender,
-        #             st_recip,
-        #             st_eth_amount,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_NZ_UINT):
-        #             self.v.transfer(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokenAddr,
-        #                 st_recip,
-        #                 st_eth_amount,
-        #                 {"from": st_sender},
-        #             )
-        #     elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
-        #         print(
-        #             "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
-        #             tokenAddr,
-        #             st_sender,
-        #             st_recip,
-        #             st_eth_amount,
-        #             signer,
-        #         )
-        #         # with reverts():
-        #         #     self.v.transfer(
-        #         #         signer.getSigDataWithNonces(
-        #         #             callDataNoSig, nonces, AGG, self.km.address
-        #         #         ),
-        #         #         tokenAddr,
-        #         #         st_recip,
-        #         #         st_eth_amount,
-        #         #         {"from": st_sender},
-        #         #     )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST _vault_transfer",
-        #             tokenAddr,
-        #             st_sender,
-        #             st_recip,
-        #             st_eth_amount,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.transfer(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokenAddr,
-        #                 st_recip,
-        #                 st_eth_amount,
-        #                 {"from": st_sender},
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
-        #             tokenAddr,
-        #             st_sender,
-        #             st_recip,
-        #             st_eth_amount,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.transfer(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokenAddr,
-        #                 st_recip,
-        #                 st_eth_amount,
-        #                 {"from": st_sender},
-        #             )
-        #     else:
-        #         print(
-        #             "                    _vault_transfer",
-        #             tokenAddr,
-        #             st_sender,
-        #             st_recip,
-        #             st_eth_amount,
-        #             signer,
-        #         )
-        #         tx = self.v.transfer(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             tokenAddr,
-        #             st_recip,
-        #             st_eth_amount,
-        #             {"from": st_sender},
-        #         )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+            elif st_eth_amount == 0:
+                print(
+                    "        REV_MSG_NZ_UINT _vault_transfer",
+                    tokenAddr,
+                    st_sender,
+                    st_recip,
+                    st_eth_amount,
+                    signer,
+                )
+                with reverts(REV_MSG_NZ_UINT):
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+            elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
+                    tokenAddr,
+                    st_sender,
+                    st_recip,
+                    st_eth_amount,
+                    signer,
+                )
+                with reverts():
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST _vault_transfer",
+                    tokenAddr,
+                    st_sender,
+                    st_recip,
+                    st_eth_amount,
+                    signer,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
+                    tokenAddr,
+                    st_sender,
+                    st_recip,
+                    st_eth_amount,
+                    signer,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokenAddr,
+                        st_recip,
+                        st_eth_amount,
+                        {"from": st_sender},
+                    )
+            else:
+                print(
+                    "                    _vault_transfer",
+                    tokenAddr,
+                    st_sender,
+                    st_recip,
+                    st_eth_amount,
+                    signer,
+                )
+                tx = self.v.transfer(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    tokenAddr,
+                    st_recip,
+                    st_eth_amount,
+                    {"from": st_sender},
+                )
 
-        #         if bals[self.v] >= st_eth_amount or tokenAddr != ETH_ADDR:
-        #             bals[self.v] -= st_eth_amount
-        #             bals[st_recip] += st_eth_amount
-        #         self.lastValidateTime = tx.timestamp
+                if bals[self.v] >= st_eth_amount or tokenAddr != ETH_ADDR:
+                    bals[self.v] -= st_eth_amount
+                    bals[st_recip] += st_eth_amount
+                self.lastValidateTime = tx.timestamp
 
-        # def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
-        #     self._vault_transfer(
-        #         self.ethBals, ETH_ADDR, st_sender, st_recip, st_eth_amount
-        #     )
+        def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
+            self._vault_transfer(
+                self.ethBals, ETH_ADDR, st_sender, st_recip, st_eth_amount
+            )
 
-        # def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
-        #     self._vault_transfer(
-        #         self.tokenABals, self.tokenA, st_sender, st_recip, st_token_amount
-        #     )
+        def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
+            self._vault_transfer(
+                self.tokenABals, self.tokenA, st_sender, st_recip, st_token_amount
+            )
 
-        # def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
-        #     self._vault_transfer(
-        #         self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount
-        #     )
+        def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
+            self._vault_transfer(
+                self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount
+            )
 
         # Send any combination of eth/tokenA/tokenB out of the vault. Using st_eth_amounts
         # for both eth amounts and token amounts here because its max is within the bounds of
         # both eth and tokens.
-        # def rule_vault_transferBatch(self, st_sender, st_recips, st_eth_amounts):
-        #     signer = self._get_key_prob(AGG)
-        #     minLen = trimToShortest([st_recips, st_eth_amounts])
-        #     tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
-        #     callDataNoSig = self.v.transferBatch.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         tokens,
-        #         st_recips,
-        #         st_eth_amounts,
-        #     )
+        def rule_vault_transferBatch(self, st_sender, st_recips, st_eth_amounts):
+            signer = self._get_key_prob(AGG)
+            minLen = trimToShortest([st_recips, st_eth_amounts])
+            tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
+            callDataNoSig = self.v.transferBatch.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                tokens,
+                st_recips,
+                st_eth_amounts,
+            )
 
-        #     totalEth = 0
-        #     totalTokenA = 0
-        #     totalTokenB = 0
-        #     validEthIdxs = getValidTranIdxs(
-        #         tokens, st_eth_amounts, self.ethBals[self.v], ETH_ADDR
-        #     )
-        #     for i, (tok, am) in enumerate(zip(tokens, st_eth_amounts)):
-        #         if tok == ETH_ADDR:
-        #             if i in validEthIdxs:
-        #                 totalEth += am
-        #         elif tok == self.tokenA:
-        #             totalTokenA += am
-        #         elif tok == self.tokenB:
-        #             totalTokenB += am
-        #         else:
-        #             assert False, "Unknown asset"
+            totalEth = 0
+            totalTokenA = 0
+            totalTokenB = 0
+            validEthIdxs = getValidTranIdxs(
+                tokens, st_eth_amounts, self.ethBals[self.v], ETH_ADDR
+            )
+            for i, (tok, am) in enumerate(zip(tokens, st_eth_amounts)):
+                if tok == ETH_ADDR:
+                    if i in validEthIdxs:
+                        totalEth += am
+                elif tok == self.tokenA:
+                    totalTokenA += am
+                elif tok == self.tokenB:
+                    totalTokenB += am
+                else:
+                    assert False, "Unknown asset"
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.transferBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.transferBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.transferBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 tokens,
-        #                 st_recips,
-        #                 st_eth_amounts,
-        #             )
-        #     elif (
-        #         totalEth > self.ethBals[self.v]
-        #         or totalTokenA > self.tokenABals[self.v]
-        #         or totalTokenB > self.tokenBBals[self.v]
-        #     ):
-        #         print(
-        #             "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         # with reverts():
-        #         #     self.v.transferBatch(
-        #         #         signer.getSigDataWithNonces(
-        #         #             callDataNoSig, nonces, AGG, self.km.address
-        #         #         ),
-        #         #         tokens,
-        #         #         st_recips,
-        #         #         st_eth_amounts,
-        #         #     )
-        #     else:
-        #         print(
-        #             "                    rule_vault_transferBatch",
-        #             signer,
-        #             st_sender,
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
-        #         tx = self.v.transferBatch(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             tokens,
-        #             st_recips,
-        #             st_eth_amounts,
-        #         )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            elif (
+                totalEth > self.ethBals[self.v]
+                or totalTokenA > self.tokenABals[self.v]
+                or totalTokenB > self.tokenBBals[self.v]
+            ):
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                with reverts():
+                    self.v.transferBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        tokens,
+                        st_recips,
+                        st_eth_amounts,
+                    )
+            else:
+                print(
+                    "                    rule_vault_transferBatch",
+                    signer,
+                    st_sender,
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
+                tx = self.v.transferBatch(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    tokens,
+                    st_recips,
+                    st_eth_amounts,
+                )
 
-        #         self.lastValidateTime = tx.timestamp
-        #         for i in range(len(st_recips)):
-        #             if tokens[i] == ETH_ADDR:
-        #                 if i in validEthIdxs:
-        #                     self.ethBals[st_recips[i]] += st_eth_amounts[i]
-        #                     self.ethBals[self.v] -= st_eth_amounts[i]
-        #             elif tokens[i] == self.tokenA:
-        #                 self.tokenABals[st_recips[i]] += st_eth_amounts[i]
-        #                 self.tokenABals[self.v] -= st_eth_amounts[i]
-        #             elif tokens[i] == self.tokenB:
-        #                 self.tokenBBals[st_recips[i]] += st_eth_amounts[i]
-        #                 self.tokenBBals[self.v] -= st_eth_amounts[i]
-        #             else:
-        #                 assert False, "Panic"
+                self.lastValidateTime = tx.timestamp
+                for i in range(len(st_recips)):
+                    if tokens[i] == ETH_ADDR:
+                        if i in validEthIdxs:
+                            self.ethBals[st_recips[i]] += st_eth_amounts[i]
+                            self.ethBals[self.v] -= st_eth_amounts[i]
+                    elif tokens[i] == self.tokenA:
+                        self.tokenABals[st_recips[i]] += st_eth_amounts[i]
+                        self.tokenABals[self.v] -= st_eth_amounts[i]
+                    elif tokens[i] == self.tokenB:
+                        self.tokenBBals[st_recips[i]] += st_eth_amounts[i]
+                        self.tokenBBals[self.v] -= st_eth_amounts[i]
+                    else:
+                        assert False, "Panic"
 
-        # # Transfers ETH from a user/sender to one of the depositEth create2 addresses
-        # def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
-        #     # No point testing reverts of these conditions since it's not what we're trying to test
-        #     if st_swapID != 0 and self.ethBals[st_sender] >= st_eth_amount:
-        #         print(
-        #             "                    rule_transfer_eth_to_depositEth",
-        #             st_sender,
-        #             st_swapID,
-        #             st_eth_amount,
-        #         )
-        #         depositAddr = getCreate2Addr(
-        #             self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
-        #         )
-        #         st_sender.transfer(depositAddr, st_eth_amount)
+        # Transfers ETH from a user/sender to one of the depositEth create2 addresses
+        def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
+            # No point testing reverts of these conditions since it's not what we're trying to test
+            if st_swapID != 0 and self.ethBals[st_sender] >= st_eth_amount:
+                print(
+                    "                    rule_transfer_eth_to_depositEth",
+                    st_sender,
+                    st_swapID,
+                    st_eth_amount,
+                )
+                depositAddr = getCreate2Addr(
+                    self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
+                )
+                st_sender.transfer(depositAddr, st_eth_amount)
 
-        #         self.ethBals[st_sender] -= st_eth_amount
-        #         self.ethBals[depositAddr] += st_eth_amount
+                self.ethBals[st_sender] -= st_eth_amount
+                self.ethBals[depositAddr] += st_eth_amount
 
-        # # Transfers a token from a user/sender to one of the depositEth create2 addresses.
-        # # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
-        # # in the same way but with a different tokenAddr
-        # def _transfer_tokens_to_token_deposit(
-        #     self, bals, token, st_sender, st_swapID, st_token_amount
-        # ):
-        #     # No point testing reverts of these conditions since it's not what we're trying to test
-        #     if st_swapID != 0 and bals[st_sender] >= st_token_amount:
-        #         print(
-        #             "                    _transfer_tokens_to_token_deposit",
-        #             token,
-        #             st_sender,
-        #             st_swapID,
-        #             st_token_amount,
-        #         )
-        #         depositAddr = getCreate2Addr(
-        #             self.v.address,
-        #             cleanHexStrPad(st_swapID),
-        #             DepositToken,
-        #             cleanHexStrPad(token.address),
-        #         )
-        #         token.transfer(depositAddr, st_token_amount, {"from": st_sender})
+        # Transfers a token from a user/sender to one of the depositEth create2 addresses.
+        # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
+        # in the same way but with a different tokenAddr
+        def _transfer_tokens_to_token_deposit(
+            self, bals, token, st_sender, st_swapID, st_token_amount
+        ):
+            # No point testing reverts of these conditions since it's not what we're trying to test
+            if st_swapID != 0 and bals[st_sender] >= st_token_amount:
+                print(
+                    "                    _transfer_tokens_to_token_deposit",
+                    token,
+                    st_sender,
+                    st_swapID,
+                    st_token_amount,
+                )
+                depositAddr = getCreate2Addr(
+                    self.v.address,
+                    cleanHexStrPad(st_swapID),
+                    DepositToken,
+                    cleanHexStrPad(token.address),
+                )
+                token.transfer(depositAddr, st_token_amount, {"from": st_sender})
 
-        #         bals[st_sender] -= st_token_amount
-        #         bals[depositAddr] += st_token_amount
+                bals[st_sender] -= st_token_amount
+                bals[depositAddr] += st_token_amount
 
-        # # Deposits tokenA from a user to a tokenA create2
-        # def rule_transfer_tokens_to_depositTokenA(
-        #     self, st_sender, st_swapID, st_token_amount
-        # ):
-        #     self._transfer_tokens_to_token_deposit(
-        #         self.tokenABals, self.tokenA, st_sender, st_swapID, st_token_amount
-        #     )
+        # Deposits tokenA from a user to a tokenA create2
+        def rule_transfer_tokens_to_depositTokenA(
+            self, st_sender, st_swapID, st_token_amount
+        ):
+            self._transfer_tokens_to_token_deposit(
+                self.tokenABals, self.tokenA, st_sender, st_swapID, st_token_amount
+            )
 
-        # # Deposits tokenB from a user to a tokenB create2
-        # def rule_transfer_tokens_to_depositTokenB(
-        #     self, st_sender, st_swapID, st_token_amount
-        # ):
-        #     self._transfer_tokens_to_token_deposit(
-        #         self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount
-        #     )
+        # Deposits tokenB from a user to a tokenB create2
+        def rule_transfer_tokens_to_depositTokenB(
+            self, st_sender, st_swapID, st_token_amount
+        ):
+            self._transfer_tokens_to_token_deposit(
+                self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount
+            )
 
-        # # Fetch the ETH deposit of a random create2
-        # def rule_fetchDepositEth(self, st_sender, st_swapID):
-        #     callDataNoSig = self.v.fetchDepositEth.encode_input(
-        #         agg_null_sig(self.km.address, chain.id), st_swapID
-        #     )
-        #     signer = self._get_key_prob(AGG)
+        # Fetch the ETH deposit of a random create2
+        def rule_fetchDepositEth(self, st_sender, st_swapID):
+            callDataNoSig = self.v.fetchDepositEth.encode_input(
+                agg_null_sig(self.km.address, chain.id), st_swapID
+            )
+            signer = self._get_key_prob(AGG)
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.fetchDepositEth(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #             )
-        #     elif st_swapID == 0:
-        #         print(
-        #             "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_NZ_BYTES32):
-        #             self.v.fetchDepositEth(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_fetchDepositEth",
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.fetchDepositEth(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_fetchDepositEth",
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.fetchDepositEth(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_fetchDepositEth",
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         depositAddr = getCreate2Addr(
-        #             self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
-        #         )
-        #         depositBal = self.ethBals[depositAddr]
-        #         tx = self.v.fetchDepositEth(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             st_swapID,
-        #         )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositEth(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                    )
+            elif st_swapID == 0:
+                print(
+                    "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                with reverts(REV_MSG_NZ_BYTES32):
+                    self.v.fetchDepositEth(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_fetchDepositEth",
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.fetchDepositEth(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_fetchDepositEth",
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.fetchDepositEth(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                    )
+            else:
+                print(
+                    "                    rule_fetchDepositEth",
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                depositAddr = getCreate2Addr(
+                    self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
+                )
+                depositBal = self.ethBals[depositAddr]
+                tx = self.v.fetchDepositEth(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    st_swapID,
+                )
 
-        #         self.ethBals[depositAddr] -= depositBal
-        #         self.ethBals[self.v] += depositBal
-        #         self.lastValidateTime = tx.timestamp
+                self.ethBals[depositAddr] -= depositBal
+                self.ethBals[self.v] += depositBal
+                self.lastValidateTime = tx.timestamp
 
-        # def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
-        #     addrs = [
-        #         getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "")
-        #         for swapID in st_swapIDs
-        #     ]
-        #     total = sum([web3.eth.get_balance(addr) for addr in addrs])
-        #     signer = self._get_key_prob(AGG)
-        #     callDataNoSig = self.v.fetchDepositEthBatch.encode_input(
-        #         agg_null_sig(self.km.address, chain.id), st_swapIDs
-        #     )
+        def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
+            addrs = [
+                getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "")
+                for swapID in st_swapIDs
+            ]
+            total = sum([web3.eth.get_balance(addr) for addr in addrs])
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(
+                agg_null_sig(self.km.address, chain.id), st_swapIDs
+            )
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.fetchDepositEthBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_fetchDepositEthBatch",
-        #             st_sender,
-        #             st_swapIDs,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.fetchDepositEthBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_fetchDepositEthBatch",
-        #             st_sender,
-        #             st_swapIDs,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.fetchDepositEthBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_fetchDepositEthBatch",
-        #             st_sender,
-        #             st_swapIDs,
-        #             signer,
-        #         )
-        #         tx = self.v.fetchDepositEthBatch(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             st_swapIDs,
-        #         )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositEthBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_fetchDepositEthBatch",
+                    st_sender,
+                    st_swapIDs,
+                    signer,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.fetchDepositEthBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_fetchDepositEthBatch",
+                    st_sender,
+                    st_swapIDs,
+                    signer,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.fetchDepositEthBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                    )
+            else:
+                print(
+                    "                    rule_fetchDepositEthBatch",
+                    st_sender,
+                    st_swapIDs,
+                    signer,
+                )
+                tx = self.v.fetchDepositEthBatch(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    st_swapIDs,
+                )
 
-        #         for addr in addrs:
-        #             self.ethBals[addr] = 0
-        #         self.ethBals[self.v] += total
-        #         self.lastValidateTime = tx.timestamp
+                for addr in addrs:
+                    self.ethBals[addr] = 0
+                self.ethBals[self.v] += total
+                self.lastValidateTime = tx.timestamp
 
-        # # Fetch the token deposit of a random create2
-        # def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-        #     callDataNoSig = self.v.fetchDepositToken.encode_input(
-        #         agg_null_sig(self.km.address, chain.id), st_swapID, token
-        #     )
-        #     signer = self._get_key_prob(AGG)
+        # Fetch the token deposit of a random create2
+        def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
+            callDataNoSig = self.v.fetchDepositToken.encode_input(
+                agg_null_sig(self.km.address, chain.id), st_swapID, token
+            )
+            signer = self._get_key_prob(AGG)
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.fetchDepositToken(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #                 token,
-        #             )
-        #     elif st_swapID == 0:
-        #         print(
-        #             "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_NZ_BYTES32):
-        #             self.v.fetchDepositToken(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #                 token,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST _fetchDepositToken",
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.fetchDepositToken(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #                 token,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG _fetchDepositToken",
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.fetchDepositToken(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapID,
-        #                 token,
-        #             )
-        #     else:
-        #         print(
-        #             "                    _fetchDepositToken",
-        #             token,
-        #             st_sender,
-        #             st_swapID,
-        #             signer,
-        #         )
-        #         depositAddr = getCreate2Addr(
-        #             self.v.address,
-        #             cleanHexStrPad(st_swapID),
-        #             DepositToken,
-        #             cleanHexStrPad(token.address),
-        #         )
-        #         depositBal = bals[depositAddr]
-        #         tx = self.v.fetchDepositToken(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             st_swapID,
-        #             token,
-        #         )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositToken(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                        token,
+                    )
+            elif st_swapID == 0:
+                print(
+                    "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                with reverts(REV_MSG_NZ_BYTES32):
+                    self.v.fetchDepositToken(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                        token,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST _fetchDepositToken",
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.fetchDepositToken(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                        token,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG _fetchDepositToken",
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.fetchDepositToken(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapID,
+                        token,
+                    )
+            else:
+                print(
+                    "                    _fetchDepositToken",
+                    token,
+                    st_sender,
+                    st_swapID,
+                    signer,
+                )
+                depositAddr = getCreate2Addr(
+                    self.v.address,
+                    cleanHexStrPad(st_swapID),
+                    DepositToken,
+                    cleanHexStrPad(token.address),
+                )
+                depositBal = bals[depositAddr]
+                tx = self.v.fetchDepositToken(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    st_swapID,
+                    token,
+                )
 
-        #         bals[depositAddr] -= depositBal
-        #         bals[self.v] += depositBal
-        #         self.lastValidateTime = tx.timestamp
+                bals[depositAddr] -= depositBal
+                bals[self.v] += depositBal
+                self.lastValidateTime = tx.timestamp
 
-        # # Fetch the tokenA deposit of a random create2
-        # def rule_fetchDepositToken_tokenA(self, st_sender, st_swapID):
-        #     self._fetchDepositToken(self.tokenABals, self.tokenA, st_sender, st_swapID)
+        # Fetch the tokenA deposit of a random create2
+        def rule_fetchDepositToken_tokenA(self, st_sender, st_swapID):
+            self._fetchDepositToken(self.tokenABals, self.tokenA, st_sender, st_swapID)
 
-        # # Fetch the tokenB deposit of a random create2
-        # def rule_fetchDepositToken_tokenB(self, st_sender, st_swapID):
-        #     self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
+        # Fetch the tokenB deposit of a random create2
+        def rule_fetchDepositToken_tokenB(self, st_sender, st_swapID):
+            self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
 
-        # def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
-        #     minLen = trimToShortest([st_swapIDs, st_tokens])
-        #     signer = self._get_key_prob(AGG)
-        #     callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
-        #         agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
-        #     )
+        def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
+            minLen = trimToShortest([st_swapIDs, st_tokens])
+            signer = self._get_key_prob(AGG)
+            callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
+                agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
+            )
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.v.fetchDepositTokenBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 st_tokens,
-        #             )
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_fetchDepositTokenBatch",
-        #             st_sender,
-        #             st_swapIDs,
-        #             st_tokens,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.v.fetchDepositTokenBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 st_tokens,
-        #             )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.v.fetchDepositTokenBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        st_tokens,
+                    )
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_fetchDepositTokenBatch",
+                    st_sender,
+                    st_swapIDs,
+                    st_tokens,
+                    signer,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.v.fetchDepositTokenBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        st_tokens,
+                    )
 
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_fetchDepositTokenBatch",
-        #             st_sender,
-        #             st_swapIDs,
-        #             st_tokens,
-        #             signer,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.v.fetchDepositTokenBatch(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 st_swapIDs,
-        #                 st_tokens,
-        #             )
-        #     else:
-        #         for swapID, token in zip(st_swapIDs, st_tokens):
-        #             addr = getCreate2Addr(
-        #                 self.v.address,
-        #                 cleanHexStrPad(swapID),
-        #                 DepositToken,
-        #                 cleanHexStrPad(token.address),
-        #             )
-        #             if token == self.tokenA:
-        #                 self.tokenABals[self.v] += self.tokenABals[addr]
-        #                 self.tokenABals[addr] = 0
-        #             elif token == self.tokenB:
-        #                 self.tokenBBals[self.v] += self.tokenBBals[addr]
-        #                 self.tokenBBals[addr] = 0
-        #             else:
-        #                 assert False, "Panicc"
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_fetchDepositTokenBatch",
+                    st_sender,
+                    st_swapIDs,
+                    st_tokens,
+                    signer,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.v.fetchDepositTokenBatch(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        st_swapIDs,
+                        st_tokens,
+                    )
+            else:
+                for swapID, token in zip(st_swapIDs, st_tokens):
+                    addr = getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(swapID),
+                        DepositToken,
+                        cleanHexStrPad(token.address),
+                    )
+                    if token == self.tokenA:
+                        self.tokenABals[self.v] += self.tokenABals[addr]
+                        self.tokenABals[addr] = 0
+                    elif token == self.tokenB:
+                        self.tokenBBals[self.v] += self.tokenBBals[addr]
+                        self.tokenBBals[addr] = 0
+                    else:
+                        assert False, "Panicc"
 
-        #         print(
-        #             "                    rule_fetchDepositTokenBatch",
-        #             st_sender,
-        #             st_swapIDs,
-        #             st_tokens,
-        #             signer,
-        #         )
-        #         tx = self.v.fetchDepositTokenBatch(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             st_swapIDs,
-        #             st_tokens,
-        #         )
+                print(
+                    "                    rule_fetchDepositTokenBatch",
+                    st_sender,
+                    st_swapIDs,
+                    st_tokens,
+                    signer,
+                )
+                tx = self.v.fetchDepositTokenBatch(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    st_swapIDs,
+                    st_tokens,
+                )
 
-        #         self.lastValidateTime = tx.timestamp
+                self.lastValidateTime = tx.timestamp
 
-        # KeyManager
+        KeyManager
 
-        # # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
-        # def rule_updateCanConsumeKeyNonce_dewhitelist(
-        #     self, st_sender, st_addrs, st_sender_any
-        # ):
-        #     # So dewhitelisting only happens 1/20 of the times
-        #     if not st_sender_any == self.governor:
-        #         return
+        # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
+        def rule_updateCanConsumeKeyNonce_dewhitelist(
+            self, st_sender, st_addrs, st_sender_any
+        ):
+            # So dewhitelisting only happens 1/20 of the times
+            if not st_sender_any == self.governor:
+                return
 
-        #     toWhitelist = [self.km] + st_addrs
+            toWhitelist = [self.km] + st_addrs
 
-        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         self.currentWhitelist,
-        #         toWhitelist,
-        #     )
+            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                self.currentWhitelist,
+                toWhitelist,
+            )
 
-        #     signer = self._get_key_prob(AGG)
-        #     if signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
-        #             st_sender,
-        #             st_addrs,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.km.updateCanConsumeKeyNonce(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 self.currentWhitelist,
-        #                 toWhitelist,
-        #                 {"from": st_sender},
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_updateCanConsumeKeyNonce_dewhitelist",
-        #             st_sender,
-        #             st_addrs,
-        #         )
-        #         tx = self.km.updateCanConsumeKeyNonce(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             self.currentWhitelist,
-        #             toWhitelist,
-        #             {"from": st_sender},
-        #         )
-        #         self.currentWhitelist = toWhitelist
-        #         self.lastValidateTime = tx.timestamp
+            signer = self._get_key_prob(AGG)
+            if signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist",
+                    st_sender,
+                    st_addrs,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.km.updateCanConsumeKeyNonce(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        self.currentWhitelist,
+                        toWhitelist,
+                        {"from": st_sender},
+                    )
+            else:
+                print(
+                    "                    rule_updateCanConsumeKeyNonce_dewhitelist",
+                    st_sender,
+                    st_addrs,
+                )
+                tx = self.km.updateCanConsumeKeyNonce(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                    {"from": st_sender},
+                )
+                self.currentWhitelist = toWhitelist
+                self.lastValidateTime = tx.timestamp
 
-        # # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
-        # def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
-        #     # Regardless of what is whitelisted, whitelist the current contracts
-        #     toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
+        # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
+        def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
+            # Regardless of what is whitelisted, whitelist the current contracts
+            toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
 
-        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         self.currentWhitelist,
-        #         toWhitelist,
-        #     )
-        #     signer = self._get_key_prob(AGG)
-        #     if signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             tx = self.km.updateCanConsumeKeyNonce(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 self.currentWhitelist,
-        #                 toWhitelist,
-        #                 {"from": st_sender},
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_updateCanConsumeKeyNonce_whitelist",
-        #             st_sender,
-        #         )
-        #         tx = self.km.updateCanConsumeKeyNonce(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             self.currentWhitelist,
-        #             toWhitelist,
-        #             {"from": st_sender},
-        #         )
-        #         self.currentWhitelist = toWhitelist
-        #         self.lastValidateTime = tx.timestamp
+            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                self.currentWhitelist,
+                toWhitelist,
+            )
+            signer = self._get_key_prob(AGG)
+            if signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
+                    st_sender,
+                )
+                with reverts(REV_MSG_SIG):
+                    tx = self.km.updateCanConsumeKeyNonce(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        self.currentWhitelist,
+                        toWhitelist,
+                        {"from": st_sender},
+                    )
+            else:
+                print(
+                    "                    rule_updateCanConsumeKeyNonce_whitelist",
+                    st_sender,
+                )
+                tx = self.km.updateCanConsumeKeyNonce(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                    {"from": st_sender},
+                )
+                self.currentWhitelist = toWhitelist
+                self.lastValidateTime = tx.timestamp
 
         # Get the key that is probably what we want, but also has a low chance of choosing
         # the 'wrong' key which will cause a revert and tests the full range. Maximises useful
         # results whilst still testing the full range.
         def _get_key_prob(self, keyID):
-            # samples = ([self.keyIDToCurKeys[keyID]] * 100) + self.allKeys
-            # return choice(samples)
+            samples = ([self.keyIDToCurKeys[keyID]] * 100) + self.allKeys
             return self.keyIDToCurKeys[keyID]
 
-        # # Checks if consumeKeyNonce returns the correct value when called with a random sender,
-        # # signing key, random keyID that the signing key is supposed to be, and random msgData
-        # def rule_consumeKeyNonce(
-        #     self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data
-        # ):
-        #     sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-        #         st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
-        #     )
+        # Checks if consumeKeyNonce returns the correct value when called with a random sender,
+        # signing key, random keyID that the signing key is supposed to be, and random msgData
+        def rule_consumeKeyNonce(
+            self, st_sender, st_sig_key_idx, st_keyID_num, st_msg_data
+        ):
+            sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
+                st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
+            )
 
-        #     if not st_sender in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_consumeKeyNonce",
-        #             st_sender,
-        #             st_sig_key_idx,
-        #             st_keyID_num,
-        #             st_msg_data,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.km.consumeKeyNonce(
-        #                 sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-        #             )
-        #     elif (
-        #         self.allKeys[st_sig_key_idx]
-        #         == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
-        #     ):
-        #         print(
-        #             "                    rule_consumeKeyNonce",
-        #             st_sender,
-        #             st_sig_key_idx,
-        #             st_keyID_num,
-        #             st_msg_data,
-        #         )
-        #         tx = self.km.consumeKeyNonce(
-        #             sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-        #         )
-        #         self.lastValidateTime = tx.timestamp
-        #     else:
-        #         with reverts(REV_MSG_SIG):
-        #             print(
-        #                 "        REV_MSG_SIG rule_consumeKeyNonce",
-        #                 st_sender,
-        #                 st_sig_key_idx,
-        #                 st_keyID_num,
-        #                 st_msg_data,
-        #             )
-        #             self.km.consumeKeyNonce(
-        #                 sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-        #             )
+            if not st_sender in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_consumeKeyNonce",
+                    st_sender,
+                    st_sig_key_idx,
+                    st_keyID_num,
+                    st_msg_data,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.km.consumeKeyNonce(
+                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                    )
+            elif (
+                self.allKeys[st_sig_key_idx]
+                == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
+            ):
+                print(
+                    "                    rule_consumeKeyNonce",
+                    st_sender,
+                    st_sig_key_idx,
+                    st_keyID_num,
+                    st_msg_data,
+                )
+                tx = self.km.consumeKeyNonce(
+                    sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                )
+                self.lastValidateTime = tx.timestamp
+            else:
+                with reverts(REV_MSG_SIG):
+                    print(
+                        "        REV_MSG_SIG rule_consumeKeyNonce",
+                        st_sender,
+                        st_sig_key_idx,
+                        st_keyID_num,
+                        st_msg_data,
+                    )
+                    self.km.consumeKeyNonce(
+                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                    )
 
-        # # Replace a key with a random key - setAggKeyWithAggKey
-        # def _set_same_key_agg(
-        #     self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx
-        # ):
-        #     callDataNoSig = fcn.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         self.allKeys[st_new_key_idx].getPubData(),
-        #     )
-        #     if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
-        #         print(
-        #             f"                    {fcn}",
-        #             st_sender,
-        #             keyID,
-        #             st_sig_key_idx,
-        #             st_new_key_idx,
-        #         )
-        #         tx = fcn(
-        #             self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             self.allKeys[st_new_key_idx].getPubData(),
-        #             {"from": st_sender},
-        #         )
+        # Replace a key with a random key - setAggKeyWithAggKey
+        def _set_same_key_agg(
+            self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx
+        ):
+            callDataNoSig = fcn.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                self.allKeys[st_new_key_idx].getPubData(),
+            )
+            if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
+                print(
+                    f"                    {fcn}",
+                    st_sender,
+                    keyID,
+                    st_sig_key_idx,
+                    st_new_key_idx,
+                )
+                tx = fcn(
+                    self.allKeys[st_sig_key_idx].getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.allKeys[st_new_key_idx].getPubData(),
+                    {"from": st_sender},
+                )
 
-        #         self.keyIDToCurKeys[keyID] = self.allKeys[st_new_key_idx]
-        #         self.lastValidateTime = tx.timestamp
-        #     else:
-        #         with reverts(REV_MSG_SIG):
-        #             print(
-        #                 f"        REV_MSG_SIG {fcn}",
-        #                 st_sender,
-        #                 keyID,
-        #                 st_sig_key_idx,
-        #                 st_new_key_idx,
-        #             )
-        #             fcn(
-        #                 self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 self.allKeys[st_new_key_idx].getPubData(),
-        #                 {"from": st_sender},
-        #             )
+                self.keyIDToCurKeys[keyID] = self.allKeys[st_new_key_idx]
+                self.lastValidateTime = tx.timestamp
+            else:
+                with reverts(REV_MSG_SIG):
+                    print(
+                        f"        REV_MSG_SIG {fcn}",
+                        st_sender,
+                        keyID,
+                        st_sig_key_idx,
+                        st_new_key_idx,
+                    )
+                    fcn(
+                        self.allKeys[st_sig_key_idx].getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        self.allKeys[st_new_key_idx].getPubData(),
+                        {"from": st_sender},
+                    )
 
-        # # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
-        # def _set_same_key_gov(self, st_sender, fcn):
-        #     #            current_governor = choice([st_sender, self.governor])
-        #     current_governor = self.governor
+        # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
+        def _set_same_key_gov(self, st_sender, fcn):
+            current_governor = choice([st_sender, self.governor])
 
-        #     if current_governor == self.governor:
-        #         print(f"                    {fcn}", st_sender, self.governor)
-        #         fcn(st_sender, {"from": current_governor})
-        #         self.governor = st_sender
-        #     else:
-        #         with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
-        #             fcn(st_sender, {"from": current_governor})
+            if current_governor == self.governor:
+                print(f"                    {fcn}", st_sender, self.governor)
+                fcn(st_sender, {"from": current_governor})
+                self.governor = st_sender
+            else:
+                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+                    fcn(st_sender, {"from": current_governor})
 
-        # # Call setAggKeyWithAggKey with a random new key, signing key, and sender
-        # def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-        #     self._set_same_key_agg(
-        #         st_sender,
-        #         self.km.setAggKeyWithAggKey,
-        #         AGG,
-        #         st_sig_key_idx,
-        #         st_new_key_idx,
-        #     )
+        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
+        def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+            self._set_same_key_agg(
+                st_sender,
+                self.km.setAggKeyWithAggKey,
+                AGG,
+                st_sig_key_idx,
+                st_new_key_idx,
+            )
 
-        # # Call setAggKeyWithAggKey with a random new key, signing key, and sender
-        # def rule_setGovKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-        #     self._set_same_key_gov(st_sender, self.km.setGovKeyWithGovKey)
+        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
+        def rule_setGovKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+            self._set_same_key_gov(st_sender, self.km.setGovKeyWithGovKey)
 
-        # # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
-        # # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
-        # # in itself, since Hypothesis usually picks small values as part of shrinking
-        # def rule_sleep_2_days(self):
-        #     print("                    rule_sleep_2_days")
-        #     chain.sleep(2 * DAY)
+        # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
+        # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
+        # in itself, since Hypothesis usually picks small values as part of shrinking
+        def rule_sleep_2_days(self):
+            print("                    rule_sleep_2_days")
+            chain.sleep(2 * DAY)
 
-        # # Call setAggKeyWithGovKey with a random new key, signing key, and sender
-        # def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
+        # Call setAggKeyWithGovKey with a random new key, signing key, and sender
+        def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
 
-        #     # current_governor = choice([st_sender, self.governor])
-        #     current_governor = self.governor
+            current_governor = choice([st_sender, self.governor])
 
-        #     if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
-        #         print(
-        #             "        REV_MSG_DELAY rule_setAggKeyWithGovKey",
-        #             st_sender,
-        #             current_governor,
-        #             st_new_key_idx,
-        #         )
-        #         with reverts(REV_MSG_DELAY):
-        #             self.km.setAggKeyWithGovKey(
-        #                 self.allKeys[st_new_key_idx].getPubData(),
-        #                 {"from": current_governor},
-        #             )
-        #     elif current_governor != self.governor:
-        #         print(
-        #             "        REV_MSG_SIG rule_setAggKeyWithGovKey",
-        #             st_sender,
-        #             current_governor,
-        #             st_new_key_idx,
-        #         )
-        #         with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
-        #             self.km.setAggKeyWithGovKey(
-        #                 self.allKeys[st_new_key_idx].getPubData(),
-        #                 {"from": current_governor},
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_setAggKeyWithGovKey",
-        #             st_sender,
-        #             current_governor,
-        #             st_new_key_idx,
-        #         )
-        #         tx = self.km.setAggKeyWithGovKey(
-        #             self.allKeys[st_new_key_idx].getPubData(),
-        #             {"from": current_governor},
-        #         )
+            if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
+                print(
+                    "        REV_MSG_DELAY rule_setAggKeyWithGovKey",
+                    st_sender,
+                    current_governor,
+                    st_new_key_idx,
+                )
+                with reverts(REV_MSG_DELAY):
+                    self.km.setAggKeyWithGovKey(
+                        self.allKeys[st_new_key_idx].getPubData(),
+                        {"from": current_governor},
+                    )
+            elif current_governor != self.governor:
+                print(
+                    "        REV_MSG_SIG rule_setAggKeyWithGovKey",
+                    st_sender,
+                    current_governor,
+                    st_new_key_idx,
+                )
+                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+                    self.km.setAggKeyWithGovKey(
+                        self.allKeys[st_new_key_idx].getPubData(),
+                        {"from": current_governor},
+                    )
+            else:
+                print(
+                    "                    rule_setAggKeyWithGovKey",
+                    st_sender,
+                    current_governor,
+                    st_new_key_idx,
+                )
+                tx = self.km.setAggKeyWithGovKey(
+                    self.allKeys[st_new_key_idx].getPubData(),
+                    {"from": current_governor},
+                )
 
-        #         self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
+                self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
 
-        # # StakeManager
+        # StakeManager
 
-        # # Stakes a random amount from a random staker to a random nodeID
-        # def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
-        #     if st_nodeID == 0:
-        #         print(
-        #             "        REV_MSG_NZ_BYTES32 rule_stake",
-        #             st_staker,
-        #             st_nodeID,
-        #             st_amount / E_18,
-        #         )
-        #         with reverts(REV_MSG_NZ_BYTES32):
-        #             self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-        #             self.sm.stake(
-        #                 st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-        #             )
-        #     elif st_amount < self.minStake:
-        #         print(
-        #             "        rule_stake MIN_STAKE",
-        #             st_staker,
-        #             st_nodeID,
-        #             st_amount / E_18,
-        #         )
-        #         with reverts(REV_MSG_MIN_STAKE):
-        #             self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-        #             self.sm.stake(
-        #                 st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-        #             )
-        #     elif st_amount > self.flipBals[st_staker]:
-        #         print(
-        #             "        rule_stake REV_MSG_ERC20_EXCEED_BAL",
-        #             st_staker,
-        #             st_nodeID,
-        #             st_amount / E_18,
-        #         )
-        #         with reverts(REV_MSG_ERC20_EXCEED_BAL):
-        #             self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-        #             self.sm.stake(
-        #                 st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-        #             )
-        #     else:
-        #         print(
-        #             "                    rule_stake ",
-        #             st_amount,
-        #             st_nodeID,
-        #             st_amount / E_18,
-        #         )
-        #         self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-        #         tx = self.sm.stake(
-        #             st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-        #         )
+        # Stakes a random amount from a random staker to a random nodeID
+        def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
+            if st_nodeID == 0:
+                print(
+                    "        REV_MSG_NZ_BYTES32 rule_stake",
+                    st_staker,
+                    st_nodeID,
+                    st_amount / E_18,
+                )
+                with reverts(REV_MSG_NZ_BYTES32):
+                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+                    self.sm.stake(
+                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+                    )
+            elif st_amount < self.minStake:
+                print(
+                    "        rule_stake MIN_STAKE",
+                    st_staker,
+                    st_nodeID,
+                    st_amount / E_18,
+                )
+                with reverts(REV_MSG_MIN_STAKE):
+                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+                    self.sm.stake(
+                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+                    )
+            elif st_amount > self.flipBals[st_staker]:
+                print(
+                    "        rule_stake REV_MSG_ERC20_EXCEED_BAL",
+                    st_staker,
+                    st_nodeID,
+                    st_amount / E_18,
+                )
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+                    self.sm.stake(
+                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+                    )
+            else:
+                print(
+                    "                    rule_stake ",
+                    st_amount,
+                    st_nodeID,
+                    st_amount / E_18,
+                )
+                self.f.approve(self.sm.address, st_amount, {"from": st_staker})
+                tx = self.sm.stake(
+                    st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
+                )
 
-        #         self.flipBals[st_staker] -= st_amount
-        #         self.flipBals[self.sm] += st_amount
-        #         self.totalStake += st_amount
+                self.flipBals[st_staker] -= st_amount
+                self.flipBals[self.sm] += st_amount
+                self.totalStake += st_amount
 
-        # # Claims a random amount from a random nodeID to a random recipient
-        # def rule_registerClaim(
-        #     self, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff
-        # ):
-        #     args = (
-        #         st_nodeID,
-        #         st_amount,
-        #         st_staker,
-        #         getChainTime() + st_expiry_time_diff,
-        #     )
-        #     callDataNoSig = self.sm.registerClaim.encode_input(
-        #         agg_null_sig(self.km.address, chain.id), *args
-        #     )
-        #     signer = self._get_key_prob(AGG)
+        # Claims a random amount from a random nodeID to a random recipient
+        def rule_registerClaim(
+            self, st_nodeID, st_staker, st_amount, st_sender, st_expiry_time_diff
+        ):
+            args = (
+                st_nodeID,
+                st_amount,
+                st_staker,
+                getChainTime() + st_expiry_time_diff,
+            )
+            callDataNoSig = self.sm.registerClaim.encode_input(
+                agg_null_sig(self.km.address, chain.id), *args
+            )
+            signer = self._get_key_prob(AGG)
 
-        #     if self.sm_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _registerClaim")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     elif st_nodeID == 0:
-        #         print("        NODEID rule_registerClaim", *args)
-        #         with reverts(REV_MSG_NZ_BYTES32):
-        #             self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     elif st_amount == 0:
-        #         print("        AMOUNT rule_registerClaim", *args)
-        #         with reverts(REV_MSG_NZ_UINT):
-        #             self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     elif not self.sm in self.currentWhitelist:
-        #         print("        REV_MSG_WHITELIST rule_registerClaim", *args)
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print("        REV_MSG_SIG rule_registerClaim", *args)
-        #         with reverts(REV_MSG_SIG):
-        #             self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
-        #         print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *args)
-        #         with reverts(REV_MSG_CLAIM_EXISTS):
-        #             self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     elif st_expiry_time_diff <= CLAIM_DELAY:
-        #         print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *args)
-        #         with reverts(REV_MSG_EXPIRY_TOO_SOON):
-        #             self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     else:
-        #         print("                    rule_registerClaim ", *args)
-        #         tx = self.sm.registerClaim(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             *args,
-        #             {"from": st_sender},
-        #         )
+            if self.sm_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _registerClaim")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif st_nodeID == 0:
+                print("        NODEID rule_registerClaim", *args)
+                with reverts(REV_MSG_NZ_BYTES32):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif st_amount == 0:
+                print("        AMOUNT rule_registerClaim", *args)
+                with reverts(REV_MSG_NZ_UINT):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif not self.sm in self.currentWhitelist:
+                print("        REV_MSG_WHITELIST rule_registerClaim", *args)
+                with reverts(REV_MSG_WHITELIST):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print("        REV_MSG_SIG rule_registerClaim", *args)
+                with reverts(REV_MSG_SIG):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
+                print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *args)
+                with reverts(REV_MSG_CLAIM_EXISTS):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif st_expiry_time_diff <= CLAIM_DELAY:
+                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *args)
+                with reverts(REV_MSG_EXPIRY_TOO_SOON):
+                    self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            else:
+                print("                    rule_registerClaim ", *args)
+                tx = self.sm.registerClaim(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    *args,
+                    {"from": st_sender},
+                )
 
-        #         self.pendingClaims[st_nodeID] = (
-        #             st_amount,
-        #             st_staker,
-        #             tx.timestamp + CLAIM_DELAY,
-        #             args[3],
-        #         )
-        #         self.lastValidateTime = tx.timestamp
+                self.pendingClaims[st_nodeID] = (
+                    st_amount,
+                    st_staker,
+                    tx.timestamp + CLAIM_DELAY,
+                    args[3],
+                )
+                self.lastValidateTime = tx.timestamp
 
-        # # Executes a random claim
-        # def rule_executeClaim(self, st_nodeID, st_sender):
-        #     if self.sm_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _executeClaim")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             self.sm.executeClaim(st_nodeID, {"from": st_sender})
-        #         return
+        # Executes a random claim
+        def rule_executeClaim(self, st_nodeID, st_sender):
+            if self.sm_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _executeClaim")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                return
 
-        #     claim = self.pendingClaims[st_nodeID]
+            claim = self.pendingClaims[st_nodeID]
 
-        #     if not claim[2] <= getChainTime() <= claim[3]:
-        #         print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
-        #         with reverts(REV_MSG_NOT_ON_TIME):
-        #             self.sm.executeClaim(st_nodeID, {"from": st_sender})
-        #     elif self.flipBals[self.sm] < claim[0]:
-        #         print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
-        #         with reverts(REV_MSG_ERC20_EXCEED_BAL):
-        #             self.sm.executeClaim(st_nodeID, {"from": st_sender})
-        #     else:
-        #         print("                    rule_executeClaim", st_nodeID)
-        #         tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
+            if not claim[2] <= getChainTime() <= claim[3]:
+                print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
+                with reverts(REV_MSG_NOT_ON_TIME):
+                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+            elif self.flipBals[self.sm] < claim[0]:
+                print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+            else:
+                print("                    rule_executeClaim", st_nodeID)
+                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
-        #         self.flipBals[claim[1]] += claim[0]
-        #         self.flipBals[self.sm] -= claim[0]
-        #         self.totalStake -= claim[0]
-        #         self.pendingClaims[st_nodeID] = NULL_CLAIM
+                self.flipBals[claim[1]] += claim[0]
+                self.flipBals[self.sm] -= claim[0]
+                self.totalStake -= claim[0]
+                self.pendingClaims[st_nodeID] = NULL_CLAIM
 
-        # # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
-        # # and sends the tx from a random address
-        # def rule_setMinStake(self, st_minStake, st_sender):
+        # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
+        # and sends the tx from a random address
+        def rule_setMinStake(self, st_minStake, st_sender):
 
-        #     if st_minStake == 0:
-        #         print(
-        #             "        REV_MSG_NZ_UINT rule_setMinstake", st_minStake, st_sender
-        #         )
-        #         with reverts(REV_MSG_NZ_UINT):
-        #             self.sm.setMinStake(st_minStake, {"from": st_sender})
-        #     elif st_sender != self.governor:
-        #         print("        REV_MSG_SIG rule_setMinstake", st_minStake, st_sender)
-        #         with reverts(REV_MSG_GOV_GOVERNOR):
-        #             self.sm.setMinStake(st_minStake, {"from": st_sender})
-        #     else:
-        #         print("                    rule_setMinstake", st_minStake, st_sender)
-        #         tx = self.sm.setMinStake(st_minStake, {"from": st_sender})
+            if st_minStake == 0:
+                print(
+                    "        REV_MSG_NZ_UINT rule_setMinstake", st_minStake, st_sender
+                )
+                with reverts(REV_MSG_NZ_UINT):
+                    self.sm.setMinStake(st_minStake, {"from": st_sender})
+            elif st_sender != self.governor:
+                print("        REV_MSG_SIG rule_setMinstake", st_minStake, st_sender)
+                with reverts(REV_MSG_GOV_GOVERNOR):
+                    self.sm.setMinStake(st_minStake, {"from": st_sender})
+            else:
+                print("                    rule_setMinstake", st_minStake, st_sender)
+                tx = self.sm.setMinStake(st_minStake, {"from": st_sender})
 
-        #         self.minStake = st_minStake
+                self.minStake = st_minStake
 
-        # # Tries to set the FLIP address. It should have been set right after the deployment.
-        # def rule_setFlip(self, st_sender, st_returnAddr):
-        #     deployer = self.sm.tx.sender
+        # Tries to set the FLIP address. It should have been set right after the deployment.
+        def rule_setFlip(self, st_sender, st_returnAddr):
+            deployer = self.sm.tx.sender
 
-        #     if st_sender != deployer:
-        #         print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
-        #         with reverts(REV_MSG_STAKEMAN_DEPLOYER):
-        #             self.sm.setFlip(st_returnAddr, {"from": st_sender})
-        #     else:
-        #         print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
-        #         with reverts(REV_MSG_NZ_ADDR):
-        #             self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
+            if st_sender != deployer:
+                print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
+                with reverts(REV_MSG_STAKEMAN_DEPLOYER):
+                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
+            else:
+                print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
+                with reverts(REV_MSG_NZ_ADDR):
+                    self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
 
-        #         print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
-        #         with reverts(REV_MSG_FLIP_ADDRESS):
-        #             self.sm.setFlip(st_returnAddr, {"from": st_sender})
+                print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
+                with reverts(REV_MSG_FLIP_ADDRESS):
+                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
 
-        # # FLIP
+        # FLIP
 
-        # # Updates Flip Supply minting/burning stakeManager tokens
-        # def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
+        # Updates Flip Supply minting/burning stakeManager tokens
+        def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
 
-        #     sm_inibalance = self.f.balanceOf(self.sm)
-        #     new_total_supply = self.f.totalSupply() + st_amount_supply
+            sm_inibalance = self.f.balanceOf(self.sm)
+            new_total_supply = self.f.totalSupply() + st_amount_supply
 
-        #     # Avoid newSupplyBlockNumber being a negative number
-        #     newSupplyBlockNumber = max(self.lastSupplyBlockNumber + blockNumber_incr, 0)
+            # Avoid newSupplyBlockNumber being a negative number
+            newSupplyBlockNumber = max(self.lastSupplyBlockNumber + blockNumber_incr, 0)
 
-        #     args = (
-        #         new_total_supply,
-        #         newSupplyBlockNumber,
-        #         self.sm.address,
-        #     )
+            args = (
+                new_total_supply,
+                newSupplyBlockNumber,
+                self.sm.address,
+            )
 
-        #     callDataNoSig = self.f.updateFlipSupply.encode_input(
-        #         agg_null_sig(self.km.address, chain.id), *args
-        #     )
+            callDataNoSig = self.f.updateFlipSupply.encode_input(
+                agg_null_sig(self.km.address, chain.id), *args
+            )
 
-        #     signer = self._get_key_prob(AGG)
+            signer = self._get_key_prob(AGG)
 
-        #     if not self.f in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_updateFlipSupply",
-        #             st_amount_supply,
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             self.f.updateFlipSupply(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_updateFlipSupply",
-        #             st_amount_supply,
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.f.updateFlipSupply(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
+            if not self.f in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_updateFlipSupply",
+                    st_amount_supply,
+                    st_sender,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    self.f.updateFlipSupply(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_updateFlipSupply",
+                    st_amount_supply,
+                    st_sender,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.f.updateFlipSupply(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
 
-        #     elif newSupplyBlockNumber <= self.lastSupplyBlockNumber:
-        #         print(
-        #             "        REV_MSG_BLOCK rule_updateFlipSupply",
-        #             st_amount_supply,
-        #             st_sender,
-        #         )
-        #         with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
-        #             self.f.updateFlipSupply(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
-        #     else:
-        #         if sm_inibalance + st_amount_supply < 0:
-        #             with reverts(REV_MSG_BURN_BALANCE):
-        #                 print(
-        #                     "        REV_MSG_BURN_BALANCE rule_updateFlipSupply",
-        #                     st_amount_supply,
-        #                     st_sender,
-        #                 )
+            elif newSupplyBlockNumber <= self.lastSupplyBlockNumber:
+                print(
+                    "        REV_MSG_BLOCK rule_updateFlipSupply",
+                    st_amount_supply,
+                    st_sender,
+                )
+                with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
+                    self.f.updateFlipSupply(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
+            else:
+                if sm_inibalance + st_amount_supply < 0:
+                    with reverts(REV_MSG_BURN_BALANCE):
+                        print(
+                            "        REV_MSG_BURN_BALANCE rule_updateFlipSupply",
+                            st_amount_supply,
+                            st_sender,
+                        )
 
-        #                 self.f.updateFlipSupply(
-        #                     signer.getSigDataWithNonces(
-        #                         callDataNoSig, nonces, AGG, self.km.address
-        #                     ),
-        #                     *args,
-        #                     {"from": st_sender},
-        #                 )
-        #         else:
-        #             print(
-        #                 "                    rule_updateFlipSupply",
-        #                 st_amount_supply,
-        #                 st_sender,
-        #             )
-        #             tx = self.f.updateFlipSupply(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
+                        self.f.updateFlipSupply(
+                            signer.getSigDataWithNonces(
+                                callDataNoSig, nonces, AGG, self.km.address
+                            ),
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    print(
+                        "                    rule_updateFlipSupply",
+                        st_amount_supply,
+                        st_sender,
+                    )
+                    tx = self.f.updateFlipSupply(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
 
-        #             assert self.f.totalSupply() == new_total_supply
-        #             assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
+                    assert self.f.totalSupply() == new_total_supply
+                    assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
 
-        #             self.flipBals[self.sm] += st_amount_supply
-        #             self.lastSupplyBlockNumber = newSupplyBlockNumber
-        #             self.lastValidateTime = tx.timestamp
+                    self.flipBals[self.sm] += st_amount_supply
+                    self.lastSupplyBlockNumber = newSupplyBlockNumber
+                    self.lastValidateTime = tx.timestamp
 
         # AggKeyNonceConsumer - upgradability
 
         # Deploys a new keyManager and updates all the references to it
-        # def rule_upgrade_keyManager(self, st_sender):
-        #     aggKeyNonceConsumers = [self.f, self.sm, self.v]
+        def rule_upgrade_keyManager(self, st_sender):
+            aggKeyNonceConsumers = [self.f, self.sm, self.v]
 
-        #     # Reusing current keyManager aggregateKey for simplicity
-        #     newKeyManager = st_sender.deploy(
-        #         KeyManager, self.km.getAggregateKey(), self.governor
-        #     )
+            # Reusing current keyManager aggregateKey for simplicity
+            newKeyManager = st_sender.deploy(
+                KeyManager, self.km.getAggregateKey(), self.governor
+            )
 
-        #     #            keyManagerAddress = choice([newKeyManager, self.km])
-        #     keyManagerAddress = newKeyManager
+            #            keyManagerAddress = choice([newKeyManager, self.km])
+            keyManagerAddress = newKeyManager
 
-        #     toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
+            toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
 
-        #     if keyManagerAddress == self.km:
-        #         with reverts(REV_MSG_DUPLICATE):
-        #             print(
-        #                 "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
-        #                 st_sender,
-        #                 keyManagerAddress.address,
-        #             )
-        #             newKeyManager.setCanConsumeKeyNonce(
-        #                 toWhitelist, {"from": st_sender}
-        #             )
-        #     else:
+            if keyManagerAddress == self.km:
+                with reverts(REV_MSG_DUPLICATE):
+                    print(
+                        "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
+                        st_sender,
+                        keyManagerAddress.address,
+                    )
+                    newKeyManager.setCanConsumeKeyNonce(
+                        toWhitelist, {"from": st_sender}
+                    )
+            else:
 
-        #         newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
+                newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
-        #         signer = self._get_key_prob(AGG)
+                signer = self._get_key_prob(AGG)
 
-        #         # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
-        #         for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        #             if not aggKeyNonceConsumer in self.currentWhitelist:
-        #                 assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
-        #                 with reverts(REV_MSG_WHITELIST):
-        #                     print(
-        #                         "        REV_MSG_WHITELIST rule_upgrade_keyManager",
-        #                         st_sender,
-        #                         keyManagerAddress.address,
-        #                     )
-        #                     callDataNoSig = (
-        #                         aggKeyNonceConsumer.updateKeyManager.encode_input(
-        #                             agg_null_sig(self.km, chain.id), newKeyManager
-        #                         )
-        #                     )
-        #                     aggKeyNonceConsumer.updateKeyManager(
-        #                         signer.getSigDataWithNonces(
-        #                             callDataNoSig, nonces, AGG, self.km.address
-        #                         ),
-        #                         newKeyManager,
-        #                     )
-        #                 return
+                # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
+                for aggKeyNonceConsumer in aggKeyNonceConsumers:
+                    if not aggKeyNonceConsumer in self.currentWhitelist:
+                        assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
+                        with reverts(REV_MSG_WHITELIST):
+                            print(
+                                "        REV_MSG_WHITELIST rule_upgrade_keyManager",
+                                st_sender,
+                                keyManagerAddress.address,
+                            )
+                            callDataNoSig = (
+                                aggKeyNonceConsumer.updateKeyManager.encode_input(
+                                    agg_null_sig(self.km, chain.id), newKeyManager
+                                )
+                            )
+                            aggKeyNonceConsumer.updateKeyManager(
+                                signer.getSigDataWithNonces(
+                                    callDataNoSig, nonces, AGG, self.km.address
+                                ),
+                                newKeyManager,
+                            )
+                        return
 
-        #         # All whitelisted
-        #         if signer != self.keyIDToCurKeys[AGG]:
-        #             print(
-        #                 "        REV_MSG_SIG rule_upgrade_keyManager",
-        #                 st_sender,
-        #                 keyManagerAddress.address,
-        #             )
-        #             # Use the first aggKeyNonceConsumer for simplicity
-        #             callDataNoSig = aggKeyNonceConsumers[
-        #                 0
-        #             ].updateKeyManager.encode_input(
-        #                 agg_null_sig(self.km, chain.id), newKeyManager
-        #             )
-        #             with reverts(REV_MSG_SIG):
-        #                 aggKeyNonceConsumers[0].updateKeyManager(
-        #                     signer.getSigDataWithNonces(
-        #                         callDataNoSig, nonces, AGG, self.km.address
-        #                     ),
-        #                     newKeyManager,
-        #                 )
-        #         else:
-        #             print(
-        #                 "                    rule_upgrade_keyManager",
-        #                 st_sender,
-        #                 keyManagerAddress.address,
-        #             )
+                # All whitelisted
+                if signer != self.keyIDToCurKeys[AGG]:
+                    print(
+                        "        REV_MSG_SIG rule_upgrade_keyManager",
+                        st_sender,
+                        keyManagerAddress.address,
+                    )
+                    # Use the first aggKeyNonceConsumer for simplicity
+                    callDataNoSig = aggKeyNonceConsumers[
+                        0
+                    ].updateKeyManager.encode_input(
+                        agg_null_sig(self.km, chain.id), newKeyManager
+                    )
+                    with reverts(REV_MSG_SIG):
+                        aggKeyNonceConsumers[0].updateKeyManager(
+                            signer.getSigDataWithNonces(
+                                callDataNoSig, nonces, AGG, self.km.address
+                            ),
+                            newKeyManager,
+                        )
+                else:
+                    print(
+                        "                    rule_upgrade_keyManager",
+                        st_sender,
+                        keyManagerAddress.address,
+                    )
 
-        #             for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        #                 assert aggKeyNonceConsumer.getKeyManager() == self.km
+                    for aggKeyNonceConsumer in aggKeyNonceConsumers:
+                        assert aggKeyNonceConsumer.getKeyManager() == self.km
 
-        #                 callDataNoSig = (
-        #                     aggKeyNonceConsumer.updateKeyManager.encode_input(
-        #                         agg_null_sig(self.km, chain.id), newKeyManager
-        #                     )
-        #                 )
+                        callDataNoSig = (
+                            aggKeyNonceConsumer.updateKeyManager.encode_input(
+                                agg_null_sig(self.km, chain.id), newKeyManager
+                            )
+                        )
 
-        #                 aggKeyNonceConsumer.updateKeyManager(
-        #                     signer.getSigDataWithNonces(
-        #                         callDataNoSig, nonces, AGG, self.km.address
-        #                     ),
-        #                     newKeyManager,
-        #                 )
+                        aggKeyNonceConsumer.updateKeyManager(
+                            signer.getSigDataWithNonces(
+                                callDataNoSig, nonces, AGG, self.km.address
+                            ),
+                            newKeyManager,
+                        )
 
-        #                 assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
+                        assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
-        #             self._updateBalancesOnUpgrade(self.km, newKeyManager)
-        #             self.km = newKeyManager
-        #             self.lastValidateTime = self.km.tx.timestamp
-        #             self.currentWhitelist = toWhitelist
+                    self._updateBalancesOnUpgrade(self.km, newKeyManager)
+                    self.km = newKeyManager
+                    self.lastValidateTime = self.km.tx.timestamp
+                    self.currentWhitelist = toWhitelist
 
-        # # Deploys a new Vault and transfers the funds from the old Vault to the new one
-        # def rule_upgrade_Vault(
-        #     self, st_sender, st_vault_transfer_amount, st_sleep_time
-        # ):
+        # Deploys a new Vault and transfers the funds from the old Vault to the new one
+        def rule_upgrade_Vault(
+            self, st_sender, st_vault_transfer_amount, st_sleep_time
+        ):
 
-        #     newVault = st_sender.deploy(Vault, self.km, self.communityKey)
+            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
 
-        #     # Keep old Vault whitelisted
-        #     toWhitelist = self.currentWhitelist.copy() + [newVault]
+            # Keep old Vault whitelisted
+            toWhitelist = self.currentWhitelist.copy() + [newVault]
 
-        #     args = (self.currentWhitelist, toWhitelist)
+            args = (self.currentWhitelist, toWhitelist)
 
-        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-        #         agg_null_sig(self.km.address, chain.id), *args
-        #     )
+            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                agg_null_sig(self.km.address, chain.id), *args
+            )
 
-        #     signer = self._get_key_prob(AGG)
+            signer = self._get_key_prob(AGG)
 
-        #     if self.v_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             callDataNoSig = self.v.transfer.encode_input(
-        #                 agg_null_sig(self.km.address, chain.id),
-        #                 ETH_ADDR,
-        #                 newVault,
-        #                 st_vault_transfer_amount,
-        #             )
-        #             self.v.transfer(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 ETH_ADDR,
-        #                 newVault,
-        #                 st_vault_transfer_amount,
-        #             )
-        #     # if old vault is not whitelisted it will fail later
-        #     elif not self.v in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_upgrade_Vault",
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             callDataNoSig = self.v.transfer.encode_input(
-        #                 agg_null_sig(self.km.address, chain.id),
-        #                 ETH_ADDR,
-        #                 newVault,
-        #                 st_vault_transfer_amount,
-        #             )
-        #             self.v.transfer(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 ETH_ADDR,
-        #                 newVault,
-        #                 st_vault_transfer_amount,
-        #             )
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_upgrade_Vault",
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.km.updateCanConsumeKeyNonce(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 *args,
-        #                 {"from": st_sender},
-        #             )
+            if self.v_suspended:
+                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    callDataNoSig = self.v.transfer.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+            # if old vault is not whitelisted it will fail later
+            elif not self.v in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_upgrade_Vault",
+                    st_sender,
+                    st_vault_transfer_amount,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    callDataNoSig = self.v.transfer.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+                    self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_upgrade_Vault",
+                    st_sender,
+                    st_vault_transfer_amount,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.km.updateCanConsumeKeyNonce(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        *args,
+                        {"from": st_sender},
+                    )
 
-        #     else:
-        #         # UpdateCanConsumeKeyNonce
-        #         self.km.updateCanConsumeKeyNonce(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             *args,
-        #             {"from": st_sender},
-        #         )
+            else:
+                # UpdateCanConsumeKeyNonce
+                self.km.updateCanConsumeKeyNonce(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    *args,
+                    {"from": st_sender},
+                )
 
-        #         self.currentWhitelist = toWhitelist.copy()
+                self.currentWhitelist = toWhitelist.copy()
 
-        #         # Vault can now validate and fetch but it has zero balance so it can't transfer
-        #         callDataNoSig = newVault.transfer.encode_input(
-        #             agg_null_sig(self.km.address, chain.id),
-        #             ETH_ADDR,
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #         )
-        #         tx = newVault.transfer(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             ETH_ADDR,
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #         )
-        #         assert tx.events["TransferFailed"][0].values() == [
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #             web3.toHex(0),
-        #         ]
+                # Vault can now validate and fetch but it has zero balance so it can't transfer
+                callDataNoSig = newVault.transfer.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
+                    ETH_ADDR,
+                    st_sender,
+                    st_vault_transfer_amount,
+                )
+                tx = newVault.transfer(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    ETH_ADDR,
+                    st_sender,
+                    st_vault_transfer_amount,
+                )
+                assert tx.events["TransferFailed"][0].values() == [
+                    st_sender,
+                    st_vault_transfer_amount,
+                    web3.toHex(0),
+                ]
 
-        #         # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
-        #         startBalVault = self.v.balance()
-        #         assert startBalVault >= st_vault_transfer_amount
-        #         startBalRecipient = newVault.balance()
+                # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
+                startBalVault = self.v.balance()
+                assert startBalVault >= st_vault_transfer_amount
+                startBalRecipient = newVault.balance()
 
-        #         callDataNoSig = self.v.transfer.encode_input(
-        #             agg_null_sig(self.km.address, chain.id),
-        #             ETH_ADDR,
-        #             newVault,
-        #             st_vault_transfer_amount,
-        #         )
-        #         self.v.transfer(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             ETH_ADDR,
-        #             newVault,
-        #             st_vault_transfer_amount,
-        #         )
+                callDataNoSig = self.v.transfer.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
+                    ETH_ADDR,
+                    newVault,
+                    st_vault_transfer_amount,
+                )
+                self.v.transfer(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    ETH_ADDR,
+                    newVault,
+                    st_vault_transfer_amount,
+                )
 
-        #         assert self.v.balance() - startBalVault == -st_vault_transfer_amount
-        #         assert (
-        #             newVault.balance() - startBalRecipient == st_vault_transfer_amount
-        #         )
+                assert self.v.balance() - startBalVault == -st_vault_transfer_amount
+                assert (
+                    newVault.balance() - startBalRecipient == st_vault_transfer_amount
+                )
 
-        #         chain.sleep(st_sleep_time)
+                chain.sleep(st_sleep_time)
 
-        #         # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
-        #         startBalVault = self.v.balance()
-        #         startBalRecipient = newVault.balance()
+                # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
+                startBalVault = self.v.balance()
+                startBalRecipient = newVault.balance()
 
-        #         if st_vault_transfer_amount > startBalVault:
-        #             print(
-        #                 "        TRANSF_FAIL rule_upgrade_vault",
-        #                 st_sender,
-        #                 st_vault_transfer_amount,
-        #             )
-        #             callDataNoSig = self.v.transfer.encode_input(
-        #                 agg_null_sig(self.km.address, chain.id),
-        #                 ETH_ADDR,
-        #                 newVault,
-        #                 st_vault_transfer_amount,
-        #             )
-        #             tx = self.v.transfer(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 ETH_ADDR,
-        #                 newVault,
-        #                 st_vault_transfer_amount,
-        #             )
-        #             assert tx.events["TransferFailed"][0].values() == [
-        #                 newVault.address,
-        #                 st_vault_transfer_amount,
-        #                 web3.toHex(0),
-        #             ]
-        #         print(
-        #             "                    rule_upgrade_vault",
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #         )
+                if st_vault_transfer_amount > startBalVault:
+                    print(
+                        "        TRANSF_FAIL rule_upgrade_vault",
+                        st_sender,
+                        st_vault_transfer_amount,
+                    )
+                    callDataNoSig = self.v.transfer.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+                    tx = self.v.transfer(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        ETH_ADDR,
+                        newVault,
+                        st_vault_transfer_amount,
+                    )
+                    assert tx.events["TransferFailed"][0].values() == [
+                        newVault.address,
+                        st_vault_transfer_amount,
+                        web3.toHex(0),
+                    ]
+                print(
+                    "                    rule_upgrade_vault",
+                    st_sender,
+                    st_vault_transfer_amount,
+                )
 
-        #         iniEthBalance = startBalVault
-        #         initTokenABalance = self.tokenA.balanceOf(self.v)
-        #         iniTokenBBalance = self.tokenB.balanceOf(self.v)
+                iniEthBalance = startBalVault
+                initTokenABalance = self.tokenA.balanceOf(self.v)
+                iniTokenBBalance = self.tokenB.balanceOf(self.v)
 
-        #         amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
-        #         tokens = [ETH_ADDR, self.tokenA, self.tokenB]
-        #         recipients = [newVault, newVault, newVault]
+                amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
+                tokens = [ETH_ADDR, self.tokenA, self.tokenB]
+                recipients = [newVault, newVault, newVault]
 
-        #         callDataNoSig = self.v.transferBatch.encode_input(
-        #             agg_null_sig(self.km.address, chain.id),
-        #             tokens,
-        #             recipients,
-        #             amountsToTransfer,
-        #         )
+                callDataNoSig = self.v.transferBatch.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
+                    tokens,
+                    recipients,
+                    amountsToTransfer,
+                )
 
-        #         self.v.transferBatch(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             tokens,
-        #             recipients,
-        #             amountsToTransfer,
-        #         )
+                self.v.transferBatch(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    tokens,
+                    recipients,
+                    amountsToTransfer,
+                )
 
-        #         # Check that all balances have been transferred
-        #         assert self.v.balance() == 0
-        #         assert self.tokenA.balanceOf(self.v) == 0
-        #         assert self.tokenB.balanceOf(self.v) == 0
+                # Check that all balances have been transferred
+                assert self.v.balance() == 0
+                assert self.tokenA.balanceOf(self.v) == 0
+                assert self.tokenB.balanceOf(self.v) == 0
 
-        #         assert self.tokenA.balanceOf(newVault) == initTokenABalance
-        #         assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
+                assert self.tokenA.balanceOf(newVault) == initTokenABalance
+                assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
 
-        #         self._updateBalancesOnUpgrade(self.v, newVault)
+                self._updateBalancesOnUpgrade(self.v, newVault)
 
-        #         # Dewhitelist old Vault
-        #         toWhitelist = self.currentWhitelist.copy()
-        #         toWhitelist.remove(self.v)
+                # Dewhitelist old Vault
+                toWhitelist = self.currentWhitelist.copy()
+                toWhitelist.remove(self.v)
 
-        #         # UpdateCanConsumeKeyNonce
-        #         callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-        #             agg_null_sig(self.km.address, chain.id),
-        #             self.currentWhitelist,
-        #             toWhitelist,
-        #         )
-        #         tx = self.km.updateCanConsumeKeyNonce(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             self.currentWhitelist,
-        #             toWhitelist,
-        #         )
+                # UpdateCanConsumeKeyNonce
+                callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
+                    self.currentWhitelist,
+                    toWhitelist,
+                )
+                tx = self.km.updateCanConsumeKeyNonce(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                )
 
-        #         self.v = newVault
-        #         self.lastValidateTime = tx.timestamp
-        #         self.currentWhitelist = toWhitelist
-        #         self.v_communityGuardDisabled = False
-        #         self.v_current_communityKey = self.communityKey
-        #         self.v_suspended = False
+                self.v = newVault
+                self.lastValidateTime = tx.timestamp
+                self.currentWhitelist = toWhitelist
+                self.v_communityGuardDisabled = False
+                self.v_current_communityKey = self.communityKey
+                self.v_suspended = False
 
-        #         # Create new addresses for the new Vault and initialize Balances
-        #         newCreate2EthAddrs = [
-        #             getCreate2Addr(
-        #                 self.v.address, cleanHexStrPad(swapID), DepositEth, ""
-        #             )
-        #             for swapID in range(MAX_SWAPID + 1)
-        #         ]
-        #         newCreate2TokenAAddrs = [
-        #             getCreate2Addr(
-        #                 self.v.address,
-        #                 cleanHexStrPad(swapID),
-        #                 DepositToken,
-        #                 cleanHexStrPad(self.tokenA.address),
-        #             )
-        #             for swapID in range(MAX_SWAPID + 1)
-        #         ]
-        #         newCreate2TokenBAddrs = [
-        #             getCreate2Addr(
-        #                 self.v.address,
-        #                 cleanHexStrPad(swapID),
-        #                 DepositToken,
-        #                 cleanHexStrPad(self.tokenB.address),
-        #             )
-        #             for swapID in range(MAX_SWAPID + 1)
-        #         ]
+                # Create new addresses for the new Vault and initialize Balances
+                newCreate2EthAddrs = [
+                    getCreate2Addr(
+                        self.v.address, cleanHexStrPad(swapID), DepositEth, ""
+                    )
+                    for swapID in range(MAX_SWAPID + 1)
+                ]
+                newCreate2TokenAAddrs = [
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(swapID),
+                        DepositToken,
+                        cleanHexStrPad(self.tokenA.address),
+                    )
+                    for swapID in range(MAX_SWAPID + 1)
+                ]
+                newCreate2TokenBAddrs = [
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(swapID),
+                        DepositToken,
+                        cleanHexStrPad(self.tokenB.address),
+                    )
+                    for swapID in range(MAX_SWAPID + 1)
+                ]
 
-        #         for swapID in range(MAX_SWAPID + 1):
-        #             # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
-        #             self._addNewAddress(newCreate2EthAddrs[swapID])
-        #             self._addNewAddress(newCreate2TokenAAddrs[swapID])
-        #             self._addNewAddress(newCreate2TokenBAddrs[swapID])
+                for swapID in range(MAX_SWAPID + 1):
+                    # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
+                    self._addNewAddress(newCreate2EthAddrs[swapID])
+                    self._addNewAddress(newCreate2TokenAAddrs[swapID])
+                    self._addNewAddress(newCreate2TokenBAddrs[swapID])
 
-        # # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
-        # def rule_upgrade_stakeManager(
-        #     self, st_sender, st_vault_transfer_amount, st_sleep_time
-        # ):
-        #     newStakeManager = st_sender.deploy(
-        #         StakeManager,
-        #         self.km,
-        #         INIT_MIN_STAKE,
-        #         self.communityKey,
-        #     )
+        # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
+        def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
+            newStakeManager = st_sender.deploy(
+                StakeManager,
+                self.km,
+                INIT_MIN_STAKE,
+                self.communityKey,
+            )
 
-        #     newStakeManager.setFlip(self.f, {"from": st_sender})
+            newStakeManager.setFlip(self.f, {"from": st_sender})
 
-        #     # Keep old StakeManager whitelisted
-        #     toWhitelist = self.currentWhitelist.copy() + [newStakeManager]
+            # Keep old StakeManager whitelisted
+            toWhitelist = self.currentWhitelist.copy() + [newStakeManager]
 
-        #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-        #         agg_null_sig(self.km.address, chain.id),
-        #         self.currentWhitelist,
-        #         toWhitelist,
-        #     )
+            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                agg_null_sig(self.km.address, chain.id),
+                self.currentWhitelist,
+                toWhitelist,
+            )
 
-        #     signer = self._get_key_prob(AGG)
+            signer = self._get_key_prob(AGG)
 
-        #     if self.sm_suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             callDataNoSig = self.sm.registerClaim.encode_input(
-        #                 agg_null_sig(self.km.address, chain.id),
-        #                 JUNK_HEX,
-        #                 1,
-        #                 newStakeManager,
-        #                 1,
-        #             )
-        #             tx = self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 JUNK_HEX,
-        #                 1,
-        #                 newStakeManager,
-        #                 1,
-        #             )
-        #     # If old stakeManager is not whitelisted it will revert later on
-        #     elif not self.sm in self.currentWhitelist:
-        #         print(
-        #             "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #         )
-        #         with reverts(REV_MSG_WHITELIST):
-        #             callDataNoSig = self.sm.registerClaim.encode_input(
-        #                 agg_null_sig(self.km.address, chain.id),
-        #                 JUNK_HEX,
-        #                 1,
-        #                 newStakeManager,
-        #                 1,
-        #             )
-        #             tx = self.sm.registerClaim(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 JUNK_HEX,
-        #                 1,
-        #                 newStakeManager,
-        #                 1,
-        #             )
+            if self.sm_suspended:
+                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    callDataNoSig = self.sm.registerClaim.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
+                    )
+                    tx = self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
+                    )
+            # If old stakeManager is not whitelisted it will revert later on
+            elif not self.sm in self.currentWhitelist:
+                print(
+                    "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
+                    st_sender,
+                )
+                with reverts(REV_MSG_WHITELIST):
+                    callDataNoSig = self.sm.registerClaim.encode_input(
+                        agg_null_sig(self.km.address, chain.id),
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
+                    )
+                    tx = self.sm.registerClaim(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        JUNK_HEX,
+                        1,
+                        newStakeManager,
+                        1,
+                    )
 
-        #     elif signer != self.keyIDToCurKeys[AGG]:
-        #         print(
-        #             "        REV_MSG_SIG rule_upgrade_stakeManager",
-        #             st_sender,
-        #             st_vault_transfer_amount,
-        #         )
-        #         with reverts(REV_MSG_SIG):
-        #             self.km.updateCanConsumeKeyNonce(
-        #                 signer.getSigDataWithNonces(
-        #                     callDataNoSig, nonces, AGG, self.km.address
-        #                 ),
-        #                 self.currentWhitelist,
-        #                 toWhitelist,
-        #                 {"from": st_sender},
-        #             )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_upgrade_stakeManager",
+                    st_sender,
+                )
+                with reverts(REV_MSG_SIG):
+                    self.km.updateCanConsumeKeyNonce(
+                        signer.getSigDataWithNonces(
+                            callDataNoSig, nonces, AGG, self.km.address
+                        ),
+                        self.currentWhitelist,
+                        toWhitelist,
+                        {"from": st_sender},
+                    )
 
-        #     else:
-        #         self.km.updateCanConsumeKeyNonce(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             self.currentWhitelist,
-        #             toWhitelist,
-        #         )
+            else:
+                self.km.updateCanConsumeKeyNonce(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                )
 
-        #         self.currentWhitelist = toWhitelist.copy()
+                self.currentWhitelist = toWhitelist.copy()
 
-        #         chain.sleep(st_sleep_time)
+                chain.sleep(st_sleep_time)
 
-        #         # Generate claim to move all FLIP to new stakeManager
-        #         stakeAmount = INIT_MIN_STAKE
-        #         expiryTime = getChainTime() + (CLAIM_DELAY * 10)
-        #         claimAmount = self.flipBals[self.sm]
-        #         # Register Claim to transfer all flip
-        #         callDataNoSig = self.sm.registerClaim.encode_input(
-        #             agg_null_sig(self.km.address, chain.id),
-        #             JUNK_HEX,
-        #             claimAmount,
-        #             newStakeManager,
-        #             expiryTime,
-        #         )
-        #         tx = self.sm.registerClaim(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             JUNK_HEX,
-        #             claimAmount,
-        #             newStakeManager,
-        #             expiryTime,
-        #         )
+                # Generate claim to move all FLIP to new stakeManager
+                stakeAmount = INIT_MIN_STAKE
+                expiryTime = getChainTime() + (CLAIM_DELAY * 10)
+                claimAmount = self.flipBals[self.sm]
+                # Register Claim to transfer all flip
+                callDataNoSig = self.sm.registerClaim.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
+                    JUNK_HEX,
+                    claimAmount,
+                    newStakeManager,
+                    expiryTime,
+                )
+                tx = self.sm.registerClaim(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    JUNK_HEX,
+                    claimAmount,
+                    newStakeManager,
+                    expiryTime,
+                )
 
-        #         chain.sleep(st_sleep_time)
-        #         if st_sleep_time < CLAIM_DELAY:
-        #             with reverts(REV_MSG_NOT_ON_TIME):
-        #                 print(
-        #                     "        REV_MSG_SIG rule_upgrade_stakeManager",
-        #                     st_sleep_time,
-        #                 )
-        #                 self.sm.executeClaim(JUNK_HEX)
+                chain.sleep(st_sleep_time)
+                if st_sleep_time < CLAIM_DELAY:
+                    with reverts(REV_MSG_NOT_ON_TIME):
+                        print(
+                            "        REV_MSG_SIG rule_upgrade_stakeManager",
+                            st_sleep_time,
+                        )
+                        self.sm.executeClaim(JUNK_HEX)
 
-        #         chain.sleep(CLAIM_DELAY * 2)
+                chain.sleep(CLAIM_DELAY * 2)
 
-        #         print("                   rule_executeClaim", newStakeManager.address)
-        #         assert self.f.balanceOf(newStakeManager) == 0
-        #         assert self.f.balanceOf(self.sm) == self.flipBals[self.sm]
+                print("                   rule_executeClaim", newStakeManager.address)
+                assert self.f.balanceOf(newStakeManager) == 0
+                assert self.f.balanceOf(self.sm) == self.flipBals[self.sm]
 
-        #         self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
+                self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
-        #         assert self.f.balanceOf(newStakeManager) == self.flipBals[self.sm]
-        #         assert self.f.balanceOf(self.sm) == 0
+                assert self.f.balanceOf(newStakeManager) == self.flipBals[self.sm]
+                assert self.f.balanceOf(self.sm) == 0
 
-        #         # Dewhitelist old StakeManager
-        #         toWhitelist = self.currentWhitelist.copy()
-        #         toWhitelist.remove(self.sm)
+                # Dewhitelist old StakeManager
+                toWhitelist = self.currentWhitelist.copy()
+                toWhitelist.remove(self.sm)
 
-        #         # UpdateCanConsumeKeyNonce
-        #         callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-        #             agg_null_sig(self.km.address, chain.id),
-        #             self.currentWhitelist,
-        #             toWhitelist,
-        #         )
-        #         tx = self.km.updateCanConsumeKeyNonce(
-        #             signer.getSigDataWithNonces(
-        #                 callDataNoSig, nonces, AGG, self.km.address
-        #             ),
-        #             self.currentWhitelist,
-        #             toWhitelist,
-        #         )
+                # UpdateCanConsumeKeyNonce
+                callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+                    agg_null_sig(self.km.address, chain.id),
+                    self.currentWhitelist,
+                    toWhitelist,
+                )
+                tx = self.km.updateCanConsumeKeyNonce(
+                    signer.getSigDataWithNonces(
+                        callDataNoSig, nonces, AGG, self.km.address
+                    ),
+                    self.currentWhitelist,
+                    toWhitelist,
+                )
 
-        #         self._updateBalancesOnUpgrade(self.sm, newStakeManager)
-        #         self.sm = newStakeManager
-        #         self.minStake = INIT_MIN_STAKE
-        #         self.lastValidateTime = tx.timestamp
-        #         self.currentWhitelist = toWhitelist
-        #         self.sm_communityGuardDisabled = False
-        #         self.sm_current_communityKey = self.communityKey
-        #         self.sm_suspended = False
+                self._updateBalancesOnUpgrade(self.sm, newStakeManager)
+                self.sm = newStakeManager
+                self.minStake = INIT_MIN_STAKE
+                self.lastValidateTime = tx.timestamp
+                self.currentWhitelist = toWhitelist
+                self.sm_communityGuardDisabled = False
+                self.sm_current_communityKey = self.communityKey
+                self.sm_suspended = False
 
-        #         # Reset all pending claims
-        #         self.pendingClaims = {
-        #             nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
-        #         }
+                # Reset all pending claims
+                self.pendingClaims = {
+                    nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
+                }
 
         # Suspend and resume Vault and StakeManager
 
@@ -2559,9 +2551,6 @@ def test_all(
             # Add time.sleep due to brownie bug that kills virtual machine too quick
             # https://github.com/smartcontractkit/full-blockchain-solidity-course-py/issues/173
             time.sleep(5)
-
-        def teardown_final(self):
-            time.sleep(30)
 
         # Update balances when a contract has been upgraded
         def _updateBalancesOnUpgrade(self, oldContract, newContract):
