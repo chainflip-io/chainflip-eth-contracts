@@ -535,141 +535,141 @@ def test_all(
         # Transfers ETH or tokens out the vault. Want this to be called by rule_vault_transfer_eth
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
-        def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            callDataNoSig = self.v.transfer.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                tokenAddr,
-                st_recip,
-                st_eth_amount,
-            )
-            signer = self._get_key_prob(AGG)
+        # def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
+        #     callDataNoSig = self.v.transfer.encode_input(
+        #         agg_null_sig(self.km.address, chain.id),
+        #         tokenAddr,
+        #         st_recip,
+        #         st_eth_amount,
+        #     )
+        #     signer = self._get_key_prob(AGG)
 
-            if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
-                    )
-            elif st_eth_amount == 0:
-                print(
-                    "        REV_MSG_NZ_UINT _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                    signer,
-                )
-                with reverts(REV_MSG_NZ_UINT):
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
-                    )
-            elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
-                print(
-                    "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                    signer,
-                )
-                # with reverts():
-                #     self.v.transfer(
-                #         signer.getSigDataWithNonces(
-                #             callDataNoSig, nonces, AGG, self.km.address
-                #         ),
-                #         tokenAddr,
-                #         st_recip,
-                #         st_eth_amount,
-                #         {"from": st_sender},
-                #     )
-            elif not self.v in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                    signer,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                    signer,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
-                    )
-            else:
-                print(
-                    "                    _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                    signer,
-                )
-                tx = self.v.transfer(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    tokenAddr,
-                    st_recip,
-                    st_eth_amount,
-                    {"from": st_sender},
-                )
+        #     if self.v_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             self.v.transfer(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 tokenAddr,
+        #                 st_recip,
+        #                 st_eth_amount,
+        #                 {"from": st_sender},
+        #             )
+        #     elif st_eth_amount == 0:
+        #         print(
+        #             "        REV_MSG_NZ_UINT _vault_transfer",
+        #             tokenAddr,
+        #             st_sender,
+        #             st_recip,
+        #             st_eth_amount,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_NZ_UINT):
+        #             self.v.transfer(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 tokenAddr,
+        #                 st_recip,
+        #                 st_eth_amount,
+        #                 {"from": st_sender},
+        #             )
+        #     elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
+        #         print(
+        #             "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
+        #             tokenAddr,
+        #             st_sender,
+        #             st_recip,
+        #             st_eth_amount,
+        #             signer,
+        #         )
+        #         # with reverts():
+        #         #     self.v.transfer(
+        #         #         signer.getSigDataWithNonces(
+        #         #             callDataNoSig, nonces, AGG, self.km.address
+        #         #         ),
+        #         #         tokenAddr,
+        #         #         st_recip,
+        #         #         st_eth_amount,
+        #         #         {"from": st_sender},
+        #         #     )
+        #     elif not self.v in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST _vault_transfer",
+        #             tokenAddr,
+        #             st_sender,
+        #             st_recip,
+        #             st_eth_amount,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.v.transfer(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 tokenAddr,
+        #                 st_recip,
+        #                 st_eth_amount,
+        #                 {"from": st_sender},
+        #             )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
+        #             tokenAddr,
+        #             st_sender,
+        #             st_recip,
+        #             st_eth_amount,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.v.transfer(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 tokenAddr,
+        #                 st_recip,
+        #                 st_eth_amount,
+        #                 {"from": st_sender},
+        #             )
+        #     else:
+        #         print(
+        #             "                    _vault_transfer",
+        #             tokenAddr,
+        #             st_sender,
+        #             st_recip,
+        #             st_eth_amount,
+        #             signer,
+        #         )
+        #         tx = self.v.transfer(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             tokenAddr,
+        #             st_recip,
+        #             st_eth_amount,
+        #             {"from": st_sender},
+        #         )
 
-                if bals[self.v] >= st_eth_amount or tokenAddr != ETH_ADDR:
-                    bals[self.v] -= st_eth_amount
-                    bals[st_recip] += st_eth_amount
-                self.lastValidateTime = tx.timestamp
+        #         if bals[self.v] >= st_eth_amount or tokenAddr != ETH_ADDR:
+        #             bals[self.v] -= st_eth_amount
+        #             bals[st_recip] += st_eth_amount
+        #         self.lastValidateTime = tx.timestamp
 
-        def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
-            self._vault_transfer(
-                self.ethBals, ETH_ADDR, st_sender, st_recip, st_eth_amount
-            )
+        # def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
+        #     self._vault_transfer(
+        #         self.ethBals, ETH_ADDR, st_sender, st_recip, st_eth_amount
+        #     )
 
-        def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
-            self._vault_transfer(
-                self.tokenABals, self.tokenA, st_sender, st_recip, st_token_amount
-            )
+        # def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
+        #     self._vault_transfer(
+        #         self.tokenABals, self.tokenA, st_sender, st_recip, st_token_amount
+        #     )
 
-        def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
-            self._vault_transfer(
-                self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount
-            )
+        # def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
+        #     self._vault_transfer(
+        #         self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount
+        #     )
 
         # Send any combination of eth/tokenA/tokenB out of the vault. Using st_eth_amounts
         # for both eth amounts and token amounts here because its max is within the bounds of
@@ -804,393 +804,393 @@ def test_all(
         #             else:
         #                 assert False, "Panic"
 
-        # Transfers ETH from a user/sender to one of the depositEth create2 addresses
-        def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
-            # No point testing reverts of these conditions since it's not what we're trying to test
-            if st_swapID != 0 and self.ethBals[st_sender] >= st_eth_amount:
-                print(
-                    "                    rule_transfer_eth_to_depositEth",
-                    st_sender,
-                    st_swapID,
-                    st_eth_amount,
-                )
-                depositAddr = getCreate2Addr(
-                    self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
-                )
-                st_sender.transfer(depositAddr, st_eth_amount)
+        # # Transfers ETH from a user/sender to one of the depositEth create2 addresses
+        # def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
+        #     # No point testing reverts of these conditions since it's not what we're trying to test
+        #     if st_swapID != 0 and self.ethBals[st_sender] >= st_eth_amount:
+        #         print(
+        #             "                    rule_transfer_eth_to_depositEth",
+        #             st_sender,
+        #             st_swapID,
+        #             st_eth_amount,
+        #         )
+        #         depositAddr = getCreate2Addr(
+        #             self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
+        #         )
+        #         st_sender.transfer(depositAddr, st_eth_amount)
 
-                self.ethBals[st_sender] -= st_eth_amount
-                self.ethBals[depositAddr] += st_eth_amount
+        #         self.ethBals[st_sender] -= st_eth_amount
+        #         self.ethBals[depositAddr] += st_eth_amount
 
-        # Transfers a token from a user/sender to one of the depositEth create2 addresses.
-        # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
-        # in the same way but with a different tokenAddr
-        def _transfer_tokens_to_token_deposit(
-            self, bals, token, st_sender, st_swapID, st_token_amount
-        ):
-            # No point testing reverts of these conditions since it's not what we're trying to test
-            if st_swapID != 0 and bals[st_sender] >= st_token_amount:
-                print(
-                    "                    _transfer_tokens_to_token_deposit",
-                    token,
-                    st_sender,
-                    st_swapID,
-                    st_token_amount,
-                )
-                depositAddr = getCreate2Addr(
-                    self.v.address,
-                    cleanHexStrPad(st_swapID),
-                    DepositToken,
-                    cleanHexStrPad(token.address),
-                )
-                token.transfer(depositAddr, st_token_amount, {"from": st_sender})
+        # # Transfers a token from a user/sender to one of the depositEth create2 addresses.
+        # # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
+        # # in the same way but with a different tokenAddr
+        # def _transfer_tokens_to_token_deposit(
+        #     self, bals, token, st_sender, st_swapID, st_token_amount
+        # ):
+        #     # No point testing reverts of these conditions since it's not what we're trying to test
+        #     if st_swapID != 0 and bals[st_sender] >= st_token_amount:
+        #         print(
+        #             "                    _transfer_tokens_to_token_deposit",
+        #             token,
+        #             st_sender,
+        #             st_swapID,
+        #             st_token_amount,
+        #         )
+        #         depositAddr = getCreate2Addr(
+        #             self.v.address,
+        #             cleanHexStrPad(st_swapID),
+        #             DepositToken,
+        #             cleanHexStrPad(token.address),
+        #         )
+        #         token.transfer(depositAddr, st_token_amount, {"from": st_sender})
 
-                bals[st_sender] -= st_token_amount
-                bals[depositAddr] += st_token_amount
+        #         bals[st_sender] -= st_token_amount
+        #         bals[depositAddr] += st_token_amount
 
-        # Deposits tokenA from a user to a tokenA create2
-        def rule_transfer_tokens_to_depositTokenA(
-            self, st_sender, st_swapID, st_token_amount
-        ):
-            self._transfer_tokens_to_token_deposit(
-                self.tokenABals, self.tokenA, st_sender, st_swapID, st_token_amount
-            )
+        # # Deposits tokenA from a user to a tokenA create2
+        # def rule_transfer_tokens_to_depositTokenA(
+        #     self, st_sender, st_swapID, st_token_amount
+        # ):
+        #     self._transfer_tokens_to_token_deposit(
+        #         self.tokenABals, self.tokenA, st_sender, st_swapID, st_token_amount
+        #     )
 
-        # Deposits tokenB from a user to a tokenB create2
-        def rule_transfer_tokens_to_depositTokenB(
-            self, st_sender, st_swapID, st_token_amount
-        ):
-            self._transfer_tokens_to_token_deposit(
-                self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount
-            )
+        # # Deposits tokenB from a user to a tokenB create2
+        # def rule_transfer_tokens_to_depositTokenB(
+        #     self, st_sender, st_swapID, st_token_amount
+        # ):
+        #     self._transfer_tokens_to_token_deposit(
+        #         self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount
+        #     )
 
-        # Fetch the ETH deposit of a random create2
-        def rule_fetchDepositEth(self, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositEth.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapID
-            )
-            signer = self._get_key_prob(AGG)
+        # # Fetch the ETH deposit of a random create2
+        # def rule_fetchDepositEth(self, st_sender, st_swapID):
+        #     callDataNoSig = self.v.fetchDepositEth.encode_input(
+        #         agg_null_sig(self.km.address, chain.id), st_swapID
+        #     )
+        #     signer = self._get_key_prob(AGG)
 
-            if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositEth(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                    )
-            elif st_swapID == 0:
-                print(
-                    "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                with reverts(REV_MSG_NZ_BYTES32):
-                    self.v.fetchDepositEth(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                    )
-            elif not self.v in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST rule_fetchDepositEth",
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    self.v.fetchDepositEth(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_fetchDepositEth",
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.v.fetchDepositEth(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                    )
-            else:
-                print(
-                    "                    rule_fetchDepositEth",
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                depositAddr = getCreate2Addr(
-                    self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
-                )
-                depositBal = self.ethBals[depositAddr]
-                tx = self.v.fetchDepositEth(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapID,
-                )
+        #     if self.v_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             self.v.fetchDepositEth(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #             )
+        #     elif st_swapID == 0:
+        #         print(
+        #             "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_NZ_BYTES32):
+        #             self.v.fetchDepositEth(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #             )
+        #     elif not self.v in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST rule_fetchDepositEth",
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.v.fetchDepositEth(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #             )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_fetchDepositEth",
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.v.fetchDepositEth(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_fetchDepositEth",
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         depositAddr = getCreate2Addr(
+        #             self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
+        #         )
+        #         depositBal = self.ethBals[depositAddr]
+        #         tx = self.v.fetchDepositEth(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             st_swapID,
+        #         )
 
-                self.ethBals[depositAddr] -= depositBal
-                self.ethBals[self.v] += depositBal
-                self.lastValidateTime = tx.timestamp
+        #         self.ethBals[depositAddr] -= depositBal
+        #         self.ethBals[self.v] += depositBal
+        #         self.lastValidateTime = tx.timestamp
 
-        def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
-            addrs = [
-                getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "")
-                for swapID in st_swapIDs
-            ]
-            total = sum([web3.eth.get_balance(addr) for addr in addrs])
-            signer = self._get_key_prob(AGG)
-            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapIDs
-            )
+        # def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
+        #     addrs = [
+        #         getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "")
+        #         for swapID in st_swapIDs
+        #     ]
+        #     total = sum([web3.eth.get_balance(addr) for addr in addrs])
+        #     signer = self._get_key_prob(AGG)
+        #     callDataNoSig = self.v.fetchDepositEthBatch.encode_input(
+        #         agg_null_sig(self.km.address, chain.id), st_swapIDs
+        #     )
 
-            if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositEthBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                    )
-            elif not self.v in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST rule_fetchDepositEthBatch",
-                    st_sender,
-                    st_swapIDs,
-                    signer,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    self.v.fetchDepositEthBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_fetchDepositEthBatch",
-                    st_sender,
-                    st_swapIDs,
-                    signer,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.v.fetchDepositEthBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                    )
-            else:
-                print(
-                    "                    rule_fetchDepositEthBatch",
-                    st_sender,
-                    st_swapIDs,
-                    signer,
-                )
-                tx = self.v.fetchDepositEthBatch(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapIDs,
-                )
+        #     if self.v_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             self.v.fetchDepositEthBatch(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapIDs,
+        #             )
+        #     elif not self.v in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST rule_fetchDepositEthBatch",
+        #             st_sender,
+        #             st_swapIDs,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.v.fetchDepositEthBatch(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapIDs,
+        #             )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_fetchDepositEthBatch",
+        #             st_sender,
+        #             st_swapIDs,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.v.fetchDepositEthBatch(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapIDs,
+        #             )
+        #     else:
+        #         print(
+        #             "                    rule_fetchDepositEthBatch",
+        #             st_sender,
+        #             st_swapIDs,
+        #             signer,
+        #         )
+        #         tx = self.v.fetchDepositEthBatch(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             st_swapIDs,
+        #         )
 
-                for addr in addrs:
-                    self.ethBals[addr] = 0
-                self.ethBals[self.v] += total
-                self.lastValidateTime = tx.timestamp
+        #         for addr in addrs:
+        #             self.ethBals[addr] = 0
+        #         self.ethBals[self.v] += total
+        #         self.lastValidateTime = tx.timestamp
 
-        # Fetch the token deposit of a random create2
-        def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositToken.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapID, token
-            )
-            signer = self._get_key_prob(AGG)
+        # # Fetch the token deposit of a random create2
+        # def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
+        #     callDataNoSig = self.v.fetchDepositToken.encode_input(
+        #         agg_null_sig(self.km.address, chain.id), st_swapID, token
+        #     )
+        #     signer = self._get_key_prob(AGG)
 
-            if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositToken(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                        token,
-                    )
-            elif st_swapID == 0:
-                print(
-                    "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                with reverts(REV_MSG_NZ_BYTES32):
-                    self.v.fetchDepositToken(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                        token,
-                    )
-            elif not self.v in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST _fetchDepositToken",
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    self.v.fetchDepositToken(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                        token,
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG _fetchDepositToken",
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.v.fetchDepositToken(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                        token,
-                    )
-            else:
-                print(
-                    "                    _fetchDepositToken",
-                    token,
-                    st_sender,
-                    st_swapID,
-                    signer,
-                )
-                depositAddr = getCreate2Addr(
-                    self.v.address,
-                    cleanHexStrPad(st_swapID),
-                    DepositToken,
-                    cleanHexStrPad(token.address),
-                )
-                depositBal = bals[depositAddr]
-                tx = self.v.fetchDepositToken(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapID,
-                    token,
-                )
+        #     if self.v_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             self.v.fetchDepositToken(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #                 token,
+        #             )
+        #     elif st_swapID == 0:
+        #         print(
+        #             "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_NZ_BYTES32):
+        #             self.v.fetchDepositToken(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #                 token,
+        #             )
+        #     elif not self.v in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST _fetchDepositToken",
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.v.fetchDepositToken(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #                 token,
+        #             )
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG _fetchDepositToken",
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.v.fetchDepositToken(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapID,
+        #                 token,
+        #             )
+        #     else:
+        #         print(
+        #             "                    _fetchDepositToken",
+        #             token,
+        #             st_sender,
+        #             st_swapID,
+        #             signer,
+        #         )
+        #         depositAddr = getCreate2Addr(
+        #             self.v.address,
+        #             cleanHexStrPad(st_swapID),
+        #             DepositToken,
+        #             cleanHexStrPad(token.address),
+        #         )
+        #         depositBal = bals[depositAddr]
+        #         tx = self.v.fetchDepositToken(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             st_swapID,
+        #             token,
+        #         )
 
-                bals[depositAddr] -= depositBal
-                bals[self.v] += depositBal
-                self.lastValidateTime = tx.timestamp
+        #         bals[depositAddr] -= depositBal
+        #         bals[self.v] += depositBal
+        #         self.lastValidateTime = tx.timestamp
 
-        # Fetch the tokenA deposit of a random create2
-        def rule_fetchDepositToken_tokenA(self, st_sender, st_swapID):
-            self._fetchDepositToken(self.tokenABals, self.tokenA, st_sender, st_swapID)
+        # # Fetch the tokenA deposit of a random create2
+        # def rule_fetchDepositToken_tokenA(self, st_sender, st_swapID):
+        #     self._fetchDepositToken(self.tokenABals, self.tokenA, st_sender, st_swapID)
 
-        # Fetch the tokenB deposit of a random create2
-        def rule_fetchDepositToken_tokenB(self, st_sender, st_swapID):
-            self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
+        # # Fetch the tokenB deposit of a random create2
+        # def rule_fetchDepositToken_tokenB(self, st_sender, st_swapID):
+        #     self._fetchDepositToken(self.tokenBBals, self.tokenB, st_sender, st_swapID)
 
-        def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
-            minLen = trimToShortest([st_swapIDs, st_tokens])
-            signer = self._get_key_prob(AGG)
-            callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
-            )
+        # def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
+        #     minLen = trimToShortest([st_swapIDs, st_tokens])
+        #     signer = self._get_key_prob(AGG)
+        #     callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
+        #         agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
+        #     )
 
-            if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
-                with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositTokenBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        st_tokens,
-                    )
-            elif not self.v in self.currentWhitelist:
-                print(
-                    "        REV_MSG_WHITELIST rule_fetchDepositTokenBatch",
-                    st_sender,
-                    st_swapIDs,
-                    st_tokens,
-                    signer,
-                )
-                with reverts(REV_MSG_WHITELIST):
-                    self.v.fetchDepositTokenBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        st_tokens,
-                    )
+        #     if self.v_suspended:
+        #         print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+        #         with reverts(REV_MSG_GOV_SUSPENDED):
+        #             self.v.fetchDepositTokenBatch(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapIDs,
+        #                 st_tokens,
+        #             )
+        #     elif not self.v in self.currentWhitelist:
+        #         print(
+        #             "        REV_MSG_WHITELIST rule_fetchDepositTokenBatch",
+        #             st_sender,
+        #             st_swapIDs,
+        #             st_tokens,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_WHITELIST):
+        #             self.v.fetchDepositTokenBatch(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapIDs,
+        #                 st_tokens,
+        #             )
 
-            elif signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_fetchDepositTokenBatch",
-                    st_sender,
-                    st_swapIDs,
-                    st_tokens,
-                    signer,
-                )
-                with reverts(REV_MSG_SIG):
-                    self.v.fetchDepositTokenBatch(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        st_tokens,
-                    )
-            else:
-                for swapID, token in zip(st_swapIDs, st_tokens):
-                    addr = getCreate2Addr(
-                        self.v.address,
-                        cleanHexStrPad(swapID),
-                        DepositToken,
-                        cleanHexStrPad(token.address),
-                    )
-                    if token == self.tokenA:
-                        self.tokenABals[self.v] += self.tokenABals[addr]
-                        self.tokenABals[addr] = 0
-                    elif token == self.tokenB:
-                        self.tokenBBals[self.v] += self.tokenBBals[addr]
-                        self.tokenBBals[addr] = 0
-                    else:
-                        assert False, "Panicc"
+        #     elif signer != self.keyIDToCurKeys[AGG]:
+        #         print(
+        #             "        REV_MSG_SIG rule_fetchDepositTokenBatch",
+        #             st_sender,
+        #             st_swapIDs,
+        #             st_tokens,
+        #             signer,
+        #         )
+        #         with reverts(REV_MSG_SIG):
+        #             self.v.fetchDepositTokenBatch(
+        #                 signer.getSigDataWithNonces(
+        #                     callDataNoSig, nonces, AGG, self.km.address
+        #                 ),
+        #                 st_swapIDs,
+        #                 st_tokens,
+        #             )
+        #     else:
+        #         for swapID, token in zip(st_swapIDs, st_tokens):
+        #             addr = getCreate2Addr(
+        #                 self.v.address,
+        #                 cleanHexStrPad(swapID),
+        #                 DepositToken,
+        #                 cleanHexStrPad(token.address),
+        #             )
+        #             if token == self.tokenA:
+        #                 self.tokenABals[self.v] += self.tokenABals[addr]
+        #                 self.tokenABals[addr] = 0
+        #             elif token == self.tokenB:
+        #                 self.tokenBBals[self.v] += self.tokenBBals[addr]
+        #                 self.tokenBBals[addr] = 0
+        #             else:
+        #                 assert False, "Panicc"
 
-                print(
-                    "                    rule_fetchDepositTokenBatch",
-                    st_sender,
-                    st_swapIDs,
-                    st_tokens,
-                    signer,
-                )
-                tx = self.v.fetchDepositTokenBatch(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapIDs,
-                    st_tokens,
-                )
+        #         print(
+        #             "                    rule_fetchDepositTokenBatch",
+        #             st_sender,
+        #             st_swapIDs,
+        #             st_tokens,
+        #             signer,
+        #         )
+        #         tx = self.v.fetchDepositTokenBatch(
+        #             signer.getSigDataWithNonces(
+        #                 callDataNoSig, nonces, AGG, self.km.address
+        #             ),
+        #             st_swapIDs,
+        #             st_tokens,
+        #         )
 
-                self.lastValidateTime = tx.timestamp
+        #         self.lastValidateTime = tx.timestamp
 
         # KeyManager
 
