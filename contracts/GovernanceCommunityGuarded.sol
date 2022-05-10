@@ -15,18 +15,11 @@ import "./abstract/Shared.sol";
  * @author   albert-llimos (Albert Llimos)
  */
 abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuarded {
-    /// @dev    Community key - address
-    address private _communityKey;
-
     /// @dev    Community Guard Disabled
     bool private _communityGuardDisabled;
 
     /// @dev    Whether execution is suspended
     bool private _suspended = false;
-
-    constructor(address communityKey) nzAddr(communityKey) {
-        _communityKey = communityKey;
-    }
 
     /**
      * @notice  Get the governor's address. The contracts inheriting this (StakeManager and Vault)
@@ -37,6 +30,16 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      * @return  The governor's address
      */
     function _getGovernor() internal view virtual returns (address);
+
+    /**
+     * @notice  Get the community's address. The contracts inheriting this (StakeManager and Vault)
+     *          get the community's address from the KeyManager through the AggKeyNonceConsumer's
+     *          inheritance. Therefore, the implementation of this function must be left
+     *          to the children. This is a workaround since the isCommunityKey modifier can't be
+     *          made virtual. This contract needs to be marked as abstract.
+     * @return  The community's address
+     */
+    function _getCommunityKey() internal view virtual returns (address);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -56,14 +59,6 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      */
     function disableCommunityGuard() external override isCommunityKey isCommunityGuardEnabled {
         _communityGuardDisabled = true;
-    }
-
-    /**
-     * @notice  Update the Community Key. Can only be called by the current Community Key.
-     * @param newCommunityKey   New Community key address.
-     */
-    function updateCommunityKey(address newCommunityKey) external override isCommunityKey nzAddr(newCommunityKey) {
-        _communityKey = newCommunityKey;
     }
 
     /**
@@ -92,7 +87,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      * @return  The CommunityKey
      */
     function getCommunityKey() external view override returns (address) {
-        return _communityKey;
+        return _getCommunityKey();
     }
 
     /**
@@ -125,9 +120,9 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Ensure that the caller is the Community Key address.
+    /// @dev    Check that the caller is the Community Key address.
     modifier isCommunityKey() {
-        require(msg.sender == _communityKey, "Governance: not Community Key");
+        require(msg.sender == _getCommunityKey(), "Governance: not Community Key");
         _;
     }
 

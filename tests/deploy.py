@@ -43,7 +43,7 @@ def deploy_initial_Chainflip_contracts(
         # This should be only for testing purposes on local testnet (hardhat)
         cf.communityKey = accounts[6]
 
-    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov)
+    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
 
     cf.numGenesisValidators = int(
         environment.get("NUM_GENESIS_VALIDATORS") or NUM_GENESIS_VALIDATORS
@@ -53,12 +53,11 @@ def deploy_initial_Chainflip_contracts(
 
     print(f"Deploying with AGG_KEY: {aggKey} and GOV_KEY: {cf.gov}")
 
-    cf.vault = deployer.deploy(Vault, cf.keyManager, cf.communityKey)
+    cf.vault = deployer.deploy(Vault, cf.keyManager)
     cf.stakeManager = deployer.deploy(
         StakeManager,
         cf.keyManager,
         MIN_STAKE,
-        cf.communityKey,
     )
     cf.flip = deployer.deploy(
         FLIP,

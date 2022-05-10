@@ -10,16 +10,6 @@ def test_constructor(cf):
         assert governanceCommunityGuarded.getSuspendedState() == False
 
 
-def test_constructor_deploy(cf, Vault, StakeManager):
-    with reverts(REV_MSG_NZ_ADDR):
-        cf.vault = cf.DEPLOYER.deploy(Vault, cf.keyManager, ZERO_ADDR)
-
-    with reverts(REV_MSG_NZ_ADDR):
-        cf.stakeManager = cf.DEPLOYER.deploy(
-            StakeManager, cf.keyManager, MIN_STAKE, ZERO_ADDR
-        )
-
-
 def test_CommunityGuard(cf):
     governanceCommunityGuardedList = getgovernanceCommunityGuardedList(cf)
     for governanceCommunityGuarded in governanceCommunityGuardedList:
@@ -45,16 +35,14 @@ def test_CommunityGuard(cf):
 
 def test_updateCommunityKey(cf):
     governanceCommunityGuardedList = getgovernanceCommunityGuardedList(cf)
+
+    with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
+        cf.keyManager.updateCommunityKey(ZERO_ADDR, {"from": cf.ALICE})
+    with reverts(REV_MSG_NZ_ADDR):
+        cf.keyManager.updateCommunityKey(ZERO_ADDR, {"from": cf.COMMUNITY_KEY})
+    cf.keyManager.updateCommunityKey(cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY})
+
     for governanceCommunityGuarded in governanceCommunityGuardedList:
-        with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-            governanceCommunityGuarded.updateCommunityKey(ZERO_ADDR, {"from": cf.ALICE})
-        with reverts(REV_MSG_NZ_ADDR):
-            governanceCommunityGuarded.updateCommunityKey(
-                ZERO_ADDR, {"from": cf.COMMUNITY_KEY}
-            )
-        governanceCommunityGuarded.updateCommunityKey(
-            cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY}
-        )
         assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY_2
         assert governanceCommunityGuarded.getCommunityGuard() == False
 

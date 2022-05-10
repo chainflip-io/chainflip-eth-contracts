@@ -94,6 +94,7 @@ REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
 # modifiers
 REV_MSG_DELAY = "KeyManager: not enough delay"
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
+REV_MSG_KEYMANAGER_NOT_COMMUNITY = "KeyManager: not Community Key"
 
 # -----SchnorrSECP256K1-----
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"

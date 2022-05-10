@@ -10,6 +10,7 @@ import "./IShared.sol";
 interface IKeyManager is IShared {
     event AggKeySetByAggKey(Key oldKey, Key newKey);
     event AggKeySetByGovKey(Key oldKey, Key newKey);
+    event GovKeySetByAggKey(address oldKey, address newKey);
     event GovKeySetByGovKey(address oldKey, address newKey);
     event SignatureAccepted(SigData sigData, address signer);
 
@@ -25,7 +26,11 @@ interface IKeyManager is IShared {
 
     function setAggKeyWithGovKey(Key memory newKey) external;
 
+    function setGovKeyWithAggKey(SigData calldata sigData, address newKey) external;
+
     function setGovKeyWithGovKey(address newKey) external;
+
+    function updateCommunityKey(address newCommunityKey) external;
 
     function canConsumeKeyNonce(address addr) external view returns (bool);
 
@@ -40,6 +45,8 @@ interface IKeyManager is IShared {
     function getAggregateKey() external view returns (Key memory);
 
     function getGovernanceKey() external view returns (address);
+
+    function getCommunityKey() external view returns (address);
 
     function getLastValidateTime() external view returns (uint256);
 

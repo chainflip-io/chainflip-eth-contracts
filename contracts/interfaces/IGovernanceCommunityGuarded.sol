@@ -26,12 +26,6 @@ interface IGovernanceCommunityGuarded is IShared {
     function disableCommunityGuard() external;
 
     /**
-     * @notice  Update the Community Key. Can only be called by the current Community Key.
-     * @param newCommunityKey   New Community key address.
-     */
-    function updateCommunityKey(address newCommunityKey) external;
-
-    /**
      * @notice  Can be used to suspend contract execution - only executable by
      *          governance and only to be used in case of emergency.
      */
