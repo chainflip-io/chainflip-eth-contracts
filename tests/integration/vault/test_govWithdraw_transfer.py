@@ -64,7 +64,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
 
     fetchDepositEth(cf, cf.vault, DepositEth)
     # Governance cannot withdraw again since community Guard is enabled again
-    with reverts(REV_MSG_GOV_GUARD):
+    with reverts(REV_MSG_GOV_ENABLED_GUARD):
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
 
     # Vault has funds so it can transfer again

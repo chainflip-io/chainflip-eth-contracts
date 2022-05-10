@@ -20,12 +20,6 @@ def test_constructor_AW(a, cfAW):
     assert cfAW.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR
     assert cfAW.keyManager.canConsumeKeyNonceSet() == True
-    cfAW.whitelisted = [
-        cfAW.vault,
-        cfAW.keyManager,
-        cfAW.stakeManager,
-        cfAW.flip,
-    ] + list(a)
     for addr in cfAW.whitelisted:
         assert cfAW.keyManager.canConsumeKeyNonce(addr) == True
 

@@ -59,7 +59,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
-    function getGovernor() internal view override returns (address) {
+    function _getGovernor() internal view override returns (address) {
         return _getKeyManager().getGovernanceKey();
     }
 
@@ -197,9 +197,10 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     function govWithdraw() external override isGovernor isCommunityGuardDisabled isSuspended {
         uint256 amount = _FLIP.balanceOf(address(this));
 
-        // msg.sender == Governor address
-        _FLIP.transfer(msg.sender, amount);
-        emit GovernanceWithdrawal(msg.sender, amount);
+        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        address recipient = _getKeyManager().getGovernanceKey();
+        _FLIP.transfer(recipient, amount);
+        emit GovernanceWithdrawal(recipient, amount);
     }
 
     /**

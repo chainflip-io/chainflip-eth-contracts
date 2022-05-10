@@ -26,13 +26,17 @@ def test_CommunityGuard(cf):
         with reverts(REV_MSG_GOV_NOT_COMMUNITY):
             governanceCommunityGuarded.disableCommunityGuard({"from": cf.ALICE})
         # Setting Guard to the same value to ensure that nothing weird happens
-        governanceCommunityGuarded.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
+        with reverts(REV_MSG_GOV_ENABLED_GUARD):
+            governanceCommunityGuarded.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
         assert governanceCommunityGuarded.getCommunityGuard() == False
         assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY
         # Disable Guard
         governanceCommunityGuarded.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
         assert governanceCommunityGuarded.getCommunityGuard() == True
         assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY
+        with reverts(REV_MSG_GOV_DISABLED_GUARD):
+            governanceCommunityGuarded.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
+
         # Enable again
         governanceCommunityGuarded.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
         assert governanceCommunityGuarded.getCommunityGuard() == False

@@ -65,4 +65,10 @@ interface IGovernanceCommunityGuarded is IShared {
      * @return  The suspended state
      */
     function getSuspendedState() external view returns (bool);
+
+    /**
+     * @notice  Get governor address
+     * @return  The governor address
+     */
+    function getGovernor() external view returns (address);
 }

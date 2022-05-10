@@ -5,8 +5,8 @@ from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
-import pytest
 import random
+import time
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -48,9 +48,15 @@ def test_upgradability(
 
             # StakeManager
             self.lastSupplyBlockNumber = 0
+            self.sm_communityKey = self.sm.getCommunityKey()
+            self.sm_guard = self.sm.getCommunityGuard()
+            self.sm_suspended = self.sm.getSuspendedState()
 
             # Vault - initialize with some funds
             a[3].transfer(self.v, self.TOTAL_FUNDS)
+            self.v_communityKey = self.v.getCommunityKey()
+            self.v_guard = self.v.getCommunityGuard()
+            self.v_suspended = self.v.getSuspendedState()
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -110,7 +116,7 @@ def test_upgradability(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
 
-            newVault = st_sender.deploy(Vault, self.km)
+            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
 
             # Keep old Vault whitelisted
             currentWhitelist = [
@@ -126,7 +132,7 @@ def test_upgradability(
                 self.km,
                 newVault,
             ]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
             callDataNoSig = newVault.transfer.encode_input(
@@ -230,10 +236,13 @@ def test_upgradability(
                 newVault,
             ]
             toWhitelist = [self.sm, self.f, self.km, newVault]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             self.v = newVault
             self.lastValidateTime = tx.timestamp
+            self.v_communityKey = self.communityKey
+            self.v_guard = False
+            self.v_suspended = False
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(
@@ -243,6 +252,7 @@ def test_upgradability(
                 StakeManager,
                 self.km,
                 MIN_STAKE,
+                cf.communityKey,
             )
 
             newStakeManager.setFlip(self.f, {"from": st_sender})
@@ -261,7 +271,7 @@ def test_upgradability(
                 self.km,
                 newStakeManager,
             ]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             chain.sleep(st_sleep_time)
 
@@ -313,9 +323,12 @@ def test_upgradability(
                 newStakeManager,
             ]
             toWhitelist = [self.v, newStakeManager, self.f, self.km]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist)
+            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
 
             self.sm = newStakeManager
+            self.sm_communityKey = self.communityKey
+            self.sm_guard = False
+            self.sm_suspended = False
 
         # Check that all the funds (ETH and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):
@@ -333,6 +346,14 @@ def test_upgradability(
             assert self.sm.getFLIP() == self.f.address
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
 
+        def invariant_governanceCommunityGuard(self):
+            assert self.v_communityKey == self.v.getCommunityKey()
+            assert self.v_guard == self.v.getCommunityGuard()
+            assert self.v_suspended == self.v.getSuspendedState()
+            assert self.sm_communityKey == self.sm.getCommunityKey()
+            assert self.sm_guard == self.sm.getCommunityGuard()
+            assert self.sm_suspended == self.sm.getSuspendedState()
+
         def invariant_keyManager_whitelist(self):
             aggKeyNonceConsumers = [
                 self.km,
@@ -348,6 +369,8 @@ def test_upgradability(
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
+            # Add time.sleep due to brownie bug that kills virtual machine too quick
+            time.sleep(5)
 
     state_machine(
         StateMachine,

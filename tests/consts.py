@@ -82,7 +82,7 @@ REV_MSG_SET = "KeyManager: already set"
 REV_MSG_DUPLICATE = "KeyManager: address already whitelisted"
 # updateCanConsumeKeyNonce
 REV_MSG_LENGTH = "KeyManager: array incorrect length"
-REV_MSG_NOT_DEWHITELISTED = "KeyManager: cannot dewhitelist"
+REV_MSG_CANNOT_DEWHITELIST = "KeyManager: cannot dewhitelist"
 REV_MSG_KEYMANAGER_WHITELIST = "KeyManager: KeyManager not whitelisted"
 # consumeKeyNonce
 REV_MSG_WHITELIST = "KeyManager: not whitelisted"
@@ -137,7 +137,8 @@ REV_MSG_SENDER = "Vault: only Vault can send ETH"
 REV_MSG_VAULT_DELAY = "Vault: not enough delay"
 
 # -----GovernanceCommunityGuarded-----
-REV_MSG_GOV_GUARD = "Governance: guard not disabled by community"
+REV_MSG_GOV_ENABLED_GUARD = "Governance: community guard enabled"
+REV_MSG_GOV_DISABLED_GUARD = "Governance: community guard disabled"
 REV_MSG_GOV_NOT_COMMUNITY = "Governance: not Community Key"
 REV_MSG_GOV_GOVERNOR = "Governance: not governor"
 REV_MSG_GOV_SUSPENDED = "Governance: suspended"

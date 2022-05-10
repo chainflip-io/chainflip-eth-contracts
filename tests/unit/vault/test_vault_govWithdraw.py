@@ -47,7 +47,7 @@ def test_govWithdraw(
     with reverts(REV_MSG_GOV_GOVERNOR):
         cf.vault.govWithdraw(tokenList, {"from": cf.ALICE})
 
-    with reverts(REV_MSG_GOV_GUARD):
+    with reverts(REV_MSG_GOV_ENABLED_GUARD):
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
 
     cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY})

@@ -36,7 +36,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      *          made virtual. This contract needs to be marked as abstract.
      * @return  The governor's address
      */
-    function getGovernor() internal view virtual returns (address);
+    function _getGovernor() internal view virtual returns (address);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -47,14 +47,14 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     /**
      * @notice  Enable Community Guard
      */
-    function enableCommunityGuard() external override isCommunityKey {
+    function enableCommunityGuard() external override isCommunityKey isCommunityGuardDisabled {
         _communityGuardDisabled = false;
     }
 
     /**
      * @notice  Disable Community Guard
      */
-    function disableCommunityGuard() external override isCommunityKey {
+    function disableCommunityGuard() external override isCommunityKey isCommunityGuardEnabled {
         _communityGuardDisabled = true;
     }
 
@@ -111,6 +111,14 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
         return _suspended;
     }
 
+    /**
+     * @notice  Get governor address
+     * @return  The governor address
+     */
+    function getGovernor() external view override returns (address) {
+        return _getGovernor();
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                         Modifiers                        //
@@ -125,14 +133,20 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
 
     /// @dev    Check that community has disabled the community guard.
     modifier isCommunityGuardDisabled() {
-        require(_communityGuardDisabled, "Governance: guard not disabled by community");
+        require(_communityGuardDisabled, "Governance: community guard enabled");
+        _;
+    }
+
+    /// @dev    Check that community has disabled the community guard.
+    modifier isCommunityGuardEnabled() {
+        require(!_communityGuardDisabled, "Governance: community guard disabled");
         _;
     }
 
     /// @notice Ensure that the caller is the governor address. Calls the getGovernor
     ///         function which is implemented by the children.
     modifier isGovernor() {
-        require(msg.sender == getGovernor(), "Governance: not governor");
+        require(msg.sender == _getGovernor(), "Governance: not governor");
         _;
     }
 
