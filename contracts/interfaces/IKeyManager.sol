@@ -36,10 +36,6 @@ interface IKeyManager is IShared {
 
     function setCommKeyWithCommKey(address newCommKey) external;
 
-    function canConsumeKeyNonce(address addr) external view returns (bool);
-
-    function canConsumeKeyNonceSet() external view returns (bool);
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //
@@ -52,9 +48,13 @@ interface IKeyManager is IShared {
 
     function getCommunityKey() external view returns (address);
 
+    function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
+
     function getLastValidateTime() external view returns (uint256);
 
-    function getNumberWhitelistedAddresses() external view returns (uint256);
+    function canConsumeKeyNonce(address addr) external view returns (bool);
 
-    function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
+    function canConsumeKeyNonceSet() external view returns (bool);
+
+    function getNumberWhitelistedAddresses() external view returns (uint256);
 }
