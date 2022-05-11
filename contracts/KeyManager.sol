@@ -22,7 +22,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint256 private _lastValidateTime;
     mapping(uint256 => bool) private _isNonceUsedByAggKey;
-    /// @dev    Whitelist for who can call isValidSig
+    /// @dev    Whitelist for who can call canConsumeNonce
     mapping(address => bool) private _canConsumeKeyNonce;
     bool private _canConsumeKeyNonceSet;
     uint256 private _numberWhitelistedAddresses;
@@ -45,7 +45,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Sets the specific addresses that can call isValidSig. This
+     * @notice  Sets the specific addresses that can call consumeKeyNonce. This
      *          function can only ever be called once! Yes, it's possible to
      *          frontrun this, but honestly, it's fine in practice - it just
      *          needs to be set up successfully once, which is trivial
@@ -69,7 +69,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
-     * @notice  Replaces the specific addresses that can call isValidSig. To be used if
+     * @notice  Replaces the specific addresses that can call consumeKeyNonce. To be used if
      *          contracts are updated. Can delist addresses and can add an arbitrary number of new addresses.
      * @param currentAddrs   List of current whitelisted addresses
      * @param newAddrs   List of new addresses to whitelist
@@ -208,7 +208,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.setAggKeyWithAggKey.selector,
+                    this.setGovKeyWithAggKey.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     newGovKey
                 )
@@ -244,7 +244,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.setAggKeyWithAggKey.selector,
+                    this.setCommKeyWithAggKey.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     newCommKey
                 )
