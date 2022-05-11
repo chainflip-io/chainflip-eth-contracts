@@ -60,21 +60,21 @@ def transfer_eth(cf, deployedVault, receiver, amount):
 def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
 
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_2.getPubData()
     )
 
-    balanceBefore = cf.ALICE.balance()
     tx = cf.keyManager.setAggKeyWithAggKey(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         AGG_SIGNER_2.getPubData(),
         {"from": cf.ALICE},
     )
-    balanceAfter = cf.ALICE.balance()
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getGovernanceKey() == cf.gov
     assert tx.events["AggKeySetByAggKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
         AGG_SIGNER_2.getPubDataWith0x(),
