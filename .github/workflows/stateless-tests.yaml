@@ -6,12 +6,12 @@ jobs:
     name: Linting
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
 
-  stateless-tests:
-    name: Stateless Tests
-    needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@feat/contract-updates
-    with:
-      stateful: false
+  # stateless-tests:
+  #   name: Stateless Tests
+  #   needs: lint
+  #   uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@feat/contract-updates
+  #   with:
+  #     stateful: false
 
   stateful-tests:
     name: Stateful Tests
