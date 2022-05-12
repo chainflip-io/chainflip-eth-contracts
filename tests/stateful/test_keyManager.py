@@ -39,6 +39,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             )
             self.numTxsTested = 0
             self.governor = cfDeployAllWhitelist.gov
+            self.current_communityKey == cfDeployAllWhitelist.COMMUNITY_KEY
             self.currentWhitelist = cfDeployAllWhitelist.whitelisted
 
         # Variables that will be a random value with each fcn/rule called
@@ -207,23 +208,20 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                     )
 
-        # Replace a key with a random key - setAggKeyWithAggKey
-        def _set_same_key_agg(
-            self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx
-        ):
-            callDataNoSig = fcn.encode_input(
+        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
+        def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+            callDataNoSig = self.km.setAggKeyWithAggKey.encode_input(
                 agg_null_sig(self.km.address, chain.id),
                 self.allKeys[st_new_key_idx].getPubData(),
             )
-            if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
+            if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
                 print(
-                    f"                    {fcn}",
+                    f"                    {self.km.setAggKeyWithAggKey}",
                     st_sender,
-                    keyID,
                     st_sig_key_idx,
                     st_new_key_idx,
                 )
-                tx = fcn(
+                tx = self.km.setAggKeyWithAggKey(
                     self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
@@ -231,18 +229,17 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                     {"from": st_sender},
                 )
 
-                self.keyIDToCurKeys[keyID] = self.allKeys[st_new_key_idx]
+                self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print(
-                        f"        REV_MSG_SIG {fcn}",
+                        f"        REV_MSG_SIG {self.km.setAggKeyWithAggKey}",
                         st_sender,
-                        keyID,
                         st_sig_key_idx,
                         st_new_key_idx,
                     )
-                    fcn(
+                    self.km.setAggKeyWithAggKey(
                         self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                             callDataNoSig, nonces, AGG, self.km.address
                         ),
@@ -250,31 +247,21 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         {"from": st_sender},
                     )
 
-        # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
-        def _set_same_key_gov(self, st_sender, fcn):
+        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
+        def rule_setGovKeyWithGovKey(self, st_sender):
             current_governor = choice([st_sender, self.governor])
 
             if current_governor == self.governor:
-                print(f"                    {fcn}", st_sender, self.governor)
-                tx = fcn(st_sender, {"from": current_governor})
+                print(
+                    f"                    {self.km.setGovKeyWithGovKey}",
+                    st_sender,
+                    self.governor,
+                )
+                self.km.setGovKeyWithGovKey(st_sender, {"from": current_governor})
                 self.governor = st_sender
             else:
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
-                    fcn(st_sender, {"from": current_governor})
-
-        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
-        def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            self._set_same_key_agg(
-                st_sender,
-                self.km.setAggKeyWithAggKey,
-                AGG,
-                st_sig_key_idx,
-                st_new_key_idx,
-            )
-
-        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
-        def rule_setGovKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            self._set_same_key_gov(st_sender, self.km.setGovKeyWithGovKey)
+                    self.km.setGovKeyWithGovKey(st_sender, {"from": current_governor})
 
         # Sleep for a random time so that setAggKeyWithGovKey can be called without reverting
         def rule_sleep(self, st_sleep_time):
@@ -315,6 +302,23 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
 
                 self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
 
+        # Updates community Key - happens with low probability - 1/20
+        def rule_setCommKeyWithCommKey(self, st_sender, st_addrs):
+            newCommunityKey = choice(st_addrs)
+            if st_sender == self.current_communityKey:
+                print("                    rule_setCommKeyWithCommKey", st_sender)
+                self.km.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
+                self.current_communityKey = newCommunityKey
+            else:
+                print(
+                    "        REV_MSG_GOV_NOT_COMMUNITY _setCommKeyWithCommKey",
+                    st_sender,
+                )
+                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                    self.km.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
+
+        # TODO: Add setGovKeyWithAggKey test and setCommKeyWithAggKey test
+
         # Check lastValidateTime after every tx
         def invariant_lastValidateTime(self):
             self.numTxsTested += 1
@@ -332,6 +336,11 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 self.km.getAggregateKey() == self.keyIDToCurKeys[AGG].getPubDataWith0x()
             )
             assert self.km.getGovernanceKey() == self.governor
+            assert self.km.getCommunityKey() == self.current_communityKey
+            assert self.v.getGovernanceKey() == self.governor
+            assert self.v.getCommunityKey() == self.current_communityKey
+            assert self.sm.getGovernanceKey() == self.governor
+            assert self.sm.getCommunityKey() == self.current_communityKey
 
         # Print how many rules were executed at the end of each run
         def teardown(self):

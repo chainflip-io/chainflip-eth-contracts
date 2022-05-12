@@ -126,7 +126,6 @@ def test_vault(
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
 
-            self.current_communityKey = self.v.getCommunityKey()
             self.communityGuardDisabled = self.v.getCommunityGuard()
             self.suspended = self.v.getSuspendedState()
 
@@ -822,47 +821,32 @@ def test_vault(
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
                     self.v.resume({"from": self.governor})
 
-        # Updates community Key - happens with low probability - 1/20
-        def rule_setCommKeyWithCommKey(self, st_sender):
-            newCommunityKey = choice([self.communityKey, self.communityKey_2])
-            if st_sender == self.current_communityKey:
-                print("                    rule_setCommKeyWithCommKey", st_sender)
-                self.v.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
-                self.current_communityKey = newCommunityKey
-            else:
-                print(
-                    "        REV_MSG_GOV_NOT_COMMUNITY _setCommKeyWithCommKey",
-                    st_sender,
-                )
-                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                    self.v.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
-
         # Enable community Guard
         def rule_enableCommunityGuard(self, st_sender):
             if self.communityGuardDisabled:
-                if st_sender != self.current_communityKey:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.enableCommunityGuard({"from": st_sender})
                 # Always enable
                 print("                    rule_enableCommunityGuard", st_sender)
-                self.v.enableCommunityGuard({"from": self.current_communityKey})
+                self.v.enableCommunityGuard({"from": self.communityKey})
                 self.communityGuardDisabled = False
             else:
                 print(
                     "        REV_MSG_GOV_ENABLED_GUARD _enableCommunityGuard", st_sender
                 )
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.enableCommunityGuard({"from": self.current_communityKey})
+                    self.v.enableCommunityGuard({"from": self.communityKey})
 
         # Enable community Guard
         def rule_disableCommunityGuard(self, st_sender):
             if not self.communityGuardDisabled:
-                if st_sender != self.current_communityKey:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.disableCommunityGuard({"from": st_sender})
                 # Always disable
                 print("                    rule_disableCommunityGuard", st_sender)
-                self.v.disableCommunityGuard({"from": self.current_communityKey})
+                self.v.disableCommunityGuard({"from": self.communityKey})
                 self.communityGuardDisabled = True
             else:
                 print(
@@ -870,7 +854,7 @@ def test_vault(
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
-                    self.v.disableCommunityGuard({"from": self.current_communityKey})
+                    self.v.disableCommunityGuard({"from": self.communityKey})
 
         # Governance attemps to withdraw FLIP in case of emergency
         def rule_govWithdrawal(self, st_sender):
@@ -936,7 +920,7 @@ def test_vault(
             assert self.v.getKeyManager() == self.km.address
 
         def invariant_governanceCommunityGuard(self):
-            assert self.current_communityKey == self.v.getCommunityKey()
+            assert self.communityKey == self.v.getCommunityKey()
             assert self.communityGuardDisabled == self.v.getCommunityGuard()
             assert self.suspended == self.v.getSuspendedState()
 
