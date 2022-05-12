@@ -172,6 +172,24 @@ def setCommKeyWithAggKey_test(cf):
     ]
 
 
+def setCommKeyWithCommKey_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
+
+    tx = cf.keyManager.setCommKeyWithCommKey(
+        cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY}
+    )
+    assert tx.events["CommKeySetByCommKey"][0].values() == [
+        cf.COMMUNITY_KEY,
+        cf.COMMUNITY_KEY_2,
+    ]
+
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.COMMUNITY_KEY_2
+
+
 def setKey_rev_pubKeyX_test(cf, fcn, signer):
     newKey = AGG_SIGNER_2.getPubData()
     newKey[0] = 0
