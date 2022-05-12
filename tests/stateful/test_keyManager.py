@@ -39,7 +39,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             )
             self.numTxsTested = 0
             self.governor = cfDeployAllWhitelist.gov
-            self.current_communityKey == cfDeployAllWhitelist.COMMUNITY_KEY
+            self.current_communityKey = cfDeployAllWhitelist.COMMUNITY_KEY
             self.currentWhitelist = cfDeployAllWhitelist.whitelisted
 
         # Variables that will be a random value with each fcn/rule called
