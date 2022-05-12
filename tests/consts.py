@@ -32,7 +32,7 @@ QUARTER_YEAR = int(YEAR / 4)
 REV_MSG_NZ_UINT = "Shared: uint input is empty"
 REV_MSG_NZ_ADDR = "Shared: address input is empty"
 REV_MSG_NZ_BYTES32 = "Shared: bytes32 input is empty"
-REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
+REV_MSG_NZ_PUBKEYX = "Shared: pubKeyX is empty"
 
 # -----KeyManager-----
 # 2 days

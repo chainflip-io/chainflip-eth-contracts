@@ -4,9 +4,20 @@ from brownie import reverts, web3
 
 
 def test_setGovKeyWithGovKey_setMinStake(cfAW):
-    # Change agg keys
+    # Change gov keys with Gov Key
     setGovKeyWithGovKey_test(cfAW)
+    # Check that only new governor can set minStake
+    setMinStake_newGov(cfAW)
 
+
+def test_setGovKeyWithAggKey_setMinStake(cfAW):
+    # Change gov keys with Agg Key
+    setGovKeyWithAggKey_test(cfAW)
+    # Check that only new governor can set minStake
+    setMinStake_newGov(cfAW)
+
+
+def setMinStake_newGov(cfAW):
     newMinStake = int(MIN_STAKE * 1.5)
 
     # Changing minStake with old key should revert

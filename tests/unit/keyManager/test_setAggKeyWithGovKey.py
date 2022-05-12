@@ -27,7 +27,7 @@ def test_setAggKeyWithGovKey_rev_governor(cf):
 
 def test_setAggKeyWithGovKey_rev_nz(cf):
     chain.sleep(AGG_KEY_TIMEOUT)
-    with reverts(REV_MSG_PUBKEYX):
+    with reverts(REV_MSG_NZ_PUBKEYX):
         cf.keyManager.setAggKeyWithGovKey(NULL_KEY, {"from": cf.GOVERNOR})
 
 

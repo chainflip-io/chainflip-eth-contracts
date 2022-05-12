@@ -36,3 +36,10 @@ def test_stake_rev_nodeID(cf):
         cf.stakeManager.stake(
             0, cf.stakeManager.getMinimumStake(), NON_ZERO_ADDR, {"from": cf.ALICE}
         )
+
+
+def test_stake_rev_zaddr(cf):
+    with reverts(REV_MSG_NZ_ADDR):
+        cf.stakeManager.stake(
+            JUNK_HEX, cf.stakeManager.getMinimumStake(), ZERO_ADDR, {"from": cf.ALICE}
+        )
