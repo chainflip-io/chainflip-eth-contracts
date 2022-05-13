@@ -8,12 +8,12 @@ import "./IShared.sol";
  * @author   Quantaf1re (James Key)
  */
 interface IKeyManager is IShared {
-    event AggKeySetByAggKey(Key oldKey, Key newKey);
-    event AggKeySetByGovKey(Key oldKey, Key newKey);
-    event GovKeySetByAggKey(address oldKey, address newKey);
-    event GovKeySetByGovKey(address oldKey, address newKey);
-    event CommKeySetByAggKey(address oldKey, address newKey);
-    event CommKeySetByCommKey(address oldKey, address newKey);
+    event AggKeySetByAggKey(Key oldAggKey, Key newAggKey);
+    event AggKeySetByGovKey(Key oldAggKey, Key newAggKey);
+    event GovKeySetByAggKey(address oldGovKey, address newGovKey);
+    event GovKeySetByGovKey(address oldGovKey, address newGovKey);
+    event CommKeySetByAggKey(address oldCommKey, address newCommKey);
+    event CommKeySetByCommKey(address oldCommKey, address newCommKey);
     event SignatureAccepted(SigData sigData, address signer);
 
     //////////////////////////////////////////////////////////////
