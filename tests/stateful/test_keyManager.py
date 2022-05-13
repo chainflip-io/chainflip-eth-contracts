@@ -432,12 +432,20 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             assert (
                 self.km.getAggregateKey() == self.keyIDToCurKeys[AGG].getPubDataWith0x()
             )
-            assert self.km.getGovernanceKey() == self.governor
-            assert self.km.getCommunityKey() == self.communityKey
-            assert self.v.getGovernor() == self.governor
-            assert self.v.getCommunityKey() == self.communityKey
-            assert self.sm.getGovernor() == self.governor
-            assert self.sm.getCommunityKey() == self.communityKey
+
+            assert (
+                self.governor
+                == self.km.getGovernanceKey()
+                == self.sm.getGovernor()
+                == self.v.getGovernor()
+            )
+
+            assert (
+                self.communityKey
+                == self.km.getCommunityKey()
+                == self.sm.getCommunityKey()
+                == self.v.getCommunityKey()
+            )
 
         # Print how many rules were executed at the end of each run
         def teardown(self):

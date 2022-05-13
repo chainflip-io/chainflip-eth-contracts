@@ -192,6 +192,7 @@ def test_all(
             self.km = self.orig_km
 
             self.governor = cfDeployAllWhitelist.gov
+            self.communityKey = cfDeployAllWhitelist.communityKey
 
             self.allAddrs = self.stakers
             self.allAddrs = [
@@ -201,7 +202,7 @@ def test_all(
                 *self.create2TokenBAddrs,
             ]
 
-            tx = self.sm.setMinStake(INIT_MIN_STAKE, {"from": self.governor})
+            self.sm.setMinStake(INIT_MIN_STAKE, {"from": self.governor})
 
             self.ethBals = {
                 # Accounts within "a" will have INIT_ETH_BAL - gas spent in setup/deployment
@@ -227,7 +228,6 @@ def test_all(
             self.tokenBBals = {
                 addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs
             }
-            self.v_current_communityKey = self.v.getCommunityKey()
             self.v_communityGuardDisabled = self.v.getCommunityGuard()
             self.v_suspended = self.v.getSuspendedState()
 
@@ -253,7 +253,6 @@ def test_all(
             }
             self.numTxsTested = 0
 
-            self.sm_current_communityKey = self.sm.getCommunityKey()
             self.sm_communityGuardDisabled = self.sm.getCommunityGuard()
             self.sm_suspended = self.sm.getSuspendedState()
 
@@ -1191,7 +1190,7 @@ def test_all(
 
                 self.lastValidateTime = tx.timestamp
 
-        KeyManager
+        # KeyManager
 
         # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
         def rule_updateCanConsumeKeyNonce_dewhitelist(
@@ -1339,13 +1338,13 @@ def test_all(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                     )
 
-        # Replace a key with a random key - setAggKeyWithAggKey
-        def _set_same_key_agg(
-            self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx
+        # Replace a key with a setKeyWithAggKey call - used to update aggKey, govKey and commKey
+        def _set_key_with_aggkey(
+            self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx, newKey
         ):
             callDataNoSig = fcn.encode_input(
                 agg_null_sig(self.km.address, chain.id),
-                self.allKeys[st_new_key_idx].getPubData(),
+                newKey,
             )
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
                 print(
@@ -1355,16 +1354,14 @@ def test_all(
                     st_sig_key_idx,
                     st_new_key_idx,
                 )
-                tx = fcn(
+                return fcn(
                     self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
-                    self.allKeys[st_new_key_idx].getPubData(),
+                    newKey,
                     {"from": st_sender},
                 )
 
-                self.keyIDToCurKeys[keyID] = self.allKeys[st_new_key_idx]
-                self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print(
@@ -1378,35 +1375,48 @@ def test_all(
                         self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                             callDataNoSig, nonces, AGG, self.km.address
                         ),
-                        self.allKeys[st_new_key_idx].getPubData(),
+                        newKey,
                         {"from": st_sender},
                     )
-
-        # Replace the gov key (address) with a random gov address - setGovKeyWithGovKey
-        def _set_same_key_gov(self, st_sender, fcn):
-            current_governor = choice([st_sender, self.governor])
-
-            if current_governor == self.governor:
-                print(f"                    {fcn}", st_sender, self.governor)
-                fcn(st_sender, {"from": current_governor})
-                self.governor = st_sender
-            else:
-                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
-                    fcn(st_sender, {"from": current_governor})
+                return None
 
         # Call setAggKeyWithAggKey with a random new key, signing key, and sender
         def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            self._set_same_key_agg(
+            tx = self._set_key_with_aggkey(
                 st_sender,
                 self.km.setAggKeyWithAggKey,
                 AGG,
                 st_sig_key_idx,
                 st_new_key_idx,
+                self.allKeys[st_new_key_idx].getPubData(),
             )
+            if tx is None:
+                return
 
-        # Call setAggKeyWithAggKey with a random new key, signing key, and sender
-        def rule_setGovKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            self._set_same_key_gov(st_sender, self.km.setGovKeyWithGovKey)
+            self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
+            self.lastValidateTime = tx.timestamp
+
+        # Call rule_setGovKeyWithGovKey with a random new key, signing key, and sender
+        def rule_setGovKeyWithGovKey(self, st_sender, st_addrs):
+            newGovKey = choice(st_addrs)
+            if st_sender == self.governor:
+                print(
+                    "                    rule_setGovKeyWithGovKey",
+                    st_sender,
+                    newGovKey,
+                    self.communityKey,
+                )
+                self.km.setGovKeyWithGovKey(newGovKey, {"from": st_sender})
+                self.governor = newGovKey
+            else:
+                print(
+                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY rule_setGovKeyWithGovKey",
+                    st_sender,
+                    newGovKey,
+                    self.communityKey,
+                )
+                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
+                    self.km.setGovKeyWithGovKey(newGovKey, {"from": st_sender})
 
         # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
@@ -1418,45 +1428,81 @@ def test_all(
         # Call setAggKeyWithGovKey with a random new key, signing key, and sender
         def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
 
-            current_governor = choice([st_sender, self.governor])
+            sender = choice([st_sender, self.governor])
 
             if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
                 print(
                     "        REV_MSG_DELAY rule_setAggKeyWithGovKey",
                     st_sender,
-                    current_governor,
+                    sender,
                     st_new_key_idx,
                 )
                 with reverts(REV_MSG_DELAY):
                     self.km.setAggKeyWithGovKey(
                         self.allKeys[st_new_key_idx].getPubData(),
-                        {"from": current_governor},
+                        {"from": sender},
                     )
-            elif current_governor != self.governor:
+            elif sender != self.governor:
                 print(
                     "        REV_MSG_SIG rule_setAggKeyWithGovKey",
                     st_sender,
-                    current_governor,
+                    sender,
                     st_new_key_idx,
                 )
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.setAggKeyWithGovKey(
                         self.allKeys[st_new_key_idx].getPubData(),
-                        {"from": current_governor},
+                        {"from": sender},
                     )
             else:
                 print(
                     "                    rule_setAggKeyWithGovKey",
                     st_sender,
-                    current_governor,
+                    sender,
                     st_new_key_idx,
                 )
-                tx = self.km.setAggKeyWithGovKey(
+                self.km.setAggKeyWithGovKey(
                     self.allKeys[st_new_key_idx].getPubData(),
-                    {"from": current_governor},
+                    {"from": sender},
                 )
 
                 self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
+
+        # Call setGovKeyWithAggKey with a random new key, signing key, and sender
+        def rule_setGovKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+            newGovKey = choice([st_sender, self.governor])
+
+            tx = self._set_key_with_aggkey(
+                st_sender,
+                self.km.setAggKeyWithAggKey,
+                AGG,
+                st_sig_key_idx,
+                st_new_key_idx,
+                newGovKey,
+            )
+            if tx is None:
+                return
+
+            self.governor = newGovKey
+            self.lastValidateTime = tx.timestamp
+
+        # Call setGovKeyWithAggKey with a random new key, signing key, and sender
+        def rule_setCommKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+            newCommKey = choice([st_sender, self.communityKey])
+
+            tx = self._set_key_with_aggkey(
+                st_sender,
+                self.km.setAggKeyWithAggKey,
+                AGG,
+                st_sig_key_idx,
+                st_new_key_idx,
+                newCommKey,
+            )
+            if tx is None:
+                return
+
+            self.communityKey = newCommKey
+            self.lastValidateTime = tx.timestamp
 
         # StakeManager
 
@@ -1637,7 +1683,7 @@ def test_all(
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
-                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
                 self.flipBals[claim[1]] += claim[0]
                 self.flipBals[self.sm] -= claim[0]
@@ -2112,7 +2158,7 @@ def test_all(
                 self.lastValidateTime = tx.timestamp
                 self.currentWhitelist = toWhitelist
                 self.v_communityGuardDisabled = False
-                self.v_current_communityKey = self.communityKey
+                self.communityKey = self.communityKey
                 self.v_suspended = False
 
                 # Create new addresses for the new Vault and initialize Balances
@@ -2306,7 +2352,7 @@ def test_all(
                 self.lastValidateTime = tx.timestamp
                 self.currentWhitelist = toWhitelist
                 self.sm_communityGuardDisabled = False
-                self.sm_current_communityKey = self.communityKey
+                self.communityKey = self.communityKey
                 self.sm_suspended = False
 
                 # Reset all pending claims
@@ -2384,31 +2430,37 @@ def test_all(
 
         # TODO: Add gov Withdrawal or no need?
 
-        # Updates community Key - happens with low probability - 1/20
-        def rule_sm_setCommKeyWithCommKey(self, st_sender):
-            #            newCommunityKey = choice([self.communityKey, self.communityKey_2])
-            newCommunityKey = self.communityKey
-            if st_sender == self.sm_current_communityKey:
-                print("                    rule_sm_setCommKeyWithCommKey", st_sender)
-                self.sm.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
-                self.sm_current_communityKey = newCommunityKey
+        # Updates community Key with a random new key - happens with low probability - 1/20
+        def rule_setCommKeyWithCommKey(self, st_sender, st_addrs):
+            newCommKey = choice(st_addrs)
+            if st_sender == self.communityKey:
+                print(
+                    "                    rule_setCommKeyWithCommKey",
+                    st_sender,
+                    newCommKey,
+                    self.communityKey,
+                )
+                self.km.setCommKeyWithCommKey(newCommKey, {"from": st_sender})
+                self.communityKey = newCommKey
             else:
                 print(
-                    "        REV_MSG_GOV_NOT_COMMUNITY _sm_setCommKeyWithCommKey",
+                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
                     st_sender,
+                    newCommKey,
+                    self.communityKey,
                 )
-                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                    self.sm.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
+                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
+                    self.km.setCommKeyWithCommKey(newCommKey, {"from": st_sender})
 
         # Enable community Guard
         def rule_sm_enableCommunityGuard(self, st_sender):
             if self.sm_communityGuardDisabled:
-                if st_sender != self.sm_current_communityKey:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.sm.enableCommunityGuard({"from": st_sender})
                 # Always enable
                 print("                    rule_sm_enableCommunityGuard", st_sender)
-                self.sm.enableCommunityGuard({"from": self.sm_current_communityKey})
+                self.sm.enableCommunityGuard({"from": self.communityKey})
                 self.sm_communityGuardDisabled = False
             else:
                 print(
@@ -2416,17 +2468,17 @@ def test_all(
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.sm.enableCommunityGuard({"from": self.sm_current_communityKey})
+                    self.sm.enableCommunityGuard({"from": self.communityKey})
 
         # Enable community Guard
         def rule_sm_disableCommunityGuard(self, st_sender):
             if not self.sm_communityGuardDisabled:
-                if st_sender != self.sm_current_communityKey:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.sm.disableCommunityGuard({"from": st_sender})
                 # Always disable
                 print("                    rule_sm_disableCommunityGuard", st_sender)
-                self.sm.disableCommunityGuard({"from": self.sm_current_communityKey})
+                self.sm.disableCommunityGuard({"from": self.communityKey})
                 self.sm_communityGuardDisabled = True
             else:
                 print(
@@ -2434,35 +2486,17 @@ def test_all(
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
-                    self.sm.disableCommunityGuard(
-                        {"from": self.sm_current_communityKey}
-                    )
-
-        # Updates community Key - happens with low probability - 1/20
-        def rule_vault_setCommKeyWithCommKey(self, st_sender):
-            #            newCommunityKey = choice([self.communityKey, self.communityKey_2])
-            newCommunityKey = self.communityKey
-            if st_sender == self.v_current_communityKey:
-                print("                    rule_v_setCommKeyWithCommKey", st_sender)
-                self.v.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
-                self.v_current_communityKey = newCommunityKey
-            else:
-                print(
-                    "        REV_MSG_GOV_NOT_COMMUNITY _v_setCommKeyWithCommKey",
-                    st_sender,
-                )
-                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                    self.v.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
+                    self.sm.disableCommunityGuard({"from": self.communityKey})
 
         # Enable community Guard
         def rule_vault_enableCommunityGuard(self, st_sender):
             if self.v_communityGuardDisabled:
-                if st_sender != self.v_current_communityKey:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.enableCommunityGuard({"from": st_sender})
                 # Always enable
                 print("                    rule_v_enableCommunityGuard", st_sender)
-                self.v.enableCommunityGuard({"from": self.v_current_communityKey})
+                self.v.enableCommunityGuard({"from": self.communityKey})
                 self.v_communityGuardDisabled = False
             else:
                 print(
@@ -2470,17 +2504,17 @@ def test_all(
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.enableCommunityGuard({"from": self.v_current_communityKey})
+                    self.v.enableCommunityGuard({"from": self.communityKey})
 
         # Enable community Guard
         def rule_vault_disableCommunityGuard(self, st_sender):
             if not self.v_communityGuardDisabled:
-                if st_sender != self.v_current_communityKey:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.disableCommunityGuard({"from": st_sender})
                 # Always disable
                 print("                    rule_v_disableCommunityGuard", st_sender)
-                self.v.disableCommunityGuard({"from": self.v_current_communityKey})
+                self.v.disableCommunityGuard({"from": self.communityKey})
                 self.v_communityGuardDisabled = True
             else:
                 print(
@@ -2488,7 +2522,7 @@ def test_all(
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
-                    self.v.disableCommunityGuard({"from": self.v_current_communityKey})
+                    self.v.disableCommunityGuard({"from": self.communityKey})
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
@@ -2539,10 +2573,14 @@ def test_all(
                 == self.sm.getGovernor()
                 == self.v.getGovernor()
             )
-            assert self.sm_current_communityKey == self.sm.getCommunityKey()
+            assert (
+                self.communityKey
+                == self.km.getCommunityKey()
+                == self.sm.getCommunityKey()
+                == self.v.getCommunityKey()
+            )
             assert self.sm_communityGuardDisabled == self.sm.getCommunityGuard()
             assert self.sm_suspended == self.sm.getSuspendedState()
-            assert self.v_current_communityKey == self.v.getCommunityKey()
             assert self.v_communityGuardDisabled == self.v.getCommunityGuard()
             assert self.v_suspended == self.v.getSuspendedState()
 
