@@ -23,16 +23,20 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    constructor(IKeyManager keyManager, address communityKey)
-        AggKeyNonceConsumer(keyManager)
-        GovernanceCommunityGuarded(communityKey)
-    {}
+    constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
         return _getKeyManager().getGovernanceKey();
+    }
+
+    /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function _getCommunityKey() internal view override returns (address) {
+        return _getKeyManager().getCommunityKey();
     }
 
     //////////////////////////////////////////////////////////////
@@ -71,7 +75,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -139,7 +143,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         nzAddr(address(token))
         nzAddr(recipient)
         nzUint(amount)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -176,7 +180,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -273,7 +277,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         override
         isNotSuspended
         nzBytes32(swapID)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -300,7 +304,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -340,7 +344,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         isNotSuspended
         nzBytes32(swapID)
         nzAddr(address(token))
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -373,7 +377,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(

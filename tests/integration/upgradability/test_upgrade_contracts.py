@@ -31,7 +31,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 
     # Reusing current keyManager aggregateKey for simplicity
     newKeyManager = cf.DEPLOYER.deploy(
-        KeyManager, cf.keyManager.getAggregateKey(), cf.gov
+        KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
     # Reverts if keyManager is not whitelisted
@@ -112,7 +112,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     # Replicate a vault with funds - 1000 ETH
     cf.DENICE.transfer(cf.vault, totalFunds)
 
-    newVault = cf.DEPLOYER.deploy(Vault, cf.keyManager, cf.COMMUNITY_KEY)
+    newVault = cf.DEPLOYER.deploy(Vault, cf.keyManager)
 
     # Check that newly deployed Vault can't validate signatures (not whitelisted yet)
     # Technically we could precomute the deployed address and whitelist it before deployment
@@ -210,9 +210,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     st_sender=strategy("address"),
 )
 def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff, st_sender):
-    newStakeManager = cf.DEPLOYER.deploy(
-        StakeManager, cf.keyManager, MIN_STAKE, cf.COMMUNITY_KEY
-    )
+    newStakeManager = cf.DEPLOYER.deploy(StakeManager, cf.keyManager, MIN_STAKE)
 
     with reverts(REV_MSG_STAKEMAN_DEPLOYER):
         newStakeManager.setFlip(cf.flip, cf.FR_ALICE)
@@ -226,8 +224,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff, st_sender):
 
     # Last register claim before stopping state's chain claim signature registry
     nodeID = JUNK_HEX
-    stakeAmount = MIN_STAKE * 3
-    expiryTime = getChainTime() + (expiryTimeDiff)
+    expiryTime = getChainTime() + expiryTimeDiff
     claimAmount = 123 * E_18
     registerClaimTest(
         cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, cf.DENICE, expiryTime
@@ -246,8 +243,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff, st_sender):
 
     # Generate claim to move all FLIP to new stakeManager
     totalFlipstaked = cf.flip.balanceOf(cf.stakeManager)
-    stakeAmount = MIN_STAKE
-    expiryTime = getChainTime() + (CLAIM_DELAY * 2)
+    expiryTime = getChainTime() + expiryTimeDiff
     claimAmount = totalFlipstaked
     registerClaimTest(
         cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, newStakeManager, expiryTime

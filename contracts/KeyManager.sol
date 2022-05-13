@@ -14,20 +14,27 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     uint256 private constant _AGG_KEY_TIMEOUT = 2 days;
 
     /// @dev    The current (schnorr) aggregate key.
-    Key private aggKey;
+    Key private _aggKey;
     /// @dev    The current governance key.
-    address private govKey;
+    address private _govKey;
+    /// @dev    The current community key.
+    address private _commKey;
     /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint256 private _lastValidateTime;
     mapping(uint256 => bool) private _isNonceUsedByAggKey;
-    /// @dev    Whitelist for who can call isValidSig
+    /// @dev    Whitelist for who can call canConsumeNonce
     mapping(address => bool) private _canConsumeKeyNonce;
     bool private _canConsumeKeyNonceSet;
     uint256 private _numberWhitelistedAddresses;
 
-    constructor(Key memory _aggKey, address _govKey) validAggKey(_aggKey) {
-        aggKey = _aggKey;
-        govKey = _govKey;
+    constructor(
+        Key memory initialAggKey,
+        address initialGovKey,
+        address initialCommKey
+    ) nzAddr(initialGovKey) nzAddr(initialCommKey) nzKey(initialAggKey) validAggKey(initialAggKey) {
+        _aggKey = initialAggKey;
+        _govKey = initialGovKey;
+        _commKey = initialCommKey;
         _lastValidateTime = block.timestamp;
     }
 
@@ -38,7 +45,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Sets the specific addresses that can call isValidSig. This
+     * @notice  Sets the specific addresses that can call consumeKeyNonce. This
      *          function can only ever be called once! Yes, it's possible to
      *          frontrun this, but honestly, it's fine in practice - it just
      *          needs to be set up successfully once, which is trivial
@@ -62,7 +69,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
-     * @notice  Replaces the specific addresses that can call isValidSig. To be used if
+     * @notice  Replaces the specific addresses that can call consumeKeyNonce. To be used if
      *          contracts are updated. Can delist addresses and can add an arbitrary number of new addresses.
      * @param currentAddrs   List of current whitelisted addresses
      * @param newAddrs   List of new addresses to whitelist
@@ -73,7 +80,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         address[] calldata newAddrs
     )
         external
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -120,7 +127,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) public override {
         require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
-        Key memory key = aggKey;
+        Key memory key = _aggKey;
         // We require the msgHash param in the sigData is equal to the contract
         // message hash (the rules coded into the contract)
         require(sigData.msgHash == uint256(contractMsgHash), "KeyManager: invalid msgHash");
@@ -145,54 +152,116 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param sigData   The keccak256 hash over the msg (uint256) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint256)
-     * @param newKey    The new aggregate key to be set. The x component of the pubkey (uint256),
+     * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
      *                  the parity of the y component (uint8)
      */
-    function setAggKeyWithAggKey(SigData calldata sigData, Key calldata newKey)
+    function setAggKeyWithAggKey(SigData calldata sigData, Key calldata newAggKey)
         external
         override
-        nzKey(newKey)
-        validAggKey(newKey)
-        consumerKeyNonce(
+        nzKey(newAggKey)
+        validAggKey(newAggKey)
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.setAggKeyWithAggKey.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newKey
+                    newAggKey
                 )
             )
         )
     {
-        emit AggKeySetByAggKey(aggKey, newKey);
-        aggKey = newKey;
+        emit AggKeySetByAggKey(_aggKey, newAggKey);
+        _aggKey = newAggKey;
     }
 
     /**
-     * @notice  Set a new aggregate key. Requires a signature from the current governance key
-     * @param newKey    The new aggregate key to be set. The x component of the pubkey (uint256),
+     * @notice  Set a new aggregate key. Can only be called by the current governance key
+     * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
      *                  the parity of the y component (uint8)
      */
-    function setAggKeyWithGovKey(Key calldata newKey)
+    function setAggKeyWithGovKey(Key calldata newAggKey)
         external
         override
-        nzKey(newKey)
-        validAggKey(newKey)
+        nzKey(newAggKey)
+        validAggKey(newAggKey)
         validTime
         isGovernor
     {
-        emit AggKeySetByGovKey(aggKey, newKey);
-        aggKey = newKey;
+        emit AggKeySetByGovKey(_aggKey, newAggKey);
+        _aggKey = newAggKey;
     }
 
     /**
-     * @notice  Set a new governance key. Requires a signature from the current governance key
-     * @param newKey    The new governance key to be set. The x component of the pubkey (uint256),
-     *                  the parity of the y component (uint8)
+     * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
+     * @param sigData   The keccak256 hash over the msg (uint256) (which is the calldata
+     *                  for this function with empty msgHash and sig) and sig over that hash
+     *                  from the current aggregate key (uint256)
+     * @param newGovKey The new governance key to be set.
+
      */
-    function setGovKeyWithGovKey(address newKey) external override nzAddr(newKey) isGovernor {
-        emit GovKeySetByGovKey(govKey, newKey);
-        govKey = newKey;
+    function setGovKeyWithAggKey(SigData calldata sigData, address newGovKey)
+        external
+        override
+        nzAddr(newGovKey)
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.setGovKeyWithAggKey.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    newGovKey
+                )
+            )
+        )
+    {
+        emit GovKeySetByAggKey(_govKey, newGovKey);
+        _govKey = newGovKey;
+    }
+
+    /**
+     * @notice  Set a new governance key. Can only be called by current governance key
+     * @param newGovKey    The new governance key to be set.
+     */
+    function setGovKeyWithGovKey(address newGovKey) external override nzAddr(newGovKey) isGovernor {
+        emit GovKeySetByGovKey(_govKey, newGovKey);
+        _govKey = newGovKey;
+    }
+
+    /**
+     * @notice  Set a new community key. Requires a signature from the current aggregate key
+     * @param sigData   The keccak256 hash over the msg (uint256) (which is the calldata
+     *                  for this function with empty msgHash and sig) and sig over that hash
+     *                  from the current aggregate key (uint256)
+     * @param newCommKey The new community key to be set.
+
+     */
+    function setCommKeyWithAggKey(SigData calldata sigData, address newCommKey)
+        external
+        override
+        nzAddr(newCommKey)
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.setCommKeyWithAggKey.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    newCommKey
+                )
+            )
+        )
+    {
+        emit CommKeySetByAggKey(_commKey, newCommKey);
+        _commKey = newCommKey;
+    }
+
+    /**
+     * @notice  Update the Community Key. Can only be called by the current Community Key.
+     * @param newCommKey   New Community key address.
+     */
+    function setCommKeyWithCommKey(address newCommKey) external override isCommunityKey nzAddr(newCommKey) {
+        emit CommKeySetByCommKey(_commKey, newCommKey);
+        _commKey = newCommKey;
     }
 
     //////////////////////////////////////////////////////////////
@@ -206,7 +275,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @return  The Key struct for the aggregate key
      */
     function getAggregateKey() external view override returns (Key memory) {
-        return aggKey;
+        return _aggKey;
     }
 
     /**
@@ -217,8 +286,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         return _getGovernanceKey();
     }
 
-    function _getGovernanceKey() internal view returns (address) {
-        return govKey;
+    /**
+     * @notice  Get the current community key
+     * @return  The Key struct for the community key
+     */
+    function getCommunityKey() external view override returns (address) {
+        return _getCommunityKey();
     }
 
     /**
@@ -270,6 +343,22 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     receive() external payable {}
 
+    /**
+     * @notice  Get the current governance key
+     * @return  The Key struct for the governance key
+     */
+    function _getGovernanceKey() internal view returns (address) {
+        return _govKey;
+    }
+
+    /**
+     * @notice  Get the current community key
+     * @return  The Key struct for the community key
+     */
+    function _getCommunityKey() internal view returns (address) {
+        return _commKey;
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Modifiers                       //
@@ -296,8 +385,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _;
     }
 
+    /// @dev    Check that the caller is the Community Key address.
+    modifier isCommunityKey() {
+        require(msg.sender == _getCommunityKey(), "KeyManager: not Community Key");
+        _;
+    }
+
     /// @dev    Call consumeKeyNonce
-    modifier consumerKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
+    modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
         // Need to make this an external call so that the msg.sender is the
         // address of this contract, otherwise calling a function with this
         // modifier from any address would fail the whitelist check

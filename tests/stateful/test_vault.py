@@ -4,7 +4,6 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from hypothesis import strategies as hypStrat
 from random import choice, choices
-import time
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -125,8 +124,8 @@ def test_vault(
 
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
+            self.community = cfDeploy.communityKey
 
-            self.current_communityKey = self.v.getCommunityKey()
             self.communityGuardDisabled = self.v.getCommunityGuard()
             self.suspended = self.v.getSuspendedState()
 
@@ -822,46 +821,32 @@ def test_vault(
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
                     self.v.resume({"from": self.governor})
 
-        # Updates community Key - happens with low probability - 1/20
-        def rule_updateCommunityKey(self, st_sender):
-            newCommunityKey = choice([self.communityKey, self.communityKey_2])
-            if st_sender == self.current_communityKey:
-                print("                    rule_updateCommunityKey", st_sender)
-                self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
-                self.current_communityKey = newCommunityKey
-            else:
-                print(
-                    "        REV_MSG_GOV_NOT_COMMUNITY _updateCommunityKey", st_sender
-                )
-                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                    self.v.updateCommunityKey(newCommunityKey, {"from": st_sender})
-
         # Enable community Guard
         def rule_enableCommunityGuard(self, st_sender):
             if self.communityGuardDisabled:
-                if st_sender != self.current_communityKey:
+                if st_sender != self.community:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.enableCommunityGuard({"from": st_sender})
                 # Always enable
                 print("                    rule_enableCommunityGuard", st_sender)
-                self.v.enableCommunityGuard({"from": self.current_communityKey})
+                self.v.enableCommunityGuard({"from": self.community})
                 self.communityGuardDisabled = False
             else:
                 print(
                     "        REV_MSG_GOV_ENABLED_GUARD _enableCommunityGuard", st_sender
                 )
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.enableCommunityGuard({"from": self.current_communityKey})
+                    self.v.enableCommunityGuard({"from": self.community})
 
         # Enable community Guard
         def rule_disableCommunityGuard(self, st_sender):
             if not self.communityGuardDisabled:
-                if st_sender != self.current_communityKey:
+                if st_sender != self.community:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.disableCommunityGuard({"from": st_sender})
                 # Always disable
                 print("                    rule_disableCommunityGuard", st_sender)
-                self.v.disableCommunityGuard({"from": self.current_communityKey})
+                self.v.disableCommunityGuard({"from": self.community})
                 self.communityGuardDisabled = True
             else:
                 print(
@@ -869,7 +854,7 @@ def test_vault(
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
-                    self.v.disableCommunityGuard({"from": self.current_communityKey})
+                    self.v.disableCommunityGuard({"from": self.community})
 
         # Governance attemps to withdraw FLIP in case of emergency
         def rule_govWithdrawal(self, st_sender):
@@ -933,17 +918,17 @@ def test_vault(
         # no intentional way to
         def invariant_nonchangeable(self):
             assert self.v.getKeyManager() == self.km.address
+            assert self.v.getGovernor() == self.governor
+            assert self.v.getCommunityKey() == self.community
 
         def invariant_governanceCommunityGuard(self):
-            assert self.current_communityKey == self.v.getCommunityKey()
+            assert self.community == self.v.getCommunityKey()
             assert self.communityGuardDisabled == self.v.getCommunityGuard()
             assert self.suspended == self.v.getSuspendedState()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
-            # Add time.sleep due to brownie bug that kills virtual machine too quick
-            time.sleep(5)
 
     state_machine(
         StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings

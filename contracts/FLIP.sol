@@ -56,7 +56,7 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
         override
         nzUint(newTotalSupply)
         nzAddr(staker)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(

@@ -6,7 +6,6 @@ from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
 import random
-import time
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -70,7 +69,7 @@ def test_upgradability(
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = st_sender.deploy(
-                KeyManager, self.km.getAggregateKey(), st_sender
+                KeyManager, self.km.getAggregateKey(), st_sender, cf.communityKey
             )
 
             keyManagerAddress = random.choice([newKeyManager, self.km])
@@ -116,7 +115,7 @@ def test_upgradability(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
 
-            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
+            newVault = st_sender.deploy(Vault, self.km)
 
             # Keep old Vault whitelisted
             currentWhitelist = [
@@ -252,7 +251,6 @@ def test_upgradability(
                 StakeManager,
                 self.km,
                 MIN_STAKE,
-                cf.communityKey,
             )
 
             newStakeManager.setFlip(self.f, {"from": st_sender})
@@ -369,8 +367,6 @@ def test_upgradability(
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
-            # Add time.sleep due to brownie bug that kills virtual machine too quick
-            time.sleep(5)
 
     state_machine(
         StateMachine,

@@ -15,7 +15,7 @@ def test_updateKeyManager(cf, KeyManager):
 
     # Reusing current keyManager aggregateKey for simplicity
     newKeyManager = cf.DEPLOYER.deploy(
-        KeyManager, cf.keyManager.getAggregateKey(), cf.gov
+        KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:

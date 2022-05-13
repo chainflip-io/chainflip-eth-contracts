@@ -8,9 +8,12 @@ import "./IShared.sol";
  * @author   Quantaf1re (James Key)
  */
 interface IKeyManager is IShared {
-    event AggKeySetByAggKey(Key oldKey, Key newKey);
-    event AggKeySetByGovKey(Key oldKey, Key newKey);
-    event GovKeySetByGovKey(address oldKey, address newKey);
+    event AggKeySetByAggKey(Key oldAggKey, Key newAggKey);
+    event AggKeySetByGovKey(Key oldAggKey, Key newAggKey);
+    event GovKeySetByAggKey(address oldGovKey, address newGovKey);
+    event GovKeySetByGovKey(address oldGovKey, address newGovKey);
+    event CommKeySetByAggKey(address oldCommKey, address newCommKey);
+    event CommKeySetByCommKey(address oldCommKey, address newCommKey);
     event SignatureAccepted(SigData sigData, address signer);
 
     //////////////////////////////////////////////////////////////
@@ -21,15 +24,17 @@ interface IKeyManager is IShared {
 
     function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
 
-    function setAggKeyWithAggKey(SigData memory sigData, Key memory newKey) external;
+    function setAggKeyWithAggKey(SigData memory sigData, Key memory newAggKey) external;
 
-    function setAggKeyWithGovKey(Key memory newKey) external;
+    function setAggKeyWithGovKey(Key memory newAggKey) external;
 
-    function setGovKeyWithGovKey(address newKey) external;
+    function setGovKeyWithAggKey(SigData calldata sigData, address newGovKey) external;
 
-    function canConsumeKeyNonce(address addr) external view returns (bool);
+    function setGovKeyWithGovKey(address newGovKey) external;
 
-    function canConsumeKeyNonceSet() external view returns (bool);
+    function setCommKeyWithAggKey(SigData calldata sigData, address newCommKey) external;
+
+    function setCommKeyWithCommKey(address newCommKey) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -41,9 +46,15 @@ interface IKeyManager is IShared {
 
     function getGovernanceKey() external view returns (address);
 
-    function getLastValidateTime() external view returns (uint256);
-
-    function getNumberWhitelistedAddresses() external view returns (uint256);
+    function getCommunityKey() external view returns (address);
 
     function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
+
+    function getLastValidateTime() external view returns (uint256);
+
+    function canConsumeKeyNonce(address addr) external view returns (bool);
+
+    function canConsumeKeyNonceSet() external view returns (bool);
+
+    function getNumberWhitelistedAddresses() external view returns (uint256);
 }

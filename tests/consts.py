@@ -32,7 +32,7 @@ QUARTER_YEAR = int(YEAR / 4)
 REV_MSG_NZ_UINT = "Shared: uint input is empty"
 REV_MSG_NZ_ADDR = "Shared: address input is empty"
 REV_MSG_NZ_BYTES32 = "Shared: bytes32 input is empty"
-REV_MSG_PUBKEYX = "Shared: pubKeyX is empty"
+REV_MSG_NZ_PUBKEYX = "Shared: pubKeyX is empty"
 
 # -----KeyManager-----
 # 2 days
@@ -94,6 +94,7 @@ REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
 # modifiers
 REV_MSG_DELAY = "KeyManager: not enough delay"
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
+REV_MSG_KEYMANAGER_NOT_COMMUNITY = "KeyManager: not Community Key"
 
 # -----SchnorrSECP256K1-----
 REV_MSG_PUB_KEY_X = "Public-key x >= HALF_Q"

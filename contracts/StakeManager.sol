@@ -47,11 +47,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     //     uint48 expiryTime;
     // }
 
-    constructor(
-        IKeyManager keyManager,
-        uint256 minStake,
-        address communityKey
-    ) AggKeyNonceConsumer(keyManager) GovernanceCommunityGuarded(communityKey) {
+    constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
         _minStake = minStake;
         deployer = msg.sender;
     }
@@ -61,6 +57,13 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
         return _getKeyManager().getGovernanceKey();
+    }
+
+    /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function _getCommunityKey() internal view override returns (address) {
+        return _getKeyManager().getCommunityKey();
     }
 
     //////////////////////////////////////////////////////////////
@@ -127,7 +130,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(

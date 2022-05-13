@@ -22,7 +22,7 @@ def test_updateFlipSupply(cf):
         stateChainBlockNumber,
         cf.stakeManager.address,
     )
-    balanceBefore = cf.ALICE.balance()
+
     tx = cf.flip.updateFlipSupply(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         NEW_TOTAL_SUPPLY_MINT,
@@ -30,7 +30,6 @@ def test_updateFlipSupply(cf):
         cf.stakeManager.address,
         cf.FR_ALICE,
     )
-    balanceAfter = cf.ALICE.balance()
 
     # Balance should be MIN_STAKE plus the minted delta
     assert (
@@ -55,7 +54,7 @@ def test_updateFlipSupply(cf):
         stateChainBlockNumber,
         cf.stakeManager.address,
     )
-    balanceBefore2 = cf.ALICE.balance()
+
     tx2 = cf.flip.updateFlipSupply(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         INIT_SUPPLY,
@@ -63,7 +62,6 @@ def test_updateFlipSupply(cf):
         cf.stakeManager.address,
         cf.FR_ALICE,
     )
-    balanceAfter2 = cf.ALICE.balance()
 
     # Balance should be MIN_STAKE as we've just burned all the FLIP we minted
     assert (

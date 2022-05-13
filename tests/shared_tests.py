@@ -60,21 +60,21 @@ def transfer_eth(cf, deployedVault, receiver, amount):
 def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
 
     callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_2.getPubData()
     )
 
-    balanceBefore = cf.ALICE.balance()
     tx = cf.keyManager.setAggKeyWithAggKey(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         AGG_SIGNER_2.getPubData(),
         {"from": cf.ALICE},
     )
-    balanceAfter = cf.ALICE.balance()
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
     assert tx.events["AggKeySetByAggKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
         AGG_SIGNER_2.getPubDataWith0x(),
@@ -99,6 +99,7 @@ def setKey_rev_newPubKeyX_test(cf):
 def setAggKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
 
     tx = cf.keyManager.setAggKeyWithGovKey(
         AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR}
@@ -106,6 +107,8 @@ def setAggKeyWithGovKey_test(cf):
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
+
     assert tx.events["AggKeySetByGovKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
         AGG_SIGNER_2.getPubDataWith0x(),
@@ -115,12 +118,76 @@ def setAggKeyWithGovKey_test(cf):
 def setGovKeyWithGovKey_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
 
     tx = cf.keyManager.setGovKeyWithGovKey(cf.GOVERNOR_2, {"from": cf.GOVERNOR})
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR_2
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
+
     assert tx.events["GovKeySetByGovKey"][0].values() == [cf.GOVERNOR, cf.GOVERNOR_2]
+
+
+def setGovKeyWithAggKey_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
+
+    callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), cf.GOVERNOR_2
+    )
+    tx = cf.keyManager.setGovKeyWithAggKey(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        cf.GOVERNOR_2,
+    )
+
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR_2
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
+
+    assert tx.events["GovKeySetByAggKey"][0].values() == [cf.GOVERNOR, cf.GOVERNOR_2]
+
+
+def setCommKeyWithAggKey_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
+
+    callDataNoSig = cf.keyManager.setCommKeyWithAggKey.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), cf.COMMUNITY_KEY_2
+    )
+    tx = cf.keyManager.setCommKeyWithAggKey(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        cf.COMMUNITY_KEY_2,
+    )
+
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.COMMUNITY_KEY_2
+
+    assert tx.events["CommKeySetByAggKey"][0].values() == [
+        cf.COMMUNITY_KEY,
+        cf.COMMUNITY_KEY_2,
+    ]
+
+
+def setCommKeyWithCommKey_test(cf):
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.communityKey
+
+    tx = cf.keyManager.setCommKeyWithCommKey(
+        cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY}
+    )
+    assert tx.events["CommKeySetByCommKey"][0].values() == [
+        cf.COMMUNITY_KEY,
+        cf.COMMUNITY_KEY_2,
+    ]
+
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
+    assert cf.keyManager.getCommunityKey() == cf.COMMUNITY_KEY_2
 
 
 def setKey_rev_pubKeyX_test(cf, fcn, signer):
@@ -132,7 +199,7 @@ def setKey_rev_pubKeyX_test(cf, fcn, signer):
         else gov_null_sig(cf.keyManager.address, chain.id)
     )
     callDataNoSig = fcn.encode_input(nullSig, newKey)
-    with reverts(REV_MSG_PUBKEYX):
+    with reverts(REV_MSG_NZ_PUBKEYX):
         fcn(signer.getSigData(callDataNoSig, cf.keyManager.address), newKey)
 
 
