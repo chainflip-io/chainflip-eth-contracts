@@ -311,10 +311,10 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 self.current_communityKey = newCommunityKey
             else:
                 print(
-                    "        REV_MSG_GOV_NOT_COMMUNITY _setCommKeyWithCommKey",
+                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
                     st_sender,
                 )
-                with reverts(REV_MSG_GOV_NOT_COMMUNITY):
+                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
                     self.km.setCommKeyWithCommKey(newCommunityKey, {"from": st_sender})
 
         # TODO: Add setGovKeyWithAggKey test and setCommKeyWithAggKey test
