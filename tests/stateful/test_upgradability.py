@@ -70,7 +70,7 @@ def test_upgradability(
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = st_sender.deploy(
-                KeyManager, self.km.getAggregateKey(), st_sender
+                KeyManager, self.km.getAggregateKey(), st_sender, cf.communityKey
             )
 
             keyManagerAddress = random.choice([newKeyManager, self.km])
@@ -116,7 +116,7 @@ def test_upgradability(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
 
-            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
+            newVault = st_sender.deploy(Vault, self.km)
 
             # Keep old Vault whitelisted
             currentWhitelist = [
@@ -252,7 +252,6 @@ def test_upgradability(
                 StakeManager,
                 self.km,
                 MIN_STAKE,
-                cf.communityKey,
             )
 
             newStakeManager.setFlip(self.f, {"from": st_sender})
