@@ -17,7 +17,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     Key private _aggKey;
     /// @dev    The current governance key.
     address private _govKey;
-    /// @dev    The current governance key.
+    /// @dev    The current community key.
     address private _commKey;
     /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint256 private _lastValidateTime;
