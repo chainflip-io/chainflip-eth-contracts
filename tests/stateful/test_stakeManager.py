@@ -4,7 +4,6 @@ from brownie.test import strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice
-import time
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -432,7 +431,5 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
-            # Add time.sleep due to brownie bug that kills virtual machine too quick
-            time.sleep(5)
 
     state_machine(StateMachine, a, cfDeploy, settings=settings)

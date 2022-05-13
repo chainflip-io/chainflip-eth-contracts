@@ -4,7 +4,6 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from hypothesis import strategies as hypStrat
 from random import choice, choices
-import time
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -930,8 +929,6 @@ def test_vault(
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
-            # Add time.sleep due to brownie bug that kills virtual machine too quick
-            time.sleep(5)
 
     state_machine(
         StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings
