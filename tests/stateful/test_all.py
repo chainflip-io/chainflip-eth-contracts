@@ -1474,7 +1474,7 @@ def test_all(
 
             tx = self._set_key_with_aggkey(
                 st_sender,
-                self.km.setAggKeyWithAggKey,
+                self.km.setGovKeyWithAggKey,
                 AGG,
                 st_sig_key_idx,
                 st_new_key_idx,
@@ -1492,7 +1492,7 @@ def test_all(
 
             tx = self._set_key_with_aggkey(
                 st_sender,
-                self.km.setAggKeyWithAggKey,
+                self.km.setCommKeyWithAggKey,
                 AGG,
                 st_sig_key_idx,
                 st_new_key_idx,
