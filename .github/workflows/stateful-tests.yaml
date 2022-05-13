@@ -1,5 +1,5 @@
 name: Stateful Tests
-on: 
+on:
   push:
     branches:
       - master
@@ -7,12 +7,12 @@ on:
 jobs:
   lint:
     name: Linting
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@feat/abi-artifacts
 
   stateful-tests:
     name: Stateful Tests
     needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@feat/abi-artifacts
     with:
       stateful: true
       timeout_minutes: 3600
