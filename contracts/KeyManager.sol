@@ -28,13 +28,13 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     uint256 private _numberWhitelistedAddresses;
 
     constructor(
-        Key memory newAggKey,
-        address newGovKey,
-        address newCommKey
-    ) nzAddr(newGovKey) nzAddr(newCommKey) validAggKey(newAggKey) {
-        _aggKey = newAggKey;
-        _govKey = newGovKey;
-        _commKey = newCommKey;
+        Key memory initialAggKey,
+        address initialGovKey,
+        address initialCommKey
+    ) nzAddr(initialGovKey) nzAddr(initialCommKey) nzKey(initialAggKey) validAggKey(initialAggKey) {
+        _aggKey = initialAggKey;
+        _govKey = initialGovKey;
+        _commKey = initialCommKey;
         _lastValidateTime = block.timestamp;
     }
 
@@ -286,20 +286,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         return _getGovernanceKey();
     }
 
-    function _getGovernanceKey() internal view returns (address) {
-        return _govKey;
-    }
-
     /**
      * @notice  Get the current community key
      * @return  The Key struct for the community key
      */
     function getCommunityKey() external view override returns (address) {
         return _getCommunityKey();
-    }
-
-    function _getCommunityKey() internal view returns (address) {
-        return _commKey;
     }
 
     /**
@@ -350,6 +342,22 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *  @notice Allows this contract to receive ETH
      */
     receive() external payable {}
+
+    /**
+     * @notice  Get the current governance key
+     * @return  The Key struct for the governance key
+     */
+    function _getGovernanceKey() internal view returns (address) {
+        return _govKey;
+    }
+
+    /**
+     * @notice  Get the current community key
+     * @return  The Key struct for the community key
+     */
+    function _getCommunityKey() internal view returns (address) {
+        return _commKey;
+    }
 
     //////////////////////////////////////////////////////////////
     //                                                          //
