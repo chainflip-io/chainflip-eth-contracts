@@ -1836,13 +1836,12 @@ def test_all(
         def rule_upgrade_keyManager(self, st_sender):
             aggKeyNonceConsumers = [self.f, self.sm, self.v]
 
-            # Reusing current keyManager aggregateKey for simplicity
+            # Reusing current keyManager aggregateKey for simplicity.
             newKeyManager = st_sender.deploy(
-                KeyManager, self.km.getAggregateKey(), self.governor
+                KeyManager, self.km.getAggregateKey(), self.governor, self.communityKey
             )
 
-            #            keyManagerAddress = choice([newKeyManager, self.km])
-            keyManagerAddress = newKeyManager
+            keyManagerAddress = choice([newKeyManager, self.km])
 
             toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
 
@@ -1940,7 +1939,7 @@ def test_all(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
 
-            newVault = st_sender.deploy(Vault, self.km, self.communityKey)
+            newVault = st_sender.deploy(Vault, self.km)
 
             # Keep old Vault whitelisted
             toWhitelist = self.currentWhitelist.copy() + [newVault]
@@ -2195,12 +2194,7 @@ def test_all(
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
-            newStakeManager = st_sender.deploy(
-                StakeManager,
-                self.km,
-                INIT_MIN_STAKE,
-                self.communityKey,
-            )
+            newStakeManager = st_sender.deploy(StakeManager, self.km, INIT_MIN_STAKE)
 
             newStakeManager.setFlip(self.f, {"from": st_sender})
 
