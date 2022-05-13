@@ -31,3 +31,19 @@ jobs:
     - run: poetry run brownie test tests/stateful/test_upgradability.py --network hardhat --stateful ${{inputs.stateful}}
     - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful ${{inputs.stateful}}
     - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}}
+
+    - run: |
+      CONTRACT_ARTIFACTS=$(ls ./build/contracts | grep -v dependencies)
+      while read contract; do
+        echo $contract
+        cat build/contracts/$contract | jq .abi > ./$contract
+      done <<< $CONTRACT_ARTIFACTS
+    - name: Store contract ABIs
+      uses: actions/upload-artifact@v2
+      with:
+        name: abis
+        path: |
+          *.json
+        if-no-files-found: error
+
+
