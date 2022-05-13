@@ -224,8 +224,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff, st_sender):
 
     # Last register claim before stopping state's chain claim signature registry
     nodeID = JUNK_HEX
-    stakeAmount = MIN_STAKE * 3
-    expiryTime = getChainTime() + (expiryTimeDiff)
+    expiryTime = getChainTime() + expiryTimeDiff
     claimAmount = 123 * E_18
     registerClaimTest(
         cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, cf.DENICE, expiryTime
@@ -244,8 +243,7 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff, st_sender):
 
     # Generate claim to move all FLIP to new stakeManager
     totalFlipstaked = cf.flip.balanceOf(cf.stakeManager)
-    stakeAmount = MIN_STAKE
-    expiryTime = getChainTime() + (CLAIM_DELAY * 2)
+    expiryTime = getChainTime() + expiryTimeDiff
     claimAmount = totalFlipstaked
     registerClaimTest(
         cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, newStakeManager, expiryTime
