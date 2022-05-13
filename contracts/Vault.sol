@@ -75,7 +75,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -143,7 +143,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         nzAddr(address(token))
         nzAddr(recipient)
         nzUint(amount)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -180,7 +180,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -277,7 +277,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         override
         isNotSuspended
         nzBytes32(swapID)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -304,7 +304,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -344,7 +344,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         isNotSuspended
         nzBytes32(swapID)
         nzAddr(address(token))
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -377,7 +377,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         isNotSuspended
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(

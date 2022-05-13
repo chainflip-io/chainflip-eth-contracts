@@ -37,7 +37,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         external
         override
         nzAddr(address(keyManager))
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -81,7 +81,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Calls consumeKeyNonce in _keyManager
-    modifier consumerKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
+    modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
         _getKeyManager().consumeKeyNonce(sigData, contractMsgHash);
         _;
     }

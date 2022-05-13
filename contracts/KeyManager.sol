@@ -80,7 +80,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         address[] calldata newAddrs
     )
         external
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -160,7 +160,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         override
         nzKey(newAggKey)
         validAggKey(newAggKey)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -204,7 +204,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         external
         override
         nzAddr(newGovKey)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -240,7 +240,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         external
         override
         nzAddr(newCommKey)
-        consumerKeyNonce(
+        consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
@@ -392,7 +392,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /// @dev    Call consumeKeyNonce
-    modifier consumerKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
+    modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
         // Need to make this an external call so that the msg.sender is the
         // address of this contract, otherwise calling a function with this
         // modifier from any address would fail the whitelist check
