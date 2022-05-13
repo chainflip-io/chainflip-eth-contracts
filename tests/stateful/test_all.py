@@ -1410,12 +1410,12 @@ def test_all(
                 self.governor = newGovKey
             else:
                 print(
-                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY rule_setGovKeyWithGovKey",
+                    "        REV_MSG_KEYMANAGER_GOVERNOR rule_setGovKeyWithGovKey",
                     st_sender,
                     newGovKey,
                     self.communityKey,
                 )
-                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
+                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.setGovKeyWithGovKey(newGovKey, {"from": st_sender})
 
         # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
