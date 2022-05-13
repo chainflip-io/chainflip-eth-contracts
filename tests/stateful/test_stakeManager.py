@@ -80,6 +80,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
+            self.community = cfDeploy.communityKey
 
             self.communityGuardDisabled = self.sm.getCommunityGuard()
             self.suspended = self.sm.getSuspendedState()
@@ -342,29 +343,29 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Enable community Guard
         def rule_enableCommunityGuard(self, st_sender):
             if self.communityGuardDisabled:
-                if st_sender != self.communityKey:
+                if st_sender != self.community:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.sm.enableCommunityGuard({"from": st_sender})
                 # Always enable
                 print("                    rule_enableCommunityGuard", st_sender)
-                self.sm.enableCommunityGuard({"from": self.communityKey})
+                self.sm.enableCommunityGuard({"from": self.community})
                 self.communityGuardDisabled = False
             else:
                 print(
                     "        REV_MSG_GOV_ENABLED_GUARD _enableCommunityGuard", st_sender
                 )
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.sm.enableCommunityGuard({"from": self.communityKey})
+                    self.sm.enableCommunityGuard({"from": self.community})
 
         # Enable community Guard
         def rule_disableCommunityGuard(self, st_sender):
             if not self.communityGuardDisabled:
-                if st_sender != self.communityKey:
+                if st_sender != self.community:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.sm.disableCommunityGuard({"from": st_sender})
                 # Always disable
                 print("                    rule_disableCommunityGuard", st_sender)
-                self.sm.disableCommunityGuard({"from": self.communityKey})
+                self.sm.disableCommunityGuard({"from": self.community})
                 self.communityGuardDisabled = True
             else:
                 print(
@@ -372,7 +373,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
-                    self.sm.disableCommunityGuard({"from": self.communityKey})
+                    self.sm.disableCommunityGuard({"from": self.community})
 
         # Governance attemps to withdraw FLIP in case of emergency
         def rule_govWithdrawal(self, st_sender):
@@ -405,6 +406,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.numTxsTested += 1
             assert self.sm.getKeyManager() == self.km.address
             assert self.sm.getFLIP() == self.f.address
+            assert self.sm.getGovernor() == self.governor
+            assert self.sm.getCommunityKey() == self.community
 
         # Check all the state variables that can be changed after every tx
         def invariant_state_vars(self):
@@ -422,7 +425,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
 
         def invariant_governanceCommunityGuard(self):
-            assert self.communityKey == self.sm.getCommunityKey()
+            assert self.community == self.sm.getCommunityKey()
             assert self.communityGuardDisabled == self.sm.getCommunityGuard()
             assert self.suspended == self.sm.getSuspendedState()
 

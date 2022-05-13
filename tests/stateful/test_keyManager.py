@@ -337,9 +337,9 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             )
             assert self.km.getGovernanceKey() == self.governor
             assert self.km.getCommunityKey() == self.current_communityKey
-            assert self.v.getGovernanceKey() == self.governor
+            assert self.v.getGovernor() == self.governor
             assert self.v.getCommunityKey() == self.current_communityKey
-            assert self.sm.getGovernanceKey() == self.governor
+            assert self.sm.getGovernor() == self.governor
             assert self.sm.getCommunityKey() == self.current_communityKey
 
         # Print how many rules were executed at the end of each run
