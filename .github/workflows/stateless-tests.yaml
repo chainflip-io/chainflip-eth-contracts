@@ -4,11 +4,11 @@ on: push
 jobs:
   lint:
     name: Linting
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@feat/abi-artifacts
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
 
   stateless-tests:
     name: Stateless Tests
     needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@feat/abi-artifacts
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: false
