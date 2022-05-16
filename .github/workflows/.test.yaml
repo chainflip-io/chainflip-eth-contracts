@@ -27,6 +27,21 @@ jobs:
     - run: poetry install --quiet
     - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}}
 
+  test0:
+    runs-on: self-hosted
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}} --hypothesis-seed 0
+
+
   test1:
     runs-on: self-hosted
     timeout-minutes: ${{ inputs.timeout_minutes }}
