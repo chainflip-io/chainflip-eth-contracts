@@ -2522,7 +2522,7 @@ def test_all(
                     with reverts(REV_MSG_GOV_GOVERNOR):
                         self.sm.govWithdraw({"from": st_sender})
 
-                if self.suspended:
+                if self.sm_suspended:
                     print("                    rule_govWithdrawal", st_sender)
                     self.sm.govWithdraw({"from": self.governor})
                     # Governor has all the FLIP - do the checking and return the tokens for the invariant check
@@ -2552,7 +2552,7 @@ def test_all(
                     with reverts(REV_MSG_GOV_GOVERNOR):
                         self.v.govWithdraw(tokenstoWithdraw, {"from": st_sender})
 
-                if self.suspended:
+                if self.v_suspended:
                     if (
                         getChainTime() - self.km.getLastValidateTime()
                         < AGG_KEY_EMERGENCY_TIMEOUT
