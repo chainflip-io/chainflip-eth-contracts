@@ -2543,14 +2543,6 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.sm.govWithdraw({"from": self.governor})
 
-                assert web3.eth.get_balance(str(addr)) == self.ethBals[
-                    addr
-                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
-
-                assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
-                assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
-                assert self.f.balanceOf(addr) == self.flipBals[addr]
-
         # Governance attemps to withdraw all tokens in case of emergency
         def rule_v_govWithdrawal(self, st_sender):
             # Withdraw token A and token B - not ETH to make the checking easier due to gas expenditure
