@@ -2515,6 +2515,92 @@ def test_all(
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
                     self.v.disableCommunityGuard({"from": self.communityKey})
 
+        # Governance attemps to withdraw FLIP in case of emergency
+        def rule_sm_govWithdrawal(self, st_sender):
+            if self.sm_communityGuardDisabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.sm.govWithdraw({"from": st_sender})
+
+                if self.suspended:
+                    print("                    rule_govWithdrawal", st_sender)
+                    self.sm.govWithdraw({"from": self.governor})
+                    # Governor has all the FLIP - do the checking and return the tokens for the invariant check
+                    assert (
+                        self.f.balanceOf(self.governor)
+                        == self.flipBals[self.governor] + self.flipBals[self.sm]
+                    )
+                    assert self.f.balanceOf(self.sm) == 0
+                    self.f.transfer(
+                        self.sm, self.flipBals[self.sm], {"from": self.governor}
+                    )
+                else:
+                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
+                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                        self.sm.govWithdraw({"from": self.governor})
+            else:
+                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.sm.govWithdraw({"from": self.governor})
+
+                assert web3.eth.get_balance(str(addr)) == self.ethBals[
+                    addr
+                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
+
+                assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
+                assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
+                assert self.f.balanceOf(addr) == self.flipBals[addr]
+
+        # Governance attemps to withdraw all tokens in case of emergency
+        def rule_v_govWithdrawal(self, st_sender):
+            # Withdraw token A and token B - not ETH to make the checking easier due to gas expenditure
+            tokenstoWithdraw = self.tokensList[1:]
+            if self.v_communityGuardDisabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": st_sender})
+
+                if self.suspended:
+                    if (
+                        getChainTime() - self.km.getLastValidateTime()
+                        < AGG_KEY_EMERGENCY_TIMEOUT
+                    ):
+                        print("        REV_MSG_VAULT_DELAY _govWithdrawal")
+                        with reverts(REV_MSG_VAULT_DELAY):
+                            self.v.govWithdraw(
+                                tokenstoWithdraw, {"from": self.governor}
+                            )
+                    else:
+                        # tokenstoWithdraw contains tokenA and tokenB
+                        print("                    rule_govWithdrawal", st_sender)
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+                        # Governor has all the tokens - do the checking and return the tokens for the invariant check
+                        assert (
+                            tokenstoWithdraw[0].balanceOf(self.governor)
+                            == self.tokenABals[self.governor] + self.tokenABals[self.v]
+                        )
+                        assert tokenstoWithdraw[0].balanceOf(self.v) == 0
+                        tokenstoWithdraw[0].transfer(
+                            self.v, self.tokenABals[self.v], {"from": self.governor}
+                        )
+                        assert (
+                            tokenstoWithdraw[1].balanceOf(self.governor)
+                            == self.tokenBBals[self.governor] + self.tokenBBals[self.v]
+                        )
+                        assert tokenstoWithdraw[1].balanceOf(self.v) == 0
+                        tokenstoWithdraw[1].transfer(
+                            self.v, self.tokenBBals[self.v], {"from": self.governor}
+                        )
+
+                else:
+                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
+                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+            else:
+                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
         def invariant_bals(self):

@@ -25,17 +25,49 @@ jobs:
     - run: npm install
     - run: echo /root/.local/bin >> $GITHUB_PATH
     - run: poetry install --quiet
-    - run: poetry run brownie test --network hardhat --stateful ${{inputs.stateful}}
-    - run: |
-        CONTRACT_ARTIFACTS=$(ls ./build/contracts | grep -v dependencies)
-        while read contract; do
-          echo $contract
-          cat build/contracts/$contract | jq .abi > ./$contract
-        done <<< $CONTRACT_ARTIFACTS
-    - name: Store contract ABIs
-      uses: actions/upload-artifact@v2
+    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}}
+
+  test1:
+    runs-on: self-hosted
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
       with:
-        name: abis
-        path: |
-          *.json
-        if-no-files-found: error
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    # For dev purposes
+    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}} --hypothesis-seed 1
+
+  test2:
+    runs-on: self-hosted
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    # For dev purposes
+    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}} --hypothesis-seed 2
+
+  test3:
+    runs-on: self-hosted
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    # For dev purposes
+    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful ${{inputs.stateful}} --hypothesis-seed 3
