@@ -2,6 +2,7 @@ from consts import *
 from brownie.test import given, strategy
 from brownie import reverts, chain
 from utils import *
+from shared_tests import *
 
 
 def test_updateFlipSupply(cf):
@@ -16,19 +17,13 @@ def test_updateFlipSupply(cf):
 
     stateChainBlockNumber = 1
 
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
+    tx = signed_call_aggSigner(
+        cf,
+        cf.flip.updateFlipSupply,
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
         cf.stakeManager.address,
-    )
-
-    tx = cf.flip.updateFlipSupply(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-        cf.FR_ALICE,
+        sender=cf.ALICE,
     )
 
     # Balance should be MIN_STAKE plus the minted delta
@@ -48,19 +43,13 @@ def test_updateFlipSupply(cf):
 
     stateChainBlockNumber = 2
 
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
+    tx = signed_call_aggSigner(
+        cf,
+        cf.flip.updateFlipSupply,
         INIT_SUPPLY,
         stateChainBlockNumber,
         cf.stakeManager.address,
-    )
-
-    tx2 = cf.flip.updateFlipSupply(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        INIT_SUPPLY,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-        cf.FR_ALICE,
+        sender=cf.ALICE,
     )
 
     # Balance should be MIN_STAKE as we've just burned all the FLIP we minted
@@ -68,7 +57,7 @@ def test_updateFlipSupply(cf):
         cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + STAKEMANAGER_INITIAL_BALANCE
     )
     assert cf.flip.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
-    assert tx2.events["FlipSupplyUpdated"][0].values() == [
+    assert tx.events["FlipSupplyUpdated"][0].values() == [
         NEW_TOTAL_SUPPLY_MINT,
         INIT_SUPPLY,
         stateChainBlockNumber,
@@ -76,19 +65,15 @@ def test_updateFlipSupply(cf):
 
     # Should not let us update the flip supply with an old block number
     stateChainBlockNumber = 1
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        INIT_SUPPLY,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-    )
+
     with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
-        cf.flip.updateFlipSupply(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        signed_call_aggSigner(
+            cf,
+            cf.flip.updateFlipSupply,
             INIT_SUPPLY,
             stateChainBlockNumber,
             cf.stakeManager.address,
-            cf.FR_ALICE,
+            sender=cf.ALICE,
         )
 
 
@@ -103,19 +88,13 @@ def test_updateFlipSupply_unchangedSupply(cf):
 
     stateChainBlockNumber = 1
 
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
+    signed_call_aggSigner(
+        cf,
+        cf.flip.updateFlipSupply,
         cf.flip.totalSupply(),
         stateChainBlockNumber,
         cf.stakeManager.address,
-    )
-
-    tx = cf.flip.updateFlipSupply(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        cf.flip.totalSupply(),
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-        cf.FR_ALICE,
+        sender=cf.ALICE,
     )
 
     stakeManagerBalanceAfter = cf.flip.balanceOf(cf.stakeManager)
@@ -130,35 +109,24 @@ def test_updateFlipSupply_unchangedSupply(cf):
 def test_updateFlipSupply_rev(cf):
     stateChainBlockNumber = 1
 
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        0,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-    )
     with reverts(REV_MSG_NZ_UINT):
-        tx = cf.flip.updateFlipSupply(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        signed_call_aggSigner(
+            cf,
+            cf.flip.updateFlipSupply,
             0,
             stateChainBlockNumber,
             cf.stakeManager.address,
-            cf.FR_ALICE,
+            sender=cf.ALICE,
         )
 
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        ZERO_ADDR,
-    )
-
     with reverts(REV_MSG_NZ_ADDR):
-        tx = cf.flip.updateFlipSupply(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        signed_call_aggSigner(
+            cf,
+            cf.flip.updateFlipSupply,
             NEW_TOTAL_SUPPLY_MINT,
             stateChainBlockNumber,
             ZERO_ADDR,
-            cf.FR_ALICE,
+            sender=cf.ALICE,
         )
 
     callDataNoSig = cf.flip.updateFlipSupply.encode_input(
@@ -169,7 +137,7 @@ def test_updateFlipSupply_rev(cf):
     )
 
     with reverts(REV_MSG_MSGHASH):
-        tx = cf.flip.updateFlipSupply(
+        cf.flip.updateFlipSupply(
             AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
             NEW_TOTAL_SUPPLY_MINT,
             stateChainBlockNumber,

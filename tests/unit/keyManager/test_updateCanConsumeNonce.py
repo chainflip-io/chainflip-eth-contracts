@@ -15,13 +15,25 @@ def test_updateCanConsumeKeyNonce_rev_length(a, cf, currentAddrs, newAddrs, st_s
 
     if len(currentAddrs) != cf.keyManager.getNumberWhitelistedAddresses():
         with reverts(REV_MSG_LENGTH):
-            updateCanConsumeKeyNonce(cf.keyManager, currentAddrs, newAddrs, st_sender)
+            signed_call_aggSigner(
+                cf,
+                cf.keyManager.updateCanConsumeKeyNonce,
+                currentAddrs,
+                newAddrs,
+                sender=st_sender,
+            )
 
     # will never match the actual whitelisted addresses since addresses
     # are chosen among a, and the whitelist has newly deployed contracts
     else:
         with reverts(REV_MSG_CANNOT_DEWHITELIST):
-            updateCanConsumeKeyNonce(cf.keyManager, currentAddrs, newAddrs, st_sender)
+            signed_call_aggSigner(
+                cf,
+                cf.keyManager.updateCanConsumeKeyNonce,
+                currentAddrs,
+                newAddrs,
+                sender=st_sender,
+            )
 
 
 @given(
@@ -35,11 +47,23 @@ def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, newAddrs, st_sender):
 
     if unique == False:
         with reverts(REV_MSG_DUPLICATE):
-            updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, newAddrs, st_sender)
+            signed_call_aggSigner(
+                cf,
+                cf.keyManager.updateCanConsumeKeyNonce,
+                cf.whitelisted,
+                newAddrs,
+                sender=st_sender,
+            )
 
     else:
         newAddrs = newAddrs + [cf.keyManager]
-        updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, newAddrs, st_sender)
+        signed_call_aggSigner(
+            cf,
+            cf.keyManager.updateCanConsumeKeyNonce,
+            cf.whitelisted,
+            newAddrs,
+            sender=st_sender,
+        )
 
         # Removed previous whitelisted addresses
         for addr in cf.whitelisted:
@@ -69,8 +93,13 @@ def test_updateCanConsumeKeyNonce_multiple(a, cf, addrsList1, addrsList2, st_sen
     currentAddrs = cf.whitelisted
 
     for newAddrs in listAddresses:
-
-        updateCanConsumeKeyNonce(cf.keyManager, currentAddrs, newAddrs, st_sender)
+        signed_call_aggSigner(
+            cf,
+            cf.keyManager.updateCanConsumeKeyNonce,
+            currentAddrs,
+            newAddrs,
+            sender=st_sender,
+        )
 
         # Removed previous whitelisted addresses that are not whitelisted again
         for addr in currentAddrs:
@@ -88,8 +117,10 @@ def test_updateCanConsumeKeyNonce_multiple(a, cf, addrsList1, addrsList2, st_sen
 def test_updateCanConsumeKeyNonce_rev_noKeyManager(a, cf):
 
     # Using [:] to create a copy of the list (instead of reference)
-    listAddresses = cf.whitelisted[:]
-    listAddresses.remove(cf.keyManager)
+    newAddrs = cf.whitelisted[:]
+    newAddrs.remove(cf.keyManager)
 
     with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-        updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, listAddresses, a[0])
+        signed_call_aggSigner(
+            cf, cf.keyManager.updateCanConsumeKeyNonce, cf.whitelisted, newAddrs
+        )

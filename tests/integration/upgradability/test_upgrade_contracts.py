@@ -43,22 +43,42 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 
     aggKeyNonceConsumers = [cf.vault, cf.stakeManager, cf.flip]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        updateKeyManager(aggKeyNonceConsumer, cf.keyManager.address, newKeyManager)
+        signed_call_aggSigner(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
     # Remove all whitelist
     # Reverts if keyManager is not whitelisted
     with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-        updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, [], st_sender)
+        signed_call_aggSigner(
+            cf,
+            cf.keyManager.updateCanConsumeKeyNonce,
+            cf.whitelisted,
+            [],
+            sender=st_sender,
+        )
 
-    updateCanConsumeKeyNonce(cf.keyManager, cf.whitelisted, [cf.keyManager], st_sender)
+    signed_call_aggSigner(
+        cf,
+        cf.keyManager.updateCanConsumeKeyNonce,
+        cf.whitelisted,
+        [cf.keyManager],
+        sender=st_sender,
+    )
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         # Check that messages signed with old keyManager's address revert in the new one
         with reverts(REV_MSG_WRONG_KEYMANADDR):
-            updateKeyManager(aggKeyNonceConsumer, cf.keyManager.address, NON_ZERO_ADDR)
+            signed_call_aggSigner(
+                cf, aggKeyNonceConsumer.updateKeyManager, NON_ZERO_ADDR
+            )
+
         # Try one validation per contract to check that they can validate
-        checkNonceConsumerCanConsume(aggKeyNonceConsumer)
+        signed_call_aggSigner(
+            cf,
+            aggKeyNonceConsumer.updateKeyManager,
+            aggKeyNonceConsumer.getKeyManager(),
+            keyManager=newKeyManager,
+        )
 
     # Try replay attack using transaction called on the previous keyManager
     # nonce is available on the new keyManager so it relies on signing over the keyManager address
@@ -131,7 +151,14 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     # Keep old Vault whitelisted
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newVault]
-    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist, st_sender)
+
+    signed_call_aggSigner(
+        cf,
+        cf.keyManager.updateCanConsumeKeyNonce,
+        currentWhitelist,
+        toWhitelist,
+        sender=st_sender,
+    )
 
     # Vault can now validate and fetch but it has zero balance so it can't transfer
     callDataNoSig = newVault.transfer.encode_input(
@@ -177,7 +204,13 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
 
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newVault]
     toWhitelist = [newVault, cf.stakeManager, cf.flip, cf.keyManager]
-    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist, st_sender)
+    signed_call_aggSigner(
+        cf,
+        cf.keyManager.updateCanConsumeKeyNonce,
+        currentWhitelist,
+        toWhitelist,
+        sender=st_sender,
+    )
 
     # Old Vault cannot validate Signatures anymore
     callDataNoSig = cf.vault.transfer.encode_input(
@@ -220,7 +253,13 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff, st_sender):
     # Keep old StakeManager whitelisted
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newStakeManager]
-    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist, st_sender)
+    signed_call_aggSigner(
+        cf,
+        cf.keyManager.updateCanConsumeKeyNonce,
+        currentWhitelist,
+        toWhitelist,
+        sender=st_sender,
+    )
 
     # Last register claim before stopping state's chain claim signature registry
     nodeID = JUNK_HEX
@@ -266,7 +305,13 @@ def test_upgrade_StakeManager(cf, StakeManager, expiryTimeDiff, st_sender):
         newStakeManager,
     ]
     toWhitelist = [cf.vault, newStakeManager, cf.flip, cf.keyManager]
-    updateCanConsumeKeyNonce(cf.keyManager, currentWhitelist, toWhitelist, st_sender)
+    signed_call_aggSigner(
+        cf,
+        cf.keyManager.updateCanConsumeKeyNonce,
+        currentWhitelist,
+        toWhitelist,
+        sender=st_sender,
+    )
 
     # Check that claims cannot be registered in old StakeManager
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(

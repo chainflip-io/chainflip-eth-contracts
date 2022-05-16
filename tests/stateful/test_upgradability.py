@@ -131,7 +131,13 @@ def test_upgradability(
                 self.km,
                 newVault,
             ]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
+            signed_call_aggSigner(
+                cf,
+                cf.keyManager.updateCanConsumeKeyNonce,
+                currentWhitelist,
+                toWhitelist,
+                sender=cf.ALICE,
+            )
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
             callDataNoSig = newVault.transfer.encode_input(
@@ -235,7 +241,13 @@ def test_upgradability(
                 newVault,
             ]
             toWhitelist = [self.sm, self.f, self.km, newVault]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
+            signed_call_aggSigner(
+                cf,
+                cf.keyManager.updateCanConsumeKeyNonce,
+                currentWhitelist,
+                toWhitelist,
+                sender=cf.ALICE,
+            )
 
             self.v = newVault
             self.lastValidateTime = tx.timestamp
@@ -244,9 +256,7 @@ def test_upgradability(
             self.v_suspended = False
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
-        def rule_upgrade_stakeManager(
-            self, st_sender, st_vault_transfer_amount, st_sleep_time
-        ):
+        def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
             newStakeManager = st_sender.deploy(
                 StakeManager,
                 self.km,
@@ -269,7 +279,13 @@ def test_upgradability(
                 self.km,
                 newStakeManager,
             ]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
+            signed_call_aggSigner(
+                cf,
+                cf.keyManager.updateCanConsumeKeyNonce,
+                currentWhitelist,
+                toWhitelist,
+                sender=cf.ALICE,
+            )
 
             chain.sleep(st_sleep_time)
 
@@ -285,7 +301,7 @@ def test_upgradability(
                 newStakeManager,
                 expiryTime,
             )
-            tx = self.sm.registerClaim(
+            self.sm.registerClaim(
                 AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
                 JUNK_HEX,
                 claimAmount,
@@ -321,7 +337,13 @@ def test_upgradability(
                 newStakeManager,
             ]
             toWhitelist = [self.v, newStakeManager, self.f, self.km]
-            updateCanConsumeKeyNonce(self.km, currentWhitelist, toWhitelist, cf.ALICE)
+            signed_call_aggSigner(
+                cf,
+                cf.keyManager.updateCanConsumeKeyNonce,
+                currentWhitelist,
+                toWhitelist,
+                sender=cf.ALICE,
+            )
 
             self.sm = newStakeManager
             self.sm_communityKey = self.communityKey
