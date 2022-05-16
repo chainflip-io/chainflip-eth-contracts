@@ -9,7 +9,7 @@ jobs:
   stateful-tests:
     name: Stateful Tests
     needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@feat/add-stateful-govWithdraw
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@test/add-stateful-govWithraw
     with:
       stateful: true
       timeout_minutes: 3600
