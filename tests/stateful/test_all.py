@@ -2003,191 +2003,191 @@ def test_all(
                         {"from": st_sender},
                     )
 
-            else:
-                # UpdateCanConsumeKeyNonce
-                self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    *args,
-                    {"from": st_sender},
-                )
+            # else:
+            #     # UpdateCanConsumeKeyNonce
+            #     self.km.updateCanConsumeKeyNonce(
+            #         signer.getSigDataWithNonces(
+            #             callDataNoSig, nonces, AGG, self.km.address
+            #         ),
+            #         *args,
+            #         {"from": st_sender},
+            #     )
 
-                self.currentWhitelist = toWhitelist.copy()
+            #     self.currentWhitelist = toWhitelist.copy()
 
-                # Vault can now validate and fetch but it has zero balance so it can't transfer
-                callDataNoSig = newVault.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                tx = newVault.transfer(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    ETH_ADDR,
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                assert tx.events["TransferFailed"][0].values() == [
-                    st_sender,
-                    st_vault_transfer_amount,
-                    web3.toHex(0),
-                ]
+            #     # Vault can now validate and fetch but it has zero balance so it can't transfer
+            #     callDataNoSig = newVault.transfer.encode_input(
+            #         agg_null_sig(self.km.address, chain.id),
+            #         ETH_ADDR,
+            #         st_sender,
+            #         st_vault_transfer_amount,
+            #     )
+            #     tx = newVault.transfer(
+            #         signer.getSigDataWithNonces(
+            #             callDataNoSig, nonces, AGG, self.km.address
+            #         ),
+            #         ETH_ADDR,
+            #         st_sender,
+            #         st_vault_transfer_amount,
+            #     )
+            #     assert tx.events["TransferFailed"][0].values() == [
+            #         st_sender,
+            #         st_vault_transfer_amount,
+            #         web3.toHex(0),
+            #     ]
 
-                # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
-                startBalVault = self.v.balance()
-                assert startBalVault >= st_vault_transfer_amount
-                startBalRecipient = newVault.balance()
+            #     # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
+            #     startBalVault = self.v.balance()
+            #     assert startBalVault >= st_vault_transfer_amount
+            #     startBalRecipient = newVault.balance()
 
-                callDataNoSig = self.v.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
-                )
-                self.v.transfer(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
-                )
+            #     callDataNoSig = self.v.transfer.encode_input(
+            #         agg_null_sig(self.km.address, chain.id),
+            #         ETH_ADDR,
+            #         newVault,
+            #         st_vault_transfer_amount,
+            #     )
+            #     self.v.transfer(
+            #         signer.getSigDataWithNonces(
+            #             callDataNoSig, nonces, AGG, self.km.address
+            #         ),
+            #         ETH_ADDR,
+            #         newVault,
+            #         st_vault_transfer_amount,
+            #     )
 
-                assert self.v.balance() - startBalVault == -st_vault_transfer_amount
-                assert (
-                    newVault.balance() - startBalRecipient == st_vault_transfer_amount
-                )
+            #     assert self.v.balance() - startBalVault == -st_vault_transfer_amount
+            #     assert (
+            #         newVault.balance() - startBalRecipient == st_vault_transfer_amount
+            #     )
 
-                chain.sleep(st_sleep_time)
+            #     chain.sleep(st_sleep_time)
 
-                # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
-                startBalVault = self.v.balance()
-                startBalRecipient = newVault.balance()
+            #     # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
+            #     startBalVault = self.v.balance()
+            #     startBalRecipient = newVault.balance()
 
-                if st_vault_transfer_amount > startBalVault:
-                    print(
-                        "        TRANSF_FAIL rule_upgrade_vault",
-                        st_sender,
-                        st_vault_transfer_amount,
-                    )
-                    callDataNoSig = self.v.transfer.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    tx = self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    assert tx.events["TransferFailed"][0].values() == [
-                        newVault.address,
-                        st_vault_transfer_amount,
-                        web3.toHex(0),
-                    ]
-                print(
-                    "                    rule_upgrade_vault",
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
+            #     if st_vault_transfer_amount > startBalVault:
+            #         print(
+            #             "        TRANSF_FAIL rule_upgrade_vault",
+            #             st_sender,
+            #             st_vault_transfer_amount,
+            #         )
+            #         callDataNoSig = self.v.transfer.encode_input(
+            #             agg_null_sig(self.km.address, chain.id),
+            #             ETH_ADDR,
+            #             newVault,
+            #             st_vault_transfer_amount,
+            #         )
+            #         tx = self.v.transfer(
+            #             signer.getSigDataWithNonces(
+            #                 callDataNoSig, nonces, AGG, self.km.address
+            #             ),
+            #             ETH_ADDR,
+            #             newVault,
+            #             st_vault_transfer_amount,
+            #         )
+            #         assert tx.events["TransferFailed"][0].values() == [
+            #             newVault.address,
+            #             st_vault_transfer_amount,
+            #             web3.toHex(0),
+            #         ]
+            #     print(
+            #         "                    rule_upgrade_vault",
+            #         st_sender,
+            #         st_vault_transfer_amount,
+            #     )
 
-                iniEthBalance = startBalVault
-                initTokenABalance = self.tokenA.balanceOf(self.v)
-                iniTokenBBalance = self.tokenB.balanceOf(self.v)
+            #     iniEthBalance = startBalVault
+            #     initTokenABalance = self.tokenA.balanceOf(self.v)
+            #     iniTokenBBalance = self.tokenB.balanceOf(self.v)
 
-                amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
-                tokens = [ETH_ADDR, self.tokenA, self.tokenB]
-                recipients = [newVault, newVault, newVault]
+            #     amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
+            #     tokens = [ETH_ADDR, self.tokenA, self.tokenB]
+            #     recipients = [newVault, newVault, newVault]
 
-                callDataNoSig = self.v.transferBatch.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    tokens,
-                    recipients,
-                    amountsToTransfer,
-                )
+            #     callDataNoSig = self.v.transferBatch.encode_input(
+            #         agg_null_sig(self.km.address, chain.id),
+            #         tokens,
+            #         recipients,
+            #         amountsToTransfer,
+            #     )
 
-                self.v.transferBatch(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    tokens,
-                    recipients,
-                    amountsToTransfer,
-                )
+            #     self.v.transferBatch(
+            #         signer.getSigDataWithNonces(
+            #             callDataNoSig, nonces, AGG, self.km.address
+            #         ),
+            #         tokens,
+            #         recipients,
+            #         amountsToTransfer,
+            #     )
 
-                # Check that all balances have been transferred
-                assert self.v.balance() == 0
-                assert self.tokenA.balanceOf(self.v) == 0
-                assert self.tokenB.balanceOf(self.v) == 0
+            #     # Check that all balances have been transferred
+            #     assert self.v.balance() == 0
+            #     assert self.tokenA.balanceOf(self.v) == 0
+            #     assert self.tokenB.balanceOf(self.v) == 0
 
-                assert self.tokenA.balanceOf(newVault) == initTokenABalance
-                assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
+            #     assert self.tokenA.balanceOf(newVault) == initTokenABalance
+            #     assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
 
-                self._updateBalancesOnUpgrade(self.v, newVault)
+            #     self._updateBalancesOnUpgrade(self.v, newVault)
 
-                # Dewhitelist old Vault
-                toWhitelist = self.currentWhitelist.copy()
-                toWhitelist.remove(self.v)
+            #     # Dewhitelist old Vault
+            #     toWhitelist = self.currentWhitelist.copy()
+            #     toWhitelist.remove(self.v)
 
-                # UpdateCanConsumeKeyNonce
-                callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    self.currentWhitelist,
-                    toWhitelist,
-                )
-                tx = self.km.updateCanConsumeKeyNonce(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    self.currentWhitelist,
-                    toWhitelist,
-                )
+            #     # UpdateCanConsumeKeyNonce
+            #     callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
+            #         agg_null_sig(self.km.address, chain.id),
+            #         self.currentWhitelist,
+            #         toWhitelist,
+            #     )
+            #     tx = self.km.updateCanConsumeKeyNonce(
+            #         signer.getSigDataWithNonces(
+            #             callDataNoSig, nonces, AGG, self.km.address
+            #         ),
+            #         self.currentWhitelist,
+            #         toWhitelist,
+            #     )
 
-                self.v = newVault
-                self.lastValidateTime = tx.timestamp
-                self.currentWhitelist = toWhitelist
-                self.v_communityGuardDisabled = False
-                self.communityKey = self.communityKey
-                self.v_suspended = False
+            #     self.v = newVault
+            #     self.lastValidateTime = tx.timestamp
+            #     self.currentWhitelist = toWhitelist
+            #     self.v_communityGuardDisabled = False
+            #     self.communityKey = self.communityKey
+            #     self.v_suspended = False
 
-                # Create new addresses for the new Vault and initialize Balances
-                newCreate2EthAddrs = [
-                    getCreate2Addr(
-                        self.v.address, cleanHexStrPad(swapID), DepositEth, ""
-                    )
-                    for swapID in range(MAX_SWAPID + 1)
-                ]
-                newCreate2TokenAAddrs = [
-                    getCreate2Addr(
-                        self.v.address,
-                        cleanHexStrPad(swapID),
-                        DepositToken,
-                        cleanHexStrPad(self.tokenA.address),
-                    )
-                    for swapID in range(MAX_SWAPID + 1)
-                ]
-                newCreate2TokenBAddrs = [
-                    getCreate2Addr(
-                        self.v.address,
-                        cleanHexStrPad(swapID),
-                        DepositToken,
-                        cleanHexStrPad(self.tokenB.address),
-                    )
-                    for swapID in range(MAX_SWAPID + 1)
-                ]
+            #     # Create new addresses for the new Vault and initialize Balances
+            #     newCreate2EthAddrs = [
+            #         getCreate2Addr(
+            #             self.v.address, cleanHexStrPad(swapID), DepositEth, ""
+            #         )
+            #         for swapID in range(MAX_SWAPID + 1)
+            #     ]
+            #     newCreate2TokenAAddrs = [
+            #         getCreate2Addr(
+            #             self.v.address,
+            #             cleanHexStrPad(swapID),
+            #             DepositToken,
+            #             cleanHexStrPad(self.tokenA.address),
+            #         )
+            #         for swapID in range(MAX_SWAPID + 1)
+            #     ]
+            #     newCreate2TokenBAddrs = [
+            #         getCreate2Addr(
+            #             self.v.address,
+            #             cleanHexStrPad(swapID),
+            #             DepositToken,
+            #             cleanHexStrPad(self.tokenB.address),
+            #         )
+            #         for swapID in range(MAX_SWAPID + 1)
+            #     ]
 
-                for swapID in range(MAX_SWAPID + 1):
-                    # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
-                    self._addNewAddress(newCreate2EthAddrs[swapID])
-                    self._addNewAddress(newCreate2TokenAAddrs[swapID])
-                    self._addNewAddress(newCreate2TokenBAddrs[swapID])
+            #     for swapID in range(MAX_SWAPID + 1):
+            #         # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
+            #         self._addNewAddress(newCreate2EthAddrs[swapID])
+            #         self._addNewAddress(newCreate2TokenAAddrs[swapID])
+            #         self._addNewAddress(newCreate2TokenBAddrs[swapID])
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
@@ -2443,7 +2443,7 @@ def test_all(
                 with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
                     self.km.setCommKeyWithCommKey(newCommKey, {"from": st_sender})
 
-        # Enable community Guard
+        # Enable Stake Manager's community Guard
         def rule_sm_enableCommunityGuard(self, st_sender):
             if self.sm_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2461,7 +2461,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.sm.enableCommunityGuard({"from": self.communityKey})
 
-        # Enable community Guard
+        # Disable Stake Manager's community Guard
         def rule_sm_disableCommunityGuard(self, st_sender):
             if not self.sm_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2479,7 +2479,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
                     self.sm.disableCommunityGuard({"from": self.communityKey})
 
-        # Enable community Guard
+        # Enable Vault's community Guard
         def rule_vault_enableCommunityGuard(self, st_sender):
             if self.v_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2497,7 +2497,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.v.enableCommunityGuard({"from": self.communityKey})
 
-        # Enable community Guard
+        # Disable Vault's community Guard
         def rule_vault_disableCommunityGuard(self, st_sender):
             if not self.v_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2515,7 +2515,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
                     self.v.disableCommunityGuard({"from": self.communityKey})
 
-        # Governance attemps to withdraw FLIP in case of emergency
+        # Governance attemps to withdraw FLIP from the Stake Manager in case of emergency
         def rule_sm_govWithdrawal(self, st_sender):
             if self.sm_communityGuardDisabled:
                 if st_sender != self.governor:
@@ -2543,7 +2543,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.sm.govWithdraw({"from": self.governor})
 
-        # Governance attemps to withdraw all tokens in case of emergency
+        # Governance attemps to withdraw all tokens from the Vault in case of emergency
         def rule_v_govWithdrawal(self, st_sender):
             # Withdraw token A and token B - not ETH to make the checking easier due to gas expenditure
             tokenstoWithdraw = self.tokensList[1:]

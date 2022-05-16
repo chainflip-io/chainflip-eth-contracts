@@ -838,7 +838,7 @@ def test_vault(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.v.enableCommunityGuard({"from": self.community})
 
-        # Enable community Guard
+        # Disable community Guard
         def rule_disableCommunityGuard(self, st_sender):
             if not self.communityGuardDisabled:
                 if st_sender != self.community:
