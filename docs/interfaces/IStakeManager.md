@@ -40,6 +40,17 @@
 
 - `nodeID`:    The nodeID of the staker
 
+## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber)` (external)
+
+ Compares a given new FLIP supply against the old supply,
+         then mints new and burns as appropriate (to/from the StakeManager)
+
+- `sigData`:               signature over the abi-encoded function params
+
+- `newTotalSupply`:        new total supply of FLIP
+
+- `stateChainBlockNumber`: State Chain block number for the new total supply
+
 ## `setMinStake(uint256 newMinStake)` (external)
 
      Set the minimum amount of stake needed for `stake` to be able
@@ -47,10 +58,28 @@
 
 - `newMinStake`:   The new minimum stake
 
+## `suspend()` (external)
+
+     Pause claim executions on the contract, for the purpose of
+             allowing governance to intervene in an emergency.
+
+## `resume()` (external)
+
+     Resume claim executions on the contract.
+
 ## `govWithdraw()` (external)
 
-Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
-        to be approved by the Community, it is a last resort. Used to rectify an emergency.
+     Withdraw all FLIP to governance address, only if suspended.
+             Used to rectify an emergency. Chainflip network is likely
+             to be compromised if this is necessary, it is a last resort.
+
+## `getKeyManager() → contract IKeyManager` (external)
+
+ Get the KeyManager address/interface that's used to validate sigs
+
+Returns
+
+- The KeyManager (IKeyManager)
 
 ## `getFLIP() → contract IFLIP` (external)
 
@@ -59,6 +88,14 @@ Withdraw all FLIP to governance address in case of emergency. This withdrawal ne
 Returns
 
 - The address of FLIP
+
+## `getLastSupplyUpdateBlockNumber() → uint256` (external)
+
+ Get the last state chain block number that the supply was updated at
+
+Returns
+
+- The state chain block number of the last update
 
 ## `getMinimumStake() → uint256` (external)
 
@@ -86,6 +123,8 @@ Returns
 ## `ClaimRegistered(bytes32 nodeID, uint256 amount, address staker, uint48 startTime, uint48 expiryTime)`
 
 ## `ClaimExecuted(bytes32 nodeID, uint256 amount)`
+
+## `FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber)`
 
 ## `MinStakeChanged(uint256 oldMinStake, uint256 newMinStake)`
 

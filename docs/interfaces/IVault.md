@@ -30,6 +30,6 @@ No description
 
 No description
 
-## `govWithdraw(contract IERC20[] tokens)` (external)
+## `getKeyManager() → contract IKeyManager` (external)
 
 No description

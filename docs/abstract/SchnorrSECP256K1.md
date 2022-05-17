@@ -91,8 +91,4 @@ Slightly modified from <https://github.com/smartcontractkit/chainlink/pull/1272/
 *************************************************************************
       @return True if passed a valid signature, false otherwise. */
 
-    fu
-
-## `verifySigningKeyX(uint256 signingPubKeyX)` (public)
-
-No description
+  func
