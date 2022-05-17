@@ -1284,7 +1284,7 @@ def test_all(
         # results whilst still testing the full range.
         def _get_key_prob(self, keyID):
             samples = ([self.keyIDToCurKeys[keyID]] * 100) + self.allKeys
-            return self.keyIDToCurKeys[keyID]
+            return choice(samples)
 
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
