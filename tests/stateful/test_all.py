@@ -2017,6 +2017,11 @@ def test_all(
 
                 chain.sleep(st_sleep_time)
 
+
+                iniEthBalance = self.v.balance()
+                initTokenABalance = self.tokenA.balanceOf(self.v)
+                iniTokenBBalance = self.tokenB.balanceOf(self.v)
+
                 # Transfer all the funds (ETH and other tokens) to new Vault and dewhitelist
                 print(
                     "                    rule_upgrade_vault",
@@ -2025,10 +2030,6 @@ def test_all(
                     initTokenABalance,
                     iniTokenBBalance,
                 )
-
-                iniEthBalance = self.v.balance()
-                initTokenABalance = self.tokenA.balanceOf(self.v)
-                iniTokenBBalance = self.tokenB.balanceOf(self.v)
 
                 amountsToTransfer = [iniEthBalance, initTokenABalance, iniTokenBBalance]
                 tokens = [ETH_ADDR, self.tokenA, self.tokenB]
