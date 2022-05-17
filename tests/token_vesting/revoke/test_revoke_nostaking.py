@@ -7,15 +7,15 @@ from shared_tests_tokenVesting import *
 import pytest
 
 
-@given(sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_revoke(addrs, cf, tokenVestingNoStaking, maths, sleepTime):
+@given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
+def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
     tv, start, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
     revokedAmount = 0
 
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
 
     if getChainTime() < cliff:
         tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
@@ -53,9 +53,9 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, sleepTime):
     assert tv.released(cf.flip) == 0
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
-    # Release leftover amount. Adding sleepTime to test that we are not following
+    # Release leftover amount. Adding st_sleepTime to test that we are not following
     # the vesting curve once it's been revoked
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
     if releasable > 0:
         tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
         check_released(tv, cf, tx, addrs.INVESTOR, releasable, releasable)

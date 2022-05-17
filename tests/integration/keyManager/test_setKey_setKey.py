@@ -10,22 +10,17 @@ def test_setAggKeyWithAggKey_setAggKeyWithAggKey(cf):
 
     # Try to set agg key with old agg key (we're not "changing" the agg key here but it should fail nonetheless since the contract does not
     # ever check that they are different)
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_1.getPubData()
-    )
     with reverts(REV_MSG_SIG):
-        cf.keyManager.setAggKeyWithAggKey(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            AGG_SIGNER_1.getPubData(),
+        signed_call_aggSigner(
+            cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1.getPubData()
         )
 
     # Change agg key back to signer one
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_1.getPubData()
-    )
-    tx = cf.keyManager.setAggKeyWithAggKey(
-        AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address),
+    tx = signed_call_aggSigner(
+        cf,
+        cf.keyManager.setAggKeyWithAggKey,
         AGG_SIGNER_1.getPubData(),
+        signer=AGG_SIGNER_2,
     )
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
@@ -93,13 +88,10 @@ def test_setAggKeyWithGovKey_setKeyWithAggKey(cf):
     cf.keyManager.setAggKeyWithGovKey(AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR})
 
     # setGovKeyWithAggKey
-    callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), cf.GOVERNOR
+    signed_call_aggSigner(
+        cf, cf.keyManager.setGovKeyWithAggKey, cf.GOVERNOR, signer=AGG_SIGNER_2
     )
-    cf.keyManager.setGovKeyWithAggKey(
-        AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address),
-        cf.GOVERNOR,
-    )
+
     with reverts(REV_MSG_DELAY):
         cf.keyManager.setAggKeyWithGovKey(
             AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR}
@@ -110,12 +102,8 @@ def test_setAggKeyWithGovKey_setKeyWithAggKey(cf):
     cf.keyManager.setAggKeyWithGovKey(AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR})
 
     # setCommKeyWithAggKey
-    callDataNoSig = cf.keyManager.setCommKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), cf.communityKey
-    )
-    cf.keyManager.setCommKeyWithAggKey(
-        AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address),
-        cf.communityKey,
+    signed_call_aggSigner(
+        cf, cf.keyManager.setCommKeyWithAggKey, cf.communityKey, signer=AGG_SIGNER_2
     )
 
     with reverts(REV_MSG_DELAY):
@@ -135,31 +123,15 @@ def test_setAggKeyWithAggKey_setKeyWithAggKey_rev(cf, st_sender):
     setAggKeyWithAggKey_test(cf)
 
     # setAggKeyWithAggKey
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_1.getPubData()
-    )
     with reverts(REV_MSG_SIG):
-        cf.keyManager.setAggKeyWithAggKey(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            AGG_SIGNER_1.getPubData(),
+        signed_call_aggSigner(
+            cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1.getPubData()
         )
 
     # setGovKeyWithAggKey
-    callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), st_sender
-    )
     with reverts(REV_MSG_SIG):
-        cf.keyManager.setGovKeyWithAggKey(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            st_sender,
-        )
+        signed_call_aggSigner(cf, cf.keyManager.setGovKeyWithAggKey, st_sender)
 
     # setCommKeyWithAggKey
-    callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), st_sender
-    )
     with reverts(REV_MSG_SIG):
-        cf.keyManager.setGovKeyWithAggKey(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            st_sender,
-        )
+        signed_call_aggSigner(cf, cf.keyManager.setGovKeyWithAggKey, st_sender)

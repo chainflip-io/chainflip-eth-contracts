@@ -30,16 +30,10 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     minAmount = 1
     iniEthBal = st_sender.balance()
     iniTransactionNumber = len(history.filter(sender=st_sender))
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, st_sender, minAmount
-    )
-    tx = cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        ETH_ADDR,
-        st_sender,
-        minAmount,
-        {"from": st_sender},
-    )
+
+    args = (ETH_ADDR, st_sender, minAmount)
+    signed_call_aggSigner(cf, cf.vault.transfer, *args, sender=st_sender)
+
     assert st_sender.balance() == iniEthBal - calculateGasSpentByAddress(
         st_sender, iniTransactionNumber
     )
@@ -51,7 +45,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     iniEthBalGov = cf.GOVERNOR.balance()
     iniTransactionNumber = len(history.filter(sender=cf.GOVERNOR))
     cf.vault.suspend({"from": cf.GOVERNOR})
-    tx = cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+    cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
     cf.vault.resume({"from": cf.GOVERNOR})
     assert (
         cf.GOVERNOR.balance()

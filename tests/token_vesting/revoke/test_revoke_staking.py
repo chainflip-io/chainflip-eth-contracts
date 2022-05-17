@@ -7,15 +7,15 @@ from shared_tests_tokenVesting import *
 import pytest
 
 
-@given(sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_revoke(addrs, cf, tokenVestingStaking, maths, sleepTime):
+@given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
+def test_revoke(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
     tv, start, cliff, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
     revokedAmount = 0
 
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
 
     if getChainTime() < cliff:
         tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
@@ -50,7 +50,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, maths, sleepTime):
     assert cf.flip.balanceOf(tv) == 0
 
     # When canStake, no amount is releasable after revoking
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
 
     with reverts(REV_MSG_FUNDS_REVOKED):
         tv.release(cf.flip, {"from": addrs.INVESTOR})
@@ -132,8 +132,8 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     with reverts(REV_MSG_FUNDS_REVOKED):
         tv.release(cf.flip, {"from": addrs.INVESTOR})
 
-    sleepTime = cliff
-    chain.sleep(sleepTime)
+    st_sleepTime = cliff
+    chain.sleep(st_sleepTime)
 
     # In option B, once revoked there is no way to release any funds
     with reverts(REV_MSG_FUNDS_REVOKED):
@@ -141,16 +141,16 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
 
 
 @given(
-    amount=strategy("uint256", min_value=MIN_STAKE, max_value=MAX_TEST_STAKE),
+    st_amount=strategy("uint256", min_value=MIN_STAKE, max_value=MAX_TEST_STAKE),
     rewards=strategy("uint256", max_value=MAX_TEST_STAKE),
 )
 def test_retrieve_revoked_funds_and_rewards(
-    addrs, cf, tokenVestingStaking, amount, rewards
+    addrs, cf, tokenVestingStaking, st_amount, rewards
 ):
     tv, start, cliff, end, total = tokenVestingStaking
 
-    cf.flip.approve(cf.stakeManager.address, amount, {"from": addrs.INVESTOR})
-    tx = tv.stake(1, amount, {"from": addrs.INVESTOR})
+    cf.flip.approve(cf.stakeManager.address, st_amount, {"from": addrs.INVESTOR})
+    tx = tv.stake(1, st_amount, {"from": addrs.INVESTOR})
     tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
     assert cf.flip.balanceOf(tv) == 0
@@ -160,9 +160,9 @@ def test_retrieve_revoked_funds_and_rewards(
 
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, 0)
 
-    # Mimic remaining stake amount unstaked
-    cf.flip.transfer(tv, amount, {"from": addrs.DEPLOYER})
-    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, amount)
+    # Mimic remaining stake st_amount unstaked
+    cf.flip.transfer(tv, st_amount, {"from": addrs.DEPLOYER})
+    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, st_amount)
 
     # Mimic rewards
     cf.flip.transfer(tv, rewards, {"from": addrs.DEPLOYER})

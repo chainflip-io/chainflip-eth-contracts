@@ -6,17 +6,17 @@ from brownie.test import given, strategy
 
 
 @given(
-    whitelist=strategy("address[]", unique=True),
+    st_whitelist=strategy("address[]", unique=True),
 )
-def test_setCanConsumeKeyNonce(a, KeyManager, Vault, StakeManager, FLIP, whitelist):
+def test_setCanConsumeKeyNonce(a, KeyManager, Vault, StakeManager, FLIP, st_whitelist):
 
     cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
-    whitelist = whitelist + [cf.keyManager]
-    cf.keyManager.setCanConsumeKeyNonce(whitelist)
-    for addr in whitelist:
+    st_whitelist = st_whitelist + [cf.keyManager]
+    cf.keyManager.setCanConsumeKeyNonce(st_whitelist)
+    for addr in st_whitelist:
         assert cf.keyManager.canConsumeKeyNonce(addr) == True
 
-    assert cf.keyManager.getNumberWhitelistedAddresses() == len(whitelist)
+    assert cf.keyManager.getNumberst_whitelistedAddresses() == len(st_whitelist)
 
 
 def test_setCanConsumeKeyNonce_rev_duplicate(a, KeyManager, Vault, StakeManager, FLIP):

@@ -3,16 +3,17 @@ from brownie import reverts, web3, history
 from brownie.test import given, strategy
 from random import choices
 from utils import *
+from shared_tests import *
 
 
 @given(
-    fetchAmounts=strategy(
+    st_fetchAmounts=strategy(
         "uint[]", max_value=TEST_AMNT, max_length=int(INIT_TOKEN_SUPPLY / TEST_AMNT)
     ),
-    fetchSwapIDs=strategy("bytes32[]", unique=True),
-    tranRecipients=strategy("address[]", unique=True),
-    tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    sender=strategy("address"),
+    st_fetchSwapIDs=strategy("bytes32[]", unique=True),
+    st_tranRecipients=strategy("address[]", unique=True),
+    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
+    st_sender=strategy("address"),
 )
 def test_allBatch(
     cf,
@@ -20,23 +21,23 @@ def test_allBatch(
     token2,
     DepositToken,
     DepositEth,
-    fetchAmounts,
-    fetchSwapIDs,
-    tranRecipients,
-    tranAmounts,
-    sender,
+    st_fetchAmounts,
+    st_fetchSwapIDs,
+    st_tranRecipients,
+    st_tranAmounts,
+    st_sender,
 ):
     # Sort out deposits first so enough can be sent to the create2 addresses
-    fetchMinLen = trimToShortest([fetchAmounts, fetchSwapIDs])
+    fetchMinLen = trimToShortest([st_fetchAmounts, st_fetchSwapIDs])
     tokensList = [ETH_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=fetchMinLen)
     fetchTotals = {
-        tok: sum([fetchAmounts[i] for i, x in enumerate(fetchTokens) if x == tok])
+        tok: sum([st_fetchAmounts[i] for i, x in enumerate(fetchTokens) if x == tok])
         for tok in tokensList
     }
 
     # Transfer tokens to the deposit addresses
-    for am, id, tok in zip(fetchAmounts, fetchSwapIDs, fetchTokens):
+    for am, id, tok in zip(st_fetchAmounts, st_fetchSwapIDs, fetchTokens):
         # Get the address to deposit to and deposit
         if tok == ETH_ADDR:
             depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositEth, "")
@@ -52,11 +53,11 @@ def test_allBatch(
     assert token2.balanceOf(cf.vault) == 0
 
     # Transfers
-    tranMinLen = trimToShortest([tranRecipients, tranAmounts])
+    tranMinLen = trimToShortest([st_tranRecipients, st_tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen)
 
     tranTotals = {
-        tok: sum([tranAmounts[i] for i, x in enumerate(tranTokens) if x == tok])
+        tok: sum([st_tranAmounts[i] for i, x in enumerate(tranTokens) if x == tok])
         for tok in tokensList
     }
     # Need to know which index that ETH transfers start to fail since they won't revert the tx, but won't send the expected amount
@@ -64,225 +65,167 @@ def test_allBatch(
     validEthIdxs = []
     for i in range(len(tranTokens)):
         if tranTokens[i] == ETH_ADDR:
-            if cumulEthTran + tranAmounts[i] <= fetchTotals[ETH_ADDR]:
+            if cumulEthTran + st_tranAmounts[i] <= fetchTotals[ETH_ADDR]:
                 validEthIdxs.append(i)
-                cumulEthTran += tranAmounts[i]
+                cumulEthTran += st_tranAmounts[i]
     tranTotals[ETH_ADDR] = sum(
         [
-            tranAmounts[i]
+            st_tranAmounts[i]
             for i, x in enumerate(tranTokens)
             if x == ETH_ADDR and i in validEthIdxs
         ]
     )
 
-    ethBals = [web3.eth.get_balance(str(recip)) for recip in tranRecipients]
-    tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
-    token2Bals = [token2.balanceOf(recip) for recip in tranRecipients]
+    ethBals = [web3.eth.get_balance(str(recip)) for recip in st_tranRecipients]
+    tokenBals = [token.balanceOf(recip) for recip in st_tranRecipients]
+    token2Bals = [token2.balanceOf(recip) for recip in st_tranRecipients]
 
-    # Account for gas expenditure if sender is in transRecipients - storing initial transaction number
-    if sender in tranRecipients:
-        iniTransactionNumberSender = len(history.filter(sender=sender))
+    # Account for gas expenditure if st_sender is in transRecipients - storing initial transaction number
+    if st_sender in st_tranRecipients:
+        iniTransactionNumberst_sender = len(history.filter(sender=st_sender))
 
-    callDataNoSig = cf.vault.allBatch.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        fetchSwapIDs,
-        fetchTokens,
-        tranTokens,
-        tranRecipients,
-        tranAmounts,
-    )
-
+    args = (st_fetchSwapIDs, fetchTokens, tranTokens, st_tranRecipients, st_tranAmounts)
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            cf.vault.allBatch(
-                AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-                fetchSwapIDs,
-                fetchTokens,
-                tranTokens,
-                tranRecipients,
-                tranAmounts,
-                {"from": sender},
-            )
+            signed_call_aggSigner(cf, cf.vault.allBatch, *args, st_sender=st_sender)
+
     else:
-        # Why the F is Alice being paid to make this transaction when the amounts are small?
-        balanceBefore = sender.balance()
-        tx = cf.vault.allBatch(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            fetchSwapIDs,
-            fetchTokens,
-            tranTokens,
-            tranRecipients,
-            tranAmounts,
-            {"from": sender},
-        )
+        signed_call_aggSigner(cf, cf.vault.allBatch, *args, st_sender=st_sender)
 
         assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
 
-        for i in range(len(tranRecipients)):
+        for i in range(len(st_tranRecipients)):
             if tranTokens[i] == ETH_ADDR:
                 if i in validEthIdxs:
-                    finalEthBals = ethBals[i] + tranAmounts[i]
-                    # Account for gas expenditure if sender is in transRecipients
-                    if tranRecipients[i] == sender:
+                    finalEthBals = ethBals[i] + st_tranAmounts[i]
+                    # Account for gas expenditure if st_sender is in transRecipients
+                    if st_tranRecipients[i] == st_sender:
                         finalEthBals -= calculateGasSpentByAddress(
-                            tranRecipients[i], iniTransactionNumberSender
+                            st_tranRecipients[i], iniTransactionNumberst_sender
                         )
-                    assert web3.eth.get_balance(str(tranRecipients[i])) == finalEthBals
+                    assert (
+                        web3.eth.get_balance(str(st_tranRecipients[i])) == finalEthBals
+                    )
             elif tranTokens[i] == token:
                 assert (
-                    token.balanceOf(tranRecipients[i]) == tokenBals[i] + tranAmounts[i]
+                    token.balanceOf(st_tranRecipients[i])
+                    == tokenBals[i] + st_tranAmounts[i]
                 )
             elif tranTokens[i] == token2:
                 assert (
-                    token2.balanceOf(tranRecipients[i])
-                    == token2Bals[i] + tranAmounts[i]
+                    token2.balanceOf(st_tranRecipients[i])
+                    == token2Bals[i] + st_tranAmounts[i]
                 )
             else:
                 assert False, "Panic"
 
 
 @given(
-    fetchSwapIDs=strategy("bytes32[]"),
-    tranRecipients=strategy("address[]", unique=True),
-    tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    sender=strategy("address"),
+    st_fetchSwapIDs=strategy("bytes32[]"),
+    st_tranRecipients=strategy("address[]", unique=True),
+    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
+    st_sender=strategy("address"),
     randK=strategy("uint", min_value=1, max_value=100),
 )
 def test_allBatch_rev_fetch_array_length(
     cf,
     token,
     token2,
-    DepositToken,
-    DepositEth,
-    fetchSwapIDs,
-    tranRecipients,
-    tranAmounts,
-    sender,
+    st_fetchSwapIDs,
+    st_tranRecipients,
+    st_tranAmounts,
+    st_sender,
     randK,
 ):
     # Make sure the lengths are always different somewhere
     tokensList = [ETH_ADDR, token, token2]
-    fetchTokens = choices(tokensList, k=len(fetchSwapIDs) + randK)
+    fetchTokens = choices(tokensList, k=len(st_fetchSwapIDs) + randK)
 
-    tranMinLen = trimToShortest([tranRecipients, tranAmounts])
+    tranMinLen = trimToShortest([st_tranRecipients, st_tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen)
 
-    callDataNoSig = cf.vault.allBatch.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        fetchSwapIDs,
-        fetchTokens,
-        tranTokens,
-        tranRecipients,
-        tranAmounts,
-    )
-
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.allBatch(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            fetchSwapIDs,
+        args = (
+            st_fetchSwapIDs,
             fetchTokens,
             tranTokens,
-            tranRecipients,
-            tranAmounts,
-            {"from": sender},
+            st_tranRecipients,
+            st_tranAmounts,
         )
+        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
 
 
 @given(
-    fetchSwapIDs=strategy("bytes32[]"),
-    tranRecipients=strategy("address[]", unique=True),
-    tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    sender=strategy("address"),
+    st_fetchSwapIDs=strategy("bytes32[]"),
+    st_tranRecipients=strategy("address[]", unique=True),
+    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
+    st_sender=strategy("address"),
     randK=strategy("uint", min_value=1, max_value=100),
 )
 def test_allBatch_rev_transfer_tokenArray_length(
     cf,
     token,
     token2,
-    DepositToken,
-    DepositEth,
-    fetchSwapIDs,
-    tranRecipients,
-    tranAmounts,
-    sender,
+    st_fetchSwapIDs,
+    st_tranRecipients,
+    st_tranAmounts,
+    st_sender,
     randK,
 ):
     # Make sure the lengths are always different somewhere
     tokensList = [ETH_ADDR, token, token2]
-    fetchTokens = choices(tokensList, k=len(fetchSwapIDs))
+    fetchTokens = choices(tokensList, k=len(st_fetchSwapIDs))
 
-    tranMinLen = trimToShortest([tranRecipients, tranAmounts])
+    tranMinLen = trimToShortest([st_tranRecipients, st_tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen + randK)
 
-    callDataNoSig = cf.vault.allBatch.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        fetchSwapIDs,
-        fetchTokens,
-        tranTokens,
-        tranRecipients,
-        tranAmounts,
-    )
-
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.allBatch(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            fetchSwapIDs,
+        args = (
+            st_fetchSwapIDs,
             fetchTokens,
             tranTokens,
-            tranRecipients,
-            tranAmounts,
-            {"from": sender},
+            st_tranRecipients,
+            st_tranAmounts,
         )
+        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
 
 
 @given(
-    fetchSwapIDs=strategy("bytes32[]"),
-    tranRecipients=strategy("address[]", unique=True),
-    tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    sender=strategy("address"),
+    st_fetchSwapIDs=strategy("bytes32[]"),
+    st_tranRecipients=strategy("address[]", unique=True),
+    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
+    st_sender=strategy("address"),
     randK=strategy("uint", min_value=1, max_value=100),
 )
 def test_allBatch_rev_transfer_amountsArray_length(
     cf,
     token,
     token2,
-    DepositToken,
-    DepositEth,
-    fetchSwapIDs,
-    tranRecipients,
-    tranAmounts,
-    sender,
+    st_fetchSwapIDs,
+    st_tranRecipients,
+    st_tranAmounts,
+    st_sender,
     randK,
 ):
     # Make sure the lengths are always different somewhere
     tokensList = [ETH_ADDR, token, token2]
-    fetchTokens = choices(tokensList, k=len(fetchSwapIDs))
+    fetchTokens = choices(tokensList, k=len(st_fetchSwapIDs))
 
-    tranTokens = choices(tokensList, k=len(tranRecipients))
-    tranAmountsModif = choices(tranAmounts, k=len(tranRecipients) + randK)
-
-    callDataNoSig = cf.vault.allBatch.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        fetchSwapIDs,
-        fetchTokens,
-        tranTokens,
-        tranRecipients,
-        tranAmountsModif,
-    )
+    tranTokens = choices(tokensList, k=len(st_tranRecipients))
+    st_tranAmountsModif = choices(st_tranAmounts, k=len(st_tranRecipients) + randK)
 
     with reverts(REV_MSG_V_ARR_LEN):
-        cf.vault.allBatch(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            fetchSwapIDs,
+        args = (
+            st_fetchSwapIDs,
             fetchTokens,
             tranTokens,
-            tranRecipients,
-            tranAmountsModif,
-            {"from": sender},
+            st_tranRecipients,
+            st_tranAmountsModif,
         )
+        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
 
 
 def test_allBatch_rev_msgHash(cf):

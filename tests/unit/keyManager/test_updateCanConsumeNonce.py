@@ -6,20 +6,22 @@ from brownie.test import given, strategy
 
 
 @given(
-    currentAddrs=strategy("address[]", unique=False),
-    newAddrs=strategy("address[]", unique=False),
+    st_currentAddrs=strategy("address[]", unique=False),
+    st_newAddrs=strategy("address[]", unique=False),
     st_sender=strategy("address"),
 )
-def test_updateCanConsumeKeyNonce_rev_length(a, cf, currentAddrs, newAddrs, st_sender):
+def test_updateCanConsumeKeyNonce_rev_length(
+    a, cf, st_currentAddrs, st_newAddrs, st_sender
+):
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
 
-    if len(currentAddrs) != cf.keyManager.getNumberWhitelistedAddresses():
+    if len(st_currentAddrs) != cf.keyManager.getNumberWhitelistedAddresses():
         with reverts(REV_MSG_LENGTH):
             signed_call_aggSigner(
                 cf,
                 cf.keyManager.updateCanConsumeKeyNonce,
-                currentAddrs,
-                newAddrs,
+                st_currentAddrs,
+                st_newAddrs,
                 sender=st_sender,
             )
 
@@ -30,20 +32,20 @@ def test_updateCanConsumeKeyNonce_rev_length(a, cf, currentAddrs, newAddrs, st_s
             signed_call_aggSigner(
                 cf,
                 cf.keyManager.updateCanConsumeKeyNonce,
-                currentAddrs,
-                newAddrs,
+                st_currentAddrs,
+                st_newAddrs,
                 sender=st_sender,
             )
 
 
 @given(
-    newAddrs=strategy("address[]"),
+    st_newAddrs=strategy("address[]"),
     st_sender=strategy("address"),
 )
-def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, newAddrs, st_sender):
+def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, st_newAddrs, st_sender):
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
 
-    unique = len(set(newAddrs)) == len(newAddrs)
+    unique = len(set(st_newAddrs)) == len(st_newAddrs)
 
     if unique == False:
         with reverts(REV_MSG_DUPLICATE):
@@ -51,76 +53,78 @@ def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, newAddrs, st_sender):
                 cf,
                 cf.keyManager.updateCanConsumeKeyNonce,
                 cf.whitelisted,
-                newAddrs,
+                st_newAddrs,
                 sender=st_sender,
             )
 
     else:
-        newAddrs = newAddrs + [cf.keyManager]
+        st_newAddrs = st_newAddrs + [cf.keyManager]
         signed_call_aggSigner(
             cf,
             cf.keyManager.updateCanConsumeKeyNonce,
             cf.whitelisted,
-            newAddrs,
+            st_newAddrs,
             sender=st_sender,
         )
 
         # Removed previous whitelisted addresses
         for addr in cf.whitelisted:
-            if addr not in newAddrs:
+            if addr not in st_newAddrs:
                 assert cf.keyManager.canConsumeKeyNonce(addr) == False
 
         # Whitelisted new addresses
-        for addr in newAddrs:
+        for addr in st_newAddrs:
             assert cf.keyManager.canConsumeKeyNonce(addr) == True
 
-        assert cf.keyManager.getNumberWhitelistedAddresses() == len(newAddrs)
+        assert cf.keyManager.getNumberWhitelistedAddresses() == len(st_newAddrs)
 
 
 @given(
-    addrsList1=strategy("address[]", unique=True),
-    addrsList2=strategy("address[]", unique=True),
+    st_addrsList1=strategy("address[]", unique=True),
+    st_addrsList2=strategy("address[]", unique=True),
     st_sender=strategy("address"),
 )
-def test_updateCanConsumeKeyNonce_multiple(a, cf, addrsList1, addrsList2, st_sender):
+def test_updateCanConsumeKeyNonce_multiple(
+    a, cf, st_addrsList1, st_addrsList2, st_sender
+):
     # Add the keyManager address to the whitelist so it can keep being updated
-    if cf.keyManager.address not in addrsList1:
-        addrsList1 += [cf.keyManager.address]
-    if cf.keyManager.address not in addrsList2:
-        addrsList2 += [cf.keyManager.address]
+    if cf.keyManager.address not in st_addrsList1:
+        st_addrsList1 += [cf.keyManager.address]
+    if cf.keyManager.address not in st_addrsList2:
+        st_addrsList2 += [cf.keyManager.address]
 
-    listAddresses = [addrsList1, addrsList2, addrsList2, addrsList1]
-    currentAddrs = cf.whitelisted
+    listAddresses = [st_addrsList1, st_addrsList2, st_addrsList2, st_addrsList1]
+    st_currentAddrs = cf.whitelisted
 
-    for newAddrs in listAddresses:
+    for st_newAddrs in listAddresses:
         signed_call_aggSigner(
             cf,
             cf.keyManager.updateCanConsumeKeyNonce,
-            currentAddrs,
-            newAddrs,
+            st_currentAddrs,
+            st_newAddrs,
             sender=st_sender,
         )
 
         # Removed previous whitelisted addresses that are not whitelisted again
-        for addr in currentAddrs:
-            if addr not in newAddrs:
+        for addr in st_currentAddrs:
+            if addr not in st_newAddrs:
                 assert cf.keyManager.canConsumeKeyNonce(addr) == False
 
         # Whitelisted new addresses
-        for addr in newAddrs:
+        for addr in st_newAddrs:
             assert cf.keyManager.canConsumeKeyNonce(addr) == True
 
-        assert cf.keyManager.getNumberWhitelistedAddresses() == len(newAddrs)
-        currentAddrs = newAddrs
+        assert cf.keyManager.getNumberWhitelistedAddresses() == len(st_newAddrs)
+        st_currentAddrs = st_newAddrs
 
 
 def test_updateCanConsumeKeyNonce_rev_noKeyManager(a, cf):
 
     # Using [:] to create a copy of the list (instead of reference)
-    newAddrs = cf.whitelisted[:]
-    newAddrs.remove(cf.keyManager)
+    st_newAddrs = cf.whitelisted[:]
+    st_newAddrs.remove(cf.keyManager)
 
     with reverts(REV_MSG_KEYMANAGER_WHITELIST):
         signed_call_aggSigner(
-            cf, cf.keyManager.updateCanConsumeKeyNonce, cf.whitelisted, newAddrs
+            cf, cf.keyManager.updateCanConsumeKeyNonce, cf.whitelisted, st_newAddrs
         )

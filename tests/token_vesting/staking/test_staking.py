@@ -4,39 +4,39 @@ from brownie.test import given, strategy
 
 
 @given(
-    nodeID=strategy("uint", exclude=0),
-    amount=strategy("uint256", max_value=MAX_TEST_STAKE),
+    st_nodeID=strategy("uint", exclude=0),
+    st_amount=strategy("uint256", max_value=MAX_TEST_STAKE),
 )
-def test_stake_nonstakable(addrs, tokenVestingNoStaking, nodeID, amount):
+def test_stake_nonstakable(addrs, tokenVestingNoStaking, st_nodeID, st_amount):
 
     tv, start, cliff, end, total = tokenVestingNoStaking
 
-    nodeID = web3.toHex(nodeID)
+    st_nodeID = web3.toHex(st_nodeID)
 
     with reverts(REV_MSG_CANNOT_STAKE):
-        tx = tv.stake(nodeID, amount, {"from": addrs.INVESTOR})
+        tx = tv.stake(st_nodeID, st_amount, {"from": addrs.INVESTOR})
 
 
 @given(
-    nodeID=strategy("uint", exclude=0),
-    amount=strategy("uint256", max_value=MAX_TEST_STAKE * 2),
+    st_nodeID=strategy("uint", exclude=0),
+    st_amount=strategy("uint256", max_value=MAX_TEST_STAKE * 2),
 )
-def test_stake(addrs, tokenVestingStaking, nodeID, amount, cf):
+def test_stake(addrs, tokenVestingStaking, st_nodeID, st_amount, cf):
 
     tv, start, cliff, end, total = tokenVestingStaking
 
-    nodeID = web3.toHex(nodeID)
+    st_nodeID = web3.toHex(st_nodeID)
 
-    if amount < MIN_STAKE:
+    if st_amount < MIN_STAKE:
         with reverts(REV_MSG_MIN_STAKE):
-            tx = tv.stake(nodeID, amount, {"from": addrs.INVESTOR})
-    elif amount > cf.flip.balanceOf(tv):
-        with reverts("ERC20: transfer amount exceeds balance"):
-            tx = tv.stake(nodeID, amount, {"from": addrs.INVESTOR})
+            tx = tv.stake(st_nodeID, st_amount, {"from": addrs.INVESTOR})
+    elif st_amount > cf.flip.balanceOf(tv):
+        with reverts("ERC20: transfer st_amount exceeds balance"):
+            tx = tv.stake(st_nodeID, st_amount, {"from": addrs.INVESTOR})
     else:
-        tx = tv.stake(nodeID, amount, {"from": addrs.INVESTOR})
+        tx = tv.stake(st_nodeID, st_amount, {"from": addrs.INVESTOR})
 
-        assert tx.events["Staked"][0].values() == (nodeID, amount, tv, tv)
+        assert tx.events["Staked"][0].values() == (st_nodeID, st_amount, tv, tv)
 
 
 def test_stake_rev_beneficiary(a, addrs, tokenVestingStaking):
