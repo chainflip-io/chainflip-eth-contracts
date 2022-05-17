@@ -13,20 +13,6 @@ env:
   FORCE_COLOR: 1
 
 jobs:
-  test-stateless:
-    runs-on: self-hosted
-    timeout-minutes: ${{ inputs.timeout_minutes }}
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test --network hardhat --stateful false
-
   test:
     runs-on: self-hosted
     timeout-minutes: ${{ inputs.timeout_minutes }}

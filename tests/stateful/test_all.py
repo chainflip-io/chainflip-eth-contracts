@@ -2015,90 +2015,18 @@ def test_all(
 
                 self.currentWhitelist = toWhitelist.copy()
 
-                # Vault can now validate and fetch but it has zero balance so it can't transfer
-                callDataNoSig = newVault.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                tx = newVault.transfer(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    ETH_ADDR,
-                    st_sender,
-                    st_vault_transfer_amount,
-                )
-                assert tx.events["TransferFailed"][0].values() == [
-                    st_sender,
-                    st_vault_transfer_amount,
-                    web3.toHex(0),
-                ]
-
-                # Transfer from oldVault to new Vault - unclear if we want to transfer all the ETH balance
-                startBalVault = self.v.balance()
-                assert startBalVault >= st_vault_transfer_amount
-                startBalRecipient = newVault.balance()
-
-                callDataNoSig = self.v.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
-                )
-                self.v.transfer(
-                    signer.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
-                )
-
-                assert self.v.balance() - startBalVault == -st_vault_transfer_amount
-                assert (
-                    newVault.balance() - startBalRecipient == st_vault_transfer_amount
-                )
-
                 chain.sleep(st_sleep_time)
 
-                # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
-                startBalVault = self.v.balance()
-                startBalRecipient = newVault.balance()
-
-                if st_vault_transfer_amount > startBalVault:
-                    print(
-                        "        TRANSF_FAIL rule_upgrade_vault",
-                        st_sender,
-                        st_vault_transfer_amount,
-                    )
-                    callDataNoSig = self.v.transfer.encode_input(
-                        agg_null_sig(self.km.address, chain.id),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    tx = self.v.transfer(
-                        signer.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        ETH_ADDR,
-                        newVault,
-                        st_vault_transfer_amount,
-                    )
-                    assert tx.events["TransferFailed"][0].values() == [
-                        newVault.address,
-                        st_vault_transfer_amount,
-                        web3.toHex(0),
-                    ]
+                # Transfer all the funds (ETH and other tokens) to new Vault and dewhitelist
                 print(
                     "                    rule_upgrade_vault",
                     st_sender,
-                    st_vault_transfer_amount,
+                    iniEthBalance,
+                    initTokenABalance,
+                    iniTokenBBalance,
                 )
 
-                iniEthBalance = startBalVault
+                iniEthBalance = self.v.balance()
                 initTokenABalance = self.tokenA.balanceOf(self.v)
                 iniTokenBBalance = self.tokenB.balanceOf(self.v)
 
@@ -2661,16 +2589,16 @@ def test_all(
         def _updateBalancesOnUpgrade(self, oldContract, newContract):
             self._addNewAddress(newContract)
 
-            self.ethBals[newContract] = self.ethBals[oldContract]
+            self.ethBals[newContract] = self.ethBals[:][oldContract]
             self.ethBals[oldContract] = 0
 
-            self.tokenABals[newContract] = self.tokenABals[oldContract]
+            self.tokenABals[newContract] = self.tokenABals[:][oldContract]
             self.tokenABals[oldContract] = 0
 
-            self.tokenBBals[newContract] = self.tokenBBals[oldContract]
+            self.tokenBBals[newContract] = self.tokenBBals[:][oldContract]
             self.tokenBBals[oldContract] = 0
 
-            self.flipBals[newContract] = self.flipBals[oldContract]
+            self.flipBals[newContract] = self.flipBals[:][oldContract]
             self.flipBals[oldContract] = 0
 
         # Update balances when a contract has been upgraded
