@@ -25,7 +25,7 @@ jobs:
     - run: npm install
     - run: echo /root/.local/bin >> $GITHUB_PATH
     - run: poetry install --quiet
-    - run: poetry run brownie --network hardhat --stateful false
+    - run: poetry run brownie test --network hardhat --stateful false
 
   test:
     runs-on: self-hosted
