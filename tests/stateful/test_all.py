@@ -2017,7 +2017,6 @@ def test_all(
 
                 chain.sleep(st_sleep_time)
 
-
                 iniEthBalance = self.v.balance()
                 initTokenABalance = self.tokenA.balanceOf(self.v)
                 iniTokenBBalance = self.tokenB.balanceOf(self.v)
