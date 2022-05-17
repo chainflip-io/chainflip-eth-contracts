@@ -16,8 +16,8 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
         cf.DEPLOYER.deploy(
             FLIP,
             0,
-            cf.st_numGenesisValidators,
-            cf.st_genesisStake,
+            cf.numGenesisValidators,
+            cf.genesisStake,
             cf.stakeManager.address,
             cf.keyManager,
         )
@@ -26,8 +26,8 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
         cf.DEPLOYER.deploy(
             FLIP,
             INIT_SUPPLY,
-            cf.st_numGenesisValidators,
-            cf.st_genesisStake,
+            cf.numGenesisValidators,
+            cf.genesisStake,
             ZERO_ADDR,
             cf.keyManager,
         )
@@ -36,8 +36,8 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
         cf.DEPLOYER.deploy(
             FLIP,
             INIT_SUPPLY,
-            cf.st_numGenesisValidators,
-            cf.st_genesisStake,
+            cf.numGenesisValidators,
+            cf.genesisStake,
             cf.stakeManager.address,
             ZERO_ADDR,
         )

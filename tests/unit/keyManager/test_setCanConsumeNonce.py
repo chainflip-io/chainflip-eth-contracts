@@ -16,7 +16,7 @@ def test_setCanConsumeKeyNonce(a, KeyManager, Vault, StakeManager, FLIP, st_whit
     for addr in st_whitelist:
         assert cf.keyManager.canConsumeKeyNonce(addr) == True
 
-    assert cf.keyManager.getNumberst_whitelistedAddresses() == len(st_whitelist)
+    assert cf.keyManager.getNumberWhitelistedAddresses() == len(st_whitelist)
 
 
 def test_setCanConsumeKeyNonce_rev_duplicate(a, KeyManager, Vault, StakeManager, FLIP):
