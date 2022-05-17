@@ -2133,26 +2133,26 @@ def test_all(
                 self._updateBalancesOnUpgrade(self.v, newVault)
 
                 # Dewhitelist old Vault
-                toWhitelist = self.currentWhitelist.copy()
-                toWhitelist.remove(self.v)
+                toWhitelistFinal = self.currentWhitelist.copy()
+                toWhitelistFinal.remove(self.v)
 
                 # UpdateCanConsumeKeyNonce
                 callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
                     agg_null_sig(self.km.address, chain.id),
                     self.currentWhitelist,
-                    toWhitelist,
+                    toWhitelistFinal,
                 )
                 tx = self.km.updateCanConsumeKeyNonce(
                     signer.getSigDataWithNonces(
                         callDataNoSig, nonces, AGG, self.km.address
                     ),
                     self.currentWhitelist,
-                    toWhitelist,
+                    toWhitelistFinal,
                 )
 
                 self.v = newVault
                 self.lastValidateTime = tx.timestamp
-                self.currentWhitelist = toWhitelist
+                self.currentWhitelist = toWhitelistFinal
                 self.v_communityGuardDisabled = False
                 self.communityKey = self.communityKey
                 self.v_suspended = False
