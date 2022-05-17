@@ -19,15 +19,3 @@
 ## `nzKey(struct IShared.Key key)`
 
    Checks that the pubKeyX is populated
-
-## `refundGas()`
-
-   Refunds (almost all) the gas spend to call this function
-
-## `refundEth(address to, uint256 amount)` (external)
-
-No description
-
-## `Refunded(uint256 amount)`
-
-## `RefundFailed(address to, uint256 amount, uint256 currentBalance)`
