@@ -2589,16 +2589,16 @@ def test_all(
         def _updateBalancesOnUpgrade(self, oldContract, newContract):
             self._addNewAddress(newContract)
 
-            self.ethBals[newContract] = self.ethBals[:][oldContract]
+            self.ethBals[newContract] = self.ethBals.copy()[oldContract]
             self.ethBals[oldContract] = 0
 
-            self.tokenABals[newContract] = self.tokenABals[:][oldContract]
+            self.tokenABals[newContract] = self.tokenABals.copy()[oldContract]
             self.tokenABals[oldContract] = 0
 
-            self.tokenBBals[newContract] = self.tokenBBals[:][oldContract]
+            self.tokenBBals[newContract] = self.tokenBBals.copy()[oldContract]
             self.tokenBBals[oldContract] = 0
 
-            self.flipBals[newContract] = self.flipBals[:][oldContract]
+            self.flipBals[newContract] = self.flipBals.copy()[oldContract]
             self.flipBals[oldContract] = 0
 
         # Update balances when a contract has been upgraded
