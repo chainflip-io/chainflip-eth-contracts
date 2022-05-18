@@ -1,5 +1,8 @@
 name: Stateful Tests
-on: push
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   lint:
@@ -9,7 +12,7 @@ jobs:
   stateful-tests:
     name: Stateful Tests
     needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@test/add-stateful-govWithraw
+    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
     with:
       stateful: true
       timeout_minutes: 3600
