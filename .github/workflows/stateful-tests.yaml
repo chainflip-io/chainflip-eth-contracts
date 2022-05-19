@@ -13,7 +13,7 @@ jobs:
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
 
   stateful-test-all:
-    name: Stateful Tests
+    name: Stateful Test All
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -29,7 +29,7 @@ jobs:
     - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
 
   stateful-test-keyManager:
-    name: Stateful Tests
+    name: Stateful Key Manager Test
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -45,7 +45,7 @@ jobs:
     - run: poetry run brownie test tests/stateful/test_keyManager.py --network hardhat --stateful true
   
   stateful-test-vault:
-    name: Stateful Tests
+    name: Stateful Vault Test
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -61,7 +61,7 @@ jobs:
     - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful true
 
   stateful-test-stakeManager:
-    name: Stateful Tests
+    name: Stateful Stake Manager Test
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -77,7 +77,7 @@ jobs:
     - run: poetry run brownie test tests/stateful/test_stakeManager.py --network hardhat --stateful true
   
   stateful-test-upgradability:
-    name: Stateful Tests
+    name: Stateful Upgradability Test
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
