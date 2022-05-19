@@ -1,11 +1,8 @@
 name: Stateful Tests
-# on:
-#   push:
-#     branches:
-#       - master
-
-# For dev purposes
-on: push
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   lint:
