@@ -1,18 +1,94 @@
 name: Stateful Tests
-on:
-  push:
-    branches:
-      - master
+# on:
+#   push:
+#     branches:
+#       - master
+
+# For dev purposes
+on: push
 
 jobs:
   lint:
     name: Linting
     uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
 
-  stateful-tests:
+  stateful-test-all:
     name: Stateful Tests
     needs: lint
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.test.yaml@master
-    with:
-      stateful: true
-      timeout_minutes: 3600
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
+
+  stateful-test-keyManager:
+    name: Stateful Tests
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie test tests/stateful/test_keyManager.py --network hardhat --stateful true
+  
+  stateful-test-vault:
+    name: Stateful Tests
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful true
+
+  stateful-test-stakeManager:
+    name: Stateful Tests
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie test tests/stateful/test_stakeManager.py --network hardhat --stateful true
+  
+  stateful-test-upgradability:
+    name: Stateful Tests
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie test tests/stateful/test_upgradability.py --network hardhat --stateful true
+  
