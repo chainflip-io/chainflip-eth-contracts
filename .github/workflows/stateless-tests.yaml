@@ -21,7 +21,22 @@ jobs:
     - run: echo /root/.local/bin >> $GITHUB_PATH
     - run: poetry install --quiet
     - run: poetry run brownie test --network hardhat --stateful false
-    
+
+  store-artifacts:
+    name: Store artifacts
+    needs: stateless-tests
+    runs-on: self-hosted
+    timeout-minutes: 360
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+        cache: npm
+    - run: npm install
+    - run: echo /root/.local/bin >> $GITHUB_PATH
+    - run: poetry install --quiet
+    - run: poetry run brownie compile
     - run: |
         CONTRACT_ARTIFACTS=$(ls ./build/contracts | grep -v dependencies)
         while read contract; do
