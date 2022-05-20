@@ -6,86 +6,40 @@ on:
 
 jobs:
   lint:
-    name: Linting
-    uses: chainflip-io/chainflip-eth-contracts/.github/workflows/.lint.yaml@master
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.9.7"
+      - uses: snok/install-poetry@v1
+      - run: npm install
+      - run: npx solhint -w 0 'contracts/**/*.sol'
+      - run: poetry install --quiet
+      - run: poetry run black . --check
 
-  stateful-test-all:
-    name: Stateful Test All
+  stateful-tests:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
+    strategy:
+      matrix:
+        test:
+          [
+            test_all.py,
+            test_keyManager.py,
+            test_vault.py,
+            test_stakeManager.py,
+            test_upgradability.py,
+          ]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
-
-  stateful-test-keyManager:
-    name: Stateful Key Manager Test
-    needs: lint
-    runs-on: self-hosted
-    timeout-minutes: 3600
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_keyManager.py --network hardhat --stateful true
-  
-  stateful-test-vault:
-    name: Stateful Vault Test
-    needs: lint
-    runs-on: self-hosted
-    timeout-minutes: 3600
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful true
-
-  stateful-test-stakeManager:
-    name: Stateful Stake Manager Test
-    needs: lint
-    runs-on: self-hosted
-    timeout-minutes: 3600
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_stakeManager.py --network hardhat --stateful true
-  
-  stateful-test-upgradability:
-    name: Stateful Upgradability Test
-    needs: lint
-    runs-on: self-hosted
-    timeout-minutes: 3600
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14'
-        cache: npm
-    - run: npm install
-    - run: echo /root/.local/bin >> $GITHUB_PATH
-    - run: poetry install --quiet
-    - run: poetry run brownie test tests/stateful/test_upgradability.py --network hardhat --stateful true
-  
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: poetry run brownie test tests/stateful/${{ matrix.test }} --network hardhat --stateful true
