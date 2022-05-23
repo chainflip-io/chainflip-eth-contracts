@@ -5,15 +5,12 @@ from utils import *
 from shared_tests import *
 
 
-def test_setCommKeyWithAggKey(cfDeploy):
-    setCommKeyWithAggKey_test(cfDeploy)
+def test_setCommKeyWithAggKey(cf):
+    setCommKeyWithAggKey_test(cf)
 
 
-def test_setCommKeyWithAggKey_rev(cfDeploy):
+def test_setCommKeyWithAggKey_rev(cf):
     with reverts(REV_MSG_NZ_ADDR):
         signed_call_aggSigner(
-            cfDeploy,
-            cfDeploy.keyManager.setCommKeyWithAggKey,
-            ZERO_ADDR,
-            sender=cfDeploy.ALICE,
+            cf, cf.keyManager.setCommKeyWithAggKey, ZERO_ADDR, sender=cf.ALICE
         )

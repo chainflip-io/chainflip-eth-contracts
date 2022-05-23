@@ -36,59 +36,59 @@ def setMinStake_newGov(cfAW):
 
 
 # Check that updating the Governor Key in the KeyManager takes effect
-def test_setGovKeyWithAggKey_govWithdrawal(cfDeploy):
+def test_setGovKeyWithAggKey_govWithdrawal(cf):
     # Check that it passes the isGovernor check initially
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
 
-    setGovKeyWithAggKey_test(cfDeploy)
+    setGovKeyWithAggKey_test(cf)
 
     with reverts(REV_MSG_GOV_GOVERNOR):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
 
 
-def test_setGovKeyWithGovKey_govWithdrawal(cfDeploy):
+def test_setGovKeyWithGovKey_govWithdrawal(cf):
     # Check that it passes the isGovernor check initially
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
 
-    setGovKeyWithGovKey_test(cfDeploy)
+    setGovKeyWithGovKey_test(cf)
 
     with reverts(REV_MSG_GOV_GOVERNOR):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
 
 
 # Check that updating the Community Key in the KeyManager takes effect
-def test_setCommKeyWithAggKey_govWithdrawal(cfDeploy):
+def test_setCommKeyWithAggKey_govWithdrawal(cf):
     # Check that the community Guard is enabled
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
 
     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-        cfDeploy.vault.disableCommunityGuard({"from": cfDeploy.COMMUNITY_KEY_2})
+        cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY_2})
 
-    setCommKeyWithAggKey_test(cfDeploy)
+    setCommKeyWithAggKey_test(cf)
 
-    cfDeploy.vault.disableCommunityGuard({"from": cfDeploy.COMMUNITY_KEY_2})
+    cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY_2})
 
     # Check that it now passes the community Guard
     with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
 
 
 # Check that updating the Community Key in the KeyManager takes effect
-def test_setCommKeyWithCommKey_govWithdrawal(cfDeploy):
+def test_setCommKeyWithCommKey_govWithdrawal(cf):
     # Check that the community Guard is enabled
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
 
     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-        cfDeploy.vault.disableCommunityGuard({"from": cfDeploy.COMMUNITY_KEY_2})
+        cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY_2})
 
-    setCommKeyWithCommKey_test(cfDeploy)
+    setCommKeyWithCommKey_test(cf)
 
-    cfDeploy.vault.disableCommunityGuard({"from": cfDeploy.COMMUNITY_KEY_2})
+    cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY_2})
 
     # Check that it now passes the community Guard
     with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-        cfDeploy.vault.govWithdraw([ETH_ADDR], {"from": cfDeploy.GOVERNOR})
+        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})

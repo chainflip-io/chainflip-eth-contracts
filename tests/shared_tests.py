@@ -43,7 +43,7 @@ def transfer_eth(cf, vault, receiver, amount):
 
 
 def setAggKeyWithAggKey_test(cf):
-    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     tx = signed_call_aggSigner(
         cf,
@@ -51,7 +51,7 @@ def setAggKeyWithAggKey_test(cf):
         AGG_SIGNER_2.getPubData(),
         sender=cf.ALICE,
     )
-    checkCurrentKeys(cf, AGG_SIGNER_2.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_2.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     assert tx.events["AggKeySetByAggKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
@@ -72,13 +72,13 @@ def setKey_rev_newPubKeyX_test(cf):
 
 
 def setAggKeyWithGovKey_test(cf):
-    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     tx = cf.keyManager.setAggKeyWithGovKey(
         AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR}
     )
 
-    checkCurrentKeys(cf, AGG_SIGNER_2.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_2.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     assert tx.events["AggKeySetByGovKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
@@ -87,19 +87,19 @@ def setAggKeyWithGovKey_test(cf):
 
 
 def setGovKeyWithGovKey_test(cf):
-    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     tx = cf.keyManager.setGovKeyWithGovKey(cf.GOVERNOR_2, {"from": cf.GOVERNOR})
 
     checkCurrentKeys(
-        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR_2, cf.communityKey
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR_2, cf.COMMUNITY_KEY
     )
 
     assert tx.events["GovKeySetByGovKey"][0].values() == [cf.GOVERNOR, cf.GOVERNOR_2]
 
 
 def setGovKeyWithAggKey_test(cf):
-    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     tx = signed_call_aggSigner(
         cf,
@@ -108,14 +108,14 @@ def setGovKeyWithAggKey_test(cf):
     )
 
     checkCurrentKeys(
-        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR_2, cf.communityKey
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR_2, cf.COMMUNITY_KEY
     )
 
     assert tx.events["GovKeySetByAggKey"][0].values() == [cf.GOVERNOR, cf.GOVERNOR_2]
 
 
 def setCommKeyWithAggKey_test(cf):
-    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     tx = signed_call_aggSigner(
         cf,
@@ -124,7 +124,7 @@ def setCommKeyWithAggKey_test(cf):
     )
 
     checkCurrentKeys(
-        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey_2
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY_2
     )
 
     assert tx.events["CommKeySetByAggKey"][0].values() == [
@@ -134,14 +134,14 @@ def setCommKeyWithAggKey_test(cf):
 
 
 def setCommKeyWithCommKey_test(cf):
-    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
     tx = cf.keyManager.setCommKeyWithCommKey(
         cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY}
     )
 
     checkCurrentKeys(
-        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey_2
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY_2
     )
 
     assert tx.events["CommKeySetByCommKey"][0].values() == [

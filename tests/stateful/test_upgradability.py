@@ -69,7 +69,7 @@ def test_upgradability(
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = st_sender.deploy(
-                KeyManager, self.km.getAggregateKey(), st_sender, cf.communityKey
+                KeyManager, self.km.getAggregateKey(), st_sender, cf.COMMUNITY_KEY
             )
 
             keyManagerAddress = choice([newKeyManager, self.km])
@@ -225,7 +225,7 @@ def test_upgradability(
 
             self.v = newVault
             self.lastValidateTime = tx.timestamp
-            self.v_communityKey = self.communityKey
+            self.v_communityKey = self.COMMUNITY_KEY
             self.v_guard = False
             self.v_suspended = False
 
@@ -312,7 +312,7 @@ def test_upgradability(
             )
 
             self.sm = newStakeManager
-            self.sm_communityKey = self.communityKey
+            self.sm_communityKey = self.COMMUNITY_KEY
             self.sm_guard = False
             self.sm_suspended = False
 
