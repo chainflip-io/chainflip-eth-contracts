@@ -234,7 +234,7 @@ def test_vault(
                     st_eth_amounts,
                     st_sender,
                 )
-                with reverts():
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
                         self.km, self.v.allBatch, *args, sender=st_sender
                     )
@@ -329,7 +329,7 @@ def test_vault(
                     st_recip,
                     st_eth_amount,
                 )
-                with reverts():
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
                         self.km, self.v.transfer, *args, sender=st_sender
                     )

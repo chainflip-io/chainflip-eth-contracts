@@ -1,8 +1,5 @@
 name: Stateful Tests
-on:
-  push:
-    branches:
-      - master
+on: push
 
 jobs:
   lint:
@@ -23,16 +20,6 @@ jobs:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
-    strategy:
-      matrix:
-        test:
-          [
-            test_all.py,
-            test_keyManager.py,
-            test_vault.py,
-            test_stakeManager.py,
-            test_upgradability.py,
-          ]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -42,4 +29,34 @@ jobs:
       - run: npm install
       - run: echo /root/.local/bin >> $GITHUB_PATH
       - run: poetry install --quiet
-      - run: poetry run brownie test tests/stateful/${{ matrix.test }} --network hardhat --stateful true
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
+
+  stateful-tests-seed0:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 0
+
+  stateful-tests-seed1:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 1
