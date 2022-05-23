@@ -68,95 +68,81 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             currentWhitelistUnique = len(set(currentWhitelist)) == len(currentWhitelist)
             newWhitelistUnique = len(set(newWhitelist)) == len(newWhitelist)
 
+            args = (currentWhitelist, newWhitelist)
+
             if len(currentWhitelist) != self.km.getNumberWhitelistedAddresses():
-                print(
-                    "        REV_MSG_LENGTH rule_updateCanConsumeKeyNonce",
-                    st_sender,
-                    currentWhitelist,
-                    newWhitelist,
-                )
+                print("        REV_MSG_LENGTH rule_updateCanConsumeKeyNonce")
                 with reverts(REV_MSG_LENGTH):
-                    self._updateCanConsumeKeyNonce_sigNonce(
-                        currentWhitelist, newWhitelist, st_sender
+                    signed_calls_nonces(
+                        self.km,
+                        self.km.updateCanConsumeKeyNonce,
+                        *args,
+                        sender=st_sender,
+                        signer=self.keyIDToCurKeys[AGG],
                     )
             else:
                 # Check current whitelist
                 for address in currentWhitelist:
                     if not self.km.canConsumeKeyNonce(address):
                         print(
-                            "        REV_MSG_CANNOT_DEWHITELIST rule_updateCanConsumeKeyNonce",
-                            st_sender,
-                            currentWhitelist,
-                            newWhitelist,
+                            "        REV_MSG_CANNOT_DEWHITELIST rule_updateCanConsumeKeyNonce"
                         )
                         with reverts(REV_MSG_CANNOT_DEWHITELIST):
-                            self._updateCanConsumeKeyNonce_sigNonce(
-                                currentWhitelist, newWhitelist, st_sender
+                            signed_calls_nonces(
+                                self.km,
+                                self.km.updateCanConsumeKeyNonce,
+                                *args,
+                                sender=st_sender,
+                                signer=self.keyIDToCurKeys[AGG],
                             )
                         return
                 if not currentWhitelistUnique:
                     print(
-                        "        REV_MSG_CANNOT_DEWHITELIST rule_updateCanConsumeKeyNonce",
-                        st_sender,
-                        currentWhitelist,
-                        newWhitelist,
+                        "        REV_MSG_CANNOT_DEWHITELIST rule_updateCanConsumeKeyNonce"
                     )
                     with reverts(REV_MSG_CANNOT_DEWHITELIST):
-                        self._updateCanConsumeKeyNonce_sigNonce(
-                            currentWhitelist, newWhitelist, st_sender
+                        signed_calls_nonces(
+                            self.km,
+                            self.km.updateCanConsumeKeyNonce,
+                            *args,
+                            sender=st_sender,
+                            signer=self.keyIDToCurKeys[AGG],
                         )
-                    return
                 # Check new whitelist
-                if not newWhitelistUnique:
-                    print(
-                        "        REV_MSG_DUPLICATE rule_updateCanConsumeKeyNonce",
-                        st_sender,
-                        currentWhitelist,
-                        newWhitelist,
-                    )
+                elif not newWhitelistUnique:
+                    print("        REV_MSG_DUPLICATE rule_updateCanConsumeKeyNonce")
                     with reverts(REV_MSG_DUPLICATE):
-                        self._updateCanConsumeKeyNonce_sigNonce(
-                            currentWhitelist, newWhitelist, st_sender
+                        signed_calls_nonces(
+                            self.km,
+                            self.km.updateCanConsumeKeyNonce,
+                            *args,
+                            sender=st_sender,
+                            signer=self.keyIDToCurKeys[AGG],
                         )
                 else:
                     if not self.km in newWhitelist:
                         print(
-                            "        REV_MSG_KEYMANAGER_WHITELIST rule_updateCanConsumeKeyNonce",
-                            st_sender,
-                            currentWhitelist,
-                            newWhitelist,
+                            "        REV_MSG_KEYMANAGER_WHITELIST rule_updateCanConsumeKeyNonce"
                         )
                         with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-                            self._updateCanConsumeKeyNonce_sigNonce(
-                                currentWhitelist, newWhitelist, st_sender
+                            signed_calls_nonces(
+                                self.km,
+                                self.km.updateCanConsumeKeyNonce,
+                                *args,
+                                sender=st_sender,
+                                signer=self.keyIDToCurKeys[AGG],
                             )
                     else:
-                        print(
-                            "                    rule_updateCanConsumeKeyNonce",
-                            st_sender,
-                            currentWhitelist,
-                            newWhitelist,
-                        )
-                        tx = self._updateCanConsumeKeyNonce_sigNonce(
-                            currentWhitelist, newWhitelist, st_sender
+                        print("                    rule_updateCanConsumeKeyNonce")
+                        tx = signed_calls_nonces(
+                            self.km,
+                            self.km.updateCanConsumeKeyNonce,
+                            *args,
+                            sender=st_sender,
+                            signer=self.keyIDToCurKeys[AGG],
                         )
                         self.currentWhitelist = newWhitelist
                         self.lastValidateTime = tx.timestamp
-
-        def _updateCanConsumeKeyNonce_sigNonce(
-            self, currentWhitelist, newWhitelist, st_sender
-        ):
-            callDataNoSig = self.km.updateCanConsumeKeyNonce.encode_input(
-                agg_null_sig(self.km.address, chain.id), currentWhitelist, newWhitelist
-            )
-            return self.km.updateCanConsumeKeyNonce(
-                self.keyIDToCurKeys[AGG].getSigDataWithNonces(
-                    callDataNoSig, nonces, AGG, self.km.address
-                ),
-                currentWhitelist,
-                newWhitelist,
-                {"from": st_sender},
-            )
 
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
@@ -209,10 +195,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
 
         # Call setAggKeyWithAggKey with a random new key, signing key, and sender
         def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-            callDataNoSig = self.km.setAggKeyWithAggKey.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                self.allKeys[st_new_key_idx].getPubData(),
-            )
+
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
                 print(
                     f"                    {self.km.setAggKeyWithAggKey}",
@@ -220,12 +203,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                     st_sig_key_idx,
                     st_new_key_idx,
                 )
-                tx = self.km.setAggKeyWithAggKey(
-                    self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
+                tx = signed_calls_nonces(
+                    self.km,
+                    self.km.setAggKeyWithAggKey,
                     self.allKeys[st_new_key_idx].getPubData(),
-                    {"from": st_sender},
+                    signer=self.allKeys[st_sig_key_idx],
+                    sender=st_sender,
                 )
 
                 self.keyIDToCurKeys[AGG] = self.allKeys[st_new_key_idx]
@@ -238,12 +221,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         st_sig_key_idx,
                         st_new_key_idx,
                     )
-                    self.km.setAggKeyWithAggKey(
-                        self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.km.setAggKeyWithAggKey,
                         self.allKeys[st_new_key_idx].getPubData(),
-                        {"from": st_sender},
+                        signer=self.allKeys[st_sig_key_idx],
+                        sender=st_sender,
                     )
 
         # Call setGovKeyWithGovKey with a random new key - happens with low probability - 1/20
@@ -334,11 +317,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             self, st_sender, st_sig_key_idx, st_new_key_idx, st_addrs
         ):
             newGovKey = choice(st_addrs)
-
-            callDataNoSig = self.km.setGovKeyWithAggKey.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                newGovKey,
-            )
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
                 print(
                     f"                    {self.km.setGovKeyWithAggKey}",
@@ -346,12 +324,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                     st_sig_key_idx,
                     st_new_key_idx,
                 )
-                tx = self.km.setGovKeyWithAggKey(
-                    self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
+                tx = signed_calls_nonces(
+                    self.km,
+                    self.km.setGovKeyWithAggKey,
                     newGovKey,
-                    {"from": st_sender},
+                    sender=st_sender,
+                    signer=self.allKeys[st_sig_key_idx],
                 )
 
                 self.governor = newGovKey
@@ -364,12 +342,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         st_sig_key_idx,
                         st_new_key_idx,
                     )
-                    self.km.setGovKeyWithAggKey(
-                        self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.km.setGovKeyWithAggKey,
                         newGovKey,
-                        {"from": st_sender},
+                        sender=st_sender,
+                        signer=self.allKeys[st_sig_key_idx],
                     )
 
         # Call setCommKeyWithAggKey with a random new key, signing key, and sender
@@ -377,11 +355,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             self, st_sender, st_sig_key_idx, st_new_key_idx, st_addrs
         ):
             newCommKey = choice(st_addrs)
-
-            callDataNoSig = self.km.setCommKeyWithAggKey.encode_input(
-                agg_null_sig(self.km.address, chain.id),
-                newCommKey,
-            )
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
                 print(
                     f"                    {self.km.setCommKeyWithAggKey}",
@@ -389,12 +362,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                     st_sig_key_idx,
                     st_new_key_idx,
                 )
-                tx = self.km.setCommKeyWithAggKey(
-                    self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
+                tx = signed_calls_nonces(
+                    self.km,
+                    self.km.setCommKeyWithAggKey,
                     newCommKey,
-                    {"from": st_sender},
+                    sender=st_sender,
+                    signer=self.allKeys[st_sig_key_idx],
                 )
 
                 self.communityKey = newCommKey
@@ -407,12 +380,12 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         st_sig_key_idx,
                         st_new_key_idx,
                     )
-                    self.km.setCommKeyWithAggKey(
-                        self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.km.setCommKeyWithAggKey,
                         newCommKey,
-                        {"from": st_sender},
+                        sender=st_sender,
+                        signer=self.allKeys[st_sig_key_idx],
                     )
 
         # Check lastValidateTime after every tx

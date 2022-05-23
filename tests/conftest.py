@@ -26,7 +26,8 @@ def cf(a, cfDeploy):
 
     # It's a bit easier to not get mixed up with accounts if they're named
     # Can't define this in consts because `a` needs to be imported into the test
-    cf.DEPLOYER = a[0]
+    # cfDeploy.deployer == a[0]
+    cf.DEPLOYER = cfDeploy.deployer
     cf.FR_DEPLOYER = {"from": cf.DEPLOYER}
     cf.ALICE = a[1]
     cf.FR_ALICE = {"from": cf.ALICE}

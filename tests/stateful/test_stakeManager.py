@@ -4,6 +4,7 @@ from brownie.test import strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice
+from shared_tests import *
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -165,80 +166,81 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 st_staker,
                 getChainTime() + st_expiry_time_diff,
             )
-            callDataNoSig = self.sm.registerClaim.encode_input(
-                agg_null_sig(self.km.address, chain.id), *args
-            )
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _registerClaim")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.sm.registerClaim(
-                        st_signer_agg.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.sm.registerClaim,
                         *args,
-                        {"from": st_sender},
+                        signer=st_signer_agg,
+                        sender=st_sender,
                     )
+
             elif st_nodeID == 0:
                 print("        NODEID rule_registerClaim", *args)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.sm.registerClaim(
-                        st_signer_agg.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.sm.registerClaim,
                         *args,
-                        {"from": st_sender},
+                        signer=st_signer_agg,
+                        sender=st_sender,
                     )
 
             elif st_amount == 0:
                 print("        AMOUNT rule_registerClaim", *args)
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.registerClaim(
-                        st_signer_agg.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.sm.registerClaim,
                         *args,
-                        {"from": st_sender},
+                        signer=st_signer_agg,
+                        sender=st_sender,
                     )
+
             elif st_signer_agg != AGG_SIGNER_1:
                 print("        REV_MSG_SIG rule_registerClaim", *args)
                 with reverts(REV_MSG_SIG):
-                    self.sm.registerClaim(
-                        st_signer_agg.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.sm.registerClaim,
                         *args,
-                        {"from": st_sender},
+                        signer=st_signer_agg,
+                        sender=st_sender,
                     )
+
             elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
                 print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *args)
                 with reverts(REV_MSG_CLAIM_EXISTS):
-                    self.sm.registerClaim(
-                        st_signer_agg.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.sm.registerClaim,
                         *args,
-                        {"from": st_sender},
+                        signer=st_signer_agg,
+                        sender=st_sender,
                     )
+
             elif st_expiry_time_diff <= CLAIM_DELAY:
                 print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *args)
                 with reverts(REV_MSG_EXPIRY_TOO_SOON):
-                    self.sm.registerClaim(
-                        st_signer_agg.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.sm.registerClaim,
                         *args,
-                        {"from": st_sender},
+                        signer=st_signer_agg,
+                        sender=st_sender,
                     )
 
             else:
                 print("                    rule_registerClaim ", *args)
-                tx = self.sm.registerClaim(
-                    st_signer_agg.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
+                tx = signed_calls_nonces(
+                    self.km,
+                    self.sm.registerClaim,
                     *args,
-                    {"from": st_sender},
+                    signer=st_signer_agg,
+                    sender=st_sender,
                 )
 
                 self.pendingClaims[st_nodeID] = (
@@ -280,7 +282,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
-                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
                 self.flipBals[claim[1]] += claim[0]
                 self.flipBals[self.sm] -= claim[0]
@@ -302,7 +304,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     self.sm.setMinStake(st_minStake, {"from": st_sender})
             else:
                 print("                    rule_setMinstake", st_minStake, st_sender)
-                tx = self.sm.setMinStake(st_minStake, {"from": st_sender})
+                self.sm.setMinStake(st_minStake, {"from": st_sender})
 
                 self.minStake = st_minStake
 

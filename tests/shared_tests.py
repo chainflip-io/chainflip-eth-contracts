@@ -43,9 +43,7 @@ def transfer_eth(cf, vault, receiver, amount):
 
 
 def setAggKeyWithAggKey_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
     tx = signed_call_aggSigner(
         cf,
@@ -53,10 +51,8 @@ def setAggKeyWithAggKey_test(cf):
         AGG_SIGNER_2.getPubData(),
         sender=cf.ALICE,
     )
+    checkCurrentKeys(cf, AGG_SIGNER_2.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
     assert tx.events["AggKeySetByAggKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
         AGG_SIGNER_2.getPubDataWith0x(),
@@ -76,17 +72,13 @@ def setKey_rev_newPubKeyX_test(cf):
 
 
 def setAggKeyWithGovKey_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
     tx = cf.keyManager.setAggKeyWithGovKey(
         AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR}
     )
 
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(cf, AGG_SIGNER_2.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
     assert tx.events["AggKeySetByGovKey"][0].values() == [
         AGG_SIGNER_1.getPubDataWith0x(),
@@ -95,23 +87,19 @@ def setAggKeyWithGovKey_test(cf):
 
 
 def setGovKeyWithGovKey_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
     tx = cf.keyManager.setGovKeyWithGovKey(cf.GOVERNOR_2, {"from": cf.GOVERNOR})
 
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR_2
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR_2, cf.communityKey
+    )
 
     assert tx.events["GovKeySetByGovKey"][0].values() == [cf.GOVERNOR, cf.GOVERNOR_2]
 
 
 def setGovKeyWithAggKey_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
     tx = signed_call_aggSigner(
         cf,
@@ -119,17 +107,15 @@ def setGovKeyWithAggKey_test(cf):
         cf.GOVERNOR_2,
     )
 
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR_2
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR_2, cf.communityKey
+    )
 
     assert tx.events["GovKeySetByAggKey"][0].values() == [cf.GOVERNOR, cf.GOVERNOR_2]
 
 
 def setCommKeyWithAggKey_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
     tx = signed_call_aggSigner(
         cf,
@@ -137,9 +123,9 @@ def setCommKeyWithAggKey_test(cf):
         cf.COMMUNITY_KEY_2,
     )
 
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.COMMUNITY_KEY_2
+    checkCurrentKeys(
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey_2
+    )
 
     assert tx.events["CommKeySetByAggKey"][0].values() == [
         cf.COMMUNITY_KEY,
@@ -148,21 +134,26 @@ def setCommKeyWithAggKey_test(cf):
 
 
 def setCommKeyWithCommKey_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.communityKey
+    checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey)
 
     tx = cf.keyManager.setCommKeyWithCommKey(
         cf.COMMUNITY_KEY_2, {"from": cf.COMMUNITY_KEY}
     )
+
+    checkCurrentKeys(
+        cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.communityKey_2
+    )
+
     assert tx.events["CommKeySetByCommKey"][0].values() == [
         cf.COMMUNITY_KEY,
         cf.COMMUNITY_KEY_2,
     ]
 
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-    assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
-    assert cf.keyManager.getCommunityKey() == cf.COMMUNITY_KEY_2
+
+def checkCurrentKeys(cf, aggKey, govKey, commkey):
+    assert cf.keyManager.getAggregateKey() == aggKey
+    assert cf.keyManager.getGovernanceKey() == govKey
+    assert cf.keyManager.getCommunityKey() == commkey
 
 
 def setKey_rev_pubKeyX_test(cf, fcn, signer):
@@ -281,15 +272,15 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
     assert stakeManager.getMinimumStake() == minStake
 
 
+# Function used to do function calls that require a signature
 def signed_call_aggSigner(cf, fcn, *args, **kwargs):
     # Get default values
-    sender = kwargs.get("sender", cf.DEPLOYER)
+    sender = kwargs.get("sender", cf.deployer)
     keyManager = kwargs.get("keyManager", cf.keyManager)
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
     # Sign the tx without a msgHash or sig
     callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
-
     return fcn(
         signer.getSigData(callDataNoSig, keyManager.address),
         *args,
@@ -297,10 +288,13 @@ def signed_call_aggSigner(cf, fcn, *args, **kwargs):
     )
 
 
-def signed_calls_nonces(cf, fcn, keyManager, sender, signer, *args, **kwargs):
+# In stateful tests signing is done via getSigDataWithNonces instead. Also, keyManager keeps
+# changing so it is required to pass it as argument.
+# Requiring cf only if a sender is not provided (almost always sender is provided)
+def signed_calls_nonces(keyManager, fcn, *args, **kwargs):
     # Get default values
-    sender = kwargs.get("sender", cf.DEPLOYER)
-    keyManager = kwargs.get("keyManager", cf.keyManager)
+    # Workaround because kwargs.get("sender", kwargs.get("cf").deployer) doesn't work if there is no "cf" key
+    sender = kwargs.get("sender") if "sender" in kwargs else kwargs.get("cf").deployer
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
     # Sign the tx without a msgHash or sig
