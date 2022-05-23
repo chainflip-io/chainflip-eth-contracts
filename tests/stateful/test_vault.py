@@ -125,7 +125,7 @@ def test_vault(
 
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
-            self.communityKey = cfDeploy.COMMUNITY_KEY
+            self.communityKey = cfDeploy.communityKey
 
             self.communityGuardDisabled = self.v.getCommunityGuard()
             self.suspended = self.v.getSuspendedState()

@@ -80,7 +80,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
-            self.community = cfDeploy.COMMUNITY_KEY
+            self.community = cfDeploy.communityKey
 
             self.communityGuardDisabled = self.sm.getCommunityGuard()
             self.suspended = self.sm.getSuspendedState()

@@ -188,7 +188,7 @@ def test_all(
             self.km = self.orig_km
 
             self.governor = cfDeployAllWhitelist.gov
-            self.communityKey = cfDeployAllWhitelist.COMMUNITY_KEY
+            self.communityKey = cfDeployAllWhitelist.communityKey
 
             self.allAddrs = self.stakers
             self.allAddrs = [
