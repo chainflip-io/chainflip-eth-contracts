@@ -427,7 +427,7 @@ def test_all(
                     st_eth_amounts,
                     st_sender,
                 )
-                with reverts():
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
                         self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
                     )
@@ -674,6 +674,8 @@ def test_all(
                 or totalTokenA > self.tokenABals[self.v]
                 or totalTokenB > self.tokenBBals[self.v]
             ):
+                if totalEth > self.ethBals[self.v]:
+                    assert 0 == 1
                 print(
                     "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
                     signer,
