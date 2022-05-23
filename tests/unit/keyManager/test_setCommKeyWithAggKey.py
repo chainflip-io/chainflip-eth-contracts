@@ -10,13 +10,7 @@ def test_setCommKeyWithAggKey(cf):
 
 
 def test_setCommKeyWithAggKey_rev(cf):
-    callDataNoSig = cf.keyManager.setCommKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ZERO_ADDR
-    )
-
     with reverts(REV_MSG_NZ_ADDR):
-        cf.keyManager.setCommKeyWithAggKey(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            ZERO_ADDR,
-            {"from": cf.ALICE},
+        signed_call_aggSigner(
+            cf, cf.keyManager.setCommKeyWithAggKey, ZERO_ADDR, sender=cf.ALICE
         )

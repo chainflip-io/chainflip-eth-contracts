@@ -838,7 +838,7 @@ def test_vault(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.v.enableCommunityGuard({"from": self.community})
 
-        # Enable community Guard
+        # Disable community Guard
         def rule_disableCommunityGuard(self, st_sender):
             if not self.communityGuardDisabled:
                 if st_sender != self.community:
@@ -858,7 +858,7 @@ def test_vault(
 
         # Governance attemps to withdraw FLIP in case of emergency
         def rule_govWithdrawal(self, st_sender):
-            # Withdraw all tokens - except ETH to make the checking easier due to gas expenditure
+            # Withdraw token A and token B - not ETH to make the checking easier due to gas expenditure
             tokenstoWithdraw = self.tokensList[1:]
             if self.communityGuardDisabled:
                 if st_sender != self.governor:
@@ -885,7 +885,7 @@ def test_vault(
                         }
                         print("                    rule_govWithdrawal", st_sender)
                         self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
-                        # Governor has all the FLIP - do the checking and return the tokens for the invariant check
+                        # Governor has all the tokens - do the checking and return the tokens for the invariant check
                         for token in tokenstoWithdraw:
                             assert (
                                 token.balanceOf(self.governor)

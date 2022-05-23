@@ -3,13 +3,13 @@ from brownie import reverts
 from brownie.test import given, strategy
 
 
-@given(newMinStake=strategy("uint256", exclude=0))
-def test_setMinStake(cf, newMinStake):
-    tx = cf.stakeManager.setMinStake(newMinStake, {"from": cf.GOVERNOR})
+@given(st_newMinStake=strategy("uint256", exclude=0))
+def test_setMinStake(cf, st_newMinStake):
+    tx = cf.stakeManager.setMinStake(st_newMinStake, {"from": cf.GOVERNOR})
 
     # Check things that should've changed
-    assert cf.stakeManager.getMinimumStake() == newMinStake
-    assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
+    assert cf.stakeManager.getMinimumStake() == st_newMinStake
+    assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, st_newMinStake]
 
     # Check things that shouldn't have changed
     assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE

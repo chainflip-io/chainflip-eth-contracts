@@ -9,14 +9,8 @@ def test_fetchDepositEth(cf, DepositEth):
 
 
 def test_fetchDepositEth_rev_swapID(cf):
-    callDataNoSig = cf.vault.fetchDepositEth.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ""
-    )
-
     with reverts(REV_MSG_NZ_BYTES32):
-        cf.vault.fetchDepositEth(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), ""
-        )
+        signed_call_aggSigner(cf, cf.vault.fetchDepositEth, "")
 
 
 def test_fetchDepositEth_rev_msgHash(cf):

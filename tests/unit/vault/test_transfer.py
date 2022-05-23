@@ -15,15 +15,8 @@ def test_transfer_eth_fails_recipient(cf, token):
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
 
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, token, TEST_AMNT
-    )
-    tx = cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        ETH_ADDR,
-        token,
-        TEST_AMNT,
-    )
+    args = (ETH_ADDR, token, TEST_AMNT)
+    tx = signed_call_aggSigner(cf, cf.vault.transfer, *args)
 
     assert tx.events["TransferFailed"][0].values() == [token, TEST_AMNT, web3.toHex(0)]
     assert cf.vault.balance() == startBalVault
@@ -34,18 +27,8 @@ def test_transfer_eth_fails_recipient(cf, token):
 def test_transfer_eth_fails_not_enough_eth(cf, token):
     startBalRecipient = cf.ALICE.balance()
 
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        ETH_ADDR,
-        cf.ALICE,
-        TEST_AMNT,
-    )
-    tx = cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        ETH_ADDR,
-        cf.ALICE,
-        TEST_AMNT,
-    )
+    args = (ETH_ADDR, cf.ALICE, TEST_AMNT)
+    tx = signed_call_aggSigner(cf, cf.vault.transfer, *args)
 
     assert tx.events["TransferFailed"][0].values() == [
         cf.ALICE,
@@ -62,60 +45,29 @@ def test_transfer_token(cf, token):
     startBalVault = token.balanceOf(cf.vault)
     startBalRecipient = token.balanceOf(cf.ALICE)
 
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), token, cf.ALICE, TEST_AMNT
-    )
-    cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        token,
-        cf.ALICE,
-        TEST_AMNT,
-    )
+    args = (token, cf.ALICE, TEST_AMNT)
+    signed_call_aggSigner(cf, cf.vault.transfer, *args)
 
     assert token.balanceOf(cf.vault) - startBalVault == -TEST_AMNT
     assert token.balanceOf(cf.ALICE) - startBalRecipient == TEST_AMNT
 
 
 def test_transfer_rev_tokenAddr(cf):
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ZERO_ADDR, cf.ALICE, TEST_AMNT
-    )
-
     with reverts(REV_MSG_NZ_ADDR):
-        cf.vault.transfer(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            ZERO_ADDR,
-            cf.ALICE,
-            TEST_AMNT,
-        )
+        args = (ZERO_ADDR, cf.ALICE, TEST_AMNT)
+        signed_call_aggSigner(cf, cf.vault.transfer, *args)
 
 
 def test_transfer_rev_recipient(cf):
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, ZERO_ADDR, TEST_AMNT
-    )
-
     with reverts(REV_MSG_NZ_ADDR):
-        cf.vault.transfer(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            ETH_ADDR,
-            ZERO_ADDR,
-            TEST_AMNT,
-        )
+        args = (ETH_ADDR, ZERO_ADDR, TEST_AMNT)
+        signed_call_aggSigner(cf, cf.vault.transfer, *args)
 
 
 def test_transfer_rev_amount(cf):
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, 0
-    )
-
     with reverts(REV_MSG_NZ_UINT):
-        cf.vault.transfer(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            ETH_ADDR,
-            cf.ALICE,
-            0,
-        )
+        args = (ETH_ADDR, cf.ALICE, 0)
+        signed_call_aggSigner(cf, cf.vault.transfer, *args)
 
 
 def test_transfer_rev_msgHash(cf):

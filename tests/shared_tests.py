@@ -5,47 +5,32 @@ from utils import *
 # ----------Vault----------
 
 
-def fetchDepositEth(cf, deployedVault, DepositEth):
+def fetchDepositEth(cf, vault, DepositEth):
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(deployedVault.address, JUNK_HEX_PAD, DepositEth, "")
+    depositAddr = getCreate2Addr(vault.address, JUNK_HEX_PAD, DepositEth, "")
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
-    balanceVaultBefore = deployedVault.balance()
-
-    # Sign the tx without a msgHash or sig
-    callDataNoSig = deployedVault.fetchDepositEth.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD
-    )
+    balanceVaultBefore = vault.balance()
 
     # Fetch the deposit
     balanceBefore = cf.ALICE.balance()
     assert balanceBefore >= TEST_AMNT
-    tx = deployedVault.fetchDepositEth(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        JUNK_HEX_PAD,
-        {"from": cf.ALICE},
-    )
+
+    signed_call_aggSigner(cf, vault.fetchDepositEth, JUNK_HEX_PAD, sender=cf.ALICE)
+
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert deployedVault.balance() == balanceVaultBefore + TEST_AMNT
+    assert vault.balance() == balanceVaultBefore + TEST_AMNT
 
 
 # Test transfer function from a vault with funds
-def transfer_eth(cf, deployedVault, receiver, amount):
-    startBalVault = deployedVault.balance()
+def transfer_eth(cf, vault, receiver, amount):
+    startBalVault = vault.balance()
     assert startBalVault >= amount
     startBalRecipient = receiver.balance()
 
-    callDataNoSig = deployedVault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, receiver, amount
-    )
-    tx = deployedVault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        ETH_ADDR,
-        receiver,
-        amount,
-    )
+    tx = signed_call_aggSigner(cf, vault.transfer, ETH_ADDR, receiver, amount)
 
-    assert deployedVault.balance() - startBalVault == -amount
+    assert vault.balance() - startBalVault == -amount
 
     # Take into account gas transfer if receiver is the address sending the transfer call (a[0]==cf.DEPLOYER)
     gasSpent = calculateGasTransaction(tx) if receiver == cf.DEPLOYER else 0
@@ -62,14 +47,11 @@ def setAggKeyWithAggKey_test(cf):
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
     assert cf.keyManager.getCommunityKey() == cf.communityKey
 
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_2.getPubData()
-    )
-
-    tx = cf.keyManager.setAggKeyWithAggKey(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+    tx = signed_call_aggSigner(
+        cf,
+        cf.keyManager.setAggKeyWithAggKey,
         AGG_SIGNER_2.getPubData(),
-        {"from": cf.ALICE},
+        sender=cf.ALICE,
     )
 
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_2.getPubDataWith0x()
@@ -84,15 +66,12 @@ def setAggKeyWithAggKey_test(cf):
 def setKey_rev_newPubKeyX_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
 
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), BAD_AGG_KEY
-    )
-
     with reverts(REV_MSG_PUB_KEY_X):
-        cf.keyManager.setAggKeyWithAggKey(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        signed_call_aggSigner(
+            cf,
+            cf.keyManager.setAggKeyWithAggKey,
             BAD_AGG_KEY,
-            {"from": cf.ALICE},
+            sender=cf.ALICE,
         )
 
 
@@ -134,11 +113,9 @@ def setGovKeyWithAggKey_test(cf):
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
     assert cf.keyManager.getCommunityKey() == cf.communityKey
 
-    callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), cf.GOVERNOR_2
-    )
-    tx = cf.keyManager.setGovKeyWithAggKey(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+    tx = signed_call_aggSigner(
+        cf,
+        cf.keyManager.setGovKeyWithAggKey,
         cf.GOVERNOR_2,
     )
 
@@ -154,11 +131,9 @@ def setCommKeyWithAggKey_test(cf):
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
     assert cf.keyManager.getCommunityKey() == cf.communityKey
 
-    callDataNoSig = cf.keyManager.setCommKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), cf.COMMUNITY_KEY_2
-    )
-    tx = cf.keyManager.setCommKeyWithAggKey(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+    tx = signed_call_aggSigner(
+        cf,
+        cf.keyManager.setCommKeyWithAggKey,
         cf.COMMUNITY_KEY_2,
     )
 
@@ -251,7 +226,7 @@ def canConsumeKeyNonce_test(cf, signer):
 def canConsumeKeyNonce_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
     with reverts(REV_MSG_SIG):
-        tx = cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+        cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
@@ -272,21 +247,13 @@ def stakeTest(cf, prevTotal, nodeID, minStake, tx, amount, returnAddr):
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
-def registerClaimTest(
-    cf, deployedStakeManager, nodeID, minStake, amount, receiver, expiryTime
-):
+def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expiryTime):
     prevReceiverBal = cf.flip.balanceOf(receiver)
-    prevStakeManBal = cf.flip.balanceOf(deployedStakeManager)
+    prevStakeManBal = cf.flip.balanceOf(stakeManager)
 
-    callDataNoSig = deployedStakeManager.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        nodeID,
-        amount,
-        receiver,
-        expiryTime,
-    )
-    tx = deployedStakeManager.registerClaim(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+    tx = signed_call_aggSigner(
+        cf,
+        stakeManager.registerClaim,
         nodeID,
         amount,
         receiver,
@@ -295,7 +262,7 @@ def registerClaimTest(
 
     startTime = tx.timestamp + CLAIM_DELAY
     # Check things that should've changed
-    assert deployedStakeManager.getPendingClaim(nodeID) == (
+    assert stakeManager.getPendingClaim(nodeID) == (
         amount,
         receiver,
         startTime,
@@ -310,43 +277,36 @@ def registerClaimTest(
     )
     # Check things that shouldn't have changed
     assert cf.flip.balanceOf(receiver) == prevReceiverBal
-    assert cf.flip.balanceOf(deployedStakeManager) == prevStakeManBal
-    assert deployedStakeManager.getMinimumStake() == minStake
+    assert cf.flip.balanceOf(stakeManager) == prevStakeManBal
+    assert stakeManager.getMinimumStake() == minStake
 
 
-# Update Whitelisted addresses in the KeyManager - addreses that can consume Nonces
-# It requires a list of the current whitelisted addresses and a list of the new ones to whitelist.
-# Current whitelist must contain all the whitelisted addresses
-# New whitelist must contain the keyManager itself.
-def updateCanConsumeKeyNonce(keyManager, currentAddrs, newAddrs, st_sender):
-    callDataNoSig = keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(keyManager.address, chain.id), currentAddrs, newAddrs
-    )
+def signed_call_aggSigner(cf, fcn, *args, **kwargs):
+    # Get default values
+    sender = kwargs.get("sender", cf.DEPLOYER)
+    keyManager = kwargs.get("keyManager", cf.keyManager)
+    signer = kwargs.get("signer", AGG_SIGNER_1)
 
-    return keyManager.updateCanConsumeKeyNonce(
-        AGG_SIGNER_1.getSigData(callDataNoSig, keyManager.address),
-        currentAddrs,
-        newAddrs,
-        {"from": st_sender},
-    )
+    # Sign the tx without a msgHash or sig
+    callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
 
-
-# Updates the aggKeyNonceConsumer's reference to the KeyManager. TO be used if the keyManager
-# contract is redeployed
-def updateKeyManager(aggKeyNonceConsumer, currentkeyManagerAddress, newkeyManager):
-    callDataNoSig = aggKeyNonceConsumer.updateKeyManager.encode_input(
-        agg_null_sig(currentkeyManagerAddress, chain.id), newkeyManager
-    )
-
-    aggKeyNonceConsumer.updateKeyManager(
-        AGG_SIGNER_1.getSigData(callDataNoSig, currentkeyManagerAddress), newkeyManager
+    return fcn(
+        signer.getSigData(callDataNoSig, keyManager.address),
+        *args,
+        {"from": sender},
     )
 
 
-# Check that Key Agg Nonce consumer can consume nonce
-def checkNonceConsumerCanConsume(aggKeyNonceConsumer):
-    updateKeyManager(
-        aggKeyNonceConsumer,
-        aggKeyNonceConsumer.getKeyManager(),
-        aggKeyNonceConsumer.getKeyManager(),
+def signed_calls_nonces(cf, fcn, keyManager, sender, signer, *args, **kwargs):
+    # Get default values
+    sender = kwargs.get("sender", cf.DEPLOYER)
+    keyManager = kwargs.get("keyManager", cf.keyManager)
+    signer = kwargs.get("signer", AGG_SIGNER_1)
+
+    # Sign the tx without a msgHash or sig
+    callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
+    return fcn(
+        signer.getSigDataWithNonces(callDataNoSig, nonces, AGG, keyManager.address),
+        *args,
+        {"from": sender},
     )

@@ -33,19 +33,19 @@ def test_consumeKeyNonce_rev_sig(cfAW):
         cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
-@given(addr=strategy("address"))
-def test_consumeKeyNonce_rev_keyManAddr(a, cfAW, addr):
-    if addr != cfAW.keyManager:
-        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, addr)
+@given(st_addr=strategy("address"))
+def test_consumeKeyNonce_rev_keyManAddr(cfAW, st_addr):
+    if st_addr != cfAW.keyManager:
+        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, st_addr)
         with reverts(REV_MSG_WRONG_KEYMANADDR):
             cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
-@given(chainID=strategy("uint256"))
-def test_consumeKeyNonce_rev_chainID(a, cfAW, chainID):
-    if chainID != chain.id:
+@given(st_chainID=strategy("uint256"))
+def test_consumeKeyNonce_rev_chainID(cfAW, st_chainID):
+    if st_chainID != chain.id:
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-        sigData[1] = chainID
+        sigData[1] = st_chainID
         with reverts(REV_MSG_WRONG_CHAINID):
             cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 

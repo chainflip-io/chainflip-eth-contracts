@@ -10,13 +10,13 @@ def test_release_rev_no_tokens(addrs, cf, tokenVestingStaking):
     release_revert(tv, cf, addrs.INVESTOR)
 
 
-@given(sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_release(addrs, cf, tokenVestingStaking, maths, sleepTime):
+@given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
+def test_release(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
     tv, start, cliff, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
 
     assert tv.cliff() == tv.end()
 
@@ -151,11 +151,11 @@ def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths
 
 
 # Test that the assert(!canStake) is not reached => cliff == end == start + QUARTER_YEAR + YEAR
-@given(sleepTime=strategy("uint256", min_value=QUARTER_YEAR, max_value=YEAR * 2))
-def test_release_around_cliff(addrs, cf, tokenVestingStaking, maths, sleepTime):
+@given(st_sleepTime=strategy("uint256", min_value=QUARTER_YEAR, max_value=YEAR * 2))
+def test_release_around_cliff(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
     tv, start, cliff, end, total = tokenVestingStaking
 
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
 
     if getChainTime() >= cliff & cliff == end:
         tx = tv.release(cf.flip, {"from": addrs.INVESTOR})

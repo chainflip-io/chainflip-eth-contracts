@@ -1284,7 +1284,7 @@ def test_all(
         # results whilst still testing the full range.
         def _get_key_prob(self, keyID):
             samples = ([self.keyIDToCurKeys[keyID]] * 100) + self.allKeys
-            return self.keyIDToCurKeys[keyID]
+            return choice(samples)
 
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
@@ -2207,7 +2207,7 @@ def test_all(
             signer = self._get_key_prob(AGG)
 
             if self.sm_suspended:
-                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_stakeManager")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     callDataNoSig = self.sm.registerClaim.encode_input(
                         agg_null_sig(self.km.address, chain.id),
@@ -2443,7 +2443,7 @@ def test_all(
                 with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
                     self.km.setCommKeyWithCommKey(newCommKey, {"from": st_sender})
 
-        # Enable community Guard
+        # Enable Stake Manager's community Guard
         def rule_sm_enableCommunityGuard(self, st_sender):
             if self.sm_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2461,7 +2461,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.sm.enableCommunityGuard({"from": self.communityKey})
 
-        # Enable community Guard
+        # Disable Stake Manager's community Guard
         def rule_sm_disableCommunityGuard(self, st_sender):
             if not self.sm_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2479,7 +2479,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
                     self.sm.disableCommunityGuard({"from": self.communityKey})
 
-        # Enable community Guard
+        # Enable Vault's community Guard
         def rule_vault_enableCommunityGuard(self, st_sender):
             if self.v_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2497,7 +2497,7 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.v.enableCommunityGuard({"from": self.communityKey})
 
-        # Enable community Guard
+        # Disable Vault's community Guard
         def rule_vault_disableCommunityGuard(self, st_sender):
             if not self.v_communityGuardDisabled:
                 if st_sender != self.communityKey:
@@ -2514,6 +2514,84 @@ def test_all(
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
                     self.v.disableCommunityGuard({"from": self.communityKey})
+
+        # Governance attemps to withdraw FLIP from the Stake Manager in case of emergency
+        def rule_sm_govWithdrawal(self, st_sender):
+            if self.sm_communityGuardDisabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.sm.govWithdraw({"from": st_sender})
+
+                if self.sm_suspended:
+                    print("                    rule_govWithdrawal", st_sender)
+                    self.sm.govWithdraw({"from": self.governor})
+                    # Governor has all the FLIP - do the checking and return the tokens for the invariant check
+                    assert (
+                        self.f.balanceOf(self.governor)
+                        == self.flipBals[self.governor] + self.flipBals[self.sm]
+                    )
+                    assert self.f.balanceOf(self.sm) == 0
+                    self.f.transfer(
+                        self.sm, self.flipBals[self.sm], {"from": self.governor}
+                    )
+                else:
+                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
+                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                        self.sm.govWithdraw({"from": self.governor})
+            else:
+                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.sm.govWithdraw({"from": self.governor})
+
+        # Governance attemps to withdraw all tokens from the Vault in case of emergency
+        def rule_v_govWithdrawal(self, st_sender):
+            # Withdraw token A and token B - not ETH to make the checking easier due to gas expenditure
+            tokenstoWithdraw = self.tokensList[1:]
+            if self.v_communityGuardDisabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": st_sender})
+
+                if self.v_suspended:
+                    if (
+                        getChainTime() - self.km.getLastValidateTime()
+                        < AGG_KEY_EMERGENCY_TIMEOUT
+                    ):
+                        print("        REV_MSG_VAULT_DELAY _govWithdrawal")
+                        with reverts(REV_MSG_VAULT_DELAY):
+                            self.v.govWithdraw(
+                                tokenstoWithdraw, {"from": self.governor}
+                            )
+                    else:
+                        # tokenstoWithdraw contains tokenA and tokenB
+                        print("                    rule_govWithdrawal", st_sender)
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+                        # Governor has all the tokens - do the checking and return the tokens for the invariant check
+                        assert (
+                            tokenstoWithdraw[0].balanceOf(self.governor)
+                            == self.tokenABals[self.governor] + self.tokenABals[self.v]
+                        )
+                        assert tokenstoWithdraw[0].balanceOf(self.v) == 0
+                        tokenstoWithdraw[0].transfer(
+                            self.v, self.tokenABals[self.v], {"from": self.governor}
+                        )
+                        assert (
+                            tokenstoWithdraw[1].balanceOf(self.governor)
+                            == self.tokenBBals[self.governor] + self.tokenBBals[self.v]
+                        )
+                        assert tokenstoWithdraw[1].balanceOf(self.v) == 0
+                        tokenstoWithdraw[1].transfer(
+                            self.v, self.tokenBBals[self.v], {"from": self.governor}
+                        )
+
+                else:
+                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
+                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
+                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
+            else:
+                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
+                with reverts(REV_MSG_GOV_ENABLED_GUARD):
+                    self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance

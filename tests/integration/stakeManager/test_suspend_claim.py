@@ -1,6 +1,7 @@
 from consts import *
 from brownie import reverts
 from brownie.test import given, strategy
+from shared_tests import *
 
 
 def test_suspend_executeClaim(cf, claimRegistered):
@@ -89,12 +90,6 @@ def test_suspend_registerClaim(cf, st_eth_amount):
     # Suspend the StakeManager contract
     cf.stakeManager.suspend({"from": cf.GOVERNOR})
 
-    args = (JUNK_HEX, st_eth_amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
-
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.stakeManager.registerClaim(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args
-        )
+        args = (JUNK_HEX, st_eth_amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
+        signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)

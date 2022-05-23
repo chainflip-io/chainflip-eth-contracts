@@ -7,13 +7,13 @@ from random import choices
 
 
 @given(
-    fetchAmounts=strategy(
+    st_fetchAmounts=strategy(
         "uint[]", max_value=TEST_AMNT, max_length=int(INIT_TOKEN_SUPPLY / TEST_AMNT)
     ),
-    fetchSwapIDs=strategy("bytes32[]", unique=True),
-    tranRecipients=strategy("address[]", unique=True),
-    tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    sender=strategy("address"),
+    st_fetchSwapIDs=strategy("bytes32[]", unique=True),
+    st_tranRecipients=strategy("address[]", unique=True),
+    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
+    st_sender=strategy("address"),
 )
 def test_setAggKeyWithAggKey_allBatch(
     cfAW,
@@ -21,32 +21,32 @@ def test_setAggKeyWithAggKey_allBatch(
     token2,
     DepositToken,
     DepositEth,
-    fetchAmounts,
-    fetchSwapIDs,
-    tranRecipients,
-    tranAmounts,
-    sender,
+    st_fetchAmounts,
+    st_fetchSwapIDs,
+    st_tranRecipients,
+    st_tranAmounts,
+    st_sender,
 ):
 
     # Allowing this breaks the refund test
-    if sender in tranRecipients:
+    if st_sender in st_tranRecipients:
         return
 
     # Change agg keys
     setAggKeyWithAggKey_test(cfAW)
 
     # Sort out deposits first so enough can be sent to the create2 addresses
-    fetchMinLen = trimToShortest([fetchAmounts, fetchSwapIDs])
+    fetchMinLen = trimToShortest([st_fetchAmounts, st_fetchSwapIDs])
     tokensList = [ETH_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=fetchMinLen)
 
     fetchTotals = {
-        tok: sum([fetchAmounts[i] for i, x in enumerate(fetchTokens) if x == tok])
+        tok: sum([st_fetchAmounts[i] for i, x in enumerate(fetchTokens) if x == tok])
         for tok in tokensList
     }
 
     # Transfer tokens to the deposit addresses
-    for am, id, tok in zip(fetchAmounts, fetchSwapIDs, fetchTokens):
+    for am, id, tok in zip(st_fetchAmounts, st_fetchSwapIDs, fetchTokens):
         # Get the address to deposit to and deposit
         if tok == ETH_ADDR:
             depositAddr = getCreate2Addr(cfAW.vault.address, id.hex(), DepositEth, "")
@@ -62,83 +62,51 @@ def test_setAggKeyWithAggKey_allBatch(
     assert token2.balanceOf(cfAW.vault) == 0
 
     # Transfers
-    tranMinLen = trimToShortest([tranRecipients, tranAmounts])
+    tranMinLen = trimToShortest([st_tranRecipients, st_tranAmounts])
     tranTokens = choices(tokensList, k=tranMinLen)
 
     tranTotals = {
-        tok: sum([tranAmounts[i] for i, x in enumerate(tranTokens) if x == tok])
+        tok: sum([st_tranAmounts[i] for i, x in enumerate(tranTokens) if x == tok])
         for tok in tokensList
     }
     validEthIdxs = getValidTranIdxs(
-        tranTokens, tranAmounts, fetchTotals[ETH_ADDR], ETH_ADDR
+        tranTokens, st_tranAmounts, fetchTotals[ETH_ADDR], ETH_ADDR
     )
     tranTotals[ETH_ADDR] = sum(
         [
-            tranAmounts[i]
+            st_tranAmounts[i]
             for i, x in enumerate(tranTokens)
             if x == ETH_ADDR and i in validEthIdxs
         ]
     )
 
     ethStartBalVault = cfAW.vault.balance()
-    ethBals = [web3.eth.get_balance(str(recip)) for recip in tranRecipients]
-    tokenBals = [token.balanceOf(recip) for recip in tranRecipients]
-    token2Bals = [token2.balanceOf(recip) for recip in tranRecipients]
+    ethBals = [web3.eth.get_balance(str(recip)) for recip in st_tranRecipients]
+    tokenBals = [token.balanceOf(recip) for recip in st_tranRecipients]
+    token2Bals = [token2.balanceOf(recip) for recip in st_tranRecipients]
 
-    callDataNoSig = cfAW.vault.allBatch.encode_input(
-        agg_null_sig(cfAW.keyManager.address, chain.id),
-        fetchSwapIDs,
+    args = (
+        st_fetchSwapIDs,
         fetchTokens,
         tranTokens,
-        tranRecipients,
-        tranAmounts,
+        st_tranRecipients,
+        st_tranAmounts,
     )
 
     # Check allBatch fails with the old agg key
     with reverts(REV_MSG_SIG):
-        cfAW.vault.allBatch(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address),
-            fetchSwapIDs,
-            fetchTokens,
-            tranTokens,
-            tranRecipients,
-            tranAmounts,
-            {"from": sender},
-        )
-
-    callDataNoSig = cfAW.vault.allBatch.encode_input(
-        agg_null_sig(cfAW.keyManager.address, chain.id),
-        fetchSwapIDs,
-        fetchTokens,
-        tranTokens,
-        tranRecipients,
-        tranAmounts,
-    )
+        signed_call_aggSigner(cfAW, cfAW.vault.allBatch, *args, sender=st_sender)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            cfAW.vault.allBatch(
-                AGG_SIGNER_2.getSigData(callDataNoSig, cfAW.keyManager.address),
-                fetchSwapIDs,
-                fetchTokens,
-                tranTokens,
-                tranRecipients,
-                tranAmounts,
-                {"from": sender},
+            signed_call_aggSigner(
+                cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
             )
     else:
-        balanceBefore = sender.balance()
-        tx = cfAW.vault.allBatch(
-            AGG_SIGNER_2.getSigData(callDataNoSig, cfAW.keyManager.address),
-            fetchSwapIDs,
-            fetchTokens,
-            tranTokens,
-            tranRecipients,
-            tranAmounts,
-            {"from": sender},
+        signed_call_aggSigner(
+            cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
         )
-        balanceAfter = sender.balance()
 
         assert cfAW.vault.balance() == ethStartBalVault + (
             fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
@@ -146,21 +114,22 @@ def test_setAggKeyWithAggKey_allBatch(
         assert token.balanceOf(cfAW.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cfAW.vault) == fetchTotals[token2] - tranTotals[token2]
 
-        for i in range(len(tranRecipients)):
+        for i in range(len(st_tranRecipients)):
             if tranTokens[i] == ETH_ADDR:
                 if i in validEthIdxs:
                     assert (
-                        web3.eth.get_balance(str(tranRecipients[i]))
-                        == ethBals[i] + tranAmounts[i]
+                        web3.eth.get_balance(str(st_tranRecipients[i]))
+                        == ethBals[i] + st_tranAmounts[i]
                     )
             elif tranTokens[i] == token:
                 assert (
-                    token.balanceOf(tranRecipients[i]) == tokenBals[i] + tranAmounts[i]
+                    token.balanceOf(st_tranRecipients[i])
+                    == tokenBals[i] + st_tranAmounts[i]
                 )
             elif tranTokens[i] == token2:
                 assert (
-                    token2.balanceOf(tranRecipients[i])
-                    == token2Bals[i] + tranAmounts[i]
+                    token2.balanceOf(st_tranRecipients[i])
+                    == token2Bals[i] + st_tranAmounts[i]
                 )
             else:
                 assert False, "Panic"

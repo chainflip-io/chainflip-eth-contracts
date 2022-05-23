@@ -44,45 +44,45 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
 
 
 @given(
-    flipTotalSupply=strategy(
+    st_flipTotalSupply=strategy(
         "uint", min_value=INIT_SUPPLY / 2, max_value=INIT_SUPPLY * 2
     ),
-    numGenesisValidators=strategy(
+    st_numGenesisValidators=strategy(
         "uint", min_value=NUM_GENESIS_VALIDATORS, max_value=NUM_GENESIS_VALIDATORS * 10
     ),
-    genesisStake=strategy(
+    st_genesisStake=strategy(
         "uint", min_value=GENESIS_STAKE, max_value=GENESIS_STAKE * 10**4
     ),
 )
 def test_flip_constructor_minting(
-    a, maths, FLIP, flipTotalSupply, numGenesisValidators, genesisStake
+    a, maths, FLIP, st_flipTotalSupply, st_numGenesisValidators, st_genesisStake
 ):
     deployer = a[0]
     receiverGenesisValidatorFlip = a[1]
     keyManProxy = a[2]
 
-    if numGenesisValidators * genesisStake > flipTotalSupply:
+    if st_numGenesisValidators * st_genesisStake > st_flipTotalSupply:
         with reverts(REV_MSG_INTEGER_OVERFLOW):
             deployer.deploy(
                 FLIP,
-                flipTotalSupply,
-                numGenesisValidators,
-                genesisStake,
+                st_flipTotalSupply,
+                st_numGenesisValidators,
+                st_genesisStake,
                 receiverGenesisValidatorFlip,
                 keyManProxy,
             )
     else:
         flip = deployer.deploy(
             FLIP,
-            flipTotalSupply,
-            numGenesisValidators,
-            genesisStake,
+            st_flipTotalSupply,
+            st_numGenesisValidators,
+            st_genesisStake,
             receiverGenesisValidatorFlip,
             keyManProxy,
         )
         genesisValidatorFlip, remainder = maths.calculateFlipGenesis(
-            flipTotalSupply, numGenesisValidators, genesisStake
+            st_flipTotalSupply, st_numGenesisValidators, st_genesisStake
         )
-        assert flip.totalSupply() == flipTotalSupply
+        assert flip.totalSupply() == st_flipTotalSupply
         assert flip.balanceOf(receiverGenesisValidatorFlip) == genesisValidatorFlip
         assert flip.balanceOf(deployer) == remainder

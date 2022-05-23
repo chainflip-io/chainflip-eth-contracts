@@ -5,25 +5,25 @@ from brownie.test import given, strategy
 
 
 @given(
-    ethAmount=strategy("uint", max_value=INIT_ETH_BAL, min_value=TEST_AMNT),
-    tokenAmount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
-    token2Amount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
-    sleepTime=strategy("uint256", max_value=MONTH * 2),
+    st_ethAmount=strategy("uint", max_value=INIT_ETH_BAL, min_value=TEST_AMNT),
+    st_tokenAmount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
+    st_token2Amount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
+    st_sleepTime=strategy("uint256", max_value=MONTH * 2),
 )
 def test_govWithdraw(
-    cf, token, token2, ethAmount, tokenAmount, token2Amount, sleepTime
+    cf, token, token2, st_ethAmount, st_tokenAmount, st_token2Amount, st_sleepTime
 ):
 
     # Fund Vault contract. Using non-deployer to transfer ETH because the deployer
     # doesn't have INIT_ETH_BAL - gas spent deploying contracts
-    cf.DENICE.transfer(cf.vault, ethAmount)
-    token.transfer(cf.vault, tokenAmount, {"from": cf.DEPLOYER})
-    token2.transfer(cf.vault, token2Amount, {"from": cf.DEPLOYER})
+    cf.DENICE.transfer(cf.vault, st_ethAmount)
+    token.transfer(cf.vault, st_tokenAmount, {"from": cf.DEPLOYER})
+    token2.transfer(cf.vault, st_token2Amount, {"from": cf.DEPLOYER})
 
     # Check Vault intial Balances
-    assert cf.vault.balance() == ethAmount
-    assert token.balanceOf(cf.vault) == tokenAmount
-    assert token2.balanceOf(cf.vault) == token2Amount
+    assert cf.vault.balance() == st_ethAmount
+    assert token.balanceOf(cf.vault) == st_tokenAmount
+    assert token2.balanceOf(cf.vault) == st_token2Amount
 
     governorBalances = [
         cf.GOVERNOR.balance(),
@@ -61,7 +61,7 @@ def test_govWithdraw(
 
     cf.vault.suspend({"from": cf.GOVERNOR})
 
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
     if getChainTime() - cf.keyManager.getLastValidateTime() < AGG_KEY_EMERGENCY_TIMEOUT:
         with reverts(REV_MSG_VAULT_DELAY):
             cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
@@ -75,9 +75,11 @@ def test_govWithdraw(
 
         assert cf.GOVERNOR.balance() == governorBalances[
             0
-        ] + ethAmount - calculateGasSpentByAddress(cf.GOVERNOR, iniTransactionNumber[0])
-        assert token.balanceOf(cf.GOVERNOR) == governorBalances[1] + tokenAmount
-        assert token2.balanceOf(cf.GOVERNOR) == governorBalances[2] + token2Amount
+        ] + st_ethAmount - calculateGasSpentByAddress(
+            cf.GOVERNOR, iniTransactionNumber[0]
+        )
+        assert token.balanceOf(cf.GOVERNOR) == governorBalances[1] + st_tokenAmount
+        assert token2.balanceOf(cf.GOVERNOR) == governorBalances[2] + st_token2Amount
 
         assert cf.COMMUNITY_KEY.balance() == communityBalances[
             0

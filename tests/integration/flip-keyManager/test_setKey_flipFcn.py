@@ -9,36 +9,16 @@ def test_setAggKeyWithAggKey_updateFlipSupply(cfAW):
 
     stateChainBlockNumber = 1
 
-    callDataNoSig = cfAW.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cfAW.keyManager.address, chain.id),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        cfAW.stakeManager.address,
-    )
+    args = (NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cfAW.stakeManager.address)
 
     # Updating supply with old key should revert
     with reverts(REV_MSG_SIG):
-        cfAW.flip.updateFlipSupply(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address),
-            NEW_TOTAL_SUPPLY_MINT,
-            stateChainBlockNumber,
-            cfAW.stakeManager.address,
-            cfAW.FR_ALICE,
+        signed_call_aggSigner(
+            cfAW, cfAW.flip.updateFlipSupply, *args, sender=cfAW.ALICE
         )
 
-    # Updating supply with new key
-    callDataNoSig = cfAW.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cfAW.keyManager.address, chain.id),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        cfAW.stakeManager.address,
-    )
-    tx = cfAW.flip.updateFlipSupply(
-        AGG_SIGNER_2.getSigData(callDataNoSig, cfAW.keyManager.address),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        cfAW.stakeManager.address,
-        cfAW.FR_ALICE,
+    tx = signed_call_aggSigner(
+        cfAW, cfAW.flip.updateFlipSupply, *args, sender=cfAW.ALICE, signer=AGG_SIGNER_2
     )
 
     # Check things that should've changed

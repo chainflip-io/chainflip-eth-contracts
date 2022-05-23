@@ -1,6 +1,7 @@
 from brownie import reverts, web3
 from consts import *
 from utils import *
+from shared_tests import *
 
 
 def test_fetchDepositToken(cf, token, DepositToken):
@@ -12,17 +13,9 @@ def test_fetchDepositToken(cf, token, DepositToken):
 
     assert token.balanceOf(cf.vault) == 0
 
-    # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD, token
-    )
-
     # Fetch the deposit
-    cf.vault.fetchDepositToken(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        JUNK_HEX_PAD,
-        token,
-    )
+    args = (JUNK_HEX_PAD, token)
+    signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
@@ -39,20 +32,9 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
     assert cf.vault.balance() == 0
     assert token.balanceOf(cf.vault) == 0
 
-    # Sign the tx without a msgHash or sig
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD, token
-    )
-
     # Fetch the deposit
-    balanceBefore = cf.ALICE.balance()
-    tx = cf.vault.fetchDepositToken(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        JUNK_HEX_PAD,
-        token,
-        cf.FR_ALICE,
-    )
-    balanceAfter = cf.ALICE.balance()
+    args = (JUNK_HEX_PAD, token)
+    signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
 
     assert cf.vault.balance() == TEST_AMNT
     assert token.balanceOf(depositAddr) == 0
@@ -60,27 +42,15 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
 
 
 def test_fetchDepositToken_rev_swapID(cf):
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), "", ETH_ADDR
-    )
-
     with reverts(REV_MSG_NZ_BYTES32):
-        cf.vault.fetchDepositToken(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), "", ETH_ADDR
-        )
+        args = ("", ETH_ADDR)
+        signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
 
 
 def test_fetchDepositToken_rev_tokenAddr(cf):
-    callDataNoSig = cf.vault.fetchDepositToken.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), JUNK_HEX_PAD, ZERO_ADDR
-    )
-
     with reverts(REV_MSG_NZ_ADDR):
-        cf.vault.fetchDepositToken(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-            JUNK_HEX_PAD,
-            ZERO_ADDR,
-        )
+        args = (JUNK_HEX_PAD, ZERO_ADDR)
+        signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
 
 
 def test_fetchDepositToken_rev_msgHash(cf):

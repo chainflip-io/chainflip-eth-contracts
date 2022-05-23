@@ -10,13 +10,13 @@ def test_release_rev_no_tokens(addrs, cf, tokenVestingNoStaking):
     release_revert(tv, cf, addrs.INVESTOR)
 
 
-@given(sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_release(addrs, cf, tokenVestingNoStaking, maths, sleepTime):
+@given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
+def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
     tv, start, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
-    chain.sleep(sleepTime)
+    chain.sleep(st_sleepTime)
 
     if getChainTime() < cliff:
         release_revert(tv, cf, addrs.INVESTOR)
