@@ -16,8 +16,8 @@ class _BaseStateMachine:
         cls.sm = cfDeploy.stakeManager
         cls.f = cfDeploy.flip
 
-        cls.communityKey = cfDeploy.communityKey
-        cls.communityKey_2 = a[7]
+        cls.COMMUNITY_KEY = cfDeploy.communityKey
+        cls.COMMUNITY_KEY_2 = a[7]
 
 
 @pytest.fixture

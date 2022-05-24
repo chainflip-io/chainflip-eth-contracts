@@ -5,7 +5,7 @@ from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
-import random
+from shared_tests import *
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -72,7 +72,7 @@ def test_upgradability(
                 KeyManager, self.km.getAggregateKey(), st_sender, cf.communityKey
             )
 
-            keyManagerAddress = random.choice([newKeyManager, self.km])
+            keyManagerAddress = choice([newKeyManager, self.km])
 
             toWhitelist = [self.v, self.sm, self.f, keyManagerAddress]
 
@@ -97,14 +97,13 @@ def test_upgradability(
                 for aggKeyNonceConsumer in aggKeyNonceConsumers:
                     assert aggKeyNonceConsumer.getKeyManager() == self.km
 
-                    callDataNoSig = aggKeyNonceConsumer.updateKeyManager.encode_input(
-                        agg_null_sig(self.km, chain.id), newKeyManager
+                    signed_calls_nonces(
+                        self.km,
+                        aggKeyNonceConsumer.updateKeyManager,
+                        newKeyManager,
+                        sender=st_sender,
                     )
 
-                    aggKeyNonceConsumer.updateKeyManager(
-                        AGG_SIGNER_1.getSigData(callDataNoSig, self.km),
-                        newKeyManager,
-                    )
                     assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
                 self.km = newKeyManager
@@ -131,26 +130,22 @@ def test_upgradability(
                 self.km,
                 newVault,
             ]
-            signed_call_aggSigner(
-                cf,
-                cf.keyManager.updateCanConsumeKeyNonce,
+            signed_calls_nonces(
+                self.km,
+                self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,
                 toWhitelist,
                 sender=cf.ALICE,
             )
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
-            callDataNoSig = newVault.transfer.encode_input(
-                agg_null_sig(self.km.address, chain.id),
+            args = (
                 ETH_ADDR,
                 st_sender,
                 st_vault_transfer_amount,
             )
-            tx = newVault.transfer(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
-                ETH_ADDR,
-                st_sender,
-                st_vault_transfer_amount,
+            tx = signed_calls_nonces(
+                self.km, newVault.transfer, *args, sender=st_sender
             )
             assert tx.events["TransferFailed"][0].values() == [
                 st_sender,
@@ -163,18 +158,12 @@ def test_upgradability(
             assert startBalVault >= st_vault_transfer_amount
             startBalRecipient = newVault.balance()
 
-            callDataNoSig = self.v.transfer.encode_input(
-                agg_null_sig(self.km.address, chain.id),
+            args = (
                 ETH_ADDR,
                 newVault,
                 st_vault_transfer_amount,
             )
-            self.v.transfer(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
-                ETH_ADDR,
-                newVault,
-                st_vault_transfer_amount,
-            )
+            signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -st_vault_transfer_amount
             assert newVault.balance() - startBalRecipient == st_vault_transfer_amount
@@ -191,17 +180,8 @@ def test_upgradability(
                     st_sender,
                     st_vault_transfer_amount,
                 )
-                callDataNoSig = self.v.transfer.encode_input(
-                    agg_null_sig(self.km.address, chain.id),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
-                )
-                tx = self.v.transfer(
-                    AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
-                    ETH_ADDR,
-                    newVault,
-                    st_vault_transfer_amount,
+                tx = signed_calls_nonces(
+                    self.km, self.v.transfer, *args, sender=st_sender
                 )
                 assert tx.events["TransferFailed"][0].values() == [
                     newVault.address,
@@ -215,18 +195,12 @@ def test_upgradability(
             )
             # Transfer all the remainding balance
             amountToTransfer = self.v.balance()
-            callDataNoSig = self.v.transfer.encode_input(
-                agg_null_sig(self.km.address, chain.id),
+            args = (
                 ETH_ADDR,
                 newVault,
                 amountToTransfer,
             )
-            self.v.transfer(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
-                ETH_ADDR,
-                newVault,
-                amountToTransfer,
-            )
+            signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -amountToTransfer
             assert newVault.balance() - startBalRecipient == amountToTransfer
@@ -241,9 +215,9 @@ def test_upgradability(
                 newVault,
             ]
             toWhitelist = [self.sm, self.f, self.km, newVault]
-            signed_call_aggSigner(
-                cf,
-                cf.keyManager.updateCanConsumeKeyNonce,
+            signed_calls_nonces(
+                self.km,
+                self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,
                 toWhitelist,
                 sender=cf.ALICE,
@@ -279,35 +253,27 @@ def test_upgradability(
                 self.km,
                 newStakeManager,
             ]
-            signed_call_aggSigner(
-                cf,
-                cf.keyManager.updateCanConsumeKeyNonce,
+            signed_calls_nonces(
+                self.km,
+                self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,
                 toWhitelist,
-                sender=cf.ALICE,
+                sender=st_sender,
             )
 
             chain.sleep(st_sleep_time)
 
             # Generate claim to move all FLIP to new stakeManager
-            stakeAmount = MIN_STAKE
             expiryTime = getChainTime() + (CLAIM_DELAY * 10)
             claimAmount = self.totalFlipstaked
             # Register Claim to transfer all flip
-            callDataNoSig = self.sm.registerClaim.encode_input(
-                agg_null_sig(self.km.address, chain.id),
+            args = (
                 JUNK_HEX,
                 claimAmount,
                 newStakeManager,
                 expiryTime,
             )
-            self.sm.registerClaim(
-                AGG_SIGNER_1.getSigData(callDataNoSig, self.km.address),
-                JUNK_HEX,
-                claimAmount,
-                newStakeManager,
-                expiryTime,
-            )
+            signed_calls_nonces(self.km, self.sm.registerClaim, *args, sender=st_sender)
 
             chain.sleep(st_sleep_time)
             if st_sleep_time < CLAIM_DELAY:
@@ -337,9 +303,9 @@ def test_upgradability(
                 newStakeManager,
             ]
             toWhitelist = [self.v, newStakeManager, self.f, self.km]
-            signed_call_aggSigner(
-                cf,
-                cf.keyManager.updateCanConsumeKeyNonce,
+            signed_calls_nonces(
+                self.km,
+                self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,
                 toWhitelist,
                 sender=cf.ALICE,

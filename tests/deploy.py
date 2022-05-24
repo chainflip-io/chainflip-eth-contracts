@@ -20,6 +20,8 @@ def deploy_initial_Chainflip_contracts(
     if args:
         environment = args[0]
 
+    cf.deployer = deployer
+
     aggKey = environment.get("AGG_KEY")
     if aggKey:
         parity = aggKey[0:2]

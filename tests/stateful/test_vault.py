@@ -4,6 +4,7 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from hypothesis import strategies as hypStrat
 from random import choice, choices
+from shared_tests import *
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -124,7 +125,7 @@ def test_vault(
 
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
-            self.community = cfDeploy.communityKey
+            self.communityKey = cfDeploy.communityKey
 
             self.communityGuardDisabled = self.v.getCommunityGuard()
             self.suspended = self.v.getSuspendedState()
@@ -204,8 +205,7 @@ def test_vault(
                 ]
             )
 
-            callDataNoSig = self.v.allBatch.encode_input(
-                agg_null_sig(self.km.address, chain.id),
+            args = (
                 st_swapIDs,
                 fetchTokens,
                 tranTokens,
@@ -216,16 +216,8 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _allBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.allBatch(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        fetchTokens,
-                        tranTokens,
-                        st_recips,
-                        st_eth_amounts,
-                        {"from": st_sender},
+                    signed_calls_nonces(
+                        self.km, self.v.allBatch, *args, sender=st_sender
                     )
             elif (
                 tranTotals[self.tokenA] - fetchTokenATotal
@@ -242,16 +234,9 @@ def test_vault(
                     st_eth_amounts,
                     st_sender,
                 )
-                with reverts():
-                    self.v.allBatch(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        fetchTokens,
-                        tranTokens,
-                        st_recips,
-                        st_eth_amounts,
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                    signed_calls_nonces(
+                        self.km, self.v.allBatch, *args, sender=st_sender
                     )
             else:
                 print(
@@ -263,17 +248,7 @@ def test_vault(
                     st_eth_amounts,
                     st_sender,
                 )
-                tx = self.v.allBatch(
-                    AGG_SIGNER_1.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapIDs,
-                    fetchTokens,
-                    tranTokens,
-                    st_recips,
-                    st_eth_amounts,
-                    {"from": st_sender},
-                )
+                signed_calls_nonces(self.km, self.v.allBatch, *args, sender=st_sender)
 
                 # Alter bals from the fetches
                 for swapID, tok in zip(st_swapIDs, fetchTokens):
@@ -320,8 +295,7 @@ def test_vault(
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            callDataNoSig = self.v.transfer.encode_input(
-                agg_null_sig(self.km.address, chain.id),
+            args = (
                 tokenAddr,
                 st_recip,
                 st_eth_amount,
@@ -330,15 +304,10 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.transfer(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
+                    signed_calls_nonces(
+                        self.km, self.v.transfer, *args, sender=st_sender
                     )
+
             elif st_eth_amount == 0:
                 print(
                     "        REV_MSG_NZ_UINT _vault_transfer",
@@ -348,15 +317,10 @@ def test_vault(
                     st_eth_amount,
                 )
                 with reverts(REV_MSG_NZ_UINT):
-                    self.v.transfer(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
+                    signed_calls_nonces(
+                        self.km, self.v.transfer, *args, sender=st_sender
                     )
+
             elif bals[self.v.address] < st_eth_amount and tokenAddr != ETH_ADDR:
                 print(
                     "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
@@ -365,16 +329,11 @@ def test_vault(
                     st_recip,
                     st_eth_amount,
                 )
-                with reverts():
-                    self.v.transfer(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokenAddr,
-                        st_recip,
-                        st_eth_amount,
-                        {"from": st_sender},
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                    signed_calls_nonces(
+                        self.km, self.v.transfer, *args, sender=st_sender
                     )
+
             else:
                 print(
                     "                    _vault_transfer",
@@ -383,15 +342,7 @@ def test_vault(
                     st_recip,
                     st_eth_amount,
                 )
-                self.v.transfer(
-                    AGG_SIGNER_1.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    tokenAddr,
-                    st_recip,
-                    st_eth_amount,
-                    {"from": st_sender},
-                )
+                signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
 
                 if bals[self.v.address] >= st_eth_amount or tokenAddr != ETH_ADDR:
                     bals[self.v.address] -= st_eth_amount
@@ -433,8 +384,7 @@ def test_vault(
                 ]
             )
 
-            callDataNoSig = self.v.transferBatch.encode_input(
-                agg_null_sig(self.km.address, chain.id),
+            args = (
                 tokens,
                 st_recips,
                 st_eth_amounts,
@@ -443,13 +393,8 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.transferBatch(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokens,
-                        st_recips,
-                        st_eth_amounts,
+                    signed_calls_nonces(
+                        self.km, self.v.transferBatch, *args, sender=st_sender
                     )
             elif (
                 tranTotals[self.tokenA] > self.tokenABals[self.v.address]
@@ -463,13 +408,8 @@ def test_vault(
                     st_eth_amounts,
                 )
                 with reverts():
-                    self.v.transferBatch(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        tokens,
-                        st_recips,
-                        st_eth_amounts,
+                    signed_calls_nonces(
+                        self.km, self.v.transferBatch, *args, sender=st_sender
                     )
             else:
                 print(
@@ -479,13 +419,8 @@ def test_vault(
                     st_recips,
                     st_eth_amounts,
                 )
-                self.v.transferBatch(
-                    AGG_SIGNER_1.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    tokens,
-                    st_recips,
-                    st_eth_amounts,
+                signed_calls_nonces(
+                    self.km, self.v.transferBatch, *args, sender=st_sender
                 )
 
                 for i in range(len(st_recips)):
@@ -566,19 +501,13 @@ def test_vault(
 
         # Fetch the ETH deposit of a random create2
         def rule_fetchDepositEth(self, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositEth.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapID
-            )
-
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositEth(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
+                    signed_calls_nonces(
+                        self.km, self.v.fetchDepositEth, st_swapID, sender=st_sender
                     )
+
             elif st_swapID == 0:
                 print(
                     "        REV_MSG_NZ_BYTES32 rule_fetchDepositEth",
@@ -586,19 +515,13 @@ def test_vault(
                     st_swapID,
                 )
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.v.fetchDepositEth(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
+                    signed_calls_nonces(
+                        self.km, self.v.fetchDepositEth, st_swapID, sender=st_sender
                     )
             else:
                 print("                    rule_fetchDepositEth", st_sender, st_swapID)
-                self.v.fetchDepositEth(
-                    AGG_SIGNER_1.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapID,
+                signed_calls_nonces(
+                    self.km, self.v.fetchDepositEth, st_swapID, sender=st_sender
                 )
 
                 depositAddr = getCreate2Addr(
@@ -615,27 +538,21 @@ def test_vault(
             ]
             total = sum([web3.eth.get_balance(addr) for addr in addrs])
 
-            callDataNoSig = self.v.fetchDepositEthBatch.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapIDs
-            )
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositEthBatch(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
+                    signed_calls_nonces(
+                        self.km,
+                        self.v.fetchDepositEthBatch,
                         st_swapIDs,
+                        sender=st_sender,
                     )
                 return
             print(
                 "                    rule_fetchDepositEthBatch", st_sender, st_swapIDs
             )
-            self.v.fetchDepositEthBatch(
-                AGG_SIGNER_1.getSigDataWithNonces(
-                    callDataNoSig, nonces, AGG, self.km.address
-                ),
-                st_swapIDs,
+            signed_calls_nonces(
+                self.km, self.v.fetchDepositEthBatch, st_swapIDs, sender=st_sender
             )
 
             for addr in addrs:
@@ -644,20 +561,15 @@ def test_vault(
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            callDataNoSig = self.v.fetchDepositToken.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapID, token
-            )
+            args = (st_swapID, token)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositToken(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                        token,
+                    signed_calls_nonces(
+                        self.km, self.v.fetchDepositToken, *args, sender=st_sender
                     )
+
             elif st_swapID == 0:
                 print(
                     "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
@@ -666,12 +578,8 @@ def test_vault(
                     st_swapID,
                 )
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.v.fetchDepositToken(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapID,
-                        token,
+                    signed_calls_nonces(
+                        self.km, self.v.fetchDepositToken, *args, sender=st_sender
                     )
             else:
                 print(
@@ -680,12 +588,8 @@ def test_vault(
                     st_sender,
                     st_swapID,
                 )
-                self.v.fetchDepositToken(
-                    AGG_SIGNER_1.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapID,
-                    token,
+                signed_calls_nonces(
+                    self.km, self.v.fetchDepositToken, *args, sender=st_sender
                 )
 
                 depositAddr = getCreate2Addr(
@@ -716,23 +620,15 @@ def test_vault(
             minLen = min(map(len, [st_swapIDs, st_tokens]))
             maxLen = max(map(len, [st_swapIDs, st_tokens]))
 
-            callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
-                agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
-            )
+            args = (st_swapIDs, st_tokens)
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.v.fetchDepositTokenBatch(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        st_tokens,
+                    signed_calls_nonces(
+                        self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                     )
+
             elif minLen == 3 and minLen != maxLen:
-                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
-                    agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
-                )
                 print(
                     "        rule_fetchDepositTokenBatch",
                     st_sender,
@@ -740,31 +636,19 @@ def test_vault(
                     st_tokens,
                 )
                 with reverts(REV_MSG_V_ARR_LEN):
-                    self.v.fetchDepositTokenBatch(
-                        AGG_SIGNER_1.getSigDataWithNonces(
-                            callDataNoSig, nonces, AGG, self.km.address
-                        ),
-                        st_swapIDs,
-                        st_tokens,
+                    signed_calls_nonces(
+                        self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                     )
             else:
                 trimToShortest([st_swapIDs, st_tokens])
-                callDataNoSig = self.v.fetchDepositTokenBatch.encode_input(
-                    agg_null_sig(self.km.address, chain.id), st_swapIDs, st_tokens
-                )
-
                 print(
                     "                    rule_fetchDepositTokenBatch",
                     st_sender,
                     st_swapIDs,
                     st_tokens,
                 )
-                self.v.fetchDepositTokenBatch(
-                    AGG_SIGNER_1.getSigDataWithNonces(
-                        callDataNoSig, nonces, AGG, self.km.address
-                    ),
-                    st_swapIDs,
-                    st_tokens,
+                signed_calls_nonces(
+                    self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                 )
 
                 for swapID, token in zip(st_swapIDs, st_tokens):
@@ -824,29 +708,29 @@ def test_vault(
         # Enable community Guard
         def rule_enableCommunityGuard(self, st_sender):
             if self.communityGuardDisabled:
-                if st_sender != self.community:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.enableCommunityGuard({"from": st_sender})
                 # Always enable
                 print("                    rule_enableCommunityGuard", st_sender)
-                self.v.enableCommunityGuard({"from": self.community})
+                self.v.enableCommunityGuard({"from": self.communityKey})
                 self.communityGuardDisabled = False
             else:
                 print(
                     "        REV_MSG_GOV_ENABLED_GUARD _enableCommunityGuard", st_sender
                 )
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.enableCommunityGuard({"from": self.community})
+                    self.v.enableCommunityGuard({"from": self.communityKey})
 
         # Disable community Guard
         def rule_disableCommunityGuard(self, st_sender):
             if not self.communityGuardDisabled:
-                if st_sender != self.community:
+                if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
                         self.v.disableCommunityGuard({"from": st_sender})
                 # Always disable
                 print("                    rule_disableCommunityGuard", st_sender)
-                self.v.disableCommunityGuard({"from": self.community})
+                self.v.disableCommunityGuard({"from": self.communityKey})
                 self.communityGuardDisabled = True
             else:
                 print(
@@ -854,7 +738,7 @@ def test_vault(
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
-                    self.v.disableCommunityGuard({"from": self.community})
+                    self.v.disableCommunityGuard({"from": self.communityKey})
 
         # Governance attemps to withdraw FLIP in case of emergency
         def rule_govWithdrawal(self, st_sender):
@@ -919,10 +803,10 @@ def test_vault(
         def invariant_nonchangeable(self):
             assert self.v.getKeyManager() == self.km.address
             assert self.v.getGovernor() == self.governor
-            assert self.v.getCommunityKey() == self.community
+            assert self.v.getCommunityKey() == self.communityKey
 
         def invariant_governanceCommunityGuard(self):
-            assert self.community == self.v.getCommunityKey()
+            assert self.communityKey == self.v.getCommunityKey()
             assert self.communityGuardDisabled == self.v.getCommunityGuard()
             assert self.suspended == self.v.getSuspendedState()
 
