@@ -21,7 +21,16 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
+    address private constant _USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
+
+    // Splitted into two events to not have to spend gas emiting the ingress token
+    event SwapETH(uint256 amount, uint256 egressChainID, string egressToken, bytes32 egressAddress);
+    // If more tokens are supported we need to add a ingressToken value to the event.
+    event SwapToken(uint256 amount, uint256 egressChainID, string egressToken, bytes32 egressAddress);
+
+    bool private _swapsEnabled;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -400,6 +409,45 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                        Swaps                             //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    // egressToken could be a bool selecting nativeToken vs USDC. Less gass but limits the amount of tokens per chain to two.
+    function swapETH(
+        uint256 egressChainID,
+        string calldata egressToken,
+        bytes32 egressAddress
+    ) external payable override swapsEnabled {
+        uint256 amount = msg.value;
+        require(amount > 0, "Vault: amount swapped is zero");
+        // The check for existing chainID, egressToken string and egressAddress shall be done in the CFE
+        emit SwapETH(amount, egressChainID, egressToken, egressAddress);
+    }
+
+    // Could be renamed to SwapUSDC if we hardcode the address. Add ingressToken otherwise.
+    function swapToken(
+        uint256 egressChainID,
+        string calldata egressToken,
+        bytes32 egressAddress,
+        uint256 amount
+    ) external override swapsEnabled {
+        require(amount > 0, "Vault: amount swapped is zero");
+        // Transfer ingress token
+        IERC20(_USDC).safeTransferFrom(msg.sender, address(this), amount);
+        // The check for existing chainID, egressToken string and egressAddress shall be done in the CFE
+        // If more tokens are supported we need to add a ingressToken value to the event.
+        emit SwapToken(amount, egressChainID, egressToken, egressAddress);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                        Governance                        //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /**
      * @notice Withdraw all funds to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community and it can only be executed if no nonce from the
@@ -428,6 +476,24 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
+    function enableSwaps() external override isGovernor swapsDisabled {
+        _swapsEnabled = true;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Getters                         //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Get swapsEnabled
+     * @return  The swapsEnableds state
+     */
+    function getSwapsEnabled() external view override returns (bool) {
+        return _swapsEnabled;
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Modifiers                       //
@@ -440,6 +506,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             block.timestamp - _getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
             "Vault: not enough delay"
         );
+        _;
+    }
+
+    /// @dev    Check that swaps are enabled
+    modifier swapsEnabled() {
+        require(_swapsEnabled, "Vault: swaps not enabled");
+        _;
+    }
+
+    /// @dev    Check that swaps are disabled
+    modifier swapsDisabled() {
+        require(!_swapsEnabled, "Vault: swaps enabled");
         _;
     }
 
