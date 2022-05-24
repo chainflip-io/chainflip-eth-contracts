@@ -33,7 +33,7 @@ jobs:
       - run: sleep 2
       - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
 
-  stateful-tests-seed6:
+  stateful-tests-seed0:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -48,10 +48,10 @@ jobs:
       - run: poetry install --quiet
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 6
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 0
 
 
-  stateful-tests-seed7:
+  stateful-tests-seed1:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -66,9 +66,9 @@ jobs:
       - run: poetry install --quiet
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 7
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 1
 
-  stateful-tests-seed8:
+  stateful-tests-seed2:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -83,9 +83,9 @@ jobs:
       - run: poetry install --quiet
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 8
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 2
 
-  stateful-tests-seed9:
+  stateful-tests-seed3:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -100,9 +100,9 @@ jobs:
       - run: poetry install --quiet
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 9
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 3
 
-  stateful-tests-seed10:
+  stateful-tests-seed4:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -117,9 +117,9 @@ jobs:
       - run: poetry install --quiet
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 10
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 4
 
-  stateful-tests-seed11:
+  stateful-tests-seed5:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
@@ -134,4 +134,4 @@ jobs:
       - run: poetry install --quiet
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 11
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 5

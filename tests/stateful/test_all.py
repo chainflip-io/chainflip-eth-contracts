@@ -5,6 +5,7 @@ from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
+import time
 
 settings = {
     "stateful_step_count": 100,
@@ -2334,10 +2335,11 @@ def test_all(
         # If the contracts have been upgraded, the latest one should hold all the balance
         def invariant_bals(self):
             self.numTxsTested += 1
+            time.sleep(10)
             for addr in self.allAddrs:
-                # assert web3.eth.get_balance(str(addr)) == self.ethBals[
-                #     addr
-                # ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
+                assert web3.eth.get_balance(str(addr)) == self.ethBals[
+                    addr
+                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
 
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
