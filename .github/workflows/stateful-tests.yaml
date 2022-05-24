@@ -42,4 +42,6 @@ jobs:
       - run: npm install
       - run: echo /root/.local/bin >> $GITHUB_PATH
       - run: poetry install --quiet
+      - run: poetry run npx hardhat node &
+      - run: sleep 2
       - run: poetry run brownie test tests/stateful/${{ matrix.test }} --network hardhat --stateful true
