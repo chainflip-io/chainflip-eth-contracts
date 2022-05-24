@@ -479,7 +479,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function enableSwaps() external override isGovernor swapsDisabled {
         _swapsEnabled = true;
     }
-
+    
+    function disableSwaps() external override isGovernor swapsEnabled {
+        _swapsEnabled = false;
+    }
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Getters                         //

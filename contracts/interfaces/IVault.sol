@@ -90,6 +90,8 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function enableSwaps() external;
 
+    function disableSwaps() external;
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Getters                         //
