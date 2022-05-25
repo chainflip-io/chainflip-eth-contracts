@@ -2335,7 +2335,7 @@ def test_all(
         # If the contracts have been upgraded, the latest one should hold all the balance
         def invariant_bals(self):
             self.numTxsTested += 1
-            time.sleep(2)
+            time.sleep(3)
             for addr in self.allAddrs:
                 assert web3.eth.get_balance(str(addr)) == self.ethBals[
                     addr
