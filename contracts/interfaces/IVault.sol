@@ -61,5 +61,38 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         IERC20[] calldata tokens
     ) external;
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                        Swaps                             //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function swapETH(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
+
+    function swapToken(
+        string calldata egressChainAndToken,
+        bytes32 egressAddress,
+        address ingressToken,
+        uint256 amount
+    ) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                        Governance                        //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     function govWithdraw(IERC20[] calldata tokens) external;
+
+    function enableSwaps() external;
+
+    function disableSwaps() external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Getters                         //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function getSwapsEnabled() external view returns (bool);
 }
