@@ -22,8 +22,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
-    event SwapETH(uint256 amount, string egressChainAndToken, bytes32 egressReceiver);
-    event SwapToken(address ingressToken, uint256 amount, string egressChainAndToken, bytes32 egressReceiver);
+    event SwapETH(uint256 amount, string egressParams, bytes32 egressReceiver);
+    event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
 
     bool private _swapsEnabled;
 
@@ -411,11 +411,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Swaps ETH for a token in another chain. Function call needs to specify egress parameters (chain and Token)
-     * @param egressChainAndToken  Egress chain and egress Token. Format "CHAIN:TOKEN" e.g. "BTC:BTC","ETH:ETH","ETH:USDC"
-     * @param egressReceiver  Egress reciever's address.
+     * @notice  Swaps ETH for a token in another chain. Function call needs to specify egress parameters
+     * @param egressParams  String containing egress parameters
+     * @param egressReceiver  Egress reciever's address
      */
-    function swapETH(string calldata egressChainAndToken, bytes32 egressReceiver)
+    function swapETH(string calldata egressParams, bytes32 egressReceiver)
         external
         payable
         override
@@ -425,25 +425,25 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         nzBytes32(egressReceiver)
     {
         // The check for existing chainID, egressToken string and egressReceiver shall be done in the CFE
-        emit SwapETH(msg.value, egressChainAndToken, egressReceiver);
+        emit SwapETH(msg.value, egressParams, egressReceiver);
     }
 
     /**
-     * @notice  Swaps ERC20 Token for a token in another chain. Function call needs to specify the ingress parameters (token and amount) and egress parameters (chain and Token)
-     * @param egressChainAndToken  Egress chain and egress Token. Format "CHAIN:TOKEN" e.g. "BTC:BTC","ETH:ETH","ETH:USDC"
-     * @param egressReceiver  Egress reciever's address.
+     * @notice  Swaps ERC20 Token for a token in another chain. Function call needs to specify the ingress and egress parameters
+     * @param egressParams  String containing egress parameters
+     * @param egressReceiver  Egress reciever's address
      * @param ingressToken  Ingress ERC20 token's address
      * @param amount  Amount of ingress token to swap
      */
     function swapToken(
-        string calldata egressChainAndToken,
+        string calldata egressParams,
         bytes32 egressReceiver,
         address ingressToken,
         uint256 amount
     ) external override isNotSuspended swapsEnabled nzUint(amount) nzAddr(ingressToken) nzBytes32(egressReceiver) {
         IERC20(ingressToken).safeTransferFrom(msg.sender, address(this), amount);
         // The check for existing egresschain, egressToken and egressReceiver shall be done in the CFE
-        emit SwapToken(ingressToken, amount, egressChainAndToken, egressReceiver);
+        emit SwapToken(ingressToken, amount, egressParams, egressReceiver);
     }
 
     //////////////////////////////////////////////////////////////
