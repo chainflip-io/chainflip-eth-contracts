@@ -21,14 +21,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
-    address private constant _USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    // Splitted into two events to not have to spend gas emiting the ingress token
-    event SwapETH(uint256 amount, uint256 egressChainID, string egressToken, bytes32 egressAddress);
-    // If more tokens are supported we need to add a ingressToken value to the event.
-    event SwapToken(uint256 amount, uint256 egressChainID, string egressToken, bytes32 egressAddress);
+    // Could reuse SwapToken instead of having two separate events and use _ETH_ADDR as ingressToken but this consumes 253 less gas
+    event SwapETH(uint256 amount, string egressChainAndToken, bytes32 egressReceiver);
+    event SwapToken(address ingressToken, uint256 amount, string egressChainAndToken, bytes32 egressReceiver);
 
     bool private _swapsEnabled;
 
@@ -415,31 +412,39 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    // egressToken could be a bool selecting nativeToken vs USDC. Less gass but limits the amount of tokens per chain to two.
-    function swapETH(
-        uint256 egressChainID,
-        string calldata egressToken,
-        bytes32 egressAddress
-    ) external payable override swapsEnabled {
-        uint256 amount = msg.value;
-        require(amount > 0, "Vault: amount swapped is zero");
-        // The check for existing chainID, egressToken string and egressAddress shall be done in the CFE
-        emit SwapETH(amount, egressChainID, egressToken, egressAddress);
+    /**
+     * @notice  Swaps ETH for a token in another chain. Function call needs to specify egress parameters (chain and Token)
+     * @param egressChainAndToken  Egress chain and egress Token. Format "CHAIN:TOKEN" e.g. "BTC:BTC","ETH:ETH","ETH:USDC"
+     * @param egressReceiver  Egress reciever's address.
+     */
+    function swapETH(string calldata egressChainAndToken, bytes32 egressReceiver)
+        external
+        payable
+        override
+        swapsEnabled
+        nzUint(msg.value)
+        nzBytes32(egressReceiver)
+    {
+        // The check for existing chainID, egressToken string and egressReceiver shall be done in the CFE
+        emit SwapETH(msg.value, egressChainAndToken, egressReceiver);
     }
 
-    // Could be renamed to SwapUSDC if we hardcode the address. Add ingressToken otherwise.
+    /**
+     * @notice  Swaps ERC20 Token for a token in another chain. Function call needs to specify the ingress parameters (token and amount) and egress parameters (chain and Token)
+     * @param egressChainAndToken  Egress chain and egress Token. Format "CHAIN:TOKEN" e.g. "BTC:BTC","ETH:ETH","ETH:USDC"
+     * @param egressReceiver  Egress reciever's address.
+     * @param ingressToken  Ingress ERC20 token's address
+     * @param amount  Amount of ingress token to swap
+     */
     function swapToken(
-        uint256 egressChainID,
-        string calldata egressToken,
-        bytes32 egressAddress,
+        string calldata egressChainAndToken,
+        bytes32 egressReceiver,
+        address ingressToken,
         uint256 amount
-    ) external override swapsEnabled {
-        require(amount > 0, "Vault: amount swapped is zero");
-        // Transfer ingress token
-        IERC20(_USDC).safeTransferFrom(msg.sender, address(this), amount);
-        // The check for existing chainID, egressToken string and egressAddress shall be done in the CFE
-        // If more tokens are supported we need to add a ingressToken value to the event.
-        emit SwapToken(amount, egressChainID, egressToken, egressAddress);
+    ) external override swapsEnabled nzUint(amount) nzAddr(ingressToken) nzBytes32(egressReceiver) {
+        IERC20(ingressToken).safeTransferFrom(msg.sender, address(this), amount);
+        // The check for existing egresschain, egressToken and egressReceiver shall be done in the CFE
+        emit SwapToken(ingressToken, amount, egressChainAndToken, egressReceiver);
     }
 
     //////////////////////////////////////////////////////////////
@@ -479,10 +484,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function enableSwaps() external override isGovernor swapsDisabled {
         _swapsEnabled = true;
     }
-    
+
     function disableSwaps() external override isGovernor swapsEnabled {
         _swapsEnabled = false;
     }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Getters                         //

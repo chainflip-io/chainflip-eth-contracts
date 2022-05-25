@@ -67,16 +67,12 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function swapETH(
-        uint256 egressChainID,
-        string calldata egressToken,
-        bytes32 egressAddress
-    ) external payable;
+    function swapETH(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
 
     function swapToken(
-        uint256 egressChainID,
-        string calldata egressToken,
+        string calldata egressChainAndToken,
         bytes32 egressAddress,
+        address ingressToken,
         uint256 amount
     ) external;
 
