@@ -92,7 +92,7 @@ def calculateGasTransaction(tx):
     # receipt (aka already mined). Otherwise an error occurs intermittently at the end of a stateful test (test_all) that causes
     # this calculation to be off. For some reason that only happens at the end of the test. Adding time.sleep(1) also seems to
     # solve the problem but using the first solution so it is reusable for non-mined transaction (to be reviewed if tests fail again)
-    # web3.eth.wait_for_transaction_receipt(tx.txid)
+    web3.eth.wait_for_transaction_receipt(tx.txid)
 
     # Gas calculation
     # Could be simplified with `tx.gas_used * tx.gas_price`, but keeping the calculation to show `base_fee + priority_fee`
