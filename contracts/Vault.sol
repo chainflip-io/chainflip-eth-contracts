@@ -422,6 +422,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         payable
         override
         swapsEnabled
+        isNotSuspended
         nzUint(msg.value)
         nzBytes32(egressReceiver)
     {
@@ -441,7 +442,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes32 egressReceiver,
         address ingressToken,
         uint256 amount
-    ) external override swapsEnabled nzUint(amount) nzAddr(ingressToken) nzBytes32(egressReceiver) {
+    ) external override swapsEnabled isNotSuspended nzUint(amount) nzAddr(ingressToken) nzBytes32(egressReceiver) {
         IERC20(ingressToken).safeTransferFrom(msg.sender, address(this), amount);
         // The check for existing egresschain, egressToken and egressReceiver shall be done in the CFE
         emit SwapToken(ingressToken, amount, egressChainAndToken, egressReceiver);
