@@ -22,8 +22,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
-
-    // Could reuse SwapToken instead of having two separate events and use _ETH_ADDR as ingressToken but this consumes 253 less gas
     event SwapETH(uint256 amount, string egressChainAndToken, bytes32 egressReceiver);
     event SwapToken(address ingressToken, uint256 amount, string egressChainAndToken, bytes32 egressReceiver);
 
