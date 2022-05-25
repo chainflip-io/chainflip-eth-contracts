@@ -33,6 +33,144 @@ jobs:
       - run: sleep 2
       - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
 
+
+  stateful-tests-noseed0:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
+
+  stateful-tests-noseed1:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
+
+  stateful-tests-seed0:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 0
+
+
+  stateful-tests-seed1:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 1
+
+  stateful-tests-seed2:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 2
+
+  stateful-tests-seed3:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 3
+
+  stateful-tests-seed4:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 4
+
+  stateful-tests-seed5:
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 3600
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true --hypothesis-seed 5
+
   stateful-tests-seed6:
     needs: lint
     runs-on: self-hosted
