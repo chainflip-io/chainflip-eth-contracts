@@ -89,6 +89,7 @@ def calculateGasSpentByAddress(address, initialTransactionNumber):
 def calculateGasTransaction(tx):
     # Can be simplified to the line below, but keeping the calculation to show base_fee + priority_fee
     # return tx.gas_used * tx.gas_price
+    web3.eth.wait_for_transaction_receipt(tx)
     base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
     priority_fee = tx.gas_price - base_fee
     return (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)
