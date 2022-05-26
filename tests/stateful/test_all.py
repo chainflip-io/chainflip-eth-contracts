@@ -6,7 +6,6 @@ from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
 import time
-import pytest
 
 settings = {
     "stateful_step_count": 100,
@@ -2336,20 +2335,11 @@ def test_all(
         # If the contracts have been upgraded, the latest one should hold all the balance
         def invariant_bals(self):
             self.numTxsTested += 1
+            time.sleep(3)
             for addr in self.allAddrs:
-                # assert web3.eth.get_balance(str(addr)) == self.ethBals[
-                #     addr
-                # ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
-
-                # Sometimes some transaction might be missing, so calculateGasSpentByAddress might be smaller than normal
-                # Account MAX ETH value is 10k eth. MAX_ETH_SEND is 1 ETH, which is > 1e-6. Therefore we should still be able to catch any
-                # unwanted outflow, this should only allow for small amounts of unaccounted gas due to this brownie issue.
-                assert web3.eth.get_balance(str(addr)) <= self.ethBals[addr]
-                assert float(web3.eth.get_balance(str(addr))) == pytest.approx(
-                    self.ethBals[addr]
-                    - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr]),
-                    rel=1e-6,
-                )
+                assert web3.eth.get_balance(str(addr)) == self.ethBals[
+                    addr
+                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
 
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
