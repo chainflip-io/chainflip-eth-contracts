@@ -80,23 +80,39 @@ def getChainTime():
 # Also, when testing with Rinkeby or a private blockchain, there might be previous
 # transactions (that is not an issue when a local hardhat node is span every time)
 def calculateGasSpentByAddress(address, initialTransactionNumber):
+    # history.filter returns a list of all the broadcasted transactions (not necessarily mined)
     transactionList = history.filter(sender=address)[initialTransactionNumber:]
     ethUsed = 0
-    for tx in transactionList:
-        ethUsed += calculateGasTransaction(tx)
+    for txReceipt in transactionList:
+        ethUsed += calculateGasTransaction(txReceipt)
     return ethUsed
 
 
 # Calculate the gas spent in a single transaction
-def calculateGasTransaction(tx):
-    # Make sure the transaction has been mined even though the transaction we get from history.filter should already be a transaction
-    # receipt (aka already mined). Otherwise an error occurs intermittently at the end of a stateful test (test_all) that causes
-    # this calculation to be off. For some reason that only happens at the end of the test. Adding time.sleep(1) also seems to
-    # solve the problem but using the first solution so it is reusable for non-mined transaction (to be reviewed if tests fail again)
+def calculateGasTransaction(txReceipt):
+    # Might be necessary to wait for the transaction to be mined (txReceipt.status == 0 or == 1). Especially
+    # in live networks that are slow.
+    # But is the line below even waiting for the transaction to be mined? Since a receipt can have status == pending
     # web3.eth.wait_for_transaction_receipt(tx.txid)
 
+    # Issue in test_all - calculateGasSpentByAddress seems to be smaller than expected and intermittently the eth balance assertion
+    # fails. Could be that the tx gas values are off or that brownie and/or history.filter  has a bug and doesn't report all the
+    # sent transactions. Adding a sleep at test_all seems to improve the situation, so the latter one seems more likely.
+
+    # Adding a time.sleep(1) in the invariant_bals in test_all and wait_for_transaction_receipt (which I suspect is effectively
+    # only acting as a delay) seems to not be good enough, but it improves a lot (14/15 pass)
+
+    # Try making sure that the transaction is mined:
+    status = txReceipt.status
+    while status == -1 or status == -2:
+        if status == -2:
+            assert 0 == 1
+        time.sleep(0.5)
+        txReceipt = web3.eth.wait_for_transaction_receipt(txReceipt.txid)
+        status = txReceipt.status
+
     # Gas calculation
-    # Could be simplified with `tx.gas_used * tx.gas_price`, but keeping the calculation to show `base_fee + priority_fee`
-    base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
-    priority_fee = tx.gas_price - base_fee
-    return (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)
+    # Could be simplified with `txReceipt.gas_used * txReceipt.gas_price`, but keeping the calculation to show `base_fee + priority_fee`
+    base_fee = web3.eth.get_block(txReceipt.block_number).baseFeePerGas
+    priority_fee = txReceipt.gas_price - base_fee
+    return (txReceipt.gas_used * base_fee) + (txReceipt.gas_used * priority_fee)
