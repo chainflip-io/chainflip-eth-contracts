@@ -94,7 +94,7 @@ def calculateGasTransaction(tx):
     # this calculation to be off. For some reason that only happens at the end of the test. Adding time.sleep(1) also seems to
     # solve the problem but using the first solution so it is reusable for non-mined transaction (to be reviewed if tests fail again)
     # web3.eth.wait_for_transaction_receipt(tx.txid)
-    time.sleep(1)
+
     # Gas calculation
     # Could be simplified with `tx.gas_used * tx.gas_price`, but keeping the calculation to show `base_fee + priority_fee`
     base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
