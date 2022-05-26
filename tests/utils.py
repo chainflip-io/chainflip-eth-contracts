@@ -102,14 +102,7 @@ def calculateGasTransaction(txReceipt):
     # Adding a time.sleep(1) in the invariant_bals in test_all and wait_for_transaction_receipt (which I suspect is effectively
     # only acting as a delay) seems to not be good enough, but it improves a lot (14/15 pass)
 
-    # Try making sure that the transaction is mined:
-    status = txReceipt.status
-    while status == -1 or status == -2:
-        if status == -2:
-            assert 0 == 1
-        time.sleep(0.5)
-        txReceipt = web3.eth.wait_for_transaction_receipt(txReceipt.txid)
-        status = txReceipt.status
+    # Adding a time.sleep(3) in the invariant_bals in test_all seems to make all runs pass
 
     # Gas calculation
     # Could be simplified with `txReceipt.gas_used * txReceipt.gas_price`, but keeping the calculation to show `base_fee + priority_fee`
