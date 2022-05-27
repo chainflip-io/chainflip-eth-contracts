@@ -1,5 +1,4 @@
 from brownie import web3, chain, history
-import time
 
 
 def cleanHexStr(thing):
@@ -79,6 +78,7 @@ def getChainTime():
 # Not using all history because we might not want to include deployment/setup transactions
 # Also, when testing with Rinkeby or a private blockchain, there might be previous
 # transactions (that is not an issue when a local hardhat node is span every time)
+# NOTE: in case of failure related to gas calculations, refer to comment in test_all invariant_bals.
 def calculateGasSpentByAddress(address, initialTransactionNumber):
     # history.filter returns a list of all the broadcasted transactions (not necessarily mined)
     transactionList = history.filter(sender=address)[initialTransactionNumber:]
