@@ -90,21 +90,9 @@ def calculateGasSpentByAddress(address, initialTransactionNumber):
 
 # Calculate the gas spent in a single transaction
 def calculateGasTransaction(txReceipt):
-    # Might be necessary to wait for the transaction to be mined (txReceipt.status == 0 or == 1). Especially
-    # in live networks that are slow.
+    # Might be necessary to wait for the transaction to be mined, especially un live networks that are slow.
+    # Either check for status (txReceipt.status == 0 or == 1) or use wait_for_transaction_receipt.
     # web3.eth.wait_for_transaction_receipt(txReceipt.txid)
-
-    # Error in test_all - calculateGasSpentByAddress seems to be smaller than expected and intermittently the eth balance assertion
-    # fails. Could be that the tx gas values are off or that brownie and/or history.filter has a bug and doesn't report all the
-    # sent transactions. Adding a sleep at test_all seems to improve the situation, so the latter one seems more likely. Also, it
-    # is an error that only occurs at the end of a test, so it is unlikely that the calculations are wrong or that we need to add
-    # the wait_for_transaction_receipt before doing the calculation.
-
-    # Adding a time.sleep(1) in the invariant_bals in test_all and wait_for_transaction_receipt (which I suspect is effectively
-    # only acting as a delay) seems to not be good enough, but it improves a lot (14/15 pass)
-    # time.sleep(2) has not improved it though.
-
-    # Adding a time.sleep(3) in the invariant_bals in test_all seems to make all runs pass
 
     # Gas calculation
     # Could be simplified with `txReceipt.gas_used * txReceipt.gas_price`, but keeping the calculation to show `base_fee + priority_fee`
