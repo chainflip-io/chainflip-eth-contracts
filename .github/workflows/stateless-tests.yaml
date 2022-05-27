@@ -1,9 +1,5 @@
 name: Stateless Tests
-
-on:
-  push:
-    branches:
-      - master
+on: push
 
 jobs:
   lint:
