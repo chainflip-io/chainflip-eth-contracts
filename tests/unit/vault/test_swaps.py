@@ -4,7 +4,7 @@ from consts import *
 from shared_tests import *
 
 
-## Tests for enable and disable swaps
+## Tests enable and disable swaps
 
 
 @given(
