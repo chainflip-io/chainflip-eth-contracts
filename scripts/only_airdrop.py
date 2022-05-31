@@ -285,7 +285,6 @@ def fetch_events(
 def waitForLogTXsToComplete(parsedLog):
     printAndLog("Waiting for sent transactions to complete...")
     # Get all previous sent transactions (if any) from the log and check that they have been included in a block and we get a receipt back
-    previouslySentTxList = []
     for line in parsedLog:
         parsedLine = line.split("Airdrop transaction Tx Hash:")
         if len(parsedLine) > 1:

@@ -42,6 +42,9 @@ jobs:
       - run: npm install
       - run: echo /root/.local/bin >> $GITHUB_PATH
       - run: poetry install --quiet
+      # Spinning hardhat node externally because there's some intermittent nasty bug when the node is shut down at 
+      # the end of some stateful test causing the tests to fail - it is confusingly logged as a Flaky inconsistent 
+      # data generation that behaved differently between runs
       - run: npx hardhat node &
       - run: sleep 2
       - run: poetry run brownie test tests/stateful/${{ matrix.test }} --network hardhat --stateful true
