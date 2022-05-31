@@ -1193,9 +1193,9 @@ def test_all(
                             )
                             assert (
                                 web3.eth.get_balance(self.v.address)
-                                == self.ethBals[self.v.address] + st_eth_amount
+                                == self.ethBals[self.v] + st_eth_amount
                             )
-                            self.ethBals[self.v.address] += st_eth_amount
+                            self.ethBals[self.v] += st_eth_amount
                             self.ethBals[st_sender] -= st_eth_amount
                             assert tx.events["SwapETH"]["amount"] == st_eth_amount
                             assert (
@@ -1289,16 +1289,16 @@ def test_all(
                             if st_token == self.tokenA:
                                 assert (
                                     st_token.balanceOf(self.v.address)
-                                    == self.tokenABals[self.v.address] + st_token_amount
+                                    == self.tokenABals[self.v] + st_token_amount
                                 )
-                                self.tokenABals[self.v.address] += st_token_amount
+                                self.tokenABals[self.v] += st_token_amount
                                 self.tokenABals[st_sender] -= st_token_amount
                             elif st_token == self.tokenB:
                                 assert (
                                     st_token.balanceOf(self.v.address)
-                                    == self.tokenBBals[self.v.address] + st_token_amount
+                                    == self.tokenBBals[self.v] + st_token_amount
                                 )
-                                self.tokenBBals[self.v.address] += st_token_amount
+                                self.tokenBBals[self.v] += st_token_amount
                                 self.tokenBBals[st_sender] -= st_token_amount
                             else:
                                 assert False, "Panicc"
