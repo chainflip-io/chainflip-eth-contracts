@@ -890,7 +890,7 @@ def test_vault(
                                 "egressReceiver"
                             ] == "0x" + cleanHexStr(st_egressReceiver)
 
-        # Swap ETH
+        # Swap Token
         def rule_swapToken(
             self,
             st_sender,
@@ -972,9 +972,17 @@ def test_vault(
                             )
 
                             if st_token == self.tokenA:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenABals[self.v.address] + st_token_amount
+                                )
                                 self.tokenABals[self.v.address] += st_token_amount
                                 self.tokenABals[st_sender] -= st_token_amount
                             elif st_token == self.tokenB:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenBBals[self.v.address] + st_token_amount
+                                )
                                 self.tokenBBals[self.v.address] += st_token_amount
                                 self.tokenBBals[st_sender] -= st_token_amount
                             else:

@@ -1149,7 +1149,7 @@ def test_all(
         def rule_swapETH(
             self, st_sender, st_egressParams, st_egressReceiver, st_eth_amount
         ):
-            if self.suspended:
+            if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
                         "        REV_MSG_GOV_SUSPENDED _swapETH",
@@ -1204,6 +1204,117 @@ def test_all(
                             assert tx.events["SwapETH"][
                                 "egressReceiver"
                             ] == "0x" + cleanHexStr(st_egressReceiver)
+
+        # Swap Token
+        def rule_swapToken(
+            self,
+            st_sender,
+            st_egressParams,
+            st_egressReceiver,
+            st_token_amount,
+            st_token,
+        ):
+            if self.v_suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _swapToken",
+                        st_sender,
+                        st_egressParams,
+                        st_egressReceiver,
+                        st_token_amount,
+                        st_token,
+                    )
+                    self.v.swapToken(
+                        st_egressParams,
+                        st_egressReceiver,
+                        st_token,
+                        st_token_amount,
+                        {"from": st_sender},
+                    )
+            else:
+                if self.swapsEnabled:
+                    if st_token_amount == 0:
+                        print(
+                            "        REV_MSG_NZ_UINT _swapToken",
+                            st_sender,
+                            st_egressParams,
+                            st_egressReceiver,
+                            st_token_amount,
+                            st_token,
+                        )
+                        with reverts(REV_MSG_NZ_UINT):
+                            self.v.swapToken(
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token,
+                                st_token_amount,
+                                {"from": st_sender},
+                            )
+                    else:
+                        st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                        if st_token.balanceOf(st_sender) < st_token_amount:
+                            print(
+                                "        REV_MSG_ERC20_EXCEED_BAL _swapToken",
+                                st_sender,
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token_amount,
+                                st_token,
+                            )
+                            with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                                self.v.swapToken(
+                                    st_egressParams,
+                                    st_egressReceiver,
+                                    st_token,
+                                    st_token_amount,
+                                    {"from": st_sender},
+                                )
+                        else:
+                            print(
+                                "                    rule_swapToken",
+                                st_sender,
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token_amount,
+                                st_token,
+                            )
+                            tx = self.v.swapToken(
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token,
+                                st_token_amount,
+                                {"from": st_sender},
+                            )
+
+                            if st_token == self.tokenA:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenABals[self.v.address] + st_token_amount
+                                )
+                                self.tokenABals[self.v.address] += st_token_amount
+                                self.tokenABals[st_sender] -= st_token_amount
+                            elif st_token == self.tokenB:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenBBals[self.v.address] + st_token_amount
+                                )
+                                self.tokenBBals[self.v.address] += st_token_amount
+                                self.tokenBBals[st_sender] -= st_token_amount
+                            else:
+                                assert False, "Panicc"
+
+                            assert tx.events["SwapToken"]["amount"] == st_token_amount
+                            assert (
+                                tx.events["SwapToken"]["egressParams"]
+                                == st_egressParams
+                            )
+                            assert tx.events["SwapToken"][
+                                "egressReceiver"
+                            ] == "0x" + cleanHexStr(st_egressReceiver)
+                            assert (
+                                tx.events["SwapToken"]["ingressToken"]
+                                == st_token.address
+                            )
 
         # KeyManager
 
