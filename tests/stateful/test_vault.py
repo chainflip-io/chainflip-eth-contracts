@@ -863,25 +863,32 @@ def test_vault(
                                 {"from": st_sender, "amount": st_eth_amount},
                             )
                     else:
-                        print(
-                            "                    rule_swapETH",
-                            st_sender,
-                            st_egressParams,
-                            st_egressReceiver,
-                            st_eth_amount,
-                        )
-                        tx = self.v.swapETH(
-                            st_egressParams,
-                            st_egressReceiver,
-                            {"from": st_sender, "amount": st_eth_amount},
-                        )
-                        self.ethBals[self.v.address] += st_eth_amount
-                        self.ethBals[st_sender] -= st_eth_amount
-                        assert tx.events["SwapETH"]["amount"] == st_eth_amount
-                        assert tx.events["SwapETH"]["egressParams"] == st_egressParams
-                        assert tx.events["SwapETH"][
-                            "egressReceiver"
-                        ] == "0x" + cleanHexStr(st_egressReceiver)
+                        if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
+                            print(
+                                "                    rule_swapETH",
+                                st_sender,
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_eth_amount,
+                            )
+                            tx = self.v.swapETH(
+                                st_egressParams,
+                                st_egressReceiver,
+                                {"from": st_sender, "amount": st_eth_amount},
+                            )
+                            assert (
+                                web3.eth.get_balance(str(st_sender))
+                                == self.ethBals[self.v.address] + st_eth_amount
+                            )
+                            self.ethBals[self.v.address] += st_eth_amount
+                            self.ethBals[st_sender] -= st_eth_amount
+                            assert tx.events["SwapETH"]["amount"] == st_eth_amount
+                            assert (
+                                tx.events["SwapETH"]["egressParams"] == st_egressParams
+                            )
+                            assert tx.events["SwapETH"][
+                                "egressReceiver"
+                            ] == "0x" + cleanHexStr(st_egressReceiver)
 
         # Swap ETH
         def rule_swapToken(
