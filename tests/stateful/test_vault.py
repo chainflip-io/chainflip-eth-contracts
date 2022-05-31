@@ -877,7 +877,7 @@ def test_vault(
                                 {"from": st_sender, "amount": st_eth_amount},
                             )
                             assert (
-                                web3.eth.get_balance(str(st_sender))
+                                web3.eth.get_balance(self.v.address)
                                 == self.ethBals[self.v.address] + st_eth_amount
                             )
                             self.ethBals[self.v.address] += st_eth_amount
@@ -1005,13 +1005,13 @@ def test_vault(
 
         # Check variable(s) after every tx that shouldn't change since there's
         # no intentional way to
-        def invariant_nonchangeable(self):
+        def invariant_keys(self):
             assert self.v.getKeyManager() == self.km.address
             assert self.v.getGovernor() == self.governor
             assert self.v.getCommunityKey() == self.communityKey
 
-        def invariant_governanceCommunityGuard(self):
-            assert self.communityKey == self.v.getCommunityKey()
+        # Check the state variables after every tx
+        def invariant_state_vars(self):
             assert self.communityGuardDisabled == self.v.getCommunityGuard()
             assert self.suspended == self.v.getSuspendedState()
             assert self.swapsEnabled == self.v.getSwapsEnabled()
