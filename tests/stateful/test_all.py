@@ -2346,12 +2346,6 @@ def test_all(
                 assert web3.eth.get_balance(str(addr)) == self.ethBals[
                     addr
                 ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
-                # assert web3.eth.get_balance(str(addr)) <= self.ethBals[addr]
-                # assert float(web3.eth.get_balance(str(addr))) == pytest.approx(
-                #     self.ethBals[addr]
-                #     - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr]),
-                #     rel=1e-6,
-                # )
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
