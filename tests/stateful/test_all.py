@@ -2142,12 +2142,14 @@ def test_all(
                         sender=st_sender,
                     )
 
+                    # Update state variables
                     self.v = newVault
                     self.lastValidateTime = tx.timestamp
                     self.currentWhitelist = toWhitelist
                     self.v_communityGuardDisabled = False
                     self.communityKey = self.communityKey
                     self.v_suspended = False
+                    self.swapsEnabled = False
 
                     # Create new addresses for the new Vault and initialize Balances
                     newCreate2EthAddrs = [
