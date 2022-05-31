@@ -324,21 +324,25 @@ def test_upgradability(
 
         # KeyManager might have changed but references must be updated
         # FLIP contract should have remained the same
-        def invariant_state_vars(self):
-            assert self.v.getKeyManager() == self.km.address
-            assert self.sm.getKeyManager() == self.km.address
-            assert self.f.getKeyManager() == self.km.address
+        def invariant_addresses(self):
+            assert (
+                self.km.address
+                == self.v.getKeyManager()
+                == self.sm.getKeyManager()
+                == self.f.getKeyManager()
+            )
 
             assert self.sm.getFLIP() == self.f.address
-            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
 
-        def invariant_governanceCommunityGuard(self):
+        # Check the state variables after every tx
+        def invariant_state_vars(self):
             assert self.v_communityKey == self.v.getCommunityKey()
             assert self.v_guard == self.v.getCommunityGuard()
             assert self.v_suspended == self.v.getSuspendedState()
             assert self.sm_communityKey == self.sm.getCommunityKey()
             assert self.sm_guard == self.sm.getCommunityGuard()
             assert self.sm_suspended == self.sm.getSuspendedState()
+            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
 
         def invariant_keyManager_whitelist(self):
             aggKeyNonceConsumers = [

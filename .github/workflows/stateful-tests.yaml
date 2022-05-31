@@ -20,6 +20,16 @@ jobs:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 3600
+    strategy:
+      matrix:
+        test:
+          [
+            test_all.py,
+            test_keyManager.py,
+            test_vault.py,
+            test_stakeManager.py,
+            test_upgradability.py,
+          ]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -31,4 +41,4 @@ jobs:
       - run: poetry install --quiet
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful true
+      - run: poetry run brownie test tests/stateful/${{ matrix.test }} --network hardhat --stateful true
