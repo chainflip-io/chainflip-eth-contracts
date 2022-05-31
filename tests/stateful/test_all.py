@@ -1394,6 +1394,27 @@ def test_all(
             self.communityKey = newCommKey
             self.lastValidateTime = tx.timestamp
 
+        # Updates community Key with a random new key - happens with low probability - 1/20
+        def rule_setCommKeyWithCommKey(self, st_sender, st_addr):
+            if st_sender == self.communityKey:
+                print(
+                    "                    rule_setCommKeyWithCommKey",
+                    st_sender,
+                    st_addr,
+                    self.communityKey,
+                )
+                self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
+                self.communityKey = st_addr
+            else:
+                print(
+                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
+                    st_sender,
+                    st_addr,
+                    self.communityKey,
+                )
+                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
+                    self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
+
         # StakeManager
 
         # Stakes a random amount from a random staker to a random nodeID
@@ -2087,7 +2108,7 @@ def test_all(
                         nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
                     }
 
-        # Suspend and resume Vault and StakeManager
+        # Governance Community Guarded
 
         # Suspends the stake Manager if st_sender matches the governor address.
         def rule_suspend_stakeManager(self, st_sender, st_addr):
@@ -2158,27 +2179,6 @@ def test_all(
                 print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
                     self.v.resume({"from": self.governor})
-
-        # Updates community Key with a random new key - happens with low probability - 1/20
-        def rule_setCommKeyWithCommKey(self, st_sender, st_addr):
-            if st_sender == self.communityKey:
-                print(
-                    "                    rule_setCommKeyWithCommKey",
-                    st_sender,
-                    st_addr,
-                    self.communityKey,
-                )
-                self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
-                self.communityKey = st_addr
-            else:
-                print(
-                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
-                    st_sender,
-                    st_addr,
-                    self.communityKey,
-                )
-                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
-                    self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
 
         # Enable Stake Manager's community Guard
         def rule_sm_enableCommunityGuard(self, st_sender):

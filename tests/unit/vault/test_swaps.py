@@ -4,7 +4,7 @@ from consts import *
 from shared_tests import *
 
 
-## Tests enable and disable swaps
+# Tests enable and disable swaps
 
 
 @given(
@@ -49,7 +49,7 @@ def test_enableSwaps_rev_disabled(cf):
         cf.vault.disableSwaps({"from": cf.gov})
 
 
-## SwapETH
+# SwapETH
 
 
 @given(
@@ -114,7 +114,7 @@ def test_swapETH_rev_nzbytes(cf, st_sender, st_egressParams, st_amount):
         cf.vault.swapETH(st_egressParams, 0, {"from": st_sender, "amount": st_amount})
 
 
-## SwapToken
+# SwapToken
 
 
 @given(
