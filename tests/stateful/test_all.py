@@ -235,6 +235,7 @@ def test_all(
                 [Signer.gen_signer(None, {})] * (TOTAL_KEYS - 2)
             )
             self.currentWhitelist = cfDeployAllWhitelist.whitelisted
+            self.swapsEnabled = False
 
             # StakeManager
             self.totalStake = 0
@@ -274,6 +275,8 @@ def test_all(
         st_addr = strategy("address", length=MAX_NUM_SENDERS)
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
+        st_egressParams = strategy("string")
+        st_egressReceiver = strategy("bytes32", exclude=(0).to_bytes(32, "big"))
 
         # KeyManager
 
@@ -1108,6 +1111,212 @@ def test_all(
                 )
                 self.lastValidateTime = tx.timestamp
 
+        # Enable swaps if they are disabled
+        def rule_enableSwaps(self, st_sender):
+            if not self.swapsEnabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        print("        REV_MSG_GOV_GOVERNOR _enableSwaps", st_sender)
+                        self.v.enableSwaps({"from": st_sender})
+                # Always enable
+                print("                    rule_enableSwaps", st_sender)
+                self.v.enableSwaps({"from": self.governor})
+                self.swapsEnabled = True
+            else:
+                print("        REV_MSG_VAULT_SWAPS_EN _enableSwaps", st_sender)
+                with reverts(REV_MSG_VAULT_SWAPS_EN):
+                    self.v.enableSwaps({"from": self.governor})
+
+        # Disable swaps if they are enabled (only 1/5 times)
+        def rule_disableSwaps(self, st_sender):
+            if self.swapsEnabled:
+                if st_sender != self.governor:
+                    with reverts(REV_MSG_GOV_GOVERNOR):
+                        print("        REV_MSG_GOV_GOVERNOR _disableSwaps", st_sender)
+                        self.v.disableSwaps({"from": st_sender})
+                else:
+                    print("                    rule_disableSwaps", st_sender)
+                    self.v.disableSwaps({"from": st_sender})
+                    self.swapsEnabled = False
+            else:
+                print(
+                    "        REV_MSG_GOV_DISABLED_GUARD _disableSwaps",
+                    st_sender,
+                )
+                with reverts(REV_MSG_VAULT_SWAPS_DIS):
+                    self.v.disableSwaps({"from": self.governor})
+
+        # Swap ETH
+        def rule_swapETH(
+            self, st_sender, st_egressParams, st_egressReceiver, st_eth_amount
+        ):
+            if self.v_suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _swapETH",
+                        st_sender,
+                        st_egressParams,
+                        st_egressReceiver,
+                        st_eth_amount,
+                    )
+                    self.v.swapETH(
+                        st_egressParams, st_egressReceiver, {"from": st_sender}
+                    )
+            else:
+                if self.swapsEnabled:
+                    if st_eth_amount == 0:
+                        print(
+                            "        REV_MSG_NZ_UINT _swapETH",
+                            st_sender,
+                            st_egressParams,
+                            st_egressReceiver,
+                            st_eth_amount,
+                        )
+                        with reverts(REV_MSG_NZ_UINT):
+                            self.v.swapETH(
+                                st_egressParams,
+                                st_egressReceiver,
+                                {"from": st_sender, "amount": st_eth_amount},
+                            )
+                    else:
+                        if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
+                            print(
+                                "                    rule_swapETH",
+                                st_sender,
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_eth_amount,
+                            )
+                            tx = self.v.swapETH(
+                                st_egressParams,
+                                st_egressReceiver,
+                                {"from": st_sender, "amount": st_eth_amount},
+                            )
+                            assert (
+                                web3.eth.get_balance(self.v.address)
+                                == self.ethBals[self.v] + st_eth_amount
+                            )
+                            self.ethBals[self.v] += st_eth_amount
+                            self.ethBals[st_sender] -= st_eth_amount
+                            assert tx.events["SwapETH"]["amount"] == st_eth_amount
+                            assert (
+                                tx.events["SwapETH"]["egressParams"] == st_egressParams
+                            )
+                            assert tx.events["SwapETH"][
+                                "egressReceiver"
+                            ] == "0x" + cleanHexStr(st_egressReceiver)
+
+        # Swap Token
+        def rule_swapToken(
+            self,
+            st_sender,
+            st_egressParams,
+            st_egressReceiver,
+            st_token_amount,
+            st_token,
+        ):
+            if self.v_suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _swapToken",
+                        st_sender,
+                        st_egressParams,
+                        st_egressReceiver,
+                        st_token_amount,
+                        st_token,
+                    )
+                    self.v.swapToken(
+                        st_egressParams,
+                        st_egressReceiver,
+                        st_token,
+                        st_token_amount,
+                        {"from": st_sender},
+                    )
+            else:
+                if self.swapsEnabled:
+                    if st_token_amount == 0:
+                        print(
+                            "        REV_MSG_NZ_UINT _swapToken",
+                            st_sender,
+                            st_egressParams,
+                            st_egressReceiver,
+                            st_token_amount,
+                            st_token,
+                        )
+                        with reverts(REV_MSG_NZ_UINT):
+                            self.v.swapToken(
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token,
+                                st_token_amount,
+                                {"from": st_sender},
+                            )
+                    else:
+                        st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                        if st_token.balanceOf(st_sender) < st_token_amount:
+                            print(
+                                "        REV_MSG_ERC20_EXCEED_BAL _swapToken",
+                                st_sender,
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token_amount,
+                                st_token,
+                            )
+                            with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                                self.v.swapToken(
+                                    st_egressParams,
+                                    st_egressReceiver,
+                                    st_token,
+                                    st_token_amount,
+                                    {"from": st_sender},
+                                )
+                        else:
+                            print(
+                                "                    rule_swapToken",
+                                st_sender,
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token_amount,
+                                st_token,
+                            )
+                            tx = self.v.swapToken(
+                                st_egressParams,
+                                st_egressReceiver,
+                                st_token,
+                                st_token_amount,
+                                {"from": st_sender},
+                            )
+
+                            if st_token == self.tokenA:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenABals[self.v] + st_token_amount
+                                )
+                                self.tokenABals[self.v] += st_token_amount
+                                self.tokenABals[st_sender] -= st_token_amount
+                            elif st_token == self.tokenB:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenBBals[self.v] + st_token_amount
+                                )
+                                self.tokenBBals[self.v] += st_token_amount
+                                self.tokenBBals[st_sender] -= st_token_amount
+                            else:
+                                assert False, "Panicc"
+
+                            assert tx.events["SwapToken"]["amount"] == st_token_amount
+                            assert (
+                                tx.events["SwapToken"]["egressParams"]
+                                == st_egressParams
+                            )
+                            assert tx.events["SwapToken"][
+                                "egressReceiver"
+                            ] == "0x" + cleanHexStr(st_egressReceiver)
+                            assert (
+                                tx.events["SwapToken"]["ingressToken"]
+                                == st_token.address
+                            )
+
         # KeyManager
 
         # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
@@ -1394,6 +1603,27 @@ def test_all(
 
             self.communityKey = newCommKey
             self.lastValidateTime = tx.timestamp
+
+        # Updates community Key with a random new key - happens with low probability - 1/20
+        def rule_setCommKeyWithCommKey(self, st_sender, st_addr):
+            if st_sender == self.communityKey:
+                print(
+                    "                    rule_setCommKeyWithCommKey",
+                    st_sender,
+                    st_addr,
+                    self.communityKey,
+                )
+                self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
+                self.communityKey = st_addr
+            else:
+                print(
+                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
+                    st_sender,
+                    st_addr,
+                    self.communityKey,
+                )
+                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
+                    self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
 
         # StakeManager
 
@@ -1913,12 +2143,14 @@ def test_all(
                         sender=st_sender,
                     )
 
+                    # Update state variables
                     self.v = newVault
                     self.lastValidateTime = tx.timestamp
                     self.currentWhitelist = toWhitelist
                     self.v_communityGuardDisabled = False
                     self.communityKey = self.communityKey
                     self.v_suspended = False
+                    self.swapsEnabled = False
 
                     # Create new addresses for the new Vault and initialize Balances
                     newCreate2EthAddrs = [
@@ -2088,7 +2320,7 @@ def test_all(
                         nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
                     }
 
-        # Suspend and resume Vault and StakeManager
+        # Governance Community Guarded
 
         # Suspends the stake Manager if st_sender matches the governor address.
         def rule_suspend_stakeManager(self, st_sender, st_addr):
@@ -2159,27 +2391,6 @@ def test_all(
                 print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
                     self.v.resume({"from": self.governor})
-
-        # Updates community Key with a random new key - happens with low probability - 1/20
-        def rule_setCommKeyWithCommKey(self, st_sender, st_addr):
-            if st_sender == self.communityKey:
-                print(
-                    "                    rule_setCommKeyWithCommKey",
-                    st_sender,
-                    st_addr,
-                    self.communityKey,
-                )
-                self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
-                self.communityKey = st_addr
-            else:
-                print(
-                    "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
-                    st_sender,
-                    st_addr,
-                    self.communityKey,
-                )
-                with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
-                    self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
 
         # Enable Stake Manager's community Guard
         def rule_sm_enableCommunityGuard(self, st_sender):
@@ -2351,10 +2562,13 @@ def test_all(
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
 
         # Regardless of contract redeployment check that references are correct
-        def invariant_nonchangeable(self):
-            assert self.v.getKeyManager() == self.km.address
-            assert self.sm.getKeyManager() == self.km.address
-            assert self.f.getKeyManager() == self.km.address
+        def invariant_addresses(self):
+            assert (
+                self.km.address
+                == self.v.getKeyManager()
+                == self.sm.getKeyManager()
+                == self.f.getKeyManager()
+            )
 
             assert self.sm.getFLIP() == self.f.address
 
@@ -2369,17 +2583,6 @@ def test_all(
             assert (
                 self.km.getAggregateKey() == self.keyIDToCurKeys[AGG].getPubDataWith0x()
             )
-            assert self.km.getGovernanceKey() == self.governor
-
-        # Check the intentionally changeable variables after every tx
-        def invariant_state_vars(self):
-            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
-            assert self.sm.getMinimumStake() == self.minStake
-            assert self.km.getLastValidateTime() == self.lastValidateTime
-            for nodeID, claim in self.pendingClaims.items():
-                assert self.sm.getPendingClaim(nodeID) == claim
-
-        def invariant_governanceCommunityGuard(self):
             assert (
                 self.governor
                 == self.km.getGovernanceKey()
@@ -2392,10 +2595,19 @@ def test_all(
                 == self.sm.getCommunityKey()
                 == self.v.getCommunityKey()
             )
+
+        # Check the state variables after every tx
+        def invariant_state_vars(self):
+            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            assert self.sm.getMinimumStake() == self.minStake
             assert self.sm_communityGuardDisabled == self.sm.getCommunityGuard()
             assert self.sm_suspended == self.sm.getSuspendedState()
             assert self.v_communityGuardDisabled == self.v.getCommunityGuard()
             assert self.v_suspended == self.v.getSuspendedState()
+            assert self.swapsEnabled == self.v.getSwapsEnabled()
+            assert self.km.getLastValidateTime() == self.lastValidateTime
+            for nodeID, claim in self.pendingClaims.items():
+                assert self.sm.getPendingClaim(nodeID) == claim
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
