@@ -401,10 +401,17 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.sm.govWithdraw({"from": self.governor})
 
-        # Check variable(s) after every tx that shouldn't change since there's
-        # no intentional way to
-        def invariant_nonchangeable(self):
+        # Check all the balances of every address are as they should be after every tx
+        def invariant_bals(self):
             self.numTxsTested += 1
+            for addr in self.allAddrs:
+                assert addr.balance() == self.ethBals[
+                    addr
+                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
+                assert self.f.balanceOf(addr) == self.flipBals[addr]
+
+        # Check addresses and keys are correct after every tx
+        def invariant_addresses(self):
             assert self.sm.getKeyManager() == self.km.address
             assert self.sm.getFLIP() == self.f.address
             assert self.sm.getGovernor() == self.governor
@@ -412,23 +419,13 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Check all the state variables that can be changed after every tx
         def invariant_state_vars(self):
+            assert self.community == self.sm.getCommunityKey()
+            assert self.communityGuardDisabled == self.sm.getCommunityGuard()
+            assert self.suspended == self.sm.getSuspendedState()
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             assert self.sm.getMinimumStake() == self.minStake
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim
-
-        # Check all the balances of every address are as they should be after every tx
-        def invariant_bals(self):
-            for addr in self.allAddrs:
-                assert addr.balance() == self.ethBals[
-                    addr
-                ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
-                assert self.f.balanceOf(addr) == self.flipBals[addr]
-
-        def invariant_governanceCommunityGuard(self):
-            assert self.community == self.sm.getCommunityKey()
-            assert self.communityGuardDisabled == self.sm.getCommunityGuard()
-            assert self.suspended == self.sm.getSuspendedState()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
