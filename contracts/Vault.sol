@@ -487,7 +487,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Disable swapETH and swapToken functionality by governance. Features disabled by default
+     * @notice  Disable swapETH and swapToken functionality by governance. Features disabled by default.
      */
     function disableSwaps() external override isGovernor swapsEnabled {
         _swapsEnabled = false;
