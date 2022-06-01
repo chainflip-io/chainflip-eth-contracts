@@ -597,7 +597,7 @@ def test_all(
                 or totalTokenB > self.tokenBBals[self.v]
             ):
                 print(
-                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch", dump
+                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch", *dump
                 )
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
@@ -990,9 +990,7 @@ def test_all(
             dump = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    print(
-                        "        REV_MSG_GOV_SUSPENDED _swapETH"
-                    )
+                    print("        REV_MSG_GOV_SUSPENDED _swapETH")
                     self.v.swapETH(*args, {"from": st_sender})
             else:
                 if self.swapsEnabled:
@@ -1037,9 +1035,7 @@ def test_all(
             dump = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    print(
-                        "        REV_MSG_GOV_SUSPENDED _swapToken"
-                    )
+                    print("        REV_MSG_GOV_SUSPENDED _swapToken")
                     self.v.swapToken(
                         *args,
                         {"from": st_sender},
@@ -1263,7 +1259,8 @@ def test_all(
                 self.governor = st_addr
             else:
                 print(
-                    "        REV_MSG_KEYMANAGER_GOVERNOR rule_setGovKeyWithGovKey", dump
+                    "        REV_MSG_KEYMANAGER_GOVERNOR rule_setGovKeyWithGovKey",
+                    *dump,
                 )
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.setGovKeyWithGovKey(st_addr, {"from": st_sender})
@@ -1350,7 +1347,7 @@ def test_all(
             else:
                 print(
                     "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
-                    dump,
+                    *dump,
                 )
                 with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
                     self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
@@ -1609,7 +1606,7 @@ def test_all(
                 if sm_inibalance + st_amount_supply < 0:
                     with reverts(REV_MSG_BURN_BALANCE):
                         print(
-                            "        REV_MSG_BURN_BALANCE rule_updateFlipSupply", dump
+                            "        REV_MSG_BURN_BALANCE rule_updateFlipSupply", *dump
                         )
                         signed_calls_nonces(
                             self.km,
@@ -1893,7 +1890,7 @@ def test_all(
             elif not self.sm in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
-                    dump,
+                    *dump,
                 )
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
@@ -1911,7 +1908,7 @@ def test_all(
                 if signer != self.keyIDToCurKeys[AGG]:
                     print(
                         "        REV_MSG_SIG rule_upgrade_stakeManager",
-                        dump,
+                        *dump,
                     )
                     with reverts(REV_MSG_SIG):
                         signed_calls_nonces(

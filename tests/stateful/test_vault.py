@@ -373,14 +373,14 @@ def test_vault(
                 or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]
             ):
                 print(
-                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch", dump
+                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch", *dump
                 )
                 with reverts():
                     signed_calls_nonces(
                         self.km, self.v.transferBatch, *args, sender=st_sender
                     )
             else:
-                print("                    rule_vault_transferBatch", dump)
+                print("                    rule_vault_transferBatch", *dump)
                 signed_calls_nonces(
                     self.km, self.v.transferBatch, *args, sender=st_sender
                 )

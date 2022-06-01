@@ -261,7 +261,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             else:
                 print(
                     "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
-                    dump,
+                    *dump,
                 )
                 with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
                     self.km.setCommKeyWithCommKey(newCommKey, {"from": st_sender})
