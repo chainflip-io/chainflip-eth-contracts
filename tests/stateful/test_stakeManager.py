@@ -103,48 +103,27 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Stakes a random amount from a random staker to a random nodeID
         def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
+            args = (st_nodeID, st_amount, st_returnAddr)
+            dump = (*args, st_staker)
             if st_nodeID == 0:
-                print(
-                    "        NODEID rule_stake", st_staker, st_nodeID, st_amount / E_18
-                )
+                print("        NODEID rule_stake", *dump)
                 with reverts(REV_MSG_NZ_BYTES32):
                     self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-                    )
+                    self.sm.stake(*args, {"from": st_staker})
             elif st_amount < self.minStake:
-                print(
-                    "        REV_MSG_MIN_STAKE rule_stake",
-                    st_staker,
-                    st_nodeID,
-                    st_amount / E_18,
-                )
+                print("        REV_MSG_MIN_STAKE rule_stake", *dump)
                 with reverts(REV_MSG_MIN_STAKE):
                     self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-                    )
+                    self.sm.stake(*args, {"from": st_staker})
             elif st_amount > self.flipBals[st_staker]:
-                print(
-                    "        REV_MSG_ERC20_EXCEED_BAL rule_stake",
-                    st_staker,
-                    st_nodeID,
-                    st_amount / E_18,
-                )
+                print("        REV_MSG_ERC20_EXCEED_BAL rule_stake", *dump)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
-                    )
+                    self.sm.stake(*args, {"from": st_staker})
             else:
-                print(
-                    "                    rule_stake",
-                    st_staker,
-                    st_nodeID,
-                    st_amount / E_18,
-                )
+                print("                    rule_stake", *dump)
                 self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                self.sm.stake(st_nodeID, st_amount, st_returnAddr, {"from": st_staker})
+                self.sm.stake(*args, {"from": st_staker})
 
                 self.flipBals[st_staker] -= st_amount
                 self.flipBals[self.sm] += st_amount
@@ -166,6 +145,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 st_staker,
                 getChainTime() + st_expiry_time_diff,
             )
+            dump = (*args, st_signer_agg, st_sender)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _registerClaim")
@@ -179,7 +159,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     )
 
             elif st_nodeID == 0:
-                print("        NODEID rule_registerClaim", *args)
+                print("        NODEID rule_registerClaim", *dump)
                 with reverts(REV_MSG_NZ_BYTES32):
                     signed_calls_nonces(
                         self.km,
@@ -190,7 +170,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     )
 
             elif st_amount == 0:
-                print("        AMOUNT rule_registerClaim", *args)
+                print("        AMOUNT rule_registerClaim", *dump)
                 with reverts(REV_MSG_NZ_UINT):
                     signed_calls_nonces(
                         self.km,
@@ -201,7 +181,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     )
 
             elif st_signer_agg != AGG_SIGNER_1:
-                print("        REV_MSG_SIG rule_registerClaim", *args)
+                print("        REV_MSG_SIG rule_registerClaim", *dump)
                 with reverts(REV_MSG_SIG):
                     signed_calls_nonces(
                         self.km,
@@ -212,7 +192,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     )
 
             elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
-                print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *args)
+                print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *dump)
                 with reverts(REV_MSG_CLAIM_EXISTS):
                     signed_calls_nonces(
                         self.km,
@@ -223,7 +203,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     )
 
             elif st_expiry_time_diff <= CLAIM_DELAY:
-                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *args)
+                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *dump)
                 with reverts(REV_MSG_EXPIRY_TOO_SOON):
                     signed_calls_nonces(
                         self.km,
@@ -234,7 +214,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     )
 
             else:
-                print("                    rule_registerClaim ", *args)
+                print("                    rule_registerClaim ", *dump)
                 tx = signed_calls_nonces(
                     self.km,
                     self.sm.registerClaim,

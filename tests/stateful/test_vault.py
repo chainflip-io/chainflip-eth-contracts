@@ -215,6 +215,7 @@ def test_vault(
                 st_recips,
                 st_eth_amounts,
             )
+            dump = (*args, st_sender)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _allBatch")
@@ -228,29 +229,13 @@ def test_vault(
                 or tranTotals[self.tokenB] - fetchTokenBTotal
                 > self.tokenBBals[self.v.address]
             ):
-                print(
-                    "        NOT ENOUGH TOKENS IN VAULT rule_allBatch",
-                    st_swapIDs,
-                    fetchTokens,
-                    tranTotals,
-                    st_recips,
-                    st_eth_amounts,
-                    st_sender,
-                )
+                print("        NOT ENOUGH TOKENS IN VAULT rule_allBatch", *dump)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
                         self.km, self.v.allBatch, *args, sender=st_sender
                     )
             else:
-                print(
-                    "                    rule_allBatch",
-                    st_swapIDs,
-                    fetchTokens,
-                    tranTokens,
-                    st_recips,
-                    st_eth_amounts,
-                    st_sender,
-                )
+                print("                    rule_allBatch", *dump)
                 signed_calls_nonces(self.km, self.v.allBatch, *args, sender=st_sender)
 
                 # Alter bals from the fetches
@@ -303,6 +288,7 @@ def test_vault(
                 st_recip,
                 st_eth_amount,
             )
+            dump = (*args, st_sender)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
@@ -312,39 +298,21 @@ def test_vault(
                     )
 
             elif st_eth_amount == 0:
-                print(
-                    "        REV_MSG_NZ_UINT _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                )
+                print("        REV_MSG_NZ_UINT _vault_transfer", *dump)
                 with reverts(REV_MSG_NZ_UINT):
                     signed_calls_nonces(
                         self.km, self.v.transfer, *args, sender=st_sender
                     )
 
             elif bals[self.v.address] < st_eth_amount and tokenAddr != ETH_ADDR:
-                print(
-                    "        NOT ENOUGH TOKENS IN VAULT _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                )
+                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *dump)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
                         self.km, self.v.transfer, *args, sender=st_sender
                     )
 
             else:
-                print(
-                    "                    _vault_transfer",
-                    tokenAddr,
-                    st_sender,
-                    st_recip,
-                    st_eth_amount,
-                )
+                print("                    _vault_transfer", *dump)
                 signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
 
                 if bals[self.v.address] >= st_eth_amount or tokenAddr != ETH_ADDR:
@@ -392,6 +360,7 @@ def test_vault(
                 st_recips,
                 st_eth_amounts,
             )
+            dump = (*args, st_sender)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
@@ -404,24 +373,14 @@ def test_vault(
                 or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]
             ):
                 print(
-                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
-                    st_sender,
-                    tokens,
-                    st_recips,
-                    st_eth_amounts,
+                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch", dump
                 )
                 with reverts():
                     signed_calls_nonces(
                         self.km, self.v.transferBatch, *args, sender=st_sender
                     )
             else:
-                print(
-                    "                    rule_vault_transferBatch",
-                    st_sender,
-                    tokens,
-                    st_recips,
-                    st_eth_amounts,
-                )
+                print("                    rule_vault_transferBatch", dump)
                 signed_calls_nonces(
                     self.km, self.v.transferBatch, *args, sender=st_sender
                 )
@@ -565,6 +524,7 @@ def test_vault(
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
             args = (st_swapID, token)
+            dump = (*args, st_sender)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
@@ -574,23 +534,13 @@ def test_vault(
                     )
 
             elif st_swapID == 0:
-                print(
-                    "        REV_MSG_NZ_BYTES32 _fetchDepositToken",
-                    token.address,
-                    st_sender,
-                    st_swapID,
-                )
+                print("        REV_MSG_NZ_BYTES32 _fetchDepositToken", *dump)
                 with reverts(REV_MSG_NZ_BYTES32):
                     signed_calls_nonces(
                         self.km, self.v.fetchDepositToken, *args, sender=st_sender
                     )
             else:
-                print(
-                    "                    _fetchDepositToken",
-                    token,
-                    st_sender,
-                    st_swapID,
-                )
+                print("                    _fetchDepositToken", *dump)
                 signed_calls_nonces(
                     self.km, self.v.fetchDepositToken, *args, sender=st_sender
                 )
@@ -624,6 +574,7 @@ def test_vault(
             maxLen = max(map(len, [st_swapIDs, st_tokens]))
 
             args = (st_swapIDs, st_tokens)
+            dump = (*args, st_sender)
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -632,24 +583,14 @@ def test_vault(
                     )
 
             elif minLen == 3 and minLen != maxLen:
-                print(
-                    "        rule_fetchDepositTokenBatch",
-                    st_sender,
-                    st_swapIDs,
-                    st_tokens,
-                )
+                print("        rule_fetchDepositTokenBatch", *dump)
                 with reverts(REV_MSG_V_ARR_LEN):
                     signed_calls_nonces(
                         self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                     )
             else:
                 trimToShortest([st_swapIDs, st_tokens])
-                print(
-                    "                    rule_fetchDepositTokenBatch",
-                    st_sender,
-                    st_swapIDs,
-                    st_tokens,
-                )
+                print("                    rule_fetchDepositTokenBatch", *dump)
                 signed_calls_nonces(
                     self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                 )
@@ -834,46 +775,28 @@ def test_vault(
         def rule_swapETH(
             self, st_sender, st_egressParams, st_egressReceiver, st_eth_amount
         ):
+            args = (st_egressParams, st_egressReceiver)
+            dump = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
                         "        REV_MSG_GOV_SUSPENDED _swapETH",
-                        st_sender,
-                        st_egressParams,
-                        st_egressReceiver,
-                        st_eth_amount,
                     )
-                    self.v.swapETH(
-                        st_egressParams, st_egressReceiver, {"from": st_sender}
-                    )
+                    self.v.swapETH(*args, {"from": st_sender})
             else:
                 if self.swapsEnabled:
                     if st_eth_amount == 0:
-                        print(
-                            "        REV_MSG_NZ_UINT _swapETH",
-                            st_sender,
-                            st_egressParams,
-                            st_egressReceiver,
-                            st_eth_amount,
-                        )
+                        print("        REV_MSG_NZ_UINT _swapETH", *dump)
                         with reverts(REV_MSG_NZ_UINT):
                             self.v.swapETH(
-                                st_egressParams,
-                                st_egressReceiver,
+                                *args,
                                 {"from": st_sender, "amount": st_eth_amount},
                             )
                     else:
                         if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
-                            print(
-                                "                    rule_swapETH",
-                                st_sender,
-                                st_egressParams,
-                                st_egressReceiver,
-                                st_eth_amount,
-                            )
+                            print("                    rule_swapETH", *dump)
                             tx = self.v.swapETH(
-                                st_egressParams,
-                                st_egressReceiver,
+                                *args,
                                 {"from": st_sender, "amount": st_eth_amount},
                             )
                             assert (
@@ -899,75 +822,37 @@ def test_vault(
             st_token_amount,
             st_token,
         ):
+            args = (st_egressParams, st_egressReceiver, st_token, st_token_amount)
+            dump = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    print(
-                        "        REV_MSG_GOV_SUSPENDED _swapToken",
-                        st_sender,
-                        st_egressParams,
-                        st_egressReceiver,
-                        st_token_amount,
-                        st_token,
-                    )
+                    print("        REV_MSG_GOV_SUSPENDED _swapToken")
                     self.v.swapToken(
-                        st_egressParams,
-                        st_egressReceiver,
-                        st_token,
-                        st_token_amount,
+                        *args,
                         {"from": st_sender},
                     )
             else:
                 if self.swapsEnabled:
                     if st_token_amount == 0:
-                        print(
-                            "        REV_MSG_NZ_UINT _swapToken",
-                            st_sender,
-                            st_egressParams,
-                            st_egressReceiver,
-                            st_token_amount,
-                            st_token,
-                        )
+                        print("        REV_MSG_NZ_UINT _swapToken", *dump)
                         with reverts(REV_MSG_NZ_UINT):
                             self.v.swapToken(
-                                st_egressParams,
-                                st_egressReceiver,
-                                st_token,
-                                st_token_amount,
+                                *args,
                                 {"from": st_sender},
                             )
                     else:
                         st_token.approve(self.v, st_token_amount, {"from": st_sender})
                         if st_token.balanceOf(st_sender) < st_token_amount:
-                            print(
-                                "        REV_MSG_ERC20_EXCEED_BAL _swapToken",
-                                st_sender,
-                                st_egressParams,
-                                st_egressReceiver,
-                                st_token_amount,
-                                st_token,
-                            )
+                            print("        REV_MSG_ERC20_EXCEED_BAL _swapToken", *dump)
                             with reverts(REV_MSG_ERC20_EXCEED_BAL):
                                 self.v.swapToken(
-                                    st_egressParams,
-                                    st_egressReceiver,
-                                    st_token,
-                                    st_token_amount,
+                                    *args,
                                     {"from": st_sender},
                                 )
                         else:
-                            print(
-                                "                    rule_swapToken",
-                                st_sender,
-                                st_egressParams,
-                                st_egressReceiver,
-                                st_token_amount,
-                                st_token,
-                            )
+                            print("                    rule_swapToken", *dump)
                             tx = self.v.swapToken(
-                                st_egressParams,
-                                st_egressReceiver,
-                                st_token,
-                                st_token_amount,
+                                *args,
                                 {"from": st_sender},
                             )
 

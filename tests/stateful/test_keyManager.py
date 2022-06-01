@@ -152,7 +152,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                 st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
             )
-
+            dump = (st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
             if not st_sender in self.currentWhitelist:
                 with reverts(REV_MSG_WHITELIST):
                     tx = self.km.consumeKeyNonce(
@@ -162,13 +162,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 self.allKeys[st_sig_key_idx]
                 == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
             ):
-                print(
-                    "                    rule_consumeKeyNonce",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_keyID_num,
-                    st_msg_data,
-                )
+                print("                    rule_consumeKeyNonce", *dump)
                 if not st_sender in self.currentWhitelist:
                     with reverts(REV_MSG_WHITELIST):
                         tx = self.km.consumeKeyNonce(
@@ -181,13 +175,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                     self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
-                    print(
-                        "        REV_MSG_SIG rule_consumeKeyNonce",
-                        st_sender,
-                        st_sig_key_idx,
-                        st_keyID_num,
-                        st_msg_data,
-                    )
+                    print("        REV_MSG_SIG rule_consumeKeyNonce", *dump)
 
                     self.km.consumeKeyNonce(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
@@ -195,14 +183,9 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
 
         # Call setAggKeyWithAggKey with a random new key, signing key, and sender
         def rule_setAggKeyWithAggKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
-
+            dump = (st_sender, st_sig_key_idx, st_new_key_idx)
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
-                print(
-                    f"                    {self.km.setAggKeyWithAggKey}",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_new_key_idx,
-                )
+                print(f"                    {self.km.setAggKeyWithAggKey}", *dump)
                 tx = signed_calls_nonces(
                     self.km,
                     self.km.setAggKeyWithAggKey,
@@ -215,12 +198,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
-                    print(
-                        f"        REV_MSG_SIG {self.km.setAggKeyWithAggKey}",
-                        st_sender,
-                        st_sig_key_idx,
-                        st_new_key_idx,
-                    )
+                    print(f"        REV_MSG_SIG {self.km.setAggKeyWithAggKey}", *dump)
                     signed_calls_nonces(
                         self.km,
                         self.km.setAggKeyWithAggKey,
@@ -232,22 +210,13 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         # Call setGovKeyWithGovKey with a random new key - happens with low probability - 1/20
         def rule_setGovKeyWithGovKey(self, st_sender, st_addrs):
             newGovKey = choice(st_addrs)
+            dump = (st_sender, self.governor, newGovKey)
             if st_sender == self.governor:
-                print(
-                    f"                    {self.km.setGovKeyWithGovKey}",
-                    st_sender,
-                    self.governor,
-                    newGovKey,
-                )
+                print(f"                    {self.km.setGovKeyWithGovKey}", *dump)
                 self.km.setGovKeyWithGovKey(newGovKey, {"from": st_sender})
                 self.governor = newGovKey
             else:
-                print(
-                    f"        REV_MSG_SIG {self.km.setGovKeyWithGovKey}",
-                    st_sender,
-                    self.governor,
-                    newGovKey,
-                )
+                print(f"        REV_MSG_SIG {self.km.setGovKeyWithGovKey}", *dump)
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.setGovKeyWithGovKey(newGovKey, {"from": st_sender})
 
@@ -265,25 +234,16 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
 
         # Call setAggKeyWithGovKey with a random new key, signing key, and sender
         def rule_setAggKeyWithGovKey(self, st_sender, st_sig_key_idx, st_new_key_idx):
+            dump = (st_sender, st_sig_key_idx, st_new_key_idx)
             if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
-                print(
-                    "        REV_MSG_DELAY rule_setAggKeyWithGovKey",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_new_key_idx,
-                )
+                print("        REV_MSG_DELAY rule_setAggKeyWithGovKey", *dump)
                 with reverts(REV_MSG_DELAY):
                     self.km.setAggKeyWithGovKey(
                         self.allKeys[st_new_key_idx].getPubData(),
                         {"from": self.governor},
                     )
             else:
-                print(
-                    "                    rule_setAggKeyWithGovKey",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_new_key_idx,
-                )
+                print("                    rule_setAggKeyWithGovKey", *dump)
                 self.km.setAggKeyWithGovKey(
                     self.allKeys[st_new_key_idx].getPubData(), {"from": self.governor}
                 )
@@ -293,21 +253,15 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         # Updates community Key with a random new key - happens with low probability - 1/20
         def rule_setCommKeyWithCommKey(self, st_sender, st_addrs):
             newCommKey = choice(st_addrs)
+            dump = (st_sender, newCommKey, self.communityKey)
             if st_sender == self.communityKey:
-                print(
-                    "                    rule_setCommKeyWithCommKey",
-                    st_sender,
-                    newCommKey,
-                    self.communityKey,
-                )
+                print("                    rule_setCommKeyWithCommKey", *dump)
                 self.km.setCommKeyWithCommKey(newCommKey, {"from": st_sender})
                 self.communityKey = newCommKey
             else:
                 print(
                     "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
-                    st_sender,
-                    newCommKey,
-                    self.communityKey,
+                    dump,
                 )
                 with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
                     self.km.setCommKeyWithCommKey(newCommKey, {"from": st_sender})
@@ -317,13 +271,9 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             self, st_sender, st_sig_key_idx, st_new_key_idx, st_addrs
         ):
             newGovKey = choice(st_addrs)
+            dump = (st_sender, st_sig_key_idx, st_new_key_idx)
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
-                print(
-                    f"                    {self.km.setGovKeyWithAggKey}",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_new_key_idx,
-                )
+                print(f"                    {self.km.setGovKeyWithAggKey}", *dump)
                 tx = signed_calls_nonces(
                     self.km,
                     self.km.setGovKeyWithAggKey,
@@ -336,12 +286,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
-                    print(
-                        f"        REV_MSG_SIG {self.km.setGovKeyWithAggKey}",
-                        st_sender,
-                        st_sig_key_idx,
-                        st_new_key_idx,
-                    )
+                    print(f"        REV_MSG_SIG {self.km.setGovKeyWithAggKey}", *dump)
                     signed_calls_nonces(
                         self.km,
                         self.km.setGovKeyWithAggKey,
@@ -355,13 +300,9 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             self, st_sender, st_sig_key_idx, st_new_key_idx, st_addrs
         ):
             newCommKey = choice(st_addrs)
+            dump = (st_sender, st_sig_key_idx, st_new_key_idx)
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
-                print(
-                    f"                    {self.km.setCommKeyWithAggKey}",
-                    st_sender,
-                    st_sig_key_idx,
-                    st_new_key_idx,
-                )
+                print(f"                    {self.km.setCommKeyWithAggKey}", *dump)
                 tx = signed_calls_nonces(
                     self.km,
                     self.km.setCommKeyWithAggKey,
@@ -374,12 +315,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
-                    print(
-                        f"        REV_MSG_SIG {self.km.setCommKeyWithAggKey}",
-                        st_sender,
-                        st_sig_key_idx,
-                        st_new_key_idx,
-                    )
+                    print(f"        REV_MSG_SIG {self.km.setCommKeyWithAggKey}", *dump)
                     signed_calls_nonces(
                         self.km,
                         self.km.setCommKeyWithAggKey,
