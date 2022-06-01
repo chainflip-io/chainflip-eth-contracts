@@ -78,17 +78,24 @@ def getChainTime():
 # Not using all history because we might not want to include deployment/setup transactions
 # Also, when testing with Rinkeby or a private blockchain, there might be previous
 # transactions (that is not an issue when a local hardhat node is span every time)
+# NOTE: in case of failure related to gas calculations, refer to comment in test_all invariant_bals.
 def calculateGasSpentByAddress(address, initialTransactionNumber):
+    # history.filter returns a list of all the broadcasted transactions (not necessarily mined)
     transactionList = history.filter(sender=address)[initialTransactionNumber:]
     ethUsed = 0
-    for tx in transactionList:
-        ethUsed += calculateGasTransaction(tx)
+    for txReceipt in transactionList:
+        ethUsed += calculateGasTransaction(txReceipt)
     return ethUsed
 
 
-def calculateGasTransaction(tx):
-    # Can be simplified to the line below, but keeping the calculation to show base_fee + priority_fee
-    # return tx.gas_used * tx.gas_price
-    base_fee = web3.eth.get_block(tx.block_number).baseFeePerGas
-    priority_fee = tx.gas_price - base_fee
-    return (tx.gas_used * base_fee) + (tx.gas_used * priority_fee)
+# Calculate the gas spent in a single transaction
+def calculateGasTransaction(txReceipt):
+    # Might be necessary to wait for the transaction to be mined, especially un live networks that are slow.
+    # Either check for status (txReceipt.status == 0 or == 1) or use wait_for_transaction_receipt.
+    # web3.eth.wait_for_transaction_receipt(txReceipt.txid)
+
+    # Gas calculation
+    # Could be simplified with `txReceipt.gas_used * txReceipt.gas_price`, but keeping the calculation to show `base_fee + priority_fee`
+    base_fee = web3.eth.get_block(txReceipt.block_number).baseFeePerGas
+    priority_fee = txReceipt.gas_price - base_fee
+    return (txReceipt.gas_used * base_fee) + (txReceipt.gas_used * priority_fee)

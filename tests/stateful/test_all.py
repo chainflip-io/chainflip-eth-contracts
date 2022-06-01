@@ -2544,6 +2544,12 @@ def test_all(
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
+        # NOTE: Error in self.ethBals assertion - calculateGasSpentByAddress seems to be smaller than expected and intermittently the eth balance
+        # assertion fails. Could be that the tx gas values are off or that brownie and/or history.filter has a bug and doesn't report all the
+        # sent transactions. It's an error that only occurs at the end of a test, so it is unlikely that the calculations are wrong or that
+        # we need to add the wait_for_transaction_receipt before doing the calculation. Adding a time.sleep(3) seems to make all runs pass.
+        # Another solution is to remove the assertion (not ideal) or to use the pytest approximation, though I've seen an old error appear
+        # when doing that (end-of-run revert error that I thought was solved by spinning the node externally)
         def invariant_bals(self):
             self.numTxsTested += 1
             time.sleep(3)
@@ -2551,7 +2557,6 @@ def test_all(
                 assert web3.eth.get_balance(str(addr)) == self.ethBals[
                     addr
                 ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
-
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
                 assert self.tokenB.balanceOf(addr) == self.tokenBBals[addr]
                 assert self.f.balanceOf(addr) == self.flipBals[addr]
