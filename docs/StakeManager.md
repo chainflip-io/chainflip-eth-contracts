@@ -10,30 +10,21 @@
           valid aggragate signature can be submitted to the contract which
           updates the total supply by minting or burning the necessary FLIP.
 
-
-
-
 ## `onlyDeployer()`
 
 Ensure that the caller is the deployer address.
-
-
-
 
 ## `constructor(contract IKeyManager keyManager, uint256 minStake)` (public)
 
 No description
 
-
 ## `_getGovernor() → address` (internal)
 
 No description
 
-
 ## `_getCommunityKey() → address` (internal)
 
 No description
-
 
 ## `setFlip(contract FLIP flip)` (external)
 
@@ -43,14 +34,11 @@ No description
          should be called. OnlyDeployer modifer for added security since tokens will be
          minted to this contract before calling setFLIP.
 
-
 - `flip`: FLIP token address
-
 
 ## `stake(bytes32 nodeID, uint256 amount, address returnAddr)` (external)
 
          Stake some FLIP and attribute it to a nodeID
-
 
 - `amount`:    The amount of stake to be locked up
 
@@ -59,13 +47,11 @@ No description
 - `returnAddr`:    The address which the staker requires to be used
                      when claiming back FLIP for `nodeID`
 
-
 ## `registerClaim(struct IShared.SigData sigData, bytes32 nodeID, uint256 amount, address staker, uint48 expiryTime)` (external)
 
  Claim back stake. If only losing an auction, the same amount initially staked
          will be sent back. If losing an auction while being a validator,
          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-
 
 - `sigData`:   The keccak256 hash over the msg (uint) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
@@ -79,7 +65,6 @@ No description
 
 - `expiryTime`:   The last valid block height that can execute this claim (uint48)
 
-
 ## `executeClaim(bytes32 nodeID)` (external)
 
  Execute a pending claim to get back stake. If only losing an auction,
@@ -89,34 +74,27 @@ No description
          claim before 48h have passed after registering it, or after the specified
          expiry time
 
-
 - `nodeID`:    The nodeID of the staker
-
 
 ## `setMinStake(uint256 newMinStake)` (external)
 
      Set the minimum amount of stake needed for `stake` to be able
              to be called. Used to prevent spamming of stakes.
 
-
 - `newMinStake`:   The new minimum stake
-
 
 ## `govWithdraw()` (external)
 
 Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
         to be approved by the Community, it is a last resort. Used to rectify an emergency.
 
-
 ## `receive()` (external)
 
  @notice Allows this contract to receive ETH used to refund callers
 
-
 ## `getFLIP() → contract IFLIP` (external)
 
  Get the FLIP token address
-
 
 Returns
 
@@ -126,7 +104,6 @@ Returns
 
  Get the minimum amount of stake that's required for a bid
          attempt in the auction to be valid - used to prevent sybil attacks
-
 
 Returns
 
@@ -138,9 +115,6 @@ Returns
          a pending claim for this nodeID, or it has already been executed
          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
 
-
 Returns
 
 - The claim (Claim)
-
-

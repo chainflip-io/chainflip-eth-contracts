@@ -6,25 +6,15 @@
           Also, it allows the CommunityKey to safeguard certain functions so the
           governor can execute them iff the communityKey allows it.
 
-
-
-
-
 ## `isCommunityKey()`
-
-
 
    Check that the caller is the Community Key address.
 
 ## `isCommunityGuardDisabled()`
 
-
-
    Check that community has disabled the community guard.
 
 ## `isCommunityGuardEnabled()`
-
-
 
    Check that community has disabled the community guard.
 
@@ -33,20 +23,9 @@
 Ensure that the caller is the governor address. Calls the getGovernor
         function which is implemented by the children.
 
-
-
 ## `isSuspended()`
 
-
-
-
-
 ## `isNotSuspended()`
-
-
-
-
-
 
 ## `_getGovernor() → address` (internal)
 
@@ -55,7 +34,6 @@ Ensure that the caller is the governor address. Calls the getGovernor
          inheritance. Therefore, the implementation of this function must be left
          to the children. This is a workaround since the isGovernor modifier can't be
          made virtual. This contract needs to be marked as abstract.
-
 
 Returns
 
@@ -69,7 +47,6 @@ Returns
          to the children. This is a workaround since the isCommunityKey modifier can't be
          made virtual. This contract needs to be marked as abstract.
 
-
 Returns
 
 - The community's address
@@ -78,27 +55,22 @@ Returns
 
  Enable Community Guard
 
-
 ## `disableCommunityGuard()` (external)
 
  Disable Community Guard
-
 
 ## `suspend()` (external)
 
 Can be used to suspend contract execution - only executable by
 governance and only to be used in case of emergency.
 
-
 ## `resume()` (external)
 
      Resume contract execution
 
-
 ## `getCommunityKey() → address` (external)
 
  Get the Community Key
-
 
 Returns
 
@@ -108,7 +80,6 @@ Returns
 
  Get the Community Guard state
 
-
 Returns
 
 - The Community Guard state
@@ -116,7 +87,6 @@ Returns
 ## `getSuspendedState() → bool` (external)
 
  Get suspended state
-
 
 Returns
 
@@ -126,9 +96,6 @@ Returns
 
  Get governor address
 
-
 Returns
 
 - The governor address
-
-

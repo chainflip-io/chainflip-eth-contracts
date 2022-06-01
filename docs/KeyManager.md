@@ -3,46 +3,31 @@
   Holds the aggregate and governance keys, functions to update them,
           and consumeKeyNonce so other contracts can verify signatures and updates _lastValidateTime
 
-
-
-
 ## `validTime()`
-
-
 
    Check that enough time has passed for setAggKeyWithGovKey. Needs
         to be done as a modifier so that it can happen before consumeKeyNonce
 
 ## `validAggKey(struct IShared.Key key)`
 
-
-
    Check that an aggregate key is capable of having its signatures
         verified by the schnorr lib.
 
 ## `isGovernor()`
 
-
-
    Check that the sender is the governance address
 
 ## `isCommunityKey()`
-
-
 
    Check that the caller is the Community Key address.
 
 ## `consumesKeyNonce(struct IShared.SigData sigData, bytes32 contractMsgHash)`
 
-
-
    Call consumeKeyNonce
-
 
 ## `constructor(struct IShared.Key initialAggKey, address initialGovKey, address initialCommKey)` (public)
 
 No description
-
 
 ## `setCanConsumeKeyNonce(address[] addrs)` (external)
 
@@ -51,25 +36,20 @@ No description
          frontrun this, but honestly, it's fine in practice - it just
          needs to be set up successfully once, which is trivial
 
-
 - `addrs`:   The addresses to whitelist
-
 
 ## `updateCanConsumeKeyNonce(struct IShared.SigData sigData, address[] currentAddrs, address[] newAddrs)` (external)
 
  Replaces the specific addresses that can call consumeKeyNonce. To be used if
          contracts are updated. Can delist addresses and can add an arbitrary number of new addresses.
 
-
 - `currentAddrs`:   List of current whitelisted addresses
 
 - `newAddrs`:   List of new addresses to whitelist
 
-
 ## `consumeKeyNonce(struct IShared.SigData sigData, bytes32 contractMsgHash)` (public)
 
  Checks the validity of a signature and msgHash, then updates _lastValidateTime
-
 
 - `sigData`:   The keccak256 hash over the msg (uint256) (here that's normally
                  a hash over the calldata to the function with an empty sigData)
@@ -79,11 +59,9 @@ No description
                  to check it against the hash in sigData (bytes32) (here that's normally
                  a hash over the calldata to the function with an empty sigData)
 
-
 ## `setAggKeyWithAggKey(struct IShared.SigData sigData, struct IShared.Key newAggKey)` (external)
 
  Set a new aggregate key. Requires a signature from the current aggregate key
-
 
 - `sigData`:   The keccak256 hash over the msg (uint256) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
@@ -92,20 +70,16 @@ No description
 - `newAggKey`: The new aggregate key to be set. The x component of the pubkey (uint256),
                  the parity of the y component (uint8)
 
-
 ## `setAggKeyWithGovKey(struct IShared.Key newAggKey)` (external)
 
  Set a new aggregate key. Can only be called by the current governance key
 
-
 - `newAggKey`: The new aggregate key to be set. The x component of the pubkey (uint256),
                  the parity of the y component (uint8)
-
 
 ## `setGovKeyWithAggKey(struct IShared.SigData sigData, address newGovKey)` (external)
 
  Set a new aggregate key. Requires a signature from the current aggregate key
-
 
 - `sigData`:   The keccak256 hash over the msg (uint256) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
@@ -113,19 +87,15 @@ No description
 
 - `newGovKey`: The new governance key to be set.
 
-
 ## `setGovKeyWithGovKey(address newGovKey)` (external)
 
  Set a new governance key. Can only be called by current governance key
 
-
 - `newGovKey`:    The new governance key to be set.
-
 
 ## `setCommKeyWithAggKey(struct IShared.SigData sigData, address newCommKey)` (external)
 
  Set a new community key. Requires a signature from the current aggregate key
-
 
 - `sigData`:   The keccak256 hash over the msg (uint256) (which is the calldata
                  for this function with empty msgHash and sig) and sig over that hash
@@ -133,19 +103,15 @@ No description
 
 - `newCommKey`: The new community key to be set.
 
-
 ## `setCommKeyWithCommKey(address newCommKey)` (external)
 
  Update the Community Key. Can only be called by the current Community Key.
 
-
 - `newCommKey`:   New Community key address.
-
 
 ## `getAggregateKey() → struct IShared.Key` (external)
 
  Get the current aggregate key
-
 
 Returns
 
@@ -155,7 +121,6 @@ Returns
 
  Get the current governance key
 
-
 Returns
 
 - The Key struct for the governance key
@@ -164,7 +129,6 @@ Returns
 
  Get the current community key
 
-
 Returns
 
 - The Key struct for the community key
@@ -172,8 +136,7 @@ Returns
 ## `getLastValidateTime() → uint256` (external)
 
  Get the last time that a function was called which
-         required a signature from _aggregateKeyData or _governanceKeyData
-
+         required a signature from _aggregateKeyData or_governanceKeyData
 
 Returns
 
@@ -184,7 +147,6 @@ Returns
  Get whether or not the specific keyID has used this nonce before
          since it cannot be used again
 
-
 Returns
 
 - Whether the nonce has already been used (bool)
@@ -193,9 +155,7 @@ Returns
 
  Get whether addr is whitelisted for validating a sig
 
-
 - `addr`:  The address to check
-
 
 Returns
 
@@ -206,7 +166,6 @@ Returns
  Get whether or not _canConsumeKeyNonce has already been set, which
          prevents it from being set again
 
-
 Returns
 
 - The value of _canConsumeKeyNonceSet
@@ -214,7 +173,6 @@ Returns
 ## `getNumberWhitelistedAddresses() → uint256` (external)
 
  Get number of whitelisted addresses
-
 
 Returns
 
@@ -224,11 +182,9 @@ Returns
 
  @notice Allows this contract to receive ETH
 
-
 ## `_getGovernanceKey() → address` (internal)
 
  Get the current governance key
-
 
 Returns
 
@@ -238,9 +194,6 @@ Returns
 
  Get the current community key
 
-
 Returns
 
 - The Key struct for the community key
-
-

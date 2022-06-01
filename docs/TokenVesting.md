@@ -1,11 +1,8 @@
 # `TokenVesting`
 
-
-
 A token holder contract that can release its token balance gradually like a
 typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
 owner.
-
 
 ## `constructor(address beneficiary_, address revoker_, bool revocable_, uint256 start_, uint256 cliff_, uint256 end_, bool canStake_, contract IStakeManager stakeManager_)` (public)
 
@@ -27,25 +24,20 @@ No description
 
 - `stakeManager_`: the staking contract to stake to if canStake
 
-
 ## `stake(bytes32 nodeID, uint256 amount)` (external)
 
  stakes some tokens for the nodeID and forces the return
          address of that stake to be this contract.
 
-
 - `nodeID`: the nodeID to stake for.
 
 - `amount`: the amount to stake out of the current funds in this contract.
-
 
 ## `release(contract IERC20 token)` (external)
 
 Transfers vested tokens to beneficiary.
 
-
 - `token`: ERC20 token which is being vested.
-
 
 ## `revoke(contract IERC20 token)` (external)
 
@@ -55,9 +47,7 @@ Allows the revoker to revoke the vesting.
         When stakable, assumption is made that revoked will be called once
         funds are unstaked and sent back to this contract.
 
-
 - `token`: ERC20 token which is being vested.
-
 
 ## `retrieveRevokedFunds(contract IERC20 token)` (external)
 
@@ -67,22 +57,8 @@ Allows the revoker to retrieve tokens that have been unstaked
         Otherwise funds would be locked. In !canStake contracts all the
         funds are withdrawn once revoked is called, so no need for this
 
-
 - `token`: ERC20 token which is being vested.
-
-
 
 ## `TokensReleased(contract IERC20 token, uint256 amount)`
 
-
-
-
-
-
 ## `TokenVestingRevoked(contract IERC20 token)`
-
-
-
-
-
-
