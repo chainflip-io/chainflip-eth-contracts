@@ -9,7 +9,6 @@ import "./AggKeyNonceConsumer.sol";
  * @title    FLIP contract
  * @notice   The FLIP utility token which is used to stake in the FLIP system and pay for
  *           trap fees with
- * @author   Quantaf1re (James Key)
  */
 contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
     /// @dev    The last time that the State Chain updated the totalSupply

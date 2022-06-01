@@ -6,7 +6,6 @@ import "./IGovernanceCommunityGuarded.sol";
 
 /**
  * @title    StakeManager interface
- * @author   Quantaf1re (James Key)
  */
 interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);

@@ -5,7 +5,6 @@ import "./IKeyManager.sol";
 
 /**
  * @title    AggKeyNonceConsumer interface
- * @author   albert-llimos (Albert Llimos)
  */
 
 interface IAggKeyNonceConsumer is IShared {

@@ -8,7 +8,6 @@ import "../abstract/SchnorrSECP256K1.sol";
  *           testVerifySignature for the purpose of testing it, since
  *           we want the contract used in production (SchnorrSECP256K1)
  *           to be abstract and have testVerifySignature internal
- * @author   Quantaf1re (James Key)
  */
 contract SchnorrSECP256K1Test is SchnorrSECP256K1 {
     /**
