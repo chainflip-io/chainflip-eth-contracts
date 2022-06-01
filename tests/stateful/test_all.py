@@ -990,7 +990,9 @@ def test_all(
             dump = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    print("        REV_MSG_GOV_SUSPENDED _swapETH")
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _swapETH"
+                    )
                     self.v.swapETH(*args, {"from": st_sender})
             else:
                 if self.swapsEnabled:
@@ -1036,7 +1038,7 @@ def test_all(
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
-                        "        REV_MSG_GOV_SUSPENDED _swapToken",
+                        "        REV_MSG_GOV_SUSPENDED _swapToken"
                     )
                     self.v.swapToken(
                         *args,
