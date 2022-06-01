@@ -3,7 +3,8 @@
     "docgen": "npx solidity-docgen --solc-module solc-0.8 --templates=./docgen/ && npx markdownlint docs/ --config docgen/.markdownlint.json --fix",
     "lint": "npx solhint -w 0 'contracts/**/*.sol' && black . --check",
     "format-sol": "npx prettier --write 'contracts/**/*.sol'",
-    "format-py": "black ."
+    "format-py": "black .",
+    "format": "yarn format-sol && yarn format-py"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.0.0-rc3"

@@ -56,17 +56,13 @@ To locally do a general check on both solidity and python code: (please ensure y
 yarn lint
 ```
 
-Format the solidity code using solhint+prettier:
+Format the solidity and python code:
 
 ```bash
-yarn format-sol
+yarn format
 ```
 
-Format the python code using black:
-
-```bash
-yarn format-py
-```
+To format them separately run `yarn format-sol` or `yarn format-py`
 
 ### Pre-commit hook
 
