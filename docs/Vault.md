@@ -3,11 +3,27 @@
   The vault for holding ETH/tokens and deploying contracts
           for fetching individual deposits
 
-## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash)`
+## `validTime()`
 
-   Calls isUpdatedValidSig in _keyManager
+   Check that no nonce of the current AggKey has been consumed in the last 14 days - emergency
+
+## `swapsEnabled()`
+
+   Check that swaps are enabled
+
+## `swapsDisabled()`
+
+   Check that swaps are disabled
 
 ## `constructor(contract IKeyManager keyManager)` (public)
+
+No description
+
+## `_getGovernor() → address` (internal)
+
+No description
+
+## `_getCommunityKey() → address` (internal)
 
 No description
 
@@ -130,16 +146,57 @@ No description
 
 - `tokens`:        The addresses of the tokens to be transferred
 
-## `getKeyManager() → contract IKeyManager` (external)
+## `swapETH(string egressParams, bytes32 egressReceiver)` (external)
 
- Get the KeyManager address/interface that's used to validate sigs
+ Swaps ETH for a token in another chain. Function call needs to specify egress parameters
+
+- `egressParams`:  String containing egress parameters
+
+- `egressReceiver`:  Egress reciever's address
+
+## `swapToken(string egressParams, bytes32 egressReceiver, address ingressToken, uint256 amount)` (external)
+
+ Swaps ERC20 Token for a token in another chain. Function call needs to specify the ingress and egress parameters
+
+- `egressParams`:  String containing egress parameters
+
+- `egressReceiver`:  Egress reciever's address
+
+- `ingressToken`:  Ingress ERC20 token's address
+
+- `amount`:  Amount of ingress token to swap
+
+## `govWithdraw(contract IERC20[] tokens)` (external)
+
+Withdraw all funds to governance address in case of emergency. This withdrawal needs
+        to be approved by the Community and it can only be executed if no nonce from the
+        current AggKey had been consumed in _AGG_KEY_TIMEOUT time. It is a last resort and
+        can be used to rectify an emergency.
+
+- `tokens`:    The addresses of the tokens to be transferred
+
+## `enableSwaps()` (external)
+
+ Enable swapETH and swapToken functionality by governance. Features disabled by default
+
+## `disableSwaps()` (external)
+
+ Disable swapETH and swapToken functionality by governance. Features disabled by default
+
+## `getSwapsEnabled() → bool` (external)
+
+ Get swapsEnabled
 
 Returns
 
-- The KeyManager (IKeyManager)
+- The swapsEnableds state
 
 ## `receive()` (external)
 
 No description
 
 ## `TransferFailed(address payable recipient, uint256 amount, bytes lowLevelData)`
+
+## `SwapETH(uint256 amount, string egressParams, bytes32 egressReceiver)`
+
+## `SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver)`

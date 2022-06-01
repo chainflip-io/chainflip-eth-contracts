@@ -10,22 +10,31 @@
           valid aggragate signature can be submitted to the contract which
           updates the total supply by minting or burning the necessary FLIP.
 
-## `updatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash)`
+## `onlyDeployer()`
 
-   Call isUpdatedValidSig in _keyManager
+Ensure that the caller is the deployer address.
 
-## `isGovernor()`
-
-Ensure that the caller is the KeyManager's governor address.
-
-## `noFish()`
-
-Ensure that FLIP can only be withdrawn via `claim`
-        and not any other method
-
-## `constructor(contract IKeyManager keyManager, uint256 minStake, uint256 flipTotalSupply, uint256 numGenesisValidators, uint256 genesisStake)` (public)
+## `constructor(contract IKeyManager keyManager, uint256 minStake)` (public)
 
 No description
+
+## `_getGovernor() → address` (internal)
+
+No description
+
+## `_getCommunityKey() → address` (internal)
+
+No description
+
+## `setFlip(contract FLIP flip)` (external)
+
+ Sets the FLIP address after initialization. We can't do this in the constructor
+         because FLIP contract requires this contract's address on deployment for minting.
+         First this contract is deployed, then the FLIP contract and finally setFLIP
+         should be called. OnlyDeployer modifer for added security since tokens will be
+         minted to this contract before calling setFLIP.
+
+- `flip`: FLIP token address
 
 ## `stake(bytes32 nodeID, uint256 amount, address returnAddr)` (external)
 
@@ -67,17 +76,6 @@ No description
 
 - `nodeID`:    The nodeID of the staker
 
-## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber)` (external)
-
- Compares a given new FLIP supply against the old supply,
-         then mints and burns as appropriate
-
-- `sigData`:               signature over the abi-encoded function params
-
-- `newTotalSupply`:        new total supply of FLIP
-
-- `stateChainBlockNumber`: State Chain block number for the new total supply
-
 ## `setMinStake(uint256 newMinStake)` (external)
 
      Set the minimum amount of stake needed for `stake` to be able
@@ -85,50 +83,14 @@ No description
 
 - `newMinStake`:   The new minimum stake
 
-## `tokensReceived(address _operator, address _from, address _to, uint256 _amount, bytes _data, bytes _operatorData)` (external)
-
-     ERC1820 tokensReceived callback, doesn't do anything in our
-             contract.
-
-- `_operator`:         operator
-
-- `_from`:             from
-
-- `_to`:               to
-
-- `_amount`:           amount
-
-- `_data`:             data
-
-- `_operatorData`:     operatorData
-
-## `suspend()` (external)
-
-Can be used to suspend executions of claims - only executable by
-governance and should only be used if fraudulent claim is suspected.
-
-## `resume()` (external)
-
-Can be used by governance to resume the execution of claims.
-
 ## `govWithdraw()` (external)
 
-In the event of fraudulent claims being accepted, the contract is
-effectively useless. This function allows governance to admit that by
-withdrawing all the FLIP to their address. From where it will be dealt
-with later.
+Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
+        to be approved by the Community, it is a last resort. Used to rectify an emergency.
 
 ## `receive()` (external)
 
  @notice Allows this contract to receive ETH used to refund callers
-
-## `getKeyManager() → contract IKeyManager` (external)
-
- Get the KeyManager address/interface that's used to validate sigs
-
-Returns
-
-- The KeyManager (IKeyManager)
 
 ## `getFLIP() → contract IFLIP` (external)
 
@@ -137,14 +99,6 @@ Returns
 Returns
 
 - The address of FLIP
-
-## `getLastSupplyUpdateBlockNumber() → uint256` (external)
-
- Get the last state chain block number of the last supply update
-
-Returns
-
-- The state chain block number of the last supply update
 
 ## `getMinimumStake() → uint256` (external)
 

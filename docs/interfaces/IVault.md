@@ -30,6 +30,26 @@ No description
 
 No description
 
-## `getKeyManager() → contract IKeyManager` (external)
+## `swapETH(string egressChainAndToken, bytes32 egressAddress)` (external)
+
+No description
+
+## `swapToken(string egressChainAndToken, bytes32 egressAddress, address ingressToken, uint256 amount)` (external)
+
+No description
+
+## `govWithdraw(contract IERC20[] tokens)` (external)
+
+No description
+
+## `enableSwaps()` (external)
+
+No description
+
+## `disableSwaps()` (external)
+
+No description
+
+## `getSwapsEnabled() → bool` (external)
 
 No description

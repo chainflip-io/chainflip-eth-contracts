@@ -2,27 +2,31 @@
 
   The interface for functions KeyManager implements
 
-## `isUpdatedValidSig(struct IShared.SigData sigData, bytes32 contractMsgHash) → bool` (external)
+## `consumeKeyNonce(struct IShared.SigData sigData, bytes32 contractMsgHash)` (external)
 
 No description
 
-## `setAggKeyWithAggKey(struct IShared.SigData sigData, struct IShared.Key newKey)` (external)
+## `setAggKeyWithAggKey(struct IShared.SigData sigData, struct IShared.Key newAggKey)` (external)
 
 No description
 
-## `setAggKeyWithGovKey(struct IShared.Key newKey)` (external)
+## `setAggKeyWithGovKey(struct IShared.Key newAggKey)` (external)
 
 No description
 
-## `setGovKeyWithGovKey(address newKey)` (external)
+## `setGovKeyWithAggKey(struct IShared.SigData sigData, address newGovKey)` (external)
 
 No description
 
-## `canValidateSig(address addr) → bool` (external)
+## `setGovKeyWithGovKey(address newGovKey)` (external)
 
 No description
 
-## `canValidateSigSet() → bool` (external)
+## `setCommKeyWithAggKey(struct IShared.SigData sigData, address newCommKey)` (external)
+
+No description
+
+## `setCommKeyWithCommKey(address newCommKey)` (external)
 
 No description
 
@@ -34,7 +38,7 @@ No description
 
 No description
 
-## `getLastValidateTime() → uint256` (external)
+## `getCommunityKey() → address` (external)
 
 No description
 
@@ -42,10 +46,32 @@ No description
 
 No description
 
-## `AggKeySetByAggKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+## `getLastValidateTime() → uint256` (external)
 
-## `AggKeySetByGovKey(struct IShared.Key oldKey, struct IShared.Key newKey)`
+No description
 
-## `GovKeySetByGovKey(address oldKey, address newKey)`
+## `canConsumeKeyNonce(address addr) → bool` (external)
 
-## `SignatureAccepted(struct IShared.SigData sigData, address broadcaster)`
+No description
+
+## `canConsumeKeyNonceSet() → bool` (external)
+
+No description
+
+## `getNumberWhitelistedAddresses() → uint256` (external)
+
+No description
+
+## `AggKeySetByAggKey(struct IShared.Key oldAggKey, struct IShared.Key newAggKey)`
+
+## `AggKeySetByGovKey(struct IShared.Key oldAggKey, struct IShared.Key newAggKey)`
+
+## `GovKeySetByAggKey(address oldGovKey, address newGovKey)`
+
+## `GovKeySetByGovKey(address oldGovKey, address newGovKey)`
+
+## `CommKeySetByAggKey(address oldCommKey, address newCommKey)`
+
+## `CommKeySetByCommKey(address oldCommKey, address newCommKey)`
+
+## `SignatureAccepted(struct IShared.SigData sigData, address signer)`
