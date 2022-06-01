@@ -8,7 +8,6 @@ import "./abstract/Shared.sol";
  * @title    KeyManager contract
  * @notice   Holds the aggregate and governance keys, functions to update them,
  *           and consumeKeyNonce so other contracts can verify signatures and updates _lastValidateTime
- * @author   Quantaf1re (James Key)
  */
 contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     uint256 private constant _AGG_KEY_TIMEOUT = 2 days;

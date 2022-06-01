@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 /**
  * @title    Shared interface
  * @notice   Holds structs needed by other interfaces
- * @author   Quantaf1re (James Key)
  */
 interface IShared {
     /**

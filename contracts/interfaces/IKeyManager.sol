@@ -5,7 +5,6 @@ import "./IShared.sol";
 /**
  * @title    KeyManager interface
  * @notice   The interface for functions KeyManager implements
- * @author   Quantaf1re (James Key)
  */
 interface IKeyManager is IShared {
     event AggKeySetByAggKey(Key oldAggKey, Key newAggKey);

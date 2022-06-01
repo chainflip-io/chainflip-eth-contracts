@@ -20,7 +20,6 @@ import "./GovernanceCommunityGuarded.sol";
  *           initial supply is minted during FLIP's creation. At any time, a
  *           valid aggragate signature can be submitted to the contract which
  *           updates the total supply by minting or burning the necessary FLIP.
- * @author   Quantaf1re (James Key)
  */
 contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded, ReentrancyGuard {
     /// @dev    The FLIP token. Initial value to be set using updateFLIP

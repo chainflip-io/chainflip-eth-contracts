@@ -6,7 +6,6 @@ import "../interfaces/IShared.sol";
  * @title    Shared contract
  * @notice   Holds constants and modifiers that are used in multiple contracts
  * @dev      It would be nice if this could be a library, but modifiers can't be exported :(
- * @author   Quantaf1re (James Key)
  */
 
 abstract contract Shared is IShared {

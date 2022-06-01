@@ -7,7 +7,6 @@ import "./IGovernanceCommunityGuarded.sol";
 /**
  * @title    Vault interface
  * @notice   The interface for functions Vault implements
- * @author   Quantaf1re (James Key)
  */
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function allBatch(

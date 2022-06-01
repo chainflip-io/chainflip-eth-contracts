@@ -10,7 +10,6 @@ import "./abstract/Shared.sol";
  *           is set in the constructor and can only be updated with a valid
  *           signature validated by the current KeyManager contract. This shall
  *           be done if the KeyManager contract is updated.
- * @author   albert-llimos (Albert Llimos)
  */
 contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     /// @dev    The KeyManager used to checks sigs used in functions here
