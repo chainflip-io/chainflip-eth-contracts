@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
  * @title    DepositEth contract
  * @notice   Creates a contract with a known address and withdraws all the ETH from it
  *           before destroying itself and refunding some ETH
- * @author   Quantaf1re (James Key)
  */
 contract DepositEth {
     constructor() {

@@ -6,7 +6,6 @@ import "./IAggKeyNonceConsumer.sol";
 
 /**
  * @title    FLIP interface for the FLIP utility token
- * @author   Quantaf1re (James Key)
  */
 interface IFLIP is IERC20, IAggKeyNonceConsumer {
     event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);

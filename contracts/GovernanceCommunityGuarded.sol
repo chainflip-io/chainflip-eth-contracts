@@ -11,8 +11,6 @@ import "./abstract/Shared.sol";
  *           critical functions.
  *           Also, it allows the CommunityKey to safeguard certain functions so the
  *           governor can execute them iff the communityKey allows it.
- *
- * @author   albert-llimos (Albert Llimos)
  */
 abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuarded {
     /// @dev    Community Guard Disabled

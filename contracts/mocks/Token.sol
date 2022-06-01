@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 /**
  * @title    Token
  * @dev      Creates a standard ERC20 just for the purposes of testing
- * @author   Quantaf1re (James Key)
  */
 contract Token is ERC20 {
     constructor(

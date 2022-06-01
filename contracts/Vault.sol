@@ -14,7 +14,6 @@ import "./GovernanceCommunityGuarded.sol";
  * @title    Vault contract
  * @notice   The vault for holding ETH/tokens and deploying contracts
  *           for fetching individual deposits
- * @author   Quantaf1re (James Key)
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;

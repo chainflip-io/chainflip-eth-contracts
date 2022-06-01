@@ -5,7 +5,6 @@ import "./IAggKeyNonceConsumer.sol";
 
 /**
  * @title    GovernanceCommunityGuarded interface
- * @author   albert-llimos (Albert Llimos)
  */
 
 interface IGovernanceCommunityGuarded is IShared {
