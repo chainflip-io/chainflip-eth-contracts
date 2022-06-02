@@ -15,7 +15,7 @@ def test_fetchDepositToken(cf, token, DepositToken):
 
     # Fetch the deposit
     args = (JUNK_HEX_PAD, token)
-    signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
+    signed_call_cf(cf, cf.vault.fetchDepositToken, *args)
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
@@ -34,7 +34,7 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
 
     # Fetch the deposit
     args = (JUNK_HEX_PAD, token)
-    signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
+    signed_call_cf(cf, cf.vault.fetchDepositToken, *args)
 
     assert cf.vault.balance() == TEST_AMNT
     assert token.balanceOf(depositAddr) == 0
@@ -44,13 +44,13 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
 def test_fetchDepositToken_rev_swapID(cf):
     with reverts(REV_MSG_NZ_BYTES32):
         args = ("", ETH_ADDR)
-        signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
+        signed_call_cf(cf, cf.vault.fetchDepositToken, *args)
 
 
 def test_fetchDepositToken_rev_tokenAddr(cf):
     with reverts(REV_MSG_NZ_ADDR):
         args = (JUNK_HEX_PAD, ZERO_ADDR)
-        signed_call_aggSigner(cf, cf.vault.fetchDepositToken, *args)
+        signed_call_cf(cf, cf.vault.fetchDepositToken, *args)
 
 
 def test_fetchDepositToken_rev_msgHash(cf):

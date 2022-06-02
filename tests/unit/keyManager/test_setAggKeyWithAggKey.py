@@ -15,7 +15,7 @@ def test_setAggKeyWithAggKey_rev_pubKeyX(cfAW):
     newKey = AGG_SIGNER_2.getPubData()
     newKey[0] = 0
     with reverts(REV_MSG_NZ_PUBKEYX):
-        signed_call_aggSigner(cfAW, cfAW.keyManager.setAggKeyWithAggKey, newKey)
+        signed_call_cf(cfAW, cfAW.keyManager.setAggKeyWithAggKey, newKey)
 
 
 def test_setAggKeyWithAggKey_rev_nonceTimesGAddr(cfAW):

@@ -29,7 +29,7 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
     token2Bals = [token2.balanceOf(recip) for recip in st_recipients]
 
     args = (tokens, st_recipients, st_amounts)
-    signed_call_aggSigner(cf, cf.vault.transferBatch, *args, sender=st_sender)
+    signed_call_cf(cf, cf.vault.transferBatch, *args, sender=st_sender)
 
     for i in range(len(st_recipients)):
         if tokens[i] == ETH_ADDR:
@@ -61,7 +61,7 @@ def test_transferBatch_rev_tokensArray_length(
 
     with reverts(REV_MSG_V_ARR_LEN):
         args = (tokens, st_recipients, st_amounts)
-        signed_call_aggSigner(cf, cf.vault.transferBatch, *args, sender=st_sender)
+        signed_call_cf(cf, cf.vault.transferBatch, *args, sender=st_sender)
 
 
 @given(
@@ -80,7 +80,7 @@ def test_transferBatch_rev_st_amountsArray_length(
 
     with reverts(REV_MSG_V_ARR_LEN):
         args = (tokens, st_recipients, st_amountsModif)
-        signed_call_aggSigner(cf, cf.vault.transferBatch, *args)
+        signed_call_cf(cf, cf.vault.transferBatch, *args)
 
 
 def test_transferBatch_rev_msgHash(cf):

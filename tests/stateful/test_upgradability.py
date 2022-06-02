@@ -97,7 +97,7 @@ def test_upgradability(
                 for aggKeyNonceConsumer in aggKeyNonceConsumers:
                     assert aggKeyNonceConsumer.getKeyManager() == self.km
 
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         aggKeyNonceConsumer.updateKeyManager,
                         newKeyManager,
@@ -130,7 +130,7 @@ def test_upgradability(
                 self.km,
                 newVault,
             ]
-            signed_calls_nonces(
+            signed_call_km(
                 self.km,
                 self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,
@@ -144,9 +144,7 @@ def test_upgradability(
                 st_sender,
                 st_vault_transfer_amount,
             )
-            tx = signed_calls_nonces(
-                self.km, newVault.transfer, *args, sender=st_sender
-            )
+            tx = signed_call_km(self.km, newVault.transfer, *args, sender=st_sender)
             assert tx.events["TransferFailed"][0].values() == [
                 st_sender,
                 st_vault_transfer_amount,
@@ -163,7 +161,7 @@ def test_upgradability(
                 newVault,
                 st_vault_transfer_amount,
             )
-            signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
+            signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -st_vault_transfer_amount
             assert newVault.balance() - startBalRecipient == st_vault_transfer_amount
@@ -180,9 +178,7 @@ def test_upgradability(
                     st_sender,
                     st_vault_transfer_amount,
                 )
-                tx = signed_calls_nonces(
-                    self.km, self.v.transfer, *args, sender=st_sender
-                )
+                tx = signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
                 assert tx.events["TransferFailed"][0].values() == [
                     newVault.address,
                     st_vault_transfer_amount,
@@ -200,7 +196,7 @@ def test_upgradability(
                 newVault,
                 amountToTransfer,
             )
-            signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
+            signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -amountToTransfer
             assert newVault.balance() - startBalRecipient == amountToTransfer
@@ -215,7 +211,7 @@ def test_upgradability(
                 newVault,
             ]
             toWhitelist = [self.sm, self.f, self.km, newVault]
-            signed_calls_nonces(
+            signed_call_km(
                 self.km,
                 self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,
@@ -253,7 +249,7 @@ def test_upgradability(
                 self.km,
                 newStakeManager,
             ]
-            signed_calls_nonces(
+            signed_call_km(
                 self.km,
                 self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,
@@ -273,7 +269,7 @@ def test_upgradability(
                 newStakeManager,
                 expiryTime,
             )
-            signed_calls_nonces(self.km, self.sm.registerClaim, *args, sender=st_sender)
+            signed_call_km(self.km, self.sm.registerClaim, *args, sender=st_sender)
 
             chain.sleep(st_sleep_time)
             if st_sleep_time < CLAIM_DELAY:
@@ -303,7 +299,7 @@ def test_upgradability(
                 newStakeManager,
             ]
             toWhitelist = [self.v, newStakeManager, self.f, self.km]
-            signed_calls_nonces(
+            signed_call_km(
                 self.km,
                 self.km.updateCanConsumeKeyNonce,
                 currentWhitelist,

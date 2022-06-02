@@ -88,10 +88,10 @@ def test_allBatch(
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            signed_call_aggSigner(cf, cf.vault.allBatch, *args, st_sender=st_sender)
+            signed_call_cf(cf, cf.vault.allBatch, *args, st_sender=st_sender)
 
     else:
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args, st_sender=st_sender)
+        signed_call_cf(cf, cf.vault.allBatch, *args, st_sender=st_sender)
 
         assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
@@ -155,7 +155,7 @@ def test_allBatch_rev_fetch_array_length(
             st_tranRecipients,
             st_tranAmounts,
         )
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
+        signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
 
 @given(
@@ -190,7 +190,7 @@ def test_allBatch_rev_transfer_tokenArray_length(
             st_tranRecipients,
             st_tranAmounts,
         )
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
+        signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
 
 @given(
@@ -225,7 +225,7 @@ def test_allBatch_rev_transfer_amountsArray_length(
             st_tranRecipients,
             st_tranAmountsModif,
         )
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
+        signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
 
 def test_allBatch_rev_msgHash(cf):

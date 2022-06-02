@@ -154,7 +154,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _registerClaim")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.sm.registerClaim,
                         *args,
@@ -165,7 +165,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             elif st_nodeID == 0:
                 print("        NODEID rule_registerClaim", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.sm.registerClaim,
                         *args,
@@ -176,7 +176,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             elif st_amount == 0:
                 print("        AMOUNT rule_registerClaim", *toLog)
                 with reverts(REV_MSG_NZ_UINT):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.sm.registerClaim,
                         *args,
@@ -187,7 +187,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             elif st_signer_agg != AGG_SIGNER_1:
                 print("        REV_MSG_SIG rule_registerClaim", *toLog)
                 with reverts(REV_MSG_SIG):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.sm.registerClaim,
                         *args,
@@ -198,7 +198,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
                 print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *toLog)
                 with reverts(REV_MSG_CLAIM_EXISTS):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.sm.registerClaim,
                         *args,
@@ -209,7 +209,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             elif st_expiry_time_diff <= CLAIM_DELAY:
                 print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *toLog)
                 with reverts(REV_MSG_EXPIRY_TOO_SOON):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.sm.registerClaim,
                         *args,
@@ -219,7 +219,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             else:
                 print("                    rule_registerClaim ", *toLog)
-                tx = signed_calls_nonces(
+                tx = signed_call_km(
                     self.km,
                     self.sm.registerClaim,
                     *args,

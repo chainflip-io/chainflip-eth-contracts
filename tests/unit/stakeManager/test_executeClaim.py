@@ -27,7 +27,7 @@ def test_executeClaim_rand(
         expiryTime = getChainTime() + st_expiryTimeDiff + 5
         args = (st_nodeID, st_amount, st_staker, expiryTime)
 
-        tx = signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+        tx = signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
         assert cf.stakeManager.getPendingClaim(st_nodeID) == (
             st_amount,
