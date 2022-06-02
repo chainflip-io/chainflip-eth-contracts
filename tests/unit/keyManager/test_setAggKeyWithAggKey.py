@@ -12,18 +12,39 @@ def test_setAggKeyWithAggKey_rev_newPubKeyX(cf):
 
 
 def test_setAggKeyWithAggKey_rev_pubKeyX(cfAW):
-    setKey_rev_pubKeyX_test(cfAW, cfAW.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1)
+    newKey = AGG_SIGNER_2.getPubData()
+    newKey[0] = 0
+    with reverts(REV_MSG_NZ_PUBKEYX):
+        signed_call_aggSigner(cfAW, cfAW.keyManager.setAggKeyWithAggKey, newKey)
 
 
 def test_setAggKeyWithAggKey_rev_nonceTimesGAddr(cfAW):
-    setKey_rev_nonceTimesGAddr_test(
-        cfAW, cfAW.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1
-    )
+    newKey = AGG_SIGNER_2.getPubData()
+    nullSig = agg_null_sig(cfAW.keyManager.address, chain.id)
+    callDataNoSig = cfAW.keyManager.setAggKeyWithAggKey.encode_input(nullSig, newKey)
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
+    sigData[3] = ZERO_ADDR
+    with reverts(REV_MSG_INPUTS_0):
+        cfAW.keyManager.setAggKeyWithAggKey(sigData, newKey)
 
 
 def test_setAggKeyWithAggKey_rev_msgHash(cfAW):
-    setKey_rev_msgHash_test(cfAW, cfAW.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1)
+    nullSig = agg_null_sig(cfAW.keyManager.address, chain.id)
+    callDataNoSig = cfAW.keyManager.setAggKeyWithAggKey.encode_input(
+        nullSig, AGG_SIGNER_2.getPubData()
+    )
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
+    sigData[2] += 1
+    with reverts(REV_MSG_MSGHASH):
+        cfAW.keyManager.setAggKeyWithAggKey(sigData, AGG_SIGNER_2.getPubData())
 
 
 def test_setAggKeyWithAggKey_rev_sig(cfAW):
-    setKey_rev_sig_test(cfAW, cfAW.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1)
+    nullSig = agg_null_sig(cfAW.keyManager.address, chain.id)
+    callDataNoSig = cfAW.keyManager.setAggKeyWithAggKey.encode_input(
+        nullSig, AGG_SIGNER_2.getPubData()
+    )
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
+    sigData[3] += 1
+    with reverts(REV_MSG_SIG):
+        cfAW.keyManager.setAggKeyWithAggKey(sigData, AGG_SIGNER_2.getPubData())

@@ -156,62 +156,9 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
     assert cf.keyManager.getCommunityKey() == commkey
 
 
-def setKey_rev_pubKeyX_test(cf, fcn, signer):
-    newKey = AGG_SIGNER_2.getPubData()
-    newKey[0] = 0
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, newKey)
-    with reverts(REV_MSG_NZ_PUBKEYX):
-        fcn(signer.getSigData(callDataNoSig, cf.keyManager.address), newKey)
-
-
-def setKey_rev_nonceTimesGAddr_test(cf, fcn, signer):
-    newKey = AGG_SIGNER_2.getPubData()
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, newKey)
-    sigData = signer.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[3] = ZERO_ADDR
-    with reverts(REV_MSG_INPUTS_0):
-        fcn(sigData, newKey)
-
-
-def setKey_rev_msgHash_test(cf, fcn, signer):
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, AGG_SIGNER_2.getPubData())
-    sigData = signer.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[2] += 1
-    with reverts(REV_MSG_MSGHASH):
-        fcn(sigData, AGG_SIGNER_2.getPubData())
-
-
-def setKey_rev_sig_test(cf, fcn, signer):
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, AGG_SIGNER_2.getPubData())
-    sigData = signer.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[3] += 1
-    with reverts(REV_MSG_SIG):
-        fcn(sigData, AGG_SIGNER_2.getPubData())
-
-
 def canConsumeKeyNonce_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    tx = cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+    cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
 def canConsumeKeyNonce_rev_test(cf, signer):
