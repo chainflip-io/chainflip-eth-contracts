@@ -219,6 +219,8 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
     assert stakeManager.getMinimumStake() == minStake
 
 
+## TODO: Look into this two functions if they can be merged - they do the same, only input parameters change?
+
 # Function used to do function calls that require a signature
 def signed_call_aggSigner(cf, fcn, *args, **kwargs):
     # Get default values
@@ -247,7 +249,7 @@ def signed_calls_nonces(keyManager, fcn, *args, **kwargs):
     # Sign the tx without a msgHash or sig
     callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
     return fcn(
-        signer.getSigDataWithNonces(callDataNoSig, nonces, AGG, keyManager.address),
+        signer.getSigDataWithNonces(callDataNoSig, nonces, keyManager.address),
         *args,
         {"from": sender},
     )
