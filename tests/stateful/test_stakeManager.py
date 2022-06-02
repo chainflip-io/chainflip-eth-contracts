@@ -98,8 +98,12 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minStake = strategy("uint", max_value=int(INIT_STAKE / 2))
         # So there's a 1% chance of a bad sig to maximise useful txs
-        st_signer_agg = hypStrat.sampled_from(([AGG_SIGNER_1] * 99) + [GOV_SIGNER_1])
-        st_signer_gov = hypStrat.sampled_from([AGG_SIGNER_1] + ([GOV_SIGNER_1] * 99))
+        st_signer_agg = hypStrat.sampled_from(
+            ([AGG_SIGNER_1] * 99) + [Signer.gen_signer(None, {})]
+        )
+        st_signer_gov = hypStrat.sampled_from(
+            [AGG_SIGNER_1] + ([Signer.gen_signer(None, {})] * 99)
+        )
 
         # Stakes a random amount from a random staker to a random nodeID
         def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
