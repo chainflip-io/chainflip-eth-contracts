@@ -378,7 +378,7 @@ def test_all(
                 st_eth_amounts,
             )
 
-            dump = (*args, signer, st_sender)
+            toLog = (*args, signer, st_sender)
 
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _allBatch")
@@ -388,7 +388,7 @@ def test_all(
                     )
 
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_allBatch", *dump)
+                print("        REV_MSG_WHITELIST rule_allBatch", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
@@ -405,14 +405,14 @@ def test_all(
                 tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v]
                 or tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v]
             ):
-                print("        NOT ENOUGH TOKENS IN VAULT rule_allBatch", *dump)
+                print("        NOT ENOUGH TOKENS IN VAULT rule_allBatch", *toLog)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
                         self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
                     )
 
             else:
-                print("                    rule_allBatch", *dump)
+                print("                    rule_allBatch", *toLog)
                 tx = signed_calls_nonces(
                     self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
                 )
@@ -470,7 +470,7 @@ def test_all(
                 st_eth_amount,
             )
             signer = self._get_key_prob(AGG)
-            dump = (*args, signer, st_sender)
+            toLog = (*args, signer, st_sender)
 
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
@@ -480,13 +480,13 @@ def test_all(
                     )
 
             elif st_eth_amount == 0:
-                print("        REV_MSG_NZ_UINT _vault_transfer", *dump)
+                print("        REV_MSG_NZ_UINT _vault_transfer", *toLog)
                 with reverts(REV_MSG_NZ_UINT):
                     signed_calls_nonces(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                     )
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST _vault_transfer", *dump)
+                print("        REV_MSG_WHITELIST _vault_transfer", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
@@ -499,13 +499,13 @@ def test_all(
                     )
 
             elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
-                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *dump)
+                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                     )
             else:
-                print("                    _vault_transfer", *dump)
+                print("                    _vault_transfer", *toLog)
                 tx = signed_calls_nonces(
                     self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                 )
@@ -542,7 +542,7 @@ def test_all(
                 st_recips,
                 st_eth_amounts,
             )
-            dump = (*args, st_sender, signer)
+            toLog = (*args, st_sender, signer)
 
             totalEth = 0
             totalTokenA = 0
@@ -573,7 +573,7 @@ def test_all(
                     )
 
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_vault_transferBatch", *dump)
+                print("        REV_MSG_WHITELIST rule_vault_transferBatch", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km,
@@ -583,7 +583,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_vault_transferBatch", *dump)
+                print("        REV_MSG_SIG rule_vault_transferBatch", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_calls_nonces(
                         self.km,
@@ -597,7 +597,8 @@ def test_all(
                 or totalTokenB > self.tokenBBals[self.v]
             ):
                 print(
-                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch", *dump
+                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
+                    *toLog,
                 )
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_calls_nonces(
@@ -608,7 +609,7 @@ def test_all(
                         sender=st_sender,
                     )
             else:
-                print("                    rule_vault_transferBatch", *dump)
+                print("                    rule_vault_transferBatch", *toLog)
                 tx = signed_calls_nonces(
                     self.km,
                     self.v.transferBatch,
@@ -695,7 +696,7 @@ def test_all(
         # Fetch the ETH deposit of a random create2
         def rule_fetchDepositEth(self, st_sender, st_swapID):
             signer = self._get_key_prob(AGG)
-            dump = (st_swapID, signer, st_sender)
+            toLog = (st_swapID, signer, st_sender)
 
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
@@ -708,7 +709,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif st_swapID == 0:
-                print("        REV_MSG_NZ_BYTES32 rule_fetchDepositEth", *dump)
+                print("        REV_MSG_NZ_BYTES32 rule_fetchDepositEth", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
                     signed_calls_nonces(
                         self.km,
@@ -718,7 +719,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositEth", *dump)
+                print("        REV_MSG_WHITELIST rule_fetchDepositEth", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km,
@@ -738,7 +739,7 @@ def test_all(
                         sender=st_sender,
                     )
             else:
-                print("                    rule_fetchDepositEth", *dump)
+                print("                    rule_fetchDepositEth", *toLog)
                 depositAddr = getCreate2Addr(
                     self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
                 )
@@ -762,7 +763,7 @@ def test_all(
             ]
             total = sum([web3.eth.get_balance(addr) for addr in addrs])
             signer = self._get_key_prob(AGG)
-            dump = (st_swapIDs, signer, st_sender)
+            toLog = (st_swapIDs, signer, st_sender)
 
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
@@ -775,7 +776,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositEthBatch", *dump)
+                print("        REV_MSG_WHITELIST rule_fetchDepositEthBatch", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km,
@@ -785,7 +786,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_fetchDepositEthBatch", *dump)
+                print("        REV_MSG_SIG rule_fetchDepositEthBatch", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_calls_nonces(
                         self.km,
@@ -795,7 +796,7 @@ def test_all(
                         sender=st_sender,
                     )
             else:
-                print("                    rule_fetchDepositEthBatch", *dump)
+                print("                    rule_fetchDepositEthBatch", *toLog)
                 tx = signed_calls_nonces(
                     self.km,
                     self.v.fetchDepositEthBatch,
@@ -813,7 +814,7 @@ def test_all(
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
             args = (st_swapID, token)
             signer = self._get_key_prob(AGG)
-            dump = (*args, signer, st_sender)
+            toLog = (*args, signer, st_sender)
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -825,7 +826,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif st_swapID == 0:
-                print("        REV_MSG_NZ_BYTES32 _fetchDepositToken", *dump)
+                print("        REV_MSG_NZ_BYTES32 _fetchDepositToken", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
                     signed_calls_nonces(
                         self.km,
@@ -835,7 +836,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST _fetchDepositToken", *dump)
+                print("        REV_MSG_WHITELIST _fetchDepositToken", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km,
@@ -855,7 +856,7 @@ def test_all(
                         sender=st_sender,
                     )
             else:
-                print("                    _fetchDepositToken", *dump)
+                print("                    _fetchDepositToken", *toLog)
                 depositAddr = getCreate2Addr(
                     self.v.address,
                     cleanHexStrPad(st_swapID),
@@ -887,7 +888,7 @@ def test_all(
             trimToShortest([st_swapIDs, st_tokens])
             signer = self._get_key_prob(AGG)
             args = (st_swapIDs, st_tokens)
-            dump = (*args, signer, st_sender)
+            toLog = (*args, signer, st_sender)
 
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
@@ -900,7 +901,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositTokenBatch", *dump)
+                print("        REV_MSG_WHITELIST rule_fetchDepositTokenBatch", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km,
@@ -937,7 +938,7 @@ def test_all(
                     else:
                         assert False, "Panicc"
 
-                print("                    rule_fetchDepositTokenBatch", *dump)
+                print("                    rule_fetchDepositTokenBatch", *toLog)
                 tx = signed_calls_nonces(
                     self.km,
                     self.v.fetchDepositTokenBatch,
@@ -987,7 +988,7 @@ def test_all(
             self, st_sender, st_egressParams, st_egressReceiver, st_eth_amount
         ):
             args = (st_egressParams, st_egressReceiver)
-            dump = (*args, st_sender)
+            toLog = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print("        REV_MSG_GOV_SUSPENDED _swapETH")
@@ -995,7 +996,7 @@ def test_all(
             else:
                 if self.swapsEnabled:
                     if st_eth_amount == 0:
-                        print("        REV_MSG_NZ_UINT _swapETH", *dump)
+                        print("        REV_MSG_NZ_UINT _swapETH", *toLog)
                         with reverts(REV_MSG_NZ_UINT):
                             self.v.swapETH(
                                 *args,
@@ -1003,7 +1004,7 @@ def test_all(
                             )
                     else:
                         if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
-                            print("                    rule_swapETH", *dump)
+                            print("                    rule_swapETH", *toLog)
                             tx = self.v.swapETH(
                                 *args,
                                 {"from": st_sender, "amount": st_eth_amount},
@@ -1032,7 +1033,7 @@ def test_all(
             st_token,
         ):
             args = (st_egressParams, st_egressReceiver, st_token, st_token_amount)
-            dump = (*args, st_sender)
+            toLog = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print("        REV_MSG_GOV_SUSPENDED _swapToken")
@@ -1043,7 +1044,7 @@ def test_all(
             else:
                 if self.swapsEnabled:
                     if st_token_amount == 0:
-                        print("        REV_MSG_NZ_UINT _swapToken", *dump)
+                        print("        REV_MSG_NZ_UINT _swapToken", *toLog)
                         with reverts(REV_MSG_NZ_UINT):
                             self.v.swapToken(
                                 *args,
@@ -1052,14 +1053,14 @@ def test_all(
                     else:
                         st_token.approve(self.v, st_token_amount, {"from": st_sender})
                         if st_token.balanceOf(st_sender) < st_token_amount:
-                            print("        REV_MSG_ERC20_EXCEED_BAL _swapToken", *dump)
+                            print("        REV_MSG_ERC20_EXCEED_BAL _swapToken", *toLog)
                             with reverts(REV_MSG_ERC20_EXCEED_BAL):
                                 self.v.swapToken(
                                     *args,
                                     {"from": st_sender},
                                 )
                         else:
-                            print("                    rule_swapToken", *dump)
+                            print("                    rule_swapToken", *toLog)
                             tx = self.v.swapToken(
                                 *args,
                                 {"from": st_sender},
@@ -1184,10 +1185,10 @@ def test_all(
             sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
                 st_msg_data.hex(), nonces, NUM_TO_KEYID[st_keyID_num], self.km.address
             )
-            dump = (st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
+            toLog = (st_sender, st_sig_key_idx, st_keyID_num, st_msg_data)
 
             if not st_sender in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_consumeKeyNonce", *dump)
+                print("        REV_MSG_WHITELIST rule_consumeKeyNonce", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     self.km.consumeKeyNonce(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
@@ -1196,14 +1197,14 @@ def test_all(
                 self.allKeys[st_sig_key_idx]
                 == self.keyIDToCurKeys[NUM_TO_KEYID[st_keyID_num]]
             ):
-                print("                    rule_consumeKeyNonce", *dump)
+                print("                    rule_consumeKeyNonce", *toLog)
                 tx = self.km.consumeKeyNonce(
                     sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                 )
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
-                    print("        REV_MSG_SIG rule_consumeKeyNonce", *dump)
+                    print("        REV_MSG_SIG rule_consumeKeyNonce", *toLog)
                     self.km.consumeKeyNonce(
                         sigData, cleanHexStr(sigData[2]), {"from": st_sender}
                     )
@@ -1212,9 +1213,9 @@ def test_all(
         def _set_key_with_aggkey(
             self, st_sender, fcn, keyID, st_sig_key_idx, st_new_key_idx, newKey
         ):
-            dump = (st_sender, keyID, st_sig_key_idx, st_new_key_idx)
+            toLog = (st_sender, keyID, st_sig_key_idx, st_new_key_idx)
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[keyID]:
-                print(f"                    {fcn}", *dump)
+                print(f"                    {fcn}", *toLog)
                 return signed_calls_nonces(
                     self.km,
                     fcn,
@@ -1224,7 +1225,7 @@ def test_all(
                 )
             else:
                 with reverts(REV_MSG_SIG):
-                    print(f"        REV_MSG_SIG {fcn}", *dump)
+                    print(f"        REV_MSG_SIG {fcn}", *toLog)
                     signed_calls_nonces(
                         self.km,
                         fcn,
@@ -1252,15 +1253,15 @@ def test_all(
 
         # Call rule_setGovKeyWithGovKey with a random new key, signing key, and sender
         def rule_setGovKeyWithGovKey(self, st_sender, st_addr):
-            dump = (st_sender, st_addr, self.communityKey)
+            toLog = (st_sender, st_addr, self.communityKey)
             if st_sender == self.governor:
-                print("                    rule_setGovKeyWithGovKey", *dump)
+                print("                    rule_setGovKeyWithGovKey", *toLog)
                 self.km.setGovKeyWithGovKey(st_addr, {"from": st_sender})
                 self.governor = st_addr
             else:
                 print(
                     "        REV_MSG_KEYMANAGER_GOVERNOR rule_setGovKeyWithGovKey",
-                    *dump,
+                    *toLog,
                 )
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.setGovKeyWithGovKey(st_addr, {"from": st_sender})
@@ -1276,24 +1277,24 @@ def test_all(
         def rule_setAggKeyWithGovKey(self, st_sender, st_new_key_idx):
 
             sender = choice([st_sender, self.governor])
-            dump = (st_sender, sender, st_new_key_idx)
+            toLog = (st_sender, sender, st_new_key_idx)
 
             if getChainTime() - self.lastValidateTime < AGG_KEY_TIMEOUT:
-                print("        REV_MSG_DELAY rule_setAggKeyWithGovKey", *dump)
+                print("        REV_MSG_DELAY rule_setAggKeyWithGovKey", *toLog)
                 with reverts(REV_MSG_DELAY):
                     self.km.setAggKeyWithGovKey(
                         self.allKeys[st_new_key_idx].getPubData(),
                         {"from": sender},
                     )
             elif sender != self.governor:
-                print("        REV_MSG_SIG rule_setAggKeyWithGovKey", *dump)
+                print("        REV_MSG_SIG rule_setAggKeyWithGovKey", *toLog)
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.setAggKeyWithGovKey(
                         self.allKeys[st_new_key_idx].getPubData(),
                         {"from": sender},
                     )
             else:
-                print("                    rule_setAggKeyWithGovKey", *dump)
+                print("                    rule_setAggKeyWithGovKey", *toLog)
                 self.km.setAggKeyWithGovKey(
                     self.allKeys[st_new_key_idx].getPubData(),
                     {"from": sender},
@@ -1339,15 +1340,15 @@ def test_all(
 
         # Updates community Key with a random new key - happens with low probability - 1/20
         def rule_setCommKeyWithCommKey(self, st_sender, st_addr):
-            dump = (st_sender, st_addr, self.communityKey)
+            toLog = (st_sender, st_addr, self.communityKey)
             if st_sender == self.communityKey:
-                print("                    rule_setCommKeyWithCommKey", *dump)
+                print("                    rule_setCommKeyWithCommKey", *toLog)
                 self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
                 self.communityKey = st_addr
             else:
                 print(
                     "        REV_MSG_KEYMANAGER_NOT_COMMUNITY _setCommKeyWithCommKey",
-                    *dump,
+                    *toLog,
                 )
                 with reverts(REV_MSG_KEYMANAGER_NOT_COMMUNITY):
                     self.km.setCommKeyWithCommKey(st_addr, {"from": st_sender})
@@ -1357,30 +1358,30 @@ def test_all(
         # Stakes a random amount from a random staker to a random nodeID
         def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
             args = (st_nodeID, st_amount, st_returnAddr)
-            dump = (*args, st_staker)
+            toLog = (*args, st_staker)
             if st_nodeID == 0:
-                print("        REV_MSG_NZ_BYTES32 rule_stake", *dump)
+                print("        REV_MSG_NZ_BYTES32 rule_stake", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
                     self.f.approve(self.sm.address, st_amount, {"from": st_staker})
                     self.sm.stake(
                         st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
                     )
             elif st_amount < self.minStake:
-                print("        rule_stake MIN_STAKE", *dump)
+                print("        rule_stake MIN_STAKE", *toLog)
                 with reverts(REV_MSG_MIN_STAKE):
                     self.f.approve(self.sm.address, st_amount, {"from": st_staker})
                     self.sm.stake(
                         st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
                     )
             elif st_amount > self.flipBals[st_staker]:
-                print("        rule_stake REV_MSG_ERC20_EXCEED_BAL", *dump)
+                print("        rule_stake REV_MSG_ERC20_EXCEED_BAL", *toLog)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.f.approve(self.sm.address, st_amount, {"from": st_staker})
                     self.sm.stake(
                         st_nodeID, st_amount, st_returnAddr, {"from": st_staker}
                     )
             else:
-                print("                    rule_stake ", *dump)
+                print("                    rule_stake ", *toLog)
                 self.f.approve(self.sm.address, st_amount, {"from": st_staker})
                 self.sm.stake(st_nodeID, st_amount, st_returnAddr, {"from": st_staker})
 
@@ -1399,7 +1400,7 @@ def test_all(
                 getChainTime() + st_expiry_time_diff,
             )
             signer = self._get_key_prob(AGG)
-            dump = (*args, signer, st_sender)
+            toLog = (*args, signer, st_sender)
 
             if self.sm_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _registerClaim")
@@ -1412,7 +1413,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif st_nodeID == 0:
-                print("        NODEID rule_registerClaim", *dump)
+                print("        NODEID rule_registerClaim", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
                     signed_calls_nonces(
                         self.km,
@@ -1422,7 +1423,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif st_amount == 0:
-                print("        AMOUNT rule_registerClaim", *dump)
+                print("        AMOUNT rule_registerClaim", *toLog)
                 with reverts(REV_MSG_NZ_UINT):
                     signed_calls_nonces(
                         self.km,
@@ -1432,7 +1433,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif not self.sm in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_registerClaim", *dump)
+                print("        REV_MSG_WHITELIST rule_registerClaim", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km,
@@ -1452,7 +1453,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
-                print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *dump)
+                print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *toLog)
                 with reverts(REV_MSG_CLAIM_EXISTS):
                     signed_calls_nonces(
                         self.km,
@@ -1462,7 +1463,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif st_expiry_time_diff <= CLAIM_DELAY:
-                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *dump)
+                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *toLog)
                 with reverts(REV_MSG_EXPIRY_TOO_SOON):
                     signed_calls_nonces(
                         self.km,
@@ -1472,7 +1473,7 @@ def test_all(
                         sender=st_sender,
                     )
             else:
-                print("                    rule_registerClaim ", *dump)
+                print("                    rule_registerClaim ", *toLog)
                 tx = signed_calls_nonces(
                     self.km,
                     self.sm.registerClaim,
@@ -1569,10 +1570,10 @@ def test_all(
                 self.sm.address,
             )
             signer = self._get_key_prob(AGG)
-            dump = (*args, signer, st_sender, st_amount_supply)
+            toLog = (*args, signer, st_sender, st_amount_supply)
 
             if not self.f in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_updateFlipSupply", *dump)
+                print("        REV_MSG_WHITELIST rule_updateFlipSupply", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km,
@@ -1582,7 +1583,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_updateFlipSupply", *dump)
+                print("        REV_MSG_SIG rule_updateFlipSupply", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_calls_nonces(
                         self.km,
@@ -1593,7 +1594,7 @@ def test_all(
                     )
 
             elif newSupplyBlockNumber <= self.lastSupplyBlockNumber:
-                print("        REV_MSG_BLOCK rule_updateFlipSupply", *dump)
+                print("        REV_MSG_BLOCK rule_updateFlipSupply", *toLog)
                 with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
                     signed_calls_nonces(
                         self.km,
@@ -1606,7 +1607,7 @@ def test_all(
                 if sm_inibalance + st_amount_supply < 0:
                     with reverts(REV_MSG_BURN_BALANCE):
                         print(
-                            "        REV_MSG_BURN_BALANCE rule_updateFlipSupply", *dump
+                            "        REV_MSG_BURN_BALANCE rule_updateFlipSupply", *toLog
                         )
                         signed_calls_nonces(
                             self.km,
@@ -1616,7 +1617,7 @@ def test_all(
                             sender=st_sender,
                         )
                 else:
-                    print("                    rule_updateFlipSupply", *dump)
+                    print("                    rule_updateFlipSupply", *toLog)
                     tx = signed_calls_nonces(
                         self.km,
                         self.f.updateFlipSupply,
@@ -1727,7 +1728,7 @@ def test_all(
             toWhitelist = self.currentWhitelist.copy() + [newVault]
             args = (ETH_ADDR, newVault, st_eth_amount)
             signer = self._get_key_prob(AGG)
-            dump = (*args, st_sender)
+            toLog = (*args, st_sender)
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -1736,7 +1737,7 @@ def test_all(
                     )
             # if old vault is not whitelisted it will fail later
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_upgrade_Vault", *dump)
+                print("        REV_MSG_WHITELIST rule_upgrade_Vault", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
@@ -1745,7 +1746,7 @@ def test_all(
                 args = (self.currentWhitelist, toWhitelist)
 
                 if signer != self.keyIDToCurKeys[AGG]:
-                    print("        REV_MSG_SIG rule_upgrade_Vault", *dump)
+                    print("        REV_MSG_SIG rule_upgrade_Vault", *toLog)
                     with reverts(REV_MSG_SIG):
                         signed_calls_nonces(
                             self.km,
@@ -1874,7 +1875,7 @@ def test_all(
             toWhitelist = self.currentWhitelist.copy() + [newStakeManager]
             args = (JUNK_HEX, 1, newStakeManager, 1)
             signer = self._get_key_prob(AGG)
-            dump = (*args, st_sender)
+            toLog = (*args, st_sender)
 
             if self.sm_suspended:
                 print("        REV_MSG_GOV_SUSPENDED rule_upgrade_stakeManager")
@@ -1890,7 +1891,7 @@ def test_all(
             elif not self.sm in self.currentWhitelist:
                 print(
                     "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
-                    *dump,
+                    *toLog,
                 )
                 with reverts(REV_MSG_WHITELIST):
                     signed_calls_nonces(
@@ -1908,7 +1909,7 @@ def test_all(
                 if signer != self.keyIDToCurKeys[AGG]:
                     print(
                         "        REV_MSG_SIG rule_upgrade_stakeManager",
-                        *dump,
+                        *toLog,
                     )
                     with reverts(REV_MSG_SIG):
                         signed_calls_nonces(
