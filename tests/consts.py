@@ -14,8 +14,6 @@ JUNK_HEX = web3.toHex(JUNK_INT)
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
 AGG = "Agg"
-# KEYID_TO_NUM = {AGG: 0, GOV: 1}
-# NUM_TO_KEYID = [AGG, GOV]
 INIT_TOKEN_SUPPLY = int(10**8 * E_18)
 INIT_ETH_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
