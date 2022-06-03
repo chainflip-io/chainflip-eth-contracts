@@ -22,7 +22,7 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
     stateChainBlockNumber = 1
 
     args = (NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.stakeManager.address)
-    tx = signed_call_aggSigner(cf, cf.flip.updateFlipSupply, *args, sender=cf.ALICE)
+    tx = signed_call_cf(cf, cf.flip.updateFlipSupply, *args, sender=cf.ALICE)
 
     # Check things that should've changed
     assert (

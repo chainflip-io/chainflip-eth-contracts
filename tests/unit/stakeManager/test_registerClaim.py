@@ -23,7 +23,7 @@ def test_registerClaim_st_amount_rand(
 
     if st_amount == 0:
         with reverts(REV_MSG_NZ_UINT):
-            signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+            signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
     else:
         registerClaimTest(
             cf,
@@ -57,14 +57,14 @@ def test_registerClaim_rev_just_under_min_expiryTime(cf, stakedMin):
     args = (JUNK_HEX, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY - 5)
 
     with reverts(REV_MSG_EXPIRY_TOO_SOON):
-        signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+        signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
 
 def test_registerClaim_claim_expired(cf, stakedMin):
     _, st_amount = stakedMin
     args = (JUNK_HEX, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
 
-    signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+    signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
     chain.sleep(CLAIM_DELAY + 10)
     registerClaimTest(
@@ -82,10 +82,10 @@ def test_registerClaim_rev_claim_not_expired(cf, stakedMin):
     _, st_amount = stakedMin
     args = (JUNK_HEX, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
 
-    signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+    signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
     with reverts(REV_MSG_CLAIM_EXISTS):
-        signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+        signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
 
 def test_registerClaim_rev_nodeID(cf, stakedMin):
@@ -93,7 +93,7 @@ def test_registerClaim_rev_nodeID(cf, stakedMin):
     args = (0, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
 
     with reverts(REV_MSG_NZ_BYTES32):
-        signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+        signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
 
 def test_registerClaim_rev_st_staker(cf, stakedMin):
@@ -101,7 +101,7 @@ def test_registerClaim_rev_st_staker(cf, stakedMin):
 
     with reverts(REV_MSG_NZ_ADDR):
         args = (JUNK_HEX, st_amount, ZERO_ADDR, getChainTime() + CLAIM_DELAY + 5)
-        signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+        signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
 
 def test_registerClaim_rev_msgHash(cf, stakedMin):
@@ -140,6 +140,4 @@ def test_registerClaim_rev_suspended(cf, stakedMin, st_sender):
 
     with reverts(REV_MSG_GOV_SUSPENDED):
         args = (JUNK_HEX, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
-        signed_call_aggSigner(
-            cf, cf.stakeManager.registerClaim, *args, sender=st_sender
-        )
+        signed_call_cf(cf, cf.stakeManager.registerClaim, *args, sender=st_sender)

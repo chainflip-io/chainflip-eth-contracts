@@ -19,5 +19,5 @@ def test_updateKeyManager(cf, KeyManager):
     )
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        signed_call_aggSigner(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
+        signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager

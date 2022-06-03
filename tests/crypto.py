@@ -11,6 +11,7 @@ class Signer:
     Q = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
     Q_INT = int(Q, 16)
     HALF_Q_INT = (Q_INT >> 1) + 1
+    AGG = "Agg"
 
     def __init__(self, privKeyHex, keyID, nonces):
         self.privKeyHex = privKeyHex
@@ -25,7 +26,6 @@ class Signer:
         self.pubKeyYPar = 0 if cleanHexStr(bytes(self.pubKey)[:1]) == "02" else 1
         self.pubKeyYParHex = "00" if self.pubKeyYPar == 0 else "01"
 
-        self.keyID = keyID
         self.nonces = nonces
 
     @classmethod
@@ -58,9 +58,9 @@ class Signer:
         return [self.pubKeyXInt, self.pubKeyYPar]
 
     def getSigData(self, msgToHash, keyManagerAddress):
-        return self.getSigDataWithKeyID(msgToHash, self.keyID, keyManagerAddress)
+        return self.getSigDataWithNonces(msgToHash, self.nonces, keyManagerAddress)
 
-    def getSigDataWithKeyID(self, msgToHash, keyID, keyManagerAddress):
+    def getSigDataWithNonces(self, msgToHash, nonces, keyManagerAddress):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
         sigData = [
@@ -68,27 +68,12 @@ class Signer:
             chain.id,
             int(msgHashHex, 16),
             s,
-            self.nonces[keyID],
-            nonceTimesGeneratorAddress,
-        ]
-
-        self.nonces[keyID] += 1
-        return sigData
-
-    def getSigDataWithNonces(self, msgToHash, nonces, keyID, keyManagerAddress):
-        msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
-        [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
-        sigData = [
-            keyManagerAddress,
-            chain.id,
-            int(msgHashHex, 16),
-            s,
-            nonces[keyID],
+            nonces[self.AGG],
             nonceTimesGeneratorAddress,
         ]
 
         # Since nonces is passed by reference, it will be altered for all other signers too
-        nonces[keyID] += 1
+        nonces[self.AGG] += 1
         return sigData
 
     # @dev reference /contracts/abstract/SchnorrSECP256k1.sol

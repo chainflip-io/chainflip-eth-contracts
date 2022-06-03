@@ -16,7 +16,7 @@ def fetchDepositEth(cf, vault, DepositEth):
     balanceBefore = cf.ALICE.balance()
     assert balanceBefore >= TEST_AMNT
 
-    signed_call_aggSigner(cf, vault.fetchDepositEth, JUNK_HEX_PAD, sender=cf.ALICE)
+    signed_call_cf(cf, vault.fetchDepositEth, JUNK_HEX_PAD, sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert vault.balance() == balanceVaultBefore + TEST_AMNT
@@ -28,7 +28,7 @@ def transfer_eth(cf, vault, receiver, amount):
     assert startBalVault >= amount
     startBalRecipient = receiver.balance()
 
-    tx = signed_call_aggSigner(cf, vault.transfer, ETH_ADDR, receiver, amount)
+    tx = signed_call_cf(cf, vault.transfer, ETH_ADDR, receiver, amount)
 
     assert vault.balance() - startBalVault == -amount
 
@@ -45,7 +45,7 @@ def transfer_eth(cf, vault, receiver, amount):
 def setAggKeyWithAggKey_test(cf):
     checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cf,
         cf.keyManager.setAggKeyWithAggKey,
         AGG_SIGNER_2.getPubData(),
@@ -63,7 +63,7 @@ def setKey_rev_newPubKeyX_test(cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
 
     with reverts(REV_MSG_PUB_KEY_X):
-        signed_call_aggSigner(
+        signed_call_cf(
             cf,
             cf.keyManager.setAggKeyWithAggKey,
             BAD_AGG_KEY,
@@ -101,7 +101,7 @@ def setGovKeyWithGovKey_test(cf):
 def setGovKeyWithAggKey_test(cf):
     checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cf,
         cf.keyManager.setGovKeyWithAggKey,
         cf.GOVERNOR_2,
@@ -117,7 +117,7 @@ def setGovKeyWithAggKey_test(cf):
 def setCommKeyWithAggKey_test(cf):
     checkCurrentKeys(cf, AGG_SIGNER_1.getPubDataWith0x(), cf.GOVERNOR, cf.COMMUNITY_KEY)
 
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cf,
         cf.keyManager.setCommKeyWithAggKey,
         cf.COMMUNITY_KEY_2,
@@ -156,62 +156,9 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
     assert cf.keyManager.getCommunityKey() == commkey
 
 
-def setKey_rev_pubKeyX_test(cf, fcn, signer):
-    newKey = AGG_SIGNER_2.getPubData()
-    newKey[0] = 0
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, newKey)
-    with reverts(REV_MSG_NZ_PUBKEYX):
-        fcn(signer.getSigData(callDataNoSig, cf.keyManager.address), newKey)
-
-
-def setKey_rev_nonceTimesGAddr_test(cf, fcn, signer):
-    newKey = AGG_SIGNER_2.getPubData()
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, newKey)
-    sigData = signer.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[3] = ZERO_ADDR
-    with reverts(REV_MSG_INPUTS_0):
-        fcn(sigData, newKey)
-
-
-def setKey_rev_msgHash_test(cf, fcn, signer):
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, AGG_SIGNER_2.getPubData())
-    sigData = signer.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[2] += 1
-    with reverts(REV_MSG_MSGHASH):
-        fcn(sigData, AGG_SIGNER_2.getPubData())
-
-
-def setKey_rev_sig_test(cf, fcn, signer):
-    nullSig = (
-        agg_null_sig(cf.keyManager.address, chain.id)
-        if signer.keyID == AGG
-        else gov_null_sig(cf.keyManager.address, chain.id)
-    )
-    callDataNoSig = fcn.encode_input(nullSig, AGG_SIGNER_2.getPubData())
-    sigData = signer.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[3] += 1
-    with reverts(REV_MSG_SIG):
-        fcn(sigData, AGG_SIGNER_2.getPubData())
-
-
 def canConsumeKeyNonce_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    tx = cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+    cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
 
 
 def canConsumeKeyNonce_rev_test(cf, signer):
@@ -242,7 +189,7 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
     prevReceiverBal = cf.flip.balanceOf(receiver)
     prevStakeManBal = cf.flip.balanceOf(stakeManager)
 
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cf,
         stakeManager.registerClaim,
         nodeID,
@@ -273,34 +220,30 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
 
 
 # Function used to do function calls that require a signature
-def signed_call_aggSigner(cf, fcn, *args, **kwargs):
+def signed_call_cf(cf, fcn, *args, **kwargs):
     # Get default values
     sender = kwargs.get("sender", cf.deployer)
     keyManager = kwargs.get("keyManager", cf.keyManager)
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
-    # Sign the tx without a msgHash or sig
-    callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
-    return fcn(
-        signer.getSigData(callDataNoSig, keyManager.address),
-        *args,
-        {"from": sender},
-    )
+    return signed_call(keyManager, fcn, signer, sender, *args)
 
 
-# In stateful tests signing is done via getSigDataWithNonces instead. Also, keyManager keeps
-# changing so it is required to pass it as argument.
-# Requiring cf only if a sender is not provided (almost always sender is provided)
-def signed_calls_nonces(keyManager, fcn, *args, **kwargs):
+# Another separate signed call to make tests less verbose
+def signed_call_km(keyManager, fcn, *args, **kwargs):
     # Get default values
     # Workaround because kwargs.get("sender", kwargs.get("cf").deployer) doesn't work if there is no "cf" key
     sender = kwargs.get("sender") if "sender" in kwargs else kwargs.get("cf").deployer
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
+    return signed_call(keyManager, fcn, signer, sender, *args)
+
+
+def signed_call(keyManager, fcn, signer, sender, *args):
     # Sign the tx without a msgHash or sig
     callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
     return fcn(
-        signer.getSigDataWithNonces(callDataNoSig, nonces, AGG, keyManager.address),
+        signer.getSigDataWithNonces(callDataNoSig, nonces, keyManager.address),
         *args,
         {"from": sender},
     )

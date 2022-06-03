@@ -17,7 +17,7 @@ def test_updateFlipSupply(cf):
 
     stateChainBlockNumber = 1
 
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cf,
         cf.flip.updateFlipSupply,
         NEW_TOTAL_SUPPLY_MINT,
@@ -43,7 +43,7 @@ def test_updateFlipSupply(cf):
 
     stateChainBlockNumber = 2
 
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cf,
         cf.flip.updateFlipSupply,
         INIT_SUPPLY,
@@ -67,7 +67,7 @@ def test_updateFlipSupply(cf):
     stateChainBlockNumber = 1
 
     with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
-        signed_call_aggSigner(
+        signed_call_cf(
             cf,
             cf.flip.updateFlipSupply,
             INIT_SUPPLY,
@@ -88,7 +88,7 @@ def test_updateFlipSupply_unchangedSupply(cf):
 
     stateChainBlockNumber = 1
 
-    signed_call_aggSigner(
+    signed_call_cf(
         cf,
         cf.flip.updateFlipSupply,
         cf.flip.totalSupply(),
@@ -110,7 +110,7 @@ def test_updateFlipSupply_rev(cf):
     stateChainBlockNumber = 1
 
     with reverts(REV_MSG_NZ_UINT):
-        signed_call_aggSigner(
+        signed_call_cf(
             cf,
             cf.flip.updateFlipSupply,
             0,
@@ -120,7 +120,7 @@ def test_updateFlipSupply_rev(cf):
         )
 
     with reverts(REV_MSG_NZ_ADDR):
-        signed_call_aggSigner(
+        signed_call_cf(
             cf,
             cf.flip.updateFlipSupply,
             NEW_TOTAL_SUPPLY_MINT,

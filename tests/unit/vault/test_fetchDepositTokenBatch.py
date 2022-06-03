@@ -36,7 +36,7 @@ def test_fetchDepositTokenBatch(
 
     # Fetch the deposit
     args = (st_swapIDs, tokens)
-    signed_call_aggSigner(cf, cf.vault.fetchDepositTokenBatch, *args)
+    signed_call_cf(cf, cf.vault.fetchDepositTokenBatch, *args)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert token.balanceOf(cf.vault) == tokenATotal
@@ -70,4 +70,4 @@ def test_fetchDepositTokenBatch_rev_sig(cf, token):
 def test_fetchDepositTokenBatch_rev_array_length(cf, token):
     with reverts(REV_MSG_V_ARR_LEN):
         args = ([JUNK_HEX_PAD, JUNK_HEX_PAD], [token])
-        signed_call_aggSigner(cf, cf.vault.fetchDepositTokenBatch, *args)
+        signed_call_cf(cf, cf.vault.fetchDepositTokenBatch, *args)

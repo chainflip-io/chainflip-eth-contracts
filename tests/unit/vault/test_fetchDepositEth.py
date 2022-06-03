@@ -10,7 +10,7 @@ def test_fetchDepositEth(cf, DepositEth):
 
 def test_fetchDepositEth_rev_swapID(cf):
     with reverts(REV_MSG_NZ_BYTES32):
-        signed_call_aggSigner(cf, cf.vault.fetchDepositEth, "")
+        signed_call_cf(cf, cf.vault.fetchDepositEth, "")
 
 
 def test_fetchDepositEth_rev_msgHash(cf):
