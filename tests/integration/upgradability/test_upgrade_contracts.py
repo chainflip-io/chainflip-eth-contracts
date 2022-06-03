@@ -222,7 +222,7 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
     newStakeManager = cf.DEPLOYER.deploy(StakeManager, cf.keyManager, MIN_STAKE)
 
     with reverts(REV_MSG_STAKEMAN_DEPLOYER):
-        newStakeManager.setFlip(cf.flip, cf.FR_ALICE)
+        newStakeManager.setFlip(cf.flip, {"from": cf.ALICE})
 
     newStakeManager.setFlip(cf.flip)
 
