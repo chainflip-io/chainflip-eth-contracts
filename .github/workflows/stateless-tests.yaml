@@ -30,8 +30,6 @@ jobs:
       - run: npm install
       - run: echo /root/.local/bin >> $GITHUB_PATH
       - run: poetry install --quiet
-      - run: npx hardhat node &
-      - run: sleep 2
       - run: poetry run brownie test --network hardhat --stateful false
 
   store-artifacts:
