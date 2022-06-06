@@ -1,6 +1,7 @@
 from brownie import web3, chain, history
 import time
 
+
 def cleanHexStr(thing):
     if isinstance(thing, int):
         thing = hex(thing)
