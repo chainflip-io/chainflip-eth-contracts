@@ -1,5 +1,4 @@
 from brownie import web3, chain, history
-import time
 
 
 def cleanHexStr(thing):
@@ -82,7 +81,6 @@ def getChainTime():
 # NOTE: in case of failure related to gas calculations, refer to comment in test_all invariant_bals.
 def calculateGasSpentByAddress(address, initialTransactionNumber):
     # history.filter returns a list of all the broadcasted transactions (not necessarily mined)
-    time.sleep(3)
     transactionList = history.filter(sender=address)[initialTransactionNumber:]
     ethUsed = 0
     for txReceipt in transactionList:
