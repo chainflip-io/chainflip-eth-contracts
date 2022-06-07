@@ -1122,7 +1122,7 @@ def test_all(
             else:
                 print(
                     "                    rule_updateCanConsumeKeyNonce_dewhitelist",
-                    *args,
+                    st_sender,
                 )
                 tx = signed_call_km(
                     self.km,
@@ -1157,7 +1157,7 @@ def test_all(
             else:
                 print(
                     "                    rule_updateCanConsumeKeyNonce_whitelist",
-                    *args,
+                    st_sender,
                 )
                 tx = signed_call_km(
                     self.km,

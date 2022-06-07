@@ -142,5 +142,5 @@ def test_updateFlipSupply_rev(cf):
             NEW_TOTAL_SUPPLY_MINT,
             stateChainBlockNumber,
             cf.stakeManager.address,
-            cf.FR_ALICE,
+            {"from": cf.ALICE},
         )
