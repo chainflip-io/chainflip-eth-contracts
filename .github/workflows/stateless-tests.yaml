@@ -28,7 +28,7 @@ jobs:
       - run: npm install
       - run: poetry install --quiet
       - run: poetry run black . --check
-      - run: poetry run yarn slither"
+      - run: poetry run yarn slither
 
   stateless-tests:
     name: Stateless Tests
