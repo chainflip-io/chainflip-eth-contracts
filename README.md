@@ -64,6 +64,17 @@ yarn format
 
 To format them separately run `yarn format-sol` or `yarn format-py`
 
+### Static analysis
+
+Slither is used to perform a static analysis on the solidity code.
+
+```bash
+yarn slither
+```
+
+Some of the slither warnings are waived in the ```slither.db.json``` using the slither triage mode. It can be run with ```yarn slither-triage```
+
+
 ### Pre-commit hook
 
 Pre-commit is part of the poetry virtual environment. Therefore, ensure that poetry is installed when commiting.
