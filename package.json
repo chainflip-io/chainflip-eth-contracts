@@ -5,6 +5,7 @@
     "format-sol": "npx prettier --write 'contracts/**/*.sol'",
     "format-py": "black .",
     "format": "yarn format-sol && yarn format-py",
+    "workaround-slither": "sed -i -e 's|/mnt/c/Users/allim/work/chainflip/slither2/chainflip-eth-contracts/|''$PWD'/'|g' slither.db.json",
     "slither": "slither .",
     "slither-triage": "slither . --triage-mode"
   },

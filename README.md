@@ -72,7 +72,7 @@ Slither is used to perform a static analysis on the solidity code.
 yarn slither
 ```
 
-Some of the slither warnings are waived in the ```slither.db.json``` using the slither triage mode. It can be run with ```yarn slither-triage```
+Some of the slither warnings are waived in the ```slither.db.json``` using the slither triage mode. It can be run with ```yarn slither-triage```.
 
 
 ### Pre-commit hook
