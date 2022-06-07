@@ -4,7 +4,8 @@
     "lint": "npx solhint -w 0 'contracts/**/*.sol' && black . --check",
     "format-sol": "npx prettier --write 'contracts/**/*.sol'",
     "format-py": "black .",
-    "format": "yarn format-sol && yarn format-py"
+    "format": "yarn format-sol && yarn format-py",
+    "slither": "slither . --triage-mode"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.0.0-rc3"
