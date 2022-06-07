@@ -19,8 +19,21 @@ jobs:
       - run: poetry install --quiet
       - run: poetry run black . --check
 
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.9.7"
+      - uses: snok/install-poetry@v1
+      - run: npm install
+      - run: poetry install --quiet
+      - run: poetry run yarn slither
+
   stateful-tests:
-    needs: lint
+    needs: [lint, analyze]
     runs-on: self-hosted
     timeout-minutes: 3600
     strategy:
