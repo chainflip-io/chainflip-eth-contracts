@@ -5,7 +5,8 @@
     "format-sol": "npx prettier --write 'contracts/**/*.sol'",
     "format-py": "black .",
     "format": "yarn format-sol && yarn format-py",
-    "slither": "slither . --triage-mode"
+    "slither": "slither .",
+    "slither-triage": "slither . --triage-mode"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.0.0-rc3"
