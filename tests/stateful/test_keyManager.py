@@ -324,7 +324,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         def rule_transfer_eth(self, st_sender, st_amount):
             if st_sender.balance() >= st_amount:
                 print("                    rule_transfer_eth", st_sender, st_amount)
-                st_sender.transfer(self.sm, st_amount)
+                st_sender.transfer(self.km, st_amount)
                 self.ethBalskm += st_amount
 
         # Governance attemps to withdraw any ETH - final balances will be check by the invariants
