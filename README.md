@@ -38,9 +38,11 @@ brownie test --network hardhat --stateful false
 Run tests with additional features:
 
 ```bash
-brownie test --network hardhat --stateful <BOOL> --coverage --gas --hypothesis-seed <SEED>
+brownie test <test-name> -s --network hardhat --stateful <BOOL> --coverage --gas --hypothesis-seed <SEED>
 ```
 Flags:
+- `<test-name>` - Run a specific test
+-  `-s`- Runs with the `print` outputs in tests.
 - `--stateful <BOOL>` - Runs (or not) stateful tests. Stateful tests might take several hours so it is recommended to set it to false.
 - `--gas` - generates a gas profile report
 - `--coverage` - generates and updates the test coverage report under reports/coverage.json
