@@ -89,6 +89,13 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      */
     function govWithdraw() external;
 
+    /**
+     * @notice Withdraw any ETH on this contract. The intended execution of this contract doesn't
+     * require any ETH. This function is just to recover any ETH that might have been sent to
+     * this contract by accident (or any other reason), since incoming ETH cannot be stopped.
+     */
+    function govWithdrawEth() external;
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //

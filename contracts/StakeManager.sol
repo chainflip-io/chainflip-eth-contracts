@@ -206,7 +206,20 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     }
 
     /**
-     *  @notice Allows this contract to receive ETH used to refund callers
+     * @notice Withdraw any ETH on this contract. The intended execution of this contract doesn't
+     * require any ETH. This function is just to recover any ETH that might have been sent to
+     * this contract by accident (or any other reason), since incoming ETH cannot be stopped.
+     */
+    function govWithdrawEth() external override isGovernor {
+        uint256 amount = address(this).balance;
+
+        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        address recipient = _getKeyManager().getGovernanceKey();
+        payable(recipient).transfer(amount);
+    }
+
+    /**
+     *  @notice Allows this contract to receive ETH
      */
     receive() external payable {}
 
