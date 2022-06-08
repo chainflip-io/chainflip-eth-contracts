@@ -23,7 +23,6 @@ def test_govWithdrawEth_zero(cf):
 # Test that governance recovers all the ETH in the keyManager contract
 @given(st_ethAmount=strategy("uint", min_value=0, max_value=INIT_ETH_BAL))
 def test_govWithdrawEth(cf, st_ethAmount):
-
     assert cf.keyManager.balance() == 0
 
     # Using DENICE since it has INIT_ETH_BAL

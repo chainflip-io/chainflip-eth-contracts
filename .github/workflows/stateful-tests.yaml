@@ -1,8 +1,5 @@
 name: Stateful Tests
-on:
-  push:
-    branches:
-      - master
+on: push
 
 jobs:
   lint:
@@ -27,11 +24,8 @@ jobs:
       matrix:
         test:
           [
-            test_all.py,
             test_keyManager.py,
-            test_vault.py,
             test_stakeManager.py,
-            test_upgradability.py,
           ]
     steps:
       - uses: actions/checkout@v3
