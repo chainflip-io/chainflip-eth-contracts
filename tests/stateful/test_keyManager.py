@@ -331,7 +331,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         def rule_govWithdrawalEth(self):
             iniEthBalsGov = self.governor.balance()
             print("                    rule_govWithdrawalEth")
-            tx = self.sm.govWithdrawEth({"from": self.governor})
+            tx = self.km.govWithdrawEth({"from": self.governor})
             assert (
                 iniEthBalsGov + self.ethBalskm
                 == self.governor.balance() + calculateGasTransaction(tx)
