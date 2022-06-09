@@ -41,6 +41,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             self.governor = cfDeployAllWhitelist.gov
             self.communityKey = cfDeployAllWhitelist.communityKey
             self.currentWhitelist = cfDeployAllWhitelist.whitelisted
+            self.ethBalskm = 0
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -50,6 +51,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
+        st_amount = strategy("uint", max_value=TEST_AMNT)
 
         # Updates the list of addresses that are nonce consumers
         def rule_updateCanConsumeKeyNonce(self, st_sender, st_addrs):
@@ -318,10 +320,31 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         signer=self.allKeys[st_sig_key_idx],
                     )
 
+        # Transfer ETH to the keyManager to check govWithdrawalEth
+        def rule_transfer_eth(self, st_sender, st_amount):
+            if st_sender.balance() >= st_amount:
+                print("                    rule_transfer_eth", st_sender, st_amount)
+                st_sender.transfer(self.km, st_amount)
+                self.ethBalskm += st_amount
+
+        # Governance attemps to withdraw any ETH - final balances will be check by the invariants
+        def rule_govWithdrawalEth(self):
+            iniEthBalsGov = self.governor.balance()
+            print("                    rule_govWithdrawalEth")
+            tx = self.km.govWithdrawEth({"from": self.governor})
+            assert (
+                iniEthBalsGov + self.ethBalskm
+                == self.governor.balance() + calculateGasTransaction(tx)
+            )
+            self.ethBalskm = 0
+
         # Check lastValidateTime after every tx
         def invariant_lastValidateTime(self):
             self.numTxsTested += 1
             assert self.km.getLastValidateTime() == self.lastValidateTime
+
+        def invariant_bals(self):
+            assert self.ethBalskm == self.km.balance()
 
         def invariant_whitelist(self):
             assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)

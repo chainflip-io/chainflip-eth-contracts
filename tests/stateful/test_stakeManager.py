@@ -385,6 +385,22 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.sm.govWithdraw({"from": self.governor})
 
+        # Transfer ETH to the stakeManager to check govWithdrawalEth. Using st_staker to make sure
+        # it is a key in the ethBals dict
+        def rule_transfer_eth(self, st_staker, st_amount):
+            if self.ethBals[st_staker] >= st_amount:
+                print("                    rule_transfer_eth", st_staker, st_amount)
+                st_staker.transfer(self.sm, st_amount)
+                self.ethBals[st_staker] -= st_amount
+                self.ethBals[self.sm] += st_amount
+
+        # Governance attemps to withdraw any ETH - final balances will be check by the invariants
+        def rule_govWithdrawalEth(self):
+            print("                    rule_govWithdrawalEth")
+            self.sm.govWithdrawEth({"from": self.governor})
+            self.ethBals[self.governor] += self.ethBals[self.sm]
+            self.ethBals[self.sm] = 0
+
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
             self.numTxsTested += 1
