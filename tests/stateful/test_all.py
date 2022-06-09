@@ -2218,6 +2218,37 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
+        # Transfer ETH to the stakeManager to check govWithdrawalEth. Using st_staker to make sure it is a key in the ethBals dict
+        def _transfer_eth_sm(self, st_staker, st_eth_amount):
+            self._transfer_eth(st_staker, self.sm, st_eth_amount)
+
+        # Transfer ETH to the stakeManager to check govWithdrawalEth. Using st_staker to make sure it is a key in the ethBals dict
+        def _transfer_eth_km(self, st_staker, st_eth_amount):
+            self._transfer_eth(st_staker, self.km, st_eth_amount)
+
+        # Transfer eth from sender to receiver. Both need be keys in the ethBals dict
+        def _transfer_eth(self, sender, receiver, amount):
+            if self.ethBals[sender] >= amount:
+                print("                    rule_transfer_eth", sender, receiver, amount)
+                sender.transfer(receiver, amount)
+                self.ethBals[sender] -= amount
+                self.ethBals[receiver] += amount
+
+        # Governance attemps to withdraw StakeManager's ETH
+        def rule_govWithdrawalEth_sm(self):
+            self._govWithdrawalEth(self.sm)
+
+        # Governance attemps to withdraw KeyManager's ETH
+        def rule_govWithdrawalEth_km(self):
+            self._govWithdrawalEth(self.km)
+
+        # Governance attemps to withdraw contract's eth- final balances will be check by the invariants
+        def _govWithdrawalEth(self, contract):
+            print("                    rule_govWithdrawalEth")
+            contract.govWithdrawEth({"from": self.governor})
+            self.ethBals[self.governor] += self.ethBals[contract]
+            self.ethBals[contract] = 0
+
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
         # NOTE: Error in self.ethBals assertion - calculateGasSpentByAddress seems to be smaller than expected and intermittently the eth balance

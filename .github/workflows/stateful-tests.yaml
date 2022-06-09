@@ -24,8 +24,7 @@ jobs:
       matrix:
         test:
           [
-            test_keyManager.py,
-            test_stakeManager.py,
+            test_all.py,
           ]
     steps:
       - uses: actions/checkout@v3
