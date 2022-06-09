@@ -41,7 +41,7 @@ Run tests with additional features:
 brownie test <test-name> -s --network hardhat --stateful <BOOL> --coverage --gas --hypothesis-seed <SEED>
 ```
 Flags:
-- `<test-name>` - Run a specific test
+- `<test-name>` - Run a specific test. If no test-name is provided all tests are run.
 -  `-s`- Runs with the `print` outputs in tests.
 - `--stateful <BOOL>` - Runs (or not) stateful tests. Stateful tests might take several hours so it is recommended to set it to false.
 - `--gas` - generates a gas profile report
