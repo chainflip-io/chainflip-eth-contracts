@@ -14,6 +14,7 @@ interface IKeyManager is IShared {
     event CommKeySetByAggKey(address oldCommKey, address newCommKey);
     event CommKeySetByCommKey(address oldCommKey, address newCommKey);
     event SignatureAccepted(SigData sigData, address signer);
+    event GovernanceAction(bytes32 message);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -36,6 +37,8 @@ interface IKeyManager is IShared {
     function setCommKeyWithCommKey(address newCommKey) external;
 
     function govWithdrawEth() external;
+
+    function govAction(bytes32 message) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

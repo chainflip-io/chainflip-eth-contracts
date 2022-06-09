@@ -52,6 +52,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
         st_amount = strategy("uint", max_value=TEST_AMNT)
+        st_message = strategy("bytes32")
 
         # Updates the list of addresses that are nonce consumers
         def rule_updateCanConsumeKeyNonce(self, st_sender, st_addrs):
@@ -337,6 +338,16 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                 == self.governor.balance() + calculateGasTransaction(tx)
             )
             self.ethBalskm = 0
+
+        def rule_govAction(self, st_sender, st_message):
+            if st_sender != self.governor:
+                with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+                    self.km.govAction(JUNK_HEX, {"from": st_sender})
+            print("                    rule_govAction")
+            tx = self.km.govAction(st_message, {"from": self.governor})
+            assert tx.events["GovernanceAction"]["message"] == "0x" + cleanHexStr(
+                st_message
+            )
 
         # Check lastValidateTime after every tx
         def invariant_lastValidateTime(self):
