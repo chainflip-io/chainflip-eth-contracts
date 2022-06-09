@@ -271,7 +271,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function govWithdrawEth() external override isGovernor {
         uint256 amount = address(this).balance;
 
-        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        // Could use msg.sender but hardcoding the get call just for extra safety
         address recipient = _getGovernanceKey();
         payable(recipient).transfer(amount);
     }
