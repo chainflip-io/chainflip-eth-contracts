@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "./IFLIP.sol";
+import "../FLIP.sol";
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
 
@@ -28,6 +29,16 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         uint48 startTime;
         uint48 expiryTime;
     }
+
+    /**
+     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
+     *          because FLIP contract requires this contract's address on deployment for minting.
+     *          First this contract is deployed, then the FLIP contract and finally setFLIP
+     *          should be called. OnlyDeployer modifer for added security since tokens will be
+     *          minted to this contract before calling setFLIP.
+     * @param flip FLIP token address
+     */
+    function setFlip(FLIP flip) external;
 
     /**
      * @notice          Stake some FLIP and attribute it to a nodeID

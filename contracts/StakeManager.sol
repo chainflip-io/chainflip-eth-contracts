@@ -79,7 +79,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *          minted to this contract before calling setFLIP.
      * @param flip FLIP token address
      */
-    function setFlip(FLIP flip) external onlyDeployer nzAddr(address(flip)) {
+    function setFlip(FLIP flip) external override onlyDeployer nzAddr(address(flip)) {
         require(address(_FLIP) == address(0), "Staking: Flip address already set");
         _FLIP = flip;
     }

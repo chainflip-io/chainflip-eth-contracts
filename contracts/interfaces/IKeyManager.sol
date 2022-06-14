@@ -22,6 +22,14 @@ interface IKeyManager is IShared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
+    function setCanConsumeKeyNonce(address[] calldata addrs) external;
+
+    function updateCanConsumeKeyNonce(
+        SigData calldata sigData,
+        address[] calldata currentAddrs,
+        address[] calldata newAddrs
+    ) external;
+
     function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
 
     function setAggKeyWithAggKey(SigData memory sigData, Key memory newAggKey) external;

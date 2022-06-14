@@ -50,7 +50,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *          needs to be set up successfully once, which is trivial
      * @param addrs   The addresses to whitelist
      */
-    function setCanConsumeKeyNonce(address[] calldata addrs) external {
+    function setCanConsumeKeyNonce(address[] calldata addrs) external override {
         require(!_canConsumeKeyNonceSet, "KeyManager: already set");
         _canConsumeKeyNonceSet = true;
 
@@ -79,6 +79,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         address[] calldata newAddrs
     )
         external
+        override
         consumesKeyNonce(
             sigData,
             keccak256(
