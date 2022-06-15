@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "../interfaces/IShared.sol";
-import "../interfaces/IStakeManager.sol";
+import "../../interfaces/IShared.sol";
+import "../../interfaces/IStakeManager.sol";
 
 contract StakeManagerEchidna is IShared {
     IStakeManager public sm;

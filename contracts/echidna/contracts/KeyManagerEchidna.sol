@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "../interfaces/IShared.sol";
-import "../interfaces/IKeyManager.sol";
+import "../../interfaces/IShared.sol";
+import "../../interfaces/IKeyManager.sol";
 
 contract KeyManagerEchidna is IShared {
     IKeyManager public km;

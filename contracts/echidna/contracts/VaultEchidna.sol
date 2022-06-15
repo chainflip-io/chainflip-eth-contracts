@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "../interfaces/IShared.sol";
-import "../interfaces/IVault.sol";
+import "../../interfaces/IShared.sol";
+import "../../interfaces/IVault.sol";
 
 contract VaultEchidna is IShared {
     IVault public v;
