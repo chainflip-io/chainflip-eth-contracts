@@ -16,3 +16,5 @@ There are some workarounds that have been done to get it working. First, we have
 A limitation caused by the previous solution is that deploying all contracts from the deployer makes it so Echidna does not see all the external functions of the contracts. Therefore, a *Echidna.sol contracts have been created as a way to expose all the external functions to Echidna so it fuzzes them. The test files then inherit from those contracts.
 
 Finally, Echidna does not suppport constructors with parameters. Therefore, the parameters needed for all the contracts' constructors have been hardcoded in every test and then passed to the remaining constructors. This way the top level test contract has no constructor parameters. The constructor parameters need to be changed in the Deployer or the test if any constructor parameters need to be changed.
+
+// Missing workaround for inherited contracts - find the best solution
