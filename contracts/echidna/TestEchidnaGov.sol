@@ -2,8 +2,9 @@ pragma solidity ^0.8.0;
 
 import "./Deployer.sol";
 
-contract TestEchidna is Deployer {
-    address internal GOV_KEY = address(1);
+contract TestEchidnaGov is Deployer {
+
+    address internal GOV_KEY = address(this);
     address internal COMM_KEY = address(2);
 
     // Echidna requires that no parameters are passed to the constructor so we need to set
@@ -26,7 +27,6 @@ contract TestEchidna is Deployer {
     // No function call that requires signing should pass the signature check - checking that contract state
     // remains the same after the function calls instead of checking function reverts one by one. This is because
     // ´echidna_revert_*` takes no arguments. Also no call from the governor is made.
-
     function echidna_flipSupply() external returns (bool) {
         return f.totalSupply() == INIT_SUPPLY;
     }
