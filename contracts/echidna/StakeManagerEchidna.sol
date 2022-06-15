@@ -17,7 +17,7 @@ contract StakeManagerEchidna is IShared {
         uint256 amount,
         address returnAddr
     ) external {
-        // TODO: Add approve tokens function?
+        sm.getFLIP().approve(address(sm), amount);
         sm.stake(nodeID, amount, returnAddr);
     }
 
@@ -45,5 +45,29 @@ contract StakeManagerEchidna is IShared {
 
     function govWithdrawEth() external {
         sm.govWithdrawEth();
+    }
+
+    // Expose AggKeyNonceConsumer functions to Echidna
+
+    function updateKeyManagerStakeManager(SigData calldata sigData, IKeyManager keyManager) external {
+        sm.updateKeyManager(sigData, keyManager);
+    }
+
+    // Expose GovernanceCommunityGuarded functions to Echidna
+
+    function enableCommunityGuardStakeManager() external {
+        sm.enableCommunityGuard();
+    }
+
+    function disableCommunityGuardStakeManager() external {
+        sm.disableCommunityGuard();
+    }
+
+    function suspendStakeManager() external {
+        sm.suspend();
+    }
+
+    function resumeStakeManager() external {
+        sm.resume();
     }
 }

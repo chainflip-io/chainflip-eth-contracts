@@ -16,4 +16,10 @@ contract FLIPEchidna is IShared {
     ) external {
         f.updateFlipSupply(sigData, newTotalSupply, stateChainBlockNumber, staker);
     }
+
+    // Expose AggKeyNonceConsumer functions to Echidna
+
+    function updateKeyManagerFLIP(SigData calldata sigData, IKeyManager keyManager) external {
+        f.updateKeyManager(sigData, keyManager);
+    }
 }

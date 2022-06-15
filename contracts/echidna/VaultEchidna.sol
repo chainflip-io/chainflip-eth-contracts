@@ -85,4 +85,27 @@ contract VaultEchidna is IShared {
     function disableSwaps() external {
         v.disableSwaps();
     }
+
+    // Expose AggKeyNonceConsumer functions to Echidna
+
+    function updateKeyManagerVault(SigData calldata sigData, IKeyManager keyManager) external {
+        v.updateKeyManager(sigData, keyManager);
+    }
+
+    // Expose GovernanceCommunityGuarded functions to Echidna
+    function enableCommunityGuardVault() external {
+        v.enableCommunityGuard();
+    }
+
+    function disableCommunityGuardVault() external {
+        v.disableCommunityGuard();
+    }
+
+    function suspendVault() external {
+        v.suspend();
+    }
+
+    function resumeVault() external {
+        v.resume();
+    }
 }
