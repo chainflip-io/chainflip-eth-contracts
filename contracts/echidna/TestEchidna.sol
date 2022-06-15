@@ -5,6 +5,7 @@ import "./Deployer.sol";
 contract TestEchidna is Deployer {
     address internal GOV_KEY = address(1);
     address internal COMM_KEY = address(2);
+    uint256 internal MIN_STAKE = 1000 * E_18;
 
     // Echidna requires that no parameters are passed to the constructor so we need to set
     // constants for the deployments of the contracts
@@ -40,6 +41,13 @@ contract TestEchidna is Deployer {
 
     function echidna_govKey() external returns (bool) {
         return
+            sm.getGovernor() == v.getGovernor() &&
+            v.getGovernor() == km.getGovernanceKey() &&
+            km.getGovernanceKey() == GOV_KEY;
+    }
+
+    function echidna_commKey() external returns (bool) {
+        return
             sm.getCommunityKey() == v.getCommunityKey() &&
             v.getCommunityKey() == km.getCommunityKey() &&
             km.getCommunityKey() == COMM_KEY;
@@ -57,14 +65,12 @@ contract TestEchidna is Deployer {
         return v.getCommunityGuard() == sm.getCommunityGuard() && sm.getCommunityGuard() == false;
     }
 
-
-
-    function echidna_commKey() external returns (bool) {
-        return km.getCommunityKey() == COMM_KEY;
-    }
-
     function echidna_minStake() external returns (bool) {
         return sm.getMinimumStake() == MIN_STAKE;
+    }
+
+    function echidna_swapsEnabled() external returns (bool) {
+        return !v.getSwapsEnabled();
     }
 
     // No signature has been validated
@@ -73,7 +79,7 @@ contract TestEchidna is Deployer {
     }
 
     function echidna_whitelistSet() external returns (bool) {
-        return km.canConsumeKeyNonceSet() == true;
+        return km.canConsumeKeyNonceSet();
     }
 
     // ´echidna_revert_*´ takes no parameters and expects a revert
@@ -121,4 +127,9 @@ contract TestEchidna is Deployer {
             assert(true);
         }
     }
+
+    function echidna_flipBalance() external returns (bool) {
+        return f.balanceOf(address(sm)) == NUM_GENESIS_VALIDATORS*GENESIS_STAKE;
+    }
+
 }
