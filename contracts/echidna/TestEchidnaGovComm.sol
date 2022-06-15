@@ -2,7 +2,7 @@ pragma solidity ^0.8.0;
 
 import "./Deployer.sol";
 
-contract TestEchidnaGov is Deployer {
+contract TestEchidnaGovComm is Deployer {
     address internal GOV_KEY = address(this);
     address internal COMM_KEY = address(this);
     uint256 internal MIN_STAKE = 1000 * E_18;
