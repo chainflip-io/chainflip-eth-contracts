@@ -78,9 +78,7 @@ Make sure solc is installed with the latest versions with support to at least So
 
 `sudo snap install solc --edge`
 
-Then Echidna can be run as normal. Echidna is not capable of reading the inherited contracts from packages under node_modules and needs an extra remapping in the config files. So always specify one of the echidna.config.yml files.
-
-There are different configuration files that can be specified.
+Then Echidna can be run as normal. Echidna is not capable of reading the inherited contracts from packages under node_modules and needs an extra remapping in the config files. So always specify one of the echidna.config.yml files. There are different configuration files that can be specified for the different test modes.
 ```bash
 ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
 ```
