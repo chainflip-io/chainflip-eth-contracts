@@ -79,3 +79,9 @@ coverage: false
 # mutConsts: [1, 1, 1, 1]
 # # maximum value to send to payable functions
 # maxValue: 100000000000000000000 # 100 eth
+
+cryticArgs: # If we add more dependencies they will need to be added as symlinks here!
+  [
+    "--solc-remaps",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  ]

@@ -1,1 +1,7 @@
 testMode: "assertion"
+
+cryticArgs: # If we add more dependencies they will need to be added as symlinks here!
+  [
+    "--solc-remaps",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  ]

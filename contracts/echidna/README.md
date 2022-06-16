@@ -20,4 +20,4 @@ Finally, Echidna does not suppport constructors with parameters. Therefore, the 
 
 Note: Do not add both slither and slither analyzer to poetry. That get installed correctly (no error or warnings) but when executing the tool it gives errors about missing packages.
 
-Note2: Dependencies that require the node_modules contract folder (inherited openZeppelin contracts) are not detected by Echidna throwing a nasty error. It doesn't understand that those dependencies are under node_modules. Therefore, any dependencies need to be copied to the root folder so the paths match.
+Note2: Dependencies that require the node_modules contract folder (inherited openZeppelin contracts) are not detected by Echidna throwing a nasty error. It doesn't understand that those dependencies are under node_modules. An extra remapping under the echidna configuration files is used to solved the issue. Therefore, a config file must always be specified.
