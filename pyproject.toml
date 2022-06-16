@@ -10,7 +10,6 @@ umbral = "^0.3.0"
 eth-brownie = "^1.18.1"
 py-ecc = "5.2.0"
 pre-commit = "^2.17.0"
-slither = "^0.3.0"
 slither-analyzer = "^0.8.3"
 
 [tool.poetry.dev-dependencies]

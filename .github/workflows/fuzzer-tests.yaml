@@ -35,12 +35,8 @@ jobs:
       ## TODO: probably add yarn fuzz install (install slither and slither analyzer due to bug)
       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
       - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
-      - run: poetry run crytic-compile .
-      # - run: cp -r node_modules/@openzeppelin .
-      - run: ls contracts/echidna/tests/TestEchidna.sol      
-      - run: poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol
-      - run: poetry remove slither
-      - run: poetry remove slither-analyzer
-      - run: poetry add slither
-      - run: poetry add slither-analyzer      
+
+      # - run: cp -r node_modules/@openzeppelin .  
+
+      ## Breaks the same as running poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol
       - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml

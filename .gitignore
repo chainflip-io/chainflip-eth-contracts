@@ -8,3 +8,4 @@ node_modules/
 .env
 @openzeppelin/
 crytic-export/
+echidna-test
