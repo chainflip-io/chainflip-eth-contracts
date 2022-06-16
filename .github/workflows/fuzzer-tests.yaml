@@ -31,7 +31,8 @@ jobs:
       - run: echo /root/.local/bin >> $GITHUB_PATH
       - run: poetry install --quiet
       - run: solc --version
-      - run: crytic-compile --version
+      - run: poetry run crytic-compile --version
+      - run: poetry run crytic-compile .
       #- run: sudo snap install solc --edge
       - run: poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol
       ##- run: poetry run solc --version
