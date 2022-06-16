@@ -46,7 +46,7 @@ contract TestEchidna is Deployer {
     }
 
     function echidna_aggKey() external returns (bool) {
-        return km.getAggregateKey().pubKeyX == pubKeyX && km.getAggregateKey().pubKeyYParity == pubKeyYParity;
+        return km.getAggregateKey().pubKeyX == PUBKEYX && km.getAggregateKey().pubKeyYParity == PUBKEYYPARITY;
     }
 
     function echidna_suspended() external returns (bool) {

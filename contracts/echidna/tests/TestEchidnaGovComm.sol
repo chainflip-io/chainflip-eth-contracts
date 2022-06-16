@@ -17,7 +17,8 @@ contract TestEchidnaGovComm is Deployer {
 
     // No function call that requires signing should pass the signature check - checking that contract state
     // remains the same after the function calls instead of checking function reverts one by one. This is because
-    // ´echidna_revert_*` takes no arguments. Also no call from the governor is made.
+    // ´echidna_revert_*` takes no arguments.
+    // This contract acts as the governance and community Key.
 
     /* solhint-disable  func-name-mixedcase*/
     function echidna_flipSupply() external returns (bool) {
@@ -32,17 +33,17 @@ contract TestEchidnaGovComm is Deployer {
     }
 
     function echidna_aggKey() external returns (bool) {
-        return km.getAggregateKey().pubKeyX == pubKeyX && km.getAggregateKey().pubKeyYParity == pubKeyYParity;
+        return km.getAggregateKey().pubKeyX == PUBKEYX && km.getAggregateKey().pubKeyYParity == PUBKEYYPARITY;
     }
 
     // Gov key changes
     function setGovKeyWithGovKey(address newGovKey) external override {
         km.setGovKeyWithGovKey(newGovKey);
-        gov_key = newGovKey;
+        govKey = newGovKey;
         assert(
             sm.getGovernor() == v.getGovernor() &&
                 v.getGovernor() == km.getGovernanceKey() &&
-                km.getGovernanceKey() == gov_key
+                km.getGovernanceKey() == govKey
         );
     }
 
@@ -51,11 +52,11 @@ contract TestEchidnaGovComm is Deployer {
     // Comm key changes
     function setCommKeyWithCommKey(address newCommKey) external override {
         km.setCommKeyWithCommKey(newCommKey);
-        comm_key = newCommKey;
+        commKey = newCommKey;
         assert(
             sm.getCommunityKey() == v.getCommunityKey() &&
                 v.getCommunityKey() == km.getCommunityKey() &&
-                km.getCommunityKey() == comm_key
+                km.getCommunityKey() == commKey
         );
     }
 
@@ -112,8 +113,8 @@ contract TestEchidnaGovComm is Deployer {
 
     function setMinStake(uint256 newMinStake) external override {
         sm.setMinStake(newMinStake);
-        min_stake = newMinStake;
-        assert(sm.getMinimumStake() == min_stake);
+        minStake = newMinStake;
+        assert(sm.getMinimumStake() == minStake);
     }
 
     // Swaps enabled
