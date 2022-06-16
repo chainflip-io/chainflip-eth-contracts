@@ -18,4 +18,6 @@ A limitation caused by the previous solution is that deploying all contracts fro
 
 Finally, Echidna does not suppport constructors with parameters. Therefore, the parameters needed for all the contracts' constructors have been hardcoded in every test and then passed to the remaining constructors. This way the top level test contract has no constructor parameters. The constructor parameters need to be changed in the Deployer or the test if any constructor parameters need to be changed.
 
-// Missing workaround for inherited contracts - find the best solution
+Note: Do not add both slither and slither analyzer to poetry. That get installed correctly (no error or warnings) but when executing the tool it gives errors about missing packages.
+
+Note2: Dependencies that require the node_modules contract folder (inherited openZeppelin contracts) are not detected by Echidna throwing a nasty error. It doesn't understand that those dependencies are under node_modules. Therefore, any dependencies need to be copied to the root folder so the paths match.
