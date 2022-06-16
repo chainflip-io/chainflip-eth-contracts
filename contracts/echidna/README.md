@@ -1,6 +1,7 @@
 # Fuzzing with Echidna
 
 Echidna: https://github.com/crytic/echidna
+
 Basic guide: https://github.com/crytic/building-secure-contracts/tree/master/program-analysis/echidna#echidna-tutorial
 
 Fuzzing is used here to to try and find bugs that arise from complex interactions both between functions in the same contract and functions of different contracts. The main difference between fuzzing and brownie stateful tests is that Echidna generates random input values for external/public functions. Then different test modes can be used to test the outcome of the function calls. This can be specified in the echidna configuration file.

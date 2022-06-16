@@ -3,23 +3,14 @@ pragma solidity ^0.8.0;
 import "../contracts/Deployer.sol";
 
 contract TestEchidnaGovComm is Deployer {
-    address internal GOV_KEY = address(this);
-    address internal COMM_KEY = address(this);
-    uint256 internal MIN_STAKE = 1000 * E_18;
+    address internal govKey = address(this);
+    address internal commKey = address(this);
+    uint256 internal minStake = 1000 * E_18;
 
     // Echidna requires that no parameters are passed to the constructor so we need to set
     // constants for the deployments of the contracts
     constructor()
-        Deployer(
-            pubKeyX,
-            pubKeyYParity,
-            MIN_STAKE,
-            INIT_SUPPLY,
-            NUM_GENESIS_VALIDATORS,
-            GENESIS_STAKE,
-            GOV_KEY,
-            COMM_KEY
-        )
+        Deployer(PUBKEYX, PUBKEYYPARITY, minStake, INIT_SUPPLY, NUM_GENESIS_VALIDATORS, GENESIS_STAKE, govKey, commKey)
     {}
 
     // PROPERTY TESTING - need to run echidna in testMode: "property"
@@ -27,6 +18,8 @@ contract TestEchidnaGovComm is Deployer {
     // No function call that requires signing should pass the signature check - checking that contract state
     // remains the same after the function calls instead of checking function reverts one by one. This is because
     // ´echidna_revert_*` takes no arguments. Also no call from the governor is made.
+
+    /* solhint-disable  func-name-mixedcase*/
     function echidna_flipSupply() external returns (bool) {
         return f.totalSupply() == INIT_SUPPLY;
     }
@@ -45,11 +38,11 @@ contract TestEchidnaGovComm is Deployer {
     // Gov key changes
     function setGovKeyWithGovKey(address newGovKey) external override {
         km.setGovKeyWithGovKey(newGovKey);
-        GOV_KEY = newGovKey;
+        gov_key = newGovKey;
         assert(
             sm.getGovernor() == v.getGovernor() &&
                 v.getGovernor() == km.getGovernanceKey() &&
-                km.getGovernanceKey() == GOV_KEY
+                km.getGovernanceKey() == gov_key
         );
     }
 
@@ -58,11 +51,11 @@ contract TestEchidnaGovComm is Deployer {
     // Comm key changes
     function setCommKeyWithCommKey(address newCommKey) external override {
         km.setCommKeyWithCommKey(newCommKey);
-        COMM_KEY = newCommKey;
+        comm_key = newCommKey;
         assert(
             sm.getCommunityKey() == v.getCommunityKey() &&
                 v.getCommunityKey() == km.getCommunityKey() &&
-                km.getCommunityKey() == COMM_KEY
+                km.getCommunityKey() == comm_key
         );
     }
 
@@ -119,8 +112,8 @@ contract TestEchidnaGovComm is Deployer {
 
     function setMinStake(uint256 newMinStake) external override {
         sm.setMinStake(newMinStake);
-        MIN_STAKE = newMinStake;
-        assert(sm.getMinimumStake() == MIN_STAKE);
+        min_stake = newMinStake;
+        assert(sm.getMinimumStake() == min_stake);
     }
 
     // Swaps enabled
@@ -160,4 +153,5 @@ contract TestEchidnaGovComm is Deployer {
             assert(true);
         }
     }
+    /* solhint-enable  func-name-mixedcase*/
 }
