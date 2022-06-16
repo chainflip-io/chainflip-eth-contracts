@@ -79,8 +79,9 @@ Make sure solc is installed with the latest versions of solidity with support to
 `sudo snap install solc --edge`
 
 Then Echidna can be run as normal. There are different configuration files that can be specified.
-
-`./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml`
+```bash
+./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
+```
 
 ### Pre-commit hook
 
