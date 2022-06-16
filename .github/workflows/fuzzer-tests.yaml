@@ -34,7 +34,7 @@ jobs:
       - run: poetry run crytic-compile --version
       - run: poetry run crytic-compile .
       #- run: sudo snap install solc --edge
-      - run: poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol
+      - run: poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol --solc-remaps @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
       ##- run: poetry run solc --version
       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
       - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
