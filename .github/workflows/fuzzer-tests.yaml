@@ -30,7 +30,7 @@ jobs:
       - run: npm install
       - run: echo /root/.local/bin >> $GITHUB_PATH
       - run: poetry install --quiet
-
+      - run: sudo snap install solc --edge
       - run: poetry run solc --version
       ## TODO: probably add yarn fuzz install (install slither and slither analyzer due to bug)
       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
