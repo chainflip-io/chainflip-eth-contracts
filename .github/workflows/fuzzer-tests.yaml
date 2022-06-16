@@ -18,7 +18,7 @@ jobs:
 
   fuzzer-tests:
     name: Stateless Tests
-    needs: lint
+    # needs: lint
     runs-on: self-hosted
     timeout-minutes: 360
     steps:
