@@ -32,7 +32,7 @@ jobs:
       - run: poetry install --quiet
       - run: solc --version
       - run: poetry run crytic-compile --version
-      - run: poetry run crytic-compile .
+      - run: poetry run crytic-compile . --solc-remaps @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
       #- run: sudo snap install solc --edge
       - run: poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol --solc-remaps @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
       ##- run: poetry run solc --version
