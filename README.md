@@ -68,13 +68,13 @@ To format them separately run `yarn format-sol` or `yarn format-py`
 
 ## Fuzzing
 
-Echidna is used for fuzzing the contracts. Make sure to follow Echidna's installation instructios or simply download the compiled binary. For Ubuntu :
+Echidna is used for fuzzing the contracts. Make sure to follow Echidna's installation instructions or simply download the compiled binary. For Ubuntu:
 
 ```bash
 curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 ```
-Make sure solc is installed with the latest versions of solidity with support to at least 0.8.0. To install:
+Make sure solc is installed with the latest versions with support to at least Solidity 0.8.0. To install:
 
 `sudo snap install solc --edge`
 
