@@ -17,7 +17,7 @@ jobs:
   #     - run: poetry run black . --check
 
   fuzzer-tests:
-    name: Stateless Tests
+    name: Fuzzer
     # needs: lint
     runs-on: self-hosted
     timeout-minutes: 360
@@ -34,6 +34,6 @@ jobs:
       - run: poetry run solc --version
       ## TODO: probably add yarn fuzz install (install slither and slither analyzer due to bug)
       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
-      - run: echidna-test-2.0.2-Ubuntu-18.04.tar.gz
+      - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
       - run: ls
       - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
