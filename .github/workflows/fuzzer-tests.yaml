@@ -1,0 +1,39 @@
+name: Stateless Tests
+on: push
+
+jobs:
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repo
+  #       uses: actions/checkout@v3
+  #     - uses: actions/setup-python@v3
+  #       with:
+  #         python-version: "3.9.7"
+  #     - uses: snok/install-poetry@v1
+  #     - run: npm install
+  #     - run: npx solhint -w 0 'contracts/**/*.sol'
+  #     - run: poetry install --quiet
+  #     - run: poetry run black . --check
+
+  fuzzer-tests:
+    name: Stateless Tests
+    needs: lint
+    runs-on: self-hosted
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+      - run: npm install
+      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: poetry install --quiet
+
+      - run: poetry run solc --version
+      ## TODO: probably add yarn fuzz install (install slither and slither analyzer due to bug)
+      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
+      - run: echidna-test-2.0.2-Ubuntu-18.04.tar.gz
+      - run: ls
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
