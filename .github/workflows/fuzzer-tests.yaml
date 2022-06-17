@@ -20,7 +20,7 @@ jobs:
     name: Fuzzer
     needs: lint
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -28,12 +28,7 @@ jobs:
           node-version: "14"
           cache: npm
       - run: npm install
-      - run: echo /root/.local/bin >> $GITHUB_PATH
-      - run: sudo apt-get -y install python3 python-dev python3-dev build-essential python3-testresources python3.8-venv python3-pip
-      - run: curl -sSL https://install.python-poetry.org | python3 -
-      - run: sudo curl -fsSL https://deb.nodesource.com/setup_16.x | sudo sh - && sudo apt-get install -y nodejs
       - run: npm install --global ganache-cli
-      - run: export PATH="$HOME/.local/bin:$PATH"
       - run: sudo pip3 install eth-brownie
       - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
