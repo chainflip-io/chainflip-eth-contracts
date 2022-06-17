@@ -35,7 +35,7 @@ jobs:
       - run: npm install --global ganache-cli
       - run: export PATH="$HOME/.local/bin:$PATH"
       - run: sudo pip3 install eth-brownie
-      - run: poetry init -n
+      - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry install --quiet
       - run: sudo snap install solc --edge
