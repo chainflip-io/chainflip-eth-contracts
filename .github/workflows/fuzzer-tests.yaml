@@ -1,5 +1,8 @@
-name: Stateless Tests
-on: push
+name: Fuzzer Testing
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   lint:
