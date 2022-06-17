@@ -30,6 +30,7 @@ jobs:
       - run: npm install
       - run: echo /root/.local/bin >> $GITHUB_PATH
       - run: poetry install --quiet
+      - run: sudo snap install solc --edge
       - run: solc --version
       - run: poetry run crytic-compile --version
       - run: poetry run crytic-compile . --solc-remaps @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
