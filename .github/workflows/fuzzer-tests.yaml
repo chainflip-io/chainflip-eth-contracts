@@ -1,5 +1,8 @@
-name: Stateless Tests
-on: push
+name: Fuzzer Testing
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   lint:
@@ -7,10 +10,27 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
         with:
           python-version: "3.9.7"
-      - uses: snok/install-poetry@v1
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Cache Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
+
       - run: npm install
       - run: npx solhint -w 0 'contracts/**/*.sol'
       - run: poetry install --quiet
@@ -20,21 +40,39 @@ jobs:
     name: Fuzzer
     needs: lint
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        contract: [TestEchidna, TestEchidnaGovComm]
+        config: [echidna-assertion, echidna-property]
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9.7"
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
           node-version: "14"
           cache: npm
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Cache Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
+
       - run: npm install
-      - run: echo /root/.local/bin >> $GITHUB_PATH
-      - run: sudo apt-get -y install python3 python-dev python3-dev build-essential python3-testresources python3.8-venv python3-pip
-      - run: curl -sSL https://install.python-poetry.org | python3 -
-      - run: sudo curl -fsSL https://deb.nodesource.com/setup_16.x | sudo sh - && sudo apt-get install -y nodejs
       - run: npm install --global ganache-cli
-      - run: export PATH="$HOME/.local/bin:$PATH"
-      - run: sudo pip3 install eth-brownie
+      - run: pip3 install eth-brownie
       - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry install --quiet
@@ -44,7 +82,4 @@ jobs:
       - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 
       ## Running actual fuzzing tests
-      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
-      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-property.config.yml
-      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-assertion.config.yml
-      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-property.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml
