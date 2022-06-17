@@ -22,14 +22,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
           node-version: "14"
           cache: npm
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
       - run: npm install
       - run: npm install --global ganache-cli
-      - run: sudo pip3 install eth-brownie
+      - run: pip3 install eth-brownie
       - run: poetry install --quiet
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry install --quiet
