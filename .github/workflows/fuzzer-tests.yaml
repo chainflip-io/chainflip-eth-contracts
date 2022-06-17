@@ -2,23 +2,23 @@ name: Stateless Tests
 on: push
 
 jobs:
-  # lint:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repo
-  #       uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v3
-  #       with:
-  #         python-version: "3.9.7"
-  #     - uses: snok/install-poetry@v1
-  #     - run: npm install
-  #     - run: npx solhint -w 0 'contracts/**/*.sol'
-  #     - run: poetry install --quiet
-  #     - run: poetry run black . --check
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.9.7"
+      - uses: snok/install-poetry@v1
+      - run: npm install
+      - run: npx solhint -w 0 'contracts/**/*.sol'
+      - run: poetry install --quiet
+      - run: poetry run black . --check
 
   fuzzer-tests:
     name: Fuzzer
-    # needs: lint
+    needs: lint
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -39,14 +39,12 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry install --quiet
       - run: sudo snap install solc --edge
-      - run: solc --version
-      - run: poetry run crytic-compile --version
-      - run: poetry run crytic-compile . --solc-remaps @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
-      #- run: sudo snap install solc --edge
-      - run: poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol --solc-remaps @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
-      ##- run: poetry run solc --version
+
       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
       - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 
-      ## Breaks the same as running poetry run crytic-compile contracts/echidna/tests/TestEchidna.sol
+      ## Running actual fuzzing tests
       - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-property.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-assertion.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-property.config.yml
