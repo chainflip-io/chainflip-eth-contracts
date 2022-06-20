@@ -22,7 +22,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  */
 contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded, ReentrancyGuard {
-    /// @dev    The FLIP token. Initial value to be set using updateFLIP
+    /// @dev    The FLIP token address. To be set only once after deployment via setFlip
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     FLIP private _FLIP;
@@ -170,7 +170,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     function executeClaim(bytes32 nodeID) external override isNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
         require(
-            uint256(block.timestamp) >= claim.startTime && uint256(block.timestamp) <= claim.expiryTime,
+            block.timestamp >= claim.startTime && block.timestamp <= claim.expiryTime,
             "Staking: early, late, or execd"
         );
 
@@ -221,7 +221,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @return  The address of FLIP
      */
     function getFLIP() external view override returns (IFLIP) {
-        return IFLIP(address(_FLIP));
+        return _FLIP;
     }
 
     /**

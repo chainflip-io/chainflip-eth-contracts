@@ -256,7 +256,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
-            IERC20(token).safeTransfer(recipient, amount);
+            token.safeTransfer(recipient, amount);
         }
     }
 
@@ -437,12 +437,20 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function swapToken(
         string calldata egressParams,
         bytes32 egressReceiver,
-        address ingressToken,
+        IERC20 ingressToken,
         uint256 amount
-    ) external override isNotSuspended swapsEnabled nzUint(amount) nzAddr(ingressToken) nzBytes32(egressReceiver) {
-        IERC20(ingressToken).safeTransferFrom(msg.sender, address(this), amount);
+    )
+        external
+        override
+        isNotSuspended
+        swapsEnabled
+        nzUint(amount)
+        nzAddr(address(ingressToken))
+        nzBytes32(egressReceiver)
+    {
+        ingressToken.safeTransferFrom(msg.sender, address(this), amount);
         // The check for existing egresschain, egressToken and egressReceiver shall be done in the CFE
-        emit SwapToken(ingressToken, amount, egressParams, egressReceiver);
+        emit SwapToken(address(ingressToken), amount, egressParams, egressReceiver);
     }
 
     //////////////////////////////////////////////////////////////

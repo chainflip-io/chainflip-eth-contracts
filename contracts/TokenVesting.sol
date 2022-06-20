@@ -19,7 +19,7 @@ contract TokenVesting is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     event TokensReleased(IERC20 indexed token, uint256 amount);
-    event TokenVestingRevoked(IERC20 indexed token);
+    event TokenVestingRevoked(IERC20 indexed token, uint256 refund);
 
     uint256 public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
 
@@ -145,7 +145,7 @@ contract TokenVesting is ReentrancyGuard {
 
         token.safeTransfer(revoker, refund);
 
-        emit TokenVestingRevoked(token);
+        emit TokenVestingRevoked(token, refund);
     }
 
     /**

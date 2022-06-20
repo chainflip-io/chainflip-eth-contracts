@@ -71,7 +71,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function swapToken(
         string calldata egressChainAndToken,
         bytes32 egressAddress,
-        address ingressToken,
+        IERC20 ingressToken,
         uint256 amount
     ) external;
 

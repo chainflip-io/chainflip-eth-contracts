@@ -68,8 +68,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
-     * @notice  Replaces the specific addresses that can call consumeKeyNonce. To be used if
-     *          contracts are updated. Can delist addresses and can add an arbitrary number of new addresses.
+     * @notice  Replaces all the addresses that can call consumeKeyNonce. Must delist all addresses and then
+                add an arbitrary number of new addresses. To be used if any other contracts is updated.
      * @param currentAddrs   List of current whitelisted addresses
      * @param newAddrs   List of new addresses to whitelist
      */
