@@ -127,7 +127,7 @@ def test_vault(
             self.governor = cfDeploy.gov
             self.communityKey = cfDeploy.communityKey
 
-            self.communityGuardDisabled = self.v.getCommunityGuard()
+            self.communityGuardDisabled = self.v.getCommunityGuardDisabled()
             self.suspended = self.v.getSuspendedState()
             self.swapsEnabled = False
 
@@ -906,7 +906,7 @@ def test_vault(
 
         # Check the state variables after every tx
         def invariant_state_vars(self):
-            assert self.communityGuardDisabled == self.v.getCommunityGuard()
+            assert self.communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.suspended == self.v.getSuspendedState()
             assert self.swapsEnabled == self.v.getSwapsEnabled()
 

@@ -225,7 +225,7 @@ def test_all(
             self.tokenBBals = {
                 addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs
             }
-            self.v_communityGuardDisabled = self.v.getCommunityGuard()
+            self.v_communityGuardDisabled = self.v.getCommunityGuardDisabled()
             self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
@@ -251,7 +251,7 @@ def test_all(
             }
             self.numTxsTested = 0
 
-            self.sm_communityGuardDisabled = self.sm.getCommunityGuard()
+            self.sm_communityGuardDisabled = self.sm.getCommunityGuardDisabled()
             self.sm_suspended = self.sm.getSuspendedState()
 
             # Flip
@@ -2282,9 +2282,9 @@ def test_all(
         def invariant_state_vars(self):
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             assert self.sm.getMinimumStake() == self.minStake
-            assert self.sm_communityGuardDisabled == self.sm.getCommunityGuard()
+            assert self.sm_communityGuardDisabled == self.sm.getCommunityGuardDisabled()
             assert self.sm_suspended == self.sm.getSuspendedState()
-            assert self.v_communityGuardDisabled == self.v.getCommunityGuard()
+            assert self.v_communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.v_suspended == self.v.getSuspendedState()
             assert self.swapsEnabled == self.v.getSwapsEnabled()
             assert self.km.getLastValidateTime() == self.lastValidateTime

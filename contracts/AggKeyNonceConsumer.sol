@@ -60,7 +60,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      * @notice  Get the KeyManager address/interface that's used to validate sigs
      * @return  The KeyManager (IKeyManager)
      */
-    function getKeyManager() external view override returns (IKeyManager) {
+    function getKeyManager() public view override returns (IKeyManager) {
         return _getKeyManager();
     }
 
@@ -81,7 +81,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
 
     /// @dev    Calls consumeKeyNonce in _keyManager
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
-        _getKeyManager().consumeKeyNonce(sigData, contractMsgHash);
+        getKeyManager().consumeKeyNonce(sigData, contractMsgHash);
         _;
     }
 }

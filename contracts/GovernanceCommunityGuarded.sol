@@ -92,7 +92,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      * @notice  Get the Community Guard state
      * @return  The Community Guard state
      */
-    function getCommunityGuard() external view override returns (bool) {
+    function getCommunityGuardDisabled() external view override returns (bool) {
         return _communityGuardDisabled;
     }
 
