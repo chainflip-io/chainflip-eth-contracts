@@ -66,6 +66,23 @@ yarn format
 
 To format them separately run `yarn format-sol` or `yarn format-py`
 
+## Fuzzing
+
+Echidna is used for fuzzing the contracts. Make sure to follow Echidna's installation instructions or simply download the compiled binary. For Ubuntu:
+
+```bash
+curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
+tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
+```
+Make sure solc is installed with the latest versions with support to at least Solidity 0.8.0. To install:
+
+`sudo snap install solc --edge`
+
+Then Echidna can be run as normal. Echidna is not capable of reading the inherited contracts from packages under node_modules and needs an extra remapping in the config files. So always specify one of the echidna.config.yml files. There are different configuration files that can be specified for the different test modes.
+```bash
+./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
+```
+
 ### Pre-commit hook
 
 Pre-commit is part of the poetry virtual environment. Therefore, ensure that poetry is installed when commiting.

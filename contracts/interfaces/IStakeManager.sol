@@ -30,6 +30,16 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     }
 
     /**
+     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
+     *          because FLIP contract requires this contract's address on deployment for minting.
+     *          First this contract is deployed, then the FLIP contract and finally setFLIP
+     *          should be called. OnlyDeployer modifer for added security since tokens will be
+     *          minted to this contract before calling setFLIP.
+     * @param flip FLIP token address
+     */
+    function setFlip(IFLIP flip) external;
+
+    /**
      * @notice          Stake some FLIP and attribute it to a nodeID
      * @dev             Requires the staker to have called `approve` in FLIP
      * @param amount    The amount of stake to be locked up
