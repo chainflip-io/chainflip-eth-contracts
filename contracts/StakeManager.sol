@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
-import "./FLIP.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
@@ -25,7 +24,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev    The FLIP token. Initial value to be set using updateFLIP
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
-    FLIP private _FLIP;
+    IFLIP private _FLIP;
 
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     uint256 private _minStake;
@@ -79,7 +78,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *          minted to this contract before calling setFLIP.
      * @param flip FLIP token address
      */
-    function setFlip(FLIP flip) external override onlyDeployer nzAddr(address(flip)) {
+    function setFlip(IFLIP flip) external override onlyDeployer nzAddr(address(flip)) {
         require(address(_FLIP) == address(0), "Staking: Flip address already set");
         _FLIP = flip;
     }
@@ -234,7 +233,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @return  The address of FLIP
      */
     function getFLIP() external view override returns (IFLIP) {
-        return IFLIP(address(_FLIP));
+        return _FLIP;
     }
 
     /**

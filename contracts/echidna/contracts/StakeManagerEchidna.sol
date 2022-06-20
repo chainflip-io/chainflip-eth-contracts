@@ -8,7 +8,7 @@ contract StakeManagerEchidna is IShared {
 
     // Expose StakeManager functions to Echidna - making them virtual to override them in tests when needed
 
-    function setFlip(FLIP flip) external virtual {
+    function setFlip(IFLIP flip) external virtual {
         sm.setFlip(flip);
     }
 

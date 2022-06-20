@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 import "./IFLIP.sol";
-import "../FLIP.sol";
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
 
@@ -38,7 +37,7 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      *          minted to this contract before calling setFLIP.
      * @param flip FLIP token address
      */
-    function setFlip(FLIP flip) external;
+    function setFlip(IFLIP flip) external;
 
     /**
      * @notice          Stake some FLIP and attribute it to a nodeID
