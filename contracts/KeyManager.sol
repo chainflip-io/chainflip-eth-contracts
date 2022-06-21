@@ -65,6 +65,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         require(_canConsumeKeyNonce[address(this)], "KeyManager: KeyManager not whitelisted");
 
         _numberWhitelistedAddresses = addrs.length;
+
+        emit KeyNonceConsumersSet(addrs);
     }
 
     /**
@@ -110,6 +112,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         require(_canConsumeKeyNonce[address(this)], "KeyManager: KeyManager not whitelisted");
 
         _numberWhitelistedAddresses = newAddrs.length;
+
+        emit KeyNonceConsumersUpdated(currentAddrs, newAddrs);
     }
 
     /**
@@ -124,8 +128,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  to check it against the hash in sigData (bytes32) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData)
      */
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) public override {
-        require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
+    function consumeKeyNonceWhitelisted(SigData calldata sigData, bytes32 contractMsgHash) internal {
         Key memory key = _aggKey;
         // We require the msgHash param in the sigData is equal to the contract
         // message hash (the rules coded into the contract)
@@ -144,6 +147,16 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         // Disable because tx.origin is not being used in the logic
         // solhint-disable-next-line avoid-tx-origin
         emit SignatureAccepted(sigData, tx.origin);
+    }
+
+    /**
+     * @notice  Checks that the msg.sender is whitelisted before verifying the signature.
+     * @dev     Split this function from consumeKeyNonceWhitelisted so the functions in this contract
+     *          can skip the whitelisting check.
+     */
+    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) public override {
+        require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
+        consumeKeyNonceWhitelisted(sigData, contractMsgHash);
     }
 
     /**
@@ -185,7 +198,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         nzKey(newAggKey)
         validAggKey(newAggKey)
         validTime
-        isGovernor
+        onlyGovernor
     {
         emit AggKeySetByGovKey(_aggKey, newAggKey);
         _aggKey = newAggKey;
@@ -222,7 +235,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @notice  Set a new governance key. Can only be called by current governance key
      * @param newGovKey    The new governance key to be set.
      */
-    function setGovKeyWithGovKey(address newGovKey) external override nzAddr(newGovKey) isGovernor {
+    function setGovKeyWithGovKey(address newGovKey) external override nzAddr(newGovKey) onlyGovernor {
         emit GovKeySetByGovKey(_govKey, newGovKey);
         _govKey = newGovKey;
     }
@@ -258,7 +271,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @notice  Update the Community Key. Can only be called by the current Community Key.
      * @param newCommKey   New Community key address.
      */
-    function setCommKeyWithCommKey(address newCommKey) external override isCommunityKey nzAddr(newCommKey) {
+    function setCommKeyWithCommKey(address newCommKey) external override onlyCommunityKey nzAddr(newCommKey) {
         emit CommKeySetByCommKey(_commKey, newCommKey);
         _commKey = newCommKey;
     }
@@ -379,23 +392,20 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /// @dev    Check that the sender is the governance address
-    modifier isGovernor() {
+    modifier onlyGovernor() {
         require(msg.sender == _getGovernanceKey(), "KeyManager: not governor");
         _;
     }
 
     /// @dev    Check that the caller is the Community Key address.
-    modifier isCommunityKey() {
+    modifier onlyCommunityKey() {
         require(msg.sender == _getCommunityKey(), "KeyManager: not Community Key");
         _;
     }
 
-    /// @dev    Call consumeKeyNonce
+    /// @dev    Call consumeKeyNonceWhitelisted
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
-        // Need to make this an external call so that the msg.sender is the
-        // address of this contract, otherwise calling a function with this
-        // modifier from any address would fail the whitelist check
-        this.consumeKeyNonce(sigData, contractMsgHash);
+        consumeKeyNonceWhitelisted(sigData, contractMsgHash);
         _;
     }
 }

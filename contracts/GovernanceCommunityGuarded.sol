@@ -23,8 +23,8 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      * @notice  Get the governor's address. The contracts inheriting this (StakeManager and Vault)
      *          get the governor's address from the KeyManager through the AggKeyNonceConsumer's
      *          inheritance. Therefore, the implementation of this function must be left
-     *          to the children. This is a workaround since the isGovernor modifier can't be
-     *          made virtual. This contract needs to be marked as abstract.
+     *          to the children. This is not implemented as a virtual onlyGovernor modifier to force
+     *          the children to implement this function - virtual modifiers don't enforce that.
      * @return  The governor's address
      */
     function _getGovernor() internal view virtual returns (address);
@@ -33,8 +33,8 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      * @notice  Get the community's address. The contracts inheriting this (StakeManager and Vault)
      *          get the community's address from the KeyManager through the AggKeyNonceConsumer's
      *          inheritance. Therefore, the implementation of this function must be left
-     *          to the children. This is a workaround since the isCommunityKey modifier can't be
-     *          made virtual. This contract needs to be marked as abstract.
+     *          to the children. This is not implemented as a virtual onlyCommunityKey modifier to force
+     *          the children to implement this function - virtual modifiers don't enforce that.
      * @return  The community's address
      */
     function _getCommunityKey() internal view virtual returns (address);
@@ -48,30 +48,34 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     /**
      * @notice  Enable Community Guard
      */
-    function enableCommunityGuard() external override isCommunityKey isCommunityGuardDisabled {
+    function enableCommunityGuard() external override onlyCommunityKey onlyIfCommunityGuardDisabled {
         _communityGuardDisabled = false;
+        emit CommunityGuardDisabled(false);
     }
 
     /**
      * @notice  Disable Community Guard
      */
-    function disableCommunityGuard() external override isCommunityKey isCommunityGuardEnabled {
+    function disableCommunityGuard() external override onlyCommunityKey onlyIfCommunityGuardEnabled {
         _communityGuardDisabled = true;
+        emit CommunityGuardDisabled(true);
     }
 
     /**
      * @notice Can be used to suspend contract execution - only executable by
      * governance and only to be used in case of emergency.
      */
-    function suspend() external override isGovernor isNotSuspended {
+    function suspend() external override onlyGovernor onlyIfNotSuspended {
         _suspended = true;
+        emit Suspended(true);
     }
 
     /**
      * @notice      Resume contract execution
      */
-    function resume() external override isGovernor isSuspended {
+    function resume() external override onlyGovernor onlyIfSuspended {
         _suspended = false;
+        emit Suspended(false);
     }
 
     //////////////////////////////////////////////////////////////
@@ -119,38 +123,38 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     //////////////////////////////////////////////////////////////
 
     /// @dev    Check that the caller is the Community Key address.
-    modifier isCommunityKey() {
+    modifier onlyCommunityKey() {
         require(msg.sender == _getCommunityKey(), "Governance: not Community Key");
         _;
     }
 
     /// @dev    Check that community has disabled the community guard.
-    modifier isCommunityGuardDisabled() {
+    modifier onlyIfCommunityGuardDisabled() {
         require(_communityGuardDisabled, "Governance: community guard enabled");
         _;
     }
 
     /// @dev    Check that community has disabled the community guard.
-    modifier isCommunityGuardEnabled() {
+    modifier onlyIfCommunityGuardEnabled() {
         require(!_communityGuardDisabled, "Governance: community guard disabled");
         _;
     }
 
     /// @notice Ensure that the caller is the governor address. Calls the getGovernor
     ///         function which is implemented by the children.
-    modifier isGovernor() {
+    modifier onlyGovernor() {
         require(msg.sender == _getGovernor(), "Governance: not governor");
         _;
     }
 
     // @notice Check execution is suspended
-    modifier isSuspended() {
+    modifier onlyIfSuspended() {
         require(_suspended, "Governance: not suspended");
         _;
     }
 
     // @notice Check execution is not suspended
-    modifier isNotSuspended() {
+    modifier onlyIfNotSuspended() {
         require(!_suspended, "Governance: suspended");
         _;
     }

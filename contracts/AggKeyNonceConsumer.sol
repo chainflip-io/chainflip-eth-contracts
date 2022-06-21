@@ -48,6 +48,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         )
     {
         _keyManager = keyManager;
+        emit UpdatedKeyManager(address(keyManager));
     }
 
     //////////////////////////////////////////////////////////////

@@ -7,6 +7,9 @@ import "./IShared.sol";
  */
 
 interface IGovernanceCommunityGuarded is IShared {
+    event CommunityGuardDisabled(bool communityGuardDisabled);
+    event Suspended(bool suspended);
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //

@@ -31,7 +31,6 @@ contract TokenVesting is ReentrancyGuard {
     bool public immutable revocable;
 
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
-    uint256 public immutable start;
     uint256 public immutable cliff;
     uint256 public immutable end;
 
@@ -56,7 +55,6 @@ contract TokenVesting is ReentrancyGuard {
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to rug the vesting
      * @param revocable_ whether the vesting is revocable or not
-     * @param start_ the unix time to start the vesting calculation at
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
@@ -66,7 +64,6 @@ contract TokenVesting is ReentrancyGuard {
         address beneficiary_,
         address revoker_,
         bool revocable_,
-        uint256 start_,
         uint256 cliff_,
         uint256 end_,
         bool canStake_,
@@ -74,8 +71,6 @@ contract TokenVesting is ReentrancyGuard {
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(revoker_ != address(0), "Vesting: revoker_ is the zero address");
-        require(start_ > 0, "Vesting: start_ is 0");
-        require(start_ < cliff_, "Vesting: start_ isn't before cliff_");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
         require(address(stakeManager_) != address(0), "Vesting: stakeManager_ is the zero address");
@@ -84,7 +79,6 @@ contract TokenVesting is ReentrancyGuard {
         beneficiary = beneficiary_;
         revoker = revoker_;
         revocable = revocable_;
-        start = start_;
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
@@ -182,12 +176,13 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function _vestedAmount(IERC20 token) private view returns (uint256) {
+        if (block.timestamp < cliff) {
+            return 0;
+        }
         uint256 currentBalance = token.balanceOf(address(this));
         uint256 totalBalance = currentBalance + released[token];
 
-        if (block.timestamp < cliff) {
-            return 0;
-        } else if (block.timestamp >= end || revoked[token]) {
+        if (block.timestamp >= end || revoked[token]) {
             return totalBalance;
         } else {
             // should never enter this if canStake == true, since cliff == end

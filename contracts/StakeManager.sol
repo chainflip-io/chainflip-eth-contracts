@@ -51,7 +51,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         deployer = msg.sender;
     }
 
-    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
@@ -82,6 +82,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     function setFlip(FLIP flip) external onlyDeployer nzAddr(address(flip)) {
         require(address(_FLIP) == address(0), "Staking: Flip address already set");
         _FLIP = flip;
+        emit FLIPSet(address(flip));
     }
 
     /**
@@ -97,6 +98,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         uint256 amount,
         address returnAddr
     ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
+        require(address(_FLIP) != address(0), "Staking: Flip not set");
         require(amount >= _minStake, "Staking: stake too small");
         // Assumption of set token allowance by the user
         _FLIP.transferFrom(msg.sender, address(this), amount);
@@ -125,7 +127,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         external
         override
         nonReentrant
-        isNotSuspended
+        onlyIfNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
@@ -167,7 +169,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(bytes32 nodeID) external override isNotSuspended {
+    function executeClaim(bytes32 nodeID) external override onlyIfNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
         require(
             block.timestamp >= claim.startTime && block.timestamp <= claim.expiryTime,
@@ -187,7 +189,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
      */
-    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) isGovernor {
+    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) onlyGovernor {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
     }
@@ -196,7 +198,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
-    function govWithdraw() external override isGovernor isCommunityGuardDisabled isSuspended {
+    function govWithdraw() external override onlyGovernor onlyIfCommunityGuardDisabled onlyIfSuspended {
         uint256 amount = _FLIP.balanceOf(address(this));
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety

@@ -8,6 +8,8 @@ import "./IKeyManager.sol";
  */
 
 interface IAggKeyNonceConsumer is IShared {
+    event UpdatedKeyManager(address keyManager);
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //

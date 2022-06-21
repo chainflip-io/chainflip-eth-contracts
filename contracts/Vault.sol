@@ -23,12 +23,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
     event SwapETH(uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
+    event SwapsEnabled(bool enabled);
 
     bool private _swapsEnabled;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
-    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
@@ -77,7 +78,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -142,7 +143,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         nzAddr(address(token))
         nzAddr(recipient)
         nzUint(amount)
@@ -182,7 +183,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -278,7 +279,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function fetchDepositEth(SigData calldata sigData, bytes32 swapID)
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         nzBytes32(swapID)
         consumesKeyNonce(
             sigData,
@@ -306,7 +307,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -344,7 +345,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         nzBytes32(swapID)
         nzAddr(address(token))
         consumesKeyNonce(
@@ -379,7 +380,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -418,7 +419,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         payable
         override
-        isNotSuspended
+        onlyIfNotSuspended
         swapsEnabled
         nzUint(msg.value)
         nzBytes32(egressReceiver)
@@ -442,7 +443,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        isNotSuspended
+        onlyIfNotSuspended
         swapsEnabled
         nzUint(amount)
         nzAddr(address(ingressToken))
@@ -469,10 +470,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function govWithdraw(IERC20[] calldata tokens)
         external
         override
-        isGovernor
-        isCommunityGuardDisabled
-        isSuspended
-        validTime
+        onlyGovernor
+        onlyIfCommunityGuardDisabled
+        onlyIfSuspended
+        timeoutEmergency
     {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
         address payable recipient = payable(getKeyManager().getGovernanceKey());
@@ -490,15 +491,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /**
      * @notice  Enable swapETH and swapToken functionality by governance. Features disabled by default
      */
-    function enableSwaps() external override isGovernor swapsDisabled {
+    function enableSwaps() external override onlyGovernor swapsDisabled {
         _swapsEnabled = true;
+        emit SwapsEnabled(true);
     }
 
     /**
      * @notice  Disable swapETH and swapToken functionality by governance. Features disabled by default.
      */
-    function disableSwaps() external override isGovernor swapsEnabled {
+    function disableSwaps() external override onlyGovernor swapsEnabled {
         _swapsEnabled = false;
+        emit SwapsEnabled(false);
     }
 
     //////////////////////////////////////////////////////////////
@@ -522,7 +525,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Check that no nonce of the current AggKey has been consumed in the last 14 days - emergency
-    modifier validTime() {
+    modifier timeoutEmergency() {
         require(
             block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
             "Vault: not enough delay"
