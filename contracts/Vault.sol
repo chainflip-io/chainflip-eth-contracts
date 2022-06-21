@@ -32,14 +32,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
-        return _getKeyManager().getGovernanceKey();
+        return getKeyManager().getGovernanceKey();
     }
 
     /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
-        return _getKeyManager().getCommunityKey();
+        return getKeyManager().getCommunityKey();
     }
 
     //////////////////////////////////////////////////////////////
@@ -475,7 +475,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         validTime
     {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address payable recipient = payable(_getKeyManager().getGovernanceKey());
+        address payable recipient = payable(getKeyManager().getGovernanceKey());
 
         // Transfer all ETH and ERC20 Tokens
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -524,7 +524,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /// @dev    Check that no nonce of the current AggKey has been consumed in the last 14 days - emergency
     modifier validTime() {
         require(
-            block.timestamp - _getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
+            block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
             "Vault: not enough delay"
         );
         _;

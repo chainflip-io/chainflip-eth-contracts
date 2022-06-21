@@ -61,15 +61,6 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      * @return  The KeyManager (IKeyManager)
      */
     function getKeyManager() public view override returns (IKeyManager) {
-        return _getKeyManager();
-    }
-
-    /**
-     * @notice  Internal getter so child contracts can access the _keyManager reference
-     *          but cannot modify it as it is kept private.
-     * @return  The KeyManager (IKeyManager)
-     */
-    function _getKeyManager() internal view returns (IKeyManager) {
         return _keyManager;
     }
 

@@ -55,14 +55,14 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
-        return _getKeyManager().getGovernanceKey();
+        return getKeyManager().getGovernanceKey();
     }
 
     /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
-        return _getKeyManager().getCommunityKey();
+        return getKeyManager().getCommunityKey();
     }
 
     //////////////////////////////////////////////////////////////
@@ -200,7 +200,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         uint256 amount = _FLIP.balanceOf(address(this));
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = _getKeyManager().getGovernanceKey();
+        address recipient = getKeyManager().getGovernanceKey();
         _FLIP.transfer(recipient, amount);
         emit GovernanceWithdrawal(recipient, amount);
     }
