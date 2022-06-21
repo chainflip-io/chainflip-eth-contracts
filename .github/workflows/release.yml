@@ -1,0 +1,60 @@
+name: Generate ABIs
+
+on:
+  push:
+    # tags:
+    #   - "*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9.7"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Cache Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
+
+      - run: npm install
+      - run: npm install --global ganache-cli
+      - run: pip3 install eth-brownie
+      - run: poetry install --quiet
+      - run: poetry run brownie compile
+      - run: |
+          CONTRACT_ARTIFACTS=$(ls ./build/contracts | grep -v dependencies)
+          while read contract; do
+            echo $contract
+            cat build/contracts/$contract | jq .abi > ./$contract
+          done <<< $CONTRACT_ARTIFACTS
+          echo $CONTRACT_ARTIFACTS
+
+      - name: Store contract ABIs
+        uses: actions/upload-artifact@v2
+        with:
+          name: abis
+          path: |
+            *.json
+          if-no-files-found: error
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files:
