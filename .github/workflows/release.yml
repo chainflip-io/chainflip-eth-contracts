@@ -51,7 +51,7 @@ jobs:
           done <<< $CONTRACT_ARTIFACTS
           zip abis.zip *.json
 
-      - name: Store contract ABIs as Artifact
+      - name: Store contract abis as Artefact
         uses: actions/upload-artifact@v2
         with:
           name: abis
