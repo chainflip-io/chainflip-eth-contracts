@@ -1,4 +1,4 @@
-name: Generate ABIs
+name: Release
 
 on:
   push:
@@ -49,11 +49,11 @@ jobs:
             echo $contract
             cat build/contracts/$contract | jq .abi > ./$contract
           done <<< $CONTRACT_ARTIFACTS
-          zip abis.zib *.json
+          zip abis.zip *.json
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
           files: |
-            abis.zib
+            abis.zip
