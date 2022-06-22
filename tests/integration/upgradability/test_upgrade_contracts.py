@@ -19,14 +19,12 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 
     # Try initial transfer to later test a replay attack on the newly deployed keyManager
     callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT
+        agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR, cf.ALICE, TEST_AMNT]
     )
     sigdata = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     cf.vault.transfer(
         sigdata,
-        ETH_ADDR,
-        cf.ALICE,
-        TEST_AMNT,
+        [ETH_ADDR, cf.ALICE, TEST_AMNT],
     )
 
     # Reusing current keyManager aggregateKey for simplicity
@@ -85,23 +83,19 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
     with reverts(REV_MSG_WRONG_KEYMANADDR):
         cf.vault.transfer(
             sigdata,
-            ETH_ADDR,
-            cf.ALICE,
-            TEST_AMNT,
+            [ETH_ADDR, cf.ALICE, TEST_AMNT],
         )
 
     # Check that a new transfer works and uses the new keyManager
     currentNonce = nonces[AGG]
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == False
     callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(newKeyManager, chain.id), ETH_ADDR, cf.ALICE, TEST_AMNT
+        agg_null_sig(newKeyManager, chain.id), [ETH_ADDR, cf.ALICE, TEST_AMNT]
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, newKeyManager)
     cf.vault.transfer(
         sigData,
-        ETH_ADDR,
-        cf.ALICE,
-        TEST_AMNT,
+        [ETH_ADDR, cf.ALICE, TEST_AMNT],
     )
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == True
 
@@ -109,9 +103,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
     with reverts(REV_MSG_KEYMANAGER_NONCE):
         cf.vault.transfer(
             sigData,
-            ETH_ADDR,
-            cf.ALICE,
-            TEST_AMNT,
+            [ETH_ADDR, cf.ALICE, TEST_AMNT],
         )
 
 
@@ -138,7 +130,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     # Technically we could precomute the deployed address and whitelist it before deployment
     # but that is unnecessary
     with reverts(REV_MSG_WHITELIST):
-        args = (ETH_ADDR, cf.ALICE, TEST_AMNT)
+        args = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
         signed_call_aggSigner(cf, newVault.transfer, *args, sender=st_sender)
 
     # Keep old Vault whitelisted

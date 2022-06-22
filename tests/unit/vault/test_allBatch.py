@@ -84,7 +84,12 @@ def test_allBatch(
     if st_sender in st_tranRecipients:
         iniTransactionNumberst_sender = len(history.filter(sender=st_sender))
 
-    args = (st_fetchSwapIDs, fetchTokens, tranTokens, st_tranRecipients, st_tranAmounts)
+    fetchParams = craftFetchParamsArray(st_fetchSwapIDs, fetchTokens)
+    transferParams = craftTransferParamsArray(
+        tranTokens, st_tranRecipients, st_tranAmounts
+    )
+    args = (fetchParams, transferParams)
+
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
@@ -123,142 +128,31 @@ def test_allBatch(
                 assert False, "Panic"
 
 
-@given(
-    st_fetchSwapIDs=strategy("bytes32[]"),
-    st_tranRecipients=strategy("address[]", unique=True),
-    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    st_sender=strategy("address"),
-    randK=strategy("uint", min_value=1, max_value=100),
-)
-def test_allBatch_rev_fetch_array_length(
-    cf,
-    token,
-    token2,
-    st_fetchSwapIDs,
-    st_tranRecipients,
-    st_tranAmounts,
-    st_sender,
-    randK,
-):
-    # Make sure the lengths are always different somewhere
-    tokensList = [ETH_ADDR, token, token2]
-    fetchTokens = choices(tokensList, k=len(st_fetchSwapIDs) + randK)
-
-    tranMinLen = trimToShortest([st_tranRecipients, st_tranAmounts])
-    tranTokens = choices(tokensList, k=tranMinLen)
-
-    with reverts(REV_MSG_V_ARR_LEN):
-        args = (
-            st_fetchSwapIDs,
-            fetchTokens,
-            tranTokens,
-            st_tranRecipients,
-            st_tranAmounts,
-        )
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
-
-
-@given(
-    st_fetchSwapIDs=strategy("bytes32[]"),
-    st_tranRecipients=strategy("address[]", unique=True),
-    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    st_sender=strategy("address"),
-    randK=strategy("uint", min_value=1, max_value=100),
-)
-def test_allBatch_rev_transfer_tokenArray_length(
-    cf,
-    token,
-    token2,
-    st_fetchSwapIDs,
-    st_tranRecipients,
-    st_tranAmounts,
-    st_sender,
-    randK,
-):
-    # Make sure the lengths are always different somewhere
-    tokensList = [ETH_ADDR, token, token2]
-    fetchTokens = choices(tokensList, k=len(st_fetchSwapIDs))
-
-    tranMinLen = trimToShortest([st_tranRecipients, st_tranAmounts])
-    tranTokens = choices(tokensList, k=tranMinLen + randK)
-
-    with reverts(REV_MSG_V_ARR_LEN):
-        args = (
-            st_fetchSwapIDs,
-            fetchTokens,
-            tranTokens,
-            st_tranRecipients,
-            st_tranAmounts,
-        )
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
-
-
-@given(
-    st_fetchSwapIDs=strategy("bytes32[]"),
-    st_tranRecipients=strategy("address[]", unique=True),
-    st_tranAmounts=strategy("uint[]", max_value=TEST_AMNT),
-    st_sender=strategy("address"),
-    randK=strategy("uint", min_value=1, max_value=100),
-)
-def test_allBatch_rev_transfer_amountsArray_length(
-    cf,
-    token,
-    token2,
-    st_fetchSwapIDs,
-    st_tranRecipients,
-    st_tranAmounts,
-    st_sender,
-    randK,
-):
-    # Make sure the lengths are always different somewhere
-    tokensList = [ETH_ADDR, token, token2]
-    fetchTokens = choices(tokensList, k=len(st_fetchSwapIDs))
-
-    tranTokens = choices(tokensList, k=len(st_tranRecipients))
-    st_tranAmountsModif = choices(st_tranAmounts, k=len(st_tranRecipients) + randK)
-
-    with reverts(REV_MSG_V_ARR_LEN):
-        args = (
-            st_fetchSwapIDs,
-            fetchTokens,
-            tranTokens,
-            st_tranRecipients,
-            st_tranAmountsModif,
-        )
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args, sender=st_sender)
-
-
 def test_allBatch_rev_msgHash(cf):
+    fetchParams = [[JUNK_HEX_PAD, ETH_ADDR]]
+    transferParams = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
+    args = (fetchParams, transferParams)
+
     callDataNoSig = cf.vault.allBatch.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        [JUNK_HEX_PAD],
-        [ETH_ADDR],
-        [ETH_ADDR],
-        [cf.ALICE],
-        [TEST_AMNT],
+        agg_null_sig(cf.keyManager.address, chain.id), *args
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.allBatch(
-            sigData, [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT]
-        )
+        cf.vault.allBatch(sigData, *args)
 
 
 def test_allBatch_rev_sig(cf):
+    fetchParams = [[JUNK_HEX_PAD, ETH_ADDR]]
+    transferParams = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
+    args = (fetchParams, transferParams)
+
     callDataNoSig = cf.vault.allBatch.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        [JUNK_HEX_PAD],
-        [ETH_ADDR],
-        [ETH_ADDR],
-        [cf.ALICE],
-        [TEST_AMNT],
+        agg_null_sig(cf.keyManager.address, chain.id), *args
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.vault.allBatch(
-            sigData, [JUNK_HEX_PAD], [ETH_ADDR], [ETH_ADDR], [cf.ALICE], [TEST_AMNT]
-        )
+        cf.vault.allBatch(sigData, *args)

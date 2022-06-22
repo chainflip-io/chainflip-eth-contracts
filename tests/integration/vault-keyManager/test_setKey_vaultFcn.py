@@ -85,13 +85,11 @@ def test_setAggKeyWithAggKey_allBatch(
     tokenBals = [token.balanceOf(recip) for recip in st_tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in st_tranRecipients]
 
-    args = (
-        st_fetchSwapIDs,
-        fetchTokens,
-        tranTokens,
-        st_tranRecipients,
-        st_tranAmounts,
+    fetchParams = craftFetchParamsArray(st_fetchSwapIDs, fetchTokens)
+    transferParams = craftTransferParamsArray(
+        tranTokens, st_tranRecipients, st_tranAmounts
     )
+    args = (fetchParams, transferParams)
 
     # Check allBatch fails with the old agg key
     with reverts(REV_MSG_SIG):

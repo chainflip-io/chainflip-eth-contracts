@@ -28,7 +28,7 @@ def transfer_eth(cf, vault, receiver, amount):
     assert startBalVault >= amount
     startBalRecipient = receiver.balance()
 
-    tx = signed_call_aggSigner(cf, vault.transfer, ETH_ADDR, receiver, amount)
+    tx = signed_call_aggSigner(cf, vault.transfer, [ETH_ADDR, receiver, amount])
 
     assert vault.balance() - startBalVault == -amount
 
@@ -304,3 +304,21 @@ def signed_calls_nonces(keyManager, fcn, *args, **kwargs):
         *args,
         {"from": sender},
     )
+
+
+# Assumption that all the parameters are the same length. Craft the TransferParams array.
+def craftTransferParamsArray(tokens, recipients, amounts):
+    length = len(tokens)
+    args = []
+    for index in range(length):
+        args.append([tokens[index], recipients[index], amounts[index]])
+    return args
+
+
+# Assumption that all the parameters are the same length. Craft the FetchParams array.
+def craftFetchParamsArray(swapIDs, tokens):
+    length = len(tokens)
+    args = []
+    for index in range(length):
+        args.append([swapIDs[index], tokens[index]])
+    return args

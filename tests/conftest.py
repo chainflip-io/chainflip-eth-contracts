@@ -176,7 +176,6 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
         addrs.INVESTOR,
         addrs.REVOKER,
         REVOCABLE,
-        start,
         cliff,
         end,
         NON_STAKABLE,
