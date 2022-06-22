@@ -62,19 +62,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param fetchSwapIDs      The unique identifiers for this swap (bytes32[]), used for create2
-     * @param fetchTokens   The addresses of the tokens to be transferred
-     * @param tranTokens    The addresses of the tokens to be transferred
-     * @param tranRecipients    The address of the recipient of the transfer
-     * @param tranAmounts       The amount to transfer, in wei (uint)
+     * @param fetchParamsArray    The array of fetch parameters
+     * @param transferParamsArray The array of transfer parameters
      */
     function allBatch(
         SigData calldata sigData,
-        bytes32[] calldata fetchSwapIDs,
-        IERC20[] calldata fetchTokens,
-        IERC20[] calldata tranTokens,
-        address payable[] calldata tranRecipients,
-        uint256[] calldata tranAmounts
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
     )
         external
         override
@@ -85,31 +79,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(
                     this.allBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    fetchSwapIDs,
-                    fetchTokens,
-                    tranTokens,
-                    tranRecipients,
-                    tranAmounts
+                    fetchParamsArray,
+                    transferParamsArray
                 )
             )
         )
     {
-        // Can't put these as modifiers annoyingly because it creates
-        // a 'stack too deep' error
-        require(
-            fetchSwapIDs.length == fetchTokens.length &&
-                tranTokens.length == tranRecipients.length &&
-                tranRecipients.length == tranAmounts.length,
-            "Vault: arrays not same length"
-        );
-
         // Fetch all deposits
-        uint256 length = fetchSwapIDs.length;
+        uint256 length = fetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            if (address(fetchTokens[i]) == _ETH_ADDR) {
-                new DepositEth{salt: fetchSwapIDs[i]}();
+            if (address(fetchParamsArray[i].token) == _ETH_ADDR) {
+                new DepositEth{salt: fetchParamsArray[i].swapID}();
             } else {
-                new DepositToken{salt: fetchSwapIDs[i]}(IERC20Lite(address(fetchTokens[i])));
+                new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
             }
             unchecked {
                 ++i;
@@ -117,7 +99,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
 
         // Send all transfers
-        _transferBatch(tranTokens, tranRecipients, tranAmounts);
+        _transferBatch(transferParamsArray);
     }
 
     //////////////////////////////////////////////////////////////
@@ -131,36 +113,27 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param token     The token to be transferred
-     * @param recipient The address of the recipient of the transfer
-     * @param amount    The amount to transfer, in wei (uint)
+     * @param transferParams       The transfer parameters
      */
-    function transfer(
-        SigData calldata sigData,
-        IERC20 token,
-        address payable recipient,
-        uint256 amount
-    )
+    function transfer(SigData calldata sigData, TransferParams calldata transferParams)
         external
         override
         onlyIfNotSuspended
-        nzAddr(address(token))
-        nzAddr(recipient)
-        nzUint(amount)
+        nzAddr(address(transferParams.token))
+        nzAddr(transferParams.recipient)
+        nzUint(transferParams.amount)
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.transfer.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    token,
-                    recipient,
-                    amount
+                    transferParams
                 )
             )
         )
     {
-        _transfer(token, recipient, amount);
+        _transfer(transferParams.token, transferParams.recipient, transferParams.amount);
     }
 
     /**
@@ -171,16 +144,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param tokens    The addresses of the tokens to be transferred
-     * @param recipients The address of the recipient of the transfer
-     * @param amounts    The amount to transfer, in wei (uint)
+     * @param transferParamsArray The array of transfer parameters
      */
-    function transferBatch(
-        SigData calldata sigData,
-        IERC20[] calldata tokens,
-        address payable[] calldata recipients,
-        uint256[] calldata amounts
-    )
+    function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray)
         external
         override
         onlyIfNotSuspended
@@ -190,19 +156,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(
                     this.transferBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    tokens,
-                    recipients,
-                    amounts
+                    transferParamsArray
                 )
             )
         )
     {
-        require(
-            tokens.length == recipients.length && recipients.length == amounts.length,
-            "Vault: arrays not same length"
-        );
-
-        _transferBatch(tokens, recipients, amounts);
+        _transferBatch(transferParamsArray);
     }
 
     /**
@@ -210,18 +169,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          transfer should should have the same index tokens[i], recipients[i],
      *          and amounts[i].
-     * @param tokens The addresses of the tokens to be transferred
-     * @param recipients The address of the recipient of the transfer
-     * @param amounts    The amount to transfer, in wei (uint)
+    * @param transferParamsArray The array of transfer parameters
+
      */
-    function _transferBatch(
-        IERC20[] calldata tokens,
-        address payable[] calldata recipients,
-        uint256[] calldata amounts
-    ) private {
-        uint256 length = tokens.length;
+    function _transferBatch(TransferParams[] calldata transferParamsArray) private {
+        uint256 length = transferParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            _transfer(tokens[i], recipients[i], amounts[i]);
+            _transfer(transferParamsArray[i].token, transferParamsArray[i].recipient, transferParamsArray[i].amount);
             unchecked {
                 ++i;
             }
@@ -335,32 +289,27 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param swapID    The unique identifier for this swap (bytes32), used for create2
-     * @param token     The token to be transferred
+     * @param fetchParams    The fetch parameters
+
      */
-    function fetchDepositToken(
-        SigData calldata sigData,
-        bytes32 swapID,
-        IERC20 token
-    )
+    function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams)
         external
         override
         onlyIfNotSuspended
-        nzBytes32(swapID)
-        nzAddr(address(token))
+        nzBytes32(fetchParams.swapID)
+        nzAddr(address(fetchParams.token))
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.fetchDepositToken.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    swapID,
-                    token
+                    fetchParams
                 )
             )
         )
     {
-        new DepositToken{salt: swapID}(IERC20Lite(address(token)));
+        new DepositToken{salt: fetchParams.swapID}(IERC20Lite(address(fetchParams.token)));
     }
 
     /**
@@ -370,14 +319,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param swapIDs       The unique identifiers for this swap (bytes32[]), used for create2
-     * @param tokens        The addresses of the tokens to be transferred
+    * @param fetchParamsArray    The array of fetch parameters
+
      */
-    function fetchDepositTokenBatch(
-        SigData calldata sigData,
-        bytes32[] calldata swapIDs,
-        IERC20[] calldata tokens
-    )
+    function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
         external
         override
         onlyIfNotSuspended
@@ -387,17 +332,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(
                     this.fetchDepositTokenBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    swapIDs,
-                    tokens
+                    fetchParamsArray
                 )
             )
         )
     {
-        require(swapIDs.length == tokens.length, "Vault: arrays not same length");
-
-        uint256 length = swapIDs.length;
+        uint256 length = fetchParamsArray.length;
         for (uint256 i; i < length; ) {
-            new DepositToken{salt: swapIDs[i]}(IERC20Lite(address(tokens[i])));
+            new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
             unchecked {
                 ++i;
             }

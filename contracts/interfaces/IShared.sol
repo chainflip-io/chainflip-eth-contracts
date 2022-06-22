@@ -1,4 +1,5 @@
 pragma solidity ^0.8.0;
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title    Shared interface
@@ -26,5 +27,25 @@ interface IShared {
         uint256 sig;
         uint256 nonce;
         address kTimesGAddress;
+    }
+
+    /**
+     * @param token The address of the token to be transferred
+     * @param recipient The address of the recipient of the transfer
+     * @param amount    The amount to transfer, in wei (uint)
+     */
+    struct TransferParams {
+        IERC20 token;
+        address payable recipient;
+        uint256 amount;
+    }
+
+    /**
+     * @param swapID    The unique identifier for this swap (bytes32), used for create2
+     * @param token     The token to be transferred
+     */
+    struct FetchParams {
+        bytes32 swapID;
+        IERC20 token;
     }
 }
