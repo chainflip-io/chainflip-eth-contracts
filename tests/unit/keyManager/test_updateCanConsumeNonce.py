@@ -59,12 +59,16 @@ def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, st_newAddrs, st_sender):
 
     else:
         st_newAddrs = st_newAddrs + [cf.keyManager]
-        signed_call_aggSigner(
+        tx = signed_call_aggSigner(
             cf,
             cf.keyManager.updateCanConsumeKeyNonce,
             cf.whitelisted,
             st_newAddrs,
             sender=st_sender,
+        )
+        assert tx.events["KeyNonceConsumersUpdated"][0].values() == (
+            cf.whitelisted,
+            st_newAddrs,
         )
 
         # Removed previous whitelisted addresses
@@ -97,12 +101,17 @@ def test_updateCanConsumeKeyNonce_multiple(
     st_currentAddrs = cf.whitelisted
 
     for st_newAddrs in listAddresses:
-        signed_call_aggSigner(
+        tx = signed_call_aggSigner(
             cf,
             cf.keyManager.updateCanConsumeKeyNonce,
             st_currentAddrs,
             st_newAddrs,
             sender=st_sender,
+        )
+
+        assert tx.events["KeyNonceConsumersUpdated"][0].values() == (
+            st_currentAddrs,
+            st_newAddrs,
         )
 
         # Removed previous whitelisted addresses that are not whitelisted again

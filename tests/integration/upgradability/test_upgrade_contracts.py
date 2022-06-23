@@ -218,7 +218,8 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
     with reverts(REV_MSG_STAKEMAN_DEPLOYER):
         newStakeManager.setFlip(cf.flip, cf.FR_ALICE)
 
-    newStakeManager.setFlip(cf.flip)
+    tx = newStakeManager.setFlip(cf.flip)
+    assert tx.events["FLIPSet"][0].values()[0] == cf.flip
 
     # Keep old StakeManager whitelisted
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
