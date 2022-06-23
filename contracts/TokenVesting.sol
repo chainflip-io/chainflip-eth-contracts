@@ -88,10 +88,10 @@ contract TokenVesting is ReentrancyGuard {
     function stake(bytes32 nodeID, uint256 amount) external onlyBeneficiary {
         require(canStake, "Vesting: cannot stake");
 
-        IERC20 FLIP = stakeManager.getFLIP();
-        require(!revoked[FLIP], "Vesting: FLIP revoked");
+        IERC20 flip = stakeManager.getFLIP();
+        require(!revoked[flip], "Vesting: FLIP revoked");
 
-        FLIP.approve(address(stakeManager), amount);
+        flip.approve(address(stakeManager), amount);
         stakeManager.stake(nodeID, amount, address(this));
     }
 
