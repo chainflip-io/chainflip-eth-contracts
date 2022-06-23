@@ -24,10 +24,11 @@ jobs:
       matrix:
         test:
           [
-            test_keyManager.py,
-            test_vault.py,
-            test_stakeManager.py,
-            test_upgradability.py,
+            test_all.py,
+            # test_keyManager.py,
+            # test_vault.py,
+            # test_stakeManager.py,
+            # test_upgradability.py,
           ]
     steps:
       - uses: actions/checkout@v3
