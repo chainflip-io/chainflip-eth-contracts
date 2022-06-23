@@ -9,7 +9,7 @@ import pytest
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_revoke(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
@@ -57,7 +57,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
 
 
 def test_revoke_rev_revoker(a, addrs, cf, tokenVestingStaking):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     for ad in a:
         if ad != addrs.REVOKER:
@@ -75,7 +75,6 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
         addrs.INVESTOR,
         addrs.REVOKER,
         NON_REVOCABLE,
-        start,
         cliff,
         end,
         STAKABLE,
@@ -87,7 +86,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
 
 
 def test_revoke_rev_revoked(a, addrs, cf, tokenVestingStaking):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
@@ -102,7 +101,7 @@ def test_revoke_rev_revoked(a, addrs, cf, tokenVestingStaking):
 
 
 def test_revoke_staked(addrs, cf, tokenVestingStaking):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
     nodeID1 = web3.toHex(1)
 
     amount = total
@@ -147,7 +146,7 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
 def test_retrieve_revoked_funds_and_rewards(
     addrs, cf, tokenVestingStaking, st_amount, rewards
 ):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     cf.flip.approve(cf.stakeManager.address, st_amount, {"from": addrs.INVESTOR})
     tx = tv.stake(1, st_amount, {"from": addrs.INVESTOR})

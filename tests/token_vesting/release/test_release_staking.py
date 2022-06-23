@@ -5,14 +5,14 @@ from shared_tests_tokenVesting import *
 
 
 def test_release_rev_no_tokens(addrs, cf, tokenVestingStaking):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     release_revert(tv, cf, addrs.INVESTOR)
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_release(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
@@ -43,7 +43,7 @@ def test_release(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
 
 
 def test_release_all(addrs, cf, tokenVestingStaking, maths):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
@@ -69,15 +69,20 @@ def test_release_all(addrs, cf, tokenVestingStaking, maths):
 
 
 def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
     accomulatedReleases = 0
     previousTimestamp = 0
 
-    # Substracting 'start' because they are on absolute terms
-    timestamps = [QUARTER_YEAR, QUARTER_YEAR * 2, end - 100 - start, end - start + 100]
+    # Substracting current time because they are on absolute terms
+    timestamps = [
+        QUARTER_YEAR,
+        QUARTER_YEAR * 2,
+        end - 100 - getChainTime(),
+        end - getChainTime(),
+    ]
 
     # In staking  conctrracts cliff == end
     # No amount can be released until we reach the cliff == end where it is all releasable
@@ -122,7 +127,7 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths)
 
 
 def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     test_release_all(addrs, cf, tokenVestingStaking, maths)
 
@@ -153,7 +158,7 @@ def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths
 # Test that the assert(!canStake) is not reached => cliff == end == start + QUARTER_YEAR + YEAR
 @given(st_sleepTime=strategy("uint256", min_value=QUARTER_YEAR, max_value=YEAR * 2))
 def test_release_around_cliff(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     chain.sleep(st_sleepTime)
 

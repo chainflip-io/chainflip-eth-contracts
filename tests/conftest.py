@@ -186,7 +186,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
 
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
-    return tv, start, cliff, end, total
+    return tv, cliff, end, total
 
 
 @pytest.fixture(scope="module")
@@ -203,7 +203,6 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
         addrs.INVESTOR,
         addrs.REVOKER,
         REVOCABLE,
-        start,
         cliff,
         end,
         STAKABLE,
@@ -214,4 +213,4 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
 
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
-    return tv, start, cliff, end, total
+    return tv, cliff, end, total

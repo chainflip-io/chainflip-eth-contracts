@@ -9,7 +9,7 @@ import pytest
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
@@ -65,7 +65,7 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
 
 
 def test_revoke_rev_revoker(a, addrs, cf, tokenVestingNoStaking):
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     for ad in a:
         if ad != addrs.REVOKER:
@@ -83,7 +83,6 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
         addrs.INVESTOR,
         addrs.REVOKER,
         NON_REVOCABLE,
-        start,
         cliff,
         end,
         NON_STAKABLE,
@@ -95,7 +94,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
 
 
 def test_revoke_rev_revoked(a, addrs, cf, tokenVestingNoStaking):
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     tv.revoke(cf.flip, {"from": addrs.REVOKER})
 

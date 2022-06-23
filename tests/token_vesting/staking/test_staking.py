@@ -9,7 +9,7 @@ from brownie.test import given, strategy
 )
 def test_stake_nonstakable(addrs, tokenVestingNoStaking, st_nodeID, st_amount):
 
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     st_nodeID = web3.toHex(st_nodeID)
 
@@ -23,7 +23,7 @@ def test_stake_nonstakable(addrs, tokenVestingNoStaking, st_nodeID, st_amount):
 )
 def test_stake(addrs, tokenVestingStaking, st_nodeID, st_amount, cf):
 
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     st_nodeID = web3.toHex(st_nodeID)
 
@@ -40,7 +40,7 @@ def test_stake(addrs, tokenVestingStaking, st_nodeID, st_amount, cf):
 
 
 def test_stake_rev_beneficiary(a, addrs, tokenVestingStaking):
-    tv, start, cliff, end, total = tokenVestingStaking
+    tv, cliff, end, total = tokenVestingStaking
 
     for ad in a:
         if ad != addrs.INVESTOR:

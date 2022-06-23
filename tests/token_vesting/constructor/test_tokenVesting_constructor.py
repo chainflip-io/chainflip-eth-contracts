@@ -99,20 +99,6 @@ def test_tokenVesting_constructor_rev_revoker(addrs, TokenVesting, cf):
         )
 
 
-def test_tokenVesting_constructor_rev_cliff_0(addrs, TokenVesting, cf):
-    with reverts(REV_MSG_CLIFF_BEFORE_START):
-        addrs.DEPLOYER.deploy(
-            TokenVesting,
-            addrs.INVESTOR,
-            addrs.REVOKER,
-            REVOCABLE,
-            0,
-            end,
-            STAKABLE,
-            cf.stakeManager,
-        )
-
-
 def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
     with reverts(REV_MSG_CLIFF_AFTER_END):
         addrs.DEPLOYER.deploy(

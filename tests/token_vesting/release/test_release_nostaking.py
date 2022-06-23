@@ -5,14 +5,14 @@ from shared_tests_tokenVesting import *
 
 
 def test_release_rev_no_tokens(addrs, cf, tokenVestingNoStaking):
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     release_revert(tv, cf, addrs.INVESTOR)
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
@@ -46,7 +46,7 @@ def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
 
 
 def test_release_all(addrs, cf, tokenVestingNoStaking, maths):
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
@@ -72,20 +72,25 @@ def test_release_all(addrs, cf, tokenVestingNoStaking, maths):
 
 
 def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingNoStaking, maths):
-    tv, start, cliff, end, total = tokenVestingNoStaking
+    tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
     accomulatedReleases = 0
     previousTimestamp = 0
 
-    # Substracting 'start' because they are on absolute terms
-    timestamps = [QUARTER_YEAR, QUARTER_YEAR * 2, end - 100 - start, end - start]
+    # Substracting current time because they are on absolute terms
+    timestamps = [
+        QUARTER_YEAR,
+        QUARTER_YEAR * 2,
+        end - 100 - getChainTime(),
+        end - getChainTime(),
+    ]
 
     for timestamp in timestamps:
 
         chain.sleep(timestamp - previousTimestamp)
-
+        print(timestamp)
         tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
 
         totalReleased = (
