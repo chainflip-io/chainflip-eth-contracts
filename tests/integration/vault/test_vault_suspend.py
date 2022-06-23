@@ -43,6 +43,4 @@ def test_vault_suspend(cf, st_reciever, st_amount):
 
     # fetchDepositTokenBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_cf(
-            cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, ETH_ADDR]]
-        )
+        signed_call_cf(cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, ETH_ADDR]])

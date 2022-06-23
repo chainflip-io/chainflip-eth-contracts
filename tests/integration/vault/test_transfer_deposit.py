@@ -164,9 +164,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
     transferParamsArray = craftTransferParamsArray(
         [token, token], [cf.ALICE, cf.BOB], [amountAlice, amountBob]
     )
-    signed_call_cf(
-        cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE
-    )
+    signed_call_cf(cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE)
 
     assert token.balanceOf(cf.vault) - tokenStartBalVault == -amountAlice - amountBob
     assert token.balanceOf(cf.ALICE) - tokenStartBalAlice == amountAlice
@@ -204,9 +202,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
         [cf.ALICE, cf.BOB],
         [amountAlice, amountBob],
     )
-    signed_call_cf(
-        cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE
-    )
+    signed_call_cf(cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE)
 
     assert cf.vault.balance() == ethStartBalVault - amountAlice - amountBob
     assert cf.ALICE.balance() == ethStartBalAlice + amountAlice
@@ -250,9 +246,7 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(
         [cf.ALICE, cf.BOB],
         [amountAlice, amountBob],
     )
-    signed_call_cf(
-        cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE
-    )
+    signed_call_cf(cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE)
 
     assert token.balanceOf(cf.vault) - tokenStartBalVault == -amountAlice - amountBob
     assert token.balanceOf(cf.ALICE) - tokenStartBalAlice == amountAlice
