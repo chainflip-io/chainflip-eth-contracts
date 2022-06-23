@@ -92,7 +92,7 @@ REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
 REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
 REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
 # modifiers
-REV_MSG_DELAY = "KeyManager: not enough delay"
+REV_MSG_DELAY = "KeyManager: not enough time"
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
 REV_MSG_KEYMANAGER_NOT_COMMUNITY = "KeyManager: not Community Key"
 
@@ -134,7 +134,7 @@ REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
 REV_MSG_SENDER = "Vault: only Vault can send ETH"
-REV_MSG_VAULT_DELAY = "Vault: not enough delay"
+REV_MSG_VAULT_DELAY = "Vault: not enough time"
 REV_MSG_VAULT_SWAPS_DIS = "Vault: swaps not enabled"
 REV_MSG_VAULT_SWAPS_EN = "Vault: swaps enabled"
 

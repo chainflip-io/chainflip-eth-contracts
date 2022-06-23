@@ -470,7 +470,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     modifier timeoutEmergency() {
         require(
             block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
-            "Vault: not enough delay"
+            "Vault: not enough time"
         );
         _;
     }

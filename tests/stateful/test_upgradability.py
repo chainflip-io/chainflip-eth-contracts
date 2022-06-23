@@ -139,11 +139,13 @@ def test_upgradability(
             )
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
-            args = (
-                ETH_ADDR,
-                st_sender,
-                st_vault_transfer_amount,
-            )
+            args = [
+                [
+                    ETH_ADDR,
+                    st_sender,
+                    st_vault_transfer_amount,
+                ]
+            ]
             tx = signed_calls_nonces(
                 self.km, newVault.transfer, *args, sender=st_sender
             )
@@ -158,11 +160,13 @@ def test_upgradability(
             assert startBalVault >= st_vault_transfer_amount
             startBalRecipient = newVault.balance()
 
-            args = (
-                ETH_ADDR,
-                newVault,
-                st_vault_transfer_amount,
-            )
+            args = [
+                [
+                    ETH_ADDR,
+                    newVault,
+                    st_vault_transfer_amount,
+                ]
+            ]
             signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -st_vault_transfer_amount
@@ -195,11 +199,13 @@ def test_upgradability(
             )
             # Transfer all the remainding balance
             amountToTransfer = self.v.balance()
-            args = (
-                ETH_ADDR,
-                newVault,
-                amountToTransfer,
-            )
+            args = [
+                [
+                    ETH_ADDR,
+                    newVault,
+                    amountToTransfer,
+                ]
+            ]
             signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -amountToTransfer

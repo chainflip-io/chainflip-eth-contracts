@@ -208,13 +208,11 @@ def test_vault(
                 ]
             )
 
-            args = (
-                st_swapIDs,
-                fetchTokens,
-                tranTokens,
-                st_recips,
-                st_eth_amounts,
+            fetchParams = craftFetchParamsArray(st_swapIDs, fetchTokens)
+            transferParams = craftTransferParamsArray(
+                tranTokens, st_recips, st_eth_amounts
             )
+            args = (fetchParams, transferParams)
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -283,11 +281,7 @@ def test_vault(
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            args = (
-                tokenAddr,
-                st_recip,
-                st_eth_amount,
-            )
+            args = [[tokenAddr, st_recip, st_eth_amount]]
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -355,11 +349,8 @@ def test_vault(
                 ]
             )
 
-            args = (
-                tokens,
-                st_recips,
-                st_eth_amounts,
-            )
+            args = [craftTransferParamsArray(tokens, st_recips, st_eth_amounts)]
+
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -524,7 +515,7 @@ def test_vault(
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            args = (st_swapID, token)
+            args = [[st_swapID, token]]
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -574,7 +565,7 @@ def test_vault(
             minLen = min(map(len, [st_swapIDs, st_tokens]))
             maxLen = max(map(len, [st_swapIDs, st_tokens]))
 
-            args = (st_swapIDs, st_tokens)
+            args = [craftFetchParamsArray(st_swapIDs, st_tokens)]
             toLog = (*args, st_sender)
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")

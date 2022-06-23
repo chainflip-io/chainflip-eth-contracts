@@ -197,7 +197,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         override
         nzKey(newAggKey)
         validAggKey(newAggKey)
-        validTime
+        timeoutEmergency
         onlyGovernor
     {
         emit AggKeySetByGovKey(_aggKey, newAggKey);
@@ -379,8 +379,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /// @dev    Check that enough time has passed for setAggKeyWithGovKey. Needs
     ///         to be done as a modifier so that it can happen before consumeKeyNonce
-    modifier validTime() {
-        require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough delay");
+    modifier timeoutEmergency() {
+        require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough time");
         _;
     }
 
