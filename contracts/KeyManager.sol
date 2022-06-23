@@ -129,7 +129,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  to check it against the hash in sigData (bytes32) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData)
      */
-    function _consumeKeyNonceWhitelisted(SigData calldata sigData, bytes32 contractMsgHash) internal {
+    function _consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) internal {
         Key memory key = _aggKey;
         // We require the msgHash param in the sigData is equal to the contract
         // message hash (the rules coded into the contract)
@@ -157,7 +157,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) public override {
         require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
-        _consumeKeyNonceWhitelisted(sigData, contractMsgHash);
+        _consumeKeyNonce(sigData, contractMsgHash);
     }
 
     /**
