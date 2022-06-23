@@ -16,12 +16,21 @@ interface IKeyManager is IShared {
     event SignatureAccepted(SigData sigData, address signer);
     event KeyNonceConsumersSet(address[] addrs);
     event KeyNonceConsumersUpdated(address[] currentAddrs, address[] newAddrs);
+    event GovernanceAction(bytes32 message);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    function setCanConsumeKeyNonce(address[] calldata addrs) external;
+
+    function updateCanConsumeKeyNonce(
+        SigData calldata sigData,
+        address[] calldata currentAddrs,
+        address[] calldata newAddrs
+    ) external;
 
     function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
 
@@ -36,6 +45,10 @@ interface IKeyManager is IShared {
     function setCommKeyWithAggKey(SigData calldata sigData, address newCommKey) external;
 
     function setCommKeyWithCommKey(address newCommKey) external;
+
+    function govWithdrawEth() external;
+
+    function govAction(bytes32 message) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

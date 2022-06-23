@@ -20,9 +20,7 @@ def test_fetchDepositEthBatch(cf, DepositEth, st_amounts, st_swapIDs):
     assert cf.vault.balance() == 0
 
     # Fetch the deposit
-    signed_call_aggSigner(
-        cf, cf.vault.fetchDepositEthBatch, st_swapIDs, sender=cf.ALICE
-    )
+    signed_call_cf(cf, cf.vault.fetchDepositEthBatch, st_swapIDs, sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == sum(st_amounts)

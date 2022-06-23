@@ -11,6 +11,6 @@ def test_setGovKeyWithAggKey(cf):
 
 def test_setGovKeyWithAggKey_rev(cf):
     with reverts(REV_MSG_NZ_ADDR):
-        signed_call_aggSigner(
+        signed_call_cf(
             cf, cf.keyManager.setGovKeyWithAggKey, ZERO_ADDR, sender=cf.ALICE
         )

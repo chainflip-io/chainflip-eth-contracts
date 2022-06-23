@@ -11,12 +11,10 @@ def test_setAggKeyWithAggKey_setAggKeyWithAggKey(cf):
     # Try to set agg key with old agg key (we're not "changing" the agg key here but it should fail nonetheless since the contract does not
     # ever check that they are different)
     with reverts(REV_MSG_SIG):
-        signed_call_aggSigner(
-            cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1.getPubData()
-        )
+        signed_call_cf(cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1.getPubData())
 
     # Change agg key back to signer one
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cf,
         cf.keyManager.setAggKeyWithAggKey,
         AGG_SIGNER_1.getPubData(),
@@ -88,7 +86,7 @@ def test_setAggKeyWithGovKey_setKeyWithAggKey(cf):
     cf.keyManager.setAggKeyWithGovKey(AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR})
 
     # setGovKeyWithAggKey
-    signed_call_aggSigner(
+    signed_call_cf(
         cf, cf.keyManager.setGovKeyWithAggKey, cf.GOVERNOR, signer=AGG_SIGNER_2
     )
 
@@ -102,7 +100,7 @@ def test_setAggKeyWithGovKey_setKeyWithAggKey(cf):
     cf.keyManager.setAggKeyWithGovKey(AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR})
 
     # setCommKeyWithAggKey
-    signed_call_aggSigner(
+    signed_call_cf(
         cf, cf.keyManager.setCommKeyWithAggKey, cf.communityKey, signer=AGG_SIGNER_2
     )
 
@@ -124,14 +122,12 @@ def test_setAggKeyWithAggKey_setKeyWithAggKey_rev(cf, st_sender):
 
     # setAggKeyWithAggKey
     with reverts(REV_MSG_SIG):
-        signed_call_aggSigner(
-            cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1.getPubData()
-        )
+        signed_call_cf(cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1.getPubData())
 
     # setGovKeyWithAggKey
     with reverts(REV_MSG_SIG):
-        signed_call_aggSigner(cf, cf.keyManager.setGovKeyWithAggKey, st_sender)
+        signed_call_cf(cf, cf.keyManager.setGovKeyWithAggKey, st_sender)
 
     # setCommKeyWithAggKey
     with reverts(REV_MSG_SIG):
-        signed_call_aggSigner(cf, cf.keyManager.setGovKeyWithAggKey, st_sender)
+        signed_call_cf(cf, cf.keyManager.setGovKeyWithAggKey, st_sender)

@@ -14,9 +14,6 @@ JUNK_HEX = web3.toHex(JUNK_INT)
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
 AGG = "Agg"
-GOV = "Gov"
-KEYID_TO_NUM = {AGG: 0, GOV: 1}
-NUM_TO_KEYID = [AGG, GOV]
 INIT_TOKEN_SUPPLY = int(10**8 * E_18)
 INIT_ETH_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
@@ -47,15 +44,11 @@ AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
 # new agg key because the current design uses a mapping that tracks every nonce ever.
 # This wouldn't be the case if a single uint was used to track the current nonce for
 # each agg and gov key tho
-nonces = {AGG: 0, GOV: 0}
+nonces = {AGG: 0}
 
 
 def agg_null_sig(kmAddr, chainId):
     return (kmAddr, chainId, 0, 0, nonces[AGG], ZERO_ADDR)
-
-
-def gov_null_sig(kmAddr, chainId):
-    return (kmAddr, chainId, 0, 0, nonces[GOV], ZERO_ADDR)
 
 
 # Keys for use in tests
@@ -64,15 +57,9 @@ def gov_null_sig(kmAddr, chainId):
 AGG_PRIV_HEX_1 = "fbcb47bc85b881e0dfb31c872d4e06848f80530ccbd18fc016a27c4a744d0eba"
 AGG_SIGNER_1 = Signer(AGG_PRIV_HEX_1, AGG, nonces)
 
-GOV_PRIV_HEX_1 = "fd0491a72700b50de61ea97c81a2df9d5a301e9b5e71d5c7786ee86d1994f1b8"
-GOV_SIGNER_1 = Signer(GOV_PRIV_HEX_1, GOV, nonces)
-
 # New keys
 AGG_PRIV_HEX_2 = "bbade2da39cfc81b1b64b6a2d66531ed74dd01803dc5b376ce7ad548bbe23608"
 AGG_SIGNER_2 = Signer(AGG_PRIV_HEX_2, AGG, nonces)
-
-GOV_PRIV_HEX_2 = "6b357e74e81bd16c202e6406d0e1883f758f0495973f316be323daebec04ad85"
-GOV_SIGNER_2 = Signer(GOV_PRIV_HEX_2, GOV, nonces)
 
 NULL_KEY = (0, 0)
 BAD_AGG_KEY = [0xEE2E4DC8797847D69A9E59C1B051E3EF2ABD7A60AA7EDC3100A69666DF9AC525, 0x01]

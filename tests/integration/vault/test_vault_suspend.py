@@ -16,6 +16,7 @@ def test_vault_suspend(cf, st_reciever, st_amount):
         transferParams = craftTransferParamsArray(
             [ETH_ADDR], [NON_ZERO_ADDR], [TEST_AMNT]
         )
+
         args = (fetchParams, transferParams)
         signed_call_aggSigner(cf, cf.vault.allBatch, *args)
 
@@ -30,11 +31,11 @@ def test_vault_suspend(cf, st_reciever, st_amount):
 
     # fetchDepositEth
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_aggSigner(cf, cf.vault.fetchDepositEth, JUNK_HEX_PAD)
+        signed_call_cf(cf, cf.vault.fetchDepositEth, JUNK_HEX_PAD)
 
     # fetchDepositEthBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_aggSigner(cf, cf.vault.fetchDepositEthBatch, [JUNK_HEX_PAD])
+        signed_call_cf(cf, cf.vault.fetchDepositEthBatch, [JUNK_HEX_PAD])
 
     # fetchDepositToken
     with reverts(REV_MSG_GOV_SUSPENDED):
@@ -45,3 +46,4 @@ def test_vault_suspend(cf, st_reciever, st_amount):
         signed_call_aggSigner(
             cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, ETH_ADDR]]
         )
+

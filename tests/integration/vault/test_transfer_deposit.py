@@ -13,7 +13,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(
 
     assert cf.vault.balance() == 0
 
-    signed_call_aggSigner(cf, cf.vault.fetchDepositEth, JUNK_HEX_PAD, sender=cf.ALICE)
+    signed_call_cf(cf, cf.vault.fetchDepositEth, JUNK_HEX_PAD, sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
@@ -30,7 +30,7 @@ def test_fetchDepositEth_transfer_fetchDepositToken_transfer(
 
     balanceVault = cf.vault.balance()
     # Transferring out again should not transfer anything (vault empty) but it shouldn't fail
-    signed_call_aggSigner(cf, cf.vault.transfer, *args)
+    signed_call_cf(cf, cf.vault.transfer, *args)
     assert balanceVault == cf.vault.balance()
 
     # Fetch token deposit
@@ -72,7 +72,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(
 
     assert cf.vault.balance() == 0
 
-    signed_call_aggSigner(cf, cf.vault.fetchDepositEthBatch, swapIDs, sender=cf.ALICE)
+    signed_call_cf(cf, cf.vault.fetchDepositEthBatch, swapIDs, sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -90,8 +90,10 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(
 
     # Transferring out again should not transfer anything (vault empty) but it shouldn't fail
     balanceVault = cf.vault.balance()
+    
     args = [[ETH_ADDR, cf.ALICE, (2 * TEST_AMNT) + 1]]
     signed_call_aggSigner(cf, cf.vault.transfer, *args)
+    
     assert balanceVault == cf.vault.balance()
 
     # Fetch token deposit
@@ -106,6 +108,7 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(
     token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.DEPLOYER})
 
     assert token.balanceOf(cf.vault) == 0
+
     fetchParamsArray = craftFetchParamsArray(swapIDs, [token, token])
     signed_call_aggSigner(
         cf, cf.vault.fetchDepositTokenBatch, fetchParamsArray, sender=cf.ALICE
@@ -183,7 +186,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositEthBatch_transferBatch
 
     assert cf.vault.balance() == 0
 
-    signed_call_aggSigner(cf, cf.vault.fetchDepositEthBatch, swapIDs, sender=cf.CHARLIE)
+    signed_call_cf(cf, cf.vault.fetchDepositEthBatch, swapIDs, sender=cf.CHARLIE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0

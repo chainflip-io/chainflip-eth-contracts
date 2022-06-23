@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
-import "./FLIP.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
@@ -25,7 +24,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev    The FLIP token address. To be set only once after deployment via setFlip
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
-    FLIP private _FLIP;
+    IFLIP private _FLIP;
 
     /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
     uint256 private _minStake;
@@ -79,7 +78,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *          minted to this contract before calling setFLIP.
      * @param flip FLIP token address
      */
-    function setFlip(FLIP flip) external onlyDeployer nzAddr(address(flip)) {
+    function setFlip(IFLIP flip) external override onlyDeployer nzAddr(address(flip)) {
         require(address(_FLIP) == address(0), "Staking: Flip address already set");
         _FLIP = flip;
         emit FLIPSet(address(flip));
@@ -208,7 +207,20 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     }
 
     /**
-     *  @notice Allows this contract to receive ETH used to refund callers
+     * @notice Withdraw any ETH on this contract. The intended execution of this contract doesn't
+     * require any ETH. This function is just to recover any ETH that might have been sent to
+     * this contract by accident (or any other reason), since incoming ETH cannot be stopped.
+     */
+    function govWithdrawEth() external override isGovernor {
+        uint256 amount = address(this).balance;
+
+        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        address recipient = _getKeyManager().getGovernanceKey();
+        payable(recipient).transfer(amount);
+    }
+
+    /**
+     *  @notice Allows this contract to receive ETH
      */
     receive() external payable {}
 

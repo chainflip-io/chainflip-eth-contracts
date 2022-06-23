@@ -92,4 +92,4 @@ def test_suspend_registerClaim(cf, st_eth_amount):
 
     with reverts(REV_MSG_GOV_SUSPENDED):
         args = (JUNK_HEX, st_eth_amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
-        signed_call_aggSigner(cf, cf.stakeManager.registerClaim, *args)
+        signed_call_cf(cf, cf.stakeManager.registerClaim, *args)

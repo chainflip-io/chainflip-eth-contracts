@@ -24,6 +24,9 @@ CHARLIE = accounts[3]
 DENICE = accounts[4]
 GOVERNOR = accounts[0]
 GOVERNOR_2 = accounts[5]
+COMMUNITY_KEY = accounts[6]
+COMMUNITY_KEY_2 = accounts[7]
+
 
 cf = deploy_set_Chainflip_contracts(
     DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {"PREFUND_CONTRACTS": "False"}
@@ -142,6 +145,39 @@ def all_keyManager_events():
         AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address),
         AGG_SIGNER_1.getPubData(),
     )
+    
+        chain.sleep(CLAIM_DELAY)
+
+    print(f"\n🔑 Aggregate Key sets the new Governance Key 🔑\n")
+    callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), GOVERNOR
+    )
+    cf.keyManager.setGovKeyWithAggKey(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        GOVERNOR,
+    )
+
+    chain.sleep(CLAIM_DELAY)
+
+    print(f"\n🔑 Community Key sets the new Community Key 🔑\n")
+    cf.keyManager.setCommKeyWithCommKey(COMMUNITY_KEY_2, {"from": COMMUNITY_KEY})
+
+    chain.sleep(CLAIM_DELAY)
+
+    print(f"\n🔑 Aggregate Key sets the new Community Key 🔑\n")
+    callDataNoSig = cf.keyManager.setCommKeyWithAggKey.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), COMMUNITY_KEY
+    )
+    cf.keyManager.setCommKeyWithAggKey(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        COMMUNITY_KEY,
+    )
+
+    chain.sleep(CLAIM_DELAY)
+
+    print(f"\n🔐 Governance calls for an action\n")
+
+    cf.keyManager.govAction(JUNK_HEX, {"from": GOVERNOR})
 
     print(f"\n🔑 Update the Key Nonce Consumer list (whitelist) 🔑\n")
     callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(

@@ -28,15 +28,10 @@ def cf(a, cfDeploy):
     # Can't define this in consts because `a` needs to be imported into the test
     # cfDeploy.deployer == a[0]
     cf.DEPLOYER = cfDeploy.deployer
-    cf.FR_DEPLOYER = {"from": cf.DEPLOYER}
     cf.ALICE = a[1]
-    cf.FR_ALICE = {"from": cf.ALICE}
     cf.BOB = a[2]
-    cf.FR_BOB = {"from": cf.BOB}
     cf.CHARLIE = a[3]
-    cf.FR_CHARLIE = {"from": cf.CHARLIE}
     cf.DENICE = a[4]
-    cf.FR_DENICE = {"from": cf.DENICE}
 
     # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh
     cf.GOVERNOR = cfDeploy.gov
@@ -72,15 +67,10 @@ def cfAW(a, cfDeployAllWhitelist):
     # It's a bit easier to not get mixed up with accounts if they're named
     # Can't define this in consts because `a` needs to be imported into the test
     cf.DEPLOYER = a[0]
-    cf.FR_DEPLOYER = {"from": cf.DEPLOYER}
     cf.ALICE = a[1]
-    cf.FR_ALICE = {"from": cf.ALICE}
     cf.BOB = a[2]
-    cf.FR_BOB = {"from": cf.BOB}
     cf.CHARLIE = a[3]
-    cf.FR_CHARLIE = {"from": cf.CHARLIE}
     cf.DENICE = a[4]
-    cf.FR_DENICE = {"from": cf.DENICE}
 
     # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh
     cf.GOVERNOR = cfDeployAllWhitelist.gov

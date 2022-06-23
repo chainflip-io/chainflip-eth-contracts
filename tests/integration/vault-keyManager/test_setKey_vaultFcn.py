@@ -93,16 +93,16 @@ def test_setAggKeyWithAggKey_allBatch(
 
     # Check allBatch fails with the old agg key
     with reverts(REV_MSG_SIG):
-        signed_call_aggSigner(cfAW, cfAW.vault.allBatch, *args, sender=st_sender)
+        signed_call_cf(cfAW, cfAW.vault.allBatch, *args, sender=st_sender)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            signed_call_aggSigner(
+            signed_call_cf(
                 cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
             )
     else:
-        signed_call_aggSigner(
+        signed_call_cf(
             cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
         )
 

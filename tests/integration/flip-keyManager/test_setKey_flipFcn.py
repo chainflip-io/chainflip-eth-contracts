@@ -13,11 +13,9 @@ def test_setAggKeyWithAggKey_updateFlipSupply(cfAW):
 
     # Updating supply with old key should revert
     with reverts(REV_MSG_SIG):
-        signed_call_aggSigner(
-            cfAW, cfAW.flip.updateFlipSupply, *args, sender=cfAW.ALICE
-        )
+        signed_call_cf(cfAW, cfAW.flip.updateFlipSupply, *args, sender=cfAW.ALICE)
 
-    tx = signed_call_aggSigner(
+    tx = signed_call_cf(
         cfAW, cfAW.flip.updateFlipSupply, *args, sender=cfAW.ALICE, signer=AGG_SIGNER_2
     )
 

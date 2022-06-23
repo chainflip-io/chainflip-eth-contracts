@@ -218,9 +218,7 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _allBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
-                        self.km, self.v.allBatch, *args, sender=st_sender
-                    )
+                    signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
             elif (
                 tranTotals[self.tokenA] - fetchTokenATotal
                 > self.tokenABals[self.v.address]
@@ -229,12 +227,10 @@ def test_vault(
             ):
                 print("        NOT ENOUGH TOKENS IN VAULT rule_allBatch", *toLog)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    signed_calls_nonces(
-                        self.km, self.v.allBatch, *args, sender=st_sender
-                    )
+                    signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
             else:
                 print("                    rule_allBatch", *toLog)
-                signed_calls_nonces(self.km, self.v.allBatch, *args, sender=st_sender)
+                signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
 
                 # Alter bals from the fetches
                 for swapID, tok in zip(st_swapIDs, fetchTokens):
@@ -287,27 +283,21 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
-                        self.km, self.v.transfer, *args, sender=st_sender
-                    )
+                    signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             elif st_eth_amount == 0:
                 print("        REV_MSG_NZ_UINT _vault_transfer", *toLog)
                 with reverts(REV_MSG_NZ_UINT):
-                    signed_calls_nonces(
-                        self.km, self.v.transfer, *args, sender=st_sender
-                    )
+                    signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             elif bals[self.v.address] < st_eth_amount and tokenAddr != ETH_ADDR:
                 print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    signed_calls_nonces(
-                        self.km, self.v.transfer, *args, sender=st_sender
-                    )
+                    signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             else:
                 print("                    _vault_transfer", *toLog)
-                signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
+                signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
                 if bals[self.v.address] >= st_eth_amount or tokenAddr != ETH_ADDR:
                     bals[self.v.address] -= st_eth_amount
@@ -356,7 +346,7 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km, self.v.transferBatch, *args, sender=st_sender
                     )
             elif (
@@ -368,14 +358,12 @@ def test_vault(
                     *toLog,
                 )
                 with reverts():
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km, self.v.transferBatch, *args, sender=st_sender
                     )
             else:
                 print("                    rule_vault_transferBatch", *toLog)
-                signed_calls_nonces(
-                    self.km, self.v.transferBatch, *args, sender=st_sender
-                )
+                signed_call_km(self.km, self.v.transferBatch, *args, sender=st_sender)
 
                 for i in range(len(st_recips)):
                     if tokens[i] == ETH_ADDR:
@@ -458,7 +446,7 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km, self.v.fetchDepositEth, st_swapID, sender=st_sender
                     )
 
@@ -469,12 +457,12 @@ def test_vault(
                     st_swapID,
                 )
                 with reverts(REV_MSG_NZ_BYTES32):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km, self.v.fetchDepositEth, st_swapID, sender=st_sender
                     )
             else:
                 print("                    rule_fetchDepositEth", st_sender, st_swapID)
-                signed_calls_nonces(
+                signed_call_km(
                     self.km, self.v.fetchDepositEth, st_swapID, sender=st_sender
                 )
 
@@ -495,7 +483,7 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.v.fetchDepositEthBatch,
                         st_swapIDs,
@@ -505,7 +493,7 @@ def test_vault(
             print(
                 "                    rule_fetchDepositEthBatch", st_sender, st_swapIDs
             )
-            signed_calls_nonces(
+            signed_call_km(
                 self.km, self.v.fetchDepositEthBatch, st_swapIDs, sender=st_sender
             )
 
@@ -521,19 +509,19 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km, self.v.fetchDepositToken, *args, sender=st_sender
                     )
 
             elif st_swapID == 0:
                 print("        REV_MSG_NZ_BYTES32 _fetchDepositToken", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km, self.v.fetchDepositToken, *args, sender=st_sender
                     )
             else:
                 print("                    _fetchDepositToken", *toLog)
-                signed_calls_nonces(
+                signed_call_km(
                     self.km, self.v.fetchDepositToken, *args, sender=st_sender
                 )
 
@@ -570,12 +558,12 @@ def test_vault(
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                     )
             else:
                 print("                    rule_fetchDepositTokenBatch", *toLog)
-                signed_calls_nonces(
+                signed_call_km(
                     self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                 )
 

@@ -11,6 +11,6 @@ def test_setCommKeyWithAggKey(cf):
 
 def test_setCommKeyWithAggKey_rev(cf):
     with reverts(REV_MSG_NZ_ADDR):
-        signed_call_aggSigner(
+        signed_call_cf(
             cf, cf.keyManager.setCommKeyWithAggKey, ZERO_ADDR, sender=cf.ALICE
         )
