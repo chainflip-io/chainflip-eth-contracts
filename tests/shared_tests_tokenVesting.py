@@ -23,7 +23,8 @@ def check_state(
 ):
     assert tv.beneficiary() == beneficiary
     assert tv.revoker() == revoker
-    assert tv.revocable() == revocable
+    tv_revocable = tv.revoker != ZERO_ADDR
+    assert tv_revocable == revocable
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == canStake

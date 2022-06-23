@@ -90,7 +90,7 @@ def calculateGasSpentByAddress(address, initialTransactionNumber):
 
 # Calculate the gas spent in a single transaction
 def calculateGasTransaction(txReceipt):
-    # Might be necessary to wait for the transaction to be mined, especially un live networks that are slow.
+    # Might be necessary to wait for the transaction to be mined, especially in live networks that are slow.
     # Either check for status (txReceipt.status == 0 or == 1) or use wait_for_transaction_receipt.
     # web3.eth.wait_for_transaction_receipt(txReceipt.txid)
 

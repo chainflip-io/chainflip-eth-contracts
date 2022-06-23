@@ -147,11 +147,10 @@ REV_MSG_GOV_SUSPENDED = "Governance: suspended"
 REV_MSG_GOV_NOT_SUSPENDED = "Governance: not suspended"
 
 # -----Vesting-----
-REVOCABLE = STAKABLE = True
-NON_REVOCABLE = NON_STAKABLE = False
+STAKABLE = True
+NON_STAKABLE = False
 REV_MSG_NO_TOKENS = "Vesting: no tokens are due"
 REV_MSG_NOT_REVOKER = "Vesting: not the revoker"
-REV_MSG_CANNOT_REVOKE = "Vesting: cannot revoke"
 REV_MSG_ALREADY_REVOKED = "Vesting: token already revoked"
 REV_MSG_CANNOT_STAKE = "Vesting: cannot stake"
 REV_MSG_VESTING_EXPIRED = "Vesting: vesting expired"
@@ -161,7 +160,7 @@ REV_MSG_NOT_REVOKED = "Vesting: token not revoked"
 REV_MSG_NOT_BENEFICIARY = "Vesting: not the beneficiary"
 REV_MSG_INVALID_CLIFF = "Vesting: invalid staking contract cliff"
 REV_MSG_INVALID_BENEFICIARY = "Vesting: beneficiary_ is the zero address"
-REV_MSG_INVALID_REVOKER = "Vesting: revoker_ is the zero address"
 REV_MSG_CLIFF_AFTER_END = "Vesting: cliff_ after end_"
 REV_MSG_INVALID_FINAL_TIME = "Vesting: final time is before current time"
 REV_MSG_INVALID_STAKEMANAGER = "Vesting: stakeManager_ is the zero address"
+REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"

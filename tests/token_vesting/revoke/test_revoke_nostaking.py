@@ -81,15 +81,14 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
-        addrs.REVOKER,
-        NON_REVOCABLE,
+        ZERO_ADDR,
         cliff,
         end,
         NON_STAKABLE,
         cf.stakeManager,
     )
 
-    with reverts(REV_MSG_CANNOT_REVOKE):
+    with reverts(REV_MSG_NOT_REVOKER):
         tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
 

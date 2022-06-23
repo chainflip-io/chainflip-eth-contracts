@@ -73,15 +73,14 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
-        addrs.REVOKER,
-        NON_REVOCABLE,
+        ZERO_ADDR,
         cliff,
         end,
         STAKABLE,
         cf.stakeManager,
     )
 
-    with reverts(REV_MSG_CANNOT_REVOKE):
+    with reverts(REV_MSG_NOT_REVOKER):
         tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
 
@@ -170,3 +169,14 @@ def test_retrieve_revoked_funds_and_rewards(
         tv.release(cf.flip, {"from": addrs.INVESTOR})
 
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, rewards)
+
+
+# If revoked when staked, we don't get the funds. Then we have to enforce that the beneficiary unstakes it.
+# When that happens the beneficiary can't release the funds but they can front-run our retrieveFunds.
+def test_stake_revoked_staked(addrs, cf, tokenVestingStaking):
+    tv, cliff, end, total = tokenVestingStaking
+    test_revoke_staked(addrs, cf, tokenVestingStaking)
+    nodeID1 = web3.toHex(1)
+    with reverts(REV_MSG_FLIP_REVOKED):
+        tv.stake(nodeID1, MAX_TEST_STAKE, {"from": addrs.INVESTOR})
+    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, MAX_TEST_STAKE)
