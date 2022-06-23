@@ -145,8 +145,8 @@ def all_keyManager_events():
         AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address),
         AGG_SIGNER_1.getPubData(),
     )
-    
-        chain.sleep(CLAIM_DELAY)
+
+    chain.sleep(CLAIM_DELAY)
 
     print(f"\n🔑 Aggregate Key sets the new Governance Key 🔑\n")
     callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(

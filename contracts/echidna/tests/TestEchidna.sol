@@ -20,57 +20,58 @@ contract TestEchidna is Deployer {
     // ´echidna_revert_*` takes no arguments. Also no call from the governor is made.
 
     /* solhint-disable  func-name-mixedcase*/
-    function echidna_flipSupply() external returns (bool) {
+    function echidna_flipSupply() external view returns (bool) {
         return f.totalSupply() == INIT_SUPPLY;
     }
 
-    function echidna_kmReference() external returns (bool) {
+    function echidna_kmReference() external view returns (bool) {
         return
             f.getKeyManager() == sm.getKeyManager() &&
             sm.getKeyManager() == v.getKeyManager() &&
             v.getKeyManager() == km;
     }
 
-    function echidna_govKey() external returns (bool) {
+    function echidna_govKey() external view returns (bool) {
         return
             sm.getGovernor() == v.getGovernor() &&
             v.getGovernor() == km.getGovernanceKey() &&
             km.getGovernanceKey() == govKey;
     }
 
-    function echidna_commKey() external returns (bool) {
+    function echidna_commKey() external view returns (bool) {
         return
             sm.getCommunityKey() == v.getCommunityKey() &&
             v.getCommunityKey() == km.getCommunityKey() &&
             km.getCommunityKey() == commKey;
     }
 
-    function echidna_aggKey() external returns (bool) {
+    function echidna_aggKey() external view returns (bool) {
         return km.getAggregateKey().pubKeyX == PUBKEYX && km.getAggregateKey().pubKeyYParity == PUBKEYYPARITY;
     }
 
-    function echidna_suspended() external returns (bool) {
+    function echidna_suspended() external view returns (bool) {
         return v.getSuspendedState() == sm.getSuspendedState() && sm.getSuspendedState() == false;
     }
 
-    function echidna_guardDisabled() external returns (bool) {
-        return v.getCommunityGuard() == sm.getCommunityGuard() && sm.getCommunityGuard() == false;
+    function echidna_guardDisabled() external view returns (bool) {
+        return
+            v.getCommunityGuardDisabled() == sm.getCommunityGuardDisabled() && sm.getCommunityGuardDisabled() == false;
     }
 
-    function echidna_minStake() external returns (bool) {
+    function echidna_minStake() external view returns (bool) {
         return sm.getMinimumStake() == minStake;
     }
 
-    function echidna_swapsEnabled() external returns (bool) {
+    function echidna_swapsEnabled() external view returns (bool) {
         return !v.getSwapsEnabled();
     }
 
     // No signature has been validated
-    function echidna_lastValidateTime() external returns (bool) {
+    function echidna_lastValidateTime() external view returns (bool) {
         return _lastValidateTime == km.getLastValidateTime();
     }
 
-    function echidna_whitelistSet() external returns (bool) {
+    function echidna_whitelistSet() external view returns (bool) {
         return km.canConsumeKeyNonceSet();
     }
 
@@ -97,7 +98,7 @@ contract TestEchidna is Deployer {
 
     // ASSERTION TESTING - need to run echidna in testMode: "assertion"
 
-    function checkwhitelistAddrs() external {
+    function checkwhitelistAddrs() external view {
         assert(km.getNumberWhitelistedAddresses() == 4);
         for (uint256 i = 0; i < whitelist.length; i++) {
             assert(km.canConsumeKeyNonce(whitelist[i]) == true);
@@ -107,20 +108,17 @@ contract TestEchidna is Deployer {
     // Proxy for a signed function - Assert if the call is not reverted
     function allBatch_revert(
         SigData calldata sigData,
-        bytes32[] calldata fetchSwapIDs,
-        IERC20[] calldata fetchTokens,
-        IERC20[] calldata tranTokens,
-        address payable[] calldata tranRecipients,
-        uint256[] calldata tranAmounts
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
     ) external {
-        try v.allBatch(sigData, fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts) {
+        try v.allBatch(sigData, fetchParamsArray, transferParamsArray) {
             assert(false);
         } catch {
             assert(true);
         }
     }
 
-    function echidna_flipBalance() external returns (bool) {
+    function echidna_flipBalance() external view returns (bool) {
         return f.balanceOf(address(sm)) == NUM_GENESIS_VALIDATORS * GENESIS_STAKE;
     }
     /* solhint-enable  func-name-mixedcase*/

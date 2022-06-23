@@ -46,4 +46,3 @@ def test_vault_suspend(cf, st_reciever, st_amount):
         signed_call_aggSigner(
             cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, ETH_ADDR]]
         )
-

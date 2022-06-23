@@ -10,31 +10,18 @@ contract VaultEchidna is IShared {
 
     function allBatch(
         SigData calldata sigData,
-        bytes32[] calldata fetchSwapIDs,
-        IERC20[] calldata fetchTokens,
-        IERC20[] calldata tranTokens,
-        address payable[] calldata tranRecipients,
-        uint256[] calldata tranAmounts
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
     ) external virtual {
-        v.allBatch(sigData, fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts);
+        v.allBatch(sigData, fetchParamsArray, transferParamsArray);
     }
 
-    function transfer(
-        SigData calldata sigData,
-        IERC20 token,
-        address payable recipient,
-        uint256 amount
-    ) external virtual {
-        v.transfer(sigData, token, recipient, amount);
+    function transfer(SigData calldata sigData, TransferParams calldata transferParams) external virtual {
+        v.transfer(sigData, transferParams);
     }
 
-    function transferBatch(
-        SigData calldata sigData,
-        IERC20[] calldata tokens,
-        address payable[] calldata recipients,
-        uint256[] calldata amounts
-    ) external virtual {
-        v.transferBatch(sigData, tokens, recipients, amounts);
+    function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray) external virtual {
+        v.transferBatch(sigData, transferParamsArray);
     }
 
     function fetchDepositEth(SigData calldata sigData, bytes32 swapID) external virtual {
@@ -45,20 +32,15 @@ contract VaultEchidna is IShared {
         v.fetchDepositEthBatch(sigData, swapIDs);
     }
 
-    function fetchDepositToken(
-        SigData calldata sigData,
-        bytes32 swapID,
-        IERC20 token
-    ) external virtual {
-        v.fetchDepositToken(sigData, swapID, token);
+    function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams) external virtual {
+        v.fetchDepositToken(sigData, fetchParams);
     }
 
-    function fetchDepositTokenBatch(
-        SigData calldata sigData,
-        bytes32[] calldata swapIDs,
-        IERC20[] calldata tokens
-    ) external virtual {
-        v.fetchDepositTokenBatch(sigData, swapIDs, tokens);
+    function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
+        external
+        virtual
+    {
+        v.fetchDepositTokenBatch(sigData, fetchParamsArray);
     }
 
     function swapETH(string calldata egressParams, bytes32 egressReceiver) external virtual {
@@ -68,7 +50,7 @@ contract VaultEchidna is IShared {
     function swapToken(
         string calldata egressParams,
         bytes32 egressReceiver,
-        address ingressToken,
+        IERC20 ingressToken,
         uint256 amount
     ) external virtual {
         v.swapToken(egressParams, egressReceiver, ingressToken, amount);

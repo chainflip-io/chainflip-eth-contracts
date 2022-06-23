@@ -211,11 +211,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * require any ETH. This function is just to recover any ETH that might have been sent to
      * this contract by accident (or any other reason), since incoming ETH cannot be stopped.
      */
-    function govWithdrawEth() external override isGovernor {
+    function govWithdrawEth() external override onlyGovernor {
         uint256 amount = address(this).balance;
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = _getKeyManager().getGovernanceKey();
+        address recipient = getKeyManager().getGovernanceKey();
         payable(recipient).transfer(amount);
     }
 

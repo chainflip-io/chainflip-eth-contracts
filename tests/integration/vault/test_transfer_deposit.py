@@ -90,10 +90,10 @@ def test_fetchDepositEthBatch_transfer_fetchDepositTokenBatch_transfer(
 
     # Transferring out again should not transfer anything (vault empty) but it shouldn't fail
     balanceVault = cf.vault.balance()
-    
+
     args = [[ETH_ADDR, cf.ALICE, (2 * TEST_AMNT) + 1]]
     signed_call_aggSigner(cf, cf.vault.transfer, *args)
-    
+
     assert balanceVault == cf.vault.balance()
 
     # Fetch token deposit

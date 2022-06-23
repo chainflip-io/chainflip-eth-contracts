@@ -93,22 +93,22 @@ contract TestEchidnaGovComm is Deployer {
     // Community Guard
     function enableCommunityGuardVault() external override {
         v.enableCommunityGuard();
-        assert(v.getCommunityGuard() == false);
+        assert(v.getCommunityGuardDisabled() == false);
     }
 
     function disableCommunityGuardVault() external override {
         v.disableCommunityGuard();
-        assert(v.getCommunityGuard() == true);
+        assert(v.getCommunityGuardDisabled() == true);
     }
 
     function enableCommunityGuardStakeManager() external override {
         v.enableCommunityGuard();
-        assert(v.getCommunityGuard() == false);
+        assert(v.getCommunityGuardDisabled() == false);
     }
 
     function disableCommunityGuardStakeManager() external override {
         sm.disableCommunityGuard();
-        assert(sm.getCommunityGuard() == true);
+        assert(sm.getCommunityGuardDisabled() == true);
     }
 
     function setMinStake(uint256 newMinStake) external override {
@@ -142,13 +142,10 @@ contract TestEchidnaGovComm is Deployer {
     // Proxy for a signed function - Assert if the call is not reverted
     function allBatch_revert(
         SigData calldata sigData,
-        bytes32[] calldata fetchSwapIDs,
-        IERC20[] calldata fetchTokens,
-        IERC20[] calldata tranTokens,
-        address payable[] calldata tranRecipients,
-        uint256[] calldata tranAmounts
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
     ) external {
-        try v.allBatch(sigData, fetchSwapIDs, fetchTokens, tranTokens, tranRecipients, tranAmounts) {
+        try v.allBatch(sigData, fetchParamsArray, transferParamsArray) {
             assert(false);
         } catch {
             assert(true);

@@ -282,7 +282,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * require any ETH. This function is just to recover any ETH that might have been sent to
      * this contract by accident (or any other reason), since incoming ETH cannot be stopped.
      */
-    function govWithdrawEth() external override isGovernor {
+    function govWithdrawEth() external override onlyGovernor {
         uint256 amount = address(this).balance;
 
         // Could use msg.sender but hardcoding the get call just for extra safety
@@ -293,7 +293,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /**
      * @notice Emit an event containing an action message. Can only be called by the governor.
      */
-    function govAction(bytes32 message) external override isGovernor {
+    function govAction(bytes32 message) external override onlyGovernor {
         emit GovernanceAction(message);
     }
 
