@@ -72,7 +72,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -86,17 +86,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // Fetch all deposits
-        uint256 length = fetchParamsArray.length;
-        for (uint256 i = 0; i < length; ) {
-            if (address(fetchParamsArray[i].token) == _ETH_ADDR) {
-                new DepositEth{salt: fetchParamsArray[i].swapID}();
-            } else {
-                new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
-            }
-            unchecked {
-                ++i;
-            }
-        }
+        _fetchBatch(fetchParamsArray);
 
         // Send all transfers
         _transferBatch(transferParamsArray);
@@ -118,7 +108,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function transfer(SigData calldata sigData, TransferParams calldata transferParams)
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         nzAddr(address(transferParams.token))
         nzAddr(transferParams.recipient)
         nzUint(transferParams.amount)
@@ -144,12 +134,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param transferParamsArray The array of transfer parameters
+     * @param transferParamsArray The array of transfer parameters.
      */
     function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray)
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -169,8 +159,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          transfer should should have the same index tokens[i], recipients[i],
      *          and amounts[i].
-    * @param transferParamsArray The array of transfer parameters
-
+     * @param transferParamsArray The array of transfer parameters.
      */
     function _transferBatch(TransferParams[] calldata transferParamsArray) private {
         uint256 length = transferParamsArray.length;
@@ -222,6 +211,27 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
+     * @notice  Retrieves ETH and tokens from multiple addresses, deterministically generated using
+     *          create2, by creating a contract for that address, sending it to this vault, and
+     *          then destroying
+     * @param fetchParamsArray    The array of fetch parameters
+     */
+    function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
+        // Fetch all deposits
+        uint256 length = fetchParamsArray.length;
+        for (uint256 i = 0; i < length; ) {
+            if (address(fetchParamsArray[i].token) == _ETH_ADDR) {
+                new DepositEth{salt: fetchParamsArray[i].swapID}();
+            } else {
+                new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
      * @notice  Retrieves ETH from an address, deterministically generated using
      *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
@@ -233,7 +243,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function fetchDepositEth(SigData calldata sigData, bytes32 swapID)
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         nzBytes32(swapID)
         consumesKeyNonce(
             sigData,
@@ -261,7 +271,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -290,12 +300,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param fetchParams    The fetch parameters
-
      */
     function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams)
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         nzBytes32(fetchParams.swapID)
         nzAddr(address(fetchParams.token))
         consumesKeyNonce(
@@ -319,13 +328,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-    * @param fetchParamsArray    The array of fetch parameters
-
+     * @param fetchParamsArray    The array of fetch parameters
      */
     function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -361,7 +369,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         payable
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         swapsEnabled
         nzUint(msg.value)
         nzBytes32(egressReceiver)
@@ -385,7 +393,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         override
-        onlyIfNotSuspended
+        onlyNotSuspended
         swapsEnabled
         nzUint(amount)
         nzAddr(address(ingressToken))
@@ -413,8 +421,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         onlyGovernor
-        onlyIfCommunityGuardDisabled
-        onlyIfSuspended
+        onlyCommunityGuardDisabled
+        onlySuspended
         timeoutEmergency
     {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety

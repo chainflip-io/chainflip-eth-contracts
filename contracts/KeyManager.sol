@@ -66,7 +66,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
         _numberWhitelistedAddresses = addrs.length;
 
-        emit KeyNonceConsumersSet(addrs);
+        emit AggKeyNonceConsumersSet(addrs);
     }
 
     /**
@@ -114,7 +114,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
         _numberWhitelistedAddresses = newAddrs.length;
 
-        emit KeyNonceConsumersUpdated(currentAddrs, newAddrs);
+        emit AggKeyNonceConsumersUpdated(currentAddrs, newAddrs);
     }
 
     /**
@@ -129,7 +129,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  to check it against the hash in sigData (bytes32) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData)
      */
-    function consumeKeyNonceWhitelisted(SigData calldata sigData, bytes32 contractMsgHash) internal {
+    function _consumeKeyNonceWhitelisted(SigData calldata sigData, bytes32 contractMsgHash) internal {
         Key memory key = _aggKey;
         // We require the msgHash param in the sigData is equal to the contract
         // message hash (the rules coded into the contract)
@@ -157,7 +157,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) public override {
         require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
-        consumeKeyNonceWhitelisted(sigData, contractMsgHash);
+        _consumeKeyNonceWhitelisted(sigData, contractMsgHash);
     }
 
     /**
@@ -426,7 +426,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /// @dev    Call consumeKeyNonceWhitelisted
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
-        consumeKeyNonceWhitelisted(sigData, contractMsgHash);
+        _consumeKeyNonceWhitelisted(sigData, contractMsgHash);
         _;
     }
 }

@@ -21,7 +21,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  */
 contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded, ReentrancyGuard {
-    /// @dev    The FLIP token address. To be set only once after deployment via setFlip
+    /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     IFLIP private _FLIP;
@@ -126,7 +126,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         external
         override
         nonReentrant
-        onlyIfNotSuspended
+        onlyNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
@@ -168,7 +168,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(bytes32 nodeID) external override onlyIfNotSuspended {
+    function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
         require(
             block.timestamp >= claim.startTime && block.timestamp <= claim.expiryTime,
@@ -197,7 +197,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
-    function govWithdraw() external override onlyGovernor onlyIfCommunityGuardDisabled onlyIfSuspended {
+    function govWithdraw() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
         uint256 amount = _FLIP.balanceOf(address(this));
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety

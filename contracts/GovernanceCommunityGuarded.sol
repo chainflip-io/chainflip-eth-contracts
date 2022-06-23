@@ -48,7 +48,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     /**
      * @notice  Enable Community Guard
      */
-    function enableCommunityGuard() external override onlyCommunityKey onlyIfCommunityGuardDisabled {
+    function enableCommunityGuard() external override onlyCommunityKey onlyCommunityGuardDisabled {
         _communityGuardDisabled = false;
         emit CommunityGuardDisabled(false);
     }
@@ -56,7 +56,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     /**
      * @notice  Disable Community Guard
      */
-    function disableCommunityGuard() external override onlyCommunityKey onlyIfCommunityGuardEnabled {
+    function disableCommunityGuard() external override onlyCommunityKey onlyCommunityGuardEnabled {
         _communityGuardDisabled = true;
         emit CommunityGuardDisabled(true);
     }
@@ -65,7 +65,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
      * @notice Can be used to suspend contract execution - only executable by
      * governance and only to be used in case of emergency.
      */
-    function suspend() external override onlyGovernor onlyIfNotSuspended {
+    function suspend() external override onlyGovernor onlyNotSuspended {
         _suspended = true;
         emit Suspended(true);
     }
@@ -73,7 +73,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     /**
      * @notice      Resume contract execution
      */
-    function resume() external override onlyGovernor onlyIfSuspended {
+    function resume() external override onlyGovernor onlySuspended {
         _suspended = false;
         emit Suspended(false);
     }
@@ -129,13 +129,13 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     }
 
     /// @dev    Check that community has disabled the community guard.
-    modifier onlyIfCommunityGuardDisabled() {
+    modifier onlyCommunityGuardDisabled() {
         require(_communityGuardDisabled, "Governance: community guard enabled");
         _;
     }
 
     /// @dev    Check that community has disabled the community guard.
-    modifier onlyIfCommunityGuardEnabled() {
+    modifier onlyCommunityGuardEnabled() {
         require(!_communityGuardDisabled, "Governance: community guard disabled");
         _;
     }
@@ -148,13 +148,13 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     }
 
     // @notice Check execution is suspended
-    modifier onlyIfSuspended() {
+    modifier onlySuspended() {
         require(_suspended, "Governance: not suspended");
         _;
     }
 
     // @notice Check execution is not suspended
-    modifier onlyIfNotSuspended() {
+    modifier onlyNotSuspended() {
         require(!_suspended, "Governance: suspended");
         _;
     }
