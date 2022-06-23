@@ -59,7 +59,7 @@ def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, st_newAddrs, st_sender):
 
     else:
         st_newAddrs = st_newAddrs + [cf.keyManager]
-        tx = signed_call_aggSigner(
+        tx = signed_call_cf(
             cf,
             cf.keyManager.updateCanConsumeKeyNonce,
             cf.whitelisted,
@@ -101,7 +101,7 @@ def test_updateCanConsumeKeyNonce_multiple(
     st_currentAddrs = cf.whitelisted
 
     for st_newAddrs in listAddresses:
-        tx = signed_call_aggSigner(
+        tx = signed_call_cf(
             cf,
             cf.keyManager.updateCanConsumeKeyNonce,
             st_currentAddrs,

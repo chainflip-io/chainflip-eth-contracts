@@ -16,7 +16,7 @@ def test_transfer_eth_fails_recipient(cf, token):
     startBalRecipient = cf.ALICE.balance()
 
     args = [[ETH_ADDR, token, TEST_AMNT]]
-    tx = signed_call_aggSigner(cf, cf.vault.transfer, *args)
+    tx = signed_call_cf(cf, cf.vault.transfer, *args)
 
     assert tx.events["TransferFailed"][0].values() == [token, TEST_AMNT, web3.toHex(0)]
     assert cf.vault.balance() == startBalVault
@@ -28,7 +28,7 @@ def test_transfer_eth_fails_not_enough_eth(cf):
     startBalRecipient = cf.ALICE.balance()
 
     args = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
-    tx = signed_call_aggSigner(cf, cf.vault.transfer, *args)
+    tx = signed_call_cf(cf, cf.vault.transfer, *args)
 
     assert tx.events["TransferFailed"][0].values() == [
         cf.ALICE,
@@ -46,7 +46,7 @@ def test_transfer_token(cf, token):
     startBalRecipient = token.balanceOf(cf.ALICE)
 
     args = [[token, cf.ALICE, TEST_AMNT]]
-    signed_call_aggSigner(cf, cf.vault.transfer, *args)
+    signed_call_cf(cf, cf.vault.transfer, *args)
 
     assert token.balanceOf(cf.vault) - startBalVault == -TEST_AMNT
     assert token.balanceOf(cf.ALICE) - startBalRecipient == TEST_AMNT
@@ -55,19 +55,19 @@ def test_transfer_token(cf, token):
 def test_transfer_rev_tokenAddr(cf):
     with reverts(REV_MSG_NZ_ADDR):
         args = [[ZERO_ADDR, cf.ALICE, TEST_AMNT]]
-        signed_call_aggSigner(cf, cf.vault.transfer, *args)
+        signed_call_cf(cf, cf.vault.transfer, *args)
 
 
 def test_transfer_rev_recipient(cf):
     with reverts(REV_MSG_NZ_ADDR):
         args = [[ETH_ADDR, ZERO_ADDR, TEST_AMNT]]
-        signed_call_aggSigner(cf, cf.vault.transfer, *args)
+        signed_call_cf(cf, cf.vault.transfer, *args)
 
 
 def test_transfer_rev_amount(cf):
     with reverts(REV_MSG_NZ_UINT):
         args = [[ETH_ADDR, cf.ALICE, 0]]
-        signed_call_aggSigner(cf, cf.vault.transfer, *args)
+        signed_call_cf(cf, cf.vault.transfer, *args)
 
 
 def test_transfer_rev_msgHash(cf):

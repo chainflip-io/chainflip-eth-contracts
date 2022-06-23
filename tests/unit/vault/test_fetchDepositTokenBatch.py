@@ -37,7 +37,7 @@ def test_fetchDepositTokenBatch(
     # Fetch the deposit
     fetchParams = [craftFetchParamsArray(st_swapIDs, tokens)]
 
-    signed_call_aggSigner(cf, cf.vault.fetchDepositTokenBatch, *fetchParams)
+    signed_call_cf(cf, cf.vault.fetchDepositTokenBatch, *fetchParams)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert token.balanceOf(cf.vault) == tokenATotal

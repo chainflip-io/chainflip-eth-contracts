@@ -30,7 +30,7 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
 
     transferParamsArray = [craftTransferParamsArray(tokens, st_recipients, st_amounts)]
 
-    signed_call_aggSigner(
+    signed_call_cf(
         cf, cf.vault.transferBatch, *transferParamsArray, sender=st_sender
     )
 

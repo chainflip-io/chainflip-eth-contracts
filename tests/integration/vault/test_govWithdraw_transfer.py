@@ -32,7 +32,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     iniTransactionNumber = len(history.filter(sender=st_sender))
 
     args = [[ETH_ADDR, st_sender, minAmount]]
-    signed_call_aggSigner(cf, cf.vault.transfer, *args, sender=st_sender)
+    signed_call_cf(cf, cf.vault.transfer, *args, sender=st_sender)
 
     assert st_sender.balance() == iniEthBal - calculateGasSpentByAddress(
         st_sender, iniTransactionNumber

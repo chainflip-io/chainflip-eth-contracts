@@ -129,7 +129,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     # but that is unnecessary
     with reverts(REV_MSG_WHITELIST):
         args = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
-        signed_call_aggSigner(cf, newVault.transfer, *args, sender=st_sender)
+        signed_call_cf(cf, newVault.transfer, *args, sender=st_sender)
 
     # Keep old Vault whitelisted
     currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]

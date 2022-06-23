@@ -28,7 +28,7 @@ def transfer_eth(cf, vault, receiver, amount):
     assert startBalVault >= amount
     startBalRecipient = receiver.balance()
 
-    tx = signed_call_aggSigner(cf, vault.transfer, [ETH_ADDR, receiver, amount])
+    tx = signed_call_cf(cf, vault.transfer, [ETH_ADDR, receiver, amount])
 
     assert vault.balance() - startBalVault == -amount
 

@@ -18,16 +18,16 @@ def test_vault_suspend(cf, st_reciever, st_amount):
         )
 
         args = (fetchParams, transferParams)
-        signed_call_aggSigner(cf, cf.vault.allBatch, *args)
+        signed_call_cf(cf, cf.vault.allBatch, *args)
 
     # transfer
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_aggSigner(cf, cf.vault.transfer, [ETH_ADDR, st_reciever, st_amount])
+        signed_call_cf(cf, cf.vault.transfer, [ETH_ADDR, st_reciever, st_amount])
 
     # transferBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
         args = [craftTransferParamsArray([ETH_ADDR], [st_reciever], [st_amount])]
-        signed_call_aggSigner(cf, cf.vault.transferBatch, *args)
+        signed_call_cf(cf, cf.vault.transferBatch, *args)
 
     # fetchDepositEth
     with reverts(REV_MSG_GOV_SUSPENDED):
@@ -39,10 +39,10 @@ def test_vault_suspend(cf, st_reciever, st_amount):
 
     # fetchDepositToken
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_aggSigner(cf, cf.vault.fetchDepositToken, [JUNK_HEX_PAD, ETH_ADDR])
+        signed_call_cf(cf, cf.vault.fetchDepositToken, [JUNK_HEX_PAD, ETH_ADDR])
 
     # fetchDepositTokenBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_aggSigner(
+        signed_call_cf(
             cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, ETH_ADDR]]
         )
