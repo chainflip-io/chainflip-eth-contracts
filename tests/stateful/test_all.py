@@ -1716,7 +1716,13 @@ def test_all(
 
             # Keep old Vault whitelisted
             toWhitelist = self.currentWhitelist.copy() + [newVault]
-            args = (ETH_ADDR, newVault, st_eth_amount)
+            args = [
+                [
+                    ETH_ADDR,
+                    st_sender,
+                    st_eth_amount,
+                ]
+            ]
             signer = self._get_key_prob(AGG)
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1774,11 +1780,10 @@ def test_all(
                     tokens = [ETH_ADDR, self.tokenA, self.tokenB]
                     recipients = [newVault, newVault, newVault]
 
-                    args = (
-                        tokens,
-                        recipients,
-                        amountsToTransfer,
-                    )
+                    args = [
+                        craftTransferParamsArray(tokens, recipients, amountsToTransfer)
+                    ]
+
                     signed_calls_nonces(
                         self.km,
                         self.v.transferBatch,
