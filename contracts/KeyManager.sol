@@ -426,7 +426,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /// @dev    Call consumeKeyNonceWhitelisted
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
-        _consumeKeyNonceWhitelisted(sigData, contractMsgHash);
+        _consumeKeyNonce(sigData, contractMsgHash);
         _;
     }
 }
