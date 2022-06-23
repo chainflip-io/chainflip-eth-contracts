@@ -562,8 +562,8 @@ def test_vault(
         # easiest random num to use is the length of the arrays themselves - I'm gonna use '3' as the
         # magic shortest length that should trigger not concating for no particular reason
         def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
-            minLen = min(map(len, [st_swapIDs, st_tokens]))
-            maxLen = max(map(len, [st_swapIDs, st_tokens]))
+
+            trimToShortest([st_swapIDs, st_tokens])
 
             args = [craftFetchParamsArray(st_swapIDs, st_tokens)]
             toLog = (*args, st_sender)
@@ -573,15 +573,7 @@ def test_vault(
                     signed_calls_nonces(
                         self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                     )
-
-            elif minLen == 3 and minLen != maxLen:
-                print("        rule_fetchDepositTokenBatch", *toLog)
-                with reverts(REV_MSG_V_ARR_LEN):
-                    signed_calls_nonces(
-                        self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
-                    )
             else:
-                trimToShortest([st_swapIDs, st_tokens])
                 print("                    rule_fetchDepositTokenBatch", *toLog)
                 signed_calls_nonces(
                     self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
