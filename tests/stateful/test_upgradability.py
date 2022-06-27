@@ -146,9 +146,7 @@ def test_upgradability(
                     st_vault_transfer_amount,
                 ]
             ]
-            tx = signed_call_km(
-                self.km, newVault.transfer, *args, sender=st_sender
-            )
+            tx = signed_call_km(self.km, newVault.transfer, *args, sender=st_sender)
 
             # Transfer from oldVault to new Vault - unclear if we want to transfer all the balance
             startBalVault = self.v.balance()
