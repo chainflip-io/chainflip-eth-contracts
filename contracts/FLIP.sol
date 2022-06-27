@@ -11,7 +11,7 @@ import "./AggKeyNonceConsumer.sol";
  *           trap fees with
  */
 contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
-    /// @dev    The last time that the State Chain updated the totalSupply
+    /// @dev    The last block number in which the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
 
     constructor(

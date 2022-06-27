@@ -21,5 +21,5 @@ interface IERC20Lite {
     /**
      * @dev Returns the amount of tokens owned by `account`.
      */
-    function balanceOf(address) external returns (uint256);
+    function balanceOf(address) external view returns (uint256);
 }

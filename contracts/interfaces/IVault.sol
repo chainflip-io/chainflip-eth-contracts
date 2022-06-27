@@ -11,11 +11,8 @@ import "./IGovernanceCommunityGuarded.sol";
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function allBatch(
         SigData calldata sigData,
-        bytes32[] calldata fetchSwapIDs,
-        IERC20[] calldata fetchTokens,
-        IERC20[] calldata tranTokens,
-        address payable[] calldata tranRecipients,
-        uint256[] calldata tranAmounts
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
     ) external;
 
     //////////////////////////////////////////////////////////////
@@ -24,19 +21,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function transfer(
-        SigData calldata sigData,
-        IERC20 token,
-        address payable recipient,
-        uint256 amount
-    ) external;
+    function transfer(SigData calldata sigData, TransferParams calldata transferParams) external;
 
-    function transferBatch(
-        SigData calldata sigData,
-        IERC20[] calldata tokens,
-        address payable[] calldata recipients,
-        uint256[] calldata amounts
-    ) external;
+    function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -48,17 +35,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external;
 
-    function fetchDepositToken(
-        SigData calldata sigData,
-        bytes32 swapID,
-        IERC20 token
-    ) external;
+    function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams) external;
 
-    function fetchDepositTokenBatch(
-        SigData calldata sigData,
-        bytes32[] calldata swapIDs,
-        IERC20[] calldata tokens
-    ) external;
+    function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -71,7 +50,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function swapToken(
         string calldata egressChainAndToken,
         bytes32 egressAddress,
-        address ingressToken,
+        IERC20 ingressToken,
         uint256 amount
     ) external;
 

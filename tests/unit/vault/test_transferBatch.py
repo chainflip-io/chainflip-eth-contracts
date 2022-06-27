@@ -28,8 +28,9 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
     tokenBals = [token.balanceOf(recip) for recip in st_recipients]
     token2Bals = [token2.balanceOf(recip) for recip in st_recipients]
 
-    args = (tokens, st_recipients, st_amounts)
-    signed_call_cf(cf, cf.vault.transferBatch, *args, sender=st_sender)
+    transferParamsArray = [craftTransferParamsArray(tokens, st_recipients, st_amounts)]
+
+    signed_call_cf(cf, cf.vault.transferBatch, *transferParamsArray, sender=st_sender)
 
     for i in range(len(st_recipients)):
         if tokens[i] == ETH_ADDR:
@@ -42,70 +43,25 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
             assert False, "Panic"
 
 
-@given(
-    st_recipients=strategy("address[]", unique=True),
-    st_amounts=strategy("uint[]", max_value=TEST_AMNT),
-    st_sender=strategy("address"),
-    randK=strategy("uint", min_value=1, max_value=100),
-)
-def test_transferBatch_rev_tokensArray_length(
-    cf, token, token2, st_recipients, st_amounts, st_sender, randK
-):
-    # Make sure the lengths are always different somewhere
-    k = (
-        len(st_amounts)
-        if len(st_recipients) != len(st_amounts)
-        else len(st_amounts) + randK
-    )
-    tokens = choices([ETH_ADDR, token, token2], k=k)
-
-    with reverts(REV_MSG_V_ARR_LEN):
-        args = (tokens, st_recipients, st_amounts)
-        signed_call_cf(cf, cf.vault.transferBatch, *args, sender=st_sender)
-
-
-@given(
-    st_recipients=strategy("address[]", unique=True),
-    st_amounts=strategy("uint[]", max_value=TEST_AMNT),
-    st_sender=strategy("address"),
-    randK=strategy("uint", min_value=1, max_value=100),
-)
-def test_transferBatch_rev_st_amountsArray_length(
-    cf, token, token2, st_recipients, st_amounts, st_sender, randK
-):
-    # Make sure the lengths are always different somewhere
-    k = len(st_recipients)
-    tokens = choices([ETH_ADDR, token, token2], k=k)
-    st_amountsModif = choices(st_amounts, k=k + randK)
-
-    with reverts(REV_MSG_V_ARR_LEN):
-        args = (tokens, st_recipients, st_amountsModif)
-        signed_call_cf(cf, cf.vault.transferBatch, *args)
-
-
 def test_transferBatch_rev_msgHash(cf):
     callDataNoSig = cf.vault.transferBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
-        [ETH_ADDR],
-        [cf.ALICE],
-        [TEST_AMNT],
+        [[ETH_ADDR, cf.ALICE, TEST_AMNT]],
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.transferBatch(sigData, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+        cf.vault.transferBatch(sigData, [[ETH_ADDR, cf.ALICE, TEST_AMNT]])
 
 
 def test_transferBatch_rev_sig(cf):
     callDataNoSig = cf.vault.transferBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
-        [ETH_ADDR],
-        [cf.ALICE],
-        [TEST_AMNT],
+        [[ETH_ADDR, cf.ALICE, TEST_AMNT]],
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.vault.transferBatch(sigData, [ETH_ADDR], [cf.ALICE], [TEST_AMNT])
+        cf.vault.transferBatch(sigData, [[ETH_ADDR, cf.ALICE, TEST_AMNT]])

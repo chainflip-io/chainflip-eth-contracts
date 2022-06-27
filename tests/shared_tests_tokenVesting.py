@@ -23,7 +23,8 @@ def check_state(
 ):
     assert tv.beneficiary() == beneficiary
     assert tv.revoker() == revoker
-    assert tv.revocable() == revocable
+    tv_revocable = tv.revoker != ZERO_ADDR
+    assert tv_revocable == revocable
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == canStake
@@ -37,7 +38,7 @@ def check_state(
 def check_revoked(tv, cf, tx, address, revokedAmount, amountLeft):
     assert cf.flip.balanceOf(address) == revokedAmount
     assert cf.flip.balanceOf(tv) == amountLeft
-    assert tx.events["TokenVestingRevoked"][0].values() == [cf.flip]
+    assert tx.events["TokenVestingRevoked"][0].values() == [cf.flip, revokedAmount]
 
 
 def retrieve_revoked_and_check(tv, cf, address, retrievedAmount):

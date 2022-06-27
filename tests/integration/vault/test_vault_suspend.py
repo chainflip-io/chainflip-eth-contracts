@@ -12,27 +12,21 @@ def test_vault_suspend(cf, st_reciever, st_amount):
 
     # allBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        args = (
-            [JUNK_HEX],
-            [ETH_ADDR],
-            [ETH_ADDR],
-            [NON_ZERO_ADDR],
-            [TEST_AMNT],
+        fetchParams = craftFetchParamsArray([JUNK_HEX], [ETH_ADDR])
+        transferParams = craftTransferParamsArray(
+            [ETH_ADDR], [NON_ZERO_ADDR], [TEST_AMNT]
         )
+
+        args = (fetchParams, transferParams)
         signed_call_cf(cf, cf.vault.allBatch, *args)
 
     # transfer
     with reverts(REV_MSG_GOV_SUSPENDED):
-        args = (ETH_ADDR, st_reciever, st_amount)
-        signed_call_cf(cf, cf.vault.transfer, *args)
+        signed_call_cf(cf, cf.vault.transfer, [ETH_ADDR, st_reciever, st_amount])
 
     # transferBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        args = (
-            [ETH_ADDR],
-            [st_reciever],
-            [st_amount],
-        )
+        args = [craftTransferParamsArray([ETH_ADDR], [st_reciever], [st_amount])]
         signed_call_cf(cf, cf.vault.transferBatch, *args)
 
     # fetchDepositEth
@@ -45,10 +39,8 @@ def test_vault_suspend(cf, st_reciever, st_amount):
 
     # fetchDepositToken
     with reverts(REV_MSG_GOV_SUSPENDED):
-        args = (JUNK_HEX_PAD, ETH_ADDR)
-        signed_call_cf(cf, cf.vault.fetchDepositToken, *args)
+        signed_call_cf(cf, cf.vault.fetchDepositToken, [JUNK_HEX_PAD, ETH_ADDR])
 
     # fetchDepositTokenBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        args = ([JUNK_HEX_PAD], [ETH_ADDR])
-        signed_call_cf(cf, cf.vault.fetchDepositTokenBatch, *args)
+        signed_call_cf(cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, ETH_ADDR]])

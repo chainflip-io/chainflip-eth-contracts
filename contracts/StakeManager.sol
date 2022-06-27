@@ -21,7 +21,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           updates the total supply by minting or burning the necessary FLIP.
  */
 contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded, ReentrancyGuard {
-    /// @dev    The FLIP token. Initial value to be set using updateFLIP
+    /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     IFLIP private _FLIP;
@@ -50,18 +50,18 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         deployer = msg.sender;
     }
 
-    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
-        return _getKeyManager().getGovernanceKey();
+        return getKeyManager().getGovernanceKey();
     }
 
     /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
-        return _getKeyManager().getCommunityKey();
+        return getKeyManager().getCommunityKey();
     }
 
     //////////////////////////////////////////////////////////////
@@ -81,6 +81,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     function setFlip(IFLIP flip) external override onlyDeployer nzAddr(address(flip)) {
         require(address(_FLIP) == address(0), "Staking: Flip address already set");
         _FLIP = flip;
+        emit FLIPSet(address(flip));
     }
 
     /**
@@ -96,6 +97,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         uint256 amount,
         address returnAddr
     ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
+        require(address(_FLIP) != address(0), "Staking: Flip not set");
         require(amount >= _minStake, "Staking: stake too small");
         // Assumption of set token allowance by the user
         _FLIP.transferFrom(msg.sender, address(this), amount);
@@ -124,7 +126,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         external
         override
         nonReentrant
-        isNotSuspended
+        onlyNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
         nzAddr(staker)
@@ -166,10 +168,10 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker
      */
-    function executeClaim(bytes32 nodeID) external override isNotSuspended {
+    function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
         require(
-            uint256(block.timestamp) >= claim.startTime && uint256(block.timestamp) <= claim.expiryTime,
+            block.timestamp >= claim.startTime && block.timestamp <= claim.expiryTime,
             "Staking: early, late, or execd"
         );
 
@@ -186,7 +188,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
      */
-    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) isGovernor {
+    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) onlyGovernor {
         emit MinStakeChanged(_minStake, newMinStake);
         _minStake = newMinStake;
     }
@@ -195,11 +197,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
-    function govWithdraw() external override isGovernor isCommunityGuardDisabled isSuspended {
+    function govWithdraw() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
         uint256 amount = _FLIP.balanceOf(address(this));
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = _getKeyManager().getGovernanceKey();
+        address recipient = getKeyManager().getGovernanceKey();
         _FLIP.transfer(recipient, amount);
         emit GovernanceWithdrawal(recipient, amount);
     }
@@ -209,11 +211,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * require any ETH. This function is just to recover any ETH that might have been sent to
      * this contract by accident (or any other reason), since incoming ETH cannot be stopped.
      */
-    function govWithdrawEth() external override isGovernor {
+    function govWithdrawEth() external override onlyGovernor {
         uint256 amount = address(this).balance;
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = _getKeyManager().getGovernanceKey();
+        address recipient = getKeyManager().getGovernanceKey();
         payable(recipient).transfer(amount);
     }
 

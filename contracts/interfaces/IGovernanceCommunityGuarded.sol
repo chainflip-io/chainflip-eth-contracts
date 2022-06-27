@@ -1,13 +1,15 @@
 pragma solidity ^0.8.0;
 
 import "./IShared.sol";
-import "./IAggKeyNonceConsumer.sol";
 
 /**
  * @title    GovernanceCommunityGuarded interface
  */
 
 interface IGovernanceCommunityGuarded is IShared {
+    event CommunityGuardDisabled(bool communityGuardDisabled);
+    event Suspended(bool suspended);
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
@@ -51,7 +53,7 @@ interface IGovernanceCommunityGuarded is IShared {
      * @notice  Get the Community Guard state
      * @return  The Community Guard state
      */
-    function getCommunityGuard() external view returns (bool);
+    function getCommunityGuardDisabled() external view returns (bool);
 
     /**
      * @notice  Get suspended state

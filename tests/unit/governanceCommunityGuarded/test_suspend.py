@@ -28,8 +28,9 @@ def test_suspend_resume(cf):
 
 
 def suspend(cf, governanceCommunityGuarded):
-    governanceCommunityGuarded.suspend({"from": cf.GOVERNOR})
+    tx = governanceCommunityGuarded.suspend({"from": cf.GOVERNOR})
     assert governanceCommunityGuarded.getSuspendedState() == True
+    assert tx.events["Suspended"][0].values()[0] == True
 
 
 def suspend_rev_notGovernor(cf, governanceCommunityGuarded):
@@ -42,7 +43,8 @@ def suspend_rev_notGovernor(cf, governanceCommunityGuarded):
 def resume(cf, governanceCommunityGuarded):
     suspended = governanceCommunityGuarded.getSuspendedState()
     if suspended:
-        governanceCommunityGuarded.resume({"from": cf.GOVERNOR})
+        tx = governanceCommunityGuarded.resume({"from": cf.GOVERNOR})
+        assert tx.events["Suspended"][0].values()[0] == False
     else:
         with reverts(REV_MSG_GOV_NOT_SUSPENDED):
             governanceCommunityGuarded.resume({"from": cf.GOVERNOR})

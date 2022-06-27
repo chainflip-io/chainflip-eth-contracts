@@ -19,7 +19,7 @@ contract TokenVesting is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     event TokensReleased(IERC20 indexed token, uint256 amount);
-    event TokenVestingRevoked(IERC20 indexed token);
+    event TokenVestingRevoked(IERC20 indexed token, uint256 refund);
 
     uint256 public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
 
@@ -27,11 +27,8 @@ contract TokenVesting is ReentrancyGuard {
     address public immutable beneficiary;
     // the revoker who can cancel the vesting and withdraw any unvested tokens
     address public immutable revoker;
-    // whether the revoker can revoke and withdraw unvested tokens
-    bool public immutable revocable;
 
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
-    uint256 public immutable start;
     uint256 public immutable cliff;
     uint256 public immutable end;
 
@@ -54,9 +51,7 @@ contract TokenVesting is ReentrancyGuard {
      *             If revoked send all funds to revoker and block beneficiary releases indefinitely.
      
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
-     * @param revoker_   the person with the power to rug the vesting
-     * @param revocable_ whether the vesting is revocable or not
-     * @param start_ the unix time to start the vesting calculation at
+     * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
@@ -65,17 +60,12 @@ contract TokenVesting is ReentrancyGuard {
     constructor(
         address beneficiary_,
         address revoker_,
-        bool revocable_,
-        uint256 start_,
         uint256 cliff_,
         uint256 end_,
         bool canStake_,
         IStakeManager stakeManager_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
-        require(revoker_ != address(0), "Vesting: revoker_ is the zero address");
-        require(start_ > 0, "Vesting: start_ is 0");
-        require(start_ < cliff_, "Vesting: start_ isn't before cliff_");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
         require(address(stakeManager_) != address(0), "Vesting: stakeManager_ is the zero address");
@@ -83,8 +73,6 @@ contract TokenVesting is ReentrancyGuard {
 
         beneficiary = beneficiary_;
         revoker = revoker_;
-        revocable = revocable_;
-        start = start_;
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
@@ -97,11 +85,13 @@ contract TokenVesting is ReentrancyGuard {
      * @param nodeID the nodeID to stake for.
      * @param amount the amount to stake out of the current funds in this contract.
      */
-    function stake(bytes32 nodeID, uint256 amount) external {
-        require(msg.sender == beneficiary, "Vesting: not the beneficiary");
+    function stake(bytes32 nodeID, uint256 amount) external onlyBeneficiary {
         require(canStake, "Vesting: cannot stake");
 
-        stakeManager.getFLIP().approve(address(stakeManager), amount);
+        IERC20 flip = stakeManager.getFLIP();
+        require(!revoked[flip], "Vesting: FLIP revoked");
+
+        flip.approve(address(stakeManager), amount);
         stakeManager.stake(nodeID, amount, address(this));
     }
 
@@ -109,8 +99,7 @@ contract TokenVesting is ReentrancyGuard {
      * @notice Transfers vested tokens to beneficiary.
      * @param token ERC20 token which is being vested.
      */
-    function release(IERC20 token) external nonReentrant {
-        require(msg.sender == beneficiary, "Vesting: not the beneficiary");
+    function release(IERC20 token) external nonReentrant onlyBeneficiary {
         require(!canStake || !revoked[token], "Vesting: staked funds revoked");
 
         uint256 unreleased = _releasableAmount(token);
@@ -130,9 +119,7 @@ contract TokenVesting is ReentrancyGuard {
      *         funds are unstaked and sent back to this contract.
      * @param token ERC20 token which is being vested.
      */
-    function revoke(IERC20 token) external {
-        require(msg.sender == revoker, "Vesting: not the revoker");
-        require(revocable, "Vesting: cannot revoke");
+    function revoke(IERC20 token) external onlyRevoker {
         require(!revoked[token], "Vesting: token already revoked");
         require(block.timestamp <= end, "Vesting: vesting expired");
 
@@ -145,7 +132,7 @@ contract TokenVesting is ReentrancyGuard {
 
         token.safeTransfer(revoker, refund);
 
-        emit TokenVestingRevoked(token);
+        emit TokenVestingRevoked(token, refund);
     }
 
     /**
@@ -156,11 +143,10 @@ contract TokenVesting is ReentrancyGuard {
      *         funds are withdrawn once revoked is called, so no need for this
      * @param token ERC20 token which is being vested.
      */
-    function retrieveRevokedFunds(IERC20 token) external {
-        require(msg.sender == revoker, "Vesting: not the revoker");
-        require(revocable, "Vesting: cannot revoke");
+    function retrieveRevokedFunds(IERC20 token) external onlyRevoker {
         require(revoked[token], "Vesting: token not revoked");
 
+        // Prevent revoker from withdrawing vested funds that belong to the beneficiary
         require(canStake, "Vesting: not retrievable");
 
         uint256 balance = token.balanceOf(address(this));
@@ -182,12 +168,13 @@ contract TokenVesting is ReentrancyGuard {
      * @param token ERC20 token which is being vested.
      */
     function _vestedAmount(IERC20 token) private view returns (uint256) {
+        if (block.timestamp < cliff) {
+            return 0;
+        }
         uint256 currentBalance = token.balanceOf(address(this));
         uint256 totalBalance = currentBalance + released[token];
 
-        if (block.timestamp < cliff) {
-            return 0;
-        } else if (block.timestamp >= end || revoked[token]) {
+        if (block.timestamp >= end || revoked[token]) {
             return totalBalance;
         } else {
             // should never enter this if canStake == true, since cliff == end
@@ -195,5 +182,21 @@ contract TokenVesting is ReentrancyGuard {
             uint256 cliffAmount = totalBalance / CLIFF_DENOMINATOR;
             return cliffAmount + ((totalBalance - cliffAmount) * (block.timestamp - cliff)) / (end - cliff);
         }
+    }
+
+    /**
+     * @dev Ensure that the caller is the beneficiary address
+     */
+    modifier onlyBeneficiary() {
+        require(msg.sender == beneficiary, "Vesting: not the beneficiary");
+        _;
+    }
+
+    /**
+     * @dev Ensure that the caller is the revoker address
+     */
+    modifier onlyRevoker() {
+        require(msg.sender == revoker, "Vesting: not the revoker");
+        _;
     }
 }

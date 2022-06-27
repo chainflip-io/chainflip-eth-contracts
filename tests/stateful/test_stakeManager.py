@@ -82,7 +82,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.governor = cfDeploy.gov
             self.community = cfDeploy.communityKey
 
-            self.communityGuardDisabled = self.sm.getCommunityGuard()
+            self.communityGuardDisabled = self.sm.getCommunityGuardDisabled()
             self.suspended = self.sm.getSuspendedState()
 
         # Variables that will be a random value with each fcn/rule called
@@ -420,7 +420,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         # Check all the state variables that can be changed after every tx
         def invariant_state_vars(self):
             assert self.community == self.sm.getCommunityKey()
-            assert self.communityGuardDisabled == self.sm.getCommunityGuard()
+            assert self.communityGuardDisabled == self.sm.getCommunityGuardDisabled()
             assert self.suspended == self.sm.getSuspendedState()
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             assert self.sm.getMinimumStake() == self.minStake

@@ -14,7 +14,7 @@ def test_communityGuard(cf):
 
 def constructor_test(cf, governanceCommunityGuarded):
     assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY
-    assert governanceCommunityGuarded.getCommunityGuard() == False
+    assert governanceCommunityGuarded.getCommunityGuardDisabled() == False
     assert governanceCommunityGuarded.getSuspendedState() == False
 
 
@@ -23,12 +23,13 @@ def communityGuard_test(cf, governanceCommunityGuarded):
         governanceCommunityGuarded.disableCommunityGuard({"from": cf.ALICE})
     # Setting Guard to the same value to ensure that nothing weird happens
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        governanceCommunityGuarded.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
-    assert governanceCommunityGuarded.getCommunityGuard() == False
+        tx = governanceCommunityGuarded.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
+    assert governanceCommunityGuarded.getCommunityGuardDisabled() == False
     assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY
     # Disable Guard
-    governanceCommunityGuarded.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
-    assert governanceCommunityGuarded.getCommunityGuard() == True
+    tx = governanceCommunityGuarded.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
+    assert tx.events["CommunityGuardDisabled"][0].values()[0] == True
+    assert governanceCommunityGuarded.getCommunityGuardDisabled() == True
     assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY
     with reverts(REV_MSG_GOV_DISABLED_GUARD):
         governanceCommunityGuarded.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
@@ -36,6 +37,7 @@ def communityGuard_test(cf, governanceCommunityGuarded):
     # Enable again
     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
         governanceCommunityGuarded.enableCommunityGuard({"from": cf.ALICE})
-    governanceCommunityGuarded.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
-    assert governanceCommunityGuarded.getCommunityGuard() == False
+    tx = governanceCommunityGuarded.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
+    assert tx.events["CommunityGuardDisabled"][0].values()[0] == False
+    assert governanceCommunityGuarded.getCommunityGuardDisabled() == False
     assert governanceCommunityGuarded.getCommunityKey() == cf.COMMUNITY_KEY

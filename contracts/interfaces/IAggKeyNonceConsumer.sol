@@ -8,6 +8,8 @@ import "./IKeyManager.sol";
  */
 
 interface IAggKeyNonceConsumer is IShared {
+    event UpdatedKeyManager(address keyManager);
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
@@ -32,5 +34,5 @@ interface IAggKeyNonceConsumer is IShared {
      * @notice  Get the KeyManager address/interface that's used to validate sigs
      * @return  The KeyManager (IKeyManager)
      */
-    function getKeyManager() external returns (IKeyManager);
+    function getKeyManager() external view returns (IKeyManager);
 }

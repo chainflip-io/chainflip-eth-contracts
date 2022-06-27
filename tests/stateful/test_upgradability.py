@@ -48,13 +48,13 @@ def test_upgradability(
             # StakeManager
             self.lastSupplyBlockNumber = 0
             self.sm_communityKey = self.sm.getCommunityKey()
-            self.sm_guard = self.sm.getCommunityGuard()
+            self.sm_guard = self.sm.getCommunityGuardDisabled()
             self.sm_suspended = self.sm.getSuspendedState()
 
             # Vault - initialize with some funds
             a[3].transfer(self.v, self.TOTAL_FUNDS)
             self.v_communityKey = self.v.getCommunityKey()
-            self.v_guard = self.v.getCommunityGuard()
+            self.v_guard = self.v.getCommunityGuardDisabled()
             self.v_suspended = self.v.getSuspendedState()
 
         # Variables that will be a random value with each fcn/rule called
@@ -139,28 +139,27 @@ def test_upgradability(
             )
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
-            args = (
-                ETH_ADDR,
-                st_sender,
-                st_vault_transfer_amount,
-            )
-            tx = signed_call_km(self.km, newVault.transfer, *args, sender=st_sender)
-            assert tx.events["TransferFailed"][0].values() == [
-                st_sender,
-                st_vault_transfer_amount,
-                web3.toHex(0),
+            args = [
+                [
+                    ETH_ADDR,
+                    st_sender,
+                    st_vault_transfer_amount,
+                ]
             ]
+            tx = signed_call_km(self.km, newVault.transfer, *args, sender=st_sender)
 
             # Transfer from oldVault to new Vault - unclear if we want to transfer all the balance
             startBalVault = self.v.balance()
             assert startBalVault >= st_vault_transfer_amount
             startBalRecipient = newVault.balance()
 
-            args = (
-                ETH_ADDR,
-                newVault,
-                st_vault_transfer_amount,
-            )
+            args = [
+                [
+                    ETH_ADDR,
+                    newVault,
+                    st_vault_transfer_amount,
+                ]
+            ]
             signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -st_vault_transfer_amount
@@ -191,11 +190,13 @@ def test_upgradability(
             )
             # Transfer all the remainding balance
             amountToTransfer = self.v.balance()
-            args = (
-                ETH_ADDR,
-                newVault,
-                amountToTransfer,
-            )
+            args = [
+                [
+                    ETH_ADDR,
+                    newVault,
+                    amountToTransfer,
+                ]
+            ]
             signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -amountToTransfer
@@ -333,10 +334,10 @@ def test_upgradability(
         # Check the state variables after every tx
         def invariant_state_vars(self):
             assert self.v_communityKey == self.v.getCommunityKey()
-            assert self.v_guard == self.v.getCommunityGuard()
+            assert self.v_guard == self.v.getCommunityGuardDisabled()
             assert self.v_suspended == self.v.getSuspendedState()
             assert self.sm_communityKey == self.sm.getCommunityKey()
-            assert self.sm_guard == self.sm.getCommunityGuard()
+            assert self.sm_guard == self.sm.getCommunityGuardDisabled()
             assert self.sm_suspended == self.sm.getSuspendedState()
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
 

@@ -23,23 +23,24 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
     event SwapETH(uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
+    event SwapsEnabled(bool enabled);
 
     bool private _swapsEnabled;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
-    /// @dev   Get the governor address from the KeyManager. This is called by the isGovernor
+    /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getGovernor() internal view override returns (address) {
-        return _getKeyManager().getGovernanceKey();
+        return getKeyManager().getGovernanceKey();
     }
 
     /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
     ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
-        return _getKeyManager().getCommunityKey();
+        return getKeyManager().getCommunityKey();
     }
 
     //////////////////////////////////////////////////////////////
@@ -61,62 +62,34 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param fetchSwapIDs      The unique identifiers for this swap (bytes32[]), used for create2
-     * @param fetchTokens   The addresses of the tokens to be transferred
-     * @param tranTokens    The addresses of the tokens to be transferred
-     * @param tranRecipients    The address of the recipient of the transfer
-     * @param tranAmounts       The amount to transfer, in wei (uint)
+     * @param fetchParamsArray    The array of fetch parameters
+     * @param transferParamsArray The array of transfer parameters
      */
     function allBatch(
         SigData calldata sigData,
-        bytes32[] calldata fetchSwapIDs,
-        IERC20[] calldata fetchTokens,
-        IERC20[] calldata tranTokens,
-        address payable[] calldata tranRecipients,
-        uint256[] calldata tranAmounts
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
     )
         external
         override
-        isNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.allBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    fetchSwapIDs,
-                    fetchTokens,
-                    tranTokens,
-                    tranRecipients,
-                    tranAmounts
+                    fetchParamsArray,
+                    transferParamsArray
                 )
             )
         )
     {
-        // Can't put these as modifiers annoyingly because it creates
-        // a 'stack too deep' error
-        require(
-            fetchSwapIDs.length == fetchTokens.length &&
-                tranTokens.length == tranRecipients.length &&
-                tranRecipients.length == tranAmounts.length,
-            "Vault: arrays not same length"
-        );
-
         // Fetch all deposits
-        uint256 length = fetchSwapIDs.length;
-        for (uint256 i = 0; i < length; ) {
-            if (address(fetchTokens[i]) == _ETH_ADDR) {
-                new DepositEth{salt: fetchSwapIDs[i]}();
-            } else {
-                new DepositToken{salt: fetchSwapIDs[i]}(IERC20Lite(address(fetchTokens[i])));
-            }
-            unchecked {
-                ++i;
-            }
-        }
+        _fetchBatch(fetchParamsArray);
 
         // Send all transfers
-        _transferBatch(tranTokens, tranRecipients, tranAmounts);
+        _transferBatch(transferParamsArray);
     }
 
     //////////////////////////////////////////////////////////////
@@ -130,36 +103,27 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param token     The token to be transferred
-     * @param recipient The address of the recipient of the transfer
-     * @param amount    The amount to transfer, in wei (uint)
+     * @param transferParams       The transfer parameters
      */
-    function transfer(
-        SigData calldata sigData,
-        IERC20 token,
-        address payable recipient,
-        uint256 amount
-    )
+    function transfer(SigData calldata sigData, TransferParams calldata transferParams)
         external
         override
-        isNotSuspended
-        nzAddr(address(token))
-        nzAddr(recipient)
-        nzUint(amount)
+        onlyNotSuspended
+        nzAddr(address(transferParams.token))
+        nzAddr(transferParams.recipient)
+        nzUint(transferParams.amount)
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.transfer.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    token,
-                    recipient,
-                    amount
+                    transferParams
                 )
             )
         )
     {
-        _transfer(token, recipient, amount);
+        _transfer(transferParams.token, transferParams.recipient, transferParams.amount);
     }
 
     /**
@@ -170,38 +134,24 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param tokens    The addresses of the tokens to be transferred
-     * @param recipients The address of the recipient of the transfer
-     * @param amounts    The amount to transfer, in wei (uint)
+     * @param transferParamsArray The array of transfer parameters.
      */
-    function transferBatch(
-        SigData calldata sigData,
-        IERC20[] calldata tokens,
-        address payable[] calldata recipients,
-        uint256[] calldata amounts
-    )
+    function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray)
         external
         override
-        isNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.transferBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    tokens,
-                    recipients,
-                    amounts
+                    transferParamsArray
                 )
             )
         )
     {
-        require(
-            tokens.length == recipients.length && recipients.length == amounts.length,
-            "Vault: arrays not same length"
-        );
-
-        _transferBatch(tokens, recipients, amounts);
+        _transferBatch(transferParamsArray);
     }
 
     /**
@@ -209,18 +159,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          transfer should should have the same index tokens[i], recipients[i],
      *          and amounts[i].
-     * @param tokens The addresses of the tokens to be transferred
-     * @param recipients The address of the recipient of the transfer
-     * @param amounts    The amount to transfer, in wei (uint)
+     * @param transferParamsArray The array of transfer parameters.
      */
-    function _transferBatch(
-        IERC20[] calldata tokens,
-        address payable[] calldata recipients,
-        uint256[] calldata amounts
-    ) private {
-        uint256 length = tokens.length;
+    function _transferBatch(TransferParams[] calldata transferParamsArray) private {
+        uint256 length = transferParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            _transfer(tokens[i], recipients[i], amounts[i]);
+            _transfer(transferParamsArray[i].token, transferParamsArray[i].recipient, transferParamsArray[i].amount);
             unchecked {
                 ++i;
             }
@@ -256,7 +200,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
         } else {
-            IERC20(token).safeTransfer(recipient, amount);
+            token.safeTransfer(recipient, amount);
         }
     }
 
@@ -265,6 +209,27 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                        Fetch Deposits                    //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Retrieves ETH and tokens from multiple addresses, deterministically generated using
+     *          create2, by creating a contract for that address, sending it to this vault, and
+     *          then destroying
+     * @param fetchParamsArray    The array of fetch parameters
+     */
+    function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
+        // Fetch all deposits
+        uint256 length = fetchParamsArray.length;
+        for (uint256 i = 0; i < length; ) {
+            if (address(fetchParamsArray[i].token) == _ETH_ADDR) {
+                new DepositEth{salt: fetchParamsArray[i].swapID}();
+            } else {
+                new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
 
     /**
      * @notice  Retrieves ETH from an address, deterministically generated using
@@ -278,7 +243,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function fetchDepositEth(SigData calldata sigData, bytes32 swapID)
         external
         override
-        isNotSuspended
+        onlyNotSuspended
         nzBytes32(swapID)
         consumesKeyNonce(
             sigData,
@@ -306,7 +271,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
-        isNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
@@ -334,32 +299,26 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param swapID    The unique identifier for this swap (bytes32), used for create2
-     * @param token     The token to be transferred
+     * @param fetchParams    The fetch parameters
      */
-    function fetchDepositToken(
-        SigData calldata sigData,
-        bytes32 swapID,
-        IERC20 token
-    )
+    function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams)
         external
         override
-        isNotSuspended
-        nzBytes32(swapID)
-        nzAddr(address(token))
+        onlyNotSuspended
+        nzBytes32(fetchParams.swapID)
+        nzAddr(address(fetchParams.token))
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.fetchDepositToken.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    swapID,
-                    token
+                    fetchParams
                 )
             )
         )
     {
-        new DepositToken{salt: swapID}(IERC20Lite(address(token)));
+        new DepositToken{salt: fetchParams.swapID}(IERC20Lite(address(fetchParams.token)));
     }
 
     /**
@@ -369,34 +328,26 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param swapIDs       The unique identifiers for this swap (bytes32[]), used for create2
-     * @param tokens        The addresses of the tokens to be transferred
+     * @param fetchParamsArray    The array of fetch parameters
      */
-    function fetchDepositTokenBatch(
-        SigData calldata sigData,
-        bytes32[] calldata swapIDs,
-        IERC20[] calldata tokens
-    )
+    function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
         external
         override
-        isNotSuspended
+        onlyNotSuspended
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
                     this.fetchDepositTokenBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    swapIDs,
-                    tokens
+                    fetchParamsArray
                 )
             )
         )
     {
-        require(swapIDs.length == tokens.length, "Vault: arrays not same length");
-
-        uint256 length = swapIDs.length;
+        uint256 length = fetchParamsArray.length;
         for (uint256 i; i < length; ) {
-            new DepositToken{salt: swapIDs[i]}(IERC20Lite(address(tokens[i])));
+            new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
             unchecked {
                 ++i;
             }
@@ -418,7 +369,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         payable
         override
-        isNotSuspended
+        onlyNotSuspended
         swapsEnabled
         nzUint(msg.value)
         nzBytes32(egressReceiver)
@@ -437,12 +388,20 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function swapToken(
         string calldata egressParams,
         bytes32 egressReceiver,
-        address ingressToken,
+        IERC20 ingressToken,
         uint256 amount
-    ) external override isNotSuspended swapsEnabled nzUint(amount) nzAddr(ingressToken) nzBytes32(egressReceiver) {
-        IERC20(ingressToken).safeTransferFrom(msg.sender, address(this), amount);
+    )
+        external
+        override
+        onlyNotSuspended
+        swapsEnabled
+        nzUint(amount)
+        nzAddr(address(ingressToken))
+        nzBytes32(egressReceiver)
+    {
+        ingressToken.safeTransferFrom(msg.sender, address(this), amount);
         // The check for existing egresschain, egressToken and egressReceiver shall be done in the CFE
-        emit SwapToken(ingressToken, amount, egressParams, egressReceiver);
+        emit SwapToken(address(ingressToken), amount, egressParams, egressReceiver);
     }
 
     //////////////////////////////////////////////////////////////
@@ -461,13 +420,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function govWithdraw(IERC20[] calldata tokens)
         external
         override
-        isGovernor
-        isCommunityGuardDisabled
-        isSuspended
-        validTime
+        onlyGovernor
+        onlyCommunityGuardDisabled
+        onlySuspended
+        timeoutEmergency
     {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address payable recipient = payable(_getKeyManager().getGovernanceKey());
+        address payable recipient = payable(getKeyManager().getGovernanceKey());
 
         // Transfer all ETH and ERC20 Tokens
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -482,15 +441,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /**
      * @notice  Enable swapETH and swapToken functionality by governance. Features disabled by default
      */
-    function enableSwaps() external override isGovernor swapsDisabled {
+    function enableSwaps() external override onlyGovernor swapsDisabled {
         _swapsEnabled = true;
+        emit SwapsEnabled(true);
     }
 
     /**
      * @notice  Disable swapETH and swapToken functionality by governance. Features disabled by default.
      */
-    function disableSwaps() external override isGovernor swapsEnabled {
+    function disableSwaps() external override onlyGovernor swapsEnabled {
         _swapsEnabled = false;
+        emit SwapsEnabled(false);
     }
 
     //////////////////////////////////////////////////////////////
@@ -514,10 +475,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Check that no nonce of the current AggKey has been consumed in the last 14 days - emergency
-    modifier validTime() {
+    modifier timeoutEmergency() {
         require(
-            block.timestamp - _getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
-            "Vault: not enough delay"
+            block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
+            "Vault: not enough time"
         );
         _;
     }

@@ -15,8 +15,6 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            REVOCABLE,
-            start,
             cliff,
             end,
             STAKABLE,
@@ -27,8 +25,6 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         TokenVesting,
         addrs.INVESTOR,
         addrs.REVOKER,
-        REVOCABLE,
-        start,
         cliff,
         end,
         NON_STAKABLE,
@@ -39,7 +35,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         cf,
         addrs.INVESTOR,
         addrs.REVOKER,
-        True,
+        addrs.REVOKER != ZERO_ADDR,
         cliff,
         end,
         False,
@@ -53,8 +49,6 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         TokenVesting,
         addrs.INVESTOR,
         addrs.REVOKER,
-        REVOCABLE,
-        start,
         valid_staking_cliff,
         end,
         STAKABLE,
@@ -65,7 +59,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         cf,
         addrs.INVESTOR,
         addrs.REVOKER,
-        True,
+        addrs.REVOKER != ZERO_ADDR,
         valid_staking_cliff,
         end,
         True,
@@ -80,69 +74,7 @@ def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, cf):
             TokenVesting,
             ZERO_ADDR,
             addrs.REVOKER,
-            REVOCABLE,
-            start,
             cliff,
-            end,
-            STAKABLE,
-            cf.stakeManager,
-        )
-
-
-def test_tokenVesting_constructor_rev_revoker(addrs, TokenVesting, cf):
-    with reverts(REV_MSG_INVALID_REVOKER):
-        addrs.DEPLOYER.deploy(
-            TokenVesting,
-            addrs.INVESTOR,
-            ZERO_ADDR,
-            REVOCABLE,
-            start,
-            cliff,
-            end,
-            STAKABLE,
-            cf.stakeManager,
-        )
-
-
-def test_tokenVesting_constructor_rev_start(addrs, TokenVesting, cf):
-    with reverts(REV_MSG_INVALID_START):
-        addrs.DEPLOYER.deploy(
-            TokenVesting,
-            addrs.INVESTOR,
-            addrs.REVOKER,
-            REVOCABLE,
-            0,
-            cliff,
-            end,
-            STAKABLE,
-            cf.stakeManager,
-        )
-
-
-def test_tokenVesting_constructor_rev_cliff_0(addrs, TokenVesting, cf):
-    with reverts(REV_MSG_CLIFF_BEFORE_START):
-        addrs.DEPLOYER.deploy(
-            TokenVesting,
-            addrs.INVESTOR,
-            addrs.REVOKER,
-            REVOCABLE,
-            start,
-            0,
-            end,
-            STAKABLE,
-            cf.stakeManager,
-        )
-
-
-def test_tokenVesting_constructor_rev_start_not_before_cliff(addrs, TokenVesting, cf):
-    with reverts(REV_MSG_CLIFF_BEFORE_START):
-        addrs.DEPLOYER.deploy(
-            TokenVesting,
-            addrs.INVESTOR,
-            addrs.REVOKER,
-            REVOCABLE,
-            start,
-            start,
             end,
             STAKABLE,
             cf.stakeManager,
@@ -155,8 +87,6 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            REVOCABLE,
-            start,
             cliff,
             0,
             STAKABLE,
@@ -170,8 +100,6 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, 
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            REVOCABLE,
-            start,
             cliff,
             cliff - 1,
             STAKABLE,
@@ -185,8 +113,6 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, cf):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            REVOCABLE,
-            start - (YEAR * 2),
             cliff - (YEAR * 2),
             end - (YEAR * 2),
             STAKABLE,
@@ -200,8 +126,6 @@ def test_tokenVesting_constructor_rev_stakeManager(addrs, TokenVesting):
             TokenVesting,
             addrs.INVESTOR,
             addrs.REVOKER,
-            REVOCABLE,
-            start,
             cliff,
             end,
             STAKABLE,

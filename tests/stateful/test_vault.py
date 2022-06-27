@@ -127,7 +127,7 @@ def test_vault(
             self.governor = cfDeploy.gov
             self.communityKey = cfDeploy.communityKey
 
-            self.communityGuardDisabled = self.v.getCommunityGuard()
+            self.communityGuardDisabled = self.v.getCommunityGuardDisabled()
             self.suspended = self.v.getSuspendedState()
             self.swapsEnabled = False
 
@@ -208,13 +208,11 @@ def test_vault(
                 ]
             )
 
-            args = (
-                st_swapIDs,
-                fetchTokens,
-                tranTokens,
-                st_recips,
-                st_eth_amounts,
+            fetchParams = craftFetchParamsArray(st_swapIDs, fetchTokens)
+            transferParams = craftTransferParamsArray(
+                tranTokens, st_recips, st_eth_amounts
             )
+            args = (fetchParams, transferParams)
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -279,11 +277,7 @@ def test_vault(
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            args = (
-                tokenAddr,
-                st_recip,
-                st_eth_amount,
-            )
+            args = [[tokenAddr, st_recip, st_eth_amount]]
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -345,11 +339,8 @@ def test_vault(
                 ]
             )
 
-            args = (
-                tokens,
-                st_recips,
-                st_eth_amounts,
-            )
+            args = [craftTransferParamsArray(tokens, st_recips, st_eth_amounts)]
+
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -512,7 +503,7 @@ def test_vault(
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            args = (st_swapID, token)
+            args = [[st_swapID, token]]
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -559,10 +550,10 @@ def test_vault(
         # easiest random num to use is the length of the arrays themselves - I'm gonna use '3' as the
         # magic shortest length that should trigger not concating for no particular reason
         def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
-            minLen = min(map(len, [st_swapIDs, st_tokens]))
-            maxLen = max(map(len, [st_swapIDs, st_tokens]))
 
-            args = (st_swapIDs, st_tokens)
+            trimToShortest([st_swapIDs, st_tokens])
+
+            args = [craftFetchParamsArray(st_swapIDs, st_tokens)]
             toLog = (*args, st_sender)
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
@@ -570,15 +561,7 @@ def test_vault(
                     signed_call_km(
                         self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
                     )
-
-            elif minLen == 3 and minLen != maxLen:
-                print("        rule_fetchDepositTokenBatch", *toLog)
-                with reverts(REV_MSG_V_ARR_LEN):
-                    signed_call_km(
-                        self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
-                    )
             else:
-                trimToShortest([st_swapIDs, st_tokens])
                 print("                    rule_fetchDepositTokenBatch", *toLog)
                 signed_call_km(
                     self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
@@ -894,7 +877,7 @@ def test_vault(
 
         # Check the state variables after every tx
         def invariant_state_vars(self):
-            assert self.communityGuardDisabled == self.v.getCommunityGuard()
+            assert self.communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.suspended == self.v.getSuspendedState()
             assert self.swapsEnabled == self.v.getSwapsEnabled()
 

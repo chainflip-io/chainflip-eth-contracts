@@ -225,7 +225,7 @@ def test_all(
             self.tokenBBals = {
                 addr: INIT_TOKEN_AMNT if addr in a else 0 for addr in self.allAddrs
             }
-            self.v_communityGuardDisabled = self.v.getCommunityGuard()
+            self.v_communityGuardDisabled = self.v.getCommunityGuardDisabled()
             self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
@@ -252,7 +252,7 @@ def test_all(
             }
             self.numTxsTested = 0
 
-            self.sm_communityGuardDisabled = self.sm.getCommunityGuard()
+            self.sm_communityGuardDisabled = self.sm.getCommunityGuardDisabled()
             self.sm_suspended = self.sm.getSuspendedState()
 
             # Flip
@@ -370,13 +370,11 @@ def test_all(
             )
 
             signer = self._get_key_prob(AGG)
-            args = (
-                st_swapIDs,
-                fetchTokens,
-                tranTokens,
-                st_recips,
-                st_eth_amounts,
+            fetchParams = craftFetchParamsArray(st_swapIDs, fetchTokens)
+            transferParams = craftTransferParamsArray(
+                tranTokens, st_recips, st_eth_amounts
             )
+            args = (fetchParams, transferParams)
 
             toLog = (*args, signer, st_sender)
 
@@ -464,11 +462,7 @@ def test_all(
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
         def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            args = (
-                tokenAddr,
-                st_recip,
-                st_eth_amount,
-            )
+            args = [[tokenAddr, st_recip, st_eth_amount]]
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender)
 
@@ -537,11 +531,7 @@ def test_all(
             signer = self._get_key_prob(AGG)
             minLen = trimToShortest([st_recips, st_eth_amounts])
             tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
-            args = (
-                tokens,
-                st_recips,
-                st_eth_amounts,
-            )
+            args = [craftTransferParamsArray(tokens, st_recips, st_eth_amounts)]
             toLog = (*args, st_sender, signer)
 
             totalEth = 0
@@ -812,7 +802,7 @@ def test_all(
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            args = (st_swapID, token)
+            args = [[st_swapID, token]]
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender)
             if self.v_suspended:
@@ -887,7 +877,7 @@ def test_all(
         def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
             trimToShortest([st_swapIDs, st_tokens])
             signer = self._get_key_prob(AGG)
-            args = (st_swapIDs, st_tokens)
+            args = [craftFetchParamsArray(st_swapIDs, st_tokens)]
             toLog = (*args, signer, st_sender)
 
             if self.v_suspended:
@@ -1721,7 +1711,13 @@ def test_all(
 
             # Keep old Vault whitelisted
             toWhitelist = self.currentWhitelist.copy() + [newVault]
-            args = (ETH_ADDR, newVault, st_eth_amount)
+            args = [
+                [
+                    ETH_ADDR,
+                    st_sender,
+                    st_eth_amount,
+                ]
+            ]
             signer = self._get_key_prob(AGG)
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1779,11 +1775,10 @@ def test_all(
                     tokens = [ETH_ADDR, self.tokenA, self.tokenB]
                     recipients = [newVault, newVault, newVault]
 
-                    args = (
-                        tokens,
-                        recipients,
-                        amountsToTransfer,
-                    )
+                    args = [
+                        craftTransferParamsArray(tokens, recipients, amountsToTransfer)
+                    ]
+
                     signed_call_km(
                         self.km,
                         self.v.transferBatch,
@@ -2318,9 +2313,9 @@ def test_all(
         def invariant_state_vars(self):
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             assert self.sm.getMinimumStake() == self.minStake
-            assert self.sm_communityGuardDisabled == self.sm.getCommunityGuard()
+            assert self.sm_communityGuardDisabled == self.sm.getCommunityGuardDisabled()
             assert self.sm_suspended == self.sm.getSuspendedState()
-            assert self.v_communityGuardDisabled == self.v.getCommunityGuard()
+            assert self.v_communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.v_suspended == self.v.getSuspendedState()
             assert self.swapsEnabled == self.v.getSwapsEnabled()
             assert self.km.getLastValidateTime() == self.lastValidateTime

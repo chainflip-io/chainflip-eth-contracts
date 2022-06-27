@@ -53,6 +53,10 @@ def all_events():
     print(f"\n-- Stake Manager Events --\n")
     all_stakeManager_events()
     chain.sleep(CLAIM_DELAY)
+    print(f"\n-- Vault Events --\n")
+    all_vault_events()
+    print(f"\n-- FLIP Events --\n")
+    all_flip_events()
     print(f"\n-- Key Manager Events --\n")
     all_keyManager_events()
 
@@ -80,24 +84,6 @@ def all_stakeManager_events():
     print(f"\n💰 Denice sets the minimum stake to {new_min_stake}\n")
     cf.stakeManager.setMinStake(new_min_stake, {"from": GOVERNOR})
 
-    stateChainBlockNumber = 100
-    print(
-        f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block {stateChainBlockNumber}\n"
-    )
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-    )
-    cf.flip.updateFlipSupply(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-        {"from": DENICE},
-    )
-
     print(f"\n🔐 Governance suspends execution of claims\n")
     cf.stakeManager.suspend({"from": GOVERNOR})
 
@@ -107,8 +93,29 @@ def all_stakeManager_events():
     print(f"\n💸 Governance withdraws all FLIP\n")
     cf.stakeManager.govWithdraw({"from": GOVERNOR})
 
+    print(f"\n🔐 Community enables guard\n")
+    cf.stakeManager.enableCommunityGuard({"from": cf.communityKey})
+
+    print(f"\n🔐 Governance resumes execution of claims\n")
+    cf.stakeManager.resume({"from": GOVERNOR})
+
+    # Last StakeManager event to emit because we set a wrong new KeyManager address
+
+    print(f"\n🔑 Update the keyManager address in Stake Manager🔑\n")
+    callDataNoSig = cf.stakeManager.updateKeyManager.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), NON_ZERO_ADDR
+    )
+    cf.stakeManager.updateKeyManager(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        NON_ZERO_ADDR,
+    )
+
 
 def all_keyManager_events():
+    # KeyNonceConsumersSet and setFlip events have already been emitted in the deployment script
+
+    chain.sleep(AGG_KEY_TIMEOUT)
+
     print(f"\n🔑 Governance Key sets the new Aggregate Key 🔑\n")
     cf.keyManager.setAggKeyWithGovKey(AGG_SIGNER_1.getPubData(), {"from": GOVERNOR})
 
@@ -171,3 +178,92 @@ def all_keyManager_events():
     print(f"\n🔐 Governance calls for an action\n")
 
     cf.keyManager.govAction(JUNK_HEX, {"from": GOVERNOR})
+
+    print(f"\n🔑 Update the Key Nonce Consumer list (whitelist) 🔑\n")
+    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), cf.whitelisted, cf.whitelisted
+    )
+    cf.keyManager.updateCanConsumeKeyNonce(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        cf.whitelisted,
+        cf.whitelisted,
+    )
+
+
+def all_flip_events():
+    stateChainBlockNumber = 100
+    print(
+        f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block {stateChainBlockNumber}\n"
+    )
+    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id),
+        NEW_TOTAL_SUPPLY_MINT,
+        stateChainBlockNumber,
+        cf.stakeManager.address,
+    )
+    cf.flip.updateFlipSupply(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        NEW_TOTAL_SUPPLY_MINT,
+        stateChainBlockNumber,
+        cf.stakeManager.address,
+        {"from": DENICE},
+    )
+
+    print(f"\n🔑 Update the keyManager address in FLIP🔑\n")
+    callDataNoSig = cf.flip.updateKeyManager.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), NON_ZERO_ADDR
+    )
+    cf.flip.updateKeyManager(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        NON_ZERO_ADDR,
+    )
+
+
+def all_vault_events():
+    print(f"\n🔐 Enable Vault swaps\n")
+    cf.vault.enableSwaps({"from": GOVERNOR})
+
+    print(
+        f"\n💰 Alice swaps {TEST_AMNT} ETH with EgressParams ETH:BTC and egressReceiver {JUNK_HEX}\n"
+    )
+    cf.vault.swapETH("ETH:BTC", JUNK_HEX, {"amount": TEST_AMNT})
+
+    print(
+        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} with EgressParams FLIP:BTC and egressReceiver {JUNK_HEX}\n"
+    )
+    cf.flip.approve(cf.vault, TEST_AMNT)
+    cf.vault.swapToken(
+        "FLIP:BTC",
+        JUNK_HEX,
+        cf.flip,
+        TEST_AMNT,
+    )
+
+    print(f"\n🔐 Disable Vault swaps\n")
+    cf.vault.disableSwaps({"from": GOVERNOR})
+
+    print(f"\n🔐 Governance suspends execution of claims\n")
+    cf.vault.suspend({"from": GOVERNOR})
+
+    print(f"\n🔐 Community disables guard\n")
+    cf.vault.disableCommunityGuard({"from": cf.communityKey})
+
+    chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
+
+    print(f"\n💸 Governance withdraws all ETH and FLIP\n")
+    cf.vault.govWithdraw([ETH_ADDR, cf.flip], {"from": GOVERNOR})
+
+    print(f"\n🔐 Community enables guard\n")
+    cf.vault.enableCommunityGuard({"from": cf.communityKey})
+
+    print(f"\n🔐 Governance resumes execution of claims\n")
+    cf.vault.resume({"from": GOVERNOR})
+
+    print(f"\n🔑 Update the keyManager address in the Vault🔑\n")
+    callDataNoSig = cf.vault.updateKeyManager.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), NON_ZERO_ADDR
+    )
+    cf.vault.updateKeyManager(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        NON_ZERO_ADDR,
+    )
