@@ -293,8 +293,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /**
      * @notice Emit an event containing an action message. Can only be called by the governor.
      */
-    function govAction(bytes32 message) external override onlyGovernor {
-        emit GovernanceAction(message);
+    function govAction(bytes32 callHash) external override onlyGovernor {
+        emit GovernanceAction(callHash);
     }
 
     //////////////////////////////////////////////////////////////
