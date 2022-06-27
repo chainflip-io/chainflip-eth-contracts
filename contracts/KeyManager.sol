@@ -155,7 +155,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @dev     Split this function from consumeKeyNonceWhitelisted so the functions in this contract
      *          can skip the whitelisting check.
      */
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) public override {
+    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
         require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
         _consumeKeyNonce(sigData, contractMsgHash);
     }
