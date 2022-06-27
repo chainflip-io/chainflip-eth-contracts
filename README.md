@@ -119,6 +119,8 @@ Inside the poetry shell:
 npx hardhat node
 # Instead, to run with interval mining - so the node continues mining blocks periodically
 npx hardhat node --config hardhat-interval-mining.config.js
+# If brownie fails to connect to the hardhat node check ip and run with the adequate hostname address. For instance:
+npx hardhat node --hostname 127.0.0.1
 # deploy the contracts - they will be deployed by acct #1 on the hardhat pre-seeded accounts
 brownie run deploy_and
 ```
