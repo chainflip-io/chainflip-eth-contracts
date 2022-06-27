@@ -19,11 +19,9 @@ jobs:
   stateless-tests:
     name: Stateless Tests
     needs: lint
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: Clear Virtual Envs
-        run: rm -rf ~/.cache/pypoetry/virtualenvs/*
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
