@@ -8,7 +8,7 @@ def test_govAction_rev(cf):
         cf.keyManager.govAction(JUNK_HEX, {"from": cf.ALICE})
 
 
-@given(st_callHash=strategy("bytes32"))
-def test_govAction(cf, st_callHash):
-    tx = cf.keyManager.govAction(st_callHash, {"from": cf.GOVERNOR})
-    assert tx.events["GovernanceAction"]["callHash"] == "0x" + cleanHexStr(st_callHash)
+@given(st_message=strategy("bytes32"))
+def test_govAction(cf, st_message):
+    tx = cf.keyManager.govAction(st_message, {"from": cf.GOVERNOR})
+    assert tx.events["GovernanceAction"]["message"] == "0x" + cleanHexStr(st_message)

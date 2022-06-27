@@ -16,7 +16,7 @@ interface IKeyManager is IShared {
     event SignatureAccepted(SigData sigData, address signer);
     event AggKeyNonceConsumersSet(address[] addrs);
     event AggKeyNonceConsumersUpdated(address[] currentAddrs, address[] newAddrs);
-    event GovernanceAction(bytes32 callHash);
+    event GovernanceAction(bytes32 message);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
