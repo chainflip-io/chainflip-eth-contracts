@@ -1096,7 +1096,7 @@ def test_all(
             if st_addr != self.governor:
                 return
 
-            toWhitelist = [self.km] + st_addrs
+            toWhitelist = st_addrs
             args = (self.currentWhitelist, toWhitelist)
             signer = self._get_key_prob(AGG)
 
@@ -1128,7 +1128,7 @@ def test_all(
         # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
         def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
             # Regardless of what is whitelisted, whitelist the current contracts
-            toWhitelist = [self.v, self.sm, self.km, self.f] + list(a)
+            toWhitelist = [self.v, self.sm, self.f] + list(a)
             args = (self.currentWhitelist, toWhitelist)
             signer = self._get_key_prob(AGG)
 
@@ -1628,69 +1628,31 @@ def test_all(
             newKeyManager = st_sender.deploy(
                 KeyManager, self.km.getAggregateKey(), self.governor, self.communityKey
             )
-            keyManagerAddress = choice([newKeyManager, self.km])
-            toWhitelist = self.currentWhitelist.copy() + [keyManagerAddress]
+            toWhitelist = self.currentWhitelist.copy()
 
-            if keyManagerAddress == self.km:
-                with reverts(REV_MSG_DUPLICATE):
-                    print(
-                        "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
-                        st_sender,
-                        keyManagerAddress.address,
-                    )
-                    newKeyManager.setCanConsumeKeyNonce(
-                        toWhitelist, {"from": st_sender}
-                    )
-            else:
+            with reverts(REV_MSG_DUPLICATE):
+                print(
+                    "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
+                    st_sender,
+                )
+                newKeyManager.setCanConsumeKeyNonce(
+                    toWhitelist + [self.v], {"from": st_sender}
+                )
 
-                newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
+            newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
-                signer = self._get_key_prob(AGG)
+            signer = self._get_key_prob(AGG)
 
-                # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
-                for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                    if not aggKeyNonceConsumer in self.currentWhitelist:
-                        assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
-                        with reverts(REV_MSG_WHITELIST):
-                            print(
-                                "        REV_MSG_WHITELIST rule_upgrade_keyManager",
-                                st_sender,
-                                keyManagerAddress.address,
-                            )
-                            signed_call_km(
-                                self.km,
-                                aggKeyNonceConsumer.updateKeyManager,
-                                newKeyManager,
-                                signer=signer,
-                                sender=st_sender,
-                            )
-                        return
-
-                # All whitelisted
-                if signer != self.keyIDToCurKeys[AGG]:
-                    print(
-                        "        REV_MSG_SIG rule_upgrade_keyManager",
-                        st_sender,
-                        keyManagerAddress.address,
-                    )
-                    # Use the first aggKeyNonceConsumer for simplicity
-                    with reverts(REV_MSG_SIG):
-                        signed_call_km(
-                            self.km,
-                            aggKeyNonceConsumers[0].updateKeyManager,
-                            newKeyManager,
-                            signer=signer,
-                            sender=st_sender,
+            # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
+            for aggKeyNonceConsumer in aggKeyNonceConsumers:
+                if not aggKeyNonceConsumer in self.currentWhitelist:
+                    assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
+                    with reverts(REV_MSG_WHITELIST):
+                        print(
+                            "        REV_MSG_WHITELIST rule_upgrade_keyManager",
+                            st_sender,
+                            newKeyManager.address,
                         )
-                else:
-                    print(
-                        "                    rule_upgrade_keyManager",
-                        st_sender,
-                        keyManagerAddress.address,
-                    )
-
-                    for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                        assert aggKeyNonceConsumer.getKeyManager() == self.km
                         signed_call_km(
                             self.km,
                             aggKeyNonceConsumer.updateKeyManager,
@@ -1698,12 +1660,46 @@ def test_all(
                             signer=signer,
                             sender=st_sender,
                         )
-                        assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
+                    return
 
-                    self._updateBalancesOnUpgrade(self.km, newKeyManager)
-                    self.km = newKeyManager
-                    self.lastValidateTime = self.km.tx.timestamp
-                    self.currentWhitelist = toWhitelist
+            # All whitelisted
+            if signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_upgrade_keyManager",
+                    st_sender,
+                    newKeyManager.address,
+                )
+                # Use the first aggKeyNonceConsumer for simplicity
+                with reverts(REV_MSG_SIG):
+                    signed_call_km(
+                        self.km,
+                        aggKeyNonceConsumers[0].updateKeyManager,
+                        newKeyManager,
+                        signer=signer,
+                        sender=st_sender,
+                    )
+            else:
+                print(
+                    "                    rule_upgrade_keyManager",
+                    st_sender,
+                    newKeyManager.address,
+                )
+
+                for aggKeyNonceConsumer in aggKeyNonceConsumers:
+                    assert aggKeyNonceConsumer.getKeyManager() == self.km
+                    signed_call_km(
+                        self.km,
+                        aggKeyNonceConsumer.updateKeyManager,
+                        newKeyManager,
+                        signer=signer,
+                        sender=st_sender,
+                    )
+                    assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
+
+                self._updateBalancesOnUpgrade(self.km, newKeyManager)
+                self.km = newKeyManager
+                self.lastValidateTime = self.km.tx.timestamp
+                self.currentWhitelist = toWhitelist
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
         def rule_upgrade_Vault(self, st_sender, st_eth_amount, st_sleep_time):
@@ -2289,7 +2285,6 @@ def test_all(
             assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)
             for address in self.currentWhitelist:
                 assert self.km.canConsumeKeyNonce(address) == True
-            assert self.km.canConsumeKeyNonce(self.km) == True
 
         # Check the keys are correct after every tx
         def invariant_keys(self):

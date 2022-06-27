@@ -52,10 +52,10 @@ def test_consumeKeyNonce_rev_chainID(cfAW, st_chainID):
 
 # Transactions sent from non-EOA accounts breaks brownie coverage - skip coverage
 @pytest.mark.skip_coverage
-def test_consumeKeyNonce_check_all(a, cf):
-    cf.whitelisted = [cf.vault, cf.keyManager, cf.stakeManager]
-    for addr in cf.whitelisted + list(a):
-        if addr in cf.whitelisted:
+def test_consumeKeyNonce_checkAll(a, cf):
+    whitelisted = [cf.vault, cf.stakeManager]
+    for addr in whitelisted + list(a):
+        if addr in whitelisted:
             sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
             cf.ALICE.transfer(to=addr, amount=ONE_ETH)
             cf.keyManager.consumeKeyNonce(

@@ -7,7 +7,6 @@ def test_constructor(a, cf):
     assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cf.keyManager.getGovernanceKey() == cf.GOVERNOR
     assert cf.keyManager.canConsumeKeyNonceSet() == True
-    cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip]
     for addr in cf.whitelisted + list(a):
         assert cf.keyManager.canConsumeKeyNonce(addr) == (
             True if addr in cf.whitelisted else False

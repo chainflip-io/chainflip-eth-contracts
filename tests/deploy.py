@@ -82,7 +82,7 @@ def deploy_set_Chainflip_contracts(
     cf = deploy_initial_Chainflip_contracts(
         deployer, KeyManager, Vault, StakeManager, FLIP, *args
     )
-    cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip]
+    cf.whitelisted = [cf.vault, cf.stakeManager, cf.flip]
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
 
     return cf
