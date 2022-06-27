@@ -146,7 +146,7 @@ def test_upgradability(
                     st_vault_transfer_amount,
                 ]
             ]
-            tx = signed_calls_nonces(
+            tx = signed_call_km(
                 self.km, newVault.transfer, *args, sender=st_sender
             )
 
@@ -162,7 +162,7 @@ def test_upgradability(
                     st_vault_transfer_amount,
                 ]
             ]
-            signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
+            signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -st_vault_transfer_amount
             assert newVault.balance() - startBalRecipient == st_vault_transfer_amount
@@ -199,7 +199,7 @@ def test_upgradability(
                     amountToTransfer,
                 ]
             ]
-            signed_calls_nonces(self.km, self.v.transfer, *args, sender=st_sender)
+            signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
             assert self.v.balance() - startBalVault == -amountToTransfer
             assert newVault.balance() - startBalRecipient == amountToTransfer

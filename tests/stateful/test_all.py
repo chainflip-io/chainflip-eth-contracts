@@ -1779,7 +1779,7 @@ def test_all(
                         craftTransferParamsArray(tokens, recipients, amountsToTransfer)
                     ]
 
-                    signed_calls_nonces(
+                    signed_call_km(
                         self.km,
                         self.v.transferBatch,
                         *args,
