@@ -1630,15 +1630,6 @@ def test_all(
             )
             toWhitelist = self.currentWhitelist.copy()
 
-            with reverts(REV_MSG_DUPLICATE):
-                print(
-                    "        REV_MSG_DUPLICATE rule_upgrade_keyManager",
-                    st_sender,
-                )
-                newKeyManager.setCanConsumeKeyNonce(
-                    toWhitelist + [self.v], {"from": st_sender}
-                )
-
             newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
             signer = self._get_key_prob(AGG)
