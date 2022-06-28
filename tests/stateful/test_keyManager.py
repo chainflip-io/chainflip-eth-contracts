@@ -347,7 +347,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)
             for address in self.currentWhitelist:
                 assert self.km.canConsumeKeyNonce(address) == True
-            assert self.km.canConsumeKeyNonce(self.km) == True
 
         # Check the keys are correct after every tx
         def invariant_keys(self):
