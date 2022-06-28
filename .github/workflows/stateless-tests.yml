@@ -3,10 +3,7 @@ on: push
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Lint
-        uses: .github/workflows/.lint.yml
+    uses: ./.github/workflows/.lint.yml
 
   stateless-tests:
     name: Stateless Tests

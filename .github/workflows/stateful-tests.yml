@@ -6,10 +6,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Lint
-        uses: .github/workflows/.lint.yml
+    uses: ./.github/workflows/.lint.yml
 
   stateful-tests:
     needs: lint
