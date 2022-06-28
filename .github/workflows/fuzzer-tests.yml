@@ -6,35 +6,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.9.7"
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "14"
-          cache: npm
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-
-      - name: Cache Packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
-
-      - run: npm install
-      - run: npx solhint -w 0 'contracts/**/*.sol'
-      - run: poetry install --quiet
-      - run: poetry run black . --check
+    uses: ./.github/workflows/.lint.yml
 
   fuzzer-tests:
     name: Fuzzer
