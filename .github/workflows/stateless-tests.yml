@@ -3,18 +3,7 @@ on: push
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9.7"
-      - uses: snok/install-poetry@v1
-      - run: npm install
-      - run: npx solhint -w 0 'contracts/**/*.sol'
-      - run: poetry install --quiet
-      - run: poetry run black . --check
+    uses: ./.github/workflows/.lint.yml
 
   stateless-tests:
     name: Stateless Tests
@@ -22,14 +11,41 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9.7"
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
           node-version: "14"
           cache: npm
+
+      - name: Restore Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Cache Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
+
       - run: npm install
-      - run: echo /root/.local/bin >> $GITHUB_PATH
+      - run: npm install --global ganache-cli
+      - run: pip3 install eth-brownie
+      - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry install --quiet
+      - run: sudo snap install solc --edge
       - run: npx hardhat node &
       - run: sleep 2
       - run: poetry run brownie test --network hardhat --stateful false
