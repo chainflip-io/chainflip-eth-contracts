@@ -11,9 +11,8 @@ from brownie.test import given, strategy
 def test_setCanConsumeKeyNonce(a, KeyManager, Vault, StakeManager, FLIP, st_whitelist):
 
     cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
-    st_whitelist = st_whitelist + [cf.keyManager]
     tx = cf.keyManager.setCanConsumeKeyNonce(st_whitelist)
-    assert tx.events["KeyNonceConsumersSet"][0].values()[0] == st_whitelist
+    assert tx.events["AggKeyNonceConsumersSet"][0].values()[0] == st_whitelist
 
     for addr in st_whitelist:
         assert cf.keyManager.canConsumeKeyNonce(addr) == True

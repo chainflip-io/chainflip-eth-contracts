@@ -72,42 +72,29 @@ def test_upgradability(
                 KeyManager, self.km.getAggregateKey(), st_sender, cf.communityKey
             )
 
-            keyManagerAddress = choice([newKeyManager, self.km])
+            toWhitelist = [self.v, self.sm, self.f]
 
-            toWhitelist = [self.v, self.sm, self.f, keyManagerAddress]
+            print(
+                "                    rule_upgrade_keyManager",
+                st_sender,
+                newKeyManager.address,
+            )
+            newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
-            if keyManagerAddress == self.km:
-                with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-                    print(
-                        "        REV_MSG_SIG rule_upgrade_keyManager",
-                        st_sender,
-                        keyManagerAddress.address,
-                    )
-                    newKeyManager.setCanConsumeKeyNonce(
-                        toWhitelist, {"from": st_sender}
-                    )
-            else:
-                print(
-                    "                    rule_upgrade_keyManager",
-                    st_sender,
-                    keyManagerAddress.address,
+            for aggKeyNonceConsumer in aggKeyNonceConsumers:
+                assert aggKeyNonceConsumer.getKeyManager() == self.km
+
+                signed_call_km(
+                    self.km,
+                    aggKeyNonceConsumer.updateKeyManager,
+                    newKeyManager,
+                    sender=st_sender,
                 )
-                newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
-                for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                    assert aggKeyNonceConsumer.getKeyManager() == self.km
+                assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
-                    signed_call_km(
-                        self.km,
-                        aggKeyNonceConsumer.updateKeyManager,
-                        newKeyManager,
-                        sender=st_sender,
-                    )
-
-                    assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
-
-                self.km = newKeyManager
-                self.lastValidateTime = self.km.tx.timestamp
+            self.km = newKeyManager
+            self.lastValidateTime = self.km.tx.timestamp
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
         def rule_upgrade_Vault(
@@ -121,13 +108,11 @@ def test_upgradability(
                 self.v,
                 self.sm,
                 self.f,
-                self.km,
             ]
             toWhitelist = [
                 self.v,
                 self.sm,
                 self.f,
-                self.km,
                 newVault,
             ]
             signed_call_km(
@@ -208,10 +193,9 @@ def test_upgradability(
                 self.v,
                 self.sm,
                 self.f,
-                self.km,
                 newVault,
             ]
-            toWhitelist = [self.sm, self.f, self.km, newVault]
+            toWhitelist = [self.sm, self.f, newVault]
             signed_call_km(
                 self.km,
                 self.km.updateCanConsumeKeyNonce,
@@ -241,13 +225,11 @@ def test_upgradability(
                 self.v,
                 self.sm,
                 self.f,
-                self.km,
             ]
             toWhitelist = [
                 self.v,
                 self.sm,
                 self.f,
-                self.km,
                 newStakeManager,
             ]
             signed_call_km(
@@ -296,10 +278,9 @@ def test_upgradability(
                 self.v,
                 self.sm,
                 self.f,
-                self.km,
                 newStakeManager,
             ]
-            toWhitelist = [self.v, newStakeManager, self.f, self.km]
+            toWhitelist = [self.v, newStakeManager, self.f]
             signed_call_km(
                 self.km,
                 self.km.updateCanConsumeKeyNonce,
@@ -343,7 +324,6 @@ def test_upgradability(
 
         def invariant_keyManager_whitelist(self):
             aggKeyNonceConsumers = [
-                self.km,
                 self.v,
                 self.f,
                 self.sm,

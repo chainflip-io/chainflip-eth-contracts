@@ -32,10 +32,6 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
         KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
-    # Reverts if keyManager is not whitelisted
-    with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-        newKeyManager.setCanConsumeKeyNonce([])
-
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newKeyManager]
     newKeyManager.setCanConsumeKeyNonce(toWhitelist)
 
@@ -44,22 +40,11 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
         signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
-    # Remove all whitelist
-    # Reverts if keyManager is not whitelisted
-    with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-        signed_call_cf(
-            cf,
-            cf.keyManager.updateCanConsumeKeyNonce,
-            cf.whitelisted,
-            [],
-            sender=st_sender,
-        )
-
     signed_call_cf(
         cf,
         cf.keyManager.updateCanConsumeKeyNonce,
         cf.whitelisted,
-        [cf.keyManager],
+        [],
         sender=st_sender,
     )
 
@@ -132,8 +117,8 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
         signed_call_cf(cf, newVault.transfer, *args, sender=st_sender)
 
     # Keep old Vault whitelisted
-    currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
-    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newVault]
+    currentWhitelist = cf.whitelisted
+    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newVault]
 
     signed_call_cf(
         cf,
@@ -178,8 +163,8 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     assert newVault.balance() == totalFunds
     assert cf.vault.balance() == 0
 
-    currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newVault]
-    toWhitelist = [newVault, cf.stakeManager, cf.flip, cf.keyManager]
+    currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, newVault]
+    toWhitelist = [newVault, cf.stakeManager, cf.flip]
     signed_call_cf(
         cf,
         cf.keyManager.updateCanConsumeKeyNonce,
@@ -220,8 +205,8 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
     assert tx.events["FLIPSet"][0].values()[0] == cf.flip
 
     # Keep old StakeManager whitelisted
-    currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager]
-    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, cf.keyManager, newStakeManager]
+    currentWhitelist = cf.whitelisted
+    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newStakeManager]
     signed_call_cf(
         cf,
         cf.keyManager.updateCanConsumeKeyNonce,
@@ -270,10 +255,9 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
         cf.vault,
         cf.stakeManager,
         cf.flip,
-        cf.keyManager,
         newStakeManager,
     ]
-    toWhitelist = [cf.vault, newStakeManager, cf.flip, cf.keyManager]
+    toWhitelist = [cf.vault, newStakeManager, cf.flip]
     signed_call_cf(
         cf,
         cf.keyManager.updateCanConsumeKeyNonce,

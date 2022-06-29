@@ -58,7 +58,6 @@ def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, st_newAddrs, st_sender):
             )
 
     else:
-        st_newAddrs = st_newAddrs + [cf.keyManager]
         tx = signed_call_cf(
             cf,
             cf.keyManager.updateCanConsumeKeyNonce,
@@ -66,7 +65,7 @@ def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, st_newAddrs, st_sender):
             st_newAddrs,
             sender=st_sender,
         )
-        assert tx.events["KeyNonceConsumersUpdated"][0].values() == (
+        assert tx.events["AggKeyNonceConsumersUpdated"][0].values() == (
             cf.whitelisted,
             st_newAddrs,
         )
@@ -91,12 +90,6 @@ def test_updateCanConsumeKeyNonce_rev_duplicate(a, cf, st_newAddrs, st_sender):
 def test_updateCanConsumeKeyNonce_multiple(
     a, cf, st_addrsList1, st_addrsList2, st_sender
 ):
-    # Add the keyManager address to the whitelist so it can keep being updated
-    if cf.keyManager.address not in st_addrsList1:
-        st_addrsList1 += [cf.keyManager.address]
-    if cf.keyManager.address not in st_addrsList2:
-        st_addrsList2 += [cf.keyManager.address]
-
     listAddresses = [st_addrsList1, st_addrsList2, st_addrsList2, st_addrsList1]
     st_currentAddrs = cf.whitelisted
 
@@ -109,7 +102,7 @@ def test_updateCanConsumeKeyNonce_multiple(
             sender=st_sender,
         )
 
-        assert tx.events["KeyNonceConsumersUpdated"][0].values() == (
+        assert tx.events["AggKeyNonceConsumersUpdated"][0].values() == (
             st_currentAddrs,
             st_newAddrs,
         )
@@ -119,21 +112,5 @@ def test_updateCanConsumeKeyNonce_multiple(
             if addr not in st_newAddrs:
                 assert cf.keyManager.canConsumeKeyNonce(addr) == False
 
-        # Whitelisted new addresses
-        for addr in st_newAddrs:
-            assert cf.keyManager.canConsumeKeyNonce(addr) == True
-
         assert cf.keyManager.getNumberWhitelistedAddresses() == len(st_newAddrs)
         st_currentAddrs = st_newAddrs
-
-
-def test_updateCanConsumeKeyNonce_rev_noKeyManager(a, cf):
-
-    # Using [:] to create a copy of the list (instead of reference)
-    st_newAddrs = cf.whitelisted[:]
-    st_newAddrs.remove(cf.keyManager)
-
-    with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-        signed_call_cf(
-            cf, cf.keyManager.updateCanConsumeKeyNonce, cf.whitelisted, st_newAddrs
-        )

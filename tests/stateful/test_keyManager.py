@@ -62,7 +62,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             newWhitelist = choice(
                 [
                     st_addrs,
-                    st_addrs + [self.km],
                     self.currentWhitelist,
                 ]
             )
@@ -122,29 +121,16 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                             signer=self.keyIDToCurKeys[AGG],
                         )
                 else:
-                    if not self.km in newWhitelist:
-                        print(
-                            "        REV_MSG_KEYMANAGER_WHITELIST rule_updateCanConsumeKeyNonce"
-                        )
-                        with reverts(REV_MSG_KEYMANAGER_WHITELIST):
-                            signed_call_km(
-                                self.km,
-                                self.km.updateCanConsumeKeyNonce,
-                                *args,
-                                sender=st_sender,
-                                signer=self.keyIDToCurKeys[AGG],
-                            )
-                    else:
-                        print("                    rule_updateCanConsumeKeyNonce")
-                        tx = signed_call_km(
-                            self.km,
-                            self.km.updateCanConsumeKeyNonce,
-                            *args,
-                            sender=st_sender,
-                            signer=self.keyIDToCurKeys[AGG],
-                        )
-                        self.currentWhitelist = newWhitelist
-                        self.lastValidateTime = tx.timestamp
+                    print("                    rule_updateCanConsumeKeyNonce")
+                    tx = signed_call_km(
+                        self.km,
+                        self.km.updateCanConsumeKeyNonce,
+                        *args,
+                        sender=st_sender,
+                        signer=self.keyIDToCurKeys[AGG],
+                    )
+                    self.currentWhitelist = newWhitelist
+                    self.lastValidateTime = tx.timestamp
 
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
@@ -361,7 +347,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)
             for address in self.currentWhitelist:
                 assert self.km.canConsumeKeyNonce(address) == True
-            assert self.km.canConsumeKeyNonce(self.km) == True
 
         # Check the keys are correct after every tx
         def invariant_keys(self):

@@ -61,9 +61,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             _canConsumeKeyNonce[addrs[i]] = true;
         }
 
-        // To make sure we never brick this contract
-        require(_canConsumeKeyNonce[address(this)], "KeyManager: KeyManager not whitelisted");
-
         _numberWhitelistedAddresses = addrs.length;
 
         emit AggKeyNonceConsumersSet(addrs);
@@ -108,9 +105,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             require(!_canConsumeKeyNonce[newAddrs[i]], "KeyManager: address already whitelisted");
             _canConsumeKeyNonce[newAddrs[i]] = true;
         }
-
-        // To make sure we never brick this contract
-        require(_canConsumeKeyNonce[address(this)], "KeyManager: KeyManager not whitelisted");
 
         _numberWhitelistedAddresses = newAddrs.length;
 
