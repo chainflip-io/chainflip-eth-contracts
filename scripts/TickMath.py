@@ -148,6 +148,7 @@ def add_bit_to_log_2(r, msb, lower_bit_mask, bit):
     r = r >> f
     return (r, msb)
 
+
 # Need to return r and log_2 since ints are passed by value and not by reference
 def add_fractional_bit(r, log_2, bit):
     r = (r * r) >> 127
