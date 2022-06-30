@@ -23,11 +23,7 @@ def getSqrtRatioAtTick(tick):
     absTick = abs(tick)
     assert absTick <= MAX_TICK, "T"
 
-    ratio = (
-        0xFFFCB933BD6FAD37AA2D162D1A594001
-        if absTick & 0x1 != 0
-        else 0x100000000000000000000000000000000
-    )
+    ratio = 0xFFFCB933BD6FAD37AA2D162D1A594001 if absTick & 0x1 != 0 else 0x100000000000000000000000000000000
     if absTick & 0x2 != 0:
         ratio = (ratio * 0xFFF97272373D413259A46990580E213A) >> 128
     if absTick & 0x4 != 0:
