@@ -9,6 +9,7 @@ import SwapMath
 import FixedPoint128
 import LiquidityMath
 import Position
+import SqrtPriceMath
 from Account import Account
 from dataclasses import dataclass
 
@@ -124,9 +125,6 @@ class UniswapPool(Account):
             tick,
             0,
         )
-
-    # TODO: implement
-    # collect, burn
 
     ## @dev Effect some changes to a position
     ## @param params the position details and the change to the position's liquidity to effect

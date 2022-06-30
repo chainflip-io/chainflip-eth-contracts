@@ -1,6 +1,7 @@
 
 import LiquidityMath
 import FixedPoint128
+from dataclasses import dataclass
 ### @title Position
 ### @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
 ### @dev Positions store additional state for tracking fees owed to the position
