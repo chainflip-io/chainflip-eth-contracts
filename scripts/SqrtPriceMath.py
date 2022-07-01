@@ -153,12 +153,7 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     assert sqrtRatioAX96 > 0
 
     if roundUp:
-        print("DEBUGGING")
-        print(liquidity)
-        print(numerator1)
-        print(numerator2)
-        print(2**256-1)
-        return int(int(numerator1 * numerator2 / sqrtRatioBX96) / sqrtRatioAX96)
+        return (math.ceil((numerator1 * numerator2) / sqrtRatioBX96) / sqrtRatioAX96)
     else:
         return (numerator1 * numerator2 / sqrtRatioBX96) / sqrtRatioAX96
 
