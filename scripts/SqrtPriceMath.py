@@ -2,6 +2,8 @@ import FixedPoint96
 import SafeMath
 import math
 
+from scripts.TickMath import MAX_UINT256
+
 MAX_UINT160 = 2**160 - 1
 
 ### @title defs based on Q64.96 sqrt price and liquidity
@@ -25,14 +27,25 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
     numerator1 = liquidity << FixedPoint96.RESOLUTION
 
     if add:
+        print("DEBUGGING")
         product = amount * sqrtPX96
-        if product / amount == sqrtPX96:
+        # Modified overflow check compared so to Solidity - product might overflow
+        if product < MAX_UINT256:
+        ##if product / amount == sqrtPX96:
             denominator = numerator1 + product
             if denominator >= numerator1:
-                ## always fits in 160 bits
-                return math.ceil(numerator1 * sqrtPX96 / denominator)
+                # Result should be casted into UINT160 without overflowing
+                # Adding assert to detect wrong behaviour
+                # math.ceil returns slight different value compared to FullMath.mulDivRoundingUp
+                # Solidity seems to give a more accurate result
+                result = (numerator1 * sqrtPX96 / denominator)
+                assert result <= MAX_UINT160, "Overflow when casting to UINT160"
+                return result
 
-        return math.ceil(numerator1 / SafeMath.add((numerator1 / sqrtPX96),amount))
+        result = math.ceil(numerator1 / SafeMath.add((numerator1 / sqrtPX96),amount))
+        # Adding assert to detect wrong behaviour
+        assert result <= MAX_UINT160, "Overflow when casting to UINT160"
+        return result
 
     else:
         ## if the product overflows, we know the denominator underflows
@@ -40,7 +53,9 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
         product = amount * sqrtPX96
         assert product / amount == sqrtPX96 and numerator1 > product
         denominator = numerator1 - product
-        return math.ceil(numerator1 * sqrtPX96 / denominator)
+        result = math.ceil(numerator1 * sqrtPX96 / denominator)
+        assert result <= MAX_UINT160, "Overflow when casting to UINT160"
+        return result
 
 
 ### @notice Gets the next sqrt price given a delta of token1
@@ -62,18 +77,24 @@ def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
             if (amount <= MAX_UINT160)
             else (amount * FixedPoint96.Q96 / liquidity)
         )
-
-        return SafeMath.add(sqrtPX96, quotient)
+        
+        result =  SafeMath.add(sqrtPX96, quotient)
+        # Result should be casted into UINT160 without overflowing
+        assert result <= MAX_UINT160, "Overflow when casting to UINT160"
+        return result
     else:
 
         quotient = (
-            math.ceil(amount << FixedPoint96.RESOLUTION / liquidity)
+            (amount << FixedPoint96.RESOLUTION) / liquidity
             if (amount <= MAX_UINT160)
             else (math.ceil(amount * FixedPoint96.Q96 / liquidity))
         )
 
         assert sqrtPX96 > quotient
         ## always fits 160 bits
+        result = sqrtPX96 - quotient
+        # Result should be casted into UINT160 without overflowing
+        assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return sqrtPX96 - quotient
 
 

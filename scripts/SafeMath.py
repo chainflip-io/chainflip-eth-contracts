@@ -9,7 +9,8 @@ import TickMath
 ### @return z The sum of x and y
 def add(x, y):
     z = x + y
-    assert z <= TickMath.MAX_UINT256
+    # Swapping order due to python stupidity (z<=TickMath.MAX_UINT256 returns False)
+    assert z - TickMath.MAX_UINT256 <= 0
     return z
 
 ### @notice Returns x - y, reverts if underflows
