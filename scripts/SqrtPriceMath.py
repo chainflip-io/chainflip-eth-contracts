@@ -1,4 +1,5 @@
 import FixedPoint96
+import SafeMath
 import math
 
 MAX_UINT160 = 2**160 - 1
@@ -31,7 +32,7 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
                 ## always fits in 160 bits
                 return math.ceil(numerator1 * sqrtPX96 / denominator)
 
-        return math.ceil(numerator1 * (numerator1 / sqrtPX96).add(amount))
+        return math.ceil(numerator1 / SafeMath.add((numerator1 / sqrtPX96),amount))
 
     else:
         ## if the product overflows, we know the denominator underflows
@@ -62,7 +63,7 @@ def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
             else (amount * FixedPoint96.Q96 / liquidity)
         )
 
-        return sqrtPX96 + quotient
+        return SafeMath.add(sqrtPX96, quotient)
     else:
 
         quotient = (

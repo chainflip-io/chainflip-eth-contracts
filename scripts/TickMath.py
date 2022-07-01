@@ -13,6 +13,8 @@ MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342
 # MAX type values
 MAX_UINT128 = 2**128 - 1
 MAX_UINT256 = 2**256 - 1
+MAX_INT256 = 2**255 - 1
+MIN_INT256 = - 2**255
 
 ### @notice Calculates sqrt(1.0001^tick) * 2^96
 ### @dev Throws if |tick| > max tick

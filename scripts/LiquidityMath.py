@@ -1,3 +1,4 @@
+import TickMath
 
 ### @title Math library for liquidity
 
@@ -8,8 +9,10 @@
 def addDelta(x, y):
     if (y < 0):
         z = x - abs(y)
-        assert z < x , 'LS'
+        # Mimic solidity underflow
+        assert z >= 0 , 'LS'
     else:
         z = x + abs(y)
-        assert z >= x, 'LA'
+        # Mimic solidity overflow check
+        assert z <= TickMath.MAX_UINT128, 'LA'
     return z

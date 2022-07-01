@@ -1,5 +1,7 @@
 import TickMath
 import LiquidityMath
+import SafeMath
+
 from dataclasses import dataclass
 
 
@@ -114,7 +116,10 @@ def update(
     info.liquidityGross = liquidityGrossAfter
 
     ## when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-    info.liquidityNet = info.liquidityNet - liquidityDelta if upper else info.liquidityNet + liquidityDelta
+    if upper:
+        info.liquidityNet = SafeMath.subInts(info.liquidityNet - liquidityDelta)
+    else:
+        info.liquidityNet = SafeMath.addInts(info.liquidityNet + liquidityDelta)
     
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped

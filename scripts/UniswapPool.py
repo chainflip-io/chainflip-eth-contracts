@@ -10,6 +10,7 @@ import FixedPoint128
 import LiquidityMath
 import Position
 import SqrtPriceMath
+import SafeMath
 from Account import Account
 from dataclasses import dataclass
 
@@ -245,9 +246,9 @@ class UniswapPool(Account):
         recipient.transferTokens(self, amount0, amount1)
 
         if amount0 > 0:
-            assert balance0Before.add(amount0) <= self.balanceToken0, "M0"
+            assert SafeMath.add(balance0Before,amount0) <= self.balanceToken0, "M0"
         if amount1 > 0:
-            assert balance1Before.add(amount1) <= self.balanceToken1, "M1"
+            assert SafeMath.add(balance1Before,amount1) <= self.balanceToken1, "M1"
 
         return (amount0, amount1)
 
@@ -357,10 +358,10 @@ class UniswapPool(Account):
 
             if exactInput:
                 state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
-                state.amountCalculated = state.amountCalculated - step.amountOut
+                state.amountCalculated = SafeMath.subInts(state.amountCalculated, step.amountOut)
             else:
                 state.amountSpecifiedRemaining += step.amountOut
-                state.amountCalculated = state.amountCalculated + (step.amountIn + step.feeAmount)
+                state.amountCalculated = SafeMath.addInts(state.amountCalculated, step.amountIn + step.feeAmount)
 
             ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
             if cache.feeProtocol > 0:
