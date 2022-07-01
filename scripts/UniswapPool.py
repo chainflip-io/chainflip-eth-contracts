@@ -609,36 +609,109 @@ def test_fromOutput_output_lessThanReserves_token1():
     assert sqrtQ - 77371252455336267181195264 == 0
 
 def test_fromOutput_puzzlingEchidnaTest():
+    print ('puzzling echidna test')
     price = 20282409603651670423947251286016
     liquidity = 1024
     amountOut = 4    
     tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, '',price, liquidity, amountOut, False)
 
 def test_fromOutput_zeroAmountIn_zeroForOne():
+    print('returns input price if amount in is zero and zeroForOne = true')
     price = encodePriceSqrt(1,1)
     sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(price, int(expandTo18Decimals(1)/10), 0, True)
     assert sqrtQ - price == 0
 
 def test_fromOutput_zeroAmountIn_notZeroForOne():
+    print('returns input price if amount in is zero and zeroForOne = false')
     price = encodePriceSqrt(1,1)
     sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(price, int(expandTo18Decimals(1)/10), 0, False)
     assert sqrtQ - price == 0
 
 def test_fromOutput_outputAmount_token1_notZeroForOne():
-
+    print('output amount of 0.1 token1')
     sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(encodePriceSqrt(1,1), expandTo18Decimals(1), int(expandTo18Decimals(1)/10), False)
     assert sqrtQ - 88031291682515930659493278152 == 0
 
 def test_fromOutput_outputAmount_token1_zeroForOne():
-
+    print('output amount of 0.1 token1')
     sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(encodePriceSqrt(1,1), expandTo18Decimals(1), int(expandTo18Decimals(1)/10), True)
     assert sqrtQ - 71305346262837903834189555302 == 0
 
+def test_fails_impossibleAmountOut_zeroForOne():
+    print('reverts if amountOut is impossible in zero for one direction')
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, '',encodePriceSqrt(1, 1), 1, int(TickMath.MAX_UINT256 / 2), True)
+
+def test_fails_impossibleAmountOut_notZeroForOne():
+    print('reverts if amountOut is impossible in zero for one direction')
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, '',encodePriceSqrt(1, 1), 1, int(TickMath.MAX_UINT256 / 2), False)
 
 
+# getAmount0Delta
+
+def test_getAmount0Delta_zeroLiquidity():
+    print('returns if liquidity is zero')
+    sqrtQ = SqrtPriceMath.getAmount0Delta(encodePriceSqrt(1,1), encodePriceSqrt(2,1), 0, True)
+    assert sqrtQ == 0
+
+def test_getAmount0Delta_equalPrices():
+    print('returns 0 if prices are equal')
+    sqrtQ = SqrtPriceMath.getAmount0Delta(encodePriceSqrt(1,1), encodePriceSqrt(1,1), 0, True)
+    assert sqrtQ == 0
+
+def test_getAmount0Delta_returnsAmount1():
+    print('returns 0.1 amount1 for price of 1 to 1.21')
+    print(encodePriceSqrt(1,1))
+    print(encodePriceSqrt(121,100))
+    print(121*2**96 / 100)
+    amount0 = SqrtPriceMath.getAmount0Delta(encodePriceSqrt(1,1), encodePriceSqrt(121,100), expandTo18Decimals(1), True)
+    assert amount0 - 90909090909090910 == 0
+
+    
+    # amount0RoundedDown = SqrtPriceMath.getAmount0Delta(encodePriceSqrt(1,1), encodePriceSqrt(121,100), expandTo18Decimals(1), False)
+    # assert amount0RoundedDown - (amount0-1) == 0
 
 
+def test_getAmount0Delta_priceOverflow():
+    print('works for prices that overflow')
 
+    amount0Up = SqrtPriceMath.getAmount0Delta(2**90,2**96, expandTo18Decimals(1), True)
+    amount0Down = SqrtPriceMath.getAmount0Delta(2**90,2**96, expandTo18Decimals(1), False)
+    assert amount0Up - (amount0Down+1) == 0
+
+# getAmount1Delta
+
+def test_getAmount1Delta_zeroLiquidity():
+    print('returns if liquidity is zero')
+    sqrtQ = SqrtPriceMath.getAmount1Delta(encodePriceSqrt(1,1), encodePriceSqrt(2,1), 0, True)
+    assert sqrtQ == 0
+
+def test_getAmount1Delta_equalPrices():
+    print('returns 0 if prices are equal')
+    sqrtQ = SqrtPriceMath.getAmount1Delta(encodePriceSqrt(1,1), encodePriceSqrt(1,1), 0, True)
+    assert sqrtQ == 0
+
+def test_getAmount1Delta_returnsAmount1():
+    print('returns 0.1 amount1 for price of 1 to 1.21')
+    amount0 = SqrtPriceMath.getAmount1Delta(encodePriceSqrt(1,1), encodePriceSqrt(121,100), expandTo18Decimals(1), True)
+    assert amount0 - 100000000000000000 == 0
+
+    amount1RoundedDown = SqrtPriceMath.getAmount1Delta(encodePriceSqrt(1,1), encodePriceSqrt(121,100), expandTo18Decimals(1), False)
+    assert amount1RoundedDown - (amount0-1) == 0    
+
+# Swap Computation
+def test_swap():
+    print("swap computation")
+    ## getNextSqrtPriceInvariants(1025574284609383690408304870162715216695788925244,50015962439936049619261659728067971248,406,true)
+    sqrtP = 1025574284609383690408304870162715216695788925244
+    liquidity = 50015962439936049619261659728067971248
+    zeroForOne = True
+    amountIn = 406
+
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne)
+    assert sqrtQ - 1025574284609383582644711336373707553698163132913 == 0
+
+    amount0Delta = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, True)
+    assert amount0Delta - 406 == 0
 
 
 

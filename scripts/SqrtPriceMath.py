@@ -27,7 +27,6 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
     numerator1 = liquidity << FixedPoint96.RESOLUTION
 
     if add:
-        print("DEBUGGING")
         product = amount * sqrtPX96
         # Modified overflow check compared so to Solidity - product might overflow
         if product < MAX_UINT256:
@@ -53,7 +52,7 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
         product = amount * sqrtPX96
         assert product / amount == sqrtPX96 and numerator1 > product
         denominator = numerator1 - product
-        result = math.ceil(numerator1 * sqrtPX96 / denominator)
+        result = numerator1 * sqrtPX96 / denominator
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return result
 
@@ -154,7 +153,12 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     assert sqrtRatioAX96 > 0
 
     if roundUp:
-        return math.ceil(math.ceil(numerator1 * numerator2 / sqrtRatioBX96) / sqrtRatioAX96)
+        print("DEBUGGING")
+        print(liquidity)
+        print(numerator1)
+        print(numerator2)
+        print(2**256-1)
+        return int(int(numerator1 * numerator2 / sqrtRatioBX96) / sqrtRatioAX96)
     else:
         return (numerator1 * numerator2 / sqrtRatioBX96) / sqrtRatioAX96
 
@@ -181,7 +185,7 @@ def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The change in liquidity for which to compute the amount0 delta
 ### @return amount0 Amount of token0 corresponding to the passed liquidityDelta between the two prices
-def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
+def getAmount0DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     if liquidity < 0:
         return -getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), False)
     else:
@@ -193,7 +197,7 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The change in liquidity for which to compute the amount1 delta
 ### @return amount1 Amount of token1 corresponding to the passed liquidityDelta between the two prices
-def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
+def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     if liquidity < 0:
         return -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), False)
     else:
