@@ -45,6 +45,7 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
             if zeroForOne
             else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity)
         )
+        print(amountOut)
 
         # amountRemaining <= 0
         if abs(amountRemaining) >= amountOut:
@@ -58,6 +59,11 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
 
     ## get the input#output amounts
     if zeroForOne:
+        print("DEBUG")
+        print(sqrtRatioNextX96)
+        print(sqrtRatioCurrentX96)
+        print(liquidity)
+
         amountIn = (
             amountIn
             if (max and exactIn)

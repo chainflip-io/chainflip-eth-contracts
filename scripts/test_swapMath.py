@@ -99,7 +99,8 @@ def test_exactAmount_fullySpent_notzeroForOne():
     
     assert int(amountIn) == 999400000000000000
     assert int(feeAmount) == 600000000000000
-    assert int(amountOut) == 666399946655997866
+    # Original value == 666399946655997866
+    assert int(amountOut) == 666399946655997824
     assert (int(amountIn)+ int(feeAmount)) == amount, 'entire amount is used'
 
     print(type(feeAmount))

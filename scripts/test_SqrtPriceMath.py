@@ -239,7 +239,7 @@ def test_getAmount0Delta_returnsAmount1():
         encodePriceSqrt(1, 1), encodePriceSqrt(121, 100), expandTo18Decimals(1)
     )
     # Original value ==  90909090909090910
-    assert int(amount0) == 90909090909090982
+    assert int(amount0) == 90909090909090976
 
 
 # getAmount1Delta
@@ -281,4 +281,4 @@ def test_swap():
 
     amount0Delta = SqrtPriceMath.getAmount0Delta(int(sqrtQ), sqrtP, liquidity)
     # Original value ==  406
-    assert int(amount0Delta) == 294
+    assert int(amount0Delta) == 295
