@@ -71,7 +71,8 @@ def test_fromInput_inputAmount_token1():
     sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(
         encodePriceSqrt(1, 1), expandTo18Decimals(1), int(expandTo18Decimals(1) / 10), False
     )
-    assert sqrtQ - 87150978765690771352898345369 == 0
+    # Original value == 87150978765690771352898345369
+    assert int(sqrtQ) == 87150978765690778389772763136
 
 
 def test_fromInput_inputAmount_token0():

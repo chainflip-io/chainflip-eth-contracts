@@ -3,7 +3,7 @@ import SqrtPriceMath
 ### @title Computes the result of a swap within ticks
 ### @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
 
-ONE_IN_PIPS = 100000
+ONE_IN_PIPS = 1000000
 
 ### @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
 ### @dev The fee, plus the amount in, will never exceed the amount remaining if the swap's `amountSpecified` is positive
@@ -27,10 +27,11 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
         amountRemainingLessFee = (amountRemaining * (ONE_IN_PIPS - feePips)) / ONE_IN_PIPS
 
         amountIn = (
-            SqrtPriceMath.getAmount0Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, True)
+            SqrtPriceMath.getAmount0Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity)
             if zeroForOne
-            else SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, True)
+            else SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity)
         )
+
         if amountRemainingLessFee >= amountIn:
             sqrtRatioNextX96 = sqrtRatioTargetX96
         else:
@@ -39,9 +40,9 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
             )
     else:
         amountOut = (
-            SqrtPriceMath.getAmount1Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, False)
+            SqrtPriceMath.getAmount1Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity)
             if zeroForOne
-            else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, False)
+            else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity)
         )
 
         # amountRemaining <= 0
@@ -56,27 +57,33 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
 
     ## get the input#output amounts
     if zeroForOne:
+        # print(amountIn)
+        print(max and exactIn)
+        print(sqrtRatioNextX96)
+        print(sqrtRatioCurrentX96)
+        print(liquidity)
         amountIn = (
             amountIn
             if (max and exactIn)
-            else SqrtPriceMath.getAmount0Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, True)
+            else SqrtPriceMath.getAmount0Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity)
         )
+        print(amountIn)
         amountOut = (
             amountOut
             if (max and not exactIn)
-            else SqrtPriceMath.getAmount1Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, False)
+            else SqrtPriceMath.getAmount1Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity)
         )
 
     else:
         amountIn = (
             amountIn
             if (max and exactIn)
-            else SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, True)
+            else SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity)
         )
         amountOut = (
             amountOut
             if (max and not exactIn)
-            else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, False)
+            else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity)
         )
 
     ## cap the output amount to not exceed the remaining output amount

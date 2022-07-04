@@ -20,7 +20,7 @@ MAX_UINT160 = 2**160 - 1
 ### @param amount How much of token0 to add or remove from virtual reserves
 ### @param add Whether to add or remove the amount of token0
 ### @return The price after adding or removing amount, depending on add
-def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
+def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
     ## we short circuit amount == 0 because the result is otherwise not guaranteed to equal the input price
     if amount == 0:
         return sqrtPX96
@@ -67,12 +67,12 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
 ### @param amount How much of token1 to add, or remove, from virtual reserves
 ### @param add Whether to add, or remove, the amount of token1
 ### @return The price after adding or removing `amount`
-def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
+def getNextSqrtPriceFromAmount1Down(sqrtPX96, liquidity, amount, add):
     ## if we're adding (subtracting), rounding down requires rounding the quotient down (up)
     ## in both cases, avoid a mulDiv for most inputs
     if add:
         quotient = (
-            (amount << FixedPoint96.RESOLUTION) / liquidity
+            (int(amount) << FixedPoint96.RESOLUTION) / liquidity
             if (amount <= MAX_UINT160)
             else (amount * FixedPoint96.Q96 / liquidity)
         )
@@ -110,9 +110,9 @@ def getNextSqrtPriceFromInput(sqrtPX96, liquidity, amountIn, zeroForOne):
 
     ## round to make sure that we don't pass the target price
     return (
-        getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountIn, True)
+        getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amountIn, True)
         if zeroForOne
-        else getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountIn, True)
+        else getNextSqrtPriceFromAmount1Down(sqrtPX96, liquidity, amountIn, True)
     )
 
 
@@ -129,9 +129,9 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
 
     ## round to make sure that we pass the target price
     return (
-        getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, False)
+        getNextSqrtPriceFromAmount1Down(sqrtPX96, liquidity, amountOut, False)
         if zeroForOne
-        else getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, False)
+        else getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amountOut, False)
     )
 
 
@@ -147,13 +147,14 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
     numerator1 = liquidity << FixedPoint96.RESOLUTION
-    numerator2 = sqrtRatioBX96 - sqrtRatioAX96
+    numerator2 = int(sqrtRatioBX96) - int(sqrtRatioAX96)
 
     assert sqrtRatioAX96 > 0
-    print(numerator1)
-    print(numerator2)
-    print(sqrtRatioBX96)
-    print(sqrtRatioAX96)
+    print("numerator1:", numerator1)
+    print("numerator2:", numerator2)
+    print("sqrtRatioAX96:", int(sqrtRatioAX96))
+    print("sqrtRatioBX96:", int(sqrtRatioBX96))
+    print(int(sqrtRatioBX96)  - int(sqrtRatioAX96))
     return (numerator1 * numerator2) / (sqrtRatioBX96 * sqrtRatioAX96)
 
 
