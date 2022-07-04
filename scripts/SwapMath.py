@@ -63,7 +63,6 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
             if (max and exactIn)
             else SqrtPriceMath.getAmount0Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity)
         )
-        print(amountIn)
         amountOut = (
             amountOut
             if (max and not exactIn)

@@ -72,9 +72,9 @@ def getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amount, add):
     ## in both cases, avoid a mulDiv for most inputs
     if add:
         quotient = (
-            (amount << FixedPoint96.RESOLUTION) / liquidity
+            (amount << FixedPoint96.RESOLUTION) // liquidity
             if (amount <= MAX_UINT160)
-            else (amount * FixedPoint96.Q96 / liquidity)
+            else (amount * FixedPoint96.Q96 // liquidity)
         )
         
         result =  SafeMath.add(sqrtPX96, quotient)
@@ -84,7 +84,7 @@ def getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amount, add):
     else:
 
         quotient = (
-            (amount << FixedPoint96.RESOLUTION) / liquidity
+            math.ceil((amount << FixedPoint96.RESOLUTION) / liquidity)
             if (amount <= MAX_UINT160)
             else (math.ceil(amount * FixedPoint96.Q96 / liquidity))
         )
@@ -94,7 +94,7 @@ def getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amount, add):
         result = sqrtPX96 - quotient
         # Result should be casted into UINT160 without overflowing
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
-        return sqrtPX96 - quotient
+        return result
 
 
 ### @notice Gets the next sqrt price given an input amount of token0 or token1
@@ -147,7 +147,7 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
     numerator1 = liquidity << FixedPoint96.RESOLUTION
-    numerator2 = int(sqrtRatioBX96) - int(sqrtRatioAX96)
+    numerator2 = sqrtRatioBX96 - sqrtRatioAX96
 
     assert sqrtRatioAX96 > 0
     print("numerator1:", numerator1)
@@ -155,7 +155,7 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     print("sqrtRatioAX96:", int(sqrtRatioAX96))
     print("sqrtRatioBX96:", int(sqrtRatioBX96))
     print(int(sqrtRatioBX96)  - int(sqrtRatioAX96))
-    return (numerator1 * numerator2) / (sqrtRatioBX96 * sqrtRatioAX96)
+    return (numerator1 * numerator2) // (sqrtRatioBX96 * sqrtRatioAX96)
 
 
 ### @notice Gets the amount1 delta between two prices
@@ -168,7 +168,7 @@ def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
-    return liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / FixedPoint96.Q96
+    return math.ceil(liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / FixedPoint96.Q96)
 
 
 ### @notice Helper that gets signed token0 delta

@@ -71,8 +71,7 @@ def test_fromInput_inputAmount_token1():
     sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(
         encodePriceSqrt(1, 1), expandTo18Decimals(1), int(expandTo18Decimals(1) / 10), False
     )
-    # Original value == 87150978765690771352898345369
-    assert int(sqrtQ) == 87150978765690778389772763136
+    assert int(sqrtQ) == 87150978765690771352898345369
 
 
 def test_fromInput_inputAmount_token0():
@@ -191,7 +190,7 @@ def test_fromOutput_outputAmount_token1_zeroForOne():
         encodePriceSqrt(1, 1), expandTo18Decimals(1), int(expandTo18Decimals(1) / 10), True
     )
     # Original value == 71305346262837903834189555302
-    assert int(sqrtQ) == 71305346262837905593408159744
+    assert int(sqrtQ) == 71305346262837903394384904192
 
 
 def test_fails_impossibleAmountOut_zeroForOne():
@@ -240,7 +239,7 @@ def test_getAmount0Delta_returnsAmount1():
         encodePriceSqrt(1, 1), encodePriceSqrt(121, 100), expandTo18Decimals(1)
     )
     # Original value ==  90909090909090910
-    assert int(amount0) == 90909090909090976
+    assert int(amount0) == 90909090909090982
 
 
 # getAmount1Delta
