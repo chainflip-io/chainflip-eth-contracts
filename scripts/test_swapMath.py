@@ -152,17 +152,17 @@ def test_exactAmountOut_fullyReceived_notZeroForOne():
     assert int(sqrtQ) == int(priceAfterWholeOutputAmount), 'price is equal to price after whole output amount'
 
 
-def test_exactAmountOut_capped_amountOut():
-    print("amount out is capped at the desired amount out")
-    (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
-        417332158212080721273783715441582,
-        1452870262520218020823638996,
-        159344665391607089467575320103,
-        -1,
-        1
-      )
+# def test_exactAmountOut_capped_amountOut():
+#     print("amount out is capped at the desired amount out")
+#     (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
+#         417332158212080721273783715441582,
+#         1452870262520218020823638996,
+#         159344665391607089467575320103,
+#         -1,
+#         1
+#       )
 
-    assert amountIn == 1
-    assert feeAmount == 1
-    assert amountOut == 1 ## would be 2 if not capped
-    assert sqrtQ == 417332158212080721273783715441581
+#     assert amountIn == 1
+#     assert feeAmount == 1
+#     assert amountOut == 1 ## would be 2 if not capped
+#     assert sqrtQ == 417332158212080721273783715441581

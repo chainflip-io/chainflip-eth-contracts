@@ -37,7 +37,7 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
                 # Adding assert to detect wrong behaviour
                 # math.ceil returns slight different value compared to FullMath.mulDivRoundingUp
                 # Solidity seems to give a more accurate result
-                result = (numerator1 * sqrtPX96 / denominator)
+                result = math.ceil(numerator1 * sqrtPX96 / denominator)
                 assert result <= MAX_UINT160, "Overflow when casting to UINT160"
                 return result
 
@@ -50,9 +50,9 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
         ## if the product overflows, we know the denominator underflows
         ## in addition, we must check that the denominator does not underflow
         product = amount * sqrtPX96
-        assert product / amount == sqrtPX96 and numerator1 > product
+        assert product < MAX_UINT256 and numerator1 > product
         denominator = numerator1 - product
-        result = numerator1 * sqrtPX96 / denominator
+        result = math.ceil(numerator1 * sqrtPX96 / denominator)
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return result
 
@@ -67,7 +67,7 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
 ### @param amount How much of token1 to add, or remove, from virtual reserves
 ### @param add Whether to add, or remove, the amount of token1
 ### @return The price after adding or removing `amount`
-def getNextSqrtPriceFromAmount1Down(sqrtPX96, liquidity, amount, add):
+def getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amount, add):
     ## if we're adding (subtracting), rounding down requires rounding the quotient down (up)
     ## in both cases, avoid a mulDiv for most inputs
     if add:
@@ -112,7 +112,7 @@ def getNextSqrtPriceFromInput(sqrtPX96, liquidity, amountIn, zeroForOne):
     return (
         getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amountIn, True)
         if zeroForOne
-        else getNextSqrtPriceFromAmount1Down(sqrtPX96, liquidity, amountIn, True)
+        else getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amountIn, True)
     )
 
 
@@ -129,7 +129,7 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
 
     ## round to make sure that we pass the target price
     return (
-        getNextSqrtPriceFromAmount1Down(sqrtPX96, liquidity, amountOut, False)
+        getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amountOut, False)
         if zeroForOne
         else getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amountOut, False)
     )
