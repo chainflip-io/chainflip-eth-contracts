@@ -1,0 +1,314 @@
+import sys
+from os import path
+import traceback
+
+import math
+
+sys.path.append(path.abspath("scripts"))
+import TickMath
+import SqrtPriceMath
+from Account import Account
+from UniswapPool import tryExceptHandler
+
+# Division in solidity and in python (and js) retrun slightly different values when dividing. E.g. mulDivRoundingUp => a*b/c will return
+# different values which makes the result to check slightly different.
+
+
+# test_fromInput_SqrtPriceMath():
+def test_fromInput_fails_price_zero():
+    print("fails if price is zero")
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromInput, "", 0, 0, expandTo18Decimals(1) / 10, False)
+
+
+def test_fromInput_fails_liquidity_zero():
+    print("fails if liquidity is zero")
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromInput, "", 1, 0, expandTo18Decimals(1) / 10, True)
+
+
+def test_fromInput_fails_input_overflow():
+    print("fails if input amount overflows the price")
+    price = 2**160 - 1
+    liquidity = 1024
+    amountIn = 1024
+    tryExceptHandler(
+        SqrtPriceMath.getNextSqrtPriceFromInput,
+        "Overflow when casting to UINT160",
+        price,
+        liquidity,
+        amountIn,
+        False,
+    )
+
+
+def test_fromInput_any_input_overflow():
+    print("any input amount cannot underflow the price")
+    price = 1
+    liquidity = 1
+    amountIn = 2**255
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromInput, "", price, liquidity, amountIn, False)
+
+
+def test_fromInput_zeroAmount_zeroForOne():
+    print("returns input price if amount in is zero and zeroForOne = true")
+    price = 2**96
+    assert price == SqrtPriceMath.getNextSqrtPriceFromInput(price, expandTo18Decimals(1) / 10, 0, True)
+
+    print("returns input price if amount in is zero and zeroForOne = false")
+    price = 2**96
+    assert price == SqrtPriceMath.getNextSqrtPriceFromInput(price, expandTo18Decimals(1) / 10, 0, False)
+
+
+def test_fromInput_zeroAmount_notZeroForOne():
+    print("returns the minimum price for max inputs")
+    sqrtP = 2**160 - 1
+    liquidity = TickMath.MAX_UINT128
+    maxAmountNoOverflow = TickMath.MAX_UINT256 - ((liquidity << 96) / sqrtP)
+    assert 1 == SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, maxAmountNoOverflow, True)
+
+
+def test_fromInput_inputAmount_token1():
+    print("input amount of 0.1 token1")
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(
+        encodePriceSqrt(1, 1), expandTo18Decimals(1), int(expandTo18Decimals(1) / 10), False
+    )
+    assert sqrtQ - 87150978765690771352898345369 == 0
+
+
+def test_fromInput_inputAmount_token0():
+    print("input amount of 0.1 token0")
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(
+        encodePriceSqrt(1, 1), expandTo18Decimals(1), int(expandTo18Decimals(1) / 10), True
+    )
+    assert sqrtQ - 72025602285694852357767227579 == 0
+
+
+def test_fromInput_amountInMaxUint96_zeroForOne():
+    print("amountIn > type(uint96).max and zeroForOne = true")
+
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(
+        encodePriceSqrt(1, 1), expandTo18Decimals(10), 2**100, True
+    )
+    # Original value == 624999999995069620
+    assert sqrtQ == 624999999995069568
+
+
+def test_fromInput_amountInMaxUint96_notZeroForOne():
+    print("can return 1 with enough amountIn and zeroForOne = true")
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(
+        encodePriceSqrt(1, 1), 1, int(TickMath.MAX_UINT256 / 2), True
+    )
+    assert int(sqrtQ) == 1
+
+
+# Test getNextSqrtPriceFromOutput
+def test_fromOutput_fails_zeroPrice():
+    print("fails if price is zero")
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, "", 0, 0, expandTo18Decimals(1) / 10, False)
+
+
+def test_fromOutput_fails_liquidityZero():
+    print("fails if price is zero")
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, "", 1, 0, expandTo18Decimals(1) / 10, True)
+
+
+def test_fromOutput_fails_equalOutputReserves_token0():
+    print("fails if output amount is exactly the virtual reserves of token0")
+    price = 20282409603651670423947251286016
+    liquidity = 1024
+    amountOut = 4
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, "", price, liquidity, amountOut, False)
+
+
+def test_fromOutput_fails_greaterOutputReserves_token0():
+    print("fails if output amount is greater than virtual reserves of token0")
+    price = 20282409603651670423947251286016
+    liquidity = 1024
+    amountOut = 5
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, "", price, liquidity, amountOut, False)
+
+
+def test_fromOutput_fails_greaterOutputReserves_token1():
+    print("fails if output amount is greater than virtual reserves of token1")
+    price = 20282409603651670423947251286016
+    liquidity = 1024
+    amountOut = 262145
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, "", price, liquidity, amountOut, True)
+
+
+def test_fromOutput_fails_equalOutputReserves_token1():
+    print("fails if output amount is exactly the virtual reserves of token1")
+    price = 20282409603651670423947251286016
+    liquidity = 1024
+    amountOut = 262144
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, "", price, liquidity, amountOut, True)
+
+
+def test_fromOutput_output_lessThanReserves_token1():
+    print("succeeds if output amount is just less than the virtual reserves of token1")
+    price = 20282409603651670423947251286016
+    liquidity = 1024
+    amountOut = 262143
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, True)
+    assert int(sqrtQ) == 77371252455336267181195264
+
+
+def test_fromOutput_puzzlingEchidnaTest():
+    print("puzzling echidna test")
+    price = 20282409603651670423947251286016
+    liquidity = 1024
+    amountOut = 4
+    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromOutput, "", price, liquidity, amountOut, False)
+
+
+def test_fromOutput_zeroAmountIn_zeroForOne():
+    print("returns input price if amount in is zero and zeroForOne = true")
+    price = encodePriceSqrt(1, 1)
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(price, int(expandTo18Decimals(1) / 10), 0, True)
+    assert int(sqrtQ) == price
+
+
+def test_fromOutput_zeroAmountIn_notZeroForOne():
+    print("returns input price if amount in is zero and zeroForOne = false")
+    price = encodePriceSqrt(1, 1)
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(price, int(expandTo18Decimals(1) / 10), 0, False)
+    assert int(sqrtQ) == price
+
+
+def test_fromOutput_outputAmount_token1_notZeroForOne():
+    print("output amount of 0.1 token1")
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(
+        encodePriceSqrt(1, 1), expandTo18Decimals(1), int(expandTo18Decimals(1) / 10), False
+    )
+    # Original value == 88031291682515930659493278152
+    assert int(sqrtQ) == 88031291682515934568867954688
+
+
+def test_fromOutput_outputAmount_token1_zeroForOne():
+    print("output amount of 0.1 token1")
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(
+        encodePriceSqrt(1, 1), expandTo18Decimals(1), int(expandTo18Decimals(1) / 10), True
+    )
+    # Original value == 71305346262837903834189555302
+    assert int(sqrtQ) == 71305346262837905593408159744
+
+
+def test_fails_impossibleAmountOut_zeroForOne():
+    print("reverts if amountOut is impossible in zero for one direction")
+    tryExceptHandler(
+        SqrtPriceMath.getNextSqrtPriceFromOutput,
+        "",
+        encodePriceSqrt(1, 1),
+        1,
+        int(TickMath.MAX_UINT256 / 2),
+        True,
+    )
+
+
+def test_fails_impossibleAmountOut_notZeroForOne():
+    print("reverts if amountOut is impossible in zero for one direction")
+    tryExceptHandler(
+        SqrtPriceMath.getNextSqrtPriceFromOutput,
+        "",
+        encodePriceSqrt(1, 1),
+        1,
+        int(TickMath.MAX_UINT256 / 2),
+        False,
+    )
+
+
+# getAmount0Delta
+
+
+def test_getAmount0Delta_zeroLiquidity():
+    print("returns if liquidity is zero")
+    sqrtQ = SqrtPriceMath.getAmount0Delta(encodePriceSqrt(1, 1), encodePriceSqrt(2, 1), 0)
+    assert sqrtQ == 0
+
+
+def test_getAmount0Delta_equalPrices():
+    print("returns 0 if prices are equal")
+    sqrtQ = SqrtPriceMath.getAmount0Delta(encodePriceSqrt(1, 1), encodePriceSqrt(1, 1), 0)
+    assert sqrtQ == 0
+
+
+def test_getAmount0Delta_returnsAmount1():
+    print("returns 0.1 amount1 for price of 1 to 1.21")
+
+    amount0 = SqrtPriceMath.getAmount0Delta(
+        encodePriceSqrt(1, 1), encodePriceSqrt(121, 100), expandTo18Decimals(1)
+    )
+    # Original value ==  90909090909090910
+    assert int(amount0) == 90909090909090976
+
+
+# getAmount1Delta
+
+
+def test_getAmount1Delta_zeroLiquidity():
+    print("returns if liquidity is zero")
+    sqrtQ = SqrtPriceMath.getAmount1Delta(encodePriceSqrt(1, 1), encodePriceSqrt(2, 1), 0)
+    assert sqrtQ == 0
+
+
+def test_getAmount1Delta_equalPrices():
+    print("returns 0 if prices are equal")
+    sqrtQ = SqrtPriceMath.getAmount1Delta(encodePriceSqrt(1, 1), encodePriceSqrt(1, 1), 0)
+    assert sqrtQ == 0
+
+
+def test_getAmount1Delta_returnsAmount1():
+    print("returns 0.1 amount1 for price of 1 to 1.21")
+    amount0 = SqrtPriceMath.getAmount1Delta(
+        encodePriceSqrt(1, 1), encodePriceSqrt(121, 100), expandTo18Decimals(1)
+    )
+    # Original value ==  100000000000000000
+    assert int(amount0) == 100000000000000096
+
+
+# Swap Computation
+def test_swap():
+    print("swap computation")
+    ## getNextSqrtPriceInvariants(1025574284609383690408304870162715216695788925244,50015962439936049619261659728067971248,406,true)
+    sqrtP = 1025574284609383690408304870162715216695788925244
+    liquidity = 50015962439936049619261659728067971248
+    zeroForOne = True
+    amountIn = 406
+
+    sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne)
+    # Original value ==  1025574284609383582644711336373707553698163132913
+    assert int(sqrtQ) == 1025574284609383612152307356577212088926655741952
+
+    print(int(sqrtQ))
+    print(sqrtP)
+    print(liquidity)
+    amount0Delta = SqrtPriceMath.getAmount0Delta(int(sqrtQ), sqrtP, liquidity)
+    # Original value ==  406
+    assert int(amount0Delta) == 294
+
+
+def encodePriceSqrt(reserve1, reserve0):
+    # Making the division by reserve0 converts it into a float which causes python to lose precision
+    return int(math.sqrt(reserve1 / reserve0) * 2**96)
+
+
+def expandTo18Decimals(number):
+    # Converting to int because python cannot shl on a float
+    return int(number * 10**18)
+
+
+def TestTokenTransfer(account0, account1):
+    # Token Transfer Test
+    account0.balanceToken0 = 100
+    account0.balanceToken1 = 100
+    account1.balanceToken0 = 100
+    account1.balanceToken1 = 100
+
+    account0.transferTokens(account1, 25, 25)
+
+    assert account0.balanceToken0 == 75
+    assert account0.balanceToken1 == 75
+    assert account1.balanceToken0 == 125
+    assert account1.balanceToken1 == 125
+
+    tryExceptHandler(account0.transferTokens, "Negative amount", -25, 25)
+    tryExceptHandler(account0.transferTokens, "Insufficient balance", 150, 25)

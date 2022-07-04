@@ -141,9 +141,8 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
 ### @param sqrtRatioAX96 A sqrt price
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The amount of usable liquidity
-### @param roundUp Whether to round the amount up or down
 ### @return amount0 Amount of token0 required to cover a position of size liquidity between the two passed prices
-def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
+def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
@@ -151,11 +150,11 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     numerator2 = sqrtRatioBX96 - sqrtRatioAX96
 
     assert sqrtRatioAX96 > 0
-
-    if roundUp:
-        return (math.ceil((numerator1 * numerator2) / sqrtRatioBX96) / sqrtRatioAX96)
-    else:
-        return (numerator1 * numerator2 / sqrtRatioBX96) / sqrtRatioAX96
+    print(numerator1)
+    print(numerator2)
+    print(sqrtRatioBX96)
+    print(sqrtRatioAX96)
+    return (numerator1 * numerator2) / (sqrtRatioBX96 * sqrtRatioAX96)
 
 
 ### @notice Gets the amount1 delta between two prices
@@ -163,16 +162,12 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 ### @param sqrtRatioAX96 A sqrt price
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The amount of usable liquidity
-### @param roundUp Whether to round the amount up, or down
 ### @return amount1 Amount of token1 required to cover a position of size liquidity between the two passed prices
-def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
+def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
-    if roundUp:
-        return math.ceil(liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / FixedPoint96.Q96)
-    else:
-        return liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / FixedPoint96.Q96
+    return liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / FixedPoint96.Q96
 
 
 ### @notice Helper that gets signed token0 delta
