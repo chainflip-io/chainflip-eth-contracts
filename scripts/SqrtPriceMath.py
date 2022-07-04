@@ -151,12 +151,6 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     assert numerator2 >= 0
 
     assert sqrtRatioAX96 > 0
-    print("numerator1:", numerator1)
-    print("numerator2:", numerator2)
-    print("sqrtRatioAX96:", int(sqrtRatioAX96))
-    print("sqrtRatioBX96:", int(sqrtRatioBX96))
-    print(int(sqrtRatioBX96)  - int(sqrtRatioAX96))
-    print((numerator1 * numerator2) / (sqrtRatioBX96 * sqrtRatioAX96))
     return math.ceil((numerator1 * numerator2) / (sqrtRatioBX96 * sqrtRatioAX96))
 
 

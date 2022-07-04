@@ -45,7 +45,6 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
             if zeroForOne
             else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity)
         )
-        print(amountOut)
 
         # amountRemaining <= 0
         if abs(amountRemaining) >= amountOut:
@@ -59,11 +58,6 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
 
     ## get the input#output amounts
     if zeroForOne:
-        print("DEBUG")
-        print(sqrtRatioNextX96)
-        print(sqrtRatioCurrentX96)
-        print(liquidity)
-
         amountIn = (
             amountIn
             if (max and exactIn)
@@ -93,7 +87,7 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
 
     if exactIn and sqrtRatioNextX96 != sqrtRatioTargetX96:
         ## we didn't reach the target, so take the remainder of the maximum input as fee
-        feeAmount = math.ceil(abs(amountRemaining) - amountIn)
+        feeAmount = abs(amountRemaining) - amountIn
     else:
         feeAmount = math.ceil((amountIn * feePips) / (1e6 - feePips))
 

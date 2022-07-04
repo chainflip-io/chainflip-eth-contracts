@@ -478,6 +478,7 @@ class UniswapPool(Account):
 #     # (r, msb) = TickMath.add_bit_to_log_2(r, msb, 1, 2)
 #     # print(r, msb)
 
+
 def encodePriceSqrt(reserve1, reserve0):
     # Making the division by reserve0 converts it into a float which causes python to lose precision
     return int(math.sqrt(reserve1 / reserve0) * 2**96)
@@ -486,6 +487,7 @@ def encodePriceSqrt(reserve1, reserve0):
 def expandTo18Decimals(number):
     # Converting to int because python cannot shl on a float
     return int(number * 10**18)
+
 
 def tryExceptHandler(fcn, assertMessage, *args):
     reverted = False
@@ -499,8 +501,14 @@ def tryExceptHandler(fcn, assertMessage, *args):
         filename, line, func, text = tb_info[-1]
 
         print("An error occurred on line {} in statement {}".format(line, text))
-        if (str(msg) != assertMessage):
-            print("Reverted succesfully but not for the expected reason. \n Expected: '" + str(assertMessage) + "' but got: '" + str(msg) + "'")
+        if str(msg) != assertMessage:
+            print(
+                "Reverted succesfully but not for the expected reason. \n Expected: '"
+                + str(assertMessage)
+                + "' but got: '"
+                + str(msg)
+                + "'"
+            )
             assert False
         print("Succesful revert")
 
