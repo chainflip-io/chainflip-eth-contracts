@@ -1,6 +1,6 @@
 import TickMath
 
-### @title Overflow and underflow math operations. 
+### @title Overflow and underflow math operations.
 ### @notice Contains methods for doing math operations that revert on overflow or underflow for minimal gas cost.Mimic solidity overflow and underflow check as in some cases the check is a safeguard.
 
 ### @notice Returns x + y, reverts if sum overflows uint256
@@ -13,6 +13,7 @@ def add(x, y):
     assert z - TickMath.MAX_UINT256 <= 0
     return z
 
+
 ### @notice Returns x - y, reverts if underflows
 ### @param x The minuend
 ### @param y The subtrahend
@@ -22,14 +23,16 @@ def sub(x, y):
     assert z >= 0
     return z
 
+
 ### @notice Returns x * y, reverts if overflows
 ### @param x The multiplicand
 ### @param y The multiplier
 ### @return z The product of x and y
 def mul(x, y):
-    z = x*y
+    z = x * y
     assert z <= TickMath.MAX_UINT256
     return z
+
 
 ### @notice Returns x + y, reverts if overflows or underflows
 ### @param x The augend
@@ -39,6 +42,7 @@ def addInts(x, y):
     z = x + y
     assert z >= TickMath.MIN_INT256 and z <= TickMath.MAX_UINT256
     return z
+
 
 ### @notice Returns x - y, reverts if overflows or underflows
 ### @param x The minuend

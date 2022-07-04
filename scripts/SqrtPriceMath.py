@@ -2,9 +2,8 @@ import FixedPoint96
 import SafeMath
 import math
 
-from scripts.TickMath import MAX_UINT256
+from scripts.TickMath import *
 
-MAX_UINT160 = 2**160 - 1
 
 ### @title defs based on Q64.96 sqrt price and liquidity
 ### @notice Contains the math that uses square root of price as a Q64.96 and liquidity to compute deltas
@@ -30,7 +29,7 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
         product = amount * sqrtPX96
         # Modified overflow check compared so to Solidity - product might overflow
         if product < MAX_UINT256:
-        ##if product / amount == sqrtPX96:
+            ##if product / amount == sqrtPX96:
             denominator = numerator1 + product
             if denominator >= numerator1:
                 # Result should be casted into UINT160 without overflowing
@@ -41,7 +40,7 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
                 assert result <= MAX_UINT160, "Overflow when casting to UINT160"
                 return result
 
-        result = math.ceil(numerator1 / SafeMath.add((numerator1 / sqrtPX96),amount))
+        result = math.ceil(numerator1 / SafeMath.add((numerator1 / sqrtPX96), amount))
         # Adding assert to detect wrong behaviour
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return result
@@ -76,8 +75,8 @@ def getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amount, add):
             if (amount <= MAX_UINT160)
             else (amount * FixedPoint96.Q96 // liquidity)
         )
-        
-        result =  SafeMath.add(sqrtPX96, quotient)
+
+        result = SafeMath.add(sqrtPX96, quotient)
         # Result should be casted into UINT160 without overflowing
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return result

@@ -15,6 +15,9 @@ MAX_UINT128 = 2**128 - 1
 MAX_UINT256 = 2**256 - 1
 MAX_INT256 = 2**255 - 1
 MIN_INT256 = - 2**255
+MAX_UINT160 = 2**160 - 1
+MIN_INT24 = - 2**24
+MAX_INT24 = 2**23 - 1
 
 ### @notice Calculates sqrt(1.0001^tick) * 2^96
 ### @dev Throws if |tick| > max tick
@@ -26,6 +29,7 @@ def getSqrtRatioAtTick(tick):
     assert absTick <= MAX_TICK, "T"
 
     ratio = 0xFFFCB933BD6FAD37AA2D162D1A594001 if absTick & 0x1 != 0 else 0x100000000000000000000000000000000
+
     if absTick & 0x2 != 0:
         ratio = (ratio * 0xFFF97272373D413259A46990580E213A) >> 128
     if absTick & 0x4 != 0:
@@ -66,12 +70,18 @@ def getSqrtRatioAtTick(tick):
         ratio = (ratio * 0x48A170391F7DC42444E8FA2) >> 128
 
     if tick > 0:
-        ratio = MAX_UINT256 / ratio
+        ratio = MAX_UINT256 // ratio
 
     ## this divides by 1<<32 rounding up to go from a Q128.128 to a Q128.96.
     ## we then downcast because we know the result always fits within 160 bits due to our tick input constraint
     ## we round up in the division so getTickAtSqrtRatio of the output price is always consistent
-    return math.ceil(ratio / (1 << 32))
+    
+    remainder = 1 if ratio % 2**32 != 0 else 0
+    # For some reason doing the division rounding up doesn't give the exact number
+    result = (ratio >> 32) + remainder
+    assert result <= MAX_UINT160
+    return result
+
 
 
 ### @notice Calculates the greatest tick value such that getRatioAtTick(tick) <= ratio
@@ -119,13 +129,12 @@ def getTickAtSqrtRatio(sqrtPriceX96):
     log_sqrt10001 = log_2 * 255738958999603826347141
     ## 128.128 number
 
-    ## TickLow and TickHi should be 24 bits long.
+    ## TickLow and TickHi should be 24 bits long (int24)
     tickLow = (log_sqrt10001 - 3402992956809132418596140100660247210) >> 128
     tickHi = (log_sqrt10001 + 291339464771989622907027621153398088495) >> 128
 
     ## Add checks to ensure that the tick is in the correct lenght (<= 24 bits)
-    assert tickLow & 0xFFFFFF == tickLow, "Failure"
-    assert tickHi & 0xFFFFFF == tickHi, "Failure"
+    assert tickLow >= MIN_INT24 and tickLow <= MAX_INT24, "Failure"
 
     if tickLow == tickHi:
         tick = tickLow
@@ -141,7 +150,7 @@ def getTickAtSqrtRatio(sqrtPriceX96):
 # Need to return r and msb since ints are passed by value and not by reference
 def add_bit_to_log_2(r, msb, lower_bit_mask, bit):
     gt = 1 if r > lower_bit_mask else 0
-    f = bit << gt
+    f = gt << bit
     msb = msb | f
     r = r >> f
     return (r, msb)
