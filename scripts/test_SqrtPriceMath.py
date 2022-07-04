@@ -8,7 +8,7 @@ sys.path.append(path.abspath("scripts"))
 import TickMath
 import SqrtPriceMath
 from Account import Account
-from UniswapPool import tryExceptHandler
+from UniswapPool import *
 
 # Division in solidity and in python (and js) retrun slightly different values when dividing. E.g. mulDivRoundingUp => a*b/c will return
 # different values which makes the result to check slightly different.
@@ -278,37 +278,6 @@ def test_swap():
     # Original value ==  1025574284609383582644711336373707553698163132913
     assert int(sqrtQ) == 1025574284609383612152307356577212088926655741952
 
-    print(int(sqrtQ))
-    print(sqrtP)
-    print(liquidity)
     amount0Delta = SqrtPriceMath.getAmount0Delta(int(sqrtQ), sqrtP, liquidity)
     # Original value ==  406
     assert int(amount0Delta) == 294
-
-
-def encodePriceSqrt(reserve1, reserve0):
-    # Making the division by reserve0 converts it into a float which causes python to lose precision
-    return int(math.sqrt(reserve1 / reserve0) * 2**96)
-
-
-def expandTo18Decimals(number):
-    # Converting to int because python cannot shl on a float
-    return int(number * 10**18)
-
-
-def TestTokenTransfer(account0, account1):
-    # Token Transfer Test
-    account0.balanceToken0 = 100
-    account0.balanceToken1 = 100
-    account1.balanceToken0 = 100
-    account1.balanceToken1 = 100
-
-    account0.transferTokens(account1, 25, 25)
-
-    assert account0.balanceToken0 == 75
-    assert account0.balanceToken1 == 75
-    assert account1.balanceToken0 == 125
-    assert account1.balanceToken1 == 125
-
-    tryExceptHandler(account0.transferTokens, "Negative amount", -25, 25)
-    tryExceptHandler(account0.transferTokens, "Insufficient balance", 150, 25)
