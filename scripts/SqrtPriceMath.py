@@ -72,7 +72,7 @@ def getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amount, add):
     ## in both cases, avoid a mulDiv for most inputs
     if add:
         quotient = (
-            (int(amount) << FixedPoint96.RESOLUTION) / liquidity
+            (amount << FixedPoint96.RESOLUTION) / liquidity
             if (amount <= MAX_UINT160)
             else (amount * FixedPoint96.Q96 / liquidity)
         )

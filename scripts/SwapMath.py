@@ -1,4 +1,5 @@
 import SqrtPriceMath
+import math
 
 ### @title Computes the result of a swap within ticks
 ### @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
@@ -57,11 +58,6 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
 
     ## get the input#output amounts
     if zeroForOne:
-        # print(amountIn)
-        print(max and exactIn)
-        print(sqrtRatioNextX96)
-        print(sqrtRatioCurrentX96)
-        print(liquidity)
         amountIn = (
             amountIn
             if (max and exactIn)
@@ -92,8 +88,8 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
 
     if exactIn and sqrtRatioNextX96 != sqrtRatioTargetX96:
         ## we didn't reach the target, so take the remainder of the maximum input as fee
-        feeAmount = abs(amountRemaining) - amountIn
+        feeAmount = math.ceil(abs(amountRemaining) - amountIn)
     else:
-        feeAmount = (amountIn * feePips) / (1e6 - feePips)
+        feeAmount = math.ceil((amountIn * feePips) / (1e6 - feePips))
 
     return (sqrtRatioNextX96, amountIn, amountOut, feeAmount)

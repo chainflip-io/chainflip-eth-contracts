@@ -29,8 +29,7 @@ def test_exactAmountIn_capped_notOneForZero():
 
     # Original value == 9975124224178055
     assert int(amountIn) == 9975124224177900
-    # Original value == 5988667735148
-    assert int(feeAmount) == 5988667735147
+    assert int(feeAmount) == 5988667735148
     # Original value == 9925619580021728
     assert int(amountOut) == 9925619580021576
     assert (amountIn + feeAmount) < amount, "Entire amount used"
@@ -65,8 +64,7 @@ def test_exactAmountOut_capped_notOneForZero():
 
     # Original value == 9975124224178055
     assert int(amountIn) == 9975124224177900
-    # Original value == 5988667735148
-    assert int(feeAmount) == 5988667735147
+    assert int(feeAmount) == 5988667735148
     # Original value == 9925619580021728
     assert int(amountOut) == 9925619580021576
     assert int(amountOut) < amount * -1 , 'entire amount out is not returned'
@@ -107,6 +105,7 @@ def test_exactAmount_fullySpent_notzeroForOne():
     assert int(amountOut) == 666399946655997952
     assert (int(amountIn)+ int(feeAmount)) == amount, 'entire amount is used'
 
+    print(type(feeAmount))
     priceAfterWholeInputAmountLessFee = SqrtPriceMath.getNextSqrtPriceFromInput(
         price,
         liquidity,
@@ -136,8 +135,7 @@ def test_exactAmountOut_fullyReceived_notZeroForOne():
       )
     
     assert int(amountIn) == 2000000000000000000
-    # Original value == 1200720432259356
-    assert int(feeAmount) == 1200720432259355
+    assert int(feeAmount) == 1200720432259356
     assert int(amountOut) == amount * -1
 
     priceAfterWholeOutputAmount = SqrtPriceMath.getNextSqrtPriceFromOutput(
