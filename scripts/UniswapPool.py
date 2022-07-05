@@ -2,6 +2,7 @@ import sys
 from os import path
 import traceback
 
+
 sys.path.append(path.abspath("scripts"))
 import Tick
 import TickMath
@@ -11,6 +12,8 @@ import LiquidityMath
 import Position
 import SqrtPriceMath
 import SafeMath
+from utilities import *
+
 from Account import Account
 from dataclasses import dataclass
 
@@ -99,7 +102,7 @@ class UniswapPool(Account):
 
     # Constructor
     def __init__(self, fee, tickSpacing):
-        # TODO: Initialize pool balances here or in initialize function call
+        # TODO: Initialize pool balances here or in initialize function call or just transfer balances in test?
         super().__init__("UniswapPool", 0, 0)
         self.fee = fee
         self.tickSpacing = tickSpacing
@@ -230,6 +233,7 @@ class UniswapPool(Account):
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
     def mint(self, recipient, tickLower, tickUpper, amount, data):
         assert amount > 0
+        checkInt128(amount)
         (_, amount0Int, amount1Int) = self._modifyPosition(
             ModifyPositionParams(recipient, tickLower, tickUpper, amount)
         )
@@ -276,7 +280,11 @@ class UniswapPool(Account):
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
     def burn(self, recipient, tickLower, tickUpper, amount):
-        assert amount > 0, "Amount must be greater than 0 - prevent creating a new position"
+        assert amount > 0, "Amount must be greater than 0 - prevent creating a new position when amount == 0"
+        checkInt128(amount)
+
+        # Health check
+        assert -amount >= MIN_INT128 and -amount <= MAX_INT128
 
         # Added extra recipient input variable to mimic msg.sender
         (position, amount0Int, amount1Int) = self._modifyPosition(

@@ -30,7 +30,7 @@ class PositionInfo:
 def get(self,owner,tickLower,tickUpper):
     # Need to handle non-existing positions in Python
     key = hash((owner, tickLower, tickUpper))
-    if not self.hasKey(key):
+    if not self.__contains__(key):
         # We don't want to create a new position if it doesn't exist!
             # In the case of collect we add an assert after that so it reverts. 
             # For mint there is an amount > 0 check so it is OK to initialize

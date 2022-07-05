@@ -85,8 +85,8 @@ def update(
     upper,
     maxLiquidity
 ):
-    # Tick might not exist
-    if not self.hasKey(tick):
+    # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
+    if not self.__contains__(tick):
         self[tick] = TickInfo(0,0,0,0)
         assert liquidityDelta > 0 , "Avoid creating empty tick"
     
@@ -104,15 +104,16 @@ def update(
         if (tick <= tickCurrent):
             info.feeGrowthOutside0X128 = feeGrowthGlobal0X128
             info.feeGrowthOutside1X128 = feeGrowthGlobal1X128
-        info.initialized = True
 
     info.liquidityGross = liquidityGrossAfter
 
     ## when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
     if upper:
-        info.liquidityNet = SafeMath.subInts(info.liquidityNet - liquidityDelta)
+        info.liquidityNet = SafeMath.subInts(info.liquidityNet, liquidityDelta)
+        checkInt128(info.liquidityNet)
     else:
-        info.liquidityNet = SafeMath.addInts(info.liquidityNet + liquidityDelta)
+        info.liquidityNet = SafeMath.addInts(info.liquidityNet, liquidityDelta)
+        checkInt128(info.liquidityNet)
     
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped

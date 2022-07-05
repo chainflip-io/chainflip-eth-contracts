@@ -26,6 +26,8 @@ MIN_INT256 = - 2**255
 MAX_UINT160 = 2**160 - 1
 MIN_INT24 = - 2**24
 MAX_INT24 = 2**23 - 1
+MIN_INT128 = - 2**128
+MAX_INT128 = 2**127 - 1
 
 def getMinTick(tickSpacing):
     return math.ceil(-887272 / tickSpacing) * tickSpacing
@@ -89,6 +91,8 @@ def tryExceptHandler(fcn, assertMessage, *args):
         assert False
 
 
+def checkInt128(number):
+    assert number >= MIN_INT128 and number <= MAX_INT128, ''
 
 # Mimic Solidity uninitialized ticks in Python - inserting keys to an empty value in a map
 def insertUninitializedTickstoMapping(mapping, keys):
