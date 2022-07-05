@@ -1,9 +1,10 @@
-from UniswapPool import *
+from Account import *
 from utilities import *
 
+
 def test_tokenTransfer():
-    pool0 = UniswapPool(1, 2)
-    pool1 = UniswapPool(2, 3)
+    pool0 = Account("ALICE", 100, 100)
+    pool1 = Account("BOB", 100, 100)
 
     # Token Transfer Test
     pool0.balanceToken0 = 100

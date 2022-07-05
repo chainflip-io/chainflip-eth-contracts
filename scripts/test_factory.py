@@ -1,0 +1,104 @@
+import sys
+from os import path
+
+sys.path.append(path.abspath("scripts"))
+from Factory import *
+from utilities import *
+
+TEST_ADDRESSES = [
+    "0x1000000000000000000000000000000000000000",
+    "0x2000000000000000000000000000000000000000",
+]
+
+
+def test_initial_fees():
+    print("initial enabled fee amounts")
+    factory = Factory()
+    assert factory.feeAmountTickSpacing[FeeAmount.LOW] == TICK_SPACINGS[FeeAmount.LOW]
+    assert factory.feeAmountTickSpacing[FeeAmount.MEDIUM] == TICK_SPACINGS[FeeAmount.MEDIUM]
+    assert factory.feeAmountTickSpacing[FeeAmount.HIGH] == TICK_SPACINGS[FeeAmount.HIGH]
+
+
+def createAndCheck_pool(factory, tokens, feeAmount, tickSpacing):
+    print("create and check pool")
+
+    pool = factory.createPool(tokens[0], tokens[1], feeAmount)
+
+    tryExceptHandler(factory.createPool, "Pool already exists", tokens[0], tokens[1], feeAmount)
+    tryExceptHandler(factory.createPool, "Pool already exists", tokens[1], tokens[0], feeAmount)
+
+    assert pool.token0 == TEST_ADDRESSES[0], "pool token0"
+    assert pool.token1 == TEST_ADDRESSES[1], "pool token1"
+    assert pool.fee == feeAmount, "pool fee"
+    assert pool.tickSpacing == tickSpacing, "pool tick spacing"
+
+
+# createPool
+def test_lowFeePool():
+    print("succeds for low fee pool")
+    createAndCheck_pool(Factory(), TEST_ADDRESSES, FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
+
+
+def test_mediumFeePool():
+    print("succeds for medium fee pool")
+    createAndCheck_pool(Factory(), TEST_ADDRESSES, FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
+
+
+def test_highFeePool():
+    print("succeds for high fee pool")
+    createAndCheck_pool(Factory(), TEST_ADDRESSES, FeeAmount.HIGH, TICK_SPACINGS[FeeAmount.HIGH])
+
+
+def test_tokensReverse():
+    print("succeds for tokens in reverse order")
+    createAndCheck_pool(Factory(), TEST_ADDRESSES[::-1], FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
+
+
+def test_fails_tokenAequalB():
+    print("fails if token a is 0 or token b is 0")
+    tryExceptHandler(Factory().createPool, "", TEST_ADDRESSES[0], "0", FeeAmount.LOW)
+    tryExceptHandler(Factory().createPool, "", "0", TEST_ADDRESSES[0], FeeAmount.LOW)
+    tryExceptHandler(Factory().createPool, "", "0", "0", FeeAmount.LOW)
+
+
+def test_fails_feeAmountNotEnabled():
+    print("fails if fee amount is not enabled")
+    tryExceptHandler(
+        Factory().createPool, "Fee amount not supported", TEST_ADDRESSES[0], TEST_ADDRESSES[1], 250
+    )
+
+
+# setO
+def test_fails_feeTooGreat():
+    print("fails if fee is too great")
+    tryExceptHandler(Factory().enableFeeAmount, "", 1000000, 10)
+
+
+def test_fails_tickSpacingTooSmall():
+    print("fails if tick spacing is too small")
+    tryExceptHandler(Factory().enableFeeAmount, "", 500, 0)
+
+
+def test_fails_tickSpacingTooLarge():
+    print("fails if tick spacing is too large")
+    tryExceptHandler(Factory().enableFeeAmount, "", 500, 16834)
+
+
+def test_fails_alreadyInitialized():
+    print("fails if already initialized")
+    factory = Factory()
+    factory.enableFeeAmount(100, 5)
+    tryExceptHandler(Factory().enableFeeAmount, "", 100, 0)
+
+
+def test_setFee():
+    print("sets the fee amount in the mapping")
+    factory = Factory()
+    factory.enableFeeAmount(100, 5)
+    assert factory.feeAmountTickSpacing[100] == 5
+
+
+def test_enablePoolCreation():
+    factory = Factory()
+    factory.enableFeeAmount(250, 15)
+    createAndCheck_pool(factory, TEST_ADDRESSES, 250, 15)

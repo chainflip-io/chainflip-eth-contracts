@@ -1,6 +1,5 @@
 import sys
 from os import path
-import traceback
 
 
 sys.path.append(path.abspath("scripts"))
@@ -87,26 +86,26 @@ class StepComputations:
 
 class UniswapPool(Account):
 
-    # Class variables
-    fee = None
-    tickSpacing = None
-    maxLiquidityPerTick = None
-    slot0 = Slot0(0, 0, 0)
-    feeGrowthGlobal0X128 = None
-    feeGrowthGlobal1X128 = None
-    protocolFees = None
-    liquidity = None
-    ticks = None
-    tickBitmap = dict()
-    positions = None
-
     # Constructor
-    def __init__(self, fee, tickSpacing):
+    def __init__(self, token0, token1, fee, tickSpacing):
         # TODO: Initialize pool balances here or in initialize function call or just transfer balances in test?
+        # Contract storage variables
         super().__init__("UniswapPool", 0, 0)
+        self.token0 = token0
+        self.token1 = token1
         self.fee = fee
         self.tickSpacing = tickSpacing
         self.maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing)
+
+        # Initialize remaining storage variables
+        self.slot0 = Slot0(0, 0, 0)
+        self.feeGrowthGlobal0X128 = 0
+        self.feeGrowthGlobal1X128 = 0
+        self.protocolFees = 0
+        self.liquidity = 0
+        self.ticks = 0
+        self.tickBitmap = dict()
+        self.positions = dict()
 
     ### @dev Common checks for valid tick inputs.
     @classmethod
@@ -472,17 +471,3 @@ class UniswapPool(Account):
                 return TickMath.MIN_TICK, False
             nextTick = sortedKeyList[indexCurrentTick - 1]
         return nextTick, True
-
-
-# def main():
-#     print("Running")
-
-#     # print(pool.fee)
-#     # r = 1
-#     # msb = 2
-#     # print(r, msb)
-#     # (r, msb) = TickMath.add_bit_to_log_2(r, msb, 1, 2)
-#     # print(r, msb)
-
-
-

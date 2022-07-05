@@ -43,7 +43,7 @@ def getMaxLiquidityPerTick(tickSpacing):
 
 @dataclass
 class FeeAmount:
-    LOW: int = 500,
+    LOW: int = 500
     MEDIUM: int = 3000
     HIGH: int = 10000
 
@@ -61,7 +61,6 @@ def encodePriceSqrt(reserve1, reserve0):
 def expandTo18Decimals(number):
     # Converting to int because python cannot shl on a float
     return int(number * 10**18)
-
 
 def tryExceptHandler(fcn, assertMessage, *args):
     reverted = False

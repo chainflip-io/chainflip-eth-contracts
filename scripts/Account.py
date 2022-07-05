@@ -1,8 +1,6 @@
 
 class Account:
-    balanceToken0 = 0
-    balanceToken1 = 0
-
+    
     def __init__(self, name, balanceToken0, balanceToken1):
         self.name = name
         self.balanceToken0 = balanceToken0
