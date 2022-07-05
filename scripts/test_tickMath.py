@@ -4,10 +4,10 @@ from os import path
 import math
 
 sys.path.append(path.abspath("scripts"))
-from UniswapPool import *
+from utilities import *
 import SwapMath as swapMath
+import TickMath
 from TickMath import *
-
 
 def test_throws_low():
     print("throws for too low test0")

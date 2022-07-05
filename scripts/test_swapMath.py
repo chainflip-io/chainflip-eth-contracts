@@ -4,8 +4,8 @@ from os import path
 import math
 
 sys.path.append(path.abspath("scripts"))
-from UniswapPool import *
-import SwapMath as swapMath
+from utilities import *
+import SwapMath
 import SqrtPriceMath
 
 
@@ -20,7 +20,7 @@ def test_exactAmountIn_capped_notOneForZero():
     amount = expandTo18Decimals(1)
     fee = 600
     zeroForOne = False
-    (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
+    (sqrtQ, amountIn, amountOut, feeAmount) = SwapMath.computeSwapStep(
         price, priceTarget, liquidity, amount, fee
     )
 
@@ -46,7 +46,7 @@ def test_exactAmountOut_capped_notOneForZero():
     fee = 600
     zeroForOne = False
 
-    (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
+    (sqrtQ, amountIn, amountOut, feeAmount) = SwapMath.computeSwapStep(
         price, priceTarget, liquidity, amount, fee
     )
 
@@ -122,7 +122,7 @@ def test_exactAmountOut_fullyReceived_notZeroForOne():
 
 def test_exactAmountOut_capped_amountOut():
     print("amount out is capped at the desired amount out")
-    (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
+    (sqrtQ, amountIn, amountOut, feeAmount) = SwapMath.computeSwapStep(
         417332158212080721273783715441582, 1452870262520218020823638996, 159344665391607089467575320103, -1, 1
     )
 
@@ -136,7 +136,7 @@ def test_exactAmountOut_capped_amountOut():
 # However, checking that the other calculations are correct
 def test_targetOne_partialInputAmount():
     print("target price of 1 uses partial input amount")
-    (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
+    (sqrtQ, amountIn, amountOut, feeAmount) = SwapMath.computeSwapStep(
         2, 1, 1, 3915081100057732413702495386755767, 1
     )
 
@@ -152,7 +152,7 @@ def test_targetOne_partialInputAmount():
 
 def test_allInput_asFee():
     print("entire input amount taken as fee")
-    (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
+    (sqrtQ, amountIn, amountOut, feeAmount) = SwapMath.computeSwapStep(
         2413, 79887613182836312, 1985041575832132834610021537970, 10, 1872
     )
     assert amountIn == 0
@@ -172,7 +172,7 @@ def test_insuffLiquid_zero_exactOutput():
     ## https://www.wolframalpha.com/input/?i=1024+%2F+%2820282409603651670423947251286016+%2F+2**96%29
     amountRemaining = -4
     feePips = 3000
-    (sqrtQ, amountIn, amountOut, feeAmount) = swapMath.computeSwapStep(
+    (sqrtQ, amountIn, amountOut, feeAmount) = SwapMath.computeSwapStep(
         sqrtP, sqrtPTarget, liquidity, amountRemaining, feePips
     )
 

@@ -1,17 +1,14 @@
 import sys
 from os import path
-import traceback
-
-import math
 
 sys.path.append(path.abspath("scripts"))
 import TickMath
 import SqrtPriceMath
-from Account import Account
-from UniswapPool import *
+from utilities import *
 
 # Division in solidity and in python (and js) retrun slightly different values when dividing. E.g. mulDivRoundingUp => a*b/c will return
-# different values which makes the result to check slightly different.
+# different values. Also, we have removed some of the rounding in the contracts, which
+# makes the result to check slightly different.
 
 
 # test_fromInput_SqrtPriceMath():

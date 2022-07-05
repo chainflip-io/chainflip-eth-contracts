@@ -1,4 +1,5 @@
-import math
+
+from utilities import *
 
 ### The minimum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**-128
 MIN_TICK = -887272
@@ -9,15 +10,6 @@ MAX_TICK = -MIN_TICK
 MIN_SQRT_RATIO = 4295128739
 ### The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
 MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342
-
-# MAX type values
-MAX_UINT128 = 2**128 - 1
-MAX_UINT256 = 2**256 - 1
-MAX_INT256 = 2**255 - 1
-MIN_INT256 = - 2**255
-MAX_UINT160 = 2**160 - 1
-MIN_INT24 = - 2**24
-MAX_INT24 = 2**23 - 1
 
 ### @notice Calculates sqrt(1.0001^tick) * 2^96
 ### @dev Throws if |tick| > max tick

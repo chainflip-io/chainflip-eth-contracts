@@ -2,19 +2,9 @@ import TickMath
 import LiquidityMath
 import SafeMath
 
+import math
 from dataclasses import dataclass
-
-
-@dataclass
-class TickInfo:
-    ## the total position liquidity that references this tick
-    liquidityGross: int
-    ## amount of net liquidity added (subtracted) when tick is crossed from left to right (right to left),
-    liquidityNet: int
-    ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
-    ## only has relative meaning, not absolute — the value depends on when the tick is initialized
-    feeGrowthOutside0X128: int
-    feeGrowthOutside1X128: int
+from utilities import *
 
 
 ### @notice Derives max liquidity per tick from given tick spacing
@@ -23,10 +13,12 @@ class TickInfo:
 ###     e.g., a tickSpacing of 3 requires ticks to be initialized every 3rd tick i.e., ..., -6, -3, 0, 3, 6, ...
 ### @return The max liquidity per tick
 def tickSpacingToMaxLiquidityPerTick(tickSpacing):
-    minTick = (TickMath.MIN_TICK / tickSpacing) * tickSpacing
-    maxTick = (TickMath.MAX_TICK / tickSpacing) * tickSpacing
-    numTicks = ((maxTick - minTick) / tickSpacing) + 1
-    return TickMath.MAX_UINT128 / numTicks
+    minTick = math.ceil(TickMath.MIN_TICK / tickSpacing) * tickSpacing
+    maxTick = math.floor(TickMath.MAX_TICK / tickSpacing) * tickSpacing
+    assert abs(maxTick) >= abs(minTick) # Health check
+    numTicks = ((maxTick - minTick) // tickSpacing) + 1
+    assert numTicks <= 2**24 - 1 # Health check
+    return TickMath.MAX_UINT128 // numTicks
 
 ### @notice Retrieves fee growth data
 ### @param self The mapping containing all tick information for initialized ticks
@@ -45,6 +37,7 @@ def getFeeGrowthInside(
     feeGrowthGlobal0X128,
     feeGrowthGlobal1X128
 ):
+    # Assumption that the key (tick) exists 
     lower = self[tickLower]
     upper = self[tickUpper]
 

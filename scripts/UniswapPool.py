@@ -2,8 +2,6 @@ import sys
 from os import path
 import traceback
 
-import math
-
 sys.path.append(path.abspath("scripts"))
 import Tick
 import TickMath
@@ -479,39 +477,4 @@ class UniswapPool(Account):
 #     # print(r, msb)
 
 
-def encodePriceSqrt(reserve1, reserve0):
-    # Making the division by reserve0 converts it into a float which causes python to lose precision
-    return int(math.sqrt(reserve1 / reserve0) * 2**96)
 
-
-def expandTo18Decimals(number):
-    # Converting to int because python cannot shl on a float
-    return int(number * 10**18)
-
-
-def tryExceptHandler(fcn, assertMessage, *args):
-    reverted = False
-    try:
-        fcn(*args)
-    except AssertionError as msg:
-        reverted = True
-        _, _, tb = sys.exc_info()
-        traceback.print_tb(tb)  # Fixed format
-        tb_info = traceback.extract_tb(tb)
-        filename, line, func, text = tb_info[-1]
-
-        print("An error occurred on line {} in statement {}".format(line, text))
-        if str(msg) != assertMessage:
-            print(
-                "Reverted succesfully but not for the expected reason. \n Expected: '"
-                + str(assertMessage)
-                + "' but got: '"
-                + str(msg)
-                + "'"
-            )
-            assert False
-        print("Succesful revert")
-
-    if not reverted:
-        print("Failed to revert: " + assertMessage)
-        assert False
