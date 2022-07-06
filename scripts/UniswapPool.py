@@ -468,22 +468,28 @@ class UniswapPool(Account):
     ### @return initialized Whether the next tick is initialized to signal if we have reached an initialized boundary
 
     def nextTick(self, tick, lte):
-        sortedKeyList = sorted(list(self.ticks.keys()))
+        if not self.ticks.__contains__(tick):
+            # If tick doesn't exist in the mapping we fake it (easier than searching for nearest value)
+            sortedKeyList = sorted(list(self.ticks.keys()) + [tick])
+        else:
+            sortedKeyList = sorted(list(self.ticks.keys()))
+
         indexCurrentTick = sortedKeyList.index(tick)
+
         if lte:
-            # Return current tick if initialized? Fix this when we know if there is cases where 
-            # ticks wont be initialized.
+            # If the current tick is initialized (not faked), we return the current tick
             if self.ticks.__contains__(tick):
-                nextTick = tick
-            elif indexCurrentTick == len(sortedKeyList) - 1:
+                return tick, True
+            elif indexCurrentTick == 0:
                 # No tick to the left
-                return TickMath.MAX_TICK, False
+                return TickMath.MIN_TICK, False
             else:
                 nextTick = sortedKeyList[indexCurrentTick - 1]
         else:
-            if indexCurrentTick == 0:
+            
+            if indexCurrentTick == len(sortedKeyList) - 1:
                 # No tick to the right
-                return TickMath.MIN_TICK, False
+                return TickMath.MAX_TICK, False
             nextTick = sortedKeyList[indexCurrentTick + 1]
         
         # Return tick within the boundaries

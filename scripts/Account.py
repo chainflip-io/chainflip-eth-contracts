@@ -19,7 +19,7 @@ class Account:
 
     def receiveTokens(self, amount0, amount1):
         # Safeguard check
-        assert amount0 > 0 and amount1 > 0
+        assert amount0 >= 0 and amount1 >= 0
         
         self.balanceToken0 += amount0
         self.balanceToken1 += amount1
