@@ -87,8 +87,8 @@ def update(
 ):
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):
-        self[tick] = TickInfo(0,0,0,0)
         assert liquidityDelta > 0 , "Avoid creating empty tick"
+        insertUninitializedTickstoMapping(self, [tick])
     
     info = self[tick]
 

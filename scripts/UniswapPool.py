@@ -103,8 +103,8 @@ class UniswapPool(Account):
         self.feeGrowthGlobal1X128 = 0
         self.protocolFees = 0
         self.liquidity = 0
-        self.ticks = 0
-        self.tickBitmap = dict()
+        # dict ( int24 => Tick.Info)
+        self.ticks = dict()
         self.positions = dict()
 
     ### @dev Common checks for valid tick inputs.
@@ -213,6 +213,9 @@ class UniswapPool(Account):
                 True,
                 self.maxLiquidityPerTick,
             )
+        
+        assert tick % self.tickSpacing == 0 ## ensure that the tick is spaced
+
 
         (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
             self.ticks, tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128
@@ -385,6 +388,7 @@ class UniswapPool(Account):
             ## shift tick if we reached the next price
             if state.sqrtPriceX96 == step.sqrtPriceNextX96:
                 ## if the tick is initialized, run the tick transition
+                ## @dev: here is where we should handle the case of an uninitialized boundary tick
                 if step.initialized:
                     liquidityNet = Tick.cross(
                         self.ticks,
@@ -456,18 +460,31 @@ class UniswapPool(Account):
     # We don't run the risk of overshooting tickNext (out of boundaries) as long as ticks (keys) have been initialized
     # within the boundaries. However, if there is no initialized tick to the left or right we will return the next boundary
     # Then we need to return the initialized bool to indicate that we are at the boundary and it is not an initalized tick.
-    # TODO: Check if this is the correct direction for MAX Tick and MIN Tick
-    def nextTick(self, tick, zeroForOne):
-        sortedKeyList = sorted(list(self.tickBitmap.keys()))
+    ### @param self The mapping in which to compute the next initialized tick
+    ### @param tick The starting tick
+    ### @param tickSpacing The spacing between usable ticks
+    ### @param lte Whether to search for the next initialized tick to the left (less than or equal to the starting tick)
+    ### @return next The next initialized or uninitialized tick => int24
+    ### @return initialized Whether the next tick is initialized to signal if we have reached an initialized boundary
+
+    def nextTick(self, tick, lte):
+        sortedKeyList = sorted(list(self.ticks.keys()))
         indexCurrentTick = sortedKeyList.index(tick)
-        if zeroForOne:
-            if indexCurrentTick == len(sortedKeyList) - 1:
-                # No tick to the right
+        if lte:
+            # Return current tick if initialized? Fix this when we know if there is cases where 
+            # ticks wont be initialized.
+            if self.ticks.__contains__(tick):
+                nextTick = tick
+            elif indexCurrentTick == len(sortedKeyList) - 1:
+                # No tick to the left
                 return TickMath.MAX_TICK, False
-            nextTick = sortedKeyList[indexCurrentTick + 1]
+            else:
+                nextTick = sortedKeyList[indexCurrentTick - 1]
         else:
             if indexCurrentTick == 0:
-                # No tick to the left
+                # No tick to the right
                 return TickMath.MIN_TICK, False
-            nextTick = sortedKeyList[indexCurrentTick - 1]
+            nextTick = sortedKeyList[indexCurrentTick + 1]
+        
+        # Return tick within the boundaries
         return nextTick, True

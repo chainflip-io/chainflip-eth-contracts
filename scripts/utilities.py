@@ -96,10 +96,14 @@ def checkInt128(number):
 # Mimic Solidity uninitialized ticks in Python - inserting keys to an empty value in a map
 def insertUninitializedTickstoMapping(mapping, keys):
     for key in keys:
-        emptyValue = TickInfo(0,0,0,0)
-        mapping[key] = emptyValue
+        insertTickInMapping(mapping, key, TickInfo(0,0,0,0))
 
+def insertTickInMapping(mapping,key,value):
+    assert mapping.__contains__(key) == False
+    mapping[key] = value
+
+# Insert a newly initialized tick into the dictionary.
 def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
     assert len(keys) == len(ticksInfo)
     for i in range(len(keys)):
-        mapping[keys[i]] = ticksInfo[i]
+        insertTickInMapping(mapping,keys[i],ticksInfo[i])

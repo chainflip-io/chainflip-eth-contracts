@@ -61,7 +61,8 @@ def test_returns_all_twoUninitialized_ifInside():
 def test_returns_0_twoUninitialized_ifAbove():
     print("returns 0 for two uninitialized ticks if tick is above")
     tickMapping = {}
-    insertUninitializedTickstoMapping(tickMapping, [-2, 2, 4, 15, 15])
+    print(tickMapping)
+    insertUninitializedTickstoMapping(tickMapping, [-2, 2, 4, 15])
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 4, 15, 15)
     assert feeGrowthInside0X128 == 0
     assert feeGrowthInside1X128 == 0
@@ -70,7 +71,7 @@ def test_returns_0_twoUninitialized_ifAbove():
 def test_returns_0_twoUninitialized_ifBelow():
     print("returns 0 for two uninitialized ticks if tick is below")
     tickMapping = {}
-    insertUninitializedTickstoMapping(tickMapping, [-2, 2, -4, 15, 15])
+    insertUninitializedTickstoMapping(tickMapping, [-2, 2, -4, 15])
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, -4, 15, 15)
     assert feeGrowthInside0X128 == 0
     assert feeGrowthInside1X128 == 0
@@ -80,7 +81,7 @@ def test_substractUpperTick_ifBelow():
     print("subtracts upper tick if below")
     tickMapping = {}
     insertInitializedTicksToMapping(tickMapping, [2], [TickInfo(0, 0, 2, 3)])
-    insertUninitializedTickstoMapping(tickMapping, [-2, 0, 15, 15])
+    insertUninitializedTickstoMapping(tickMapping, [-2, 0, 15])
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
     feeGrowthInside0X128 == 13
     feeGrowthInside1X128 == 12
@@ -90,7 +91,7 @@ def test_substractLowerTick_ifAbove():
     print("subtracts lower tick if above")
     tickMapping = {}
     insertInitializedTicksToMapping(tickMapping, [-2], [TickInfo(0, 0, 2, 3)])
-    insertUninitializedTickstoMapping(tickMapping, [2, 0, 15, 15])
+    insertUninitializedTickstoMapping(tickMapping, [2, 0, 15])
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
     feeGrowthInside0X128 == 13
     feeGrowthInside1X128 == 12
@@ -100,7 +101,7 @@ def test_substractUpperAndLower_ifInside():
     print("subtracts upper and lower tick if inside")
     tickMapping = {}
     insertInitializedTicksToMapping(tickMapping, [-2, 2], [TickInfo(0, 0, 2, 3), TickInfo(0, 0, 4, 1)])
-    insertUninitializedTickstoMapping(tickMapping, [0, 15, 15])
+    insertUninitializedTickstoMapping(tickMapping, [0, 15])
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
     feeGrowthInside0X128 == 9
     feeGrowthInside1X128 == 11
@@ -112,7 +113,7 @@ def test_overflow_insideTick():
     insertInitializedTicksToMapping(
         tickMapping, [-2, 2], [TickInfo(0, 0, MAX_UINT256 - 3, MAX_UINT256 - 2), TickInfo(0, 0, 3, 5)]
     )
-    insertUninitializedTickstoMapping(tickMapping, [0, 15, 15])
+    insertUninitializedTickstoMapping(tickMapping, [0, 15])
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
     feeGrowthInside0X128 == 16
     feeGrowthInside1X128 == 13
