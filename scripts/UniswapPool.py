@@ -90,7 +90,7 @@ class UniswapPool(Account):
     def __init__(self, token0, token1, fee, tickSpacing):
         # TODO: Initialize pool balances here or in initialize function call or just transfer balances in test?
         # Contract storage variables
-        super().__init__("UniswapPool", 0, 0)
+        super().__init__("UniswapPool", [token0,token1],[0, 0])
         self.token0 = token0
         self.token1 = token1
         self.fee = fee
@@ -108,7 +108,6 @@ class UniswapPool(Account):
         self.positions = dict()
 
     ### @dev Common checks for valid tick inputs.
-    @classmethod
     def checkTicks(tickLower, tickUpper):
         assert tickLower < tickUpper, "TLU"
         assert tickLower >= TickMath.MIN_TICK, "TLM"
@@ -155,7 +154,7 @@ class UniswapPool(Account):
                 )
             elif _slot0.tick < params.tickUpper:
                 ## current tick is inside the passed range
-                liquidityBefore = liquidity
+                liquidityBefore = self.liquidity
                 ## SLOAD for gas optimization
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -165,7 +164,7 @@ class UniswapPool(Account):
                     TickMath.getSqrtRatioAtTick(params.tickLower), _slot0.sqrtPriceX96, params.liquidityDelta
                 )
 
-                liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta)
+                self.liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta)
             else:
                 ## current tick is above the passed range; liquidity can only become in range by crossing from right to
                 ## left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -214,14 +213,17 @@ class UniswapPool(Account):
                 self.maxLiquidityPerTick,
             )
         
-        assert tick % self.tickSpacing == 0 ## ensure that the tick is spaced
-
+        if flippedLower:
+            assert tickLower % self.tickSpacing == 0 ## ensure that the tick is spaced
+        if flippedUpper:
+            assert tickUpper % self.tickSpacing == 0 ## ensure that the tick is spaced
+            
 
         (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
             self.ticks, tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128
         )
 
-        position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128)
+        Position.update(position,liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128)
 
         ## clear any tick data that is no longer needed
         if liquidityDelta < 0:
@@ -233,7 +235,7 @@ class UniswapPool(Account):
 
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
-    def mint(self, recipient, tickLower, tickUpper, amount, data):
+    def mint(self, recipient, tickLower, tickUpper, amount):
         assert amount > 0
         checkInt128(amount)
         (_, amount0Int, amount1Int) = self._modifyPosition(
@@ -244,17 +246,18 @@ class UniswapPool(Account):
         amount1 = amount1Int
 
         if amount0 > 0:
-            balance0Before = self.balanceToken0
+            balance0Before = self.balances[self.token0]
         if amount1 > 0:
-            balance1Before = self.balanceToken1
+            balance1Before = self.balances[self.token1]
 
         # Transfer tokens
-        recipient.transferTokens(self, amount0, amount1)
+        recipient.transferToken(self, self.token0, amount0)
+        recipient.transferToken(self, self.token1, amount1)
 
         if amount0 > 0:
-            assert SafeMath.add(balance0Before, amount0) <= self.balanceToken0, "M0"
+            assert SafeMath.add(balance0Before, amount0) <= self.balances[self.token0], "M0"
         if amount1 > 0:
-            assert SafeMath.add(balance1Before, amount1) <= self.balanceToken1, "M1"
+            assert SafeMath.add(balance1Before, amount1) <= self.balances[self.token1], "M1"
 
         return (amount0, amount1)
 
@@ -305,7 +308,7 @@ class UniswapPool(Account):
         return (amount0, amount1)
 
     ### @inheritdoc IUniswapV3PoolActions
-    def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96, data):
+    def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
         assert amountSpecified != 0, "AS"
 
         slot0Start = self.slot0

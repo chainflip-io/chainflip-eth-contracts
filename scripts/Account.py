@@ -1,25 +1,26 @@
 
 class Account:
-    
-    def __init__(self, name, balanceToken0, balanceToken1):
+    def __init__(self, name, tokens, balances):
         self.name = name
-        self.balanceToken0 = balanceToken0
-        self.balanceToken1 = balanceToken1
+        assert len(tokens) == len(balances)
+        # Check uniquness of tokens list
+        assert len(set(tokens)) == len(tokens)
+        self.tokens = tokens
+        self.balances = {}
+        for i in range(len(tokens)):
+            self.balances[tokens[i]] = balances[i]
 
     # Add transfer and receive tokens functions
-    def transferTokens(self, recipient, amount0, amount1):
+    def transferToken(self, recipient, token, amount):
         # Safeguard checks
-        assert amount0 >= 0 and amount1 >= 0
-        assert self.balanceToken0 >= amount0, "Insufficient balance"
-        assert self.balanceToken1 >= amount1, "Insufficient balance"
+        assert amount >= 0
+        assert self.balances[token] >= amount, "Insufficient balance"
 
-        self.balanceToken0 -= amount0
-        self.balanceToken1 -= amount1
-        recipient.receiveTokens(amount0, amount1)
+        self.balances[token] -= amount
+        recipient.receiveToken(token, amount)
 
-    def receiveTokens(self, amount0, amount1):
+    def receiveToken(self, token, amount):
         # Safeguard check
-        assert amount0 >= 0 and amount1 >= 0
+        assert amount >= 0
         
-        self.balanceToken0 += amount0
-        self.balanceToken1 += amount1
+        self.balances[token] += amount

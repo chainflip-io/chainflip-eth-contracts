@@ -29,6 +29,8 @@ MAX_INT24 = 2**23 - 1
 MIN_INT128 = - 2**128
 MAX_INT128 = 2**127 - 1
 
+TEST_TOKENS = ["TokenA", "TokenB"]
+
 def getMinTick(tickSpacing):
     return math.ceil(-887272 / tickSpacing) * tickSpacing
 
