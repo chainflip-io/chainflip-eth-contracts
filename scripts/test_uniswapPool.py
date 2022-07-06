@@ -104,3 +104,126 @@ def test_fails_amountGtMax(initializedPool, accounts):
     tryExceptHandler(pool.mint, "LO", accounts[0], minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross + 1)
     pool.mint(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)
 
+def test_fails_totalAmountatTick_gtMAX(initializedPool, accounts):
+    print('fails if total amount at tick exceeds the max')
+    pool, _, minTick, maxTick, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 1000)
+
+    maxLiquidityGross = pool.maxLiquidityPerTick
+    tryExceptHandler(pool.mint, "LO", accounts[0], minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross - 1000 + 1)
+    tryExceptHandler(pool.mint, "LO", accounts[0], minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross - 1000+1)
+    tryExceptHandler(pool.mint, "LO", accounts[0], minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross - 1000 + 1)
+    pool.mint(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross - 1000)
+
+def test_fails_zeroAmount(initializedPool, accounts):
+    print('fails if amount is zero')
+    pool, _, minTick, maxTick, _, tickSpacing = initializedPool
+    tryExceptHandler(pool.mint, "", accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 0)
+
+# Success cases
+
+def test_initial_balances(initializedPool):
+    print('fails if amount is zero')
+    pool, _, _, _, _, _ = initializedPool
+    assert pool.balances[pool.token0] == 9996
+    assert pool.balances[pool.token1] == 1000
+
+def test_initialTick(initializedPool):
+    print('fails if amount is zero')
+    pool, _, _, _, _, _ = initializedPool
+    assert pool.slot0.tick == -23028
+
+# Above current tick
+def test_transferToken0_only(initializedPool, accounts):
+    print('transferToken0 only')
+    pool, _, _, _, _, _ = initializedPool
+    (amount0, amount1) = pool.mint(accounts[0], -22980, 0, 10000)
+    assert amount0 != 0
+    assert amount1 == 0
+    assert pool.balances[pool.token0] == 9996 + 21549
+    assert pool.balances[pool.token1] == 1000    
+
+def test_maxTick_maxLeverage(initializedPool, accounts):
+    print('max tick with max leverage')
+    pool, _, _, maxTick, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], maxTick - tickSpacing, maxTick, 2**102)
+    assert pool.balances[pool.token0] == 9996 + 828011525
+    assert pool.balances[pool.token1] == 1000
+
+def test_maxTick(initializedPool, accounts):
+    print('works for max tick')
+    pool, _, _, maxTick, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], -22980, maxTick, 10000)
+    assert pool.balances[pool.token0] == 9996 + 31549
+    assert pool.balances[pool.token1] == 1000
+
+def test_removingWorks(initializedPool, accounts):
+    print('removing works')
+    pool, _, _, _, _, _ = initializedPool
+    pool.mint(accounts[0], -240, 0, 10000)
+    pool.burn(accounts[0],-240, 0, 10000)
+    ( amount0, amount1 ) = pool.collect(accounts[0], -240, 0, MAX_UINT128, MAX_UINT128)
+    assert amount0 == 120
+    assert amount1 == 0
+
+def test_addLiquidity_toLiquidityGross(initializedPool, accounts):
+    print('addLiquidity to liquidity gross')
+    pool, _, _, _, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], -240, 0, 100)
+    assert pool.ticks[-240].liquidityGross == 100
+    assert pool.ticks[0].liquidityGross == 100
+    # No liquidityGross === tick doesn't exist
+    assert not pool.ticks.__contains__(tickSpacing)
+    assert not pool.ticks.__contains__(tickSpacing*2)
+    pool.mint(accounts[0], -240, tickSpacing, 150)
+    assert pool.ticks[-240].liquidityGross == 250
+    assert pool.ticks[0].liquidityGross == 100
+    assert pool.ticks[tickSpacing].liquidityGross == 150
+    # No liquidityGross === tick doesn't exist
+    assert not pool.ticks.__contains__(tickSpacing*2)
+    pool.mint(accounts[0], 0, tickSpacing * 2, 60)
+    assert pool.ticks[-240].liquidityGross == 250
+    assert pool.ticks[0].liquidityGross == 160
+    assert pool.ticks[tickSpacing].liquidityGross == 150
+    assert pool.ticks[tickSpacing * 2].liquidityGross == 60   
+
+
+def test_removeLiquidity_fromLiquidityGross(initializedPool, accounts):
+    print('removes liquidity from liquidityGross')
+    pool, _, _, _, _, _ = initializedPool
+    pool.mint(accounts[0], -240, 0, 100)
+    pool.mint(accounts[0], -240, 0, 40)
+    pool.burn(accounts[0],-240, 0, 90)
+    assert pool.ticks[-240].liquidityGross == 50
+    assert pool.ticks[0].liquidityGross == 50
+
+def test_clearTickLower_ifLastPositionRemoved(initializedPool, accounts):
+    print('clears tick lower if last position is removed')
+    pool, _, _, _, _, _ = initializedPool
+    pool.mint(accounts[0], -240, 0, 100)
+    pool.burn(accounts[0],-240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticks.__contains__(-240)    
+
+def test_clearTickUpper_ifLastPositionRemoved(initializedPool, accounts):
+    print('clears tick upper if last position is removed')
+    pool, _, _, _, _, _ = initializedPool
+    pool.mint(accounts[0], -240, 0, 100)
+    pool.burn(accounts[0],-240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticks.__contains__(0)
+
+def test_clearsTick_ifNotUser(initializedPool, accounts):
+    print('only clears the tick that is not used at all')
+    pool, _, _, _, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], -240, 0, 100)
+    pool.mint(accounts[1], -tickSpacing, 0, 250)
+    pool.burn(accounts[0],-240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticks.__contains__(-240)    
+    tickInfo = pool.ticks[-tickSpacing]
+    assert tickInfo.liquidityGross == 250
+    assert tickInfo.feeGrowthOutside0X128 == 0
+    assert tickInfo.feeGrowthOutside1X128 == 0
+
+# To continue on UniswapV3Pool.spec.ts line 359

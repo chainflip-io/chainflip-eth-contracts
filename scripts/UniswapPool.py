@@ -139,6 +139,10 @@ class UniswapPool(Account):
         _slot0 = self.slot0
         ## SLOAD for gas optimization
 
+        # Initialize values
+        amount0 = 0
+        amount1 = 0
+
         position = self._updatePosition(
             params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, _slot0.tick
         )
@@ -275,10 +279,10 @@ class UniswapPool(Account):
 
         if amount0 > 0:
             position.tokensOwed0 -= amount0
-            self.transferTokens(recipient, amount0, 0)
+            self.transferToken(recipient, self.token0, amount0)
         if amount1 > 0:
             position.tokensOwed1 -= amount1
-            self.transferTokens(recipient, 0, amount1)
+            self.transferToken(recipient, self.token1, amount1)
 
         return (amount0, amount1)
 
