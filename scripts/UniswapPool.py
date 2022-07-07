@@ -83,6 +83,10 @@ class StepComputations:
     ## how much fee is being paid in
     feeAmount: int
 
+@dataclass
+class ProtocolFees:
+    token0: int
+    token1: int
 
 class UniswapPool(Account):
 
@@ -101,7 +105,7 @@ class UniswapPool(Account):
         self.slot0 = Slot0(0, 0, 0)
         self.feeGrowthGlobal0X128 = 0
         self.feeGrowthGlobal1X128 = 0
-        self.protocolFees = 0
+        self.protocolFees = ProtocolFees(0,0)
         self.liquidity = 0
         # dict ( int24 => Tick.Info)
         self.ticks = dict()
@@ -328,7 +332,7 @@ class UniswapPool(Account):
 
         feeProtocol = (slot0Start.feeProtocol % 16) if zeroForOne else (slot0Start.feeProtocol >> 4)
 
-        cache = SwapCache(self.liquidity, feeProtocol, 0, 0, False)
+        cache = SwapCache(self.liquidity, feeProtocol)
 
         exactInput = amountSpecified > 0
 
@@ -345,7 +349,7 @@ class UniswapPool(Account):
         )
 
         while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
-            step = StepComputations()
+            step = StepComputations(0,0,0,0,0,0,0)
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
@@ -454,14 +458,52 @@ class UniswapPool(Account):
         assert isinstance(recipient, Account)
         if zeroForOne:
             if amount1 < 0:
-                self.transferTokens(recipient, 0, -amount1)
+                self.transferToken(recipient, self.token1, abs(amount1))
 
-            recipient.transferTokens(self, amount0, 0)
+            balanceBefore = self.balances[self.token0]
+            recipient.transferToken(self, self.token0, abs(amount0))
+            assert balanceBefore + abs(amount0) == self.balances[self.token0], 'IIA'
         else:
             if amount0 < 0:
-                self.transferTokens(recipient, -amount0, 0)
+                self.transferToken(recipient, self.token0, abs(amount0))
 
-            recipient.transferTokens(self, amount1, 0)
+            balanceBefore = self.balances[self.token1]
+            recipient.transferToken(self, self.token1, abs(amount1))
+            assert balanceBefore + abs(amount1) == self.balances[self.token1], 'IIA'
+
+        return recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick
+
+
+
+    def setFeeProtocol(self,feeProtocol0, feeProtocol1):
+        assert (feeProtocol0 == 0 or (feeProtocol0 >= 4 and feeProtocol0 <= 10)) and (feeProtocol1 == 0 or (feeProtocol1 >= 4 and feeProtocol1 <= 10))
+        
+        feeProtocolOld = self.slot0.feeProtocol
+        feeProtocolNew = feeProtocol0 + (feeProtocol1 << 4)
+        # Health check
+        assert feeProtocolNew >= 0 and feeProtocolNew <= MAX_UINT8
+        self.slot0.feeProtocol = feeProtocolNew
+        return (feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1)
+
+    def collectProtocol(self, recipient, amount0Requested, amount1Requested):
+        amount0 = self.protocolFees.token0 if amount0Requested > self.protocolFees.token0 else amount0Requested
+        amount1 = self.protocolFees.token1 if amount1Requested > self.protocolFees.token1 else amount1Requested
+
+        if amount0 > 0:
+            if (amount0 == self.protocolFees.token0):
+                amount0 -= 1 ##ensure that the slot is not cleared, for gas savings
+            self.protocolFees.token0 -= amount0
+            self.transferToken(recipient, self.token0, amount0)
+
+        if amount1 > 0:
+            if (amount1 == self.protocolFees.token1):
+                amount1 -= 1 ## ensure that the slot is not cleared, for gas savings
+            self.protocolFees.token1 -= amount1
+            self.transferToken(recipient, self.token1, amount1)
+
+        return amount0, amount1, recipient
+
+
 
     # It is assumed that the keys are within [MIN_TICK , MAX_TICK]
     # We don't run the risk of overshooting tickNext (out of boundaries) as long as ticks (keys) have been initialized

@@ -28,6 +28,7 @@ MIN_INT24 = - 2**24
 MAX_INT24 = 2**23 - 1
 MIN_INT128 = - 2**128
 MAX_INT128 = 2**127 - 1
+MAX_UINT8 = 2**8 - 1
 
 TEST_TOKENS = ["TokenA", "TokenB"]
 
@@ -64,6 +65,8 @@ def expandTo18Decimals(number):
     # Converting to int because python cannot shl on a float
     return int(number * 10**18)
 
+# @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert
+# so we will need to handle that separately if we want to artifially revert to the previous state.
 def tryExceptHandler(fcn, assertMessage, *args):
     reverted = False
     try:
@@ -94,6 +97,9 @@ def tryExceptHandler(fcn, assertMessage, *args):
 
 def checkInt128(number):
     assert number >= MIN_INT128 and number <= MAX_INT128, ''
+
+def checkInt256(number):
+    assert number >= MIN_INT256 and number <= MAX_INT256, ''
 
 # Mimic Solidity uninitialized ticks in Python - inserting keys to an empty value in a map
 def insertUninitializedTickstoMapping(mapping, keys):

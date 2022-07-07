@@ -152,12 +152,12 @@ def test_maxTick_maxLeverage(initializedPool, accounts):
 
 def test_maxTick(initializedPool, accounts):
     print('works for max tick')
-    pool, _, _, maxTick, _, tickSpacing = initializedPool
+    pool, _, _, maxTick, _, _ = initializedPool
     pool.mint(accounts[0], -22980, maxTick, 10000)
     assert pool.balances[pool.token0] == 9996 + 31549
     assert pool.balances[pool.token1] == 1000
 
-def test_removingWorks(initializedPool, accounts):
+def test_remove_aboveCurrentPrice(initializedPool, accounts):
     print('removing works')
     pool, _, _, _, _, _ = initializedPool
     pool.mint(accounts[0], -240, 0, 10000)
@@ -226,4 +226,138 @@ def test_clearsTick_ifNotUser(initializedPool, accounts):
     assert tickInfo.feeGrowthOutside0X128 == 0
     assert tickInfo.feeGrowthOutside1X128 == 0
 
-# To continue on UniswapV3Pool.spec.ts line 359
+# Including current price
+def test_transferCurrentPriceTokens(initializedPool, accounts):
+    print('price within range: transfers current price of both tokens')
+    pool, _, minTick, maxTick, _, tickSpacing = initializedPool
+    (amount0, amount1) = pool.mint(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 100)
+    assert amount0 == 317
+    assert amount1 == 32
+    assert pool.balances[pool.token0] == 9996 + 317
+    assert pool.balances[pool.token1] == 1000 + 32
+
+def test_initializes_lowerTick(initializedPool, accounts):
+    print('initializes lower tick')
+    pool, _, minTick, maxTick, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 100)
+    liquidityGross =  pool.ticks[minTick + tickSpacing].liquidityGross
+    assert liquidityGross == 100
+
+def test_initializes_upperTick(initializedPool, accounts):
+    print('initializes upper tick')
+    pool, _, minTick, maxTick, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 100)
+    liquidityGross =  pool.ticks[maxTick - tickSpacing].liquidityGross
+    assert liquidityGross == 100
+
+def test_works_minMaxTick(initializedPool, accounts):
+    print('works for min/ max tick')
+    pool, _, minTick, maxTick, _, _ = initializedPool
+    (amount0, amount1) = pool.mint(accounts[0], minTick, maxTick, 10000)
+    assert amount0 == 31623
+    assert amount1 == 3163    
+    assert pool.balances[pool.token0] == 9996 + 31623
+    assert pool.balances[pool.token1] == 1000 + 3163
+
+def test_removing_includesCurrentPrice(initializedPool, accounts):
+    print('removing works')
+    pool, _, minTick, maxTick, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 100)
+    pool.burn(accounts[0],minTick + tickSpacing, maxTick - tickSpacing, 100)
+    ( amount0, amount1 ) = pool.collect(accounts[0], minTick + tickSpacing, maxTick - tickSpacing, MAX_UINT128, MAX_UINT128)
+    assert amount0 == 316
+    assert amount1 == 31
+
+# Below current price
+def test_transfer_onlyToken1(initializedPool, accounts):
+    print('transfers token1 only')
+    pool, _, _, _, _, _ = initializedPool
+    (amount0, amount1) = pool.mint(accounts[0], -46080, -23040, 10000)
+    assert amount0 == 0
+    assert amount1 == 2162
+    assert pool.balances[pool.token0] == 9996
+    assert pool.balances[pool.token1] == 1000 + 2162
+
+def test_minTick_maxLeverage(initializedPool, accounts):
+    print('min tick with max leverage')
+    pool, _, minTick, _, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], minTick, minTick + tickSpacing, 2**102)
+    assert pool.balances[pool.token0] == 9996
+    assert pool.balances[pool.token1] == 1000 + 828011520
+
+def test_works_minTick(initializedPool, accounts):
+    print('works for min tick')
+    pool, _, minTick, _, _, _ = initializedPool
+    (amount0, amount1) = pool.mint(accounts[0], minTick, -23040, 10000)
+    assert amount0 == 0
+    assert amount1 == 3161    
+    assert pool.balances[pool.token0] == 9996
+    assert pool.balances[pool.token1] == 1000 + 3161
+
+def test_removing_belowCurrentPrice(initializedPool, accounts):
+    print('removing works')
+    pool, _, minTick, _, _, tickSpacing = initializedPool
+    pool.mint(accounts[0], -46080, -46020, 10000)
+    pool.burn(accounts[0],-46080, -46020, 10000)
+    ( amount0, amount1 ) = pool.collect(accounts[0], -46080, -46020, MAX_UINT128, MAX_UINT128)
+    assert amount0 == 0
+    assert amount1 == 3
+
+### UTILITIES ###
+def swapExact0For1(pool, amount, recipient, **kwargs):
+    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[0]))
+    return swap(pool, TEST_TOKENS[0], [amount, 0], recipient, sqrtPriceLimitX96)
+
+def swap0ForExact1(pool , amount, recipient, **kwargs):
+    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[0]))
+    return swap(pool,TEST_TOKENS[0], [0, amount], recipient, sqrtPriceLimitX96)
+
+def swapExact1For0(pool , amount, recipient, **kwargs):
+    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[1]))
+    return swap(pool,TEST_TOKENS[1], [amount, 0], recipient, sqrtPriceLimitX96)
+
+def swap1ForExact0(pool , amount, recipient, **kwargs):
+    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[1]))
+    return swap(pool,TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
+
+def swap(pool, inputToken, amounts, recipient, sqrtPriceLimitX96):
+    [amountIn, amountOut] = amounts
+    exactInput = (amountOut == 0)
+    amount = amountIn if exactInput else amountOut
+
+    if inputToken == TEST_TOKENS[0]:
+        if exactInput:
+            checkInt128(amount)
+            pool.swap(recipient, True, amount, sqrtPriceLimitX96)
+        else:
+            checkInt128(-amount)
+            pool.swap(recipient, True, -amount, sqrtPriceLimitX96)
+    else:
+        if exactInput:
+            checkInt128(amount)
+            pool.swap(recipient, False, amount, sqrtPriceLimitX96)
+        else:
+            checkInt128(-amount)
+            pool.swap(recipient, False, -amount, sqrtPriceLimitX96)
+
+def getSqrtPriceLimitX96(inputToken):
+    if inputToken == TEST_TOKENS[0]:
+        return TickMath.MIN_SQRT_RATIO + 1
+    else:
+        return TickMath.MAX_SQRT_RATIO - 1
+
+
+################
+
+def test_fees_duringSwap(initializedPool, accounts):
+    print('protocol fees accumulate as expected during swap')
+    pool, _, minTick, maxTick, _, tickSpacing = initializedPool
+    pool.setFeeProtocol(6,6)
+    
+    pool.mint(accounts[0],  minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
+    swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0])
+    swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0])
+
+    assert pool.protocolFees.token0 == 50000000000000
+    assert pool.protocolFees.token1 == 5000000000000
+
