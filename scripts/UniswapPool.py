@@ -171,7 +171,6 @@ class UniswapPool(Account):
                 amount1 = SqrtPriceMath.getAmount1Delta(
                     TickMath.getSqrtRatioAtTick(params.tickLower), _slot0.sqrtPriceX96, params.liquidityDelta
                 )
-
                 self.liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta)
             else:
                 ## current tick is above the passed range; liquidity can only become in range by crossing from right to
@@ -332,7 +331,7 @@ class UniswapPool(Account):
 
         feeProtocol = (slot0Start.feeProtocol % 16) if zeroForOne else (slot0Start.feeProtocol >> 4)
 
-        cache = SwapCache(self.liquidity, feeProtocol)
+        cache = SwapCache(feeProtocol, self.liquidity)
 
         exactInput = amountSpecified > 0
 
@@ -459,7 +458,6 @@ class UniswapPool(Account):
         if zeroForOne:
             if amount1 < 0:
                 self.transferToken(recipient, self.token1, abs(amount1))
-
             balanceBefore = self.balances[self.token0]
             recipient.transferToken(self, self.token0, abs(amount0))
             assert balanceBefore + abs(amount0) == self.balances[self.token0], 'IIA'

@@ -303,61 +303,17 @@ def test_removing_belowCurrentPrice(initializedPool, accounts):
     assert amount0 == 0
     assert amount1 == 3
 
-### UTILITIES ###
-def swapExact0For1(pool, amount, recipient, **kwargs):
-    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[0]))
-    return swap(pool, TEST_TOKENS[0], [amount, 0], recipient, sqrtPriceLimitX96)
-
-def swap0ForExact1(pool , amount, recipient, **kwargs):
-    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[0]))
-    return swap(pool,TEST_TOKENS[0], [0, amount], recipient, sqrtPriceLimitX96)
-
-def swapExact1For0(pool , amount, recipient, **kwargs):
-    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[1]))
-    return swap(pool,TEST_TOKENS[1], [amount, 0], recipient, sqrtPriceLimitX96)
-
-def swap1ForExact0(pool , amount, recipient, **kwargs):
-    sqrtPriceLimitX96 = kwargs.get("sqrtPriceLimitX96", getSqrtPriceLimitX96(TEST_TOKENS[1]))
-    return swap(pool,TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
-
-def swap(pool, inputToken, amounts, recipient, sqrtPriceLimitX96):
-    [amountIn, amountOut] = amounts
-    exactInput = (amountOut == 0)
-    amount = amountIn if exactInput else amountOut
-
-    if inputToken == TEST_TOKENS[0]:
-        if exactInput:
-            checkInt128(amount)
-            pool.swap(recipient, True, amount, sqrtPriceLimitX96)
-        else:
-            checkInt128(-amount)
-            pool.swap(recipient, True, -amount, sqrtPriceLimitX96)
-    else:
-        if exactInput:
-            checkInt128(amount)
-            pool.swap(recipient, False, amount, sqrtPriceLimitX96)
-        else:
-            checkInt128(-amount)
-            pool.swap(recipient, False, -amount, sqrtPriceLimitX96)
-
-def getSqrtPriceLimitX96(inputToken):
-    if inputToken == TEST_TOKENS[0]:
-        return TickMath.MIN_SQRT_RATIO + 1
-    else:
-        return TickMath.MAX_SQRT_RATIO - 1
-
-
-################
-
 def test_fees_duringSwap(initializedPool, accounts):
     print('protocol fees accumulate as expected during swap')
     pool, _, minTick, maxTick, _, tickSpacing = initializedPool
     pool.setFeeProtocol(6,6)
     
     pool.mint(accounts[0],  minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
-    swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0])
-    swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0])
+    swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
+    swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0], None)
 
     assert pool.protocolFees.token0 == 50000000000000
     assert pool.protocolFees.token1 == 5000000000000
 
+    ## Continue UniswapV3Pool.spec.ts line 479. First test swapping functionality in
+    ## 'UniswapV3Pool.swaps.spec.ts' and then debug this.

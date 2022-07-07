@@ -5,6 +5,10 @@ import traceback
 import math
 from dataclasses import dataclass
 
+### The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
+MIN_SQRT_RATIO = 4295128739
+### The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
+MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342
 
 @dataclass
 class TickInfo:
@@ -115,3 +119,59 @@ def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
     assert len(keys) == len(ticksInfo)
     for i in range(len(keys)):
         insertTickInMapping(mapping,keys[i],ticksInfo[i])
+
+
+
+
+
+
+### POOL SWAPS ###
+def swapExact0For1(pool, amount, recipient,sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    print(sqrtPriceLimitX96)
+    return swap(pool, TEST_TOKENS[0], [amount, 0], recipient, sqrtPriceLimitX96)
+
+def swap0ForExact1(pool , amount, recipient, sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    return swap(pool,TEST_TOKENS[0], [0, amount], recipient, sqrtPriceLimitX96)
+
+def swapExact1For0(pool , amount, recipient, sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[1])
+    return swap(pool,TEST_TOKENS[1], [amount, 0], recipient, sqrtPriceLimitX96)
+
+def swap1ForExact0(pool , amount, recipient, sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    return swap(pool,TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
+
+def swap(pool, inputToken, amounts, recipient, sqrtPriceLimitX96):
+    [amountIn, amountOut] = amounts
+    exactInput = (amountOut == 0)
+    amount = amountIn if exactInput else amountOut
+
+    if inputToken == TEST_TOKENS[0]:
+        if exactInput:
+            checkInt128(amount)
+            return pool.swap(recipient, True, amount, sqrtPriceLimitX96)
+        else:
+            checkInt128(-amount)
+            return pool.swap(recipient, True, -amount, sqrtPriceLimitX96)
+    else:
+        if exactInput:
+            checkInt128(amount)
+            return pool.swap(recipient, False, amount, sqrtPriceLimitX96)
+        else:
+            checkInt128(-amount)
+            return pool.swap(recipient, False, -amount, sqrtPriceLimitX96)
+
+
+def getSqrtPriceLimitX96(inputToken):
+    if inputToken == TEST_TOKENS[0]:
+        return MIN_SQRT_RATIO + 1
+    else:
+        return MAX_SQRT_RATIO - 1
+
+################
+
+
+def formatPrice(price):
+  return (price / (2**96))
