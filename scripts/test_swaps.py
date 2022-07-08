@@ -10,8 +10,8 @@ import pytest
 import copy
 
 # Doing only one pool now to debug
-#@pytest.fixture(params=[0, 1])
-@pytest.fixture(params=[0,1,2,3,4,5,6,7,8,9,10])
+# @pytest.fixture(params=[0, 1])
+@pytest.fixture(params=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 def TEST_POOLS(request, accounts):
     poolFixture = request.getfixturevalue("pool{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -29,7 +29,7 @@ def TEST_POOLS(request, accounts):
 def afterEach(accounts, TEST_POOLS):
     yield
     # Comment out while debugging
-    #print("check can burn positions")
+    # print("check can burn positions")
     # (_, _, pool, _, _, _, poolFixture) = TEST_POOLS
     # for position in poolFixture.positions:
     #     pool.burn(accounts[0], position.tickLower, position.tickUpper, position.liquidity)
@@ -61,7 +61,15 @@ def test_testing(TEST_POOLS, accounts):
         slot0 = pool.slot0
         poolInstance = copy.deepcopy(pool)
 
-        recipient, amount0, amount1, sqrtPriceX96, liquidity, tick = executeSwap(poolInstance, testCase, recipient)
+        try:
+            recipient, amount0, amount1, sqrtPriceX96, liquidity, tick = executeSwap(
+                poolInstance, testCase, recipient
+            )
+        except AssertionError as msg:
+            assert str(msg) == "SPL"
+            # TODO: Add checking against error snapshots
+            continue
+
 
         poolBalance0After = poolInstance.balances[TEST_TOKENS[0]]
         poolBalance1After = poolInstance.balances[TEST_TOKENS[1]]
@@ -77,20 +85,19 @@ def test_testing(TEST_POOLS, accounts):
         if poolBalance0Delta == 0:
             amount0 == 0
         elif poolBalance0Delta <= 0:
-            amount0 == - poolBalance0Delta
+            amount0 == -poolBalance0Delta
         else:
             amount0 == poolBalance0Delta
 
         if poolBalance1Delta == 0:
             amount1 == 0
         elif poolBalance1Delta <= 0:
-            amount1 == - poolBalance1Delta
+            amount1 == -poolBalance1Delta
         else:
             amount1 == poolBalance1Delta
-        
-        # TODO: check that the swap event was emitted too
+
         if poolBalance0Delta != 0:
-            executionPrice = - (poolBalance1Delta / poolBalance0Delta)
+            executionPrice = -(poolBalance1Delta / poolBalance0Delta)
         else:
             executionPrice = "-Infinity"
 
@@ -103,45 +110,50 @@ def test_testing(TEST_POOLS, accounts):
         # print(f'feeGrowthGlobal0X128Delta: {feeGrowthGlobal0X128}')
         # print(f'feeGrowthGlobal1X128Delta: {feeGrowthGlobal1X128}')
         # print(f'poolPriceAfter: {formatPrice(slot0After.sqrtPriceX96)}')  #same as $sqrtPriceX96
-        # print(f'poolPriceBefore: {formatPrice(slot0.sqrtPriceX96)}')       
+        # print(f'poolPriceBefore: {formatPrice(slot0.sqrtPriceX96)}')
         # print(f'tickAfter: {slot0After.tick}') #same as $tick
         # print(f'tickBefore: {slot0.tick}')
 
-        snapshotIndex = swapsSnapshot.index("UniswapV3Pool swap tests "+poolFixture.description + " " + swapCaseToDescription(testCase))
+        # Get snapshot results
+        snapshotIndex = swapsSnapshot.index(
+            "UniswapV3Pool swap tests " + poolFixture.description + " " + swapCaseToDescription(testCase)
+        )
         dict = swapsSnapshot[snapshotIndex + 1]
 
         # For small swaps, the price tends to need bigger margins since we have skipped the roundings - skipping those tests
         # or probably we should improve the rounding logic. Same applies to amounts that should be zero/one and are one/zero
         # In general pytest.approx rel could be smaller but they are higher to account for this.
-        assert float(dict["amount0Before"]) == pytest.approx(poolBalance0,rel = 1e-12)
-        if (float(dict["amount0Delta"]) == 0):
-            assert abs(poolBalance0Delta) <=1
+        assert float(dict["amount0Before"]) == pytest.approx(poolBalance0, rel=1e-12)
+        if float(dict["amount0Delta"]) == 0:
+            assert abs(poolBalance0Delta) <= 1
             # Force this to avoid the assertion error when checking execution price
-            executionPrice = 'Infinity'
+            executionPrice = "Infinity"
         else:
-            assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta,rel = 1e-12)
-        assert float(dict["amount1Before"]) == pytest.approx(poolBalance1,rel = 1e-12)
-        assert float(dict["amount1Delta"]) == pytest.approx(poolBalance1Delta,rel = 1e-12)
-        if (dict["executionPrice"] in ["Infinity","-Infinity", "NaN"]):
+            assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta, rel=1e-12)
+        assert float(dict["amount1Before"]) == pytest.approx(poolBalance1, rel=1e-12)
+        assert float(dict["amount1Delta"]) == pytest.approx(poolBalance1Delta, rel=1e-12)
+        if dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
             # Seems like sometimes in snapshot it is infinity and sometimes NaN
-            assert executionPrice in ["Infinity","-Infinity", "NaN"]
+            assert executionPrice in ["Infinity", "-Infinity", "NaN"]
         else:
-            assert float(dict["executionPrice"]) == pytest.approx(executionPrice,rel = 1e-4)
-        assert float(dict["feeGrowthGlobal0X128Delta"]) == pytest.approx(feeGrowthGlobal0X128,rel = 1e-6)
-        assert float(dict["feeGrowthGlobal1X128Delta"]) == pytest.approx(feeGrowthGlobal1X128,rel = 1e-6)
-        assert float(dict["poolPriceAfter"]) == pytest.approx(float(formatPrice(slot0After.sqrtPriceX96)),rel = 1e-4)
-        assert float(dict["poolPriceBefore"]) == pytest.approx(float(formatPrice(slot0.sqrtPriceX96)),rel = 1e-5)
+            assert float(dict["executionPrice"]) == pytest.approx(executionPrice, rel=1e-4)
+        assert float(dict["feeGrowthGlobal0X128Delta"]) == pytest.approx(feeGrowthGlobal0X128, rel=1e-6)
+        assert float(dict["feeGrowthGlobal1X128Delta"]) == pytest.approx(feeGrowthGlobal1X128, rel=1e-6)
+        assert float(dict["poolPriceAfter"]) == pytest.approx(
+            float(formatPrice(slot0After.sqrtPriceX96)), rel=1e-4
+        )
+        assert float(dict["poolPriceBefore"]) == pytest.approx(
+            float(formatPrice(slot0.sqrtPriceX96)), rel=1e-5
+        )
         assert float(dict["tickAfter"]) == slot0After.tick
         assert float(dict["tickBefore"]) == slot0.tick
 
         successfulTests += 1
 
-
         # print("SUCCESFUL TEST: " + str(testCase))
-    
+
     print("SUCCESFUL POOL TESTED: " + poolFixture.description)
     # assert False
-
 
 
 def executeSwap(pool, testCase, recipient):
@@ -164,23 +176,46 @@ def executeSwap(pool, testCase, recipient):
             return swapToHigherPrice(pool, recipient, testCase["sqrtPriceLimit"])
 
 
-
 def swapCaseToDescription(testCase):
-    priceClause = " to price " + str(formatPrice(testCase["sqrtPriceLimit"])) if testCase.__contains__("sqrtPriceLimit") else ""
+    priceClause = (
+        " to price " + str(formatPrice(testCase["sqrtPriceLimit"]))
+        if testCase.__contains__("sqrtPriceLimit")
+        else ""
+    )
 
     if testCase.__contains__("exactOut"):
         if testCase["exactOut"]:
             if testCase["zeroForOne"]:
-                return "swap token0 for exactly " + str(formatTokenAmount(testCase["amount1"])) + " token1" + priceClause
+                return (
+                    "swap token0 for exactly "
+                    + str(formatTokenAmount(testCase["amount1"]))
+                    + " token1"
+                    + priceClause
+                )
             else:
-                return "swap token1 for exactly " + str(formatTokenAmount(testCase["amount0"])) + " token0" + priceClause
+                return (
+                    "swap token1 for exactly "
+                    + str(formatTokenAmount(testCase["amount0"]))
+                    + " token0"
+                    + priceClause
+                )
         else:
             if testCase["zeroForOne"]:
-                return "swap exactly " + str(formatTokenAmount(testCase["amount0"])) + " token0 for token1" + priceClause
+                return (
+                    "swap exactly "
+                    + str(formatTokenAmount(testCase["amount0"]))
+                    + " token0 for token1"
+                    + priceClause
+                )
             else:
-                return "swap exactly " + str(formatTokenAmount(testCase["amount1"])) + " token1 for token0" + priceClause
+                return (
+                    "swap exactly "
+                    + str(formatTokenAmount(testCase["amount1"]))
+                    + " token1 for token0"
+                    + priceClause
+                )
     else:
         if testCase["zeroForOne"]:
-            return "swap token0 for token1"+priceClause
+            return "swap token0 for token1" + priceClause
         else:
-            return "swap token1 for token0"+priceClause
+            return "swap token1 for token0" + priceClause

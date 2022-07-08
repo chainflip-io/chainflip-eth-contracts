@@ -304,13 +304,6 @@ def pool14():
     )
 
 
-# @pytest.fixture(params=[0, 1])
-# def TEST_POOLS(request):
-#     your_fixture = request.getfixturevalue("pool{}".format(request.param))
-#     # here you can call your_fixture.do_something()
-#     return your_fixture
-
-
 @dataclass
 class SWAP_TEST:
     zeroForOne: bool
@@ -378,11 +371,12 @@ DEFAULT_POOL_SWAP_TESTS = [
     #   "exactOut": False,
     #   "amount1": 1000,
     # },
-    # {
-    #   "zeroForOne": True,
-    #   "exactOut": True,
-    #   "amount1": 1000,
-    # },
+    {
+      "zeroForOne": True,
+      "exactOut": True,
+      "amount1": 1000,
+    },
+    # TODO: THIS ONE IS QUITE OFF, look into it    
     # {
     #   "zeroForOne": False,
     #   "exactOut": True,
@@ -397,13 +391,12 @@ DEFAULT_POOL_SWAP_TESTS = [
         "sqrtPriceLimit": encodePriceSqrt(2, 5),
         "zeroForOne": True,
     },
-    ## THIS TWO FAIL WITH SPL ERROR - HANDLE IT WITH SNAPSHOTS
-    # {
-    #   "sqrtPriceLimit": encodePriceSqrt(5, 2),
-    #   "zeroForOne": True,
-    # },
-    # {
-    #   "sqrtPriceLimit": encodePriceSqrt(2, 5),
-    #   "zeroForOne": False,
-    # },
+    {
+      "sqrtPriceLimit": encodePriceSqrt(5, 2),
+      "zeroForOne": True,
+    },
+    {
+      "sqrtPriceLimit": encodePriceSqrt(2, 5),
+      "zeroForOne": False,
+    },
 ]
