@@ -11,64 +11,71 @@ def accounts():
     account1 = Account("BOB", TEST_TOKENS, [MAX_INT256, MAX_INT256])
     return account0,account1
 
-@pytest.fixture
-def createPool():
+def createPool(feeAmount):
     factory = Factory()
-    feeAmount = FeeAmount.MEDIUM
-    tickSpacing = TICK_SPACINGS[FeeAmount.MEDIUM]
-    pool = factory.createPool(TEST_TOKENS[0],TEST_TOKENS[1], FeeAmount.MEDIUM)
+    feeAmount = feeAmount
+    tickSpacing = TICK_SPACINGS[feeAmount]
+    pool = factory.createPool(TEST_TOKENS[0],TEST_TOKENS[1], feeAmount)
     minTick = getMinTick(tickSpacing)
     maxTick = getMaxTick(tickSpacing)
-    return pool, factory, minTick, maxTick, feeAmount, tickSpacing
+    return pool, factory, minTick, maxTick, feeAmount, tickSpacing    
 
 @pytest.fixture
-def initializedPool(createPool, accounts):
-    pool, _, minTick, maxTick, _, _ = createPool
+def createPoolMedium():
+    return createPool(FeeAmount.MEDIUM)
+
+@pytest.fixture
+def createPoolLow():
+    return createPool(FeeAmount.LOW)
+
+@pytest.fixture
+def initializedPool(createPoolMedium, accounts):
+    pool, _, minTick, maxTick, _, _ = createPoolMedium
     pool.initialize(encodePriceSqrt(1, 10))
     pool.mint(accounts[0], minTick, maxTick, 3161)    
-    return createPool
+    return createPoolMedium
 
-def test_constructor(createPool):
+def test_constructor(createPoolMedium):
     print('constructor initializes immutables')
-    pool, factory, _, _, _, _ = createPool
+    pool, factory, _, _, _, _ = createPoolMedium
     assert factory.getPool[0] == [TEST_TOKENS[0], TEST_TOKENS[1], FeeAmount.MEDIUM]
     assert pool.token0 == TEST_TOKENS[0]
     assert pool.token1 == TEST_TOKENS[1]
 
 # Initialize
-def test_fails_alreadyInitialized(createPool):
+def test_fails_alreadyInitialized(createPoolMedium):
     print('fails if already initialized')
-    pool, _, _, _, _, _ = createPool
+    pool, _, _, _, _, _ = createPoolMedium
     pool.initialize(encodePriceSqrt(1, 1))
     tryExceptHandler(pool.initialize, "AI", encodePriceSqrt(1, 1))  
 
-def test_fails_lowStartingPrice(createPool):
-    pool, _, _, _, _, _ = createPool
+def test_fails_lowStartingPrice(createPoolMedium):
+    pool, _, _, _, _, _ = createPoolMedium
     print('fails if already initialized')
     tryExceptHandler(pool.initialize,  "R", 1)
     tryExceptHandler(pool.initialize,  "R", TickMath.MIN_SQRT_RATIO - 1)
 
-def test_fails_highStartingPrice(createPool):
+def test_fails_highStartingPrice(createPoolMedium):
     print('fails if already initialized')
-    pool, _, _, _, _, _ = createPool
+    pool, _, _, _, _, _ = createPoolMedium
     tryExceptHandler(pool.initialize,  "R", TickMath.MAX_SQRT_RATIO)
     tryExceptHandler(pool.initialize,  "R", MAX_UINT160)
 
-def test_initialize_MIN_SQRT_RATIO(createPool):
+def test_initialize_MIN_SQRT_RATIO(createPoolMedium):
     print('can be initialized at MIN_SQRT_RATIO')
-    pool, _, _, _, _, _ = createPool
+    pool, _, _, _, _, _ = createPoolMedium
     pool.initialize(TickMath.MIN_SQRT_RATIO)
     assert pool.slot0.tick == getMinTick(1)
 
-def test_initialize_MAX_SQRT_RATIO_minusOne(createPool):
+def test_initialize_MAX_SQRT_RATIO_minusOne(createPoolMedium):
     print('can be initialized at MAX_SQRT_RATIO - 1')
-    pool, _, _, _, _, _ = createPool
+    pool, _, _, _, _, _ = createPoolMedium
     pool.initialize(TickMath.MAX_SQRT_RATIO - 1)
     assert pool.slot0.tick == getMaxTick(1) - 1
 
-def test_setInitialVariables(createPool):
+def test_setInitialVariables(createPoolMedium):
     print('sets initial variables')
-    pool, _, _, _, _, _ = createPool
+    pool, _, _, _, _, _ = createPoolMedium
     price = encodePriceSqrt(1, 2)
     pool.initialize(price)
 
@@ -77,8 +84,8 @@ def test_setInitialVariables(createPool):
     
 # Mint
 
-def test_initialize_10to1(createPool, accounts):
-    pool, _, minTick, maxTick, _, _ = createPool
+def test_initialize_10to1(createPoolMedium, accounts):
+    pool, _, minTick, maxTick, _, _ = createPoolMedium
     pool.initialize(encodePriceSqrt(1, 10))
     pool.mint(accounts[0], minTick, maxTick, 3161)
 
@@ -357,31 +364,31 @@ def test_notAllowPoke_uninitialized_position(initializedPool, accounts):
 
 # Burn
 
+## the combined amount of liquidity that the pool is initialized with (including the 1 minimum liquidity that is burned)
 initializeLiquidityAmount = expandTo18Decimals(2)
-def initializeAtZeroTick(accounts, pool):
+
+def initializeAtZero(pool, accounts):
     pool.initialize(encodePriceSqrt(1, 1))
     tickSpacing = pool.tickSpacing
     [min, max] = [getMinTick(tickSpacing), getMaxTick(tickSpacing)]
-    pool.mint(accounts[0], min, max, initializeLiquidityAmount)
+    pool.mint(accounts[0], min, max, initializeLiquidityAmount)    
 
 @pytest.fixture
-def initializedPoolAtZero(createPool, accounts):
-    pool, _, _, _, _, _ = createPool
-    initializeAtZeroTick(accounts, pool)
-    return createPool
+def mediumPoolInitializedAtZero(createPoolMedium, accounts):
+    pool, _, _, _, _, _ = createPoolMedium
+    initializeAtZero(pool, accounts)  
+    return createPoolMedium
 
 def checkTickIsClear(pool, tick):
-      tickInfo = pool.ticks[tick]
-      tickInfo.liquidityGross == 0
-      tickInfo.feeGrowthOutside0X128 == 0
-      tickInfo.feeGrowthOutside1X128 == 0
-      tickInfo.liquidityNet == 0
+    assert pool.ticks.__contains__(tick) == False
 
 def checkTickIsNotClear(pool, tick):
-      assert pool.ticks[tick].liquidityGross != 0
+    # Make check explicit
+    assert pool.ticks.__contains__(tick)
+    assert pool.ticks[tick].liquidityGross != 0
 
-def test_notClearPosition_ifNoMoreLiquidity(accounts, initializedPoolAtZero):
-    pool, _, minTick, maxTick, _, tickSpacing = initializedPoolAtZero
+def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
+    pool, _, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
     print('does not clear the position fee growth snapshot if no more liquidity')
     ## some activity that would make the ticks non-zero
 
@@ -400,3 +407,109 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, initializedPoolAtZero):
     assert tickInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
 
 # Continue UniswapV3Pool.spects.ts line 596
+def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
+    print('clears the tick if its the last position using it')
+    pool, _, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    tickLower = minTick + tickSpacing
+    tickUpper = maxTick - tickSpacing
+    ## some activity that would make the ticks non-zero
+    pool.mint(accounts[0], tickLower, tickUpper, 1)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burn(accounts[0],tickLower, tickUpper, 1)
+    checkTickIsClear(pool, tickLower)
+    checkTickIsClear(pool, tickUpper)
+
+
+def test_clearOnlyLower_ifUpperUsed(accounts, mediumPoolInitializedAtZero):
+    print('clears only the lower tick if upper is still used')
+    pool, _, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    tickLower = minTick + tickSpacing
+    tickUpper = maxTick - tickSpacing
+    ## some activity that would make the ticks non-zero
+    pool.mint(accounts[0], tickLower, tickUpper, 1)
+    pool.mint(accounts[0], tickLower + tickSpacing, tickUpper, 1)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burn(accounts[0],tickLower, tickUpper, 1)
+    checkTickIsClear(pool, tickLower)
+    checkTickIsNotClear(pool, tickUpper)
+
+def test_clearsOnlyUpper_ifLowerUsed(accounts, mediumPoolInitializedAtZero):
+    print('clears only the upper tick if lower is still used')
+    pool, _, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    tickLower = minTick + tickSpacing
+    tickUpper = maxTick - tickSpacing
+    ## some activity that would make the ticks non-zero
+    pool.mint(accounts[0], tickLower, tickUpper, 1)
+    pool.mint(accounts[0], tickLower, tickUpper - tickSpacing, 1)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burn(accounts[0],tickLower, tickUpper, 1)
+    checkTickIsNotClear(pool, tickLower)
+    checkTickIsClear(pool, tickUpper)
+
+
+# Miscellaneous mint tests
+# Continue UniswapV3Pool.spects.ts line 673 
+@pytest.fixture
+def lowPoolInitializedAtZero(createPoolLow, accounts):
+    pool, _, _, _, _, _ = createPoolLow
+    initializeAtZero(pool, accounts)  
+    return createPoolLow
+
+
+def test_mintRight_currentPrice(lowPoolInitializedAtZero, accounts):
+    print('mint to the right of the current price')
+    pool, _, _, _, _, tickSpacing = lowPoolInitializedAtZero    
+    liquidityDelta = 1000
+    lowerTick = tickSpacing
+    upperTick = tickSpacing * 2
+    liquidityBefore = pool.liquidity
+    b0 = pool.balances[TEST_TOKENS[0]]
+    b1 = pool.balances[TEST_TOKENS[1]]
+
+    pool.mint(accounts[0], lowerTick, upperTick, liquidityDelta)
+
+    liquidityAfter = pool.liquidity
+    assert liquidityAfter >= liquidityBefore
+
+    assert pool.balances[TEST_TOKENS[0]] - b0 == 1
+    assert pool.balances[TEST_TOKENS[1]] - b1 == 0
+
+
+def test_mintLeft_currentPrice(lowPoolInitializedAtZero, accounts):
+    print('mint to the right of the current price')
+    pool, _, _, _, _, tickSpacing = lowPoolInitializedAtZero    
+    liquidityDelta = 1000
+    lowerTick = -tickSpacing * 2
+    upperTick = -tickSpacing
+    liquidityBefore = pool.liquidity
+    b0 = pool.balances[TEST_TOKENS[0]]
+    b1 = pool.balances[TEST_TOKENS[1]]
+
+    pool.mint(accounts[0], lowerTick, upperTick, liquidityDelta)
+
+    liquidityAfter = pool.liquidity
+    assert liquidityAfter >= liquidityBefore
+
+    assert pool.balances[TEST_TOKENS[0]] - b0 == 0
+    assert pool.balances[TEST_TOKENS[1]] - b1 == 1
+
+def test_mint_withinCurrentPrice(lowPoolInitializedAtZero, accounts):
+    print('mint within the current price')
+    pool, _, _, _, _, tickSpacing = lowPoolInitializedAtZero    
+    liquidityDelta = 1000
+    lowerTick = -tickSpacing
+    upperTick = tickSpacing
+    liquidityBefore = pool.liquidity
+    b0 = pool.balances[TEST_TOKENS[0]]
+    b1 = pool.balances[TEST_TOKENS[1]]
+
+    pool.mint(accounts[0], lowerTick, upperTick, liquidityDelta)
+
+    liquidityAfter = pool.liquidity
+    assert liquidityAfter >= liquidityBefore
+
+    assert pool.balances[TEST_TOKENS[0]] - b0 == 1
+    assert pool.balances[TEST_TOKENS[1]] - b1 == 1
+
+
+# Continue UniswapV3Pool.spects.ts line 736
