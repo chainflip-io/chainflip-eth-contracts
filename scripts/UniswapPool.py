@@ -348,6 +348,7 @@ class UniswapPool(Account):
         )
 
         while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
+            print("SWAP LOOP")
             step = StepComputations(0,0,0,0,0,0,0)
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96

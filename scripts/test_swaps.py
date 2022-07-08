@@ -99,21 +99,21 @@ def test_testing(TEST_POOLS, accounts):
 
         print("Swap results")
         print(f'amount0Before: {poolBalance0}')
-        print(f'amount1Before: {poolBalance1}')
         print(f'amount0Delta: {poolBalance0Delta}')
+        print(f'amount1Before: {poolBalance1}')
         print(f'amount1Delta: {poolBalance1Delta}')
+        print(f'executionPrice: {executionPrice}')
         print(f'feeGrowthGlobal0X128Delta: {feeGrowthGlobal0X128}')
         print(f'feeGrowthGlobal1X128Delta: {feeGrowthGlobal1X128}')
+        print(f'poolPriceAfter: {formatPrice(slot0After.sqrtPriceX96)}')  #same as $sqrtPriceX96
+        print(f'poolPriceBefore: {formatPrice(slot0.sqrtPriceX96)}')       
+        print(f'tickAfter: {slot0After.tick}') #same as $tick
         print(f'tickBefore: {slot0.tick}')
-        print(f'poolPriceBefore: {formatPrice(slot0.sqrtPriceX96)}')
-        print(f'tickAfter: {slot0After.tick}')
-        print(f'poolPriceAfter: {formatPrice(slot0After.sqrtPriceX96)}')
-        print(f'executionPrice: {executionPrice}')
 
 
         print("SUCCESFUL TEST because we are not checking anything right now")
 
-    
+    assert False
 
 
 

@@ -128,7 +128,6 @@ def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
 ### POOL SWAPS ###
 def swapExact0For1(pool, amount, recipient,sqrtPriceLimit):
     sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[0])
-    print(sqrtPriceLimitX96)
     return swap(pool, TEST_TOKENS[0], [amount, 0], recipient, sqrtPriceLimitX96)
 
 def swap0ForExact1(pool , amount, recipient, sqrtPriceLimit):
@@ -140,7 +139,7 @@ def swapExact1For0(pool , amount, recipient, sqrtPriceLimit):
     return swap(pool,TEST_TOKENS[1], [amount, 0], recipient, sqrtPriceLimitX96)
 
 def swap1ForExact0(pool , amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[1])
     return swap(pool,TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
 
 def swap(pool, inputToken, amounts, recipient, sqrtPriceLimitX96):
@@ -174,4 +173,4 @@ def getSqrtPriceLimitX96(inputToken):
 
 
 def formatPrice(price):
-  return (price / (2**96))
+  return (price / (2**96))**2
