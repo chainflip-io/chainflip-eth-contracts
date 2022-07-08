@@ -16,11 +16,9 @@ def TEST_POOLS(request, accounts):
     feeAmount = poolFixture.feeAmount
     tickSpacing = poolFixture.tickSpacing
     pool = UniswapPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
-    # minTick = getMinTick(tickSpacing)
-    # maxTick = getMaxTick(tickSpacing)
     pool.initialize(poolFixture.startingPrice)
     for position in poolFixture.positions:
-        (amount0, amount1) = pool.mint(accounts[0], position.tickLower, position.tickUpper, position.liquidity)
+        pool.mint(accounts[0], position.tickLower, position.tickUpper, position.liquidity)
     poolBalance0 = pool.balances[TEST_TOKENS[0]]
     poolBalance1 = pool.balances[TEST_TOKENS[1]]
     return TEST_TOKENS[0], TEST_TOKENS[1], pool, poolBalance0, poolBalance1, accounts[1], poolFixture
@@ -43,18 +41,12 @@ def afterEach(accounts, TEST_POOLS):
 @pytest.mark.usefixtures("afterEach")
 def test_example(accounts, TEST_POOLS):
     assert True
-    # print(accounts[0])
-    # print(TEST_POOLS)
-    # assert False
+
 
 @pytest.mark.usefixtures("afterEach")
 def test_testing(TEST_POOLS, accounts):
     print("TBD")
     (_, _, pool, poolBalance0, poolBalance1, recipient, poolFixture) = TEST_POOLS
-
-    print("Initial balances")
-    print(poolBalance0)
-    print(poolBalance1)
 
     if poolFixture.swapTests == None:
         swapTests = DEFAULT_POOL_SWAP_TESTS
@@ -64,6 +56,7 @@ def test_testing(TEST_POOLS, accounts):
     for testCase in swapTests:
         slot0 = pool.slot0
         poolInstance = copy.deepcopy(pool)
+        print(testCase)
         recipient, amount0, amount1, sqrtPriceX96, liquidity, tick = executeSwap(poolInstance, testCase, recipient)
 
         poolBalance0After = poolInstance.balances[TEST_TOKENS[0]]
@@ -113,12 +106,11 @@ def test_testing(TEST_POOLS, accounts):
 
         print("SUCCESFUL TEST because we are not checking anything right now")
 
-    assert False
+    #assert False
 
 
 
 def executeSwap(pool, testCase, recipient):
-    print(testCase)
     sqrtPriceLimit = None if not testCase.__contains__("sqrtPriceLimit") else testCase["sqrtPriceLimit"]
     if testCase.__contains__("exactOut"):
         if testCase["exactOut"]:
@@ -128,12 +120,11 @@ def executeSwap(pool, testCase, recipient):
                 return swap1ForExact0(pool, testCase["amount0"], recipient, sqrtPriceLimit)
         else:
             if testCase["zeroForOne"]:
-                print('swapExact0For1')
                 return swapExact0For1(pool, testCase["amount0"], recipient, sqrtPriceLimit)
             else:
                 return swapExact1For0(pool, testCase["amount1"], recipient, sqrtPriceLimit)
     else:
         if testCase["zeroForOne"]:
-            return swapToLowerPrice(pool, testCase["sqrtPriceLimit"], recipient)
+            return swapToLowerPrice(pool, recipient, testCase["sqrtPriceLimit"])
         else:
-            return swapToHigherPrice(pool, testCase["sqrtPriceLimit"], recipient)
+            return swapToHigherPrice(pool, recipient, testCase["sqrtPriceLimit"])

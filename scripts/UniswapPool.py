@@ -346,9 +346,13 @@ class UniswapPool(Account):
             0,
             cache.liquidityStart,
         )
+        
+        # Since we removed the rounding in the SqrtMathPrice in some cases we can't get the state.amountSpecifiedRemaining
+        # to be exactly zero and then it loops indefinitely becauseSwapMath.computeSwapStep returns 0
+        # Workaround to have some margin or just implement the rounding in the SqrtMathPrice.
+        #while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
+        while abs(state.amountSpecifiedRemaining) > 200 and state.sqrtPriceX96 != sqrtPriceLimitX96:
 
-        while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
-            print("SWAP LOOP")
             step = StepComputations(0,0,0,0,0,0,0)
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96

@@ -88,71 +88,72 @@ DEFAULT_POOL_SWAP_TESTS = [{
     "exactOut": False,
     "amount1": expandTo18Decimals(1),
   },
-  # {
-  #   "zeroForOne": True,
-  #   "exactOut": True,
-  #   "amount1": expandTo18Decimals(1),
-  # },
-  # {
-  #   "zeroForOne": False,
-  #   "exactOut": True,
-  #   "amount0": expandTo18Decimals(1),
-  # },
-  #  ## swap large amounts in/out with a price limit
-  # {
-  #   "zeroForOne": True,
-  #   "exactOut": False,
-  #   "amount0": expandTo18Decimals(1),
-  #   "sqrtPriceLimit": encodePriceSqrt(50, 100),
-  # },
-  # {
-  #   "zeroForOne": False,
-  #   "exactOut": False,
-  #   "amount1": expandTo18Decimals(1),
-  #   "sqrtPriceLimit": encodePriceSqrt(200, 100),
-  # },
-  # {
-  #   "zeroForOne": True,
-  #   "exactOut": True,
-  #   "amount1": expandTo18Decimals(1),
-  #   "sqrtPriceLimit": encodePriceSqrt(50, 100),
-  # },
-  # {
-  #   "zeroForOne": False,
-  #   "exactOut": True,
-  #   "amount0": expandTo18Decimals(1),
-  #   "sqrtPriceLimit": encodePriceSqrt(200, 100),
-  # },
-  #  ## swap small amounts in/out
-  # {
-  #   "zeroForOne": True,
-  #   "exactOut": False,
-  #   "amount0": 1000,
-  # },
-  # {
-  #   "zeroForOne": False,
-  #   "exactOut": False,
-  #   "amount1": 1000,
-  # },
-  # {
-  #   "zeroForOne": True,
-  #   "exactOut": True,
-  #   "amount1": 1000,
-  # },
-  # {
-  #   "zeroForOne": False,
-  #   "exactOut": True,
-  #   "amount0": 1000,
-  # },
-  #  ## swap arbitrary input to price
-  # {
-  #   "sqrtPriceLimit": encodePriceSqrt(5, 2),
-  #   "zeroForOne": False,
-  # },
-  # {
-  #   "sqrtPriceLimit": encodePriceSqrt(2, 5),
-  #   "zeroForOne": True,
-  # },
+  {
+    "zeroForOne": True,
+    "exactOut": True,
+    "amount1": expandTo18Decimals(1),
+  },
+  {
+    "zeroForOne": False,
+    "exactOut": True,
+    "amount0": expandTo18Decimals(1),
+  },
+   ## swap large amounts in/out with a price limit
+  {
+    "zeroForOne": True,
+    "exactOut": False,
+    "amount0": expandTo18Decimals(1),
+    "sqrtPriceLimit": encodePriceSqrt(50, 100),
+  },
+  {
+    "zeroForOne": False,
+    "exactOut": False,
+    "amount1": expandTo18Decimals(1),
+    "sqrtPriceLimit": encodePriceSqrt(200, 100),
+  },
+  {
+    "zeroForOne": True,
+    "exactOut": True,
+    "amount1": expandTo18Decimals(1),
+    "sqrtPriceLimit": encodePriceSqrt(50, 100),
+  },
+  {
+    "zeroForOne": False,
+    "exactOut": True,
+    "amount0": expandTo18Decimals(1),
+    "sqrtPriceLimit": encodePriceSqrt(200, 100),
+  },
+   ## swap small amounts in/out
+  {
+    "zeroForOne": True,
+    "exactOut": False,
+    "amount0": 1000,
+  },
+  {
+    "zeroForOne": False,
+    "exactOut": False,
+    "amount1": 1000,
+  },
+  {
+    "zeroForOne": True,
+    "exactOut": True,
+    "amount1": 1000,
+  },
+  {
+    "zeroForOne": False,
+    "exactOut": True,
+    "amount0": 1000,
+  },
+   ## swap arbitrary input to price
+  {
+    "sqrtPriceLimit": encodePriceSqrt(5, 2),
+    "zeroForOne": False,
+  },
+  {
+    "sqrtPriceLimit": encodePriceSqrt(2, 5),
+    "zeroForOne": True,
+  },
+  ## THIS TWO FAIL WITH SPL ERROR - HANDLE IT WITH SNAPSHOTS
   # {
   #   "sqrtPriceLimit": encodePriceSqrt(5, 2),
   #   "zeroForOne": True,

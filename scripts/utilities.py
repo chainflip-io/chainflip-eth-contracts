@@ -120,7 +120,8 @@ def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
     for i in range(len(keys)):
         insertTickInMapping(mapping,keys[i],ticksInfo[i])
 
-
+def getPositionKey(address, lowerTick, upperTick):
+  return hash((address, lowerTick, upperTick))
 
 
 
@@ -141,6 +142,15 @@ def swapExact1For0(pool , amount, recipient, sqrtPriceLimit):
 def swap1ForExact0(pool , amount, recipient, sqrtPriceLimit):
     sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[1])
     return swap(pool,TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
+
+def swapToLowerPrice(pool , recipient, sqrtPriceLimit):
+    return pool.swap(recipient, True, MAX_INT256, sqrtPriceLimit)
+
+def swapToHigherPrice(pool , recipient, sqrtPriceLimit):
+    return pool.swap(recipient, False, MAX_INT256, sqrtPriceLimit)
+
+
+
 
 def swap(pool, inputToken, amounts, recipient, sqrtPriceLimitX96):
     [amountIn, amountOut] = amounts
