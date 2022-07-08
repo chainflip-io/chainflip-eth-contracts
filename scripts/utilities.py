@@ -181,10 +181,24 @@ def getSqrtPriceLimitX96(inputToken):
 
 ################
 
-# Format doesn't match the snapshot format
 def formatPrice(price):
-  return (price / (2**96))**2
+    # Rounded to arbitrarily 10 decimals because in some cases we get something like 0.5000000000000001
+    # because of the lack of rounding instead of 0.5
+    fraction = round((price / (2**96))**2, 10)
+    return formatAsInSnapshot(fraction)
 
-# Format doesn't match the snapshot format
 def formatTokenAmount(amount):
-  return amount / (10**18)
+    fraction = amount / (10**18)
+    return formatAsInSnapshot(fraction)
+
+
+def formatAsInSnapshot(number):
+    # To match snapshot formatting
+    precision = int(f'{number:e}'.split('e')[-1])
+    # For token we want 4 extra decimals of precision
+    if precision >= 0:
+        precision = 4
+    else:
+        precision = -precision + 4
+
+    return format(number,"."+str(precision)+"f")

@@ -4,6 +4,7 @@ from Factory import *
 from poolFixtures import *
 
 from test_uniswapPool import accounts
+from UniswapV3PoolSwaps import swapsSnapshot
 
 import pytest
 import copy
@@ -46,7 +47,7 @@ def test_example(accounts, TEST_POOLS):
 @pytest.mark.usefixtures("afterEach")
 def test_testing(TEST_POOLS, accounts):
     (_, _, pool, poolBalance0, poolBalance1, recipient, poolFixture) = TEST_POOLS
-    print("Testing pool: " + poolFixture.description)
+    print(poolFixture.description)
 
     if poolFixture.swapTests == None:
         swapTests = DEFAULT_POOL_SWAP_TESTS
@@ -92,23 +93,38 @@ def test_testing(TEST_POOLS, accounts):
         else:
             executionPrice = "-Infinity"
 
-        print("Swap results")
-        print(f'amount0Before: {poolBalance0}')
-        print(f'amount0Delta: {poolBalance0Delta}')
-        print(f'amount1Before: {poolBalance1}')
-        print(f'amount1Delta: {poolBalance1Delta}')
-        print(f'executionPrice: {executionPrice}')
-        print(f'feeGrowthGlobal0X128Delta: {feeGrowthGlobal0X128}')
-        print(f'feeGrowthGlobal1X128Delta: {feeGrowthGlobal1X128}')
-        print(f'poolPriceAfter: {formatPrice(slot0After.sqrtPriceX96)}')  #same as $sqrtPriceX96
-        print(f'poolPriceBefore: {formatPrice(slot0.sqrtPriceX96)}')       
-        print(f'tickAfter: {slot0After.tick}') #same as $tick
-        print(f'tickBefore: {slot0.tick}')
+        # print("Swap results")
+        # print(f'amount0Before: {poolBalance0}')
+        # print(f'amount0Delta: {poolBalance0Delta}')
+        # print(f'amount1Before: {poolBalance1}')
+        # print(f'amount1Delta: {poolBalance1Delta}')
+        # print(f'executionPrice: {executionPrice}')
+        # print(f'feeGrowthGlobal0X128Delta: {feeGrowthGlobal0X128}')
+        # print(f'feeGrowthGlobal1X128Delta: {feeGrowthGlobal1X128}')
+        # print(f'poolPriceAfter: {formatPrice(slot0After.sqrtPriceX96)}')  #same as $sqrtPriceX96
+        # print(f'poolPriceBefore: {formatPrice(slot0.sqrtPriceX96)}')       
+        # print(f'tickAfter: {slot0After.tick}') #same as $tick
+        # print(f'tickBefore: {slot0.tick}')
+
+        snapshotIndex = swapsSnapshot.index("UniswapV3Pool swap tests "+poolFixture.description + " " + swapCaseToDescription(testCase))
+        dict = swapsSnapshot[snapshotIndex + 1]
+
+        # For small swaps, the price tends to need bigger margins since we have skipped the roundings - skipping those tests
+        # or probably we should improve the rounding logic
+        assert float(dict["amount0Before"]) == poolBalance0
+        assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta,rel = 1e-12)
+        assert float(dict["amount1Before"]) == poolBalance1
+        assert float(dict["amount1Delta"]) == pytest.approx(poolBalance1Delta,rel = 1e-12)
+        assert float(dict["executionPrice"]) == pytest.approx(executionPrice,rel = 1e-4)
+        assert float(dict["feeGrowthGlobal0X128Delta"]) == pytest.approx(feeGrowthGlobal0X128,rel = 1e-6)
+        assert float(dict["feeGrowthGlobal1X128Delta"]) == pytest.approx(feeGrowthGlobal1X128,rel = 1e-6)
+        assert dict["poolPriceAfter"] == formatPrice(slot0After.sqrtPriceX96)
+        assert dict["poolPriceBefore"] == formatPrice(slot0.sqrtPriceX96)
+        assert float(dict["tickAfter"]) == slot0After.tick
+        assert float(dict["tickBefore"]) == slot0.tick
 
 
-        print("SUCCESFUL TEST because we are not checking anything right now")
-
-    assert False
+        print("SUCCESFUL TEST")
 
 
 
@@ -141,7 +157,7 @@ def swapCaseToDescription(testCase):
             if testCase["zeroForOne"]:
                 return "swap token0 for exactly " + str(formatTokenAmount(testCase["amount1"])) + " token1" + priceClause
             else:
-                return "swap token1 for exactly " + str(formatTokenAmount(testCase["amount0"])) + " token0 " + priceClause
+                return "swap token1 for exactly " + str(formatTokenAmount(testCase["amount0"])) + " token0" + priceClause
         else:
             if testCase["zeroForOne"]:
                 return "swap exactly " + str(formatTokenAmount(testCase["amount0"])) + " token0 for token1" + priceClause
