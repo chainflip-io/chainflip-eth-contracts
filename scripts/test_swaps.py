@@ -45,8 +45,8 @@ def test_example(accounts, TEST_POOLS):
 
 @pytest.mark.usefixtures("afterEach")
 def test_testing(TEST_POOLS, accounts):
-    print("TBD")
     (_, _, pool, poolBalance0, poolBalance1, recipient, poolFixture) = TEST_POOLS
+    print("Testing pool: " + poolFixture.description)
 
     if poolFixture.swapTests == None:
         swapTests = DEFAULT_POOL_SWAP_TESTS
@@ -54,9 +54,11 @@ def test_testing(TEST_POOLS, accounts):
         swapTests = poolFixture.swapTests
 
     for testCase in swapTests:
+        print(testCase)
+        print(swapCaseToDescription(testCase))
         slot0 = pool.slot0
         poolInstance = copy.deepcopy(pool)
-        print(testCase)
+
         recipient, amount0, amount1, sqrtPriceX96, liquidity, tick = executeSwap(poolInstance, testCase, recipient)
 
         poolBalance0After = poolInstance.balances[TEST_TOKENS[0]]
@@ -106,7 +108,7 @@ def test_testing(TEST_POOLS, accounts):
 
         print("SUCCESFUL TEST because we are not checking anything right now")
 
-    #assert False
+    assert False
 
 
 
@@ -128,3 +130,25 @@ def executeSwap(pool, testCase, recipient):
             return swapToLowerPrice(pool, recipient, testCase["sqrtPriceLimit"])
         else:
             return swapToHigherPrice(pool, recipient, testCase["sqrtPriceLimit"])
+
+
+
+def swapCaseToDescription(testCase):
+    priceClause = " to price " + str(formatPrice(testCase["sqrtPriceLimit"])) if testCase.__contains__("sqrtPriceLimit") else ""
+
+    if testCase.__contains__("exactOut"):
+        if testCase["exactOut"]:
+            if testCase["zeroForOne"]:
+                return "swap token0 for exactly " + str(formatTokenAmount(testCase["amount1"])) + " token1" + priceClause
+            else:
+                return "swap token1 for exactly " + str(formatTokenAmount(testCase["amount0"])) + " token0 " + priceClause
+        else:
+            if testCase["zeroForOne"]:
+                return "swap exactly " + str(formatTokenAmount(testCase["amount0"])) + " token0 for token1" + priceClause
+            else:
+                return "swap exactly " + str(formatTokenAmount(testCase["amount1"])) + " token1 for token0" + priceClause
+    else:
+        if testCase["zeroForOne"]:
+            return "swap token0 for token1"+priceClause
+        else:
+            return "swap token1 for token0"+priceClause

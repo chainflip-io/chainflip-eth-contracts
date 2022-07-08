@@ -181,6 +181,10 @@ def getSqrtPriceLimitX96(inputToken):
 
 ################
 
-
+# Format doesn't match the snapshot format
 def formatPrice(price):
   return (price / (2**96))**2
+
+# Format doesn't match the snapshot format
+def formatTokenAmount(amount):
+  return amount / (10**18)

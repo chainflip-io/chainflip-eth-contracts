@@ -68,14 +68,6 @@ class SWAP_TEST:
     amount0: int
 
 
-# @pytest.fixture
-# def DEFAULT_POOL_SWAP_TESTS0():
-#     return SWAP_TEST(
-#   ## swap large amounts in/out
-#     zeroForOne = True,
-#     exactOut = False,
-#     amount0 = expandTo18Decimals(1),
-#     )
 
 DEFAULT_POOL_SWAP_TESTS = [{
   ## swap large amounts in/out
