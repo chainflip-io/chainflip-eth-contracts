@@ -394,7 +394,7 @@ class UniswapPool(Account):
 
             ## update global fee tracker
             if state.liquidity > 0:
-                state.feeGrowthGlobalX128 += step.feeAmount * FixedPoint128.Q128  # state.liquidity
+                state.feeGrowthGlobalX128 += (step.feeAmount * FixedPoint128.Q128) // state.liquidity
 
             ## shift tick if we reached the next price
             if state.sqrtPriceX96 == step.sqrtPriceNextX96:
@@ -436,6 +436,10 @@ class UniswapPool(Account):
 
         ## update fee growth global and, if necessary, protocol fees
         ## overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
+
+        # THIS ONE IS TOO HIGH!
+        print("state.feeGrowthGlobalX128",state.feeGrowthGlobalX128)
+
         if zeroForOne:
             self.feeGrowthGlobal0X128 = state.feeGrowthGlobalX128
             if state.protocolFee > 0:
