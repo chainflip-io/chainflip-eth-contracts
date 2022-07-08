@@ -40,7 +40,7 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
                 assert result <= MAX_UINT160, "Overflow when casting to UINT160"
                 return result
 
-        result = math.ceil(numerator1 / SafeMath.add((numerator1 / sqrtPX96), amount))
+        result = math.ceil(numerator1 / SafeMath.add((numerator1 // sqrtPX96), amount))
         # Adding assert to detect wrong behaviour
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return result
@@ -150,6 +150,7 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     assert numerator2 >= 0
 
     assert sqrtRatioAX96 > 0
+    # Arbitrarily chosen rounding up or down - no need to care about such accuracy here
     return math.ceil((numerator1 * numerator2) / (sqrtRatioBX96 * sqrtRatioAX96))
 
 
@@ -163,6 +164,7 @@ def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
+    # Arbitrarily chosen rounding up or down - no need to care about such accuracy here
     return math.ceil(liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / FixedPoint96.Q96)
 
 

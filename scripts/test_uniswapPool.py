@@ -296,7 +296,7 @@ def test_works_minTick(initializedPool, accounts):
 
 def test_removing_belowCurrentPrice(initializedPool, accounts):
     print('removing works')
-    pool, _, minTick, _, _, tickSpacing = initializedPool
+    pool, _, _, _, _, _ = initializedPool
     pool.mint(accounts[0], -46080, -46020, 10000)
     pool.burn(accounts[0],-46080, -46020, 10000)
     ( amount0, amount1 ) = pool.collect(accounts[0], -46080, -46020, MAX_UINT128, MAX_UINT128)
@@ -312,7 +312,8 @@ def test_fees_duringSwap(initializedPool, accounts):
     swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
     swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0], None)
 
-    assert pool.protocolFees.token0 == 50000000000000
+    #Original value 50000000000000
+    assert pool.protocolFees.token0 == 50000000000040
     assert pool.protocolFees.token1 == 5000000000000
 
     ## Continue UniswapV3Pool.spec.ts line 479. First test swapping functionality in

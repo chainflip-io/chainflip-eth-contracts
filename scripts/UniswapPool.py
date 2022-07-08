@@ -388,7 +388,7 @@ class UniswapPool(Account):
 
             ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
             if cache.feeProtocol > 0:
-                delta = step.feeAmount  # cache.feeProtocol
+                delta = abs(step.feeAmount // cache.feeProtocol)
                 step.feeAmount -= delta
                 state.protocolFee += delta
 
@@ -436,9 +436,6 @@ class UniswapPool(Account):
 
         ## update fee growth global and, if necessary, protocol fees
         ## overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
-
-        # THIS ONE IS TOO HIGH!
-        print("state.feeGrowthGlobalX128",state.feeGrowthGlobalX128)
 
         if zeroForOne:
             self.feeGrowthGlobal0X128 = state.feeGrowthGlobalX128
