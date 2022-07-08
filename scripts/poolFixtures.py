@@ -55,11 +55,261 @@ def pool1():
         swapTests = None,
     )
 
+@pytest.fixture
+def pool2():
+    return PoolTestCase(
+        description="high fee, 1:1 price, 2e18 max range liquidity",
+        feeAmount=FeeAmount.HIGH,
+        tickSpacing=TICK_SPACINGS[FeeAmount.HIGH],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+                liquidity=expandTo18Decimals(2),
+            ),
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool3():
+    return PoolTestCase(
+        description="medium fee, 10:1 price, 2e18 max range liquidity",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(10, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            ),
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool4():
+    return PoolTestCase(
+        description="medium fee, 1:10 price, 2e18 max range liquidity",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 10),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            ),
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool5():
+    return PoolTestCase(
+        description="medium fee, 1:1 price, 0 liquidity, all liquidity around current price",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=-TICK_SPACINGS[FeeAmount.MEDIUM],
+                liquidity=expandTo18Decimals(2),
+            ),
+            Position(
+                tickLower=TICK_SPACINGS[FeeAmount.MEDIUM],
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            ),
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool6():
+    return PoolTestCase(
+        description="medium fee, 1:1 price, additional liquidity around current price",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            ),
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=-TICK_SPACINGS[FeeAmount.MEDIUM],
+                liquidity=expandTo18Decimals(2),
+            ),
+            Position(
+                tickLower=TICK_SPACINGS[FeeAmount.MEDIUM],
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            ),
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool7():
+    return PoolTestCase(
+        description="low fee, large liquidity around current price (stable swap)",
+        feeAmount=FeeAmount.LOW,
+        tickSpacing=TICK_SPACINGS[FeeAmount.LOW],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=-TICK_SPACINGS[FeeAmount.LOW],
+                tickUpper=TICK_SPACINGS[FeeAmount.LOW],
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool8():
+    return PoolTestCase(
+        description="medium fee, token0 liquidity only",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=0,
+                tickUpper=2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool9():
+    return PoolTestCase(
+        description="medium fee, token1 liquidity only",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=-2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+                tickUpper=0,
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool10():
+    return PoolTestCase(
+        description="close to max price",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(2**127, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool11():
+    return PoolTestCase(
+        description="close to min price",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 2**127),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool12():
+    return PoolTestCase(
+        description="max full range liquidity at 1:1 price with default fee",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            )
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool13():
+    return PoolTestCase(
+        description="initialized at the max ratio",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=MAX_SQRT_RATIO.sub(1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
+
+
+@pytest.fixture
+def pool14():
+    return PoolTestCase(
+        description="initialized at the min ratio",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=MIN_SQRT_RATIO,
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
+
+
 # @pytest.fixture(params=[0, 1])
 # def TEST_POOLS(request):
 #     your_fixture = request.getfixturevalue("pool{}".format(request.param))
 #     # here you can call your_fixture.do_something()
 #     return your_fixture
+
 
 @dataclass
 class SWAP_TEST:
@@ -68,93 +318,92 @@ class SWAP_TEST:
     amount0: int
 
 
-
-DEFAULT_POOL_SWAP_TESTS = [{
-  ## swap large amounts in/out
-    "zeroForOne" : True,
-    "exactOut" : False,
-    "amount0" : expandTo18Decimals(1),
+DEFAULT_POOL_SWAP_TESTS = [
+    {
+        ## swap large amounts in/out
+        "zeroForOne": True,
+        "exactOut": False,
+        "amount0": expandTo18Decimals(1),
     },
-  {
-    "zeroForOne": False,
-    "exactOut": False,
-    "amount1": expandTo18Decimals(1),
-  },
-  {
-    "zeroForOne": True,
-    "exactOut": True,
-    "amount1": expandTo18Decimals(1),
-  },
-  {
-    "zeroForOne": False,
-    "exactOut": True,
-    "amount0": expandTo18Decimals(1),
-  },
-   ## swap large amounts in/out with a price limit
-  {
-    "zeroForOne": True,
-    "exactOut": False,
-    "amount0": expandTo18Decimals(1),
-    "sqrtPriceLimit": encodePriceSqrt(50, 100),
-  },
-  {
-    "zeroForOne": False,
-    "exactOut": False,
-    "amount1": expandTo18Decimals(1),
-    "sqrtPriceLimit": encodePriceSqrt(200, 100),
-  },
-  {
-    "zeroForOne": True,
-    "exactOut": True,
-    "amount1": expandTo18Decimals(1),
-    "sqrtPriceLimit": encodePriceSqrt(50, 100),
-  },
-  {
-    "zeroForOne": False,
-    "exactOut": True,
-    "amount0": expandTo18Decimals(1),
-    "sqrtPriceLimit": encodePriceSqrt(200, 100),
-  },
-   ## swap small amounts in/out
-  
-  # TODO: THIS ONE IS QUITE OFF, look into it
-  # {
-  #   "zeroForOne": True,
-  #   "exactOut": False,
-  #   "amount0": 1000,
-  # },
-  # TODO: This other ones the error can go up to 0.1% because of the lack of 1-rounding
-  # {
-  #   "zeroForOne": False,
-  #   "exactOut": False,
-  #   "amount1": 1000,
-  # },
-  # {
-  #   "zeroForOne": True,
-  #   "exactOut": True,
-  #   "amount1": 1000,
-  # },
-  # {
-  #   "zeroForOne": False,
-  #   "exactOut": True,
-  #   "amount0": 1000,
-  # },
-   ## swap arbitrary input to price
-  {
-    "sqrtPriceLimit": encodePriceSqrt(5, 2),
-    "zeroForOne": False,
-  },
-  {
-    "sqrtPriceLimit": encodePriceSqrt(2, 5),
-    "zeroForOne": True,
-  },
-  ## THIS TWO FAIL WITH SPL ERROR - HANDLE IT WITH SNAPSHOTS
-  # {
-  #   "sqrtPriceLimit": encodePriceSqrt(5, 2),
-  #   "zeroForOne": True,
-  # },
-  # {
-  #   "sqrtPriceLimit": encodePriceSqrt(2, 5),
-  #   "zeroForOne": False,
-  # },
+    {
+        "zeroForOne": False,
+        "exactOut": False,
+        "amount1": expandTo18Decimals(1),
+    },
+    {
+        "zeroForOne": True,
+        "exactOut": True,
+        "amount1": expandTo18Decimals(1),
+    },
+    {
+        "zeroForOne": False,
+        "exactOut": True,
+        "amount0": expandTo18Decimals(1),
+    },
+    ## swap large amounts in/out with a price limit
+    {
+        "zeroForOne": True,
+        "exactOut": False,
+        "amount0": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(50, 100),
+    },
+    {
+        "zeroForOne": False,
+        "exactOut": False,
+        "amount1": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    },
+    {
+        "zeroForOne": True,
+        "exactOut": True,
+        "amount1": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(50, 100),
+    },
+    {
+        "zeroForOne": False,
+        "exactOut": True,
+        "amount0": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    },
+    ## swap small amounts in/out
+    # TODO: THIS ONE IS QUITE OFF, look into it
+    # {
+    #   "zeroForOne": True,
+    #   "exactOut": False,
+    #   "amount0": 1000,
+    # },
+    # TODO: This other ones the error can go up to 0.1% because of the lack of 1-rounding
+    # {
+    #   "zeroForOne": False,
+    #   "exactOut": False,
+    #   "amount1": 1000,
+    # },
+    # {
+    #   "zeroForOne": True,
+    #   "exactOut": True,
+    #   "amount1": 1000,
+    # },
+    # {
+    #   "zeroForOne": False,
+    #   "exactOut": True,
+    #   "amount0": 1000,
+    # },
+    ## swap arbitrary input to price
+    {
+        "sqrtPriceLimit": encodePriceSqrt(5, 2),
+        "zeroForOne": False,
+    },
+    {
+        "sqrtPriceLimit": encodePriceSqrt(2, 5),
+        "zeroForOne": True,
+    },
+    ## THIS TWO FAIL WITH SPL ERROR - HANDLE IT WITH SNAPSHOTS
+    # {
+    #   "sqrtPriceLimit": encodePriceSqrt(5, 2),
+    #   "zeroForOne": True,
+    # },
+    # {
+    #   "sqrtPriceLimit": encodePriceSqrt(2, 5),
+    #   "zeroForOne": False,
+    # },
 ]
