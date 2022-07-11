@@ -176,7 +176,7 @@ def test_reverts_overflow_liquidityGross():
     print("reverts on overflow liquidity gross")
     tickMapping = {}
     Tick.update(tickMapping, 0, 0, (MAX_UINT128 // 2) - 1, 0, 0, False, MAX_UINT128)
-    tryExceptHandler(Tick.update, "", tickMapping, 0, 0, (MAX_UINT128 // 2) - 1, 0, 0, False, MAX_UINT128)
+    tryExceptHandler(Tick.update, "OF or UF of UINT128", tickMapping, 0, 0, (MAX_UINT128 // 2) - 1, 0, 0, False, MAX_UINT128)
 
 
 def test_growthBelowTicks_lteCurrentTick():

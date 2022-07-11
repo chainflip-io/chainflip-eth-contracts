@@ -19,7 +19,7 @@ from scripts.TickMath import *
 ### @param amount How much of token0 to add or remove from virtual reserves
 ### @param add Whether to add or remove the amount of token0
 ### @return The price after adding or removing amount, depending on add
-def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
+def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
     ## we short circuit amount == 0 because the result is otherwise not guaranteed to equal the input price
     if amount == 0:
         return sqrtPX96
@@ -34,10 +34,9 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
             if denominator >= numerator1:
                 # Result should be casted into UINT160 without overflowing
                 # Adding assert to detect wrong behaviour
-                # math.ceil returns slight different value compared to FullMath.mulDivRoundingUp
-                # Solidity seems to give a more accurate result
-                result = math.ceil(numerator1 * sqrtPX96 / denominator)
-                assert result <= MAX_UINT160, "Overflow when casting to UINT160"
+                result = mulDivRoundingUp(numerator1 , sqrtPX96, denominator)
+                #result = math.ceil((numerator1 * sqrtPX96) / denominator)
+                checkUInt160(result)
                 return result
 
         result = math.ceil(numerator1 / SafeMath.add((numerator1 // sqrtPX96), amount))
@@ -51,10 +50,9 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
         product = amount * sqrtPX96
         assert product < MAX_UINT256 and numerator1 > product
         denominator = numerator1 - product
-        result = math.ceil(numerator1 * sqrtPX96 / denominator)
+        result = mulDivRoundingUp(numerator1 , sqrtPX96, denominator)
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return result
-
 
 ### @notice Gets the next sqrt price given a delta of token1
 ### @dev Always rounds down, because in the exact output case (decreasing price) we need to move the price at least
@@ -66,34 +64,26 @@ def getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amount, add):
 ### @param amount How much of token1 to add, or remove, from virtual reserves
 ### @param add Whether to add, or remove, the amount of token1
 ### @return The price after adding or removing `amount`
-def getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amount, add):
+def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
     ## if we're adding (subtracting), rounding down requires rounding the quotient down (up)
     ## in both cases, avoid a mulDiv for most inputs
     if add:
-        quotient = (
-            (amount << FixedPoint96.RESOLUTION) // liquidity
-            if (amount <= MAX_UINT160)
-            else (amount * FixedPoint96.Q96 // liquidity)
-        )
+        quotient =(amount << FixedPoint96.RESOLUTION) // liquidity if amount <= MAX_UINT160 else mulDiv(amount , FixedPoint96.Q96 , liquidity)
 
-        result = SafeMath.add(sqrtPX96, quotient)
-        # Result should be casted into UINT160 without overflowing
-        assert result <= MAX_UINT160, "Overflow when casting to UINT160"
+        result = sqrtPX96 + quotient
+
+        checkUInt160(result)
         return result
     else:
-
-        quotient = (
-            math.ceil((amount << FixedPoint96.RESOLUTION) / liquidity)
-            if (amount <= MAX_UINT160)
-            else (math.ceil(amount * FixedPoint96.Q96 / liquidity))
-        )
-
+        quotient = divRoundingUp(amount << FixedPoint96.RESOLUTION , liquidity) if amount <= MAX_UINT160 else mulDivRoundingUp(amount , FixedPoint96.Q96 , liquidity)
+        
         assert sqrtPX96 > quotient
         ## always fits 160 bits
         result = sqrtPX96 - quotient
-        # Result should be casted into UINT160 without overflowing
-        assert result <= MAX_UINT160, "Overflow when casting to UINT160"
+
+        checkUInt160(result)
         return result
+        
 
 
 ### @notice Gets the next sqrt price given an input amount of token0 or token1
@@ -109,11 +99,10 @@ def getNextSqrtPriceFromInput(sqrtPX96, liquidity, amountIn, zeroForOne):
 
     ## round to make sure that we don't pass the target price
     return (
-        getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amountIn, True)
+        getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountIn, True)
         if zeroForOne
-        else getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amountIn, True)
+        else getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountIn, True)
     )
-
 
 ### @notice Gets the next sqrt price given an output amount of token0 or token1
 ### @dev Throws if price or liquidity are 0 or the next price is out of bounds
@@ -128,11 +117,10 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
 
     ## round to make sure that we pass the target price
     return (
-        getNextSqrtPriceFromAmount1(sqrtPX96, liquidity, amountOut, False)
+        getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, False)
         if zeroForOne
-        else getNextSqrtPriceFromAmount0(sqrtPX96, liquidity, amountOut, False)
+        else getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, False)
     )
-
 
 ### @notice Gets the amount0 delta between two prices
 ### @dev Calculates liquidity / sqrt(lower) - liquidity / sqrt(upper),
@@ -141,7 +129,7 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The amount of usable liquidity
 ### @return amount0 Amount of token0 required to cover a position of size liquidity between the two passed prices
-def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
+def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
@@ -150,9 +138,14 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     assert numerator2 >= 0
 
     assert sqrtRatioAX96 > 0
-    # Arbitrarily chosen rounding up or down - no need to care about such accuracy here
-    return math.ceil((numerator1 * numerator2) / (sqrtRatioBX96 * sqrtRatioAX96))
-
+    if roundUp:
+        print(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96))
+        print(sqrtRatioAX96)
+        print(divRoundingUp(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96) ,sqrtRatioAX96)+1)
+        print(divRoundingUp(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96) ,sqrtRatioAX96))
+        return divRoundingUp(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96) ,sqrtRatioAX96)
+    else:
+        return mulDiv(numerator1 , numerator2 , sqrtRatioBX96) // sqrtRatioAX96
 
 ### @notice Gets the amount1 delta between two prices
 ### @dev Calculates liquidity * (sqrt(upper) - sqrt(lower))
@@ -160,12 +153,14 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The amount of usable liquidity
 ### @return amount1 Amount of token1 required to cover a position of size liquidity between the two passed prices
-def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity):
+def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
-    # Arbitrarily chosen rounding up or down - no need to care about such accuracy here
-    return math.ceil(liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / FixedPoint96.Q96)
+    if roundUp:
+        return mulDivRoundingUp(liquidity , (sqrtRatioBX96 - sqrtRatioAX96) , FixedPoint96.Q96)
+    else:
+        return mulDiv(liquidity , (sqrtRatioBX96 - sqrtRatioAX96) ,  FixedPoint96.Q96)
 
 
 ### @notice Helper that gets signed token0 delta
@@ -185,7 +180,7 @@ def getAmount0DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The change in liquidity for which to compute the amount1 delta
 ### @return amount1 Amount of token1 corresponding to the passed liquidityDelta between the two prices
-def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
+def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     if liquidity < 0:
         return -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), False)
     else:

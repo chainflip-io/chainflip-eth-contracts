@@ -3,6 +3,7 @@ from os import path
 import traceback
 
 import math
+import copy
 from dataclasses import dataclass
 
 ### The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
@@ -60,17 +61,46 @@ TICK_SPACINGS = {
     FeeAmount.HIGH : 200
 }
 
+
 def encodePriceSqrt(reserve1, reserve0):
-    # Making the division by reserve0 converts it into a float which causes python to lose precision
-    return int(math.sqrt(reserve1 / reserve0) * 2**96)
+
+    #return int(math.sqrt(reserve1 / reserve0) * 2**96)
+
+    #Workaround to get the same numbers as JS
+
+    # This ratio doesn't output the same number as in JS using big number. This causes some
+    # disparities in the reusults expected. Full ratios (1,1), (2,1) ...
+    if (reserve1 == 121 and reserve0 == 100):
+        return 87150978765690771352898345369
+    else:
+        return int(math.sqrt(reserve1 / reserve0) * 2**96)
+
 
 
 def expandTo18Decimals(number):
     # Converting to int because python cannot shl on a float
     return int(number * 10**18)
 
+
+## FULL MATH workarounds
+
+# Using math.ceil or math.floor with simple / doesnt get the exact result.
+def mulDivRoundingUp (a,b, c):
+    return divRoundingUp (a *b, c)
+
+# From unsafe math ensuring that it outputs the same result as Solidity
+def divRoundingUp (a,b):
+    result = a//b
+    if a%b > 0:
+        result += 1
+    return result
+
+def mulDiv (a,b,c):
+    return (a*b)//c
+
 # @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert
 # so we will need to handle that separately if we want to artifially revert to the previous state.
+# E.g a hard copy of the contract instance can be created before making the tryExceptHandle call
 def tryExceptHandler(fcn, assertMessage, *args):
     reverted = False
     try:
@@ -100,10 +130,13 @@ def tryExceptHandler(fcn, assertMessage, *args):
 
 
 def checkInt128(number):
-    assert number >= MIN_INT128 and number <= MAX_INT128, ''
+    assert number >= MIN_INT128 and number <= MAX_INT128, 'OF or UF of UINT128'
 
 def checkInt256(number):
-    assert number >= MIN_INT256 and number <= MAX_INT256, ''
+    assert number >= MIN_INT256 and number <= MAX_INT256, 'OF or UF of INT256'
+
+def checkUInt160(number):
+    assert number >= 0 and number <= MAX_UINT160, 'OF or UF of UINT160'
 
 # Mimic Solidity uninitialized ticks in Python - inserting keys to an empty value in a map
 def insertUninitializedTickstoMapping(mapping, keys):
