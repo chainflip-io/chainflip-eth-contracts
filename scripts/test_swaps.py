@@ -55,12 +55,15 @@ def test_testing(TEST_POOLS, accounts):
     else:
         swapTests = poolFixture.swapTests
 
-    successfulTests = 0
     for testCase in swapTests:
-        # print(testCase)
-        # print(swapCaseToDescription(testCase))
         slot0 = pool.slot0
         poolInstance = copy.deepcopy(pool)
+
+        # Get snapshot results
+        snapshotIndex = swapsSnapshot.index(
+            "UniswapV3Pool swap tests " + poolFixture.description + " " + swapCaseToDescription(testCase)
+        )
+        dict = swapsSnapshot[snapshotIndex + 1]
 
         try:
             recipient, amount0, amount1, sqrtPriceX96, liquidity, tick = executeSwap(
@@ -68,7 +71,11 @@ def test_testing(TEST_POOLS, accounts):
             )
         except AssertionError as msg:
             assert str(msg) == "SPL"
-            # TODO: Add checking against error snapshots
+            assert float(dict["poolBalance0"]) == pytest.approx(poolBalance0, rel=1e-12)
+            assert float(dict["poolBalance1"]) == pytest.approx(poolBalance1, rel=1e-12)
+            decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent        
+            assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(slot0.sqrtPriceX96, -decimalPoints)
+            assert float(dict["tickBefore"]) == slot0.tick
             continue
 
 
@@ -102,27 +109,8 @@ def test_testing(TEST_POOLS, accounts):
         else:
             executionPrice = "-Infinity"
 
-        # print("Swap results")
-        # print(f'amount0Before: {poolBalance0}')
-        # print(f'amount0Delta: {poolBalance0Delta}')
-        # print(f'amount1Before: {poolBalance1}')
-        # print(f'amount1Delta: {poolBalance1Delta}')
-        # print(f'executionPrice: {executionPrice}')
-        # print(f'feeGrowthGlobal0X128Delta: {feeGrowthGlobal0X128}')
-        # print(f'feeGrowthGlobal1X128Delta: {feeGrowthGlobal1X128}')
-        # print(f'poolPriceAfter: {formatPrice(slot0After.sqrtPriceX96)}')  #same as $sqrtPriceX96
-        # print(f'poolPriceBefore: {formatPrice(slot0.sqrtPriceX96)}')
-        # print(f'tickAfter: {slot0After.tick}') #same as $tick
-        # print(f'tickBefore: {slot0.tick}')
-
-        # Get snapshot results
-        snapshotIndex = swapsSnapshot.index(
-            "UniswapV3Pool swap tests " + poolFixture.description + " " + swapCaseToDescription(testCase)
-        )
-        dict = swapsSnapshot[snapshotIndex + 1]
-
         # Allowing some very small difference due to rounding errors
-        assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta, rel=1e-12)
+        assert float(dict["amount0Before"]) == pytest.approx(poolBalance0, rel=1e-12)
         assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta, rel=1e-12)
         assert float(dict["amount1Before"]) == pytest.approx(poolBalance1, rel=1e-12)
         assert float(dict["amount1Delta"]) == pytest.approx(poolBalance1Delta, rel=1e-12)
@@ -140,10 +128,6 @@ def test_testing(TEST_POOLS, accounts):
         assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(slot0.sqrtPriceX96, -decimalPoints)
         assert float(dict["tickAfter"]) == slot0After.tick
         assert float(dict["tickBefore"]) == slot0.tick
-
-        successfulTests += 1
-
-    print("SUCCESFUL POOL TESTED: " + poolFixture.description)
 
 
 def executeSwap(pool, testCase, recipient):

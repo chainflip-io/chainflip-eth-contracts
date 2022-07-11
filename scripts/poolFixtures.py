@@ -233,7 +233,7 @@ def pool10():
 
 
 # This pool with such low starting price ends up with a bigger than normal rounding
-# error when comparing numbers e-39. But this should be alright
+# error when comparing numbers e-39 in poolPriceAfter. But this should be alright.
 # @pytest.fixture
 # def pool11():
 #     return PoolTestCase(
@@ -362,6 +362,7 @@ DEFAULT_POOL_SWAP_TESTS = [
     },
     # ## swap small amounts in/out
     # TODO: Swapping small amounts in/out can be off - assuming it's due to rounding errors
+    # Also, it is only off in extreme pools, not in the ones closer to normal functioning.
     # {
     #   "zeroForOne": True,
     #   "exactOut": False,
