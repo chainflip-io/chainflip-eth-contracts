@@ -25,7 +25,7 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
     exactIn = amountRemaining >= 0
 
     if exactIn:
-        amountRemainingLessFee = mulDiv(amountRemaining , ONE_IN_PIPS - feePips , ONE_IN_PIPS)
+        amountRemainingLessFee = mulDiv(amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS)
 
         amountIn = (
             SqrtPriceMath.getAmount0Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, True)
@@ -91,6 +91,6 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
         checkUInt256(amountRemaining)
         feeAmount = abs(amountRemaining) - amountIn
     else:
-        feeAmount = mulDivRoundingUp(amountIn , feePips , ONE_IN_PIPS - feePips)
+        feeAmount = mulDivRoundingUp(amountIn, feePips, ONE_IN_PIPS - feePips)
 
     return (sqrtRatioNextX96, amountIn, amountOut, feeAmount)

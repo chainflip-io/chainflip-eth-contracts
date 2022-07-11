@@ -1,4 +1,3 @@
-
 class Account:
     def __init__(self, name, tokens, balances):
         self.name = name
@@ -22,5 +21,5 @@ class Account:
     def receiveToken(self, token, amount):
         # Safeguard check
         assert amount >= 0
-        
+
         self.balances[token] += amount

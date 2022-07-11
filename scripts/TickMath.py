@@ -1,4 +1,3 @@
-
 from utilities import *
 
 ### The minimum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**-128
@@ -62,13 +61,12 @@ def getSqrtRatioAtTick(tick):
     ## this divides by 1<<32 rounding up to go from a Q128.128 to a Q128.96.
     ## we then downcast because we know the result always fits within 160 bits due to our tick input constraint
     ## we round up in the division so getTickAtSqrtRatio of the output price is always consistent
-    
+
     remainder = 1 if ratio % 2**32 != 0 else 0
     # For some reason doing the division rounding up doesn't give the exact number
     result = (ratio >> 32) + remainder
     assert result <= MAX_UINT160
     return result
-
 
 
 ### @notice Calculates the greatest tick value such that getRatioAtTick(tick) <= ratio

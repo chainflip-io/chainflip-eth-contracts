@@ -7,12 +7,12 @@ import TickMath
 ### @param y The delta by which liquidity should be changed
 ### @return z The liquidity delta
 def addDelta(x, y):
-    if (y < 0):
+    if y < 0:
         z = x - abs(y)
         # Mimic solidity underflow
-        assert z >= 0 , 'LS'
+        assert z >= 0, "LS"
     else:
         z = x + abs(y)
         # Mimic solidity overflow check
-        assert z <= TickMath.MAX_UINT128, 'LA'
+        assert z <= TickMath.MAX_UINT128, "LA"
     return z

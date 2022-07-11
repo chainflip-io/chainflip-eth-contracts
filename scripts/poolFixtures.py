@@ -1,9 +1,11 @@
 from utilities import *
+
 # from UniswapPool import *
 # from Factory import *
 
 import pytest
 import Position
+
 
 @dataclass
 class PoolTestCase:
@@ -15,45 +17,49 @@ class PoolTestCase:
     # SwapTestCase[]
     swapTests: list
 
+
 @dataclass
 class Position:
     tickLower: int
     tickUpper: int
     liquidity: int
 
+
 @pytest.fixture
 def pool0():
     return PoolTestCase(
-        description = 'low fee, 1:1 price, 2e18 max range liquidity',
-        feeAmount = FeeAmount.LOW,
-        tickSpacing = TICK_SPACINGS[FeeAmount.LOW],
-        startingPrice = encodePriceSqrt(1, 1),
-        positions = [
-        Position (
-            tickLower = getMinTick(TICK_SPACINGS[FeeAmount.LOW]),
-            tickUpper = getMaxTick(TICK_SPACINGS[FeeAmount.LOW]),
-            liquidity = expandTo18Decimals(2),
-        ),
+        description="low fee, 1:1 price, 2e18 max range liquidity",
+        feeAmount=FeeAmount.LOW,
+        tickSpacing=TICK_SPACINGS[FeeAmount.LOW],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.LOW]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.LOW]),
+                liquidity=expandTo18Decimals(2),
+            ),
         ],
-        swapTests = None,
+        swapTests=None,
     )
+
 
 @pytest.fixture
 def pool1():
     return PoolTestCase(
-        description = 'medium fee, 1:1 price, 2e18 max range liquidity',
-        feeAmount = FeeAmount.MEDIUM,
-        tickSpacing = TICK_SPACINGS[FeeAmount.MEDIUM],
-        startingPrice = encodePriceSqrt(1, 1),
-        positions = [
-        Position (
-            tickLower = getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-            tickUpper = getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-            liquidity = expandTo18Decimals(2),
-        ),
+        description="medium fee, 1:1 price, 2e18 max range liquidity",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            ),
         ],
-        swapTests = None,
+        swapTests=None,
     )
+
 
 @pytest.fixture
 def pool2():
@@ -374,16 +380,15 @@ DEFAULT_POOL_SWAP_TESTS = [
     #   "amount1": 1000,
     # },
     {
-      "zeroForOne": True,
-      "exactOut": True,
-      "amount1": 1000,
+        "zeroForOne": True,
+        "exactOut": True,
+        "amount1": 1000,
     },
     {
-      "zeroForOne": False,
-      "exactOut": True,
-      "amount0": 1000,
+        "zeroForOne": False,
+        "exactOut": True,
+        "amount0": 1000,
     },
-
     # ## swap arbitrary input to price
     {
         "sqrtPriceLimit": encodePriceSqrt(5, 2),
@@ -394,11 +399,11 @@ DEFAULT_POOL_SWAP_TESTS = [
         "zeroForOne": True,
     },
     {
-      "sqrtPriceLimit": encodePriceSqrt(5, 2),
-      "zeroForOne": True,
+        "sqrtPriceLimit": encodePriceSqrt(5, 2),
+        "zeroForOne": True,
     },
     {
-      "sqrtPriceLimit": encodePriceSqrt(2, 5),
-      "zeroForOne": False,
+        "sqrtPriceLimit": encodePriceSqrt(2, 5),
+        "zeroForOne": False,
     },
 ]

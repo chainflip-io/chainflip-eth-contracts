@@ -15,10 +15,11 @@ from utilities import *
 def tickSpacingToMaxLiquidityPerTick(tickSpacing):
     minTick = math.ceil(TickMath.MIN_TICK / tickSpacing) * tickSpacing
     maxTick = math.floor(TickMath.MAX_TICK / tickSpacing) * tickSpacing
-    assert abs(maxTick) >= abs(minTick) # Health check
+    assert abs(maxTick) >= abs(minTick)  # Health check
     numTicks = ((maxTick - minTick) // tickSpacing) + 1
-    assert numTicks <= 2**24 - 1 # Health check
+    assert numTicks <= 2**24 - 1  # Health check
     return TickMath.MAX_UINT128 // numTicks
+
 
 ### @notice Retrieves fee growth data
 ### @param self The mapping containing all tick information for initialized ticks
@@ -29,29 +30,21 @@ def tickSpacingToMaxLiquidityPerTick(tickSpacing):
 ### @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
 ### @return feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
 ### @return feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
-def getFeeGrowthInside(
-    self,
-    tickLower,
-    tickUpper,
-    tickCurrent,
-    feeGrowthGlobal0X128,
-    feeGrowthGlobal1X128
-):
-    # Assumption that the key (tick) exists 
+def getFeeGrowthInside(self, tickLower, tickUpper, tickCurrent, feeGrowthGlobal0X128, feeGrowthGlobal1X128):
+    # Assumption that the key (tick) exists
     lower = self[tickLower]
     upper = self[tickUpper]
 
     ## calculate fee growth below
-    if (tickCurrent >= tickLower):
+    if tickCurrent >= tickLower:
         feeGrowthBelow0X128 = lower.feeGrowthOutside0X128
         feeGrowthBelow1X128 = lower.feeGrowthOutside1X128
     else:
         feeGrowthBelow0X128 = feeGrowthGlobal0X128 - lower.feeGrowthOutside0X128
         feeGrowthBelow1X128 = feeGrowthGlobal1X128 - lower.feeGrowthOutside1X128
 
-
     ## calculate fee growth above
-    if (tickCurrent < tickUpper):
+    if tickCurrent < tickUpper:
         feeGrowthAbove0X128 = upper.feeGrowthOutside0X128
         feeGrowthAbove1X128 = upper.feeGrowthOutside1X128
     else:
@@ -60,7 +53,7 @@ def getFeeGrowthInside(
 
     feeGrowthInside0X128 = feeGrowthGlobal0X128 - feeGrowthBelow0X128 - feeGrowthAbove0X128
     feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128
-    return (feeGrowthInside0X128,feeGrowthInside1X128)
+    return (feeGrowthInside0X128, feeGrowthInside1X128)
 
 
 ### @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
@@ -76,32 +69,25 @@ def getFeeGrowthInside(
 ### @param maxLiquidity The maximum liquidity allocation for a single tick
 ### @return flipped Whether the tick was flipped from initialized to uninitialized, or vice versa
 def update(
-    self,
-    tick,
-    tickCurrent,
-    liquidityDelta,
-    feeGrowthGlobal0X128,
-    feeGrowthGlobal1X128,
-    upper,
-    maxLiquidity
+    self, tick, tickCurrent, liquidityDelta, feeGrowthGlobal0X128, feeGrowthGlobal1X128, upper, maxLiquidity
 ):
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):
-        assert liquidityDelta > 0 , "Avoid creating empty tick"
+        assert liquidityDelta > 0, "Avoid creating empty tick"
         insertUninitializedTickstoMapping(self, [tick])
-    
+
     info = self[tick]
 
     liquidityGrossBefore = info.liquidityGross
     liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)
 
-    assert liquidityGrossAfter <= maxLiquidity, 'LO'
+    assert liquidityGrossAfter <= maxLiquidity, "LO"
 
     flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0)
 
-    if (liquidityGrossBefore == 0):
+    if liquidityGrossBefore == 0:
         ## by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-        if (tick <= tickCurrent):
+        if tick <= tickCurrent:
             info.feeGrowthOutside0X128 = feeGrowthGlobal0X128
             info.feeGrowthOutside1X128 = feeGrowthGlobal1X128
 
@@ -114,9 +100,10 @@ def update(
     else:
         info.liquidityNet = SafeMath.addInts(info.liquidityNet, liquidityDelta)
         checkInt128(info.liquidityNet)
-    
+
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped
+
 
 ### @notice Clears tick data
 ### @param self The mapping containing all initialized tick information for initialized ticks

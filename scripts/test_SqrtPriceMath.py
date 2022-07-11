@@ -42,7 +42,9 @@ def test_fromInput_any_input_overflow():
     price = 1
     liquidity = 1
     amountIn = 2**255
-    tryExceptHandler(SqrtPriceMath.getNextSqrtPriceFromInput, "OF or UF of UINT160", price, liquidity, amountIn, False)
+    tryExceptHandler(
+        SqrtPriceMath.getNextSqrtPriceFromInput, "OF or UF of UINT160", price, liquidity, amountIn, False
+    )
 
 
 def test_fromInput_zeroAmount_zeroForOne():
@@ -233,22 +235,18 @@ def test_getAmount0Delta_returnsAmount1():
     )
     assert int(amount0) == 90909090909090910
 
-def test_getAmount0Delta_priceOverflow():
-    print('works for prices that overflow')
-    amount0Up = SqrtPriceMath.getAmount0Delta(
-        encodePriceSqrt(2**90, 1),
-        encodePriceSqrt(2**96, 1),
-        expandTo18Decimals(1),
-        True
-    )    
-    amount0Down = SqrtPriceMath.getAmount0Delta(
-        encodePriceSqrt(2**90, 1),
-        encodePriceSqrt(2**96, 1),
-        expandTo18Decimals(1),
-        False
-    )    
 
-    assert int(amount0Up) == int(amount0Down) +1 
+def test_getAmount0Delta_priceOverflow():
+    print("works for prices that overflow")
+    amount0Up = SqrtPriceMath.getAmount0Delta(
+        encodePriceSqrt(2**90, 1), encodePriceSqrt(2**96, 1), expandTo18Decimals(1), True
+    )
+    amount0Down = SqrtPriceMath.getAmount0Delta(
+        encodePriceSqrt(2**90, 1), encodePriceSqrt(2**96, 1), expandTo18Decimals(1), False
+    )
+
+    assert int(amount0Up) == int(amount0Down) + 1
+
 
 # getAmount1Delta
 
@@ -269,7 +267,7 @@ def test_getAmount1Delta_returnsAmount1():
     print("returns 0.1 amount1 for price of 1 to 1.21")
     print(encodePriceSqrt(1, 1))
     print(encodePriceSqrt(121, 100))
-    
+
     amount0 = SqrtPriceMath.getAmount1Delta(
         encodePriceSqrt(1, 1), encodePriceSqrt(121, 100), expandTo18Decimals(1), True
     )
@@ -280,6 +278,7 @@ def test_getAmount1Delta_returnsAmount1():
     )
 
     assert int(amount1RoundedDown) == int(amount0) - 1
+
 
 # Swap Computation
 def test_swap():

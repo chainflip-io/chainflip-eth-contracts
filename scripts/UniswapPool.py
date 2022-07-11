@@ -83,18 +83,19 @@ class StepComputations:
     ## how much fee is being paid in
     feeAmount: int
 
+
 @dataclass
 class ProtocolFees:
     token0: int
     token1: int
 
+
 class UniswapPool(Account):
 
     # Constructor
     def __init__(self, token0, token1, fee, tickSpacing):
-        # TODO: Initialize pool balances here or in initialize function call or just transfer balances in test?
         # Contract storage variables
-        super().__init__("UniswapPool", [token0,token1],[0, 0])
+        super().__init__("UniswapPool", [token0, token1], [0, 0])
         self.token0 = token0
         self.token1 = token1
         self.fee = fee
@@ -105,7 +106,7 @@ class UniswapPool(Account):
         self.slot0 = Slot0(0, 0, 0)
         self.feeGrowthGlobal0X128 = 0
         self.feeGrowthGlobal1X128 = 0
-        self.protocolFees = ProtocolFees(0,0)
+        self.protocolFees = ProtocolFees(0, 0)
         self.liquidity = 0
         # dict ( int24 => Tick.Info)
         self.ticks = dict()
@@ -219,18 +220,17 @@ class UniswapPool(Account):
                 True,
                 self.maxLiquidityPerTick,
             )
-        
+
         if flippedLower:
-            assert tickLower % self.tickSpacing == 0 ## ensure that the tick is spaced
+            assert tickLower % self.tickSpacing == 0  ## ensure that the tick is spaced
         if flippedUpper:
-            assert tickUpper % self.tickSpacing == 0 ## ensure that the tick is spaced
-            
+            assert tickUpper % self.tickSpacing == 0  ## ensure that the tick is spaced
 
         (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
             self.ticks, tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128
         )
 
-        Position.update(position,liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128)
+        Position.update(position, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128)
 
         ## clear any tick data that is no longer needed
         if liquidityDelta < 0:
@@ -240,11 +240,20 @@ class UniswapPool(Account):
                 Tick.clear(self.ticks, tickUpper)
         return position
 
+    def mint(self, recipient, tickLower, tickUpper, amount):
+        # Health check inputs
+        checkUInt128(amount)
+        checkInt24(tickLower)
+        checkInt24(tickUpper)
+        checkInt128(amount)
+        assert isinstance(recipient, Account)
+        return self._mint(recipient, tickLower, tickUpper, amount)
+
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
-    def mint(self, recipient, tickLower, tickUpper, amount):
+    def _mint(self, recipient, tickLower, tickUpper, amount):
         assert amount > 0
-        checkInt128(amount)
+
         (_, amount0Int, amount1Int) = self._modifyPosition(
             ModifyPositionParams(recipient, tickLower, tickUpper, amount)
         )
@@ -268,8 +277,17 @@ class UniswapPool(Account):
 
         return (amount0, amount1)
 
-    ### @inheritdoc IUniswapV3PoolActions
     def collect(self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested):
+        # Health check inputs
+        checkInt24(tickLower)
+        checkInt24(tickUpper)
+        checkUInt128(amount0Requested)
+        checkUInt128(amount1Requested)
+        assert isinstance(recipient, Account)
+        return self._collect(recipient, tickLower, tickUpper, amount0Requested, amount1Requested)
+
+    ### @inheritdoc IUniswapV3PoolActions
+    def _collect(self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested):
         ## we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
         ## Hardcoded recipient == msg.sender. If position doesn't exist abort.
         position = Position.get(self.positions, recipient, tickLower, tickUpper)
@@ -289,9 +307,17 @@ class UniswapPool(Account):
 
         return (amount0, amount1)
 
+    def burn(self, recipient, tickLower, tickUpper, amount):
+        # Health check inputs
+        checkInt24(tickLower)
+        checkInt24(tickUpper)
+        checkUInt128(amount)
+        assert isinstance(recipient, Account)
+        return self._burn(recipient, tickLower, tickUpper, amount)
+
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
-    def burn(self, recipient, tickLower, tickUpper, amount):
+    def _burn(self, recipient, tickLower, tickUpper, amount):
         assert amount > 0, "Amount must be greater than 0 - prevent creating a new position when amount == 0"
         checkInt128(amount)
 
@@ -314,8 +340,16 @@ class UniswapPool(Account):
 
         return (amount0, amount1)
 
-    ### @inheritdoc IUniswapV3PoolActions
     def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
+        # Health check inputs
+        assert zeroForOne == True or zeroForOne == False
+        checkInt256(amountSpecified)
+        checkUInt160(sqrtPriceLimitX96)
+        assert isinstance(recipient, Account)
+        return self._swap(recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96)
+
+    ### @inheritdoc IUniswapV3PoolActions
+    def _swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
         assert amountSpecified != 0, "AS"
 
         slot0Start = self.slot0
@@ -344,10 +378,10 @@ class UniswapPool(Account):
             0,
             cache.liquidityStart,
         )
-        
+
         while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
 
-            step = StepComputations(0,0,0,0,0,0,0)
+            step = StepComputations(0, 0, 0, 0, 0, 0, 0)
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
@@ -391,7 +425,7 @@ class UniswapPool(Account):
 
             ## update global fee tracker
             if state.liquidity > 0:
-                state.feeGrowthGlobalX128 += mulDiv(step.feeAmount , FixedPoint128.Q128 , state.liquidity)
+                state.feeGrowthGlobalX128 += mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity)
 
             ## shift tick if we reached the next price
             if state.sqrtPriceX96 == step.sqrtPriceNextX96:
@@ -453,28 +487,27 @@ class UniswapPool(Account):
         )
 
         ## do the transfers and collect payment
-        assert isinstance(recipient, Account)
         if zeroForOne:
             if amount1 < 0:
                 self.transferToken(recipient, self.token1, abs(amount1))
             balanceBefore = self.balances[self.token0]
             recipient.transferToken(self, self.token0, abs(amount0))
-            assert balanceBefore + abs(amount0) == self.balances[self.token0], 'IIA'
+            assert balanceBefore + abs(amount0) == self.balances[self.token0], "IIA"
         else:
             if amount0 < 0:
                 self.transferToken(recipient, self.token0, abs(amount0))
 
             balanceBefore = self.balances[self.token1]
             recipient.transferToken(self, self.token1, abs(amount1))
-            assert balanceBefore + abs(amount1) == self.balances[self.token1], 'IIA'
+            assert balanceBefore + abs(amount1) == self.balances[self.token1], "IIA"
 
         return recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick
 
+    def setFeeProtocol(self, feeProtocol0, feeProtocol1):
+        assert (feeProtocol0 == 0 or (feeProtocol0 >= 4 and feeProtocol0 <= 10)) and (
+            feeProtocol1 == 0 or (feeProtocol1 >= 4 and feeProtocol1 <= 10)
+        )
 
-
-    def setFeeProtocol(self,feeProtocol0, feeProtocol1):
-        assert (feeProtocol0 == 0 or (feeProtocol0 >= 4 and feeProtocol0 <= 10)) and (feeProtocol1 == 0 or (feeProtocol1 >= 4 and feeProtocol1 <= 10))
-        
         feeProtocolOld = self.slot0.feeProtocol
         feeProtocolNew = feeProtocol0 + (feeProtocol1 << 4)
         # Health check
@@ -483,24 +516,26 @@ class UniswapPool(Account):
         return (feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1)
 
     def collectProtocol(self, recipient, amount0Requested, amount1Requested):
-        amount0 = self.protocolFees.token0 if amount0Requested > self.protocolFees.token0 else amount0Requested
-        amount1 = self.protocolFees.token1 if amount1Requested > self.protocolFees.token1 else amount1Requested
+        amount0 = (
+            self.protocolFees.token0 if amount0Requested > self.protocolFees.token0 else amount0Requested
+        )
+        amount1 = (
+            self.protocolFees.token1 if amount1Requested > self.protocolFees.token1 else amount1Requested
+        )
 
         if amount0 > 0:
-            if (amount0 == self.protocolFees.token0):
-                amount0 -= 1 ##ensure that the slot is not cleared, for gas savings
+            if amount0 == self.protocolFees.token0:
+                amount0 -= 1  ##ensure that the slot is not cleared, for gas savings
             self.protocolFees.token0 -= amount0
             self.transferToken(recipient, self.token0, amount0)
 
         if amount1 > 0:
-            if (amount1 == self.protocolFees.token1):
-                amount1 -= 1 ## ensure that the slot is not cleared, for gas savings
+            if amount1 == self.protocolFees.token1:
+                amount1 -= 1  ## ensure that the slot is not cleared, for gas savings
             self.protocolFees.token1 -= amount1
             self.transferToken(recipient, self.token1, amount1)
 
         return amount0, amount1, recipient
-
-
 
     # It is assumed that the keys are within [MIN_TICK , MAX_TICK]
     # We don't run the risk of overshooting tickNext (out of boundaries) as long as ticks (keys) have been initialized
@@ -532,11 +567,11 @@ class UniswapPool(Account):
             else:
                 nextTick = sortedKeyList[indexCurrentTick - 1]
         else:
-            
+
             if indexCurrentTick == len(sortedKeyList) - 1:
                 # No tick to the right
                 return TickMath.MAX_TICK, False
             nextTick = sortedKeyList[indexCurrentTick + 1]
-        
+
         # Return tick within the boundaries
         return nextTick, True

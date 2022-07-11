@@ -34,8 +34,8 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
             if denominator >= numerator1:
                 # Result should be casted into UINT160 without overflowing
                 # Adding assert to detect wrong behaviour
-                result = mulDivRoundingUp(numerator1 , sqrtPX96, denominator)
-                #result = math.ceil((numerator1 * sqrtPX96) / denominator)
+                result = mulDivRoundingUp(numerator1, sqrtPX96, denominator)
+                # result = math.ceil((numerator1 * sqrtPX96) / denominator)
                 checkUInt160(result)
                 return result
 
@@ -50,9 +50,10 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
         product = amount * sqrtPX96
         assert product < MAX_UINT256 and numerator1 > product
         denominator = numerator1 - product
-        result = mulDivRoundingUp(numerator1 , sqrtPX96, denominator)
+        result = mulDivRoundingUp(numerator1, sqrtPX96, denominator)
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
         return result
+
 
 ### @notice Gets the next sqrt price given a delta of token1
 ### @dev Always rounds down, because in the exact output case (decreasing price) we need to move the price at least
@@ -68,22 +69,29 @@ def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
     ## if we're adding (subtracting), rounding down requires rounding the quotient down (up)
     ## in both cases, avoid a mulDiv for most inputs
     if add:
-        quotient =(amount << FixedPoint96.RESOLUTION) // liquidity if amount <= MAX_UINT160 else mulDiv(amount , FixedPoint96.Q96 , liquidity)
+        quotient = (
+            (amount << FixedPoint96.RESOLUTION) // liquidity
+            if amount <= MAX_UINT160
+            else mulDiv(amount, FixedPoint96.Q96, liquidity)
+        )
 
         result = sqrtPX96 + quotient
 
         checkUInt160(result)
         return result
     else:
-        quotient = divRoundingUp(amount << FixedPoint96.RESOLUTION , liquidity) if amount <= MAX_UINT160 else mulDivRoundingUp(amount , FixedPoint96.Q96 , liquidity)
-        
+        quotient = (
+            divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+            if amount <= MAX_UINT160
+            else mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
+        )
+
         assert sqrtPX96 > quotient
         ## always fits 160 bits
         result = sqrtPX96 - quotient
 
         checkUInt160(result)
         return result
-        
 
 
 ### @notice Gets the next sqrt price given an input amount of token0 or token1
@@ -104,6 +112,7 @@ def getNextSqrtPriceFromInput(sqrtPX96, liquidity, amountIn, zeroForOne):
         else getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountIn, True)
     )
 
+
 ### @notice Gets the next sqrt price given an output amount of token0 or token1
 ### @dev Throws if price or liquidity are 0 or the next price is out of bounds
 ### @param sqrtPX96 The starting price before accounting for the output amount
@@ -122,6 +131,7 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
         else getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, False)
     )
 
+
 ### @notice Gets the amount0 delta between two prices
 ### @dev Calculates liquidity / sqrt(lower) - liquidity / sqrt(upper),
 ### i.e. liquidity * (sqrt(upper) - sqrt(lower)) / (sqrt(upper) * sqrt(lower))
@@ -139,9 +149,10 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 
     assert sqrtRatioAX96 > 0
     if roundUp:
-        return divRoundingUp(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96) ,sqrtRatioAX96)
+        return divRoundingUp(mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96), sqrtRatioAX96)
     else:
-        return mulDiv(numerator1 , numerator2 , sqrtRatioBX96) // sqrtRatioAX96
+        return mulDiv(numerator1, numerator2, sqrtRatioBX96) // sqrtRatioAX96
+
 
 ### @notice Gets the amount1 delta between two prices
 ### @dev Calculates liquidity * (sqrt(upper) - sqrt(lower))
@@ -154,9 +165,9 @@ def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
     if roundUp:
-        return mulDivRoundingUp(liquidity , (sqrtRatioBX96 - sqrtRatioAX96) , FixedPoint96.Q96)
+        return mulDivRoundingUp(liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96.Q96)
     else:
-        return mulDiv(liquidity , (sqrtRatioBX96 - sqrtRatioAX96) ,  FixedPoint96.Q96)
+        return mulDiv(liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96.Q96)
 
 
 ### @notice Helper that gets signed token0 delta

@@ -11,6 +11,7 @@ MIN_SQRT_RATIO = 4295128739
 ### The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
 MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342
 
+
 @dataclass
 class TickInfo:
     ## the total position liquidity that references this tick
@@ -27,18 +28,20 @@ class TickInfo:
 MAX_UINT128 = 2**128 - 1
 MAX_UINT256 = 2**256 - 1
 MAX_INT256 = 2**255 - 1
-MIN_INT256 = - 2**255
+MIN_INT256 = -(2**255)
 MAX_UINT160 = 2**160 - 1
-MIN_INT24 = - 2**24
+MIN_INT24 = -(2**24)
 MAX_INT24 = 2**23 - 1
-MIN_INT128 = - 2**128
+MIN_INT128 = -(2**128)
 MAX_INT128 = 2**127 - 1
 MAX_UINT8 = 2**8 - 1
 
 TEST_TOKENS = ["TokenA", "TokenB"]
 
+
 def getMinTick(tickSpacing):
     return math.ceil(-887272 / tickSpacing) * tickSpacing
+
 
 def getMaxTick(tickSpacing):
     return math.floor(887272 / tickSpacing) * tickSpacing
@@ -46,7 +49,7 @@ def getMaxTick(tickSpacing):
 
 def getMaxLiquidityPerTick(tickSpacing):
     denominator = (getMaxTick(tickSpacing) - getMinTick(tickSpacing)) // tickSpacing + 1
-    return (2**128 -1)  // denominator
+    return (2**128 - 1) // denominator
 
 
 @dataclass
@@ -55,32 +58,27 @@ class FeeAmount:
     MEDIUM: int = 3000
     HIGH: int = 10000
 
-TICK_SPACINGS = {
-    FeeAmount.LOW : 10,
-    FeeAmount.MEDIUM : 60,
-    FeeAmount.HIGH : 200
-}
+
+TICK_SPACINGS = {FeeAmount.LOW: 10, FeeAmount.MEDIUM: 60, FeeAmount.HIGH: 200}
 
 
 def encodePriceSqrt(reserve1, reserve0):
-    #Workaround to get the same numbers as JS
+    # Workaround to get the same numbers as JS
 
     # This ratio doesn't output the same number as in JS using big number. This causes some
     # disparities in the reusults expected. Full ratios (1,1), (2,1) ...
     # Forcing values obtained by bigNumber.js when ratio is not exact
-    if (reserve1 == 121 and reserve0 == 100):
+    if reserve1 == 121 and reserve0 == 100:
         return 87150978765690771352898345369
-    elif(reserve1 == 101 and reserve0 == 100):
+    elif reserve1 == 101 and reserve0 == 100:
         return 79623317895830914510487008059
-    elif(reserve1 == 1 and reserve0 == 10):
-        return 25054144837504793118650146401   
-    elif(reserve1 == 1 and reserve0 == 2**127):
-        #return 60856750000
+    elif reserve1 == 1 and reserve0 == 10:
+        return 25054144837504793118650146401
+    elif reserve1 == 1 and reserve0 == 2**127:
         return 6074000999
-    
+
     else:
         return int(math.sqrt(reserve1 / reserve0) * 2**96)
-
 
 
 def expandTo18Decimals(number):
@@ -91,18 +89,21 @@ def expandTo18Decimals(number):
 ## FULL MATH workarounds
 
 # Using math.ceil or math.floor with simple / doesnt get the exact result.
-def mulDivRoundingUp (a,b, c):
-    return divRoundingUp (a *b, c)
+def mulDivRoundingUp(a, b, c):
+    return divRoundingUp(a * b, c)
+
 
 # From unsafe math ensuring that it outputs the same result as Solidity
-def divRoundingUp (a,b):
-    result = a//b
-    if a%b > 0:
+def divRoundingUp(a, b):
+    result = a // b
+    if a % b > 0:
         result += 1
     return result
 
-def mulDiv (a,b,c):
-    return (a*b)//c
+
+def mulDiv(a, b, c):
+    return (a * b) // c
+
 
 # @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert
 # so we will need to handle that separately if we want to artifially revert to the previous state.
@@ -135,68 +136,84 @@ def tryExceptHandler(fcn, assertMessage, *args):
         assert False
 
 
+def checkUInt128(number):
+    assert number >= 0 and number <= MAX_UINT128, "OF or UF of UINT128"
+
+
 def checkInt128(number):
-    assert number >= MIN_INT128 and number <= MAX_INT128, 'OF or UF of UINT128'
+    assert number >= MIN_INT128 and number <= MAX_INT128, "OF or UF of INT128"
+
 
 def checkInt256(number):
-    assert number >= MIN_INT256 and number <= MAX_INT256, 'OF or UF of INT256'
+    assert number >= MIN_INT256 and number <= MAX_INT256, "OF or UF of INT256"
+
 
 def checkUInt160(number):
-    assert number >= 0 and number <= MAX_UINT160, 'OF or UF of UINT160'
+    assert number >= 0 and number <= MAX_UINT160, "OF or UF of UINT160"
+
 
 def checkUInt256(number):
-    assert number >= 0 and number <= MAX_UINT256, 'OF or UF of UINT256'
+    assert number >= 0 and number <= MAX_UINT256, "OF or UF of UINT256"
+
+
+def checkInt24(number):
+    assert number >= MIN_INT24 and number <= MAX_INT24, "OF or UF of INT24"
+
 
 # Mimic Solidity uninitialized ticks in Python - inserting keys to an empty value in a map
 def insertUninitializedTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfo(0,0,0,0))
+        insertTickInMapping(mapping, key, TickInfo(0, 0, 0, 0))
 
-def insertTickInMapping(mapping,key,value):
+
+def insertTickInMapping(mapping, key, value):
     assert mapping.__contains__(key) == False
     mapping[key] = value
+
 
 # Insert a newly initialized tick into the dictionary.
 def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
     assert len(keys) == len(ticksInfo)
     for i in range(len(keys)):
-        insertTickInMapping(mapping,keys[i],ticksInfo[i])
+        insertTickInMapping(mapping, keys[i], ticksInfo[i])
+
 
 def getPositionKey(address, lowerTick, upperTick):
-  return hash((address, lowerTick, upperTick))
-
-
+    return hash((address, lowerTick, upperTick))
 
 
 ### POOL SWAPS ###
-def swapExact0For1(pool, amount, recipient,sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+def swapExact0For1(pool, amount, recipient, sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[0])
     return swap(pool, TEST_TOKENS[0], [amount, 0], recipient, sqrtPriceLimitX96)
 
-def swap0ForExact1(pool , amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[0])
-    return swap(pool,TEST_TOKENS[0], [0, amount], recipient, sqrtPriceLimitX96)
 
-def swapExact1For0(pool , amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[1])
-    return swap(pool,TEST_TOKENS[1], [amount, 0], recipient, sqrtPriceLimitX96)
+def swap0ForExact1(pool, amount, recipient, sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    return swap(pool, TEST_TOKENS[0], [0, amount], recipient, sqrtPriceLimitX96)
 
-def swap1ForExact0(pool , amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit!= None else getSqrtPriceLimitX96(TEST_TOKENS[1])
-    return swap(pool,TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
 
-def swapToLowerPrice(pool , recipient, sqrtPriceLimit):
+def swapExact1For0(pool, amount, recipient, sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[1])
+    return swap(pool, TEST_TOKENS[1], [amount, 0], recipient, sqrtPriceLimitX96)
+
+
+def swap1ForExact0(pool, amount, recipient, sqrtPriceLimit):
+    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[1])
+    return swap(pool, TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
+
+
+def swapToLowerPrice(pool, recipient, sqrtPriceLimit):
     return pool.swap(recipient, True, MAX_INT256, sqrtPriceLimit)
 
-def swapToHigherPrice(pool , recipient, sqrtPriceLimit):
+
+def swapToHigherPrice(pool, recipient, sqrtPriceLimit):
     return pool.swap(recipient, False, MAX_INT256, sqrtPriceLimit)
-
-
 
 
 def swap(pool, inputToken, amounts, recipient, sqrtPriceLimitX96):
     [amountIn, amountOut] = amounts
-    exactInput = (amountOut == 0)
+    exactInput = amountOut == 0
     amount = amountIn if exactInput else amountOut
 
     if inputToken == TEST_TOKENS[0]:
@@ -221,27 +238,32 @@ def getSqrtPriceLimitX96(inputToken):
     else:
         return MAX_SQRT_RATIO - 1
 
+
 ################
 
+
 def formatPrice(price):
-    fraction = (price / (2**96))**2
+    fraction = (price / (2**96)) ** 2
     return formatAsInSnapshot(fraction)
+
 
 def formatTokenAmount(amount):
     fraction = amount / (10**18)
     return formatAsInSnapshot(fraction)
 
+
 def formatAsInSnapshot(number):
     # To match snapshot formatting
-    precision = int(f'{number:e}'.split('e')[-1])
+    precision = int(f"{number:e}".split("e")[-1])
     # For token we want 4 extra decimals of precision
     if precision >= 0:
         precision = 4
     else:
         precision = -precision + 4
 
-    return format(number,"."+str(precision)+"f")
+    return format(number, "." + str(precision) + "f")
+
 
 def formatPriceWithPrecision(price, precision):
-    fraction = (price / (2**96))**2
+    fraction = (price / (2**96)) ** 2
     return round(fraction, precision)

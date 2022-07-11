@@ -12,7 +12,7 @@ import decimal
 
 # Doing only one pool now to debug
 # @pytest.fixture(params=[0, 1])
-@pytest.fixture(params=[0, 1, 2, 3,4,5,6,7,8,9,10,12,13,14])
+@pytest.fixture(params=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14])
 def TEST_POOLS(request, accounts):
     poolFixture = request.getfixturevalue("pool{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -38,12 +38,6 @@ def afterEach(accounts, TEST_POOLS):
 
 
 # UniswapV3Pool swap tests
-
-
-@pytest.mark.usefixtures("afterEach")
-def test_example(accounts, TEST_POOLS):
-    assert True
-
 
 @pytest.mark.usefixtures("afterEach")
 def test_testing(TEST_POOLS, accounts):
@@ -73,11 +67,12 @@ def test_testing(TEST_POOLS, accounts):
             assert str(msg) == "SPL"
             assert float(dict["poolBalance0"]) == pytest.approx(poolBalance0, rel=1e-12)
             assert float(dict["poolBalance1"]) == pytest.approx(poolBalance1, rel=1e-12)
-            decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent        
-            assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(slot0.sqrtPriceX96, -decimalPoints)
+            decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent
+            assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(
+                slot0.sqrtPriceX96, -decimalPoints
+            )
             assert float(dict["tickBefore"]) == slot0.tick
             continue
-
 
         poolBalance0After = poolInstance.balances[TEST_TOKENS[0]]
         poolBalance1After = poolInstance.balances[TEST_TOKENS[1]]
@@ -122,9 +117,11 @@ def test_testing(TEST_POOLS, accounts):
         assert float(dict["feeGrowthGlobal0X128Delta"]) == pytest.approx(feeGrowthGlobal0X128, rel=1e-12)
         assert float(dict["feeGrowthGlobal1X128Delta"]) == pytest.approx(feeGrowthGlobal1X128, rel=1e-12)
         # Rounding pool storage variables to the same amount of decimal points as the snapshots
-        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent        
-        assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints)
-        decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent 
+        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+        assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(
+            slot0After.sqrtPriceX96, -decimalPoints
+        )
+        decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent
         assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(slot0.sqrtPriceX96, -decimalPoints)
         assert float(dict["tickAfter"]) == slot0After.tick
         assert float(dict["tickBefore"]) == slot0.tick
