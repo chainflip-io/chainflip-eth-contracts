@@ -155,7 +155,7 @@ class UniswapPool(Account):
             if _slot0.tick < params.tickLower:
                 ## current tick is below the passed range; liquidity can only become in range by crossing from left to
                 ## right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
-                amount0 = SqrtPriceMath.getAmount0Delta(
+                amount0 = SqrtPriceMath.getAmount0DeltaHelper(
                     TickMath.getSqrtRatioAtTick(params.tickLower),
                     TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta,
@@ -165,17 +165,17 @@ class UniswapPool(Account):
                 liquidityBefore = self.liquidity
                 ## SLOAD for gas optimization
 
-                amount0 = SqrtPriceMath.getAmount0Delta(
+                amount0 = SqrtPriceMath.getAmount0DeltaHelper(
                     _slot0.sqrtPriceX96, TickMath.getSqrtRatioAtTick(params.tickUpper), params.liquidityDelta
                 )
-                amount1 = SqrtPriceMath.getAmount1Delta(
+                amount1 = SqrtPriceMath.getAmount1DeltaHelper(
                     TickMath.getSqrtRatioAtTick(params.tickLower), _slot0.sqrtPriceX96, params.liquidityDelta
                 )
                 self.liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta)
             else:
                 ## current tick is above the passed range; liquidity can only become in range by crossing from right to
                 ## left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
-                amount1 = SqrtPriceMath.getAmount1Delta(
+                amount1 = SqrtPriceMath.getAmount1DeltaHelper(
                     TickMath.getSqrtRatioAtTick(params.tickLower),
                     TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta,
@@ -335,23 +335,17 @@ class UniswapPool(Account):
 
         exactInput = amountSpecified > 0
 
-        feeGrowthGlobalX128 = self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128
-
         state = SwapState(
             amountSpecified,
             0,
             slot0Start.sqrtPriceX96,
             slot0Start.tick,
-            feeGrowthGlobalX128,
+            self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
             0,
             cache.liquidityStart,
         )
         
-        # Since we removed the rounding in the SqrtMathPrice in some cases we can't get the state.amountSpecifiedRemaining
-        # to be exactly zero and then it loops indefinitely becauseSwapMath.computeSwapStep returns 0
-        # Workaround to have some margin or just implement the rounding in the SqrtMathPrice.
-        #while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
-        while abs(state.amountSpecifiedRemaining) > 200 and state.sqrtPriceX96 != sqrtPriceLimitX96:
+        while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
 
             step = StepComputations(0,0,0,0,0,0,0)
 
@@ -380,7 +374,6 @@ class UniswapPool(Account):
                 state.amountSpecifiedRemaining,
                 self.fee,
             )
-
             if exactInput:
                 state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
                 state.amountCalculated = SafeMath.subInts(state.amountCalculated, step.amountOut)
@@ -398,7 +391,7 @@ class UniswapPool(Account):
 
             ## update global fee tracker
             if state.liquidity > 0:
-                state.feeGrowthGlobalX128 += (step.feeAmount * FixedPoint128.Q128) // state.liquidity
+                state.feeGrowthGlobalX128 += mulDiv(step.feeAmount , FixedPoint128.Q128 , state.liquidity)
 
             ## shift tick if we reached the next price
             if state.sqrtPriceX96 == step.sqrtPriceNextX96:
@@ -424,7 +417,7 @@ class UniswapPool(Account):
                 state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
 
         ## End of swap loop
-        ## update tick and write an oracle entry if the tick change
+        ## update tick
         if state.tick != slot0Start.tick:
             (self.slot0.sqrtPriceX96, self.slot0.tick) = (
                 state.sqrtPriceX96,

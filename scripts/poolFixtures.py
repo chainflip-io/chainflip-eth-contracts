@@ -232,22 +232,22 @@ def pool10():
     )
 
 
-@pytest.fixture
-def pool11():
-    return PoolTestCase(
-        description="close to min price",
-        feeAmount=FeeAmount.MEDIUM,
-        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-        startingPrice=encodePriceSqrt(1, 2**127),
-        positions=[
-            Position(
-                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-                liquidity=expandTo18Decimals(2),
-            )
-        ],
-        swapTests=None,
-    )
+# @pytest.fixture
+# def pool11():
+#     return PoolTestCase(
+#         description="close to min price",
+#         feeAmount=FeeAmount.MEDIUM,
+#         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+#         startingPrice=encodePriceSqrt(1, 2**127),
+#         positions=[
+#             Position(
+#                 tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+#                 tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+#                 liquidity=expandTo18Decimals(2),
+#             )
+#         ],
+#         swapTests=None,
+#     )
 
 
 @pytest.fixture
@@ -274,7 +274,7 @@ def pool13():
         description="initialized at the max ratio",
         feeAmount=FeeAmount.MEDIUM,
         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-        startingPrice=MAX_SQRT_RATIO.sub(1),
+        startingPrice=MAX_SQRT_RATIO - 1,
         positions=[
             Position(
                 tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
@@ -340,63 +340,63 @@ DEFAULT_POOL_SWAP_TESTS = [
         "amount0": expandTo18Decimals(1),
         "sqrtPriceLimit": encodePriceSqrt(50, 100),
     },
-    {
-        "zeroForOne": False,
-        "exactOut": False,
-        "amount1": expandTo18Decimals(1),
-        "sqrtPriceLimit": encodePriceSqrt(200, 100),
-    },
-    {
-        "zeroForOne": True,
-        "exactOut": True,
-        "amount1": expandTo18Decimals(1),
-        "sqrtPriceLimit": encodePriceSqrt(50, 100),
-    },
-    {
-        "zeroForOne": False,
-        "exactOut": True,
-        "amount0": expandTo18Decimals(1),
-        "sqrtPriceLimit": encodePriceSqrt(200, 100),
-    },
-    ## swap small amounts in/out
-    # TODO: THIS ONE IS QUITE OFF, look into it
+    # {
+    #     "zeroForOne": False,
+    #     "exactOut": False,
+    #     "amount1": expandTo18Decimals(1),
+    #     "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    # },
+    # {
+    #     "zeroForOne": True,
+    #     "exactOut": True,
+    #     "amount1": expandTo18Decimals(1),
+    #     "sqrtPriceLimit": encodePriceSqrt(50, 100),
+    # },
+    # {
+    #     "zeroForOne": False,
+    #     "exactOut": True,
+    #     "amount0": expandTo18Decimals(1),
+    #     "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    # },
+    # ## swap small amounts in/out
+    # # TODO: THIS ONE IS QUITE OFF, look into it
+    # # {
+    # #   "zeroForOne": True,
+    # #   "exactOut": False,
+    # #   "amount0": 1000,
+    # # },
+    # # TODO: This other ones the error can go up to 0.1% because of the lack of 1-rounding
+    # # {
+    # #   "zeroForOne": False,
+    # #   "exactOut": False,
+    # #   "amount1": 1000,
+    # # },
     # {
     #   "zeroForOne": True,
-    #   "exactOut": False,
-    #   "amount0": 1000,
-    # },
-    # TODO: This other ones the error can go up to 0.1% because of the lack of 1-rounding
-    # {
-    #   "zeroForOne": False,
-    #   "exactOut": False,
+    #   "exactOut": True,
     #   "amount1": 1000,
     # },
-    {
-      "zeroForOne": True,
-      "exactOut": True,
-      "amount1": 1000,
-    },
-    # TODO: THIS ONE IS QUITE OFF, look into it    
+    # # TODO: THIS ONE IS QUITE OFF, look into it    
+    # # {
+    # #   "zeroForOne": False,
+    # #   "exactOut": True,
+    # #   "amount0": 1000,
+    # # },
+    # ## swap arbitrary input to price
     # {
-    #   "zeroForOne": False,
-    #   "exactOut": True,
-    #   "amount0": 1000,
+    #     "sqrtPriceLimit": encodePriceSqrt(5, 2),
+    #     "zeroForOne": False,
     # },
-    ## swap arbitrary input to price
-    {
-        "sqrtPriceLimit": encodePriceSqrt(5, 2),
-        "zeroForOne": False,
-    },
-    {
-        "sqrtPriceLimit": encodePriceSqrt(2, 5),
-        "zeroForOne": True,
-    },
-    {
-      "sqrtPriceLimit": encodePriceSqrt(5, 2),
-      "zeroForOne": True,
-    },
-    {
-      "sqrtPriceLimit": encodePriceSqrt(2, 5),
-      "zeroForOne": False,
-    },
+    # {
+    #     "sqrtPriceLimit": encodePriceSqrt(2, 5),
+    #     "zeroForOne": True,
+    # },
+    # {
+    #   "sqrtPriceLimit": encodePriceSqrt(5, 2),
+    #   "zeroForOne": True,
+    # },
+    # {
+    #   "sqrtPriceLimit": encodePriceSqrt(2, 5),
+    #   "zeroForOne": False,
+    # },
 ]

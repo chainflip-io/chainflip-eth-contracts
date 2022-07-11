@@ -319,8 +319,7 @@ def test_fees_duringSwap(initializedPool, accounts):
     swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
     swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0], None)
 
-    #Original value 50000000000000
-    assert pool.protocolFees.token0 == 50000000000040
+    assert pool.protocolFees.token0 == 50000000000000
     assert pool.protocolFees.token1 == 5000000000000
 
 def test_protectedPositions_beforefeesAreOn(initializedPool, accounts):
@@ -347,8 +346,7 @@ def test_notAllowPoke_uninitialized_position(initializedPool, accounts):
 
     position = pool.positions[getPositionKey(accounts[0], minTick + tickSpacing, maxTick - tickSpacing)]
     assert position.liquidity == 1
-    # Original value: 102084710076281216349243831104605583
-    assert position.feeGrowthInside0LastX128 == 102084710076362884117304856077684978
+    assert position.feeGrowthInside0LastX128 == 102084710076281216349243831104605583
     assert position.feeGrowthInside1LastX128 == 10208471007628121634924383110460558
     assert position.tokensOwed0 == 0, 'tokens owed 0 before'
     assert position.tokensOwed1 == 0, 'tokens owed 1 before'
@@ -356,8 +354,7 @@ def test_notAllowPoke_uninitialized_position(initializedPool, accounts):
     pool.burn(accounts[0],minTick + tickSpacing, maxTick - tickSpacing, 1)
     position = pool.positions[getPositionKey(accounts[0], minTick + tickSpacing, maxTick - tickSpacing)]
     assert position.liquidity == 0  
-    # Original value: 102084710076281216349243831104605583
-    assert position.feeGrowthInside0LastX128 == 102084710076362884117304856077684978
+    assert position.feeGrowthInside0LastX128 == 102084710076281216349243831104605583
     assert position.feeGrowthInside1LastX128 == 10208471007628121634924383110460558
     assert position.tokensOwed0 == 3, 'tokens owed 0 before'
     assert position.tokensOwed1 == 0, 'tokens owed 1 before'
@@ -391,19 +388,17 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
     pool, _, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
     print('does not clear the position fee growth snapshot if no more liquidity')
     ## some activity that would make the ticks non-zero
-
     pool.mint(accounts[1], minTick, maxTick, expandTo18Decimals(1))
+    print(pool.slot0.tick)
     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)   
-
     pool.burn(accounts[1],minTick, maxTick, expandTo18Decimals(1))
     tickInfo =  pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
     assert tickInfo.liquidity == 0
     assert tickInfo.tokensOwed0 != 0
     assert tickInfo.tokensOwed1 != 0
+    assert tickInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
     # Original value: 340282366920938463463374607431768211
-    assert tickInfo.feeGrowthInside0LastX128 == 340282366920967500892018527513983752
-    # Original value: 340282366920938576890830247744589365
     assert tickInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
 
 # Continue UniswapV3Pool.spects.ts line 596

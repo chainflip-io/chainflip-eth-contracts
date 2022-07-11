@@ -139,10 +139,6 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 
     assert sqrtRatioAX96 > 0
     if roundUp:
-        print(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96))
-        print(sqrtRatioAX96)
-        print(divRoundingUp(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96) ,sqrtRatioAX96)+1)
-        print(divRoundingUp(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96) ,sqrtRatioAX96))
         return divRoundingUp(mulDivRoundingUp(numerator1, numerator2 , sqrtRatioBX96) ,sqrtRatioAX96)
     else:
         return mulDiv(numerator1 , numerator2 , sqrtRatioBX96) // sqrtRatioAX96
@@ -180,7 +176,7 @@ def getAmount0DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
 ### @param sqrtRatioBX96 Another sqrt price
 ### @param liquidity The change in liquidity for which to compute the amount1 delta
 ### @return amount1 Amount of token1 corresponding to the passed liquidityDelta between the two prices
-def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
+def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
     if liquidity < 0:
         return -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), False)
     else:

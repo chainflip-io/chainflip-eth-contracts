@@ -1,5 +1,5 @@
 import SqrtPriceMath
-import math
+from utilities import *
 
 ### @title Computes the result of a swap within ticks
 ### @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
@@ -21,11 +21,11 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
 
     zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96
 
-    # exactIn < 0 === exactOut
+    # exactIn < 0 means exactOut = True
     exactIn = amountRemaining >= 0
 
     if exactIn:
-        amountRemainingLessFee = (amountRemaining * (ONE_IN_PIPS - feePips)) // ONE_IN_PIPS
+        amountRemainingLessFee = mulDiv(amountRemaining , ONE_IN_PIPS - feePips , ONE_IN_PIPS)
 
         amountIn = (
             SqrtPriceMath.getAmount0Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, True)
@@ -82,13 +82,15 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
         )
 
     ## cap the output amount to not exceed the remaining output amount
-    if not exactIn and amountOut > abs(amountRemaining):
+    if (not exactIn) and (amountOut > abs(amountRemaining)):
+        checkUInt256(-amountRemaining)
         amountOut = abs(amountRemaining)
 
     if exactIn and sqrtRatioNextX96 != sqrtRatioTargetX96:
         ## we didn't reach the target, so take the remainder of the maximum input as fee
+        checkUInt256(amountRemaining)
         feeAmount = abs(amountRemaining) - amountIn
     else:
-        feeAmount = math.ceil((amountIn * feePips) / (1e6 - feePips))
+        feeAmount = mulDivRoundingUp(amountIn , feePips , ONE_IN_PIPS - feePips)
 
     return (sqrtRatioNextX96, amountIn, amountOut, feeAmount)

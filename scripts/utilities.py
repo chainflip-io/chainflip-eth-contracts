@@ -63,15 +63,16 @@ TICK_SPACINGS = {
 
 
 def encodePriceSqrt(reserve1, reserve0):
-
-    #return int(math.sqrt(reserve1 / reserve0) * 2**96)
-
     #Workaround to get the same numbers as JS
 
     # This ratio doesn't output the same number as in JS using big number. This causes some
     # disparities in the reusults expected. Full ratios (1,1), (2,1) ...
     if (reserve1 == 121 and reserve0 == 100):
         return 87150978765690771352898345369
+    elif(reserve1 == 101 and reserve0 == 100):
+        return 79623317895830914510487008059
+    elif(reserve1 == 1 and reserve0 == 10):
+        return 25054144837504793118650146401   
     else:
         return int(math.sqrt(reserve1 / reserve0) * 2**96)
 
@@ -137,6 +138,9 @@ def checkInt256(number):
 
 def checkUInt160(number):
     assert number >= 0 and number <= MAX_UINT160, 'OF or UF of UINT160'
+
+def checkUInt256(number):
+    assert number >= 0 and number <= MAX_UINT256, 'OF or UF of UINT256'
 
 # Mimic Solidity uninitialized ticks in Python - inserting keys to an empty value in a map
 def insertUninitializedTickstoMapping(mapping, keys):
@@ -215,15 +219,12 @@ def getSqrtPriceLimitX96(inputToken):
 ################
 
 def formatPrice(price):
-    # Rounded to arbitrarily 10 decimals because in some cases we get something like 0.5000000000000001
-    # because of the lack of rounding instead of 0.5
-    fraction = round((price / (2**96))**2, 10)
+    fraction = (price / (2**96))**2
     return formatAsInSnapshot(fraction)
 
 def formatTokenAmount(amount):
     fraction = amount / (10**18)
     return formatAsInSnapshot(fraction)
-
 
 def formatAsInSnapshot(number):
     # To match snapshot formatting
@@ -235,3 +236,7 @@ def formatAsInSnapshot(number):
         precision = -precision + 4
 
     return format(number,"."+str(precision)+"f")
+
+def formatPriceWithPrecision(price, precision):
+    fraction = (price / (2**96))**2
+    return round(fraction, precision)
