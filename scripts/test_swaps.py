@@ -30,11 +30,11 @@ def TEST_POOLS(request, accounts):
 def afterEach(accounts, TEST_POOLS):
     yield
     # Comment out while debugging
-    # print("check can burn positions")
-    # (_, _, pool, _, _, _, poolFixture) = TEST_POOLS
-    # for position in poolFixture.positions:
-    #     pool.burn(accounts[0], position.tickLower, position.tickUpper, position.liquidity)
-    #     pool.collect(accounts[0], position.tickLower, position.tickUpper, MAX_UINT128, MAX_UINT128)
+    print("check can burn positions")
+    (_, _, pool, _, _, _, poolFixture) = TEST_POOLS
+    for position in poolFixture.positions:
+        pool.burn(accounts[0], position.tickLower, position.tickUpper, position.liquidity)
+        pool.collect(accounts[0], position.tickLower, position.tickUpper, MAX_UINT128, MAX_UINT128)
 
 
 # UniswapV3Pool swap tests
@@ -121,35 +121,7 @@ def test_testing(TEST_POOLS, accounts):
         )
         dict = swapsSnapshot[snapshotIndex + 1]
 
-        # For small swaps, the price tends to need bigger margins since we have skipped the roundings - skipping those tests
-        # or probably we should improve the rounding logic. Same applies to amounts that should be zero/one and are one/zero
-        # In general pytest.approx rel could be smaller but they are higher to account for this.
-        # assert float(dict["amount0Before"]) == pytest.approx(poolBalance0, rel=1e-12)
-
-        # if float(dict["amount0Delta"]) == 0:
-        #     assert abs(poolBalance0Delta) <= 1
-        #     # Force this to avoid the assertion error when checking execution price
-        #     executionPrice = "Infinity"
-        # else:
-        #     assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta, rel=1e-12)
-        # assert float(dict["amount1Before"]) == pytest.approx(poolBalance1, rel=1e-12)
-        # assert float(dict["amount1Delta"]) == pytest.approx(poolBalance1Delta, rel=1e-12)
-        # if dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
-        #     # Seems like sometimes in snapshot it is infinity and sometimes NaN
-        #     assert executionPrice in ["Infinity", "-Infinity", "NaN"]
-        # else:
-        #     assert float(dict["executionPrice"]) == pytest.approx(executionPrice, rel=1e-12)
-        # assert float(dict["feeGrowthGlobal0X128Delta"]) == pytest.approx(feeGrowthGlobal0X128, rel=1e-6)
-        # assert float(dict["feeGrowthGlobal1X128Delta"]) == pytest.approx(feeGrowthGlobal1X128, rel=1e-6)
-        # assert float(dict["poolPriceAfter"]) == pytest.approx(
-        #     float(formatPrice(slot0After.sqrtPriceX96)), rel=1e-4
-        # )
-        # assert float(dict["poolPriceBefore"]) == pytest.approx(
-        #     float(formatPrice(slot0.sqrtPriceX96)), rel=1e-5
-        # )
-        # assert float(dict["tickAfter"]) == slot0After.tick
-        # assert float(dict["tickBefore"]) == slot0.tick
-
+        # Allowing some very small difference due to rounding errors
         assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta, rel=1e-12)
         assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta, rel=1e-12)
         assert float(dict["amount1Before"]) == pytest.approx(poolBalance1, rel=1e-12)
@@ -161,8 +133,8 @@ def test_testing(TEST_POOLS, accounts):
             assert float(dict["executionPrice"]) == round(executionPrice, -decimalPoints)
         assert float(dict["feeGrowthGlobal0X128Delta"]) == pytest.approx(feeGrowthGlobal0X128, rel=1e-12)
         assert float(dict["feeGrowthGlobal1X128Delta"]) == pytest.approx(feeGrowthGlobal1X128, rel=1e-12)
+        # Rounding pool storage variables to the same amount of decimal points as the snapshots
         decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent        
-        print("poolpriceAfter", dict["poolPriceAfter"])
         assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints)
         decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent 
         assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(slot0.sqrtPriceX96, -decimalPoints)
@@ -171,10 +143,7 @@ def test_testing(TEST_POOLS, accounts):
 
         successfulTests += 1
 
-        # print("SUCCESFUL TEST: " + str(testCase))
-
     print("SUCCESFUL POOL TESTED: " + poolFixture.description)
-    # assert False
 
 
 def executeSwap(pool, testCase, recipient):

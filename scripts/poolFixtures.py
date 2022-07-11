@@ -232,6 +232,8 @@ def pool10():
     )
 
 
+# This pool with such low starting price ends up with a bigger than normal rounding
+# error when comparing numbers e-39. But this should be alright
 # @pytest.fixture
 # def pool11():
 #     return PoolTestCase(
@@ -340,63 +342,62 @@ DEFAULT_POOL_SWAP_TESTS = [
         "amount0": expandTo18Decimals(1),
         "sqrtPriceLimit": encodePriceSqrt(50, 100),
     },
-    # {
-    #     "zeroForOne": False,
-    #     "exactOut": False,
-    #     "amount1": expandTo18Decimals(1),
-    #     "sqrtPriceLimit": encodePriceSqrt(200, 100),
-    # },
-    # {
-    #     "zeroForOne": True,
-    #     "exactOut": True,
-    #     "amount1": expandTo18Decimals(1),
-    #     "sqrtPriceLimit": encodePriceSqrt(50, 100),
-    # },
-    # {
-    #     "zeroForOne": False,
-    #     "exactOut": True,
-    #     "amount0": expandTo18Decimals(1),
-    #     "sqrtPriceLimit": encodePriceSqrt(200, 100),
-    # },
+    {
+        "zeroForOne": False,
+        "exactOut": False,
+        "amount1": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    },
+    {
+        "zeroForOne": True,
+        "exactOut": True,
+        "amount1": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(50, 100),
+    },
+    {
+        "zeroForOne": False,
+        "exactOut": True,
+        "amount0": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    },
     # ## swap small amounts in/out
-    # # TODO: THIS ONE IS QUITE OFF, look into it
-    # # {
-    # #   "zeroForOne": True,
-    # #   "exactOut": False,
-    # #   "amount0": 1000,
-    # # },
-    # # TODO: This other ones the error can go up to 0.1% because of the lack of 1-rounding
-    # # {
-    # #   "zeroForOne": False,
-    # #   "exactOut": False,
-    # #   "amount1": 1000,
-    # # },
+    # TODO: Swapping small amounts in/out can be off - assuming it's due to rounding errors
     # {
     #   "zeroForOne": True,
-    #   "exactOut": True,
+    #   "exactOut": False,
+    #   "amount0": 1000,
+    # },
+    # {
+    #   "zeroForOne": False,
+    #   "exactOut": False,
     #   "amount1": 1000,
     # },
-    # # TODO: THIS ONE IS QUITE OFF, look into it    
-    # # {
-    # #   "zeroForOne": False,
-    # #   "exactOut": True,
-    # #   "amount0": 1000,
-    # # },
+    {
+      "zeroForOne": True,
+      "exactOut": True,
+      "amount1": 1000,
+    },
+    {
+      "zeroForOne": False,
+      "exactOut": True,
+      "amount0": 1000,
+    },
+
     # ## swap arbitrary input to price
-    # {
-    #     "sqrtPriceLimit": encodePriceSqrt(5, 2),
-    #     "zeroForOne": False,
-    # },
-    # {
-    #     "sqrtPriceLimit": encodePriceSqrt(2, 5),
-    #     "zeroForOne": True,
-    # },
-    # {
-    #   "sqrtPriceLimit": encodePriceSqrt(5, 2),
-    #   "zeroForOne": True,
-    # },
-    # {
-    #   "sqrtPriceLimit": encodePriceSqrt(2, 5),
-    #   "zeroForOne": False,
-    # },
+    {
+        "sqrtPriceLimit": encodePriceSqrt(5, 2),
+        "zeroForOne": False,
+    },
+    {
+        "sqrtPriceLimit": encodePriceSqrt(2, 5),
+        "zeroForOne": True,
+    },
+    {
+      "sqrtPriceLimit": encodePriceSqrt(5, 2),
+      "zeroForOne": True,
+    },
+    {
+      "sqrtPriceLimit": encodePriceSqrt(2, 5),
+      "zeroForOne": False,
+    },
 ]
