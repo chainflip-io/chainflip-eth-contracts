@@ -43,7 +43,7 @@ def test_fromInput_any_input_overflow():
     liquidity = 1
     amountIn = 2**255
     tryExceptHandler(
-        SqrtPriceMath.getNextSqrtPriceFromInput, "OF or UF of UINT160", price, liquidity, amountIn, False
+        SqrtPriceMath.getNextSqrtPriceFromInput, "OF or UF of UINT256", price, liquidity, amountIn, False
     )
 
 

@@ -102,7 +102,10 @@ def divRoundingUp(a, b):
 
 
 def mulDiv(a, b, c):
-    return (a * b) // c
+    result = (a * b) // c
+    checkUInt256(result)
+    return result
+
 
 
 # @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert

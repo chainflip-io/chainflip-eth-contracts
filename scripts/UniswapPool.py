@@ -297,8 +297,6 @@ class UniswapPool(Account):
 
         # Added this check to prevent creating a new position if the position doesn't exist or it's empty
         assert position != Position.PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
-        print((amount0Requested > position.tokensOwed0))
-        print((amount1Requested > position.tokensOwed1))
         amount0 = position.tokensOwed0 if (amount0Requested > position.tokensOwed0) else amount0Requested
         amount1 = position.tokensOwed1 if (amount1Requested > position.tokensOwed1) else amount1Requested
 
@@ -309,7 +307,7 @@ class UniswapPool(Account):
             position.tokensOwed1 -= amount1
             self.transferToken(recipient, self.token1, amount1)
 
-        return (amount0, amount1)
+        return (recipient, tickLower, tickUpper, amount0, amount1)
 
     def burn(self, recipient, tickLower, tickUpper, amount):
         # Health check inputs
