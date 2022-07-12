@@ -32,7 +32,7 @@ def get(self, owner, tickLower, tickUpper):
         # We don't want to create a new position if it doesn't exist!
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
-        # In burn if the position is not initialized, any amount will revert. However, an amount 0 would create a position - added an assert amount > 0
+        # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
         self[key] = PositionInfo(0, 0, 0, 0, 0)
     return self[key]
 
@@ -51,8 +51,8 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):  #
         liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)
 
     ## calculate accumulated fees
-    tokensOwed0 = (feeGrowthInside0X128 - self.feeGrowthInside0LastX128) * self.liquidity / FixedPoint128.Q128
-    tokensOwed1 = (feeGrowthInside1X128 - self.feeGrowthInside1LastX128) * self.liquidity / FixedPoint128.Q128
+    tokensOwed0 = ((feeGrowthInside0X128 - self.feeGrowthInside0LastX128) * self.liquidity) // FixedPoint128.Q128
+    tokensOwed1 = ((feeGrowthInside1X128 - self.feeGrowthInside1LastX128) * self.liquidity) // FixedPoint128.Q128
 
     ## update the position
     if liquidityDelta != 0:

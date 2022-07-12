@@ -198,6 +198,9 @@ class UniswapPool(Account):
         _feeGrowthGlobal1X128 = self.feeGrowthGlobal1X128
         ## SLOAD for gas optimization
 
+        # Initialize values
+        flippedLower = False
+        flippedUpper = False
         ## if we need to update the ticks, do it
         if liquidityDelta != 0:
             flippedLower = Tick.update(
@@ -289,12 +292,13 @@ class UniswapPool(Account):
     ### @inheritdoc IUniswapV3PoolActions
     def _collect(self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested):
         ## we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
-        ## Hardcoded recipient == msg.sender. If position doesn't exist abort.
+        ## Hardcoded recipient == msg.sender.
         position = Position.get(self.positions, recipient, tickLower, tickUpper)
 
-        # Added this check to prevent creating a new position if the position doesn't exist
+        # Added this check to prevent creating a new position if the position doesn't exist or it's empty
         assert position != Position.PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
-
+        print((amount0Requested > position.tokensOwed0))
+        print((amount1Requested > position.tokensOwed1))
         amount0 = position.tokensOwed0 if (amount0Requested > position.tokensOwed0) else amount0Requested
         amount1 = position.tokensOwed1 if (amount1Requested > position.tokensOwed1) else amount1Requested
 
@@ -318,8 +322,6 @@ class UniswapPool(Account):
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
     def _burn(self, recipient, tickLower, tickUpper, amount):
-        assert amount > 0, "Amount must be greater than 0 - prevent creating a new position when amount == 0"
-        checkInt128(amount)
 
         # Health check
         assert -amount >= MIN_INT128 and -amount <= MAX_INT128
@@ -338,7 +340,7 @@ class UniswapPool(Account):
                 position.tokensOwed1 + amount1,
             )
 
-        return (amount0, amount1)
+        return (recipient, tickLower, tickUpper, amount, amount0, amount1)
 
     def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
         # Health check inputs

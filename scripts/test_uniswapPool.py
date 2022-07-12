@@ -409,7 +409,7 @@ def test_notAllowPoke_uninitialized_position(initializedPool, accounts):
     # Modified revert reason
     tryExceptHandler(
         pool.burn,
-        "Amount must be greater than 0 - prevent creating a new position when amount == 0",
+        "NP",
         accounts[0],
         minTick + tickSpacing,
         maxTick - tickSpacing,
@@ -440,7 +440,7 @@ def test_notAllowPoke_uninitialized_position(initializedPool, accounts):
 initializeLiquidityAmount = expandTo18Decimals(2)
 
 
-def initializeAtZero(pool, accounts):
+def initializeAtZeroTick(pool, accounts):
     pool.initialize(encodePriceSqrt(1, 1))
     tickSpacing = pool.tickSpacing
     [min, max] = [getMinTick(tickSpacing), getMaxTick(tickSpacing)]
@@ -450,7 +450,7 @@ def initializeAtZero(pool, accounts):
 @pytest.fixture
 def mediumPoolInitializedAtZero(createPoolMedium, accounts):
     pool, _, _, _, _, _ = createPoolMedium
-    initializeAtZero(pool, accounts)
+    initializeAtZeroTick(pool, accounts)
     return createPoolMedium
 
 
@@ -525,11 +525,10 @@ def test_clearsOnlyUpper_ifLowerUsed(accounts, mediumPoolInitializedAtZero):
 
 
 # Miscellaneous mint tests
-# Continue UniswapV3Pool.spects.ts line 673
 @pytest.fixture
 def lowPoolInitializedAtZero(createPoolLow, accounts):
     pool, _, _, _, _, _ = createPoolLow
-    initializeAtZero(pool, accounts)
+    initializeAtZeroTick(pool, accounts)
     return createPoolLow
 
 
@@ -590,4 +589,178 @@ def test_mint_withinCurrentPrice(lowPoolInitializedAtZero, accounts):
     assert pool.balances[TEST_TOKENS[1]] - b1 == 1
 
 
-# Continue UniswapV3Pool.spects.ts line 736
+def test_cannotRemove_moreThanPosition(lowPoolInitializedAtZero, accounts):
+    print("cannot remove more than the entire position")
+    pool, _, _, _, _, tickSpacing = lowPoolInitializedAtZero
+    lowerTick = -tickSpacing
+    upperTick = tickSpacing
+
+    pool.mint(accounts[0], lowerTick, upperTick, expandTo18Decimals(1000))
+
+    tryExceptHandler(pool.burn, "LS", accounts[0], lowerTick, upperTick, expandTo18Decimals(1001))
+
+
+def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
+    print("collect fees within the current price after swap")
+    pool, _, _, _, _, tickSpacing = lowPoolInitializedAtZero
+    liquidityDelta = expandTo18Decimals(100)
+    lowerTick = -tickSpacing * 100
+    upperTick = tickSpacing * 100
+
+    pool.mint(accounts[0], lowerTick, upperTick, liquidityDelta)
+
+    liquidityBefore = pool.liquidity
+
+    amount0In = expandTo18Decimals(1)
+
+    swapExact0For1(pool, amount0In, accounts[0], None)
+
+    liquidityAfter = pool.liquidity
+
+    assert liquidityAfter >= liquidityBefore, "k increases"
+
+    token0BalanceBeforePool = pool.balances[TEST_TOKENS[0]]
+    token1BalanceBeforePool = pool.balances[TEST_TOKENS[1]]
+    token0BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[0]]
+    token1BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[1]]
+
+    pool.burn(accounts[0], lowerTick, upperTick, 0)
+    pool.collect(accounts[0], lowerTick, upperTick, MAX_UINT128, MAX_UINT128)
+
+    pool.burn(accounts[0], lowerTick, upperTick, 0)
+
+    (fees0, fees1) = pool.collect(accounts[0], lowerTick, upperTick, MAX_UINT128, MAX_UINT128)
+
+    assert fees0 == 0
+    assert fees1 == 0
+
+    token0BalanceAfterPool = pool.balances[TEST_TOKENS[0]]
+    token1BalanceAfterPool = pool.balances[TEST_TOKENS[1]]
+    token0BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[0]]
+    token1BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[1]]
+
+    assert token0BalanceAfterWallet > token0BalanceBeforeWallet
+    assert token1BalanceAfterWallet == token1BalanceBeforeWallet
+    assert token0BalanceAfterPool < token0BalanceBeforePool
+    assert token1BalanceAfterPool == token1BalanceBeforePool
+
+
+# pre-initialize at medium fee
+def test_preInitialized_mediumFee(createPoolMedium):
+    print("pre-initialized at medium fee")
+    pool, _, _, _, _, _ = createPoolMedium
+    assert pool.liquidity == 0
+
+
+# post-initialize at medium fee
+def test_initialLiquidity(mediumPoolInitializedAtZero):
+    print("returns initial liquidity")
+    pool, _, _, _, _, _ = mediumPoolInitializedAtZero
+    assert pool.liquidity == expandTo18Decimals(2)
+
+
+def test_supplyInRange(mediumPoolInitializedAtZero, accounts):
+    print("returns in supply in range")
+    pool, _, _, _, _, tickSpacing = mediumPoolInitializedAtZero
+    pool.mint(accounts[0], -tickSpacing, tickSpacing, expandTo18Decimals(3))
+    assert pool.liquidity == expandTo18Decimals(5)
+
+
+def test_excludeSupply_tickAboveCurrentTick(mediumPoolInitializedAtZero, accounts):
+    print("excludes supply at tick above current tick")
+    pool, _, _, _, _, tickSpacing = mediumPoolInitializedAtZero
+    pool.mint(accounts[0], tickSpacing, tickSpacing * 2, expandTo18Decimals(3))
+    assert pool.liquidity == expandTo18Decimals(2)
+
+
+def test_excludeSupply_tickBelowCurrentTick(mediumPoolInitializedAtZero, accounts):
+    print("excludes supply at tick below current tick")
+    pool, _, _, _, _, tickSpacing = mediumPoolInitializedAtZero
+    pool.mint(accounts[0], -tickSpacing * 2, -tickSpacing, expandTo18Decimals(3))
+    assert pool.liquidity == expandTo18Decimals(2)
+
+
+def test_updatesWhenExitingRange(mediumPoolInitializedAtZero, accounts):
+    print("updates correctly when exiting range")
+    pool, _, _, _, _, tickSpacing = mediumPoolInitializedAtZero
+
+    kBefore = pool.liquidity
+    assert kBefore == expandTo18Decimals(2)
+
+    ## add liquidity at and above current tick
+    liquidityDelta = expandTo18Decimals(1)
+    lowerTick = 0
+    upperTick = tickSpacing
+    pool.mint(accounts[0], lowerTick, upperTick, liquidityDelta)
+
+    ## ensure virtual supply has increased appropriately
+    kAfter = pool.liquidity
+    assert kAfter == expandTo18Decimals(3)
+
+    ## swap toward the left (just enough for the tick transition function to trigger)
+    swapExact0For1(pool, 1, accounts[0], None)
+    assert pool.slot0.tick == -1
+
+    kAfterSwap = pool.liquidity
+    assert kAfterSwap == expandTo18Decimals(2)
+
+
+def test_updatesWhenEnteringRange(mediumPoolInitializedAtZero, accounts):
+    print("updates correctly when entering range")
+    pool, _, _, _, _, tickSpacing = mediumPoolInitializedAtZero
+
+    kBefore = pool.liquidity
+    assert kBefore == expandTo18Decimals(2)
+
+    ## add liquidity at and below current tick
+    liquidityDelta = expandTo18Decimals(1)
+    lowerTick = -tickSpacing
+    upperTick = 0
+    pool.mint(accounts[0], lowerTick, upperTick, liquidityDelta)
+
+    ## ensure virtual supply has increased appropriately
+    kAfter = pool.liquidity
+    assert kAfter == kBefore
+    ## swap toward the right (just enough for the tick transition function to trigger)
+    swapExact0For1(pool, 1, accounts[0], None)
+    assert pool.slot0.tick == -1
+
+    kAfterSwap = pool.liquidity
+    assert kAfterSwap == expandTo18Decimals(3)
+
+
+# Limit orders
+
+
+def test_limitSelling0For1_atTick0Thru1(mediumPoolInitializedAtZero, accounts):
+    print("limit selling 0 for 1 at tick 0 thru 1")
+    pool, _, _, _, _, _ = mediumPoolInitializedAtZero
+
+    (amount0, amount1) = pool.mint(accounts[0], 0, 120, expandTo18Decimals(1))
+    assert amount0 == 5981737760509663
+    assert amount1 == 0
+
+    ## somebody takes the limit order
+    swapExact1For0(pool, expandTo18Decimals(2), accounts[0], None)
+    (recipient, tickLower, tickUpper, amount, amount0, amount1) = pool.burn(
+        accounts[0], 0, 120, expandTo18Decimals(1)
+    )
+    assert (recipient, tickLower, tickUpper, amount, amount0, amount1) == (
+        accounts[0],
+        0,
+        120,
+        expandTo18Decimals(1),
+        0,
+        6017734268818165,
+    )
+
+    token1BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[1]]
+    pool.collect(accounts[0], 0, 120, MAX_UINT128, MAX_UINT128)
+    token1BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[1]]
+
+    amountTranferred = token1BalanceAfterWallet - token1BalanceBeforeWallet
+
+    assert recipient == accounts[0]
+    assert amountTranferred == 6017734268818165 + 18107525382602
+
+    assert pool.slot0.tick >= 120
