@@ -321,9 +321,6 @@ class UniswapPool(Account):
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
     def _burn(self, recipient, tickLower, tickUpper, amount):
 
-        # Health check
-        assert -amount >= MIN_INT128 and -amount <= MAX_INT128
-
         # Added extra recipient input variable to mimic msg.sender
         (position, amount0Int, amount1Int) = self._modifyPosition(
             ModifyPositionParams(recipient, tickLower, tickUpper, -amount)
@@ -421,7 +418,7 @@ class UniswapPool(Account):
             if cache.feeProtocol > 0:
                 delta = abs(step.feeAmount // cache.feeProtocol)
                 step.feeAmount -= delta
-                state.protocolFee += delta
+                state.protocolFee += delta & (2**128 - 1) 
 
             ## update global fee tracker
             if state.liquidity > 0:
@@ -535,7 +532,7 @@ class UniswapPool(Account):
             self.protocolFees.token1 -= amount1
             self.transferToken(recipient, self.token1, amount1)
 
-        return amount0, amount1, recipient
+        return recipient, amount0, amount1
 
     # It is assumed that the keys are within [MIN_TICK , MAX_TICK]
     # We don't run the risk of overshooting tickNext (out of boundaries) as long as ticks (keys) have been initialized
