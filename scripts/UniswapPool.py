@@ -141,19 +141,16 @@ class UniswapPool(Account):
     def _modifyPosition(self, params):
         UniswapPool.checkTicks(params.tickLower, params.tickUpper)
 
-        _slot0 = self.slot0
-        ## SLOAD for gas optimization
-
         # Initialize values
         amount0 = 0
         amount1 = 0
 
         position = self._updatePosition(
-            params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, _slot0.tick
+            params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, self.slot0.tick
         )
 
         if params.liquidityDelta != 0:
-            if _slot0.tick < params.tickLower:
+            if self.slot0.tick < params.tickLower:
                 ## current tick is below the passed range; liquidity can only become in range by crossing from left to
                 ## right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
                 amount0 = SqrtPriceMath.getAmount0DeltaHelper(
@@ -161,18 +158,19 @@ class UniswapPool(Account):
                     TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta,
                 )
-            elif _slot0.tick < params.tickUpper:
+            elif self.slot0.tick < params.tickUpper:
                 ## current tick is inside the passed range
-                liquidityBefore = self.liquidity
-                ## SLOAD for gas optimization
-
                 amount0 = SqrtPriceMath.getAmount0DeltaHelper(
-                    _slot0.sqrtPriceX96, TickMath.getSqrtRatioAtTick(params.tickUpper), params.liquidityDelta
+                    self.slot0.sqrtPriceX96,
+                    TickMath.getSqrtRatioAtTick(params.tickUpper),
+                    params.liquidityDelta,
                 )
                 amount1 = SqrtPriceMath.getAmount1DeltaHelper(
-                    TickMath.getSqrtRatioAtTick(params.tickLower), _slot0.sqrtPriceX96, params.liquidityDelta
+                    TickMath.getSqrtRatioAtTick(params.tickLower),
+                    self.slot0.sqrtPriceX96,
+                    params.liquidityDelta,
                 )
-                self.liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta)
+                self.liquidity = LiquidityMath.addDelta(self.liquidity, params.liquidityDelta)
             else:
                 ## current tick is above the passed range; liquidity can only become in range by crossing from right to
                 ## left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -193,14 +191,9 @@ class UniswapPool(Account):
         # This will create a position if it doesn't exist
         position = Position.get(self.positions, owner, tickLower, tickUpper)
 
-        _feeGrowthGlobal0X128 = self.feeGrowthGlobal0X128
-        ## SLOAD for gas optimization
-        _feeGrowthGlobal1X128 = self.feeGrowthGlobal1X128
-        ## SLOAD for gas optimization
-
         # Initialize values
-        flippedLower = False
-        flippedUpper = False
+        flippedLower = flippedUpper = False
+
         ## if we need to update the ticks, do it
         if liquidityDelta != 0:
             flippedLower = Tick.update(
@@ -208,8 +201,8 @@ class UniswapPool(Account):
                 tickLower,
                 tick,
                 liquidityDelta,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128,
+                self.feeGrowthGlobal0X128,
+                self.feeGrowthGlobal1X128,
                 False,
                 self.maxLiquidityPerTick,
             )
@@ -218,8 +211,8 @@ class UniswapPool(Account):
                 tickUpper,
                 tick,
                 liquidityDelta,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128,
+                self.feeGrowthGlobal0X128,
+                self.feeGrowthGlobal1X128,
                 True,
                 self.maxLiquidityPerTick,
             )
@@ -230,7 +223,7 @@ class UniswapPool(Account):
             assert tickUpper % self.tickSpacing == 0  ## ensure that the tick is spaced
 
         (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
-            self.ticks, tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128
+            self.ticks, tickLower, tickUpper, tick, self.feeGrowthGlobal0X128, self.feeGrowthGlobal1X128
         )
 
         Position.update(position, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128)
@@ -326,14 +319,13 @@ class UniswapPool(Account):
             ModifyPositionParams(recipient, tickLower, tickUpper, -amount)
         )
 
-        amount0 = -amount0Int
-        amount1 = -amount1Int
+        # Mimic conversion to uint256
+        amount0 = abs(-amount0Int) & (2**256 - 1)
+        amount1 = abs(-amount1Int) & (2**256 - 1)
 
         if amount0 > 0 or amount1 > 0:
-            (position.tokensOwed0, position.tokensOwed1) = (
-                position.tokensOwed0 + amount0,
-                position.tokensOwed1 + amount1,
-            )
+            position.tokensOwed0 += amount0
+            position.tokensOwed1 += amount1
 
         return (recipient, tickLower, tickUpper, amount, amount0, amount1)
 
@@ -450,10 +442,8 @@ class UniswapPool(Account):
         ## End of swap loop
         ## update tick
         if state.tick != slot0Start.tick:
-            (self.slot0.sqrtPriceX96, self.slot0.tick) = (
-                state.sqrtPriceX96,
-                state.tick,
-            )
+            self.slot0.sqrtPriceX96 = state.sqrtPriceX96
+            self.slot0.tick = state.tick
         else:
             ## otherwise just update the price
             self.slot0.sqrtPriceX96 = state.sqrtPriceX96

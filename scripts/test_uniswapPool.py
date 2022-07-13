@@ -1389,33 +1389,32 @@ def test_unchangedProtocolFee_returns(initializedSetFeeProtPool):
 # use callbacks, we just do the transfer in the pool itself. However, it is useful to
 # check that we can't transfer more than the balances
 
-
 @pytest.fixture
-def initializedPoolSwapUnderpay(initializedSetFeeProtPool, accounts):
+def initializedPoolSwapBalances(initializedSetFeeProtPool, accounts):
     pool, minTick, maxTick, _, _ = initializedSetFeeProtPool
     pool.mint(accounts[0], minTick, maxTick, expandTo18Decimals(1))
     return initializedSetFeeProtPool
 
 
-def test_enoughBalance_token0(initializedPoolSwapUnderpay, accounts):
+def test_enoughBalance_token0(initializedPoolSwapBalances, accounts):
     print("swapper swaps all token0")
-    pool, _, _, _, _ = initializedPoolSwapUnderpay
+    pool, _, _, _, _ = initializedPoolSwapBalances
 
     swapExact0For1(pool, accounts[2].balances[TEST_TOKENS[0]], accounts[2], None)
     assert accounts[2].balances[TEST_TOKENS[0]] == 0
 
 
-def test_enoughBalance_token1(initializedPoolSwapUnderpay, accounts):
+def test_enoughBalance_token1(initializedPoolSwapBalances, accounts):
     print("swapper doesn't have enough token0")
-    pool, _, _, _, _ = initializedPoolSwapUnderpay
+    pool, _, _, _, _ = initializedPoolSwapBalances
 
     swapExact1For0(pool, accounts[2].balances[TEST_TOKENS[1]], accounts[2], None)
     assert accounts[2].balances[TEST_TOKENS[1]] == 0
 
 
-def test_notEnoughBalance_token0(initializedPoolSwapUnderpay, accounts):
+def test_notEnoughBalance_token0(initializedPoolSwapBalances, accounts):
     print("swapper doesn't have enough token0")
-    pool, _, _, _, _ = initializedPoolSwapUnderpay
+    pool, _, _, _, _ = initializedPoolSwapBalances
     initialBalanceToken0 = accounts[2].balances[TEST_TOKENS[0]]
     tryExceptHandler(
         swapExact0For1,
@@ -1428,9 +1427,9 @@ def test_notEnoughBalance_token0(initializedPoolSwapUnderpay, accounts):
     assert accounts[2].balances[TEST_TOKENS[0]] == initialBalanceToken0
 
 
-def test_notEnoughBalance_token1(initializedPoolSwapUnderpay, accounts):
+def test_notEnoughBalance_token1(initializedPoolSwapBalances, accounts):
     print("swapper doesn't have enough token1")
-    pool, _, _, _, _ = initializedPoolSwapUnderpay
+    pool, _, _, _, _ = initializedPoolSwapBalances
     initialBalanceToken1 = accounts[2].balances[TEST_TOKENS[1]]
     tryExceptHandler(
         swapExact1For0,
