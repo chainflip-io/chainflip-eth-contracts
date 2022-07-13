@@ -30,10 +30,14 @@ def test_exactAmountIn_capped_notOneForZero():
     assert int(amountOut) == 9925619580021728
     assert (amountIn + feeAmount) < amount, "Entire amount used"
 
-    priceAfterWholeInputAmount = SqrtPriceMath.getNextSqrtPriceFromInput(price, liquidity, amount, zeroForOne)
+    priceAfterWholeInputAmount = SqrtPriceMath.getNextSqrtPriceFromInput(
+        price, liquidity, amount, zeroForOne
+    )
 
     assert int(sqrtQ) == priceTarget, "price not capped at price target"
-    assert int(sqrtQ) < int(priceAfterWholeInputAmount), "price not less than price after whole input amount"
+    assert int(sqrtQ) < int(
+        priceAfterWholeInputAmount
+    ), "price not less than price after whole input amount"
 
 
 def test_exactAmountOut_capped_notOneForZero():
@@ -59,7 +63,9 @@ def test_exactAmountOut_capped_notOneForZero():
     )
 
     assert int(sqrtQ) == priceTarget, "price is capped at price target"
-    assert int(sqrtQ) < priceAfterWholeOutputAmount, "price is less than price after whole output amount"
+    assert (
+        int(sqrtQ) < priceAfterWholeOutputAmount
+    ), "price is less than price after whole output amount"
 
 
 def test_exactAmount_fullySpent_notzeroForOne():
@@ -113,13 +119,19 @@ def test_exactAmountOut_fullyReceived_notZeroForOne():
     )
 
     assert int(sqrtQ) < priceTarget, "price does not reach price target"
-    assert int(sqrtQ) == int(priceAfterWholeOutputAmount), "price is equal to price after whole output amount"
+    assert int(sqrtQ) == int(
+        priceAfterWholeOutputAmount
+    ), "price is equal to price after whole output amount"
 
 
 def test_exactAmountOut_capped_amountOut():
     print("amount out is capped at the desired amount out")
     (sqrtQ, amountIn, amountOut, feeAmount) = SwapMath.computeSwapStep(
-        417332158212080721273783715441582, 1452870262520218020823638996, 159344665391607089467575320103, -1, 1
+        417332158212080721273783715441582,
+        1452870262520218020823638996,
+        159344665391607089467575320103,
+        -1,
+        1,
     )
 
     assert int(amountIn) == 1
@@ -157,7 +169,9 @@ def test_allInput_asFee():
 # This test doesn't make much sence since amountOut is 1 and not 0 since because removed rounding
 # However, checking that the other calculations are correct
 def test_insuffLiquid_zero_exactOutput():
-    print("handles intermediate insufficient liquidity in zero for one exact output case")
+    print(
+        "handles intermediate insufficient liquidity in zero for one exact output case"
+    )
     sqrtP = 20282409603651670423947251286016
     sqrtPTarget = sqrtP * 11 // 10
     liquidity = 1024

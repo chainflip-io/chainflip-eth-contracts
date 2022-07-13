@@ -109,7 +109,9 @@ def getNextSqrtPriceFromInput(sqrtPX96, liquidity, amountIn, zeroForOne):
     return (
         getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountIn, True)
         if zeroForOne
-        else getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountIn, True)
+        else getNextSqrtPriceFromAmount1RoundingDown(
+            sqrtPX96, liquidity, amountIn, True
+        )
     )
 
 
@@ -128,7 +130,9 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
     return (
         getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, False)
         if zeroForOne
-        else getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, False)
+        else getNextSqrtPriceFromAmount0RoundingUp(
+            sqrtPX96, liquidity, amountOut, False
+        )
     )
 
 
@@ -149,7 +153,9 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 
     assert sqrtRatioAX96 > 0
     if roundUp:
-        return divRoundingUp(mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96), sqrtRatioAX96)
+        return divRoundingUp(
+            mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96), sqrtRatioAX96
+        )
     else:
         return mulDiv(numerator1, numerator2, sqrtRatioBX96) // sqrtRatioAX96
 
@@ -165,7 +171,9 @@ def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
     if roundUp:
-        return mulDivRoundingUp(liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96.Q96)
+        return mulDivRoundingUp(
+            liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96.Q96
+        )
     else:
         return mulDiv(liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96.Q96)
 

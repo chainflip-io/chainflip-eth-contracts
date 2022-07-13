@@ -17,7 +17,9 @@ ONE_IN_PIPS = 1000000
 ### @return amountIn The amount to be swapped in, of either token0 or token1, based on the direction of the swap
 ### @return amountOut The amount to be received, of either token0 or token1, based on the direction of the swap
 ### @return feeAmount The amount of input that will be taken as a fee
-def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRemaining, feePips):
+def computeSwapStep(
+    sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRemaining, feePips
+):
 
     zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96
 
@@ -25,12 +27,18 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
     exactIn = amountRemaining >= 0
 
     if exactIn:
-        amountRemainingLessFee = mulDiv(amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS)
+        amountRemainingLessFee = mulDiv(
+            amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
+        )
 
         amountIn = (
-            SqrtPriceMath.getAmount0Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, True)
+            SqrtPriceMath.getAmount0Delta(
+                sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, True
+            )
             if zeroForOne
-            else SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, True)
+            else SqrtPriceMath.getAmount1Delta(
+                sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, True
+            )
         )
 
         if amountRemainingLessFee >= amountIn:
@@ -41,9 +49,13 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
             )
     else:
         amountOut = (
-            SqrtPriceMath.getAmount1Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, False)
+            SqrtPriceMath.getAmount1Delta(
+                sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, False
+            )
             if zeroForOne
-            else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, False)
+            else SqrtPriceMath.getAmount0Delta(
+                sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, False
+            )
         )
 
         # amountRemaining <= 0
@@ -61,24 +73,32 @@ def computeSwapStep(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRe
         amountIn = (
             amountIn
             if (max and exactIn)
-            else SqrtPriceMath.getAmount0Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, True)
+            else SqrtPriceMath.getAmount0Delta(
+                sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, True
+            )
         )
         amountOut = (
             amountOut
             if (max and not exactIn)
-            else SqrtPriceMath.getAmount1Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, False)
+            else SqrtPriceMath.getAmount1Delta(
+                sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, False
+            )
         )
 
     else:
         amountIn = (
             amountIn
             if (max and exactIn)
-            else SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, True)
+            else SqrtPriceMath.getAmount1Delta(
+                sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, True
+            )
         )
         amountOut = (
             amountOut
             if (max and not exactIn)
-            else SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, False)
+            else SqrtPriceMath.getAmount0Delta(
+                sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, False
+            )
         )
 
     ## cap the output amount to not exceed the remaining output amount

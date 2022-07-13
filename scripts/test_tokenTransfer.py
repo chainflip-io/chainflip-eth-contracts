@@ -24,7 +24,9 @@ def test_tokenTransfer():
     tryExceptHandler(account0.transferToken, "", account1, TEST_TOKENS[1], -25)
 
     # Insufficient Balance
-    tryExceptHandler(account0.transferToken, "Insufficient balance", account1, TEST_TOKENS[0], 150)
+    tryExceptHandler(
+        account0.transferToken, "Insufficient balance", account1, TEST_TOKENS[0], 150
+    )
 
 
 def test_tokenReceive():

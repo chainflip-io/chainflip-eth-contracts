@@ -13,21 +13,29 @@ from utilities import *
 
 def test_returns_lowFee():
     print("returns the correct value for low fee")
-    maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.LOW])
+    maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(
+        TICK_SPACINGS[FeeAmount.LOW]
+    )
     assert maxLiquidityPerTick == 1917569901783203986719870431555990  ##0.8 bits
     assert maxLiquidityPerTick == getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.LOW])
 
 
 def test_returns_mediumFee():
     print("returns the correct value for medium fee")
-    maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM])
+    maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(
+        TICK_SPACINGS[FeeAmount.MEDIUM]
+    )
     assert maxLiquidityPerTick == 11505743598341114571880798222544994  ## 113.1 bits
-    assert maxLiquidityPerTick == getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM])
+    assert maxLiquidityPerTick == getMaxLiquidityPerTick(
+        TICK_SPACINGS[FeeAmount.MEDIUM]
+    )
 
 
 def test_returns_highFee():
     print("returns the correct value for high fee")
-    maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.HIGH])
+    maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(
+        TICK_SPACINGS[FeeAmount.HIGH]
+    )
     assert maxLiquidityPerTick == 38350317471085141830651933667504588  ## 114.7 bits
     assert maxLiquidityPerTick == getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.HIGH])
 
@@ -53,7 +61,9 @@ def test_returns_all_twoUninitialized_ifInside():
     print("returns all for two uninitialized ticks if tick is inside")
     tickMapping = {}
     insertUninitializedTickstoMapping(tickMapping, [-2, 2, 0, 15, 1])
-    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
+    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
+        tickMapping, -2, 2, 0, 15, 15
+    )
     assert feeGrowthInside0X128 == 15
     assert feeGrowthInside1X128 == 15
 
@@ -63,7 +73,9 @@ def test_returns_0_twoUninitialized_ifAbove():
     tickMapping = {}
     print(tickMapping)
     insertUninitializedTickstoMapping(tickMapping, [-2, 2, 4, 15])
-    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 4, 15, 15)
+    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
+        tickMapping, -2, 2, 4, 15, 15
+    )
     assert feeGrowthInside0X128 == 0
     assert feeGrowthInside1X128 == 0
 
@@ -72,7 +84,9 @@ def test_returns_0_twoUninitialized_ifBelow():
     print("returns 0 for two uninitialized ticks if tick is below")
     tickMapping = {}
     insertUninitializedTickstoMapping(tickMapping, [-2, 2, -4, 15])
-    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, -4, 15, 15)
+    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
+        tickMapping, -2, 2, -4, 15, 15
+    )
     assert feeGrowthInside0X128 == 0
     assert feeGrowthInside1X128 == 0
 
@@ -82,7 +96,9 @@ def test_substractUpperTick_ifBelow():
     tickMapping = {}
     insertInitializedTicksToMapping(tickMapping, [2], [TickInfo(0, 0, 2, 3)])
     insertUninitializedTickstoMapping(tickMapping, [-2, 0, 15])
-    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
+    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
+        tickMapping, -2, 2, 0, 15, 15
+    )
     feeGrowthInside0X128 == 13
     feeGrowthInside1X128 == 12
 
@@ -92,7 +108,9 @@ def test_substractLowerTick_ifAbove():
     tickMapping = {}
     insertInitializedTicksToMapping(tickMapping, [-2], [TickInfo(0, 0, 2, 3)])
     insertUninitializedTickstoMapping(tickMapping, [2, 0, 15])
-    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
+    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
+        tickMapping, -2, 2, 0, 15, 15
+    )
     feeGrowthInside0X128 == 13
     feeGrowthInside1X128 == 12
 
@@ -100,9 +118,13 @@ def test_substractLowerTick_ifAbove():
 def test_substractUpperAndLower_ifInside():
     print("subtracts upper and lower tick if inside")
     tickMapping = {}
-    insertInitializedTicksToMapping(tickMapping, [-2, 2], [TickInfo(0, 0, 2, 3), TickInfo(0, 0, 4, 1)])
+    insertInitializedTicksToMapping(
+        tickMapping, [-2, 2], [TickInfo(0, 0, 2, 3), TickInfo(0, 0, 4, 1)]
+    )
     insertUninitializedTickstoMapping(tickMapping, [0, 15])
-    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
+    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
+        tickMapping, -2, 2, 0, 15, 15
+    )
     feeGrowthInside0X128 == 9
     feeGrowthInside1X128 == 11
 
@@ -111,10 +133,14 @@ def test_overflow_insideTick():
     print("works correctly with overflow inside tick")
     tickMapping = {}
     insertInitializedTicksToMapping(
-        tickMapping, [-2, 2], [TickInfo(0, 0, MAX_UINT256 - 3, MAX_UINT256 - 2), TickInfo(0, 0, 3, 5)]
+        tickMapping,
+        [-2, 2],
+        [TickInfo(0, 0, MAX_UINT256 - 3, MAX_UINT256 - 2), TickInfo(0, 0, 3, 5)],
     )
     insertUninitializedTickstoMapping(tickMapping, [0, 15])
-    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(tickMapping, -2, 2, 0, 15, 15)
+    (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
+        tickMapping, -2, 2, 0, 15, 15
+    )
     feeGrowthInside0X128 == 16
     feeGrowthInside1X128 == 13
 
@@ -177,7 +203,16 @@ def test_reverts_overflow_liquidityGross():
     tickMapping = {}
     Tick.update(tickMapping, 0, 0, (MAX_UINT128 // 2) - 1, 0, 0, False, MAX_UINT128)
     tryExceptHandler(
-        Tick.update, "OF or UF of INT128", tickMapping, 0, 0, (MAX_UINT128 // 2) - 1, 0, 0, False, MAX_UINT128
+        Tick.update,
+        "OF or UF of INT128",
+        tickMapping,
+        0,
+        0,
+        (MAX_UINT128 // 2) - 1,
+        0,
+        0,
+        False,
+        MAX_UINT128,
     )
 
 

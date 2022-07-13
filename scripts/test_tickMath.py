@@ -28,7 +28,10 @@ def test_minTick_plus_one():
 
 def test_maxTick_minus_one():
     print("max tick - 1")
-    assert TickMath.getSqrtRatioAtTick(MAX_TICK - 1) == 1461373636630004318706518188784493106690254656249
+    assert (
+        TickMath.getSqrtRatioAtTick(MAX_TICK - 1)
+        == 1461373636630004318706518188784493106690254656249
+    )
 
 
 def test_minTickRatio_ltImplementation():
@@ -43,7 +46,10 @@ def test_maxTickRatio_gtImplementation():
 
 def test_maxTick():
     print("max tick")
-    assert TickMath.getSqrtRatioAtTick(MAX_TICK) == 1461446703485210103287273052203988822378723970342
+    assert (
+        TickMath.getSqrtRatioAtTick(MAX_TICK)
+        == 1461446703485210103287273052203988822378723970342
+    )
 
 
 def test_ticks():
@@ -109,7 +115,10 @@ def test_ratio_minTick_plusOne():
 
 def test_ratio_maxTick_minusOne():
     print("ratio if min tick")
-    assert TickMath.getTickAtSqrtRatio(1461373636630004318706518188784493106690254656249) == MAX_TICK - 1
+    assert (
+        TickMath.getTickAtSqrtRatio(1461373636630004318706518188784493106690254656249)
+        == MAX_TICK - 1
+    )
 
 
 def test_ratio_closestMaxTick():

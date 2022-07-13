@@ -43,7 +43,9 @@ def get(self, owner, tickLower, tickUpper):
 ### @param liquidityDelta The change in pool liquidity as a result of the position update
 ### @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
 ### @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
-def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):  # PositionInfo
+def update(
+    self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128
+):  # PositionInfo
     # Health Check
     checkInt128(liquidityDelta)
     checkUInt256(feeGrowthInside0X128)
@@ -57,10 +59,14 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):  #
 
     ## calculate accumulated fees
     tokensOwed0 = mulDiv(
-        feeGrowthInside0X128 - self.feeGrowthInside0LastX128, self.liquidity, FixedPoint128.Q128
+        feeGrowthInside0X128 - self.feeGrowthInside0LastX128,
+        self.liquidity,
+        FixedPoint128.Q128,
     )
     tokensOwed1 = mulDiv(
-        feeGrowthInside1X128 - self.feeGrowthInside1LastX128, self.liquidity, FixedPoint128.Q128
+        feeGrowthInside1X128 - self.feeGrowthInside1LastX128,
+        self.liquidity,
+        FixedPoint128.Q128,
     )
 
     # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself

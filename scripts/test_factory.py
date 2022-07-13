@@ -15,7 +15,10 @@ def test_initial_fees():
     print("initial enabled fee amounts")
     factory = Factory()
     assert factory.feeAmountTickSpacing[FeeAmount.LOW] == TICK_SPACINGS[FeeAmount.LOW]
-    assert factory.feeAmountTickSpacing[FeeAmount.MEDIUM] == TICK_SPACINGS[FeeAmount.MEDIUM]
+    assert (
+        factory.feeAmountTickSpacing[FeeAmount.MEDIUM]
+        == TICK_SPACINGS[FeeAmount.MEDIUM]
+    )
     assert factory.feeAmountTickSpacing[FeeAmount.HIGH] == TICK_SPACINGS[FeeAmount.HIGH]
 
 
@@ -24,8 +27,12 @@ def createAndCheck_pool(factory, tokens, feeAmount, tickSpacing):
 
     pool = factory.createPool(tokens[0], tokens[1], feeAmount)
 
-    tryExceptHandler(factory.createPool, "Pool already exists", tokens[0], tokens[1], feeAmount)
-    tryExceptHandler(factory.createPool, "Pool already exists", tokens[1], tokens[0], feeAmount)
+    tryExceptHandler(
+        factory.createPool, "Pool already exists", tokens[0], tokens[1], feeAmount
+    )
+    tryExceptHandler(
+        factory.createPool, "Pool already exists", tokens[1], tokens[0], feeAmount
+    )
 
     assert pool.token0 == TEST_ADDRESSES[0], "pool token0"
     assert pool.token1 == TEST_ADDRESSES[1], "pool token1"
@@ -36,22 +43,33 @@ def createAndCheck_pool(factory, tokens, feeAmount, tickSpacing):
 # createPool
 def test_lowFeePool():
     print("succeds for low fee pool")
-    createAndCheck_pool(Factory(), TEST_ADDRESSES, FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
+    createAndCheck_pool(
+        Factory(), TEST_ADDRESSES, FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW]
+    )
 
 
 def test_mediumFeePool():
     print("succeds for medium fee pool")
-    createAndCheck_pool(Factory(), TEST_ADDRESSES, FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
+    createAndCheck_pool(
+        Factory(), TEST_ADDRESSES, FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM]
+    )
 
 
 def test_highFeePool():
     print("succeds for high fee pool")
-    createAndCheck_pool(Factory(), TEST_ADDRESSES, FeeAmount.HIGH, TICK_SPACINGS[FeeAmount.HIGH])
+    createAndCheck_pool(
+        Factory(), TEST_ADDRESSES, FeeAmount.HIGH, TICK_SPACINGS[FeeAmount.HIGH]
+    )
 
 
 def test_tokensReverse():
     print("succeds for tokens in reverse order")
-    createAndCheck_pool(Factory(), TEST_ADDRESSES[::-1], FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
+    createAndCheck_pool(
+        Factory(),
+        TEST_ADDRESSES[::-1],
+        FeeAmount.MEDIUM,
+        TICK_SPACINGS[FeeAmount.MEDIUM],
+    )
 
 
 def test_fails_tokenAequalB():
@@ -64,7 +82,11 @@ def test_fails_tokenAequalB():
 def test_fails_feeAmountNotEnabled():
     print("fails if fee amount is not enabled")
     tryExceptHandler(
-        Factory().createPool, "Fee amount not supported", TEST_ADDRESSES[0], TEST_ADDRESSES[1], 250
+        Factory().createPool,
+        "Fee amount not supported",
+        TEST_ADDRESSES[0],
+        TEST_ADDRESSES[1],
+        250,
     )
 
 

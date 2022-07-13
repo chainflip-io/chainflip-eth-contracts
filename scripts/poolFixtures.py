@@ -238,7 +238,7 @@ def pool10():
     )
 
 
-# This pool with such low starting price (or someething else) ends up with a bigger 
+# This pool with such low starting price (or someething else) ends up with a bigger
 # than normal rounding error when comparing amount0before (and possibly others)
 @pytest.fixture
 def pool11():
@@ -368,7 +368,7 @@ DEFAULT_POOL_SWAP_TESTS = [
     },
     # ## swap small amounts in/out
     # TODO: Swapping small amounts in/out can be off (e-5) - assuming it's due to rounding errors
-    # Also, it is only off in extreme pools, not in the ones closer to normal functioning.    
+    # Also, it is only off in extreme pools, not in the ones closer to normal functioning.
     # {
     #   "zeroForOne": True,
     #   "exactOut": False,

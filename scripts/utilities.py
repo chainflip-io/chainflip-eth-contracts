@@ -75,7 +75,7 @@ def encodePriceSqrt(reserve1, reserve0):
     elif reserve1 == 1 and reserve0 == 10:
         return 25054144837504793118650146401
     elif reserve1 == 1 and reserve0 == 2**127:
-        return  6085630636
+        return 6085630636
     elif reserve1 == 2**127 and reserve0 == 1:
         return 1033437718471923701407239276819587054334136928048
     else:
@@ -187,22 +187,38 @@ def getPositionKey(address, lowerTick, upperTick):
 
 ### POOL SWAPS ###
 def swapExact0For1(pool, amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    sqrtPriceLimitX96 = (
+        sqrtPriceLimit
+        if sqrtPriceLimit != None
+        else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    )
     return swap(pool, TEST_TOKENS[0], [amount, 0], recipient, sqrtPriceLimitX96)
 
 
 def swap0ForExact1(pool, amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    sqrtPriceLimitX96 = (
+        sqrtPriceLimit
+        if sqrtPriceLimit != None
+        else getSqrtPriceLimitX96(TEST_TOKENS[0])
+    )
     return swap(pool, TEST_TOKENS[0], [0, amount], recipient, sqrtPriceLimitX96)
 
 
 def swapExact1For0(pool, amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[1])
+    sqrtPriceLimitX96 = (
+        sqrtPriceLimit
+        if sqrtPriceLimit != None
+        else getSqrtPriceLimitX96(TEST_TOKENS[1])
+    )
     return swap(pool, TEST_TOKENS[1], [amount, 0], recipient, sqrtPriceLimitX96)
 
 
 def swap1ForExact0(pool, amount, recipient, sqrtPriceLimit):
-    sqrtPriceLimitX96 = sqrtPriceLimit if sqrtPriceLimit != None else getSqrtPriceLimitX96(TEST_TOKENS[1])
+    sqrtPriceLimitX96 = (
+        sqrtPriceLimit
+        if sqrtPriceLimit != None
+        else getSqrtPriceLimitX96(TEST_TOKENS[1])
+    )
     return swap(pool, TEST_TOKENS[1], [0, amount], recipient, sqrtPriceLimitX96)
 
 

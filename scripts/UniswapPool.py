@@ -146,7 +146,11 @@ class UniswapPool(Account):
         amount1 = 0
 
         position = self._updatePosition(
-            params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, self.slot0.tick
+            params.owner,
+            params.tickLower,
+            params.tickUpper,
+            params.liquidityDelta,
+            self.slot0.tick,
         )
 
         if params.liquidityDelta != 0:
@@ -170,7 +174,9 @@ class UniswapPool(Account):
                     self.slot0.sqrtPriceX96,
                     params.liquidityDelta,
                 )
-                self.liquidity = LiquidityMath.addDelta(self.liquidity, params.liquidityDelta)
+                self.liquidity = LiquidityMath.addDelta(
+                    self.liquidity, params.liquidityDelta
+                )
             else:
                 ## current tick is above the passed range; liquidity can only become in range by crossing from right to
                 ## left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -223,10 +229,17 @@ class UniswapPool(Account):
             assert tickUpper % self.tickSpacing == 0  ## ensure that the tick is spaced
 
         (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
-            self.ticks, tickLower, tickUpper, tick, self.feeGrowthGlobal0X128, self.feeGrowthGlobal1X128
+            self.ticks,
+            tickLower,
+            tickUpper,
+            tick,
+            self.feeGrowthGlobal0X128,
+            self.feeGrowthGlobal1X128,
         )
 
-        Position.update(position, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128)
+        Position.update(
+            position, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128
+        )
 
         ## clear any tick data that is no longer needed
         if liquidityDelta < 0:
@@ -267,31 +280,51 @@ class UniswapPool(Account):
         recipient.transferToken(self, self.token1, amount1)
 
         if amount0 > 0:
-            assert SafeMath.add(balance0Before, amount0) <= self.balances[self.token0], "M0"
+            assert (
+                SafeMath.add(balance0Before, amount0) <= self.balances[self.token0]
+            ), "M0"
         if amount1 > 0:
-            assert SafeMath.add(balance1Before, amount1) <= self.balances[self.token1], "M1"
+            assert (
+                SafeMath.add(balance1Before, amount1) <= self.balances[self.token1]
+            ), "M1"
 
         return (amount0, amount1)
 
-    def collect(self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested):
+    def collect(
+        self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested
+    ):
         # Health check inputs
         checkInt24(tickLower)
         checkInt24(tickUpper)
         checkUInt128(amount0Requested)
         checkUInt128(amount1Requested)
         assert isinstance(recipient, Account)
-        return self._collect(recipient, tickLower, tickUpper, amount0Requested, amount1Requested)
+        return self._collect(
+            recipient, tickLower, tickUpper, amount0Requested, amount1Requested
+        )
 
     ### @inheritdoc IUniswapV3PoolActions
-    def _collect(self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested):
+    def _collect(
+        self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested
+    ):
         ## we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
         ## Hardcoded recipient == msg.sender.
         position = Position.get(self.positions, recipient, tickLower, tickUpper)
 
         # Added this check to prevent creating a new position if the position doesn't exist or it's empty
-        assert position != Position.PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
-        amount0 = position.tokensOwed0 if (amount0Requested > position.tokensOwed0) else amount0Requested
-        amount1 = position.tokensOwed1 if (amount1Requested > position.tokensOwed1) else amount1Requested
+        assert position != Position.PositionInfo(
+            0, 0, 0, 0, 0
+        ), "Position doesn't exist"
+        amount0 = (
+            position.tokensOwed0
+            if (amount0Requested > position.tokensOwed0)
+            else amount0Requested
+        )
+        amount1 = (
+            position.tokensOwed1
+            if (amount1Requested > position.tokensOwed1)
+            else amount1Requested
+        )
 
         if amount0 > 0:
             position.tokensOwed0 -= amount0
@@ -345,14 +378,20 @@ class UniswapPool(Account):
 
         if zeroForOne:
             assert (
-                sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 and sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
+                sqrtPriceLimitX96 < slot0Start.sqrtPriceX96
+                and sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
             ), "SPL"
         else:
             assert (
-                sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 and sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
+                sqrtPriceLimitX96 > slot0Start.sqrtPriceX96
+                and sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
             ), "SPL"
 
-        feeProtocol = (slot0Start.feeProtocol % 16) if zeroForOne else (slot0Start.feeProtocol >> 4)
+        feeProtocol = (
+            (slot0Start.feeProtocol % 16)
+            if zeroForOne
+            else (slot0Start.feeProtocol >> 4)
+        )
 
         cache = SwapCache(feeProtocol, self.liquidity)
 
@@ -368,7 +407,10 @@ class UniswapPool(Account):
             cache.liquidityStart,
         )
         print("Start Swap")
-        while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
+        while (
+            state.amountSpecifiedRemaining != 0
+            and state.sqrtPriceX96 != sqrtPriceLimitX96
+        ):
             print("SWAP LOOP")
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
@@ -382,14 +424,23 @@ class UniswapPool(Account):
             ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted
             if zeroForOne:
                 sqrtRatioTargetX96 = (
-                    sqrtPriceLimitX96 if step.sqrtPriceNextX96 < sqrtPriceLimitX96 else step.sqrtPriceNextX96
+                    sqrtPriceLimitX96
+                    if step.sqrtPriceNextX96 < sqrtPriceLimitX96
+                    else step.sqrtPriceNextX96
                 )
             else:
                 sqrtRatioTargetX96 = (
-                    sqrtPriceLimitX96 if step.sqrtPriceNextX96 > sqrtPriceLimitX96 else step.sqrtPriceNextX96
+                    sqrtPriceLimitX96
+                    if step.sqrtPriceNextX96 > sqrtPriceLimitX96
+                    else step.sqrtPriceNextX96
                 )
 
-            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount,) = SwapMath.computeSwapStep(
+            (
+                state.sqrtPriceX96,
+                step.amountIn,
+                step.amountOut,
+                step.feeAmount,
+            ) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
                 sqrtRatioTargetX96,
                 state.liquidity,
@@ -398,7 +449,9 @@ class UniswapPool(Account):
             )
             if exactInput:
                 state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
-                state.amountCalculated = SafeMath.subInts(state.amountCalculated, step.amountOut)
+                state.amountCalculated = SafeMath.subInts(
+                    state.amountCalculated, step.amountOut
+                )
             else:
                 state.amountSpecifiedRemaining += step.amountOut
                 state.amountCalculated = SafeMath.addInts(
@@ -413,7 +466,9 @@ class UniswapPool(Account):
 
             ## update global fee tracker
             if state.liquidity > 0:
-                state.feeGrowthGlobalX128 += mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity)
+                state.feeGrowthGlobalX128 += mulDiv(
+                    step.feeAmount, FixedPoint128.Q128, state.liquidity
+                )
 
             ## shift tick if we reached the next price
             if state.sqrtPriceX96 == step.sqrtPriceNextX96:
@@ -423,15 +478,21 @@ class UniswapPool(Account):
                     liquidityNet = Tick.cross(
                         self.ticks,
                         step.tickNext,
-                        state.feeGrowthGlobalX128 if zeroForOne else self.feeGrowthGlobal0X128,
-                        self.feeGrowthGlobal1X128 if zeroForOne else state.feeGrowthGlobalX128,
+                        state.feeGrowthGlobalX128
+                        if zeroForOne
+                        else self.feeGrowthGlobal0X128,
+                        self.feeGrowthGlobal1X128
+                        if zeroForOne
+                        else state.feeGrowthGlobalX128,
                     )
                     ## if we're moving leftward, we interpret liquidityNet as the opposite sign
                     ## safe because liquidityNet cannot be type(int128).min
                     if zeroForOne:
                         liquidityNet = -liquidityNet
 
-                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet)
+                    state.liquidity = LiquidityMath.addDelta(
+                        state.liquidity, liquidityNet
+                    )
 
                 state.tick = (step.tickNext - 1) if zeroForOne else step.tickNext
             elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
@@ -487,7 +548,14 @@ class UniswapPool(Account):
             recipient.transferToken(self, self.token1, abs(amount1))
             assert balanceBefore + abs(amount1) == self.balances[self.token1], "IIA"
 
-        return recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick
+        return (
+            recipient,
+            amount0,
+            amount1,
+            state.sqrtPriceX96,
+            state.liquidity,
+            state.tick,
+        )
 
     def setFeeProtocol(self, feeProtocol0, feeProtocol1):
         assert (feeProtocol0 == 0 or (feeProtocol0 >= 4 and feeProtocol0 <= 10)) and (
@@ -503,10 +571,14 @@ class UniswapPool(Account):
 
     def collectProtocol(self, recipient, amount0Requested, amount1Requested):
         amount0 = (
-            self.protocolFees.token0 if amount0Requested > self.protocolFees.token0 else amount0Requested
+            self.protocolFees.token0
+            if amount0Requested > self.protocolFees.token0
+            else amount0Requested
         )
         amount1 = (
-            self.protocolFees.token1 if amount1Requested > self.protocolFees.token1 else amount1Requested
+            self.protocolFees.token1
+            if amount1Requested > self.protocolFees.token1
+            else amount1Requested
         )
 
         if amount0 > 0:

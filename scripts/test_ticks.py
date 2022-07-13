@@ -19,7 +19,9 @@ import TickMath
 def initializePoolWithMockTicks(tickSpacing):
     # To mimic tickBitmaps we need to create a dict of initialized ticks (ticks)
     pool = UniswapPool("A", "B", 1, tickSpacing)
-    insertUninitializedTickstoMapping(pool.ticks, [-200, -55, -4, 70, 78, 84, 139, 240, 535])
+    insertUninitializedTickstoMapping(
+        pool.ticks, [-200, -55, -4, 70, 78, 84, 139, 240, 535]
+    )
     return pool
 
 

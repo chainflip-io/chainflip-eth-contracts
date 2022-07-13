@@ -30,7 +30,9 @@ def tickSpacingToMaxLiquidityPerTick(tickSpacing):
 ### @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
 ### @return feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
 ### @return feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
-def getFeeGrowthInside(self, tickLower, tickUpper, tickCurrent, feeGrowthGlobal0X128, feeGrowthGlobal1X128):
+def getFeeGrowthInside(
+    self, tickLower, tickUpper, tickCurrent, feeGrowthGlobal0X128, feeGrowthGlobal1X128
+):
     # Assumption that the key (tick) exists
     lower = self[tickLower]
     upper = self[tickUpper]
@@ -51,8 +53,12 @@ def getFeeGrowthInside(self, tickLower, tickUpper, tickCurrent, feeGrowthGlobal0
         feeGrowthAbove0X128 = feeGrowthGlobal0X128 - upper.feeGrowthOutside0X128
         feeGrowthAbove1X128 = feeGrowthGlobal1X128 - upper.feeGrowthOutside1X128
 
-    feeGrowthInside0X128 = feeGrowthGlobal0X128 - feeGrowthBelow0X128 - feeGrowthAbove0X128
-    feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128
+    feeGrowthInside0X128 = (
+        feeGrowthGlobal0X128 - feeGrowthBelow0X128 - feeGrowthAbove0X128
+    )
+    feeGrowthInside1X128 = (
+        feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128
+    )
     return (feeGrowthInside0X128, feeGrowthInside1X128)
 
 
@@ -69,7 +75,14 @@ def getFeeGrowthInside(self, tickLower, tickUpper, tickCurrent, feeGrowthGlobal0
 ### @param maxLiquidity The maximum liquidity allocation for a single tick
 ### @return flipped Whether the tick was flipped from initialized to uninitialized, or vice versa
 def update(
-    self, tick, tickCurrent, liquidityDelta, feeGrowthGlobal0X128, feeGrowthGlobal1X128, upper, maxLiquidity
+    self,
+    tick,
+    tickCurrent,
+    liquidityDelta,
+    feeGrowthGlobal0X128,
+    feeGrowthGlobal1X128,
+    upper,
+    maxLiquidity,
 ):
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):

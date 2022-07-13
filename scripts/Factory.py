@@ -34,5 +34,8 @@ class Factory:
         ## TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
         ## 16384 ticks represents a >5x price change with ticks of 1 bips
         assert tickSpacing > 0 and tickSpacing < 16384
-        assert not self.feeAmountTickSpacing.__contains__(fee) or self.feeAmountTickSpacing[fee] == 0
+        assert (
+            not self.feeAmountTickSpacing.__contains__(fee)
+            or self.feeAmountTickSpacing[fee] == 0
+        )
         self.feeAmountTickSpacing[fee] = tickSpacing
