@@ -11,8 +11,7 @@ import copy
 import decimal
 
 # Doing only one pool now to debug
-# @pytest.fixture(params=[0, 1])
-@pytest.fixture(params=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+@pytest.fixture(params=[*range(0, 15, 1)])
 def TEST_POOLS(request, accounts):
     poolFixture = request.getfixturevalue("pool{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -29,7 +28,6 @@ def TEST_POOLS(request, accounts):
 @pytest.fixture
 def afterEach(accounts, TEST_POOLS):
     yield
-    # Comment out while debugging
     print("check can burn positions")
     (_, _, pool, _, _, _, poolFixture) = TEST_POOLS
     for position in poolFixture.positions:
@@ -104,7 +102,7 @@ def test_testing(TEST_POOLS, accounts):
             executionPrice = -(poolBalance1Delta / poolBalance0Delta)
         else:
             executionPrice = "-Infinity"
-
+        
         # Allowing some very small difference due to rounding errors
         assert float(dict["amount0Before"]) == pytest.approx(poolBalance0, rel=1e-12)
         assert float(dict["amount0Delta"]) == pytest.approx(poolBalance0Delta, rel=1e-12)

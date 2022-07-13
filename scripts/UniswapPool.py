@@ -367,11 +367,10 @@ class UniswapPool(Account):
             0,
             cache.liquidityStart,
         )
-
+        print("Start Swap")
         while state.amountSpecifiedRemaining != 0 and state.sqrtPriceX96 != sqrtPriceLimitX96:
-
+            print("SWAP LOOP")
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
-
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?

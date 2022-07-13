@@ -367,8 +367,8 @@ DEFAULT_POOL_SWAP_TESTS = [
         "sqrtPriceLimit": encodePriceSqrt(200, 100),
     },
     # ## swap small amounts in/out
-    # TODO: Swapping small amounts in/out can be off - assuming it's due to rounding errors
-    # Also, it is only off in extreme pools, not in the ones closer to normal functioning.
+    # TODO: Swapping small amounts in/out can be off (e-5) - assuming it's due to rounding errors
+    # Also, it is only off in extreme pools, not in the ones closer to normal functioning.    
     # {
     #   "zeroForOne": True,
     #   "exactOut": False,

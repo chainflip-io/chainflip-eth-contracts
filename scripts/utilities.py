@@ -76,7 +76,8 @@ def encodePriceSqrt(reserve1, reserve0):
         return 25054144837504793118650146401
     elif reserve1 == 1 and reserve0 == 2**127:
         return  6085630636
-
+    elif reserve1 == 2**127 and reserve0 == 1:
+        return 1033437718471923701407239276819587054334136928048
     else:
         return int(math.sqrt(reserve1 / reserve0) * 2**96)
 
