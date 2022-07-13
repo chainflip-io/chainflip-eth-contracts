@@ -990,7 +990,8 @@ def swapAndGetFeesOwed(createPoolParams, amount, zeroForOne, poke, account):
     if poke:
         pool.burn(account, minTick, maxTick, 0)
 
-    (_, _, _, fees0, fees1) = pool.collect(account, minTick, maxTick, MAX_UINT128, MAX_UINT128)
+    # Copy pool instance to check that the accrued fees are correct but allowing to accumulate
+    (_, _, _, fees0, fees1) = copy.deepcopy(pool).collect(account, minTick, maxTick, MAX_UINT128, MAX_UINT128)
 
     assert fees0 >= 0, "fees owed in token0 are greater than 0"
     assert fees1 >= 0, "fees owed in token1 are greater than 0"
@@ -1010,68 +1011,68 @@ def test_positionOwner_fullFees_feeProtocolOff(initializedLowPoolCollectFees, ac
 
 
 # TODO: DEBUG THIS - with poking = True it doesnt make sense that we expect the fees to accrue
-# def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
-#     print("swap fees accumulate as expected (0 for 1)")
+def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
+    print("swap fees accumulate as expected (0 for 1)")
 
-#     ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         True,
-#         True,
-#         accounts[0]
-#     )
-#     assert token0Fees == 499999999999999
-#     assert token1Fees == 0
+    ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0]
+    )
+    assert token0Fees == 499999999999999
+    assert token1Fees == 0
 
-#     ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         True,
-#         True,
-#         accounts[0]
-#     )
-#     assert token0Fees == 999999999999998
-#     assert token1Fees == 0
-
-
-#     ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         True,
-#         True,
-#         accounts[0]
-#     )
-#     assert token0Fees == 1499999999999997
-#     assert token1Fees == 0
-
-# def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
-#     print("swap fees accumulate as expected (1 for 0)")
-
-#     ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         False,
-#         True,
-#         accounts[0]
-#     )
-
-#     assert token0Fees == 0
-#     assert token1Fees == 499999999999999
-
-#     ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         False,
-#         True,
-#         accounts[0]
-#     )
-#     assert token0Fees == 0
-#     assert token1Fees == 999999999999998
+    ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0]
+    )
+    assert token0Fees == 999999999999998
+    assert token1Fees == 0
 
 
-#     ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         False,
-#         True,
-#         accounts[0]
-#     )
-#     assert token0Fees == 0
-#     assert token1Fees == 1499999999999997
+    ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0]
+    )
+    assert token0Fees == 1499999999999997
+    assert token1Fees == 0
+
+def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
+    print("swap fees accumulate as expected (1 for 0)")
+
+    ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        False,
+        True,
+        accounts[0]
+    )
+
+    assert token0Fees == 0
+    assert token1Fees == 499999999999999
+
+    ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        False,
+        True,
+        accounts[0]
+    )
+    assert token0Fees == 0
+    assert token1Fees == 999999999999998
+
+
+    ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        False,
+        True,
+        accounts[0]
+    )
+    assert token0Fees == 0
+    assert token1Fees == 1499999999999997
 
 
 def test_partialFees_feeProtocolOn(initializedLowPoolCollectFees, accounts):
@@ -1128,28 +1129,28 @@ def test_feesDifferToken0Token1(initializedLowPoolCollectFees, accounts):
 
 
 # TODO: DEBUG THIS - with poking = True it doesnt make sense that we expect the fees to accrue
-# def test_doubleFees(initializedLowPoolCollectFees, accounts):
-#     print('fees collected by lp after two swaps should be double one swap')
+def test_doubleFees(initializedLowPoolCollectFees, accounts):
+    print('fees collected by lp after two swaps should be double one swap')
 
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
+    pool, _, _, _, _ = initializedLowPoolCollectFees
 
-#     swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         True,
-#         True,
-#         accounts[0]
-#     )
+    swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0]
+    )
 
-#     ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
-#         expandTo18Decimals(1),
-#         True,
-#         True,
-#         accounts[0]
-#     )
+    ( token0Fees, token1Fees ) = swapAndGetFeesOwed(initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0]
+    )
 
-#     ## 6 bips * 2e18
-#     assert token0Fees == 999999999999998
-#     assert token1Fees == 0
+    ## 6 bips * 2e18
+    assert token0Fees == 999999999999998
+    assert token1Fees == 0
 
 
 def test_feesCollected_combination0(initializedLowPoolCollectFees, accounts):
