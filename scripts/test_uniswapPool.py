@@ -1,6 +1,5 @@
 from utilities import *
 from UniswapPool import *
-import SqrtPriceMath
 import SwapMath
 import TickMath
 
@@ -12,7 +11,8 @@ def accounts():
     # Fund them with infinite tokens
     account0 = Account("ALICE", TEST_TOKENS, [MAX_INT256, MAX_INT256])
     account1 = Account("BOB", TEST_TOKENS, [MAX_INT256, MAX_INT256])
-    return account0, account1
+    account2 = Account("CHARLIE", TEST_TOKENS, [1000, 2000])
+    return account0, account1, account2
 
 
 def createPool(feeAmount, tickSpacing):
@@ -1381,34 +1381,63 @@ def test_unchangedProtocolFee_returns(initializedSetFeeProtPool):
     assert (feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1) == (5, 9, 5, 9)
 
 
-# fees overflow scenarios
+# fees overflow scenarios => they seem to test the feeGrowth overflow in the
+# flash function so we can skip those tests.
 
-def test_maxUint128(createPoolMedium, accounts):
-    pool, minTick, maxTick, _, tickSpacing = createPoolMedium
-    pool.initialize(encodePriceSqrt(1, 1))
-    pool.mint(accounts[0], minTick, maxTick, 1)
-        
-    ## LINE 1863 of UniswapV3Pool.specs.ts
 
-    # Need to create a function or call to swap that mimics the fees overflow
-    # that the flash call causes. Probably two huge swaps can do the same. Or just
-    # set the fees to almost MAX and then do two normal-sized swaps    
-    #flash(0, 0, wallet.address, MaxUint128, MaxUint128)
+# Swap underpayment tests => we don't really need to replicate those since we don't
+# use callbacks, we just do the transfer in the pool itself. However, it is useful to
+# check that we can't transfer more than the balances
 
-    feeGrowthGlobal0X128 = pool.feeGrowthGlobal0X128
-    feeGrowthGlobal1X128 = pool.feeGrowthGlobal1X128
 
-    ## all 1s in first 128 bits
-    assert feeGrowthGlobal0X128 == MAX_UINT128 << 128
-    assert feeGrowthGlobal1X128 == MAX_UINT128 << 128
+@pytest.fixture
+def initializedPoolSwapUnderpay(initializedSetFeeProtPool, accounts):
+    pool, minTick, maxTick, _, _ = initializedSetFeeProtPool
+    pool.mint(accounts[0], minTick, maxTick, expandTo18Decimals(1))
+    return initializedSetFeeProtPool
 
-    pool.burn(accounts[0], minTick, maxTick, 0)
-    # const { amount0, amount1 } = pool.callStatic.collect(
-    # wallet.address,
-    # minTick,
-    # maxTick,
-    # MaxUint128,
-    # MaxUint128
-    # )
-    # expect(amount0).to.eq(MaxUint128)
-    # expect(amount1).to.eq(MaxUint128)    
+
+def test_enoughBalance_token0(initializedPoolSwapUnderpay, accounts):
+    print("swapper swaps all token0")
+    pool, _, _, _, _ = initializedPoolSwapUnderpay
+
+    swapExact0For1(pool, accounts[2].balances[TEST_TOKENS[0]], accounts[2], None)
+    assert accounts[2].balances[TEST_TOKENS[0]] == 0
+
+
+def test_enoughBalance_token1(initializedPoolSwapUnderpay, accounts):
+    print("swapper doesn't have enough token0")
+    pool, _, _, _, _ = initializedPoolSwapUnderpay
+
+    swapExact1For0(pool, accounts[2].balances[TEST_TOKENS[1]], accounts[2], None)
+    assert accounts[2].balances[TEST_TOKENS[1]] == 0
+
+
+def test_notEnoughBalance_token0(initializedPoolSwapUnderpay, accounts):
+    print("swapper doesn't have enough token0")
+    pool, _, _, _, _ = initializedPoolSwapUnderpay
+    initialBalanceToken0 = accounts[2].balances[TEST_TOKENS[0]]
+    tryExceptHandler(
+        swapExact0For1,
+        "Insufficient balance",
+        pool,
+        accounts[2].balances[TEST_TOKENS[0]] + 1,
+        accounts[2],
+        None,
+    )
+    assert accounts[2].balances[TEST_TOKENS[0]] == initialBalanceToken0
+
+
+def test_notEnoughBalance_token1(initializedPoolSwapUnderpay, accounts):
+    print("swapper doesn't have enough token1")
+    pool, _, _, _, _ = initializedPoolSwapUnderpay
+    initialBalanceToken1 = accounts[2].balances[TEST_TOKENS[1]]
+    tryExceptHandler(
+        swapExact1For0,
+        "Insufficient balance",
+        pool,
+        accounts[2].balances[TEST_TOKENS[1]] + 1,
+        accounts[2],
+        None,
+    )
+    assert accounts[2].balances[TEST_TOKENS[1]] == initialBalanceToken1

@@ -107,7 +107,6 @@ def mulDiv(a, b, c):
     return result
 
 
-
 # @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert
 # so we will need to handle that separately if we want to artifially revert to the previous state.
 # E.g a hard copy of the contract instance can be created before making the tryExceptHandle call

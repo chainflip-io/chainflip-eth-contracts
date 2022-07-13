@@ -39,6 +39,7 @@ def afterEach(accounts, TEST_POOLS):
 
 # UniswapV3Pool swap tests
 
+
 @pytest.mark.usefixtures("afterEach")
 def test_testing(TEST_POOLS, accounts):
     (_, _, pool, poolBalance0, poolBalance1, recipient, poolFixture) = TEST_POOLS

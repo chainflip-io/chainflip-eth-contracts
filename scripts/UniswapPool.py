@@ -418,7 +418,7 @@ class UniswapPool(Account):
             if cache.feeProtocol > 0:
                 delta = abs(step.feeAmount // cache.feeProtocol)
                 step.feeAmount -= delta
-                state.protocolFee += delta & (2**128 - 1) 
+                state.protocolFee += delta & (2**128 - 1)
 
             ## update global fee tracker
             if state.liquidity > 0:
