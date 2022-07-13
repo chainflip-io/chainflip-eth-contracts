@@ -444,10 +444,10 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     )
     swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
     swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0], None)
-    # Modified revert reason
+    # Modified revert reason because a check is added in burn for uninitialized position
     tryExceptHandler(
         pool.burn,
-        "NP",
+        "Position doesn't exist",
         accounts[0],
         minTick + tickSpacing,
         maxTick - tickSpacing,
@@ -1508,3 +1508,79 @@ def test_notEnoughBalance_token1(initializedPoolSwapBalances, accounts):
         None,
     )
     assert accounts[2].balances[TEST_TOKENS[1]] == initialBalanceToken1
+
+
+# Extra tests since there are modifications in the python UniswapPool
+
+# Due to the difference in mappings between the python and the solidity we
+# have added an assertion when positions don't exist (to not create it)
+def test_fails_collectEmpty(createPoolMedium, accounts):
+    print("Cannot collect a non-existent position")
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    tryExceptHandler(
+        pool.collect, "Position doesn't exist", accounts[0], minTick, maxTick, 0, 0
+    )
+    tryExceptHandler(
+        pool.collect, "Position doesn't exist", accounts[0], minTick, maxTick, 1, 1
+    )
+    tryExceptHandler(pool.collect, "Position doesn't exist", accounts[0], 0, 0, 0, 0)
+
+
+def test_collectEmpty_noPositionCreated_emptyPool(createPoolMedium, accounts):
+    print(
+        "Check that new positions are not created (reverts) when we collect an empty position"
+    )
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    assert pool.ticks == {}
+    tryExceptHandler(
+        pool.collect, "Position doesn't exist", accounts[0], minTick, maxTick, 0, 0
+    )
+    # Check that no position has been created
+    assert pool.ticks == {}
+
+
+def test_collectEmpty_noPositionCreated_initializedPool(
+    mediumPoolInitializedAtZero, accounts
+):
+    print(
+        "Check that new positions are not created (reverts) when we collect an empty position"
+    )
+    pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
+    initialTicks = pool.ticks
+    tryExceptHandler(
+        pool.collect, "Position doesn't exist", accounts[1], minTick, maxTick, 0, 0
+    )
+    # Check that no position has been created
+    assert initialTicks == pool.ticks
+
+
+# Not allow burning >0 in a non-existent position
+def test_burnGtZero_noPositionCreated_initializedPool(createPoolMedium, accounts):
+    print(
+        "test that burn > 0 a non-existent position doesn't create a new position(reverts)"
+    )
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    initialTicks = pool.ticks
+    tryExceptHandler(
+        pool.burn, "Position doesn't exist", accounts[1], minTick, maxTick, 1
+    )
+    assert initialTicks == pool.ticks
+
+
+# Allow burning zero in an existing position (poke) but make sure no new position is created if
+# burn zero is done on a non-existent position
+def test_burnZero_noPositionCreated_initializedPool(createPoolMedium, accounts):
+    print(
+        "test that burn zero (== poke) a non-existent position doesn't create a new position(reverts)"
+    )
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    initialTicks = pool.ticks
+    tryExceptHandler(
+        pool.burn,
+        "Position doesn't exist",
+        accounts[1],
+        minTick,
+        maxTick,
+        0,
+    )
+    assert initialTicks == pool.ticks

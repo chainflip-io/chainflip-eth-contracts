@@ -38,6 +38,11 @@ def get(self, owner, tickLower, tickUpper):
     return self[key]
 
 
+def assertPositionExists(self, owner, tickLower, tickUpper):
+    positionInfo = get(self, owner, tickLower, tickUpper)
+    assert positionInfo != PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
+
+
 ### @notice Credits accumulated fees to a user's position
 ### @param self The individual position to update
 ### @param liquidityDelta The change in pool liquidity as a result of the position update
@@ -52,7 +57,8 @@ def update(
     checkUInt256(feeGrowthInside1X128)
 
     if liquidityDelta == 0:
-        assert self.liquidity > 0, "NP"  ## disallow pokes for 0 liquidity positions
+        # Removed because a check is added for burn 0 uninitialized position
+        # assert self.liquidity > 0, "NP"  ## disallow pokes for 0 liquidity positions
         liquidityNext = self.liquidity
     else:
         liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)

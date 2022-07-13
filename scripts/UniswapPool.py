@@ -307,14 +307,13 @@ class UniswapPool(Account):
     def _collect(
         self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested
     ):
+        # Add this check to prevent creating a new position if the position doesn't exist or it's empty
+        Position.assertPositionExists(self.positions, recipient, tickLower, tickUpper)
+
         ## we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
         ## Hardcoded recipient == msg.sender.
         position = Position.get(self.positions, recipient, tickLower, tickUpper)
 
-        # Added this check to prevent creating a new position if the position doesn't exist or it's empty
-        assert position != Position.PositionInfo(
-            0, 0, 0, 0, 0
-        ), "Position doesn't exist"
         amount0 = (
             position.tokensOwed0
             if (amount0Requested > position.tokensOwed0)
@@ -346,6 +345,10 @@ class UniswapPool(Account):
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
     def _burn(self, recipient, tickLower, tickUpper, amount):
+
+        # Add check if the position exists - when poking an uninitialized position it can be that
+        # getFeeGrowthInside finds a non-initialized tick before Position.update reverts.
+        Position.assertPositionExists(self.positions, recipient, tickLower, tickUpper)
 
         # Added extra recipient input variable to mimic msg.sender
         (position, amount0Int, amount1Int) = self._modifyPosition(
@@ -406,12 +409,11 @@ class UniswapPool(Account):
             0,
             cache.liquidityStart,
         )
-        print("Start Swap")
+
         while (
             state.amountSpecifiedRemaining != 0
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
-            print("SWAP LOOP")
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
