@@ -238,24 +238,24 @@ def pool10():
     )
 
 
-# This pool with such low starting price ends up with a bigger than normal rounding
-# error when comparing numbers e-39 in poolPriceAfter. But this should be alright.
-# @pytest.fixture
-# def pool11():
-#     return PoolTestCase(
-#         description="close to min price",
-#         feeAmount=FeeAmount.MEDIUM,
-#         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-#         startingPrice=encodePriceSqrt(1, 2**127),
-#         positions=[
-#             Position(
-#                 tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 liquidity=expandTo18Decimals(2),
-#             )
-#         ],
-#         swapTests=None,
-#     )
+# This pool with such low starting price (or someething else) ends up with a bigger 
+# than normal rounding error when comparing amount0before (and possibly others)
+@pytest.fixture
+def pool11():
+    return PoolTestCase(
+        description="close to min price",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 2**127),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        swapTests=None,
+    )
 
 
 @pytest.fixture

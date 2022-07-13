@@ -12,7 +12,7 @@ import decimal
 
 # Doing only one pool now to debug
 # @pytest.fixture(params=[0, 1])
-@pytest.fixture(params=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14])
+@pytest.fixture(params=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 def TEST_POOLS(request, accounts):
     poolFixture = request.getfixturevalue("pool{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -61,7 +61,7 @@ def test_testing(TEST_POOLS, accounts):
         dict = swapsSnapshot[snapshotIndex + 1]
 
         try:
-            recipient, amount0, amount1, sqrtPriceX96, liquidity, tick = executeSwap(
+            recipient, amount0, amount1, _, _, _ = executeSwap(
                 poolInstance, testCase, recipient
             )
         except AssertionError as msg:
