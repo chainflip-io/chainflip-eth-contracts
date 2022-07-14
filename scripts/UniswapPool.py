@@ -6,7 +6,6 @@ sys.path.append(path.abspath("scripts"))
 import Tick
 import TickMath
 import SwapMath
-import FixedPoint128
 import LiquidityMath
 import Position
 import SqrtPriceMath
@@ -461,7 +460,7 @@ class UniswapPool(Account):
             ## update global fee tracker
             if state.liquidity > 0:
                 state.feeGrowthGlobalX128 += mulDiv(
-                    step.feeAmount, FixedPoint128.Q128, state.liquidity
+                    step.feeAmount, FixedPoint128_Q128, state.liquidity
                 )
                 # Addition can overflow in Solidity - mimic it
                 state.feeGrowthGlobalX128 = toUint256(state.feeGrowthGlobalX128)

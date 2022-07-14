@@ -1,5 +1,4 @@
 import LiquidityMath
-import FixedPoint128
 from utilities import *
 from dataclasses import dataclass
 
@@ -67,12 +66,12 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
     tokensOwed0 = mulDiv(
         toUint256(feeGrowthInside0X128 - self.feeGrowthInside0LastX128),
         self.liquidity,
-        FixedPoint128.Q128,
+        FixedPoint128_Q128,
     )
     tokensOwed1 = mulDiv(
         toUint256(feeGrowthInside1X128 - self.feeGrowthInside1LastX128),
         self.liquidity,
-        FixedPoint128.Q128,
+        FixedPoint128_Q128,
     )
 
     # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself

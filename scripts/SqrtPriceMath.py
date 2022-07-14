@@ -1,4 +1,3 @@
-import FixedPoint96
 import SafeMath
 import math
 
@@ -24,7 +23,7 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
     ## we short circuit amount == 0 because the result is otherwise not guaranteed to equal the input price
     if amount == 0:
         return sqrtPX96
-    numerator1 = liquidity << FixedPoint96.RESOLUTION
+    numerator1 = liquidity << FixedPoint96_RESOLUTION
 
     if add:
         product = amount * sqrtPX96
@@ -71,9 +70,9 @@ def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
     ## in both cases, avoid a mulDiv for most inputs
     if add:
         quotient = (
-            (amount << FixedPoint96.RESOLUTION) // liquidity
+            (amount << FixedPoint96_RESOLUTION) // liquidity
             if amount <= MAX_UINT160
-            else mulDiv(amount, FixedPoint96.Q96, liquidity)
+            else mulDiv(amount, FixedPoint96_Q96, liquidity)
         )
 
         result = sqrtPX96 + quotient
@@ -82,9 +81,9 @@ def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
         return result
     else:
         quotient = (
-            divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+            divRoundingUp(amount << FixedPoint96_RESOLUTION, liquidity)
             if amount <= MAX_UINT160
-            else mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
+            else mulDivRoundingUp(amount, FixedPoint96_Q96, liquidity)
         )
 
         assert sqrtPX96 > quotient
@@ -157,7 +156,7 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
-    numerator1 = liquidity << FixedPoint96.RESOLUTION
+    numerator1 = liquidity << FixedPoint96_RESOLUTION
     numerator2 = sqrtRatioBX96 - sqrtRatioAX96
     assert numerator2 >= 0
 
@@ -185,10 +184,10 @@ def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 
     if roundUp:
         return mulDivRoundingUp(
-            liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96.Q96
+            liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96_Q96
         )
     else:
-        return mulDiv(liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96.Q96)
+        return mulDiv(liquidity, (sqrtRatioBX96 - sqrtRatioAX96), FixedPoint96_Q96)
 
 
 ### @notice Helper that gets signed token0 delta
