@@ -11,6 +11,7 @@ MAX_TICK = -MIN_TICK
 ### @return sqrtPriceX96 A Fixed point Q64.96 number representing the sqrt of the ratio of the two assets (token1/token0)
 ### at the given tick
 def getSqrtRatioAtTick(tick):
+    checkInt24(tick)
     absTick = abs(tick)
     assert absTick <= MAX_TICK, "T"
 
@@ -79,6 +80,7 @@ def getSqrtRatioAtTick(tick):
 ### @param sqrtPriceX96 The sqrt ratio for which to compute the tick as a Q64.96
 ### @return tick The greatest tick for which the ratio is less than or equal to the input ratio
 def getTickAtSqrtRatio(sqrtPriceX96):
+    checkUInt160(sqrtPriceX96)
     ## second inequality must be < because the price can never reach the price at the max tick
     assert sqrtPriceX96 >= MIN_SQRT_RATIO and sqrtPriceX96 < MAX_SQRT_RATIO, "R"
     ratio = sqrtPriceX96 << 32

@@ -13,6 +13,7 @@ from utilities import *
 ###     e.g., a tickSpacing of 3 requires ticks to be initialized every 3rd tick i.e., ..., -6, -3, 0, 3, 6, ...
 ### @return The max liquidity per tick
 def tickSpacingToMaxLiquidityPerTick(tickSpacing):
+    checkInt24(tickSpacing)
     minTick = math.ceil(TickMath.MIN_TICK / tickSpacing) * tickSpacing
     maxTick = math.floor(TickMath.MAX_TICK / tickSpacing) * tickSpacing
     assert abs(maxTick) >= abs(minTick)  # Health check
@@ -33,6 +34,12 @@ def tickSpacingToMaxLiquidityPerTick(tickSpacing):
 def getFeeGrowthInside(
     self, tickLower, tickUpper, tickCurrent, feeGrowthGlobal0X128, feeGrowthGlobal1X128
 ):
+    checkInputTypes(
+        dict=self,
+        int24=(tickLower, tickUpper, tickCurrent),
+        uint256=(feeGrowthGlobal0X128, feeGrowthGlobal1X128),
+    )
+
     # Assumption that the key (tick) exists
     lower = self[tickLower]
     upper = self[tickUpper]
@@ -84,6 +91,14 @@ def update(
     upper,
     maxLiquidity,
 ):
+    checkInputTypes(
+        dict=self,
+        int24=(tick, tickCurrent),
+        int128=liquidityDelta,
+        uint256=(feeGrowthGlobal0X128, feeGrowthGlobal1X128),
+        bool=upper,
+        uint128=maxLiquidity,
+    )
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):
         assert liquidityDelta > 0, "Avoid creating empty tick"
@@ -122,6 +137,7 @@ def update(
 ### @param self The mapping containing all initialized tick information for initialized ticks
 ### @param tick The tick that will be cleared
 def clear(self, tick):
+    checkInputTypes(dict=self, int24=tick)
     # Assumption that the key (tick) exists (it should)
     del self[tick]
 
@@ -140,6 +156,11 @@ def cross(
     feeGrowthGlobal0X128,
     feeGrowthGlobal1X128,
 ):
+    checkInputTypes(
+        dict=tickBitmap,
+        int24=tick,
+        uint256=(feeGrowthGlobal0X128, feeGrowthGlobal1X128),
+    )
     ## TickBitMap is passed by reference so all changes will be applied to the original dict
     ## TickBitMap = dict(uint256 tick => TickInfo)
     info = tickBitmap[tick]

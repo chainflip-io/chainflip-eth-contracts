@@ -157,53 +157,58 @@ def checkUInt160(number):
 def checkUInt256(number):
     assert number >= 0 and number <= MAX_UINT256, "OF or UF of UINT256"
 
+
 def checkUInt8(number):
     assert number >= 0 and number <= MAX_UINT8, "OF or UF of UINT8"
+
 
 def checkInt24(number):
     assert number >= MIN_INT24 and number <= MAX_INT24, "OF or UF of INT24"
 
+
 def checkString(input):
     assert type(input) == str
 
+
+def checkDict(input):
+    assert type(input) == dict
+
+
+# TODO: Fix this since it is a recursive import
 def checkAccount(recipient):
     assert True
-    #assert isinstance(recipient, Account)
+    # assert isinstance(recipient, Account)
+
+
+# Mimic overflows in Solidity
+def toUint256(number):
+    try:
+        checkUInt256(number)
+    except:
+        number = number & (2**128 - 1)
+        checkUInt256(number)
+    return number
+
 
 # General checkInput function for all functions that take input parameters
 def checkInputTypes(**kwargs):
-    # emptyTuple = ()
-    # # Each input should be a tuple
-    # strings = kwargs.get('string', emptyTuple)
-    # accounts = kwargs.get('accounts', emptyTuple)
-    # int24s = kwargs.get('int24', emptyTuple) 
-    # uint256s = kwargs.get('uint256', emptyTuple) 
-    # uint160s = kwargs.get('uint160', emptyTuple) 
-    # uint128s = kwargs.get('uint128', emptyTuple)
-    # uint8s = kwargs.get('uint8', emptyTuple)
+    if "string" in kwargs:
+        loopChecking(kwargs.get("string"), checkString)
+    if "accounts" in kwargs:
+        loopChecking(kwargs.get("accounts"), checkAccount)
+    if "int24" in kwargs:
+        loopChecking(kwargs.get("int24"), checkInt24)
+    if "uint256" in kwargs:
+        loopChecking(kwargs.get("uint256"), checkUInt256)
+    if "uint160" in kwargs:
+        loopChecking(kwargs.get("uint160"), checkUInt160)
+    if "uint128" in kwargs:
+        loopChecking(kwargs.get("uint128"), checkUInt128)
+    if "uint8" in kwargs:
+        loopChecking(kwargs.get("uint8"), checkUInt8)
+    if "dict" in kwargs:
+        checkDict(kwargs.get("dict"))
 
-    if 'string' in kwargs:
-        loopChecking(kwargs.get('string'), checkString)
-    if 'accounts' in kwargs:
-        loopChecking(kwargs.get('accounts'), checkAccount)
-    if 'int24' in kwargs:
-        loopChecking(kwargs.get('int24'), checkInt24)
-    if 'uint256' in kwargs:
-        loopChecking(kwargs.get('uint256'), checkUInt256)
-    if 'uint160' in kwargs:
-        loopChecking(kwargs.get('uint160'), checkUInt160)
-    if 'uint128' in kwargs:
-        loopChecking(kwargs.get('uint128'), checkUInt128)
-    if 'uint8' in kwargs:
-        loopChecking(kwargs.get('uint8'), checkUInt8)
-
-    # loopChecking(strings, checkString)
-    # loopChecking(accounts, checkAccount)
-    # loopChecking(int24s, checkInt24)
-    # loopChecking(uint256s, checkUInt256)
-    # loopChecking(uint160s, checkUInt160)
-    # loopChecking(uint128s, checkUInt128)
-    # loopChecking(uint8s, checkUInt8)
 
 def loopChecking(tuple, fcn):
     try:

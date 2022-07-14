@@ -20,6 +20,12 @@ ONE_IN_PIPS = 1000000
 def computeSwapStep(
     sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, amountRemaining, feePips
 ):
+    checkInputTypes(
+        uint160=(sqrtRatioCurrentX96, sqrtRatioTargetX96),
+        uint128=liquidity,
+        int256=amountRemaining,
+        uint24=feePips,
+    )
 
     zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96
 

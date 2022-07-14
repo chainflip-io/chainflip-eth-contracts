@@ -1,4 +1,5 @@
 import TickMath
+from scripts.utilities import checkInputTypes
 
 ### @title Overflow and underflow math operations.
 ### @notice Contains methods for doing math operations that revert on overflow or underflow for minimal gas cost.Mimic solidity overflow and underflow check as in some cases the check is a safeguard.
@@ -8,9 +9,9 @@ import TickMath
 ### @param y The addend
 ### @return z The sum of x and y
 def add(x, y):
+    checkInputTypes(uint256=(x, y))
     z = x + y
-    # Swapping order due to python stupidity (z<=TickMath.MAX_UINT256 returns False)
-    assert z - TickMath.MAX_UINT256 <= 0
+    assert z <= TickMath.MAX_UINT256
     return z
 
 
@@ -19,6 +20,7 @@ def add(x, y):
 ### @param y The subtrahend
 ### @return z The difference of x and y
 def sub(x, y):
+    checkInputTypes(uint256=(x, y))
     z = x - y
     assert z >= 0
     return z
@@ -29,6 +31,7 @@ def sub(x, y):
 ### @param y The multiplier
 ### @return z The product of x and y
 def mul(x, y):
+    checkInputTypes(uint256=(x, y))
     z = x * y
     assert z <= TickMath.MAX_UINT256
     return z
@@ -39,6 +42,7 @@ def mul(x, y):
 ### @param y The addend
 ### @return z The sum of x and y
 def addInts(x, y):
+    checkInputTypes(int256=(x, y))
     z = x + y
     assert z >= TickMath.MIN_INT256 and z <= TickMath.MAX_UINT256
     return z
@@ -49,6 +53,7 @@ def addInts(x, y):
 ### @param y The subtrahend
 ### @return z The difference of x and y
 def subInts(x, y):
+    checkInputTypes(int256=(x, y))
     z = x - y
     assert z >= TickMath.MIN_INT256 and z <= TickMath.MAX_UINT256
     return z

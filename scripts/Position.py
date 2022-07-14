@@ -27,6 +27,8 @@ class PositionInfo:
 ### @param tickUpper The upper tick boundary of the position
 ### @return position The position info struct of the given owners' position
 def get(self, owner, tickLower, tickUpper):
+    checkInputTypes(account=owner, int24=(tickLower, tickLower))
+
     # Need to handle non-existing positions in Python
     key = hash((owner, tickLower, tickUpper))
     if not self.__contains__(key):
@@ -39,6 +41,7 @@ def get(self, owner, tickLower, tickUpper):
 
 
 def assertPositionExists(self, owner, tickLower, tickUpper):
+    checkInputTypes(account=owner, int24=(tickLower, tickLower))
     positionInfo = get(self, owner, tickLower, tickUpper)
     assert positionInfo != PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
 
@@ -48,13 +51,10 @@ def assertPositionExists(self, owner, tickLower, tickUpper):
 ### @param liquidityDelta The change in pool liquidity as a result of the position update
 ### @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
 ### @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
-def update(
-    self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128
-):  # PositionInfo
-    # Health Check
-    checkInt128(liquidityDelta)
-    checkUInt256(feeGrowthInside0X128)
-    checkUInt256(feeGrowthInside1X128)
+def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
+    checkInputTypes(
+        int128=(liquidityDelta), uin256=(feeGrowthInside0X128, feeGrowthInside1X128)
+    )
 
     if liquidityDelta == 0:
         # Removed because a check is added for burn 0 uninitialized position
@@ -63,14 +63,14 @@ def update(
     else:
         liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)
 
-    ## calculate accumulated fees
+    ## calculate accumulated fees. Add toUint256 because there can be an underflow
     tokensOwed0 = mulDiv(
-        feeGrowthInside0X128 - self.feeGrowthInside0LastX128,
+        toUint256(feeGrowthInside0X128 - self.feeGrowthInside0LastX128),
         self.liquidity,
         FixedPoint128.Q128,
     )
     tokensOwed1 = mulDiv(
-        feeGrowthInside1X128 - self.feeGrowthInside1LastX128,
+        toUint256(feeGrowthInside1X128 - self.feeGrowthInside1LastX128),
         self.liquidity,
         FixedPoint128.Q128,
     )
@@ -92,7 +92,7 @@ def update(
     self.feeGrowthInside1LastX128 = feeGrowthInside1X128
 
     if tokensOwed0 > 0 or tokensOwed1 > 0:
-        # TODO: Do we want to allow this overflow to happen?
-        ## overflow is acceptable, have to withdraw before you hit type(uint128).max fees
+        # TODO: Do we want to allow this overflow to happen - for now we allow it.
+        ## In uniswap: overflow is acceptable, have to withdraw before you hit type(uint128).max fees
         self.tokensOwed0 += tokensOwed0
         self.tokensOwed1 += tokensOwed1

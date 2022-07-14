@@ -2,7 +2,7 @@ import FixedPoint96
 import SafeMath
 import math
 
-from scripts.TickMath import *
+from TickMath import *
 
 
 ### @title defs based on Q64.96 sqrt price and liquidity
@@ -20,6 +20,7 @@ from scripts.TickMath import *
 ### @param add Whether to add or remove the amount of token0
 ### @return The price after adding or removing amount, depending on add
 def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
+    checkInputTypes(uint160=sqrtPX96, uint128=liquidity, uint256=amount, bool=add)
     ## we short circuit amount == 0 because the result is otherwise not guaranteed to equal the input price
     if amount == 0:
         return sqrtPX96
@@ -38,7 +39,6 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
                 # result = math.ceil((numerator1 * sqrtPX96) / denominator)
                 checkUInt160(result)
                 return result
-
         result = math.ceil(numerator1 / SafeMath.add((numerator1 // sqrtPX96), amount))
         # Adding assert to detect wrong behaviour
         assert result <= MAX_UINT160, "Overflow when casting to UINT160"
@@ -66,6 +66,7 @@ def getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add):
 ### @param add Whether to add, or remove, the amount of token1
 ### @return The price after adding or removing `amount`
 def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
+    checkInputTypes(uint160=sqrtPX96, uint128=liquidity, uint256=amount, bool=add)
     ## if we're adding (subtracting), rounding down requires rounding the quotient down (up)
     ## in both cases, avoid a mulDiv for most inputs
     if add:
@@ -102,6 +103,9 @@ def getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add):
 ### @param zeroForOne Whether the amount in is token0 or token1
 ### @return sqrtQX96 The price after adding the input amount to token0 or token1
 def getNextSqrtPriceFromInput(sqrtPX96, liquidity, amountIn, zeroForOne):
+    checkInputTypes(
+        uint160=sqrtPX96, uint128=liquidity, uint256=amountIn, bool=zeroForOne
+    )
     assert sqrtPX96 > 0
     assert liquidity > 0
 
@@ -123,6 +127,9 @@ def getNextSqrtPriceFromInput(sqrtPX96, liquidity, amountIn, zeroForOne):
 ### @param zeroForOne Whether the amount out is token0 or token1
 ### @return sqrtQX96 The price after removing the output amount of token0 or token1
 def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
+    checkInputTypes(
+        uint160=sqrtPX96, uint128=liquidity, uint256=amountOut, bool=zeroForOne
+    )
     assert sqrtPX96 > 0
     assert liquidity > 0
 
@@ -144,6 +151,9 @@ def getNextSqrtPriceFromOutput(sqrtPX96, liquidity, amountOut, zeroForOne):
 ### @param liquidity The amount of usable liquidity
 ### @return amount0 Amount of token0 required to cover a position of size liquidity between the two passed prices
 def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
+    checkInputTypes(
+        uint160=(sqrtRatioAX96, sqrtRatioBX96), uint128=liquidity, bool=roundUp
+    )
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
@@ -167,6 +177,9 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 ### @param liquidity The amount of usable liquidity
 ### @return amount1 Amount of token1 required to cover a position of size liquidity between the two passed prices
 def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
+    checkInputTypes(
+        uint160=(sqrtRatioAX96, sqrtRatioBX96), uint128=liquidity, bool=roundUp
+    )
     if sqrtRatioAX96 > sqrtRatioBX96:
         (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96)
 
@@ -184,6 +197,7 @@ def getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
 ### @param liquidity The change in liquidity for which to compute the amount0 delta
 ### @return amount0 Amount of token0 corresponding to the passed liquidityDelta between the two prices
 def getAmount0DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
+    checkInputTypes(uint160=(sqrtRatioAX96, sqrtRatioBX96), int128=liquidity)
     if liquidity < 0:
         return -getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), False)
     else:
@@ -196,6 +210,7 @@ def getAmount0DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
 ### @param liquidity The change in liquidity for which to compute the amount1 delta
 ### @return amount1 Amount of token1 corresponding to the passed liquidityDelta between the two prices
 def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
+    checkInputTypes(uint160=(sqrtRatioAX96, sqrtRatioBX96), int128=liquidity)
     if liquidity < 0:
         return -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), False)
     else:

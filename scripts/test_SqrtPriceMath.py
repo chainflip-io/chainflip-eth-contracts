@@ -84,7 +84,7 @@ def test_fromInput_zeroAmount_notZeroForOne():
     print("returns the minimum price for max inputs")
     sqrtP = 2**160 - 1
     liquidity = TickMath.MAX_UINT128
-    maxAmountNoOverflow = TickMath.MAX_UINT256 - ((liquidity << 96) / sqrtP)
+    maxAmountNoOverflow = TickMath.MAX_UINT256 - ((liquidity << 96) // sqrtP)
     assert 1 == SqrtPriceMath.getNextSqrtPriceFromInput(
         sqrtP, liquidity, maxAmountNoOverflow, True
     )

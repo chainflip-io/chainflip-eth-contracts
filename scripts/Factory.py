@@ -11,6 +11,7 @@ class Factory:
     ## @param fee The fee amount to enable, denominated in hundredths of a bip (i.e. 1e-6)
     ## @param tickSpacing The spacing between ticks to be enforced for all pools created with the given fee amount
     def createPool(self, tokenA, tokenB, fee):
+        checkInputTypes(string=(tokenA, tokenB), uint24=(fee))
         assert tokenA != tokenB
 
         (token0, token1) = (tokenA, tokenB) if tokenA < tokenB else (tokenB, tokenA)
@@ -29,6 +30,7 @@ class Factory:
         return pool
 
     def enableFeeAmount(self, fee, tickSpacing):
+        checkInputTypes(uint24=(fee), int24=(tickSpacing))
         assert fee < 1000000
         ## tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
         ## TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick

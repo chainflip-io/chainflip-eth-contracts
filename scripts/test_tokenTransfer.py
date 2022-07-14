@@ -20,8 +20,12 @@ def test_tokenTransfer():
     assert account1.balances[TEST_TOKENS[1]] == 100
 
     # Negative Amount
-    tryExceptHandler(account0.transferToken, "OF or UF of UINT256", account1, TEST_TOKENS[0], -25)
-    tryExceptHandler(account0.transferToken, "OF or UF of UINT256", account1, TEST_TOKENS[1], -25)
+    tryExceptHandler(
+        account0.transferToken, "OF or UF of UINT256", account1, TEST_TOKENS[0], -25
+    )
+    tryExceptHandler(
+        account0.transferToken, "OF or UF of UINT256", account1, TEST_TOKENS[1], -25
+    )
 
     # Insufficient Balance
     tryExceptHandler(

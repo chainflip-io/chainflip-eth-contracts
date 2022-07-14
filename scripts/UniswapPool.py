@@ -11,7 +11,6 @@ import LiquidityMath
 import Position
 import SqrtPriceMath
 import SafeMath
-import copy
 from utilities import *
 
 from Account import Account
@@ -95,7 +94,7 @@ class UniswapPool(Account):
 
     # Constructor
     def __init__(self, token0, token1, fee, tickSpacing):
-        checkInputTypes(string=(token0,token1), uint24=(fee) , int24=(tickSpacing))
+        checkInputTypes(string=(token0, token1), uint24=(fee), int24=(tickSpacing))
         # Contract storage variables
         super().__init__("UniswapPool", [token0, token1], [0, 0])
         self.token0 = token0
@@ -143,7 +142,11 @@ class UniswapPool(Account):
     ## @return amount0 the amount of token0 owed to the pool, negative if the pool should pay the recipient
     ## @return amount1 the amount of token1 owed to the pool, negative if the pool should pay the recipient
     def _modifyPosition(self, params):
-        checkInputTypes(accounts=(params.owner),int24=(params.tickLower, params.tickUpper),int128=(params.liquidityDelta))
+        checkInputTypes(
+            accounts=(params.owner),
+            int24=(params.tickLower, params.tickUpper),
+            int128=(params.liquidityDelta),
+        )
         UniswapPool.checkTicks(params.tickLower, params.tickUpper)
 
         # Initialize values
@@ -199,7 +202,11 @@ class UniswapPool(Account):
     ### @param tickUpper the upper tick of the position's tick range
     ### @param tick the current tick, passed to avoid sloads
     def _updatePosition(self, owner, tickLower, tickUpper, liquidityDelta, tick):
-        checkInputTypes(accounts=(owner),int24=(tickLower, tickUpper, tick),int128=(liquidityDelta))
+        checkInputTypes(
+            accounts=(owner),
+            int24=(tickLower, tickUpper, tick),
+            int128=(liquidityDelta),
+        )
         # This will create a position if it doesn't exist
         position = Position.get(self.positions, owner, tickLower, tickUpper)
 
@@ -258,7 +265,9 @@ class UniswapPool(Account):
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
     def mint(self, recipient, tickLower, tickUpper, amount):
-        checkInputTypes(accounts=(recipient),int24=(tickLower, tickUpper),uint128=(amount))
+        checkInputTypes(
+            accounts=(recipient), int24=(tickLower, tickUpper), uint128=(amount)
+        )
         assert amount > 0
 
         (_, amount0Int, amount1Int) = self._modifyPosition(
@@ -292,7 +301,11 @@ class UniswapPool(Account):
     def collect(
         self, recipient, tickLower, tickUpper, amount0Requested, amount1Requested
     ):
-        checkInputTypes(accounts=(recipient),int24=(tickLower, tickUpper),uint128=(amount0Requested, amount1Requested))
+        checkInputTypes(
+            accounts=(recipient),
+            int24=(tickLower, tickUpper),
+            uint128=(amount0Requested, amount1Requested),
+        )
         # Add this check to prevent creating a new position if the position doesn't exist or it's empty
         Position.assertPositionExists(self.positions, recipient, tickLower, tickUpper)
 
@@ -323,7 +336,9 @@ class UniswapPool(Account):
     ### @inheritdoc IUniswapV3PoolActions
     ### @dev noDelegateCall is applied indirectly via _modifyPosition
     def burn(self, recipient, tickLower, tickUpper, amount):
-        checkInputTypes(accounts=(recipient),int24=(tickLower, tickUpper),uint128=(amount))
+        checkInputTypes(
+            accounts=(recipient), int24=(tickLower, tickUpper), uint128=(amount)
+        )
 
         # Add check if the position exists - when poking an uninitialized position it can be that
         # getFeeGrowthInside finds a non-initialized tick before Position.update reverts.
@@ -346,7 +361,12 @@ class UniswapPool(Account):
 
     ### @inheritdoc IUniswapV3PoolActions
     def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
-        checkInputTypes(accounts=(recipient),bool=(zeroForOne),int256=(amountSpecified),uint160=(sqrtPriceLimitX96))
+        checkInputTypes(
+            accounts=(recipient),
+            bool=(zeroForOne),
+            int256=(amountSpecified),
+            uint160=(sqrtPriceLimitX96),
+        )
         assert amountSpecified != 0, "AS"
 
         slot0Start = self.slot0
@@ -443,6 +463,8 @@ class UniswapPool(Account):
                 state.feeGrowthGlobalX128 += mulDiv(
                     step.feeAmount, FixedPoint128.Q128, state.liquidity
                 )
+                # Addition can overflow in Solidity - mimic it
+                state.feeGrowthGlobalX128 = toUint256(state.feeGrowthGlobalX128)
 
             ## shift tick if we reached the next price
             if state.sqrtPriceX96 == step.sqrtPriceNextX96:
@@ -540,12 +562,14 @@ class UniswapPool(Account):
         feeProtocolOld = self.slot0.feeProtocol
         feeProtocolNew = feeProtocol0 + (feeProtocol1 << 4)
         # Health check
-        assert feeProtocolNew >= 0 and feeProtocolNew <= MAX_UINT8
+        checkUInt8(feeProtocolNew)
         self.slot0.feeProtocol = feeProtocolNew
         return (feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1)
 
     def collectProtocol(self, recipient, amount0Requested, amount1Requested):
-        checkInputTypes(accounts=(recipient),uint128=(amount0Requested, amount1Requested))
+        checkInputTypes(
+            accounts=(recipient), uint128=(amount0Requested, amount1Requested)
+        )
         amount0 = (
             self.protocolFees.token0
             if amount0Requested > self.protocolFees.token0
