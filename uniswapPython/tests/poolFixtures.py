@@ -1,9 +1,10 @@
+import sys, os
+
 from utilities import *
 
-# from UniswapPool import *
-# from Factory import *
-
 import pytest
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
 import Position
 
 

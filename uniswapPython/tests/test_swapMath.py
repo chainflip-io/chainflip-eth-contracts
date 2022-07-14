@@ -1,10 +1,8 @@
-import sys
-from os import path
+import sys, os
 
-import math
-
-sys.path.append(path.abspath("scripts"))
 from utilities import *
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
 import SwapMath
 import SqrtPriceMath
 

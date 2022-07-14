@@ -1,4 +1,8 @@
+import sys,os
+
 from UniswapPool import *
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'tests'))
 from utilities import *
 
 

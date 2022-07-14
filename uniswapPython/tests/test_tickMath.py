@@ -1,11 +1,10 @@
-import sys
-from os import path
+import sys,os
 
 import math
 
-sys.path.append(path.abspath("scripts"))
 from utilities import *
-import SwapMath as swapMath
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
 import TickMath
 from TickMath import *
 

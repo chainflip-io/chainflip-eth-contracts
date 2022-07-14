@@ -1,10 +1,13 @@
-from utilities import *
-from UniswapPool import *
-from Factory import *
-from poolFixtures import *
+import sys,os
 
+from utilities import *
+from poolFixtures import *
 from test_uniswapPool import accounts
 from UniswapV3PoolSwaps import swapsSnapshot
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
+from UniswapPool import *
+from Factory import *
 
 import pytest
 import copy

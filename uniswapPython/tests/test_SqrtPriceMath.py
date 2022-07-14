@@ -1,10 +1,10 @@
-import sys
-from os import path
+import sys, os
 
-sys.path.append(path.abspath("scripts"))
+from utilities import *
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
 import TickMath
 import SqrtPriceMath
-from utilities import *
 
 # Division in solidity and in python (and js) retrun slightly different values when dividing. E.g. mulDivRoundingUp => a*b/c will return
 # different values. Also, we have removed some of the rounding in the contracts, which

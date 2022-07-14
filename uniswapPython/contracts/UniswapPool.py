@@ -1,8 +1,5 @@
-import sys
-from os import path
+import sys,os
 
-
-sys.path.append(path.abspath("scripts"))
 import Tick
 import TickMath
 import SwapMath
@@ -10,6 +7,8 @@ import LiquidityMath
 import Position
 import SqrtPriceMath
 import SafeMath
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'tests'))
 from utilities import *
 
 from Account import Account

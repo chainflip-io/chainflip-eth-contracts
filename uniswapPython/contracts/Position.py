@@ -1,5 +1,10 @@
+import sys,os
+
 import LiquidityMath
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'tests'))
 from utilities import *
+
 from dataclasses import dataclass
 
 ### @title Position

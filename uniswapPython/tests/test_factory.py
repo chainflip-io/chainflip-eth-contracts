@@ -1,8 +1,7 @@
-import sys
-from os import path
+import sys,os
 
-sys.path.append(path.abspath("scripts"))
-from Factory import *
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
+from Factory import Factory
 from utilities import *
 
 TEST_ADDRESSES = [

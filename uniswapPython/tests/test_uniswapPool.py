@@ -1,4 +1,8 @@
+import sys,os
+
 from utilities import *
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
 from UniswapPool import *
 import SwapMath
 import TickMath

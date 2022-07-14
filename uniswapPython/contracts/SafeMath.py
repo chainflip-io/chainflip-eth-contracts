@@ -1,5 +1,9 @@
+import sys,os
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'tests'))
+from utilities import checkInputTypes
+
 import TickMath
-from scripts.utilities import checkInputTypes
 
 ### @title Overflow and underflow math operations.
 ### @notice Contains methods for doing math operations that revert on overflow or underflow for minimal gas cost.Mimic solidity overflow and underflow check as in some cases the check is a safeguard.

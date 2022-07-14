@@ -1,5 +1,7 @@
-from utilities import *
+import sys,os
 
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'tests'))
+from utilities import *
 
 # For now this will only support the tokens that are initialized in the constructor function. Tranfering or receiving
 # other tokens will fail (token not in balances dict).
