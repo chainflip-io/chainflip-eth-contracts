@@ -4,7 +4,7 @@ import SwapMath
 import TickMath
 
 import pytest
-
+import copy
 
 @pytest.fixture
 def accounts():
