@@ -1,6 +1,6 @@
-import sys,os
+import sys, os
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'tests'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "tests"))
 from utilities import checkInputTypes
 
 import TickMath

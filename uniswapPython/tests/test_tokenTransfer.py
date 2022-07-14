@@ -2,8 +2,9 @@ import sys, os
 
 from utilities import *
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
 from Account import Account
+
 
 def test_tokenTransfer():
     account0 = Account("ALICE", TEST_TOKENS, [100, 100])

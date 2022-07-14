@@ -2,7 +2,7 @@ import sys, os
 
 from utilities import *
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
 import TickMath
 import SqrtPriceMath
 

@@ -1,10 +1,10 @@
-import sys,os
+import sys, os
 
 import math
 
 from utilities import *
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
 import TickMath
 from TickMath import *
 

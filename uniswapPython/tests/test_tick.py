@@ -1,12 +1,13 @@
-import sys,os
+import sys, os
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'contracts'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
 from UniswapPool import *
 import Tick
 from utilities import *
 
 
 # tickSpacingToMaxLiquidityPerTick
+
 
 def test_returns_lowFee():
     print("returns the correct value for low fee")

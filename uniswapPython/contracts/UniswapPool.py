@@ -1,4 +1,4 @@
-import sys,os
+import sys, os
 
 import Tick
 import TickMath
@@ -8,7 +8,7 @@ import Position
 import SqrtPriceMath
 import SafeMath
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'tests'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "tests"))
 from utilities import *
 
 from Account import Account
