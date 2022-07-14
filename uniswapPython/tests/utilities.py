@@ -184,7 +184,7 @@ def checkAccount(recipient):
     # assert isinstance(recipient, Account)
 
 
-# Mimic overflows in Solidity
+# Mimic unsafe overflows in Solidity
 def toUint256(number):
     try:
         checkUInt256(number)

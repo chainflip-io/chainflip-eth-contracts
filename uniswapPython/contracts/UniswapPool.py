@@ -272,8 +272,8 @@ class UniswapPool(Account):
             ModifyPositionParams(recipient, tickLower, tickUpper, amount)
         )
 
-        amount0 = amount0Int
-        amount1 = amount1Int
+        amount0 = toUint256(abs(amount0Int))
+        amount1 = toUint256(abs(amount1Int))
 
         if amount0 > 0:
             balance0Before = self.balances[self.token0]
