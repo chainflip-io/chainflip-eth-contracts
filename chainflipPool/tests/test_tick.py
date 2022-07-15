@@ -1,7 +1,7 @@
 import sys, os
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
-from UniswapPool import *
+from ChainflipPool import *
 import Tick
 from utilities import *
 

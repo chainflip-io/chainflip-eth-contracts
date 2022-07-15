@@ -6,7 +6,7 @@ from test_uniswapPool import accounts
 from UniswapV3PoolSwaps import swapsSnapshot
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
-from UniswapPool import *
+from ChainflipPool import *
 from Factory import *
 
 import pytest
@@ -19,7 +19,7 @@ def TEST_POOLS(request, accounts):
     poolFixture = request.getfixturevalue("pool{}".format(request.param))
     feeAmount = poolFixture.feeAmount
     tickSpacing = poolFixture.tickSpacing
-    pool = UniswapPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
+    pool = ChainflipPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
     pool.initialize(poolFixture.startingPrice)
     for position in poolFixture.positions:
         pool.mint(

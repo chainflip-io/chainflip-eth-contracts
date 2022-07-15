@@ -214,87 +214,96 @@ class ChainflipPool(UniswapPool):
 
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
+            
+            
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
             (step.tickNext, step.initialized) = UniswapPool.nextTick(self.ticksLinear, state.tick, zeroForOne)
-            # Do we use the same math as in the linear pool? (aka range orders?)
-            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
-
-            ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted
-            if zeroForOne:
-                sqrtRatioTargetX96 = (
-                    sqrtPriceLimitX96
-                    if step.sqrtPriceNextX96 < sqrtPriceLimitX96
-                    else step.sqrtPriceNextX96
-                )
-                linearLiquidity = self.ticksLinear[state.tick].liquidityRangeGrossToken0
-            else:
-                sqrtRatioTargetX96 = (
-                    sqrtPriceLimitX96
-                    if step.sqrtPriceNextX96 > sqrtPriceLimitX96
-                    else step.sqrtPriceNextX96
-                )
-                linearLiquidity = self.ticksLinear[state.tick].liquidityRangeGrossToken1
             
-            (
-                state.sqrtPriceX96,
-                step.amountIn,
-                step.amountOut,
-                step.feeAmount,
-            ) = SwapMath.computeSwapStep(
-                state.sqrtPriceX96,
-                sqrtRatioTargetX96,
-                linearLiquidity,
-                state.amountSpecifiedRemaining,
-                self.fee,
-            )
-
-            if exactInput:
-                state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
-                state.amountCalculated = SafeMath.subInts(
-                    state.amountCalculated, step.amountOut
-                )
+            if step.initialized == False:
+                # We are in the TICK MIN or TICK MAX, so we can't execute any limit orders
+                step = StepComputations(0, 0, 0, 0, 0, 0, 0)
+                step.sqrtPriceStartX96 = state.sqrtPriceX96
+            
             else:
-                state.amountSpecifiedRemaining += step.amountOut
-                state.amountCalculated = SafeMath.addInts(
-                    state.amountCalculated, step.amountIn + step.feeAmount
-                )
+                # Do we use the same math as in the linear pool? (aka range orders?)
+                step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
 
-
-            ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
-            if cache.feeProtocol > 0:
-                delta = abs(step.feeAmount // cache.feeProtocol)
-                step.feeAmount -= delta
-                state.protocolFee += delta & (2**128 - 1)
-
-
-            ## shift tick if we reached the next price
-            if state.sqrtPriceX96 == step.sqrtPriceNextX96:
-                ## if the tick is initialized, run the tick transition
-                ## @dev: here is where we should handle the case of an uninitialized boundary tick
-                if step.initialized:
-                    Tick.cross(
-                        self.ticks,
-                        step.tickNext,
-                        state.feeGrowthGlobalX128
-                        if zeroForOne
-                        else self.feeGrowthGlobal0X128,
-                        self.feeGrowthGlobal1X128
-                        if zeroForOne
-                        else state.feeGrowthGlobalX128,
+                ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted
+                if zeroForOne:
+                    sqrtRatioTargetX96 = (
+                        sqrtPriceLimitX96
+                        if step.sqrtPriceNextX96 < sqrtPriceLimitX96
+                        else step.sqrtPriceNextX96
                     )
-                    # TODO: Remove all the positions included in this tick. But we can't easily get them
-                    # since they keys are hashes. Store a dictionary with that??
-                    
-                # Do we need to update the tick here?
-                state.tick = (step.tickNext - 1) if zeroForOne else step.tickNext
-            elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
-                ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
-                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
-            
-            
-            # Stop the loop if the swap is completed with limit orders
-            if (state.amountSpecifiedRemaining == 0 or state.sqrtPriceX96 == sqrtPriceLimitX96):
-                break
+                    linearLiquidity = self.ticksLinear[state.tick].liquidityRangeGrossToken0
+                else:
+                    sqrtRatioTargetX96 = (
+                        sqrtPriceLimitX96
+                        if step.sqrtPriceNextX96 > sqrtPriceLimitX96
+                        else step.sqrtPriceNextX96
+                    )
+                    linearLiquidity = self.ticksLinear[state.tick].liquidityRangeGrossToken1
+                
+                (
+                    state.sqrtPriceX96,
+                    step.amountIn,
+                    step.amountOut,
+                    step.feeAmount,
+                ) = SwapMath.computeSwapStep(
+                    state.sqrtPriceX96,
+                    sqrtRatioTargetX96,
+                    linearLiquidity,
+                    state.amountSpecifiedRemaining,
+                    self.fee,
+                )
+
+                if exactInput:
+                    state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
+                    state.amountCalculated = SafeMath.subInts(
+                        state.amountCalculated, step.amountOut
+                    )
+                else:
+                    state.amountSpecifiedRemaining += step.amountOut
+                    state.amountCalculated = SafeMath.addInts(
+                        state.amountCalculated, step.amountIn + step.feeAmount
+                    )
+
+
+                ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+                if cache.feeProtocol > 0:
+                    delta = abs(step.feeAmount // cache.feeProtocol)
+                    step.feeAmount -= delta
+                    state.protocolFee += delta & (2**128 - 1)
+
+
+                ## shift tick if we reached the next price
+                if state.sqrtPriceX96 == step.sqrtPriceNextX96:
+                    ## if the tick is initialized, run the tick transition
+                    ## @dev: here is where we should handle the case of an uninitialized boundary tick
+                    if step.initialized:
+                        Tick.cross(
+                            self.ticks,
+                            step.tickNext,
+                            state.feeGrowthGlobalX128
+                            if zeroForOne
+                            else self.feeGrowthGlobal0X128,
+                            self.feeGrowthGlobal1X128
+                            if zeroForOne
+                            else state.feeGrowthGlobalX128,
+                        )
+                        # TODO: Remove all the positions included in this tick. But we can't easily get them
+                        # since they keys are hashes. Store a dictionary with that??
+                        
+                    # Do we need to update the tick here?
+                    state.tick = (step.tickNext - 1) if zeroForOne else step.tickNext
+                elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
+                    ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
+                    state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
+                
+                
+                # Stop the loop if the swap is completed with limit orders
+                if (state.amountSpecifiedRemaining == 0 or state.sqrtPriceX96 == sqrtPriceLimitX96):
+                    break
 
 
 

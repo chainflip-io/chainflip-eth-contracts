@@ -3,7 +3,7 @@ import sys, os
 from utilities import *
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
-from UniswapPool import *
+from ChainflipPool import *
 import SwapMath
 import TickMath
 
@@ -22,7 +22,7 @@ def accounts():
 
 def createPool(feeAmount, tickSpacing):
     feeAmount = feeAmount
-    pool = UniswapPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
+    pool = ChainflipPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
     minTick = getMinTick(tickSpacing)
     maxTick = getMaxTick(tickSpacing)
     return pool, minTick, maxTick, feeAmount, tickSpacing
@@ -1515,7 +1515,7 @@ def test_notEnoughBalance_token1(initializedPoolSwapBalances, accounts):
     assert accounts[2].balances[TEST_TOKENS[1]] == initialBalanceToken1
 
 
-# Extra tests since there are modifications in the python UniswapPool
+# Extra tests since there are modifications in the python ChainflipPool
 
 # Due to the difference in mappings between the python and the solidity we
 # have added an assertion when positions don't exist (to not create it)
