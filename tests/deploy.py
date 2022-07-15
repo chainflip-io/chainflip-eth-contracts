@@ -70,7 +70,7 @@ def deploy_initial_Chainflip_contracts(
         cf.keyManager,
     )
 
-    cf.stakeManager.setFlip(cf.flip)
+    cf.stakeManager.setFlip(cf.flip.address, { "from": cf.deployer })
 
     return cf
 
