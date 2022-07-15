@@ -189,8 +189,16 @@ def toUint256(number):
     try:
         checkUInt256(number)
     except:
-        number = number & (2**128 - 1)
+        number = number & (2**256 - 1)
         checkUInt256(number)
+    return number
+
+def toUint128(number):
+    try:
+        checkUInt128(number)
+    except:
+        number = number & (2**128 - 1)
+        checkUInt128(number)
     return number
 
 

@@ -19,7 +19,7 @@ class PositionInfo:
     ## fee growth per unit of liquidity as of the last update to liquidity or fees owed
     feeGrowthInside0LastX128: int
     feeGrowthInside1LastX128: int
-    ## the fees owed to the position owner in token0#token1 => uin128
+    ## the fees owed to the position owner in token0#token1 => uint128
     tokensOwed0: int
     tokensOwed1: int
 
