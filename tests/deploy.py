@@ -53,8 +53,12 @@ def deploy_initial_Chainflip_contracts(
 
     cf.genesisStake = int(environment.get("GENESIS_STAKE") or GENESIS_STAKE)
 
-    print(f"Deploying with AGG_KEY: {aggKey}, GOV_KEY: {cf.gov} and COMM_KEY: {cf.communityKey}")
-    print(f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}")
+    print(
+        f"Deploying with AGG_KEY: {aggKey}, GOV_KEY: {cf.gov} and COMM_KEY: {cf.communityKey}"
+    )
+    print(
+        f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
+    )
 
     cf.vault = deployer.deploy(Vault, cf.keyManager)
     cf.stakeManager = deployer.deploy(
@@ -71,7 +75,7 @@ def deploy_initial_Chainflip_contracts(
         cf.keyManager,
     )
 
-    cf.stakeManager.setFlip(cf.flip.address, { "from": cf.deployer })
+    cf.stakeManager.setFlip(cf.flip.address, {"from": cf.deployer})
 
     return cf
 
