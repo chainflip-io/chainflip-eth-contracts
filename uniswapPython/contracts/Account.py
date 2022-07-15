@@ -24,11 +24,26 @@ class Account:
     def transferToken(self, recipient, token, amount):
         checkInputTypes(account=(recipient), string=(token), uint256=(amount))
 
+        balanceSenderBefore = self.balances[token]
+        balanceReceiverBefore = recipient.balances[token]
+
         assert self.balances[token] >= amount, "Insufficient balance"
 
-        self.balances[token] -= amount
+        self.updateBalance(token, -amount)
+
         recipient.receiveToken(token, amount)
+
+        # Transfer health check
+        assert self.balances[token] == balanceSenderBefore - amount
+        assert recipient.balances[token] == balanceReceiverBefore + amount
 
     def receiveToken(self, token, amount):
         checkInputTypes(string=(token), uint256=(amount))
+        self.updateBalance(token, amount)
+
+    def updateBalance(self, token, amount):
+        checkInputTypes(string=(token), int256=(amount))
         self.balances[token] += amount
+
+        # Check potential overflow/underflow that would happen in solidity
+        checkUInt256(self.balances[token])

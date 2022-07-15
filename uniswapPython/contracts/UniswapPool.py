@@ -275,23 +275,9 @@ class UniswapPool(Account):
         amount0 = toUint256(abs(amount0Int))
         amount1 = toUint256(abs(amount1Int))
 
-        if amount0 > 0:
-            balance0Before = self.balances[self.token0]
-        if amount1 > 0:
-            balance1Before = self.balances[self.token1]
-
-        # Transfer tokens
+        # Transfer tokens - including safety checks
         recipient.transferToken(self, self.token0, amount0)
         recipient.transferToken(self, self.token1, amount1)
-
-        if amount0 > 0:
-            assert (
-                SafeMath.add(balance0Before, amount0) <= self.balances[self.token0]
-            ), "M0"
-        if amount1 > 0:
-            assert (
-                SafeMath.add(balance1Before, amount1) <= self.balances[self.token1]
-            ), "M1"
 
         return (amount0, amount1)
 
