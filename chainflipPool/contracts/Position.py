@@ -23,24 +23,16 @@ class PositionInfo:
     tokensOwed0: int
     tokensOwed1: int
 
+@dataclass
 class PositionLinearInfo:
     ## the amount of liquidity owned by this position
     liquidity: int
     ## fee growth per unit of liquidity as of the last update to liquidity or fees owed
-    feeGrowthInside0LastX128: int
-    feeGrowthInside1LastX128: int
+    feeGrowthInsideLastX128: int
     ## the fees owed to the position owner in token0#token1 => uint128
-    tokensOwed0: int
-    tokensOwed1: int
-    isToken0: bool
-    
-# # For now we implement it as a normal PositionInfo in where one of the two sides will be zero
-# @dataclass
-# class PositionInfoLimitOrder:
-#     liquidity: int
-#     isToken0: bool
-#     ## the amount of liquidity owned by this position
-#     feesOwed: int
+    tokensOwed: int
+    #Not strictly necessary since we need to pass a bool (isToken0) to generate the key
+    #isToken0: bool
 
 ### @notice Returns the Info struct of a position, given an owner and position boundaries
 ### @param self The mapping containing all user positions
@@ -71,7 +63,7 @@ def getLinear(self, owner, tickLower, tickUpper, isToken0):
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
-        self[key] = PositionLinearInfo(0, 0, 0, 0, 0, False)
+        self[key] = PositionLinearInfo(0, 0, 0)
     return self[key]
 
 def assertPositionExists(self, owner, tickLower, tickUpper):
@@ -130,3 +122,42 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
         ## In uniswap: overflow is acceptable, have to withdraw before you hit type(uint128).max fees
         self.tokensOwed0 += tokensOwed0
         self.tokensOwed1 += tokensOwed1
+
+def updateLinear(self, liquidityDelta, feeGrowthInsideX128):
+    checkInputTypes(
+        int128=(liquidityDelta), uin256=(feeGrowthInsideX128)
+    )
+
+    if liquidityDelta == 0:
+        # Removed because a check is added for burn 0 uninitialized position
+        # assert self.liquidity > 0, "NP"  ## disallow pokes for 0 liquidity positions
+        liquidityNext = self.liquidity
+    else:
+        liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)
+
+    ## calculate accumulated fees. Add toUint256 because there can be an underflow
+    tokensOwed = mulDiv(
+        toUint256(feeGrowthInsideX128 - self.feeGrowthInsideLastX128),
+        self.liquidity,
+        FixedPoint128_Q128,
+    )
+
+
+    # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
+    # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
+    # acceptable to save gas. TODO: Is this OK for us?
+
+    # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
+    if tokensOwed > MAX_UINT128:
+        tokensOwed = tokensOwed & (2**128 - 1)
+
+
+    ## update the position
+    if liquidityDelta != 0:
+        self.liquidity = liquidityNext
+    self.feeGrowthInsideLastX128 = feeGrowthInsideX128
+
+    if tokensOwed > 0:
+        # TODO: Do we want to allow this overflow to happen - for now we allow it.
+        ## In uniswap: overflow is acceptable, have to withdraw before you hit type(uint128).max fees
+        self.tokensOwed += tokensOwed

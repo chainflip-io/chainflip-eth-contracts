@@ -68,6 +68,37 @@ def getFeeGrowthInside(
     )
     return (feeGrowthInside0X128, feeGrowthInside1X128)
 
+def getFeeGrowthInsideLinear(
+    self, tickLower, tickUpper, tickCurrent, feeGrowthGlobalX128
+):
+    checkInputTypes(
+        dict=self,
+        int24=(tickLower, tickUpper, tickCurrent),
+        uint256=(feeGrowthGlobalX128),
+    )
+
+    # Assumption that the key (tick) exists
+    lower = self[tickLower]
+    upper = self[tickUpper]
+
+    ## calculate fee growth below
+    if tickCurrent >= tickLower:
+        feeGrowthBelowX128 = lower.feeGrowthOutsideX128
+    else:
+        feeGrowthBelowX128 = feeGrowthGlobalX128 - lower.feeGrowthOutsideX128
+
+    ## calculate fee growth above
+    if tickCurrent < tickUpper:
+        feeGrowthAboveX128 = upper.feeGrowthOutsideX128
+    else:
+        feeGrowthAboveX128 = feeGrowthGlobalX128 - upper.feeGrowthOutsideX128
+
+    feeGrowthInsideX128 = (
+        feeGrowthGlobalX128 - feeGrowthBelowX128 - feeGrowthAboveX128
+    )
+
+    return feeGrowthInsideX128
+
 
 ### @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
 ### @param self The mapping containing all tick information for initialized ticks
@@ -172,25 +203,20 @@ def cross(
 def crosslinear(
     tickBitmap,
     tick,
-    feeGrowthGlobal0X128,
-    feeGrowthGlobal1X128,
+    feeGrowthGlobalX128,
 ):
     checkInputTypes(
         dict=tickBitmap,
         int24=tick,
-        uint256=(feeGrowthGlobal0X128, feeGrowthGlobal1X128),
+        uint256=(feeGrowthGlobalX128),
     )
     ## TickBitMap is passed by reference so all changes will be applied to the original dict
     ## TickBitMap = dict(uint256 tick => TickInfo)
     info = tickBitmap[tick]
-    info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128
-    info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128
-    # Set liquidity to zero since we will remove all the positions from the tick.
-    # One of this two values should already be zero, so we just zero both.
-    info.liquidityRangeGrossToken0 = 0
-    info.liquidityRangeGrossToken1 = 0
-
-
+    info.feeGrowthOutside0X128 = feeGrowthGlobalX128 - info.feeGrowthOutside0X128
+    # Mark all liquidity as used since we will remove all the positions from the tick.
+    info.liquidityRangeRemaining = 0
+    return info.liquidityRangeRemaining
 
 
 def updateLinear(
@@ -198,8 +224,7 @@ def updateLinear(
     tick,
     tickCurrent,
     liquidityDelta,
-    feeGrowthGlobal0X128,
-    feeGrowthGlobal1X128,
+    feeGrowthGlobalX128,
     upper,
     maxLiquidity,
     isToken0
@@ -208,21 +233,18 @@ def updateLinear(
         dict=self,
         int24=(tick, tickCurrent),
         int128=liquidityDelta,
-        uint256=(feeGrowthGlobal0X128, feeGrowthGlobal1X128),
+        uint256=(feeGrowthGlobalX128),
         bool=(upper,isToken0),
         uint128=maxLiquidity,
     )
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):
         assert liquidityDelta > 0, "Avoid creating empty tick"
-        insertUninitializedTickstoMapping(self, [tick])
+        insertUninitializedLinearTickstoMapping(self, [tick])
 
     info = self[tick]
 
-    if isToken0: 
-        liquidityGrossBefore = info.liquidityRangeGrossToken0
-    else:
-        liquidityGrossBefore = info.liquidityRangeGrossToken1
+    liquidityGrossBefore = info.liquidityRangeGross
 
     liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)
 
@@ -233,16 +255,17 @@ def updateLinear(
     if liquidityGrossBefore == 0:
         ## by convention, we assume that all growth before a tick was initialized happened _below_ the tick
         if tick <= tickCurrent:
-            #TODO: Is this correct?
-            if isToken0:
-                info.feeGrowthOutside0X128 = feeGrowthGlobal0X128
-            else:
-                info.feeGrowthOutside1X128 = feeGrowthGlobal1X128    
+            info.feeGrowthOutside0X128 = feeGrowthGlobalX128
 
-    if isToken0:
-        info.liquidityRangeGrossToken0 = liquidityGrossAfter
+    info.liquidityRangeGross = liquidityGrossAfter
+
+    # Update liquidity remaining
+    # liquidityDelta < 0 would be due to burn
+    if liquidityDelta < 0:
+        # How do we handle someone burning a half-swapped position - aka when this reverts
+        info.liquidityRangeRemaining = SafeMath.sub(info.liquidityRangeRemaining, liquidityDelta)
     else:
-        info.liquidityRangeGrossToken1 = liquidityGrossAfter
+        info.liquidityRangeRemaining = SafeMath.add(info.liquidityRangeRemaining, liquidityDelta)
 
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped

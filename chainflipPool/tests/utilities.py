@@ -29,13 +29,13 @@ class TickInfo:
 @dataclass
 class TickInfoLinear:
     # Liquidity in range orders
-    liquidityRangeGrossToken0: int
-    liquidityRangeGrossToken1: int
-    ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
-    ## only has relative meaning, not absolute — the value depends on when the tick is initialized
-    feeGrowthOutside0X128: int
-    feeGrowthOutside1X128: int
-    
+    liquidityRangeGross: int
+    # Liquidity remaining - not yet swapped
+    liquidityRangeRemaining: int
+    # TODO: Removing this might be a problem. When positions are removed or when a linear tick is crossed
+    # and we want to burn all positions we need this.
+    feeGrowthOutsideX128: int
+
 # MAX type values
 MAX_UINT128 = 2**128 - 1
 MAX_UINT256 = 2**256 - 1
@@ -248,6 +248,9 @@ def insertUninitializedTickstoMapping(mapping, keys):
     for key in keys:
         insertTickInMapping(mapping, key, TickInfo(0, 0, 0, 0))
 
+def insertUninitializedLinearTickstoMapping(mapping, keys):
+    for key in keys:
+        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0))
 
 def insertTickInMapping(mapping, key, value):
     assert mapping.__contains__(key) == False
