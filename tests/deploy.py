@@ -53,7 +53,8 @@ def deploy_initial_Chainflip_contracts(
 
     cf.genesisStake = int(environment.get("GENESIS_STAKE") or GENESIS_STAKE)
 
-    print(f"Deploying with AGG_KEY: {aggKey} and GOV_KEY: {cf.gov}")
+    print(f"Deploying with AGG_KEY: {aggKey}, GOV_KEY: {cf.gov} and COMM_KEY: {cf.communityKey}")
+    print(f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}")
 
     cf.vault = deployer.deploy(Vault, cf.keyManager)
     cf.stakeManager = deployer.deploy(
@@ -82,7 +83,7 @@ def deploy_set_Chainflip_contracts(
     cf = deploy_initial_Chainflip_contracts(
         deployer, KeyManager, Vault, StakeManager, FLIP, *args
     )
-    cf.whitelisted = [cf.vault, cf.stakeManager, cf.flip]
+    cf.whitelisted = [cf.vault.address, cf.stakeManager.address, cf.flip.address]
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
 
     return cf
