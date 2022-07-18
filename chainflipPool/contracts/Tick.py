@@ -68,6 +68,7 @@ def getFeeGrowthInside(
     )
     return (feeGrowthInside0X128, feeGrowthInside1X128)
 
+
 def getFeeGrowthInsideLinear(
     self, tickLower, tickUpper, tickCurrent, feeGrowthGlobalX128
 ):
@@ -93,9 +94,7 @@ def getFeeGrowthInsideLinear(
     else:
         feeGrowthAboveX128 = feeGrowthGlobalX128 - upper.feeGrowthOutsideX128
 
-    feeGrowthInsideX128 = (
-        feeGrowthGlobalX128 - feeGrowthBelowX128 - feeGrowthAboveX128
-    )
+    feeGrowthInsideX128 = feeGrowthGlobalX128 - feeGrowthBelowX128 - feeGrowthAboveX128
 
     return feeGrowthInsideX128
 
@@ -138,7 +137,9 @@ def update(
     info = self[tick]
 
     liquidityGrossBefore = info.liquidityGross
-    liquidityGrossAfter = toUint128(LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta))
+    liquidityGrossAfter = toUint128(
+        LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)
+    )
 
     assert liquidityGrossAfter <= maxLiquidity, "LO"
 
@@ -200,6 +201,7 @@ def cross(
     liquidityNet = info.liquidityNet
     return liquidityNet
 
+
 def crosslinear(
     tickBitmap,
     tick,
@@ -215,8 +217,8 @@ def crosslinear(
     info = tickBitmap[tick]
     info.feeGrowthOutside0X128 = feeGrowthGlobalX128 - info.feeGrowthOutside0X128
     # Mark all liquidity as used since we will remove all the positions from the tick.
-    info.liquidityRangeRemaining = 0
-    return info.liquidityRangeRemaining
+    info.liquidityRemaining = 0
+    return info.liquidityRemaining
 
 
 def updateLinear(
@@ -227,14 +229,14 @@ def updateLinear(
     feeGrowthGlobalX128,
     upper,
     maxLiquidity,
-    isToken0
+    isToken0,
 ):
     checkInputTypes(
         dict=self,
         int24=(tick, tickCurrent),
         int128=liquidityDelta,
         uint256=(feeGrowthGlobalX128),
-        bool=(upper,isToken0),
+        bool=(upper, isToken0),
         uint128=maxLiquidity,
     )
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
@@ -244,7 +246,7 @@ def updateLinear(
 
     info = self[tick]
 
-    liquidityGrossBefore = info.liquidityRangeGross
+    liquidityGrossBefore = info.liquidityGross
 
     liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)
 
@@ -257,15 +259,15 @@ def updateLinear(
         if tick <= tickCurrent:
             info.feeGrowthOutside0X128 = feeGrowthGlobalX128
 
-    info.liquidityRangeGross = liquidityGrossAfter
+    info.liquidityGross = liquidityGrossAfter
 
     # Update liquidity remaining
     # liquidityDelta < 0 would be due to burn
     if liquidityDelta < 0:
         # How do we handle someone burning a half-swapped position - aka when this reverts
-        info.liquidityRangeRemaining = SafeMath.sub(info.liquidityRangeRemaining, liquidityDelta)
+        info.liquidityRemaining = SafeMath.sub(info.liquidityRemaining, liquidityDelta)
     else:
-        info.liquidityRangeRemaining = SafeMath.add(info.liquidityRangeRemaining, liquidityDelta)
+        info.liquidityRemaining = SafeMath.add(info.liquidityRemaining, liquidityDelta)
 
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped

@@ -394,7 +394,9 @@ class UniswapPool(Account):
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
-            (step.tickNext, step.initialized) = UniswapPool.nextTick(self.ticks, state.tick, zeroForOne)
+            (step.tickNext, step.initialized) = UniswapPool.nextTick(
+                self.ticks, state.tick, zeroForOne
+            )
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)

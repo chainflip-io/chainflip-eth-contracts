@@ -16,11 +16,10 @@ from dataclasses import dataclass
 
 
 class ChainflipPool(UniswapPool):
-
     def __init__(self, token0, token1, fee, tickSpacing):
         # For now separate linear orders from uniswap range orders.
         # Also separate tick information to prevent collisions/issues when
-        # clearing or updating ticks. 
+        # clearing or updating ticks.
         self.linearPositions = dict()
 
         self.liquidityLinear0 = 0
@@ -36,17 +35,21 @@ class ChainflipPool(UniswapPool):
         # Pass all paramaters to UniswapPool's constructor
         super().__init__(token0, token1, fee, tickSpacing)
 
-
     def mintLinearOrder(self, token, recipient, tickLower, tickUpper, amount):
         checkInputTypes(
-            string = token, accounts=(recipient), int24=(tickLower, tickUpper), uint128=(amount)
+            string=token,
+            accounts=(recipient),
+            int24=(tickLower, tickUpper),
+            uint128=(amount),
         )
         assert amount > 0
-        assert token == self.token0 or token == self.token1, "Token not part of the pool"
+        assert (
+            token == self.token0 or token == self.token1
+        ), "Token not part of the pool"
 
-        (_,amountIn) = self._modifyPositionLinearOrder( token,
-            ModifyPositionParams(recipient, tickLower, tickUpper, amount)
-        )  
+        (_, amountIn) = self._modifyPositionLinearOrder(
+            token, ModifyPositionParams(recipient, tickLower, tickUpper, amount)
+        )
 
         amountIn = toUint256(abs(amountIn))
 
@@ -57,14 +60,14 @@ class ChainflipPool(UniswapPool):
 
         return amountIn
 
-    def _modifyPositionLinearOrder(self,token, params):
+    def _modifyPositionLinearOrder(self, token, params):
         checkInputTypes(
-            string = token,
+            string=token,
             accounts=(params.owner),
             int24=(params.tickLower, params.tickUpper),
             int128=(params.liquidityDelta),
         )
-        
+
         UniswapPool.checkTicks(params.tickLower, params.tickUpper)
 
         # Initialize value
@@ -95,23 +98,34 @@ class ChainflipPool(UniswapPool):
                     params.liquidityDelta,
                 )
 
-            if not(self.slot0.tick >= params.tickUpper and self.slot0.tick < params.tickUpper):
+            if not (
+                self.slot0.tick >= params.tickUpper
+                and self.slot0.tick < params.tickUpper
+            ):
                 if token == self.token0:
-                    self.liquidityLinear0 = LiquidityMath.addDelta(self.liquidityLinear0, params.liquidityDelta)
+                    self.liquidityLinear0 = LiquidityMath.addDelta(
+                        self.liquidityLinear0, params.liquidityDelta
+                    )
                 else:
-                    self.liquidityLinear1 = LiquidityMath.addDelta(self.liquidityLinear1, params.liquidityDelta)
+                    self.liquidityLinear1 = LiquidityMath.addDelta(
+                        self.liquidityLinear1, params.liquidityDelta
+                    )
 
         return (position, amount)
 
-    def _updatePositionLinearOrder(self, token, owner, tickLower, tickUpper, liquidityDelta, tick):
+    def _updatePositionLinearOrder(
+        self, token, owner, tickLower, tickUpper, liquidityDelta, tick
+    ):
         checkInputTypes(
-            string = token,
+            string=token,
             accounts=(owner),
             int24=(tickLower, tickUpper, tick),
             int128=(liquidityDelta),
         )
         # This will create a position if it doesn't exist
-        position = Position.getLinear(self.linearPositions, owner, tickLower, tickUpper, token == self.token0)
+        position = Position.getLinear(
+            self.linearPositions, owner, tickLower, tickUpper, token == self.token0
+        )
 
         # Initialize values
         flippedLower = flippedUpper = False
@@ -127,7 +141,9 @@ class ChainflipPool(UniswapPool):
                 tickLower,
                 tick,
                 liquidityDelta,
-                self.linearFeeGrowthGlobal0X128 if token== self.token0 else self.linearFeeGrowthGlobal1X128,
+                self.linearFeeGrowthGlobal0X128
+                if token == self.token0
+                else self.linearFeeGrowthGlobal1X128,
                 False,
                 self.maxLiquidityPerTick,
                 token == self.token0,
@@ -137,7 +153,9 @@ class ChainflipPool(UniswapPool):
                 tickUpper,
                 tick,
                 liquidityDelta,
-                self.linearFeeGrowthGlobal1X128 if token== self.token0 else self.linearFeeGrowthGlobal0X128,
+                self.linearFeeGrowthGlobal1X128
+                if token == self.token0
+                else self.linearFeeGrowthGlobal0X128,
                 True,
                 self.maxLiquidityPerTick,
                 token == self.token0,
@@ -150,18 +168,18 @@ class ChainflipPool(UniswapPool):
 
         # TODO: Add position.feesOwed update here?? Maybe not, we can update the fees owed
         # when a swap is performed.
-        
+
         feeGrowthInsideX128 = Tick.getFeeGrowthInsideLinear(
             ticksLinearMap,
             tickLower,
             tickUpper,
             tick,
-            self.linearFeeGrowthGlobal0X128 if token == self.token0 else self.linearFeeGrowthGlobal1X128,
+            self.linearFeeGrowthGlobal0X128
+            if token == self.token0
+            else self.linearFeeGrowthGlobal1X128,
         )
 
-        Position.updateLinear(
-            position, liquidityDelta, feeGrowthInsideX128
-        )
+        Position.updateLinear(position, liquidityDelta, feeGrowthInsideX128)
 
         ## clear any tick data that is no longer needed
         if liquidityDelta < 0:
@@ -170,7 +188,6 @@ class ChainflipPool(UniswapPool):
             if flippedUpper:
                 Tick.clear(ticksLinearMap, tickUpper)
         return position
-
 
     # Overriding UniswapPool's swap function
     def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
@@ -227,7 +244,9 @@ class ChainflipPool(UniswapPool):
             0,
             slot0Start.sqrtPriceX96,
             slot0Start.tick,
-            self.linearFeeGrowthGlobal0X128 if zeroForOne else self.linearFeeGrowthGlobal1X128,
+            self.linearFeeGrowthGlobal0X128
+            if zeroForOne
+            else self.linearFeeGrowthGlobal1X128,
             0,
             cacheLinear.liquidityStart,
         )
@@ -247,9 +266,10 @@ class ChainflipPool(UniswapPool):
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
-            
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
-            (step.tickNext, step.initialized) = UniswapPool.nextTick(ticksLinearMap, stateLinear.tick, zeroForOne)
+            (step.tickNext, step.initialized) = UniswapPool.nextTick(
+                ticksLinearMap, stateLinear.tick, zeroForOne
+            )
 
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
 
@@ -291,13 +311,11 @@ class ChainflipPool(UniswapPool):
                     stateLinear.amountCalculated, step.amountIn + step.feeAmount
                 )
 
-
             ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
             if cache.feeProtocol > 0:
                 delta = abs(step.feeAmount // cache.feeProtocol)
                 step.feeAmount -= delta
                 stateLinear.protocolFee += delta & (2**128 - 1)
-
 
             ## shift tick if we reached the next price
             if stateLinear.sqrtPriceX96 == step.sqrtPriceNextX96:
@@ -309,7 +327,7 @@ class ChainflipPool(UniswapPool):
                         step.tickNext,
                         stateLinear.feeGrowthGlobalX128
                         if zeroForOne
-                        else self.feeGrowthGlobal0X128
+                        else self.feeGrowthGlobal0X128,
                     )
                     # Should set it to zero
                     stateLinear.liquidity = liquidity
@@ -317,9 +335,8 @@ class ChainflipPool(UniswapPool):
                     # TODO: Remove all the positions included in this tick. But we can't easily get them
                     # since they keys are hashes. This might be the reason
                     # for Uniswapv3 having range orders that can be crossed back again.
-                    # Store a dictionary with the positions (keys of self.positionsLinear) for each tick? 
+                    # Store a dictionary with the positions (keys of self.positionsLinear) for each tick?
                     # We can only disable/clear the tick if we have first burnt all the positions
-                    
 
             # We CANNOT update tick here because it can be that there is a range order too. Only update ticks if we reach
             # the range orders and we then need to switch.
@@ -329,35 +346,33 @@ class ChainflipPool(UniswapPool):
             # elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
             #     ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
             #     state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
-            
 
-            
             # Stop the loop if the swap is completed with limit orders
-            if (stateLinear.amountSpecifiedRemaining == 0 or stateLinear.sqrtPriceX96 == sqrtPriceLimitX96):
+            if (
+                stateLinear.amountSpecifiedRemaining == 0
+                or stateLinear.sqrtPriceX96 == sqrtPriceLimitX96
+            ):
                 # "state" will have the state before Linear orders are executed. Only Amount specified needs to remain
-                state.amountSpecifiedRemaining = stateLinear.amountSpecifiedRemaining              
-                print ("LIMIT ORDERS are enough")
+                state.amountSpecifiedRemaining = stateLinear.amountSpecifiedRemaining
+                print("LIMIT ORDERS are enough")
                 break
             else:
                 # "state" will have the state before Linear orders are executed. Only Amount specified needs to remain
-                state.amountSpecifiedRemaining = stateLinear.amountSpecifiedRemaining  
+                state.amountSpecifiedRemaining = stateLinear.amountSpecifiedRemaining
 
-            
-            
             print("Starting with Range Orders")
             print("Amount Remaining: ", state.amountSpecifiedRemaining)
             ######################################################
             #################### RANGE ORDERS ####################
             ######################################################
 
-
-
-
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
-            
+
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
-            (step.tickNext, step.initialized) = UniswapPool.nextTick(self.ticks, state.tick, zeroForOne)
+            (step.tickNext, step.initialized) = UniswapPool.nextTick(
+                self.ticks, state.tick, zeroForOne
+            )
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
@@ -399,7 +414,6 @@ class ChainflipPool(UniswapPool):
                 state.amountCalculated = SafeMath.addInts(
                     state.amountCalculated, step.amountIn + step.feeAmount
                 )
-
 
             ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
             if cache.feeProtocol > 0:
@@ -450,22 +464,30 @@ class ChainflipPool(UniswapPool):
         ## update tick to the MIN/MAX from limit/range order???
         if state.tick != slot0Start.tick:
             if zeroForOne:
-                self.slot0.sqrtPriceX96 = max(state.sqrtPriceX96, stateLinear.sqrtPriceX96)
+                self.slot0.sqrtPriceX96 = max(
+                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
+                )
                 self.slot0.tick = max(state.tick, stateLinear.sqrtPriceX96)
             else:
-                self.slot0.sqrtPriceX96 = min(state.sqrtPriceX96, stateLinear.sqrtPriceX96)
-                self.slot0.tick = min(state.tick, stateLinear.sqrtPriceX96)                
+                self.slot0.sqrtPriceX96 = min(
+                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
+                )
+                self.slot0.tick = min(state.tick, stateLinear.sqrtPriceX96)
         else:
             ## otherwise just update the price
             if zeroForOne:
-                self.slot0.sqrtPriceX96 = max(state.sqrtPriceX96, stateLinear.sqrtPriceX96)
+                self.slot0.sqrtPriceX96 = max(
+                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
+                )
             else:
-                self.slot0.sqrtPriceX96 = min(state.sqrtPriceX96, stateLinear.sqrtPriceX96)
+                self.slot0.sqrtPriceX96 = min(
+                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
+                )
 
         ## update liquidity if it changed
         if cache.liquidityStart != state.liquidity:
             self.liquidity = state.liquidity
-        
+
         if cacheLinear.liquidityStart != stateLinear.liquidity:
             self.liquidityLinear = stateLinear.liquidity
 
@@ -478,7 +500,7 @@ class ChainflipPool(UniswapPool):
             if state.protocolFee > 0:
                 self.protocolFees.token0 += state.protocolFee
             if stateLinear.protocolFee > 0:
-                self.protocolFees.token0 += stateLinear.protocolFee                
+                self.protocolFees.token0 += stateLinear.protocolFee
         else:
             self.feeGrowthGlobal1X128 = state.feeGrowthGlobalX128
             self.linearFeeGrowthGlobal1X128 = stateLinear.feeGrowthGlobalX128

@@ -23,6 +23,7 @@ class PositionInfo:
     tokensOwed0: int
     tokensOwed1: int
 
+
 @dataclass
 class PositionLinearInfo:
     ## the amount of liquidity owned by this position
@@ -31,8 +32,9 @@ class PositionLinearInfo:
     feeGrowthInsideLastX128: int
     ## the fees owed to the position owner in token0#token1 => uint128
     tokensOwed: int
-    #Not strictly necessary since we need to pass a bool (isToken0) to generate the key
-    #isToken0: bool
+    # Not strictly necessary since we need to pass a bool (isToken0) to generate the key
+    # isToken0: bool
+
 
 ### @notice Returns the Info struct of a position, given an owner and position boundaries
 ### @param self The mapping containing all user positions
@@ -53,6 +55,7 @@ def get(self, owner, tickLower, tickUpper):
         self[key] = PositionInfo(0, 0, 0, 0, 0)
     return self[key]
 
+
 def getLinear(self, owner, tickLower, tickUpper, isToken0):
     checkInputTypes(account=owner, int24=(tickLower, tickLower))
 
@@ -65,6 +68,7 @@ def getLinear(self, owner, tickLower, tickUpper, isToken0):
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
         self[key] = PositionLinearInfo(0, 0, 0)
     return self[key]
+
 
 def assertPositionExists(self, owner, tickLower, tickUpper):
     checkInputTypes(account=owner, int24=(tickLower, tickLower))
@@ -123,10 +127,9 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
         self.tokensOwed0 += tokensOwed0
         self.tokensOwed1 += tokensOwed1
 
+
 def updateLinear(self, liquidityDelta, feeGrowthInsideX128):
-    checkInputTypes(
-        int128=(liquidityDelta), uin256=(feeGrowthInsideX128)
-    )
+    checkInputTypes(int128=(liquidityDelta), uin256=(feeGrowthInsideX128))
 
     if liquidityDelta == 0:
         # Removed because a check is added for burn 0 uninitialized position
@@ -142,7 +145,6 @@ def updateLinear(self, liquidityDelta, feeGrowthInsideX128):
         FixedPoint128_Q128,
     )
 
-
     # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
     # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
     # acceptable to save gas. TODO: Is this OK for us?
@@ -150,7 +152,6 @@ def updateLinear(self, liquidityDelta, feeGrowthInsideX128):
     # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
     if tokensOwed > MAX_UINT128:
         tokensOwed = tokensOwed & (2**128 - 1)
-
 
     ## update the position
     if liquidityDelta != 0:

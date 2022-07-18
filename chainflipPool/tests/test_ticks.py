@@ -29,7 +29,7 @@ def initializePoolWithMockTicks(tickSpacing):
 def test_lte_eq_false_notLte_notLte():
     print("returns tick to right if at initialized tick")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,78, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 78, False)
 
     assert next == 84
     assert initialized == True
@@ -38,7 +38,7 @@ def test_lte_eq_false_notLte_notLte():
 def test_tickRight_ifAtInitializedTick_notLte():
     print("returns tick to right if at initialized tick")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,-55, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, -55, False)
 
     assert next == -4
     assert initialized == True
@@ -47,7 +47,7 @@ def test_tickRight_ifAtInitializedTick_notLte():
 def test_tickRight_nonInit_notLte():
     print("returns the tick directly to the right")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,77, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 77, False)
 
     assert next == 78
     assert initialized == True
@@ -56,7 +56,7 @@ def test_tickRight_nonInit_notLte():
 def test_tickRight_init_notLte():
     print("returns the tick directly to the right")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,-56, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, -56, False)
 
     assert next == -55
     assert initialized == True
@@ -66,7 +66,7 @@ def test_tickRight_init_notLte():
 def test_nextInit_rightBoundary_notLte():
     print("returns the next words initialized tick if on the right boundary")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,255, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 255, False)
 
     assert next == 535
     assert initialized == True
@@ -75,7 +75,7 @@ def test_nextInit_rightBoundary_notLte():
 def test_nextInit_leftBoundary_notLte():
     print("returns the next words initialized tick if on the left boundary")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,-257, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, -257, False)
 
     assert next == -200
     assert initialized == True
@@ -85,7 +85,7 @@ def test_nextInit_notLte():
     print("returns the next initialized tick from the next word")
     pool = initializePoolWithMockTicks(1)
     insertUninitializedTickstoMapping(pool.ticks, [340])
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,328, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 328, False)
 
     assert next == 340
     assert initialized == True
@@ -95,15 +95,15 @@ def test_nextInit_notLte():
 def test_return_rightNoWordBoundaries_notLte():
     print("returns the next tick regardless of 256 word boundaries")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,508, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 508, False)
     assert next == 535
     assert initialized == True
 
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,255, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 255, False)
     assert next == 535
     assert initialized == True
 
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,383, False)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 383, False)
     assert next == 535
     assert initialized == True
 
@@ -114,7 +114,7 @@ def test_return_rightNoWordBoundaries_notLte():
 def test_sameTick_ifInitialized_lte():
     print("returns the same tick if initialized tick")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,78, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 78, True)
 
     assert next == 78
     assert initialized == True
@@ -123,7 +123,7 @@ def test_sameTick_ifInitialized_lte():
 def test_tickLeft_ifNotInitialized_lte():
     print("returns tick directly to the left of input tick if not initialized")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,79, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 79, True)
 
     assert next == 78
     assert initialized == True
@@ -133,15 +133,15 @@ def test_tickLeft_ifNotInitialized_lte():
 def test_crossWordBoundary_lte():
     print("can exceed a word boundary")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,258, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 258, True)
     assert next == 240
     assert initialized == True
 
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,256, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 256, True)
     assert next == 240
     assert initialized == True
 
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,72, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 72, True)
     assert next == 70
     assert initialized == True
 
@@ -151,7 +151,7 @@ def test_crossWordBoundary_lte():
 def test_return_leftBoundary_lte():
     print("returns the next tick if at the right boundary")
     pool = initializePoolWithMockTicks(1)
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,-257, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, -257, True)
 
     assert next == TickMath.MIN_TICK
     assert initialized == False
@@ -162,11 +162,11 @@ def test_nextInit_leftBoundary_lte():
     print("returns the next words initialized tick if on the right boundary")
     pool = initializePoolWithMockTicks(1)
 
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,1023, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 1023, True)
     assert next == 535
     assert initialized == True
 
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,900, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 900, True)
     assert next == 535
     assert initialized == True
 
@@ -176,6 +176,6 @@ def test_wordBoundaryInitialized():
     pool = initializePoolWithMockTicks(1)
     insertUninitializedTickstoMapping(pool.ticks, [329])
 
-    (next, initialized) = UniswapPool.nextTick(pool.ticks,456, True)
+    (next, initialized) = UniswapPool.nextTick(pool.ticks, 456, True)
     assert next == 329
     assert initialized == True
