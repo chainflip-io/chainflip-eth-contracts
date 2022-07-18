@@ -121,8 +121,6 @@ class ChainflipPool(UniswapPool):
             int24=(tickLower, tickUpper, tick),
             int128=(liquidityDelta),
         )
-        print("Updating Position")
-        print(token==self.token0)
         # This will create a position if it doesn't exist
         position = Position.getLinear(
             self.linearPositions, owner, tickLower, tickUpper, token == self.token0
@@ -281,6 +279,7 @@ class ChainflipPool(UniswapPool):
 
         amountSpecifiedRemaining = amountSpecified
         sqrtPriceX96 = state.sqrtPriceX96
+        assert state.sqrtPriceX96 == stateLinear.sqrtPriceX96
 
         loopCounter = 0
 
@@ -319,6 +318,7 @@ class ChainflipPool(UniswapPool):
                     if stepLinear.sqrtPriceNextX96 > sqrtPriceLimitX96
                     else stepLinear.sqrtPriceNextX96
                 )
+
             (
                 stateLinear.sqrtPriceX96,
                 stepLinear.amountIn,
@@ -362,17 +362,22 @@ class ChainflipPool(UniswapPool):
                 ## if the tick is initialized, run the tick transition
                 ## @dev: here is where we should handle the case of an uninitialized boundary tick
                 if stepLinear.initialized:
-                    liquidity = Tick.crosslinear(
+                    liquidityRemaining = Tick.crosslinear(
                         ticksLinearMap,
                         stepLinear.tickNext,
                         stateLinear.feeGrowthGlobalX128
                         if zeroForOne
                         else self.linearFeeGrowthGlobal1X128,
                     )
-                    # Should set it to zero
-                    stateLinear.liquidity = liquidity
-                    assert stateLinear.liquidity == 0
-                    # TODO: Remove all the positions included in this tick. But we can't easily get them
+                    #TODO: Check if this makes sense and if it's working
+                    # For now only remove some liquidity
+                    if zeroForOne:
+                        liquidityRemaining = - liquidityRemaining
+                    stateLinear.liquidity = LiquidityMath.addDelta(
+                        stateLinear.liquidity, liquidityRemaining
+                    )
+                    # TODO: Should set the tick Liquidity to zero (old tick) and remove all 
+                    # the positions included in this tick. But we can't easily get them
                     # since they keys are hashes. This might be the reason
                     # for Uniswapv3 having range orders that can be crossed back again.
                     # Store a dictionary with the positions (keys of self.positionsLinear) for each tick?
@@ -493,16 +498,15 @@ class ChainflipPool(UniswapPool):
                     state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
 
         
-            # Compare where state.tick and stateLinear.tick are. Same for sqrtPriceX96. Then decide which one to use.
-            # Do this even if the range order is not used
+            ##Compare where state.tick and stateLinear.tick are. Same for sqrtPriceX96. Then decide which one to use.
+            ##Do this even if the range order is not used. Only move ticks if there are no range nor limit orders.
             state.tick = stateLinear.tick =  max(state.tick, stateLinear.tick) if zeroForOne else min(state.tick, stateLinear.tick)
-            state.sqrtPriceX96 =stateLinear.sqrtPriceX96 = sqrtPriceX96 = max(state.sqrtPriceX96, stateLinear.sqrtPriceX96) if zeroForOne else min(state.sqrtPriceX96, stateLinear.sqrtPriceX96)
-            
-            loopCounter += 1
-            if loopCounter == 2:
-                assert False
+            state.sqrtPriceX96 = stateLinear.sqrtPriceX96 = sqrtPriceX96 = max(state.sqrtPriceX96, stateLinear.sqrtPriceX96) if zeroForOne else min(state.sqrtPriceX96, stateLinear.sqrtPriceX96)
 
-        print("Calculating fees")
+            # Temporal to prevent infinite loop
+            loopCounter += 1
+            if loopCounter == 5:
+                assert False
 
         ## End of swap loop
         ## update tick to the MIN/MAX from limit/range order???
@@ -561,11 +565,11 @@ class ChainflipPool(UniswapPool):
         state.amountCalculated += stateLinear.amountCalculated
 
         (amount0, amount1) = (
-            (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
+            (amountSpecified - amountSpecifiedRemaining, state.amountCalculated)
             if (zeroForOne == exactInput)
             else (
                 state.amountCalculated,
-                amountSpecified - state.amountSpecifiedRemaining,
+                amountSpecified - amountSpecifiedRemaining,
             )
         )
 

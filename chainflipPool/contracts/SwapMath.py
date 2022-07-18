@@ -26,7 +26,6 @@ def computeSwapStep(
         int256=amountRemaining,
         uint24=feePips,
     )
-
     zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96
 
     # exactIn < 0 means exactOut = True
@@ -36,7 +35,7 @@ def computeSwapStep(
         amountRemainingLessFee = mulDiv(
             amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
         )
-
+    
         amountIn = (
             SqrtPriceMath.getAmount0Delta(
                 sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, True

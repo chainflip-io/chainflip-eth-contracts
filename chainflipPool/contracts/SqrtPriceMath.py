@@ -159,7 +159,6 @@ def getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity, roundUp):
     numerator1 = liquidity << FixedPoint96_RESOLUTION
     numerator2 = sqrtRatioBX96 - sqrtRatioAX96
     assert numerator2 >= 0
-
     assert sqrtRatioAX96 > 0
     if roundUp:
         return divRoundingUp(

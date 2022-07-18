@@ -712,16 +712,16 @@ def checkTickIsNotClear(tickmap, tick):
 
 # TODO: TO DEBUG
 def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
-    pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
+    pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
     print("does not clear the position fee growth snapshot if no more liquidity")
     ## some activity that would make the ticks non-zero
     initialTick = pool.slot0.tick
     pool.mintLinearOrder(TEST_TOKENS[0],accounts[1], initialTick, maxTick, expandTo18Decimals(1))
-    print(pool.linearPositions)   
-    #pool.mintLinearOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
+    pool.mintLinearOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
 
-    #print("First SWAP")
-    #swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    print(pool.ticksLinearTokens1)
+    print("First SWAP")
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
     print("self.linearFeeGrowthGlobal0X128", pool.linearFeeGrowthGlobal0X128)
     print("self.linearFeeGrowthGlobal1X128", pool.linearFeeGrowthGlobal1X128)    
     print("Second SWAP")
@@ -729,16 +729,16 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
     print("self.linearFeeGrowthGlobal0X128", pool.linearFeeGrowthGlobal0X128)
     print("self.linearFeeGrowthGlobal1X128", pool.linearFeeGrowthGlobal1X128)
     pool.burnLimitOrder(TEST_TOKENS[0],accounts[1], initialTick, maxTick, expandTo18Decimals(1))
-    #pool.burnLimitOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
+    pool.burnLimitOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
     positionInfo0 = pool.linearPositions[getLimitPositionKey(accounts[1], initialTick, maxTick, True)]
-    #positionInfo1 = pool.linearPositions[getLimitPositionKey(accounts[1], minTick, initialTick,False)]
+    positionInfo1 = pool.linearPositions[getLimitPositionKey(accounts[1], minTick, initialTick,False)]
     assert positionInfo0.liquidity == 0
-    #assert positionInfo1.liquidity == 0
+    assert positionInfo1.liquidity == 0
     assert positionInfo0.tokensOwed != 0
-    #assert positionInfo1.tokensOwed != 0
+    assert positionInfo1.tokensOwed != 0
     # Original range value: 340282366920938463463374607431768211
     assert positionInfo0.feeGrowthInsideLastX128 == 340282366920938104919187328403318328
-    #assert positionInfo1.feeGrowthInsideLastX128 == 340282366920938463463374607431768211
+    assert positionInfo1.feeGrowthInsideLastX128 == 340282366920938463463374607431768211
 
 
 # def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
