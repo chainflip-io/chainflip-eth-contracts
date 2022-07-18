@@ -272,6 +272,8 @@ def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
 def getPositionKey(address, lowerTick, upperTick):
     return hash((address, lowerTick, upperTick))
 
+def getLimitPositionKey(address, lowerTick, upperTick, isToken0):
+    return hash((address, lowerTick, upperTick, isToken0 ))
 
 ### POOL SWAPS ###
 def swapExact0For1(pool, amount, recipient, sqrtPriceLimit):

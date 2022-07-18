@@ -272,6 +272,5 @@ def updateLinear(
         info.liquidityRemaining = SafeMath.addInts(
             info.liquidityRemaining, liquidityDelta
         )
-
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped

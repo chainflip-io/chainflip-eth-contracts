@@ -360,37 +360,52 @@ def test_removeLiquidity_fromLiquidityGross(initializedMediumPool, accounts):
     assert pool.ticksLinearTokens1[0].liquidityGross == 50
 
 
-# def test_clearTickLower_ifLastPositionRemoved(initializedMediumPool, accounts):
-#     print("clears tick lower if last position is removed")
-#     pool, _, _, _, _, _, _ = initializedMediumPool
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
-#     # tick cleared == not in ticks
-#     assert not pool.ticks.__contains__(-240)
+def test_clearTickLower_ifLastPositionRemoved(initializedMediumPool, accounts):
+    print("clears tick lower if last position is removed")
+    pool, _, _, _, _, _, _ = initializedMediumPool
+    pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
+    pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticksLinearTokens0.__contains__(-240)
 
+    pool.mintLinearOrder(TEST_TOKENS[1],accounts[0], -240, 0, 100)
+    pool.burnLimitOrder(TEST_TOKENS[1],accounts[0], -240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticksLinearTokens1.__contains__(-240)
 
-# def test_clearTickUpper_ifLastPositionRemoved(initializedMediumPool, accounts):
-#     print("clears tick upper if last position is removed")
-#     pool, _, _, _, _, _, _ = initializedMediumPool
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
-#     # tick cleared == not in ticks
-#     assert not pool.ticks.__contains__(0)
+def test_clearTickUpper_ifLastPositionRemoved(initializedMediumPool, accounts):
+    print("clears tick upper if last position is removed")
+    pool, _, _, _, _, _, _ = initializedMediumPool
+    pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
+    pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticksLinearTokens0.__contains__(0)
 
+    pool.mintLinearOrder(TEST_TOKENS[1],accounts[0], -240, 0, 100)
+    pool.burnLimitOrder(TEST_TOKENS[1],accounts[0], -240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticksLinearTokens1.__contains__(0)
 
-# def test_clearsTick_ifNotUser(initializedMediumPool, accounts):
-#     print("only clears the tick that is not used at all")
-#     pool, _, _, _, tickSpacing, _, _ = initializedMediumPool
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[1], -tickSpacing, 0, 250)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
-#     # tick cleared == not in ticks
-#     assert not pool.ticks.__contains__(-240)
-#     tickInfo = pool.ticksLinearTokens0[-tickSpacing]
-#     assert tickInfo.liquidityGross == 250
-#     assert tickInfo.feeGrowthOutside0X128 == 0
-#     assert tickInfo.feeGrowthOutside1X128 == 0
+def test_clearsTick_ifNotUser(initializedMediumPool, accounts):
+    print("only clears the tick that is not used at all")
+    pool, _, _, _, tickSpacing, _, _ = initializedMediumPool
+    pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
+    pool.mintLinearOrder(TEST_TOKENS[0],accounts[1], -tickSpacing, 0, 250)
+    pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], -240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticksLinearTokens0.__contains__(-240)
+    tickInfo = pool.ticksLinearTokens0[-tickSpacing]
+    assert tickInfo.liquidityGross == 250
+    assert tickInfo.feeGrowthOutsideX128 == 0
 
+    pool.mintLinearOrder(TEST_TOKENS[1],accounts[0], -240, 0, 100)
+    pool.mintLinearOrder(TEST_TOKENS[1],accounts[1], -tickSpacing, 0, 250)
+    pool.burnLimitOrder(TEST_TOKENS[1],accounts[0], -240, 0, 100)
+    # tick cleared == not in ticks
+    assert not pool.ticksLinearTokens1.__contains__(-240)
+    tickInfo = pool.ticksLinearTokens1[-tickSpacing]
+    assert tickInfo.liquidityGross == 250
+    assert tickInfo.feeGrowthOutsideX128 == 0
 
 # Including current price
 def test_transferCurrentPriceTokens(initializedMediumPool, accounts):
@@ -591,44 +606,70 @@ def test_protectedPositions_beforefeesAreOn(initializedMediumPool, accounts):
     assert pool.protocolFees.token1 == 0
 
 
-# def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
-#     print("poke is not allowed on uninitialized position")
-#     pool, minTick, maxTick, _, tickSpacing, _, _ = initializedMediumPool
-#     pool.mintLinearOrder(TEST_TOKENS[0],
-#         accounts[1], minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1)
-#     )
-#     swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
-#     swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0], None)
-#     # Modified revert reason because a check is added in burn for uninitialized position
-#     tryExceptHandler(
-#         pool.burn,
-#         "Position doesn't exist",
-#         accounts[0],
-#         minTick + tickSpacing,
-#         maxTick - tickSpacing,
-#         0,
-#     )
+def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
+    print("poke is not allowed on uninitialized position")
+    pool, minTick, maxTick, _, tickSpacing,closeIniTickRDown,closeIniTickRUp, = initializedMediumPool
+    pool.mintLinearOrder(TEST_TOKENS[0],
+        accounts[1], closeIniTickRDown, maxTick - tickSpacing, expandTo18Decimals(1)
+    )
+    pool.mintLinearOrder(TEST_TOKENS[1],
+        accounts[1], minTick + tickSpacing, closeIniTickRUp, expandTo18Decimals(1)
+    )
+    swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
+    swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0], None)
+    # Modified revert reason because a check is added in burn for uninitialized position
+    tryExceptHandler(
+        pool.burn,
+        "Position doesn't exist",
+        accounts[0],
+        closeIniTickRDown,
+        maxTick - tickSpacing,
+        0,
+    )
+    tryExceptHandler(
+        pool.burn,
+        "Position doesn't exist",
+        accounts[0],
+        minTick + tickSpacing,
+        closeIniTickRUp,
+        0,
+    )
 
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 1)
+    pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], closeIniTickRDown, maxTick - tickSpacing, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1],accounts[0], minTick + tickSpacing, closeIniTickRUp, 1)
 
-#     position = pool.positions[
-#         getPositionKey(accounts[0], minTick + tickSpacing, maxTick - tickSpacing)
-#     ]
-#     assert position.liquidity == 1
-#     assert position.feeGrowthInside0LastX128 == 102084710076281216349243831104605583
-#     assert position.feeGrowthInside1LastX128 == 10208471007628121634924383110460558
-#     assert position.tokensOwed0 == 0, "tokens owed 0 before"
-#     assert position.tokensOwed1 == 0, "tokens owed 1 before"
+    positionLinear0 = pool.linearPositions[
+        getLimitPositionKey(accounts[0], closeIniTickRDown, maxTick - tickSpacing, True)
+    ]
 
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 1)
-#     position = pool.positions[
-#         getPositionKey(accounts[0], minTick + tickSpacing, maxTick - tickSpacing)
-#     ]
-#     assert position.liquidity == 0
-#     assert position.feeGrowthInside0LastX128 == 102084710076281216349243831104605583
-#     assert position.feeGrowthInside1LastX128 == 10208471007628121634924383110460558
-#     assert position.tokensOwed0 == 3, "tokens owed 0 before"
-#     assert position.tokensOwed1 == 0, "tokens owed 1 before"
+    positionLinear1 = pool.linearPositions[
+        getLimitPositionKey(accounts[0], minTick + tickSpacing, closeIniTickRUp, False)
+    ]    
+    assert positionLinear0.liquidity == 1
+    assert positionLinear1.liquidity == 1
+
+    assert positionLinear0.feeGrowthInsideLastX128 == 10208471007628121634924383110460558
+    assert positionLinear1.feeGrowthInsideLastX128 == 102084710076281216349243831104605583
+    assert positionLinear0.tokensOwed == 0, "tokens owed 0 before"
+    assert positionLinear1.tokensOwed == 0, "tokens owed 1 before"
+
+    pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], closeIniTickRDown, maxTick - tickSpacing, 1)
+    pool.burnLimitOrder(TEST_TOKENS[1],accounts[0], minTick + tickSpacing, closeIniTickRUp, 1)
+
+    positionLinear0 = pool.linearPositions[
+        getLimitPositionKey(accounts[0], closeIniTickRDown, maxTick - tickSpacing, True)
+    ]
+
+    positionLinear1 = pool.linearPositions[
+        getLimitPositionKey(accounts[0], minTick + tickSpacing, closeIniTickRUp, False)
+    ]    
+
+    assert positionLinear0.liquidity == 0
+    assert positionLinear1.liquidity == 0
+    assert positionLinear0.feeGrowthInsideLastX128 == 10208471007628121634924383110460558
+    assert positionLinear1.feeGrowthInsideLastX128 == 102084710076281216349243831104605583
+    assert positionLinear0.tokensOwed == 3, "tokens owed 0 before"
+    assert positionLinear1.tokensOwed == 0, "tokens owed 1 before"
 
 
 # Burn
@@ -669,35 +710,48 @@ def checkTickIsNotClear(tickmap, tick):
     assert tickmap.__contains__(tick)
     assert tickmap[tick].liquidityGross != 0
 
+# TODO: TO DEBUG
+def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
+    pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
+    print("does not clear the position fee growth snapshot if no more liquidity")
+    ## some activity that would make the ticks non-zero
+    initialTick = pool.slot0.tick
+    pool.mintLinearOrder(TEST_TOKENS[0],accounts[1], initialTick, maxTick, expandTo18Decimals(1))
+    print(pool.linearPositions)   
+    #pool.mintLinearOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
 
-# def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
-#     pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
-#     print("does not clear the position fee growth snapshot if no more liquidity")
-#     ## some activity that would make the ticks non-zero
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[1], pool.slot0.tick, maxTick, expandTo18Decimals(1))
-#     pool.mintLinearOrder(TEST_TOKENS[1],accounts[1], minTick, pool.slot0.tick, expandTo18Decimals(1))
+    #print("First SWAP")
+    #swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    print("self.linearFeeGrowthGlobal0X128", pool.linearFeeGrowthGlobal0X128)
+    print("self.linearFeeGrowthGlobal1X128", pool.linearFeeGrowthGlobal1X128)    
+    print("Second SWAP")
+    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
+    print("self.linearFeeGrowthGlobal0X128", pool.linearFeeGrowthGlobal0X128)
+    print("self.linearFeeGrowthGlobal1X128", pool.linearFeeGrowthGlobal1X128)
+    pool.burnLimitOrder(TEST_TOKENS[0],accounts[1], initialTick, maxTick, expandTo18Decimals(1))
+    #pool.burnLimitOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
+    positionInfo0 = pool.linearPositions[getLimitPositionKey(accounts[1], initialTick, maxTick, True)]
+    #positionInfo1 = pool.linearPositions[getLimitPositionKey(accounts[1], minTick, initialTick,False)]
+    assert positionInfo0.liquidity == 0
+    #assert positionInfo1.liquidity == 0
+    assert positionInfo0.tokensOwed != 0
+    #assert positionInfo1.tokensOwed != 0
+    # Original range value: 340282366920938463463374607431768211
+    assert positionInfo0.feeGrowthInsideLastX128 == 340282366920938104919187328403318328
+    #assert positionInfo1.feeGrowthInsideLastX128 == 340282366920938463463374607431768211
 
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[1], minTick, maxTick, expandTo18Decimals(1))
-#     tickInfo = pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
-#     assert tickInfo.liquidity == 0
-#     assert tickInfo.tokensOwed0 != 0
-#     assert tickInfo.tokensOwed1 != 0
-#     assert tickInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
-#     assert tickInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
 
-
-# # Continue UniswapV3Pool.spects.ts line 596
 # def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
 #     print("clears the tick if its the last position using it")
 #     pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
 #     tickLower = minTick + tickSpacing
 #     tickUpper = maxTick - tickSpacing
 #     ## some activity that would make the ticks non-zero
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], tickLower, tickUpper, 1)
+#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], pool.slot0.tick, tickUpper, 1)
+#     pool.mintLinearOrder(TEST_TOKENS[1],accounts[0], tickLower, pool.slot0.tick, 1)
 #     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], tickLower, tickUpper, 1)
+#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], pool.slot0.tick, tickUpper, 1)
+#     pool.burnLimitOrder(TEST_TOKENS[1],accounts[0], tickLower, pool.slot0.tick, 1)
 #     checkTickIsClear(pool, tickLower)
 #     checkTickIsClear(pool, tickUpper)
 
