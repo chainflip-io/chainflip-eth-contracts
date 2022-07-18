@@ -76,6 +76,12 @@ def assertPositionExists(self, owner, tickLower, tickUpper):
     assert positionInfo != PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
 
 
+def assertLimitPositionExists(self, owner, tickLower, tickUpper, isToken0):
+    checkInputTypes(account=owner, int24=(tickLower, tickLower), bool=isToken0)
+    positionInfo = getLinear(self, owner, tickLower, tickUpper, isToken0)
+    assert positionInfo != PositionLinearInfo(0, 0, 0), "Position doesn't exist"
+
+
 ### @notice Credits accumulated fees to a user's position
 ### @param self The individual position to update
 ### @param liquidityDelta The change in pool liquidity as a result of the position update

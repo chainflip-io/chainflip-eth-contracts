@@ -83,7 +83,6 @@ class ChainflipPool(UniswapPool):
         )
 
         if params.liquidityDelta != 0:
-            # TODO: Fix/Modify this?
             if token == self.token0:
                 ## Regardless of the current tick, only one asset is provided as liquidity
                 amount = SqrtPriceMath.getAmount0DeltaHelper(
@@ -189,6 +188,34 @@ class ChainflipPool(UniswapPool):
                 Tick.clear(ticksLinearMap, tickUpper)
         return position
 
+    def burnLimitOrder(self, token, recipient, tickLower, tickUpper, amount):
+        checkInputTypes(
+            string=token,
+            accounts=(recipient),
+            int24=(tickLower, tickUpper),
+            uint128=(amount),
+        )
+
+        # Add check if the position exists - when poking an uninitialized position it can be that
+        # getFeeGrowthInside finds a non-initialized tick before Position.update reverts.
+        Position.assertLimitPositionExists(
+            self.linearPositions, recipient, tickLower, tickUpper, token == self.token0
+        )
+
+        # Added extra recipient input variable to mimic msg.sender
+        (position, amountInt) = self._modifyPositionLinearOrder(
+            token,
+            ModifyPositionParams(recipient, tickLower, tickUpper, -amount),
+        )
+
+        # Mimic conversion to uint256
+        amount = abs(-amountInt) & (2**256 - 1)
+
+        if amount > 0:
+            position.tokensOwed += amount
+
+        return (recipient, tickLower, tickUpper, amount, amount)
+
     # Overriding UniswapPool's swap function
     def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
         checkInputTypes(
@@ -265,11 +292,12 @@ class ChainflipPool(UniswapPool):
 
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
-
+            print("initial tick limit : ", stateLinear.tick)
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
             (step.tickNext, step.initialized) = UniswapPool.nextTick(
                 ticksLinearMap, stateLinear.tick, zeroForOne
             )
+            print("next tick limit : ", step.tickNext)
 
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
 
@@ -362,6 +390,7 @@ class ChainflipPool(UniswapPool):
 
             print("Starting with Range Orders")
             print("Amount Remaining: ", state.amountSpecifiedRemaining)
+
             ######################################################
             #################### RANGE ORDERS ####################
             ######################################################
@@ -373,6 +402,7 @@ class ChainflipPool(UniswapPool):
             (step.tickNext, step.initialized) = UniswapPool.nextTick(
                 self.ticks, state.tick, zeroForOne
             )
+            print("Range order next tick: ", step.tickNext)
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
@@ -467,12 +497,12 @@ class ChainflipPool(UniswapPool):
                 self.slot0.sqrtPriceX96 = max(
                     state.sqrtPriceX96, stateLinear.sqrtPriceX96
                 )
-                self.slot0.tick = max(state.tick, stateLinear.sqrtPriceX96)
+                self.slot0.tick = max(state.tick, stateLinear.tick)
             else:
                 self.slot0.sqrtPriceX96 = min(
                     state.sqrtPriceX96, stateLinear.sqrtPriceX96
                 )
-                self.slot0.tick = min(state.tick, stateLinear.sqrtPriceX96)
+                self.slot0.tick = min(state.tick, stateLinear.tick)
         else:
             ## otherwise just update the price
             if zeroForOne:

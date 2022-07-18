@@ -265,9 +265,13 @@ def updateLinear(
     # liquidityDelta < 0 would be due to burn
     if liquidityDelta < 0:
         # How do we handle someone burning a half-swapped position - aka when this reverts
-        info.liquidityRemaining = SafeMath.sub(info.liquidityRemaining, liquidityDelta)
+        info.liquidityRemaining = SafeMath.subInts(
+            info.liquidityRemaining, liquidityDelta
+        )
     else:
-        info.liquidityRemaining = SafeMath.add(info.liquidityRemaining, liquidityDelta)
+        info.liquidityRemaining = SafeMath.addInts(
+            info.liquidityRemaining, liquidityDelta
+        )
 
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped
