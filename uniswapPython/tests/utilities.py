@@ -193,6 +193,7 @@ def toUint256(number):
         checkUInt256(number)
     return number
 
+
 def toUint128(number):
     try:
         checkUInt128(number)

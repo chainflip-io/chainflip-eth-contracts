@@ -172,9 +172,9 @@ class ChainflipPool(UniswapPool):
             tickLower,
             tickUpper,
             tick,
-            self.linearFeeGrowthGlobal1X128
+            self.linearFeeGrowthGlobal0X128
             if token == self.token0
-            else self.linearFeeGrowthGlobal0X128,
+            else self.linearFeeGrowthGlobal1X128,
         )
 
         Position.updateLinear(position, liquidityDelta, feeGrowthInsideX128)
@@ -302,6 +302,8 @@ class ChainflipPool(UniswapPool):
             (stepLinear.tickNext, stepLinear.initialized) = UniswapPool.nextTick(
                 ticksLinearMap, stateLinear.tick, zeroForOne
             )
+            print("Tick before linear order: ", stateLinear.tick)
+            print("Next tick linear order: ", stepLinear.tickNext)
 
             stepLinear.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(stepLinear.tickNext)
 

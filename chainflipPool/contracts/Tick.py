@@ -77,7 +77,7 @@ def getFeeGrowthInsideLinear(
         int24=(tickLower, tickUpper, tickCurrent),
         uint256=(feeGrowthGlobalX128),
     )
-
+    
     # Assumption that the key (tick) exists
     lower = self[tickLower]
     upper = self[tickUpper]

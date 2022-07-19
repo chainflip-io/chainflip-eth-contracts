@@ -107,7 +107,9 @@ def update(
     info = self[tick]
 
     liquidityGrossBefore = info.liquidityGross
-    liquidityGrossAfter = toUint128(LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta))
+    liquidityGrossAfter = toUint128(
+        LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)
+    )
 
     assert liquidityGrossAfter <= maxLiquidity, "LO"
 
