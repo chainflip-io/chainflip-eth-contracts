@@ -585,7 +585,7 @@ def test_fees_duringSwap(initializedMediumPool, accounts):
     print(pool.positionsZero)
     print("initialTick: ", pool.slot0.tick)
 
-    swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
+    print(swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None))
     #print(swapExact1For0(pool, expandTo18Decimals(1) // 100, accounts[0], None))
 
     assert pool.protocolFees.token0 == 50000000000000

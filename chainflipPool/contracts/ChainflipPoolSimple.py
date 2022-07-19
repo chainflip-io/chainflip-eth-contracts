@@ -234,11 +234,10 @@ class ChainflipPoolSimple(UniswapPool):
                     #state.tick = (state.tick - 1) if zeroForOne else step.tickNext
                     state.tick = (state.tick - 1) if zeroForOne else (state.tick+1)
                     print("NO TICK FOUND")
-                    assert False
+                    #assert False
                     continue
 
                 ## get the price for the next tick
-                print(position)
                 state.sqrtPriceX96 = position.currentSqrtPricex96
 
                 # TODO: Check if direction is correct
@@ -381,9 +380,9 @@ def getLinearPositionSimple(listPositions, owner, tickLower, tickUpper, isToken0
 
     # Need to handle non-existing positions in Python
     if isToken0:
-        key = tickLower
-    else:
         key = tickUpper
+    else:
+        key = tickLower
 
     if not listPositions.__contains__(key):
         # We don't want to create a new position if it doesn't exist!
@@ -460,9 +459,9 @@ def getNextPosition(positionsMap, tick, lte):
             while (indexCurrentTick > 0):
                 nextTick = sortedKeyList[indexCurrentTick - 1]
                 for i in range(len(positionsMap[nextTick])):
-                    if positionsMap[i].liquidityRemaining > 0:
+                    if positionsMap[nextTick][i].liquidityRemaining > 0:
                         # Return the first position that has tick Lower to the left of the current tick
-                        return positionsMap[tick][i]
+                        return (positionsMap[nextTick][i], True)
                 # If none of the positions match what we are looking for, we look for next tick again
                 indexCurrentTick -= 1
             # No more ticks nor positions to the left
@@ -479,9 +478,9 @@ def getNextPosition(positionsMap, tick, lte):
             while (indexCurrentTick <  len(sortedKeyList)):
                 nextTick = sortedKeyList[indexCurrentTick - 1]
                 for i in range(len(positionsMap[nextTick])):
-                    if positionsMap[i].liquidityRemaining > 0:
+                    if positionsMap[nextTick][i].liquidityRemaining > 0:
                         # Return the first position that has tick Lower to the left of the current tick
-                        return positionsMap[tick][i]
+                        return (positionsMap[nextTick][i], True)
                 # If none of the positions match what we are looking for, we look for next tick again
                 indexCurrentTick += 1
             # No more ticks nor positions to the right
