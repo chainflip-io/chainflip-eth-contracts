@@ -168,3 +168,5 @@ def updateLinear(self, liquidityDelta, feeGrowthInsideX128):
         # TODO: Do we want to allow this overflow to happen - for now we allow it.
         ## In uniswap: overflow is acceptable, have to withdraw before you hit type(uint128).max fees
         self.tokensOwed += tokensOwed
+    
+    print("final pos liquidity: ", self.liquidity)

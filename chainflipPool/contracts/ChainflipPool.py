@@ -164,19 +164,16 @@ class ChainflipPool(UniswapPool):
         if flippedUpper:
             assert tickUpper % self.tickSpacing == 0  ## ensure that the tick is spaced
 
-        # TODO: Add position.feesOwed update here?? Maybe not, we can update the fees owed
-        # when a swap is performed.
-
+        # If position is token0, the fees will be in token1
         feeGrowthInsideX128 = Tick.getFeeGrowthInsideLinear(
             ticksLinearMap,
             tickLower,
             tickUpper,
             tick,
-            self.linearFeeGrowthGlobal0X128
+            self.linearFeeGrowthGlobal1X128
             if token == self.token0
-            else self.linearFeeGrowthGlobal1X128,
+            else self.linearFeeGrowthGlobal0X128,
         )
-
         Position.updateLinear(position, liquidityDelta, feeGrowthInsideX128)
 
         ## clear any tick data that is no longer needed
@@ -187,6 +184,8 @@ class ChainflipPool(UniswapPool):
                 Tick.clear(ticksLinearMap, tickUpper)
         return position
 
+    # This can only be run if the order has only been partially crossed. If fully crossed, the positions
+    # will have been burnt automatically.
     def burnLimitOrder(self, token, recipient, tickLower, tickUpper, amount):
         checkInputTypes(
             string=token,
@@ -289,7 +288,10 @@ class ChainflipPool(UniswapPool):
         ):
             print("SWAP LOOP")
             # For now we give priority to limit orders being executed first. In the future we might want to compare
-            # and execute the one that gives a higher price. That makes things too complicatef for now.
+            # and execute the one that gives a higher price. That makes things too complicated for now.
+
+            ##TODO: Add someting like doing both swaps (or comparing current ticks for Linear & range) and choose one.
+            # Then skip the other one because the best option might be to do two swaps of the same kind.
 
             ######################################################
             #################### LIMIT ORDERS ####################
@@ -364,19 +366,20 @@ class ChainflipPool(UniswapPool):
                 ## if the tick is initialized, run the tick transition
                 ## @dev: here is where we should handle the case of an uninitialized boundary tick
                 if stepLinear.initialized:
-                    liquidityRemaining = Tick.crosslinear(
+                    print("CROSSING TICK")
+                    liquidityNet = Tick.crosslinear(
                         ticksLinearMap,
                         stepLinear.tickNext,
                         stateLinear.feeGrowthGlobalX128
                         if zeroForOne
-                        else self.linearFeeGrowthGlobal1X128,
+                        else self.linearFeeGrowthGlobal0X128,
                     )
                     #TODO: Check if this makes sense and if it's working
                     # For now only remove some liquidity
                     if zeroForOne:
-                        liquidityRemaining = - liquidityRemaining
+                        liquidityNet = - liquidityNet
                     stateLinear.liquidity = LiquidityMath.addDelta(
-                        stateLinear.liquidity, liquidityRemaining
+                        stateLinear.liquidity, liquidityNet
                     )
                     # TODO: Should set the tick Liquidity to zero (old tick) and remove all 
                     # the positions included in this tick. But we can't easily get them
@@ -394,6 +397,7 @@ class ChainflipPool(UniswapPool):
                 ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
                 stateLinear.tick = TickMath.getTickAtSqrtRatio(stateLinear.sqrtPriceX96)
 
+            print("OUTPUT OF LINEAR TICK calculations: ", stateLinear.tick)
             # Stop the loop if the swap is completed with limit orders
             if (
                 amountSpecifiedRemaining != 0
@@ -500,10 +504,9 @@ class ChainflipPool(UniswapPool):
                     state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
 
         
-            ##Compare where state.tick and stateLinear.tick are. Same for sqrtPriceX96. Then decide which one to use.
-            ##Do this even if the range order is not used. Only move ticks if there are no range nor limit orders.
-            state.tick = stateLinear.tick =  max(state.tick, stateLinear.tick) if zeroForOne else min(state.tick, stateLinear.tick)
-            state.sqrtPriceX96 = stateLinear.sqrtPriceX96 = sqrtPriceX96 = max(state.sqrtPriceX96, stateLinear.sqrtPriceX96) if zeroForOne else min(state.sqrtPriceX96, stateLinear.sqrtPriceX96)
+            ## Leave the state.tick and price separate for the Range and Limit order swaps. We will most likely need to
+            ## compare them at the begining of the loop.
+
 
             # Temporal to prevent infinite loop
             loopCounter += 1
@@ -511,40 +514,50 @@ class ChainflipPool(UniswapPool):
                 assert False
 
         ## End of swap loop
-        ## update tick to the MIN/MAX from limit/range order???
-        
-        # Health check
-        assert state.sqrtPriceX96 ==stateLinear.sqrtPriceX96 == sqrtPriceX96
-        assert state.tick == stateLinear.tick
-
+        # Set final tick as the range tick
         if state.tick != slot0Start.tick:
-            if zeroForOne:
-                self.slot0.sqrtPriceX96 = max(
-                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
-                )
-                self.slot0.tick = max(state.tick, stateLinear.tick)
-            else:
-                self.slot0.sqrtPriceX96 = min(
-                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
-                )
-                self.slot0.tick = min(state.tick, stateLinear.tick)
+            self.slot0.sqrtPriceX96 = state.sqrtPriceX96
+            self.slot0.tick = state.tick
         else:
             ## otherwise just update the price
-            if zeroForOne:
-                self.slot0.sqrtPriceX96 = max(
-                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
-                )
-            else:
-                self.slot0.sqrtPriceX96 = min(
-                    state.sqrtPriceX96, stateLinear.sqrtPriceX96
-                )
+            self.slot0.sqrtPriceX96 = state.sqrtPriceX96
+
+
+        # FOR DEBUGGING PURPOSES - to check buurned half-swapped positions
+        self.slot0.sqrtPriceX96 = stateLinear.sqrtPriceX96
+        self.slot0.tick = stateLinear.tick
+
+        # if state.tick != slot0Start.tick:
+        #     if zeroForOne:
+        #         self.slot0.sqrtPriceX96 = max(
+        #             state.sqrtPriceX96, stateLinear.sqrtPriceX96
+        #         )
+        #         self.slot0.tick = max(state.tick, stateLinear.tick)
+        #     else:
+        #         self.slot0.sqrtPriceX96 = min(
+        #             state.sqrtPriceX96, stateLinear.sqrtPriceX96
+        #         )
+        #         self.slot0.tick = min(state.tick, stateLinear.tick)
+        # else:
+        #     ## otherwise just update the price
+        #     if zeroForOne:
+        #         self.slot0.sqrtPriceX96 = max(
+        #             state.sqrtPriceX96, stateLinear.sqrtPriceX96
+        #         )
+        #     else:
+        #         self.slot0.sqrtPriceX96 = min(
+        #             state.sqrtPriceX96, stateLinear.sqrtPriceX96
+        #         )
 
         ## update liquidity if it changed
         if cache.liquidityStart != state.liquidity:
             self.liquidity = state.liquidity
 
         if cacheLinear.liquidityStart != stateLinear.liquidity:
-            self.liquidityLinear = stateLinear.liquidity
+            if zeroForOne:
+                self.liquidityLinear1 = stateLinear.liquidity
+            else:
+                self.liquidityLinear0 = stateLinear.liquidity
 
         ## update fee growth global and, if necessary, protocol fees
         ## overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees

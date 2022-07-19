@@ -31,10 +31,13 @@ class TickInfo:
 class TickInfoLinear:
     # Liquidity in range orders
     liquidityGross: int
-    # Liquidity remaining - not yet swapped
-    liquidityRemaining: int
-    # TODO: Removing this might be a problem. When positions are removed or when a linear tick is crossed
-    # and we want to burn all positions we need this.
+    # Liquidity remaining - not yet swapped => TODO: Check implementation
+    # Since we won't store the stateLinear.sqrtPrice but rather only the range one, we need to store in each tick
+    # how much liquidity has already been swapped. Or store a global variable with that??
+    liquidityNet: int
+    
+    ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
+    ## only has relative meaning, not absolute — the value depends on when the tick is initialized    
     feeGrowthOutsideX128: int
 
 

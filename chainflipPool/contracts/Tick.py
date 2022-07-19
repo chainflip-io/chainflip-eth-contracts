@@ -77,7 +77,7 @@ def getFeeGrowthInsideLinear(
         int24=(tickLower, tickUpper, tickCurrent),
         uint256=(feeGrowthGlobalX128),
     )
-    
+
     # Assumption that the key (tick) exists
     lower = self[tickLower]
     upper = self[tickUpper]
@@ -217,8 +217,8 @@ def crosslinear(
     info = tickBitmap[tick]
     info.feeGrowthOutside0X128 = feeGrowthGlobalX128 - info.feeGrowthOutside0X128
     # Mark all liquidity as used since we will remove all the positions from the tick.
-    info.liquidityRemaining = 0
-    return info.liquidityRemaining
+    info.liquidityNet = 0
+    return info.liquidityNet
 
 
 def updateLinear(
@@ -263,14 +263,19 @@ def updateLinear(
 
     # Update liquidity remaining
     # liquidityDelta < 0 would be due to burn
-    if liquidityDelta < 0:
-        # How do we handle someone burning a half-swapped position - aka when this reverts
-        info.liquidityRemaining = SafeMath.subInts(
-            info.liquidityRemaining, liquidityDelta
-        )
-    else:
-        info.liquidityRemaining = SafeMath.addInts(
-            info.liquidityRemaining, liquidityDelta
-        )
+    # if liquidityDelta < 0:
+    #     # How do we handle someone burning a half-swapped position - aka when this reverts
+    #     info.liquidityNet = SafeMath.subInts(
+    #         info.liquidityNet, liquidityDelta
+    #     )
+    # else:
+    #     info.liquidityNet = SafeMath.addInts(
+    #         info.liquidityNet, liquidityDelta
+    #     )
+
+    # Update liquidity remaining
+    # How do we handle someone burning a half-swapped position - aka when this reverts with underflow?
+    info.liquidityNet = SafeMath.addInts(info.liquidityNet, liquidityDelta)
+    
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped
