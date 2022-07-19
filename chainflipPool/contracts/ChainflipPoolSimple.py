@@ -67,6 +67,8 @@ class ChainflipPoolSimple(UniswapPool):
         elif token == self.token1:
             recipient.transferToken(self, self.token1, amountIn)
 
+        return amountIn
+
 
     def _modifyPositionLinearOrder(self, token, params):
         checkInputTypes(
@@ -120,7 +122,7 @@ class ChainflipPoolSimple(UniswapPool):
         )
         # This will create a position if it doesn't exist
         positions =  self.positionsZero if token == self.token0 else self.positionsOne
-        position = getLinearSimple(
+        position = getLinearPositionSimple(
             positions, owner, tickLower, tickUpper, token == self.token0
         )
 
@@ -143,8 +145,10 @@ class ChainflipPoolSimple(UniswapPool):
 
         # Add check if the position exists - when poking an uninitialized position it can be that
         # getFeeGrowthInside finds a non-initialized tick before Position.update reverts.
-        Position.assertLimitPositionExists(
-            self.linearPositions, recipient, tickLower, tickUpper, token == self.token0
+        positions =  self.positionsZero if token == self.token0 else self.positionsOne
+
+        assertLimitPositionExistsSimple(
+            positions, recipient, tickLower, tickUpper, token == self.token0
         )
 
         # Added extra recipient input variable to mimic msg.sender
@@ -161,9 +165,218 @@ class ChainflipPoolSimple(UniswapPool):
 
         return (recipient, tickLower, tickUpper, amount, amount)
 
+    def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
+            checkInputTypes(
+                accounts=(recipient),
+                bool=(zeroForOne),
+                int256=(amountSpecified),
+                uint160=(sqrtPriceLimitX96),
+            )
+
+            assert amountSpecified != 0, "AS"
+
+            slot0Start = self.slot0
+
+            if zeroForOne:
+                assert (
+                    sqrtPriceLimitX96 < slot0Start.sqrtPriceX96
+                    and sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
+                ), "SPL"
+            else:
+                assert (
+                    sqrtPriceLimitX96 > slot0Start.sqrtPriceX96
+                    and sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
+                ), "SPL"
+
+            feeProtocol = (
+                (slot0Start.feeProtocol % 16)
+                if zeroForOne
+                else (slot0Start.feeProtocol >> 4)
+            )
+            cache = SwapCache(feeProtocol, self.liquidity)
+
+            exactInput = amountSpecified > 0
+
+            state = SwapState(
+                amountSpecified,
+                0,
+                slot0Start.sqrtPriceX96,
+                slot0Start.tick,
+                self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
+                0,
+                cache.liquidityStart,
+            )
+
+            positions = self.positionsOne if zeroForOne else self.positionsZero
+
+            # FOR NOW ONLY SWAP LIMIT ORDERS
+
+            while (
+                state.amountSpecifiedRemaining != 0
+                and state.sqrtPriceX96 != sqrtPriceLimitX96
+            ):
+                print("SWAP LOOP")
+                print("current tick: " + str(state.tick))
+                step = StepComputations(0, 0, 0, 0, 0, 0, 0)
+                step.sqrtPriceStartX96 = state.sqrtPriceX96
+
+                # This will return one of the ticks, there might be multiples or none
+                # TODO: FIX PROBLEM HERE. We don't keep track of current liquidity when we mint so if we start
+                # between two ticks we don't find any ticks. E.g. start at -23020, zeroForOne, only minted (-887220,22980)
+                (position, step.initialized) = getNextPosition(
+                    positions, state.tick, zeroForOne
+                )
+                print("position: " + str(position))
+
+                if position == None:
+                    # In this case we should be continuing to range orders or check next linear. For now we just add or decrease tick
+                    # in search for a valid limit position to swap
+                    #state.tick = (state.tick - 1) if zeroForOne else step.tickNext
+                    state.tick = (state.tick - 1) if zeroForOne else (state.tick+1)
+                    print("NO TICK FOUND")
+                    assert False
+                    continue
+
+                ## get the price for the next tick
+                print(position)
+                state.sqrtPriceX96 = position.currentSqrtPricex96
+
+                # TODO: Check if direction is correct
+                if zeroForOne:
+                    step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(position.tickLower)
+                    ## Add assertions to remember to check the direction
+                    assert step.sqrtPriceNextX96 < step.sqrtPriceStartX96, "SPN"
+                else:
+                    step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(position.tickUpper)
+                    assert step.sqrtPriceNextX96 > step.sqrtPriceStartX96, "SPN"
+                
+                #if position is partially swapped we need to load the currentPrice
+
+                ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted
+                if zeroForOne:
+                    sqrtRatioTargetX96 = (
+                        sqrtPriceLimitX96
+                        if step.sqrtPriceNextX96 < sqrtPriceLimitX96
+                        else step.sqrtPriceNextX96
+                    )
+                else:
+                    sqrtRatioTargetX96 = (
+                        sqrtPriceLimitX96
+                        if step.sqrtPriceNextX96 > sqrtPriceLimitX96
+                        else step.sqrtPriceNextX96
+                    )
+
+                (
+                    state.sqrtPriceX96,
+                    step.amountIn,
+                    step.amountOut,
+                    step.feeAmount,
+                ) = SwapMath.computeSwapStep(
+                    state.sqrtPriceX96,
+                    sqrtRatioTargetX96,
+                    position.liquidityRemaining,
+                    state.amountSpecifiedRemaining,
+                    self.fee,
+                )
+                if exactInput:
+                    state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
+                    state.amountCalculated = SafeMath.subInts(
+                        state.amountCalculated, step.amountOut
+                    )
+                else:
+                    state.amountSpecifiedRemaining += step.amountOut
+                    state.amountCalculated = SafeMath.addInts(
+                        state.amountCalculated, step.amountIn + step.feeAmount
+                    )
+
+                ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+                if cache.feeProtocol > 0:
+                    delta = abs(step.feeAmount // cache.feeProtocol)
+                    step.feeAmount -= delta
+                    state.protocolFee += delta & (2**128 - 1)
+
+                ## update position fee tracker
+                if position.liquidityRemaining > 0:
+                    state.feeGrowthGlobalX128 += mulDiv(
+                        step.feeAmount, FixedPoint128_Q128, position.liquidityRemaining
+                    )
+                    # Addition can overflow in Solidity - mimic it
+                    state.feeGrowthGlobalX128 = toUint256(state.feeGrowthGlobalX128)
+
+                ## shift tick if we reached the next price
+                if state.sqrtPriceX96 == step.sqrtPriceNextX96:
+                    ## if the tick is initialized, run the tick transition
+                    ## @dev: here is where we should handle the case of an uninitialized boundary tick
+                    if step.initialized:
+                        # TODO: Burn position and calculate fees - leave it ready for collect (or also collect?!)
+                        position.liquidityRemaining = 0
+                        
+                    # DO NOT move the tick for now since there might be multiple positions in the same tick
+                    #state.tick = (step.tickNext - 1) if zeroForOne else step.tickNext
+                elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
+                    ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
+                    # DO NOT move the tick for now since there might be multiple positions in the same tick
+                    state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
+                    # Store in the position the latest price swapped
+                    position.currentSqrtPriceX96 = state.sqrtPriceX96
+
+            ## End of swap loop
+            ## update tick
+
+            # TODO: This will probably need to change, since it should only change it if range orders change it.
+            if state.tick != slot0Start.tick:
+                self.slot0.sqrtPriceX96 = state.sqrtPriceX96
+                self.slot0.tick = state.tick
+            else:
+                ## otherwise just update the price
+                self.slot0.sqrtPriceX96 = state.sqrtPriceX96
 
 
-def getLinearSimple(listPositions, owner, tickLower, tickUpper, isToken0):
+            ## update fee growth global and, if necessary, protocol fees
+            ## overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
+
+            if zeroForOne:
+                if state.protocolFee > 0:
+                    self.protocolFees.token0 += state.protocolFee
+            else:
+                if state.protocolFee > 0:
+                    self.protocolFees.token1 += state.protocolFee
+
+            (amount0, amount1) = (
+                (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
+                if (zeroForOne == exactInput)
+                else (
+                    state.amountCalculated,
+                    amountSpecified - state.amountSpecifiedRemaining,
+                )
+            )
+
+            ## do the transfers and collect payment
+            if zeroForOne:
+                if amount1 < 0:
+                    self.transferToken(recipient, self.token1, abs(amount1))
+                balanceBefore = self.balances[self.token0]
+                recipient.transferToken(self, self.token0, abs(amount0))
+                assert balanceBefore + abs(amount0) == self.balances[self.token0], "IIA"
+            else:
+                if amount0 < 0:
+                    self.transferToken(recipient, self.token0, abs(amount0))
+
+                balanceBefore = self.balances[self.token1]
+                recipient.transferToken(self, self.token1, abs(amount1))
+                assert balanceBefore + abs(amount1) == self.balances[self.token1], "IIA"
+
+            return (
+                recipient,
+                amount0,
+                amount1,
+                state.sqrtPriceX96,
+                0,
+                state.tick,
+            )
+
+
+def getLinearPositionSimple(listPositions, owner, tickLower, tickUpper, isToken0):
     checkInputTypes(account=owner, int24=(tickLower, tickLower))
 
     # Need to handle non-existing positions in Python
@@ -202,206 +415,7 @@ def getLinearSimple(listPositions, owner, tickLower, tickUpper, isToken0):
     return listPositions[key][-1]
 
 
-def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
-        checkInputTypes(
-            accounts=(recipient),
-            bool=(zeroForOne),
-            int256=(amountSpecified),
-            uint160=(sqrtPriceLimitX96),
-        )
-        assert amountSpecified != 0, "AS"
 
-        slot0Start = self.slot0
-
-        if zeroForOne:
-            assert (
-                sqrtPriceLimitX96 < slot0Start.sqrtPriceX96
-                and sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
-            ), "SPL"
-        else:
-            assert (
-                sqrtPriceLimitX96 > slot0Start.sqrtPriceX96
-                and sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
-            ), "SPL"
-
-        feeProtocol = (
-            (slot0Start.feeProtocol % 16)
-            if zeroForOne
-            else (slot0Start.feeProtocol >> 4)
-        )
-        cache = SwapCache(feeProtocol, self.liquidity)
-
-        exactInput = amountSpecified > 0
-
-        state = SwapState(
-            amountSpecified,
-            0,
-            slot0Start.sqrtPriceX96,
-            slot0Start.tick,
-            self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
-            0,
-            cache.liquidityStart,
-        )
-
-        positions = self.positionsOne if zeroForOne else self.positionsZero
-
-        # FOR NOW ONLY SWAP LIMIT ORDERS
-
-        while (
-            state.amountSpecifiedRemaining != 0
-            and state.sqrtPriceX96 != sqrtPriceLimitX96
-        ):
-            step = StepComputations(0, 0, 0, 0, 0, 0, 0)
-            step.sqrtPriceStartX96 = state.sqrtPriceX96
-
-            # This will return one of the ticks, there might be multiples.
-            (position, step.initialized) = getNextPosition(
-                positions, state.tick, zeroForOne
-            )
-
-            if position == None:
-                # In this case we should be continuing to range orders or check next linear. For now we just add or decrease tick
-                # in search for a valid limit position to swap
-                state.tick = (state.tick - 1) if zeroForOne else step.tickNext
-                continue
-
-            ## get the price for the next tick
-
-            state.sqrtPriceX96 = position.currentSqrtPriceX96
-
-            # TODO: Check if direction is correct
-            if zeroForOne:
-                step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(position.tickLower)
-                ## Add assertions to remember to check the direction
-                assert step.sqrtPriceNextX96 < step.sqrtPriceStartX96, "SPN"
-            else:
-                step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(position.tickUpper)
-                assert step.sqrtPriceNextX96 > step.sqrtPriceStartX96, "SPN"
-            
-            #if position is partially swapped we need to load the currentPrice
-
-            ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted
-            if zeroForOne:
-                sqrtRatioTargetX96 = (
-                    sqrtPriceLimitX96
-                    if step.sqrtPriceNextX96 < sqrtPriceLimitX96
-                    else step.sqrtPriceNextX96
-                )
-            else:
-                sqrtRatioTargetX96 = (
-                    sqrtPriceLimitX96
-                    if step.sqrtPriceNextX96 > sqrtPriceLimitX96
-                    else step.sqrtPriceNextX96
-                )
-
-            (
-                state.sqrtPriceX96,
-                step.amountIn,
-                step.amountOut,
-                step.feeAmount,
-            ) = SwapMath.computeSwapStep(
-                state.sqrtPriceX96,
-                sqrtRatioTargetX96,
-                position.liquidityRemaining,
-                state.amountSpecifiedRemaining,
-                self.fee,
-            )
-            if exactInput:
-                state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
-                state.amountCalculated = SafeMath.subInts(
-                    state.amountCalculated, step.amountOut
-                )
-            else:
-                state.amountSpecifiedRemaining += step.amountOut
-                state.amountCalculated = SafeMath.addInts(
-                    state.amountCalculated, step.amountIn + step.feeAmount
-                )
-
-            ## if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
-            if cache.feeProtocol > 0:
-                delta = abs(step.feeAmount // cache.feeProtocol)
-                step.feeAmount -= delta
-                state.protocolFee += delta & (2**128 - 1)
-
-            ## update position fee tracker
-            if position.liquidityRemaining > 0:
-                state.feeGrowthGlobalX128 += mulDiv(
-                    step.feeAmount, FixedPoint128_Q128, position.liquidityRemaining
-                )
-                # Addition can overflow in Solidity - mimic it
-                state.feeGrowthGlobalX128 = toUint256(state.feeGrowthGlobalX128)
-
-            ## shift tick if we reached the next price
-            if state.sqrtPriceX96 == step.sqrtPriceNextX96:
-                ## if the tick is initialized, run the tick transition
-                ## @dev: here is where we should handle the case of an uninitialized boundary tick
-                if step.initialized:
-                    # TODO: Burn position and calculate fees - leave it ready for collect (or also collect?!)
-                    position.liquidityRemaining = 0
-                    
-                # DO NOT move the tick for now since there might be multiple positions in the same tick
-                #state.tick = (step.tickNext - 1) if zeroForOne else step.tickNext
-            elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
-                ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
-                # DO NOT move the tick for now since there might be multiple positions in the same tick
-                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
-                # Store in the position the latest price swapped
-                position.currentSqrtPriceX96 = state.sqrtPriceX96
-
-        ## End of swap loop
-        ## update tick
-
-        # TODO: This will probably need to change, since it should only change it if range orders change it.
-        if state.tick != slot0Start.tick:
-            self.slot0.sqrtPriceX96 = state.sqrtPriceX96
-            self.slot0.tick = state.tick
-        else:
-            ## otherwise just update the price
-            self.slot0.sqrtPriceX96 = state.sqrtPriceX96
-
-
-        ## update fee growth global and, if necessary, protocol fees
-        ## overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
-
-        if zeroForOne:
-            if state.protocolFee > 0:
-                self.protocolFees.token0 += state.protocolFee
-        else:
-            if state.protocolFee > 0:
-                self.protocolFees.token1 += state.protocolFee
-
-        (amount0, amount1) = (
-            (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
-            if (zeroForOne == exactInput)
-            else (
-                state.amountCalculated,
-                amountSpecified - state.amountSpecifiedRemaining,
-            )
-        )
-
-        ## do the transfers and collect payment
-        if zeroForOne:
-            if amount1 < 0:
-                self.transferToken(recipient, self.token1, abs(amount1))
-            balanceBefore = self.balances[self.token0]
-            recipient.transferToken(self, self.token0, abs(amount0))
-            assert balanceBefore + abs(amount0) == self.balances[self.token0], "IIA"
-        else:
-            if amount0 < 0:
-                self.transferToken(recipient, self.token0, abs(amount0))
-
-            balanceBefore = self.balances[self.token1]
-            recipient.transferToken(self, self.token1, abs(amount1))
-            assert balanceBefore + abs(amount1) == self.balances[self.token1], "IIA"
-
-        return (
-            recipient,
-            amount0,
-            amount1,
-            state.sqrtPriceX96,
-            0,
-            state.tick,
-        )
 
 
 # def getNextPosition(listPositions,tick, zeroForOne):
@@ -425,6 +439,7 @@ def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
 
 def getNextPosition(positionsMap, tick, lte):
     checkInputTypes(int24=(tick), bool=(lte))
+
     if not positionsMap.__contains__(tick):
         # If tick doesn't exist in the mapping we fake it (easier than searching for nearest value)
         sortedKeyList = sorted(list(positionsMap.keys()) + [tick])
@@ -433,21 +448,110 @@ def getNextPosition(positionsMap, tick, lte):
 
     indexCurrentTick = sortedKeyList.index(tick)
 
+    #TODO: We need to swap how we store LinearOrder 0 and 1 (tickUpper/Lower for this to work). So we look at HighTick
     if lte:
         # If the current tick is initialized (not faked), we return the current tick
         if positionsMap.__contains__(tick):
-            return tick, True
+                return positionsMap[tick], True
         elif indexCurrentTick == 0:
             # No tick to the left
-            return TickMath.MIN_TICK, False
+            return None, False
         else:
-            nextTick = sortedKeyList[indexCurrentTick - 1]
+            while (indexCurrentTick > 0):
+                nextTick = sortedKeyList[indexCurrentTick - 1]
+                for i in range(len(positionsMap[nextTick])):
+                    if positionsMap[i].liquidityRemaining > 0:
+                        # Return the first position that has tick Lower to the left of the current tick
+                        return positionsMap[tick][i]
+                # If none of the positions match what we are looking for, we look for next tick again
+                indexCurrentTick -= 1
+            # No more ticks nor positions to the left
+            return None, False
     else:
-
-        if indexCurrentTick == len(sortedKeyList) - 1:
+    #TODO: We need to swap how we store LinearOrder 0 and 1 (tickUpper/Lower for this to work). So we look at LowTick
+        # THis first case might be wrong
+        if positionsMap.__contains__(tick):
+                return positionsMap[tick], True
+        elif indexCurrentTick == len(sortedKeyList) - 1:
             # No tick to the right
-            return TickMath.MAX_TICK, False
-        nextTick = sortedKeyList[indexCurrentTick + 1]
+            return None, False
+        else:
+            while (indexCurrentTick <  len(sortedKeyList)):
+                nextTick = sortedKeyList[indexCurrentTick - 1]
+                for i in range(len(positionsMap[nextTick])):
+                    if positionsMap[i].liquidityRemaining > 0:
+                        # Return the first position that has tick Lower to the left of the current tick
+                        return positionsMap[tick][i]
+                # If none of the positions match what we are looking for, we look for next tick again
+                indexCurrentTick += 1
+            # No more ticks nor positions to the right
+            return None, False
 
-    # Return tick within the boundaries
-    return nextTick, True
+
+
+
+
+
+
+
+
+
+
+
+
+    # if not positionsMap.__contains__(tick):
+    #     # If there are no positions at that tick we fake it (easier than searching for nearest value)
+    #     sortedKeyList = sorted(list(positionsMap.keys()) + [tick])
+    # else:
+    #     sortedKeyList = sorted(list(positionsMap.keys()))
+
+    # indexCurrentTick = sortedKeyList.index(tick)
+
+    if not positionsMap.__contains__(tick):
+        # TODO: Improve this depending on how to decide between range orders and limit orders
+        return None, False
+
+    # Return the first position that is has liquidityRemaining >0. The direction should be correct.
+    for i in range(len(positionsMap)):
+        if positionsMap[i].liquidityRemaining > 0:
+            return positionsMap[tick][0]
+    return None, False
+
+
+    # if lte:
+    #     # If the current tick is initialized (not faked), we return the current tick
+    #     if positionsMap.__contains__(tick):
+    #         return tick, True
+    #     elif indexCurrentTick == 0:
+    #         # No tick to the left
+    #         return None, False
+    #     else:
+    #         nextTick = sortedKeyList[indexCurrentTick - 1]
+    # else:
+
+    #     if indexCurrentTick == len(sortedKeyList) - 1:
+    #         # No tick to the right
+    #         return None, False
+    #     nextTick = sortedKeyList[indexCurrentTick + 1]
+
+    # # Return tick within the boundaries
+    # return nextTick, True
+
+
+def assertLimitPositionExistsSimple(self, owner, tickLower, tickUpper, isToken0):
+    checkInputTypes(account=owner, int24=(tickLower, tickLower))
+    positionInfo = getLinearPositionSimple(self, owner, tickLower, tickUpper, isToken0)
+    if isToken0:
+        assert positionInfo != PositionLinearInfoSimple(isToken0,tickLower,tickUpper,owner,0,0,0,TickMath.getSqrtRatioAtTick(tickLower)), "Position doesn't exist"
+    else:
+        assert positionInfo != PositionLinearInfoSimple(isToken0,tickLower,tickUpper,owner,0,0,0,TickMath.getSqrtRatioAtTick(tickUpper)), "Position doesn't exist"
+
+
+# Helper for tests
+def assertLimitPositionNotExistsSimple(self, owner, tickLower, tickUpper, isToken0):
+    checkInputTypes(account=owner, int24=(tickLower, tickLower))
+    positionInfo = getLinearPositionSimple(self, owner, tickLower, tickUpper, isToken0)
+    if isToken0:
+        assert positionInfo == PositionLinearInfoSimple(isToken0,tickLower,tickUpper,owner,0,0,0,TickMath.getSqrtRatioAtTick(tickLower)), "Position doesn't exist"
+    else:
+        assert positionInfo == PositionLinearInfoSimple(isToken0,tickLower,tickUpper,owner,0,0,0,TickMath.getSqrtRatioAtTick(tickUpper)), "Position doesn't exist"

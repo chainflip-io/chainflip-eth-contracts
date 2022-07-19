@@ -327,7 +327,6 @@ def swap(pool, inputToken, amounts, recipient, sqrtPriceLimitX96):
     [amountIn, amountOut] = amounts
     exactInput = amountOut == 0
     amount = amountIn if exactInput else amountOut
-
     if inputToken == TEST_TOKENS[0]:
         if exactInput:
             checkInt128(amount)
