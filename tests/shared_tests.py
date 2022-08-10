@@ -5,21 +5,24 @@ from utils import *
 # ----------Vault----------
 
 
-def fetchDepositEth(cf, vault, DepositEth):
+def fetchDepositEth(cf, vault, DepositEth, **kwargs):
+    amount = kwargs.get("amount", TEST_AMNT)
+
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(vault.address, JUNK_HEX_PAD, DepositEth, "")
-    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+
+    assert cf.DEPLOYER.balance() >= amount
+    cf.DEPLOYER.transfer(depositAddr, amount)
 
     balanceVaultBefore = vault.balance()
 
     # Fetch the deposit
-    balanceBefore = cf.ALICE.balance()
-    assert balanceBefore >= TEST_AMNT
-
     signed_call_cf(cf, vault.fetchDepositEth, JUNK_HEX_PAD, sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert vault.balance() == balanceVaultBefore + TEST_AMNT
+    assert vault.balance() == balanceVaultBefore + amount
+
+    return depositAddr
 
 
 # Test transfer function from a vault with funds

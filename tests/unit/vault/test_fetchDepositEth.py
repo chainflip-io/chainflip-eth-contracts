@@ -35,3 +35,20 @@ def test_fetchDepositEth_rev_sig(cf):
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
         cf.vault.fetchDepositEth(sigData, JUNK_HEX_PAD)
+
+
+# Redeploy a depositETH contract in the same address as the previous one. This is in case
+# an attacker tries to grief the protocol by sending a small amount to an address where
+# the CFE is expecting the user's input swap amount to be deposited. We need to then
+# be able to redeploy the contract in the same address to be able to fetch the funds.
+def test_fetchDepositEth_grief(cf, DepositEth):
+    assert cf.vault.balance() == 0
+
+    addr0 = fetchDepositEth(cf, cf.vault, DepositEth)
+    assert cf.vault.balance() == TEST_AMNT
+
+    addr1 = fetchDepositEth(cf, cf.vault, DepositEth, amount=TEST_AMNT * 200)
+    assert cf.vault.balance() == TEST_AMNT * (200 + 1)
+
+    # Check addresses are the same
+    assert addr0 == addr1

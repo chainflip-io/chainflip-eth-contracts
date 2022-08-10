@@ -4,20 +4,26 @@ from utils import *
 from shared_tests import *
 
 
-def test_fetchDepositToken(cf, token, DepositToken):
+def test_fetchDepositToken(cf, token, DepositToken, **kwargs):
+    amount = kwargs.get("amount", TEST_AMNT)
+
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
         cf.vault.address, JUNK_HEX_PAD, DepositToken, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
 
-    assert token.balanceOf(cf.vault) == 0
+    assert token.balanceOf(cf.DEPLOYER) >= amount
+    token.transfer(depositAddr, amount, {"from": cf.DEPLOYER})
+
+    balanceVaultBefore = token.balanceOf(cf.vault)
 
     # Fetch the deposit
     signed_call_cf(cf, cf.vault.fetchDepositToken, [JUNK_HEX_PAD, token])
 
     assert token.balanceOf(depositAddr) == 0
-    assert token.balanceOf(cf.vault) == TEST_AMNT
+    assert token.balanceOf(cf.vault) == balanceVaultBefore + amount
+
+    return depositAddr
 
 
 def test_fetchDepositToken_and_eth(cf, token, DepositToken):
@@ -71,3 +77,20 @@ def test_fetchDepositToken_rev_sig(cf):
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
         cf.vault.fetchDepositToken(sigData, [JUNK_HEX_PAD, ETH_ADDR])
+
+
+# Redeploy a DepositToken contract in the same address as the previous one. This is in case
+# an attacker tries to grief the protocol by sending a small amount to an address where
+# the CFE is expecting the user's input swap amount to be deposited. We need to then
+# be able to redeploy the contract in the same address to be able to fetch the funds.
+def test_fetchDepositToken_grief(cf, token, DepositToken):
+    assert token.balanceOf(cf.vault) == 0
+
+    addr0 = test_fetchDepositToken(cf, token, DepositToken)
+    assert token.balanceOf(cf.vault) == TEST_AMNT
+
+    addr1 = test_fetchDepositToken(cf, token, DepositToken, amount=TEST_AMNT * 200)
+    assert token.balanceOf(cf.vault) == TEST_AMNT * (200 + 1)
+
+    # Check addresses are the same
+    assert addr0 == addr1
