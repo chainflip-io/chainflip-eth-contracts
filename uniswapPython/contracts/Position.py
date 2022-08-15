@@ -24,6 +24,21 @@ class PositionInfo:
     tokensOwed1: int
 
 
+@dataclass
+class PositionLinearInfo:
+    ## the amount of liquidity owned by this position in the token provided
+    liquidity: int
+    # TODO: How to keep track of the fees
+    ## fee growth per unit of liquidity as of the last update to liquidity or fees owed
+    feeGrowthInsideLastX128: int
+    ## the fees owed to the position owner in token0#token1 => uint128
+    # Since we can burn a position half swapped, we need both tokensOwed0 and tokensOwed1
+    tokensOwed0: int
+    tokensOwed1: int
+    # Not strictly necessary since we need to pass the bool (isToken0) to generate the key
+    # isToken0: bool
+
+
 ### @notice Returns the Info struct of a position, given an owner and position boundaries
 ### @param self The mapping containing all user positions
 ### @param owner The address of the position owner
@@ -44,10 +59,30 @@ def get(self, owner, tickLower, tickUpper):
     return self[key]
 
 
+def getLinear(self, owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=tick, bool=isToken0)
+
+    # Need to handle non-existing positions in Python
+    key = hash((owner, tick, isToken0))
+    if not self.__contains__(key):
+        # We don't want to create a new position if it doesn't exist!
+        # In the case of collect we add an assert after that so it reverts.
+        # For mint there is an amount > 0 check so it is OK to initialize
+        # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
+        self[key] = PositionLinearInfo(0, 0, 0, 0)
+    return self[key]
+
+
 def assertPositionExists(self, owner, tickLower, tickUpper):
     checkInputTypes(account=owner, int24=(tickLower, tickLower))
     positionInfo = get(self, owner, tickLower, tickUpper)
     assert positionInfo != PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
+
+
+def assertLimitPositionExists(self, owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
+    positionInfo = getLinear(self, owner, tick, isToken0)
+    assert positionInfo != PositionLinearInfo(0, 0, 0, 0), "Position doesn't exist"
 
 
 ### @notice Credits accumulated fees to a user's position
@@ -100,3 +135,51 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
         ## In uniswap: overflow is acceptable, have to withdraw before you hit type(uint128).max fees
         self.tokensOwed0 += tokensOwed0
         self.tokensOwed1 += tokensOwed1
+
+
+def updateLinear(
+    self,
+    liquidityDelta,
+    # feeGrowthInsideX128
+):
+    checkInputTypes(
+        int128=(
+            liquidityDelta
+            # uin256=(feeGrowthInsideX128)
+        )
+    )
+
+    if liquidityDelta == 0:
+        # Removed because a check is added for burn 0 uninitialized position
+        # assert self.liquidity > 0, "NP"  ## disallow pokes for 0 liquidity positions
+        liquidityNext = self.liquidity
+    else:
+        liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)
+
+    # TODO: Add fee and tokensOwed calculation
+
+    # TODO: Does this make sense?
+    ## calculate accumulated fees. Add toUint256 because there can be an underflow
+    # tokensOwed = mulDiv(
+    #     toUint256(feeGrowthInsideX128 - self.feeGrowthInsideLastX128),
+    #     self.liquidity,
+    #     FixedPoint128_Q128,
+    # )
+
+    # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
+    # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
+    # acceptable to save gas. TODO: Is this OK for us?
+
+    # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
+    # if tokensOwed > MAX_UINT128:
+    #     tokensOwed = tokensOwed & (2**128 - 1)
+
+    ## update the position
+    if liquidityDelta != 0:
+        self.liquidity = liquidityNext
+    # self.feeGrowthInsideLastX128 = feeGrowthInsideX128
+
+    # if tokensOwed > 0:
+    # TODO: Do we want to allow this overflow to happen - for now we allow it.
+    ## In uniswap: overflow is acceptable, have to withdraw before you hit type(uint128).max fees
+    # self.tokensOwed += tokensOwed

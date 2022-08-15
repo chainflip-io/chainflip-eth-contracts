@@ -27,6 +27,19 @@ class TickInfo:
     feeGrowthOutside1X128: int
 
 
+@dataclass
+class TickInfoLinear:
+    ## amount of liquidity that has not been yet swapped
+    liquidityLeft: int
+    # Liquidity that has been swapped
+    liquiditySwapped: int
+
+    # TODO: How to keep track of fees?
+    ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
+    ## only has relative meaning, not absolute — the value depends on when the tick is initialized
+    feeGrowthOutsideX128: int
+
+
 # MAX type values
 MAX_UINT128 = 2**128 - 1
 MAX_UINT256 = 2**256 - 1
@@ -194,6 +207,15 @@ def toUint256(number):
     return number
 
 
+def toUint128(number):
+    try:
+        checkUInt128(number)
+    except:
+        number = number & (2**128 - 1)
+        checkUInt128(number)
+    return number
+
+
 # General checkInput function for all functions that take input parameters
 def checkInputTypes(**kwargs):
     if "string" in kwargs:
@@ -232,6 +254,11 @@ def insertUninitializedTickstoMapping(mapping, keys):
         insertTickInMapping(mapping, key, TickInfo(0, 0, 0, 0))
 
 
+def insertUninitializedLinearTickstoMapping(mapping, keys):
+    for key in keys:
+        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0))
+
+
 def insertTickInMapping(mapping, key, value):
     assert mapping.__contains__(key) == False
     mapping[key] = value
@@ -246,6 +273,10 @@ def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
 
 def getPositionKey(address, lowerTick, upperTick):
     return hash((address, lowerTick, upperTick))
+
+
+def getLimitPositionKey(address, tick, isToken0):
+    return hash((address, tick, isToken0))
 
 
 ### POOL SWAPS ###

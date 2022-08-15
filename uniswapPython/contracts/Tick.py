@@ -133,6 +133,76 @@ def update(
     return flipped
 
 
+def updateLinear(
+    self,
+    tick,
+    liquidityDelta,
+    # feeGrowthGlobalX128,
+    maxLiquidity,
+    # isToken0,
+):
+    checkInputTypes(
+        dict=self,
+        int24=(tick),
+        int128=liquidityDelta,
+        # uint256=(feeGrowthGlobalX128),
+        # bool=(isToken0),
+        uint128=maxLiquidity,
+    )
+
+    # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
+    if not self.__contains__(tick):
+        assert liquidityDelta > 0, "Avoid creating empty tick"
+        insertUninitializedLinearTickstoMapping(self, [tick])
+
+    info = self[tick]
+
+    liquidityLeftBefore = info.liquidityLeft
+
+    # if we are miinting
+    if liquidityDelta > 0:
+        liquidityLeftAfter = toUint128(
+            LiquidityMath.addDelta(liquidityLeftBefore, liquidityDelta)
+        )
+        amountSwappedDelta = 0
+        amountLeftDelta = liquidityDelta
+
+    # if we are burning
+    else:
+        liquidityToRemove = abs(liquidityDelta)
+        # we burn a proportional part of the remaining liquidity in the tick
+        # liquidityDelta * (position.liquidity / totalLiquidity)
+        totalLiquidity = LiquidityMath.addDelta(
+            info.liquidityLeft, info.liquiditySwapped
+        )
+        amountSwappedDelta = mulDiv(
+            liquidityToRemove, info.liquiditySwapped, totalLiquidity
+        )
+        amountLeftDelta = mulDiv(liquidityToRemove, info.liquidityLeft, totalLiquidity)
+        # Remove those amounts from the tick
+        info.liquiditySwapped = LiquidityMath.addDelta(
+            info.liquiditySwapped, -amountSwappedDelta
+        )
+        liquidityLeftAfter = LiquidityMath.addDelta(
+            info.liquidityLeft, -amountLeftDelta
+        )
+
+    assert liquidityLeftAfter <= maxLiquidity, "LO"
+
+    flipped = (liquidityLeftAfter == 0) != (liquidityLeftBefore == 0)
+
+    # TODO: How to account for fees
+    # if liquidityGrossBefore == 0:
+    #     ## by convention, we assume that all growth before a tick was initialized happened _below_ the tick
+    #     if tick <= tickCurrent:
+    #         info.feeGrowthOutside0X128 = feeGrowthGlobalX128
+
+    info.liquidityLeft = liquidityLeftAfter
+
+    # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
+    return flipped, amountSwappedDelta, amountLeftDelta
+
+
 ### @notice Clears tick data
 ### @param self The mapping containing all initialized tick information for initialized ticks
 ### @param tick The tick that will be cleared
