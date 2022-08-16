@@ -60,6 +60,19 @@ def initializedMediumPool(createPoolMedium, accounts):
 
 
 @pytest.fixture
+def initializedMediumPoolNoLO(createPoolMedium):
+    pool, _, _, _, _ = createPoolMedium
+    pool.initialize(encodePriceSqrt(1, 10))
+    # pool.mint(accounts[0], minTick, maxTick, 3161)
+    # In order to mimic the original tests, we provide liquidity from current tick to MAX tick
+    # for each of the two assets. Doing two different roundings so both include current tick
+    closeAligniniTickiRDown = pool.slot0.tick - 12  # -23016
+    closeAligniniTickRUp = pool.slot0.tick + 48  # −22968
+
+    return *createPoolMedium, closeAligniniTickiRDown, closeAligniniTickRUp
+
+
+@pytest.fixture
 def initializedLowPoolCollect(createPoolLow):
     pool, _, _, _, _ = createPoolLow
     pool.initialize(encodePriceSqrt(1, 1))
@@ -805,54 +818,21 @@ def test_removing_belowCurrentPrice(initializedMediumPool, accounts):
 #     assert tickmap.__contains__(tick)
 #     assert tickmap[tick].liquidityGross != 0
 
-# # TODO: For position 1 it doesn't work exactly by using initialTick as a tickUpper. We need to use initialTick + tickSpacing as a tickUpper.
-# # Does this make sense? Is that OK?
-# # The "getFeeGrowthInsideLinear" gets calculated wrongly otherwise
-# # Might this get solved when we burn the positions automatically?
 # def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
-#     pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+#     pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
 #     print("does not clear the position fee growth snapshot if no more liquidity")
 #     ## some activity that would make the ticks non-zero
-#     initialTick = pool.slot0.tick
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[1], initialTick, maxTick, expandTo18Decimals(1))
-#     pool.mintLinearOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
+#     pool.mint(accounts[1], minTick, maxTick, expandTo18Decimals(1))
 
-#     print(pool.ticksLinearTokens0)
-#     print(pool.ticksLinearTokens1)
-#     print("First SWAP")
 #     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     print("self.linearFeeGrowthGlobal0X128", pool.linearFeeGrowthGlobal0X128)
-#     print("self.linearFeeGrowthGlobal1X128", pool.linearFeeGrowthGlobal1X128)
-#     print("Tick after swap 0: ", pool.slot0.tick)
-#     pool.burnLimitOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
-#     positionInfo1 = pool.linearPositions[getLimitPositionKey(accounts[1], minTick, initialTick,False)]
-#     assert positionInfo1.feeGrowthInsideLastX128 == 340282366920938104919187328403318328
-
-#     print("Second SWAP")
 #     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
-#     print("self.linearFeeGrowthGlobal0X128", pool.linearFeeGrowthGlobal0X128)
-#     print("self.linearFeeGrowthGlobal1X128", pool.linearFeeGrowthGlobal1X128)
-#     print("Final tick: ", pool.slot0.tick)
-#     print("Final status ticks linear 0: ", pool.ticksLinearTokens0)
-#     print("Final status ticks linear 1: ", pool.ticksLinearTokens1)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[1], initialTick, maxTick, expandTo18Decimals(1))
-#     # If we fall into slot0 tick at the end, when we burn the feeGrowthInsideLastX128 gets updated to 0.
-#     # This is because pool.slot0.tick == position.TickUpper
-#     # Forcing the end tick to be -1 works and making the position1 range to be initialTick + tickSpacing also
-#     # works but I am not sure this is good behaviour. Is this the same with Uniswap Range orders????
-#     #pool.slot0.tick = -1
-#     pool.burnLimitOrder(TEST_TOKENS[1],accounts[1], minTick, initialTick, expandTo18Decimals(1))
-#     positionInfo0 = pool.linearPositions[getLimitPositionKey(accounts[1], initialTick, maxTick, True)]
-#     positionInfo1 = pool.linearPositions[getLimitPositionKey(accounts[1], minTick, initialTick,False)]
-#     assert positionInfo0.liquidity == 0
-#     assert positionInfo1.liquidity == 0
-#     assert positionInfo0.tokensOwed != 0
-#     assert positionInfo1.tokensOwed != 0
-#     # Original range values: 340282366920938463463374607431768211
-#     assert positionInfo0.feeGrowthInsideLastX128 == 340282366920938104919187328403318328
-#     assert positionInfo1.feeGrowthInsideLastX128 == 340282366920938104919187328403318328
-
-#     assert False
+#     pool.burn(accounts[1], minTick, maxTick, expandTo18Decimals(1))
+#     positionInfo = pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
+#     assert positionInfo.liquidity == 0
+#     assert positionInfo.tokensOwed0 != 0
+#     assert positionInfo.tokensOwed1 != 0
+#     assert positionInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
+#     assert positionInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
 
 # def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
 #     print("clears the tick if its the last position using it")
@@ -1913,3 +1893,104 @@ def test_removing_belowCurrentPrice(initializedMediumPool, accounts):
 #         0,
 #     )
 #     assert initialTicks == pool.ticks
+
+
+### Own tests for limit orders
+
+# Initial tick == -23028
+# Initially no LO
+def test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
+    print("addLiquidity to liquidity left")
+    (
+        pool,
+        _,
+        _,
+        _,
+        tickSpacing,
+        closeAligniniTickiRDown,
+        closeAligniniTickRUp,
+    ) = initializedMediumPoolNoLO
+
+    iniLiquidity = pool.liquidity
+    iniSlot0 = pool.slot0
+
+    tickLO = closeAligniniTickRUp + tickSpacing * 10
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1))
+
+    (
+        _,
+        amount0,
+        amount1,
+        sqrtPriceX96,
+        liquidity,
+        tick,
+    ) = swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
+
+    # This should have partially swapped the limit order placed
+    priceLO = TickMath.getPriceAtTick(tickLO) / (2**96)
+    # Pool has been initialized at around 1 : 10.
+    priceIni = TickMath.getPriceAtTick(-23028) / (2**96)
+    priceCloseTickUp = TickMath.getPriceAtTick(closeAligniniTickRUp) / (2**96)
+
+    # The price of tickLO should be a bit above the initialized price (tickSpacing*10) and the closest tick up
+    assert priceLO > priceCloseTickUp
+    assert priceLO > priceIni
+
+    ## Check swap outcomes
+    # Tick, sqrtPrice and liquidity haven't changed (range order pool)
+    assert pool.liquidity == iniLiquidity == liquidity
+    assert pool.slot0 == iniSlot0
+    assert pool.slot0.sqrtPriceX96 == sqrtPriceX96
+    assert pool.slot0.tick == tick
+
+    # Check amounts
+    assert amount0 == expandTo18Decimals(1) // 10
+
+    amountRemainingLessFee = (
+        (expandTo18Decimals(1) // 10)
+        * (SwapMath.ONE_IN_PIPS - pool.fee)
+        / SwapMath.ONE_IN_PIPS
+    )
+    amountOut = -amountRemainingLessFee * priceLO
+
+    assert amount1 == amountOut
+
+    # Check LO position and tick
+    assert pool.linearPositions[
+        getLimitPositionKey(accounts[0], tickLO, False)
+    ].liquidity == expandTo18Decimals(1)
+    assert pool.ticksLinearTokens1[tickLO].liquidityLeft == expandTo18Decimals(1) - int(
+        amountOut
+    )
+    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == abs(amount1)
+
+
+def test_mintBadLO(initializedMediumPoolNoLO, accounts):
+    print("check that LO with bad pricing is not used")
+    pool, _, _, _, _, closeAligniniTickiRDown, _ = initializedMediumPoolNoLO
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[0], closeAligniniTickiRDown, expandTo18Decimals(1)
+    )
+    test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts)
+    # Check LO position and tick
+    assert pool.linearPositions[
+        getLimitPositionKey(accounts[0], closeAligniniTickiRDown, False)
+    ].liquidity == expandTo18Decimals(1)
+    assert pool.ticksLinearTokens1[
+        closeAligniniTickiRDown
+    ].liquidityLeft == expandTo18Decimals(1)
+    assert pool.ticksLinearTokens1[closeAligniniTickiRDown].liquiditySwapped == 0
+
+
+# TO continue:
+# TODO: Fix nextTickLimitOrder. Right now it's getting the next tick in the oposite direction, but it should
+# find the best tick (more far away in the other direction). PD: Remember that it's not symetrical, in one
+# direction (swap lte), we look for ticks to the right we want tick > current tick. But in the other direction
+# we can take ticks <= current one.
+
+# Mint and then swap a full position
+# Mint multiple LOs and check that the correct one is used
+# Try swapping across one position and a half
+# Mint multiple positions in the same tick and check that the swapping goes well
+# Try minting on top of an already half-swappped tick
+# Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine

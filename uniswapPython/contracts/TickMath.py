@@ -156,3 +156,8 @@ def add_fractional_bit(r, log_2, bit):
     if bit != 50:
         r = r >> f
     return (r, log_2)
+
+
+# We might come up with a smarter way to do this (e.g. for linear orders just store the price per tick)
+def getPriceAtTick(tick):
+    return ((getSqrtRatioAtTick(tick)) ** 2) // (2**96)

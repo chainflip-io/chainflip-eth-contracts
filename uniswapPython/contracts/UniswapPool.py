@@ -63,6 +63,9 @@ class SwapState:
     ## the current liquidity in range
     liquidity: int
 
+    # Linear fees - unclear how we will calculate them for now
+    linearFees: int
+
 
 @dataclass
 class StepComputations:
