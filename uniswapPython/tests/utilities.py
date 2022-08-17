@@ -32,8 +32,11 @@ class TickInfoLinear:
     ## amount of liquidity that has not been yet swapped
     liquidityLeft: int
     # Liquidity that has been swapped => for now we keep in the same token as liquidityLeft but we should
-    # probably change it to the swapped token
+    # probably change it to the swapped token. TODO: We might not need this!
     liquiditySwapped: int
+
+    # amount swapped per unit of liquidity in this tick. Only has relative meaning, not absolute.
+    amountSwappedInsideX128: int
 
     # TODO: How to keep track of fees?
     ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
@@ -257,7 +260,7 @@ def insertUninitializedTickstoMapping(mapping, keys):
 
 def insertUninitializedLinearTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0))
+        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0, 0))
 
 
 def insertTickInMapping(mapping, key, value):

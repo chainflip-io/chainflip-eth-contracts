@@ -138,9 +138,17 @@ class ChainflipPool(UniswapPool):
         #     else self.linearFeeGrowthGlobal0X128,
         # )
 
+        # TODO: If doing this with amountSwapped works, do the same for fees
+        print(
+            "ticksLinearMap[tick].amountSwappedInsideX128",
+            ticksLinearMap[tick].amountSwappedInsideX128,
+        )
         Position.updateLinear(
             position,
             liquidityDelta,
+            ticksLinearMap[tick].amountSwappedInsideX128,
+            token == self.token0,
+            TickMath.getPriceAtTick(tick)
             # feeGrowthInsideX128
         )
 
@@ -169,28 +177,33 @@ class ChainflipPool(UniswapPool):
         # Added extra recipient input variable to mimic msg.sender
         (
             position,
-            amountSwappedDelta,
-            amountLeftDelta,
+            # amountSwappedDelta,
+            # amountLeftDelta,
+            _,
+            _,
         ) = self._modifyPositionLinearOrder(
             token,
             ModifyLinearPositionParams(recipient, tick, -amount),
         )
 
-        (token0Delta, token1Delta) = (
-            (amountLeftDelta, amountSwappedDelta)
-            if token == self.token0
-            else (amountSwappedDelta, amountLeftDelta)
-        )
+        # In limit orders the amountSwappedDelta and amountLeftDelta returned
+        # don't make sense.
 
-        # Mimic conversion to uint256
-        amount0 = abs(-token0Delta) & (2**256 - 1)
-        amount1 = abs(-token1Delta) & (2**256 - 1)
+        # (token0Delta, token1Delta) = (
+        #     (amountLeftDelta, amountSwappedDelta)
+        #     if token == self.token0
+        #     else (amountSwappedDelta, amountLeftDelta)
+        # )
 
-        if amount0 > 0 or amount1 > 0:
-            position.tokensOwed0 += amount0
-            position.tokensOwed1 += amount1
+        # # Mimic conversion to uint256
+        # amount0 = abs(-token0Delta) & (2**256 - 1)
+        # amount1 = abs(-token1Delta) & (2**256 - 1)
 
-        return (recipient, tick, amount, amount)
+        # if amount0 > 0 or amount1 > 0:
+        #     position.tokensOwed0 += amount0
+        #     position.tokensOwed1 += amount1
+
+        return (recipient, tick, position.tokensOwed0, position.tokensOwed1)
 
     ### @inheritdoc IUniswapV3PoolActions
     def collectLinear(self, recipient, token, tick, amount0Requested, amount1Requested):
@@ -280,8 +293,6 @@ class ChainflipPool(UniswapPool):
             getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
             0,
         )
-        print("ticksLinearMap", ticksLinearMap)
-        print("limitTicks: ", state.linearTicks)
 
         loopCounter = 0
 
@@ -338,7 +349,18 @@ class ChainflipPool(UniswapPool):
                         zeroForOne,
                     )
 
-                    # Update the tick liquidity
+                    # Update the tick - we can consider to only update when we cross tick
+                    # and keep global variables in state (like uniswap does)
+
+                    # Update the tick amountSwappedInsideLastX128 - For now we dont handle overflow (?)
+                    # Using liquidityLeft before it has been updated
+                    tickLinearInfo.amountSwappedInsideX128 += mulDiv(
+                        stepLinear.amountIn,
+                        FixedPoint128_Q128,
+                        tickLinearInfo.liquidityLeft,
+                    )
+
+                    # Update tick liquidity
                     # amountOut > 0 here
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut

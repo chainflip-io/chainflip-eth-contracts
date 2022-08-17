@@ -153,12 +153,6 @@ def test_initialize_10to1(createPoolMedium, accounts):
     pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], maxTick, 3161)
 
 
-# def test_fails_tickLower_gtTickUpper(initializedMediumPool, accounts):
-#     print("fails if tickLower greater than tickUpper")
-#     pool, _, _, _, _, _, _ = initializedMediumPool
-#     tryExceptHandler(pool.mintLinearOrder, "TLU", TEST_TOKENS[0], accounts[0], 1, 0, 1)
-
-
 def test_fails_tick_ltMinTick(initializedMediumPool, accounts):
     print("fails if tickLower less than min Tick")
     pool, _, _, _, _, _, _ = initializedMediumPool
@@ -2350,12 +2344,26 @@ def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
 
     tickLO = closeAligniniTickRUp + tickSpacing * 10
     pool.burnLimitOrder(TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1))
+
+    assert (
+        pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, False)].liquidity
+        == 0
+    )
+
     (_, _, amount0, amount1) = pool.collectLinear(
         accounts[1], TEST_TOKENS[1], tickLO, MAX_UINT128, MAX_UINT128
     )
 
     assert amount0 == 0
     assert amount1 == expandTo18Decimals(1)
+
+    # Burn first position
+    (_, _, tokensOwed0, tokensOwed1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1)
+    )
+
+    # TODO: Check that the first position is burnt and then collected properly. The mint and burn of the extra position
+    # should not have caused any change in the position, nor fees nor tokensOwed.
 
 
 # TO continue:
