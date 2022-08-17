@@ -299,7 +299,7 @@ class ChainflipPool(UniswapPool):
 
             # I think we can reuse the nextTick funcion but swapping the zeroForOne input. We want he exact opposite
             # and seems like when zeroForOne we want tick > current one, and when not zeroFor one we want tick <= current one.
-            (stepLinear.tickNext, stepLinear.initialized) = nextTickLimitOrder(
+            (stepLinear.tickNext, stepLinear.initialized) = bestTickLimitOrder(
                 ticksLinearMap, state.tick, not zeroForOne
             )
 
@@ -542,12 +542,8 @@ class ChainflipPool(UniswapPool):
         )
 
 
-def nextTickLimitOrder(tickMapping, tick, lte):
+def bestTickLimitOrder(tickMapping, tick, lte):
     checkInputTypes(int24=(tick), bool=(lte))
-
-    print("tick:", tick)
-    print("lte:", lte)
-    print("tickMapping:", tickMapping)
 
     if not tickMapping.__contains__(tick):
         # If tick doesn't exist in the mapping we fake it (easier than searching for nearest value)
@@ -558,20 +554,20 @@ def nextTickLimitOrder(tickMapping, tick, lte):
     indexCurrentTick = sortedKeyList.index(tick)
 
     if lte:
-        # If the current tick is initialized (not faked), we return the current tick
-        if tickMapping.__contains__(tick):
-            return tick, True
-        elif indexCurrentTick == 0:
+        if indexCurrentTick == 0:
             # No tick to the left
-            return TickMath.MIN_TICK, False
+            if tickMapping.__contains__(tick):
+                return tick, True
+            else:
+                return TickMath.MIN_TICK, False
         else:
-            nextTick = sortedKeyList[indexCurrentTick - 1]
+            nextTick = sortedKeyList[0]
     else:
-
         if indexCurrentTick == len(sortedKeyList) - 1:
             # No tick to the right
             return TickMath.MAX_TICK, False
-        nextTick = sortedKeyList[indexCurrentTick + 1]
+        else:
+            nextTick = sortedKeyList[len(sortedKeyList) - 1]
 
     # Return tick within the boundaries
     return nextTick, True

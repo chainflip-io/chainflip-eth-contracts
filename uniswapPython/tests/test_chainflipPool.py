@@ -1983,10 +1983,6 @@ def test_mintBadLO(initializedMediumPoolNoLO, accounts):
 
 
 # TO continue:
-# TODO: Fix nextTickLimitOrder. Right now it's getting the next tick in the oposite direction, but it should
-# find the best tick (more far away in the other direction). PD: Remember that it's not symetrical, in one
-# direction (swap lte), we look for ticks to the right we want tick > current tick. But in the other direction
-# we can take ticks <= current one.
 
 # Mint and then swap a full position
 # Mint multiple LOs and check that the correct one is used
@@ -1994,3 +1990,4 @@ def test_mintBadLO(initializedMediumPoolNoLO, accounts):
 # Mint multiple positions in the same tick and check that the swapping goes well
 # Try minting on top of an already half-swappped tick
 # Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine
+# Try minting position, swapping, adding another position and burning both to see if then we get the correct amount of tokens back
