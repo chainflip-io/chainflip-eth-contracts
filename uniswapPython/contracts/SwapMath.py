@@ -1,5 +1,4 @@
 import SqrtPriceMath
-import TickMath
 from utilities import *
 
 ### @title Computes the result of a swap within ticks
@@ -141,19 +140,25 @@ def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroFor
         amountRemainingLessFee = mulDiv(
             amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
         )
-
         # Swap amountRemainingLessFee
-        amountOut = mulDiv(amountRemainingLessFee, priceX96, 2**96)
-
+        if zeroForOne:
+            amountOut = mulDiv(amountRemainingLessFee, priceX96, 2**96)
+        else:
+            amountOut = mulDiv(amountRemainingLessFee, 2**96, priceX96)
         # MAX amountIn that can be swapped in this tick
         if amountOut <= liquidity:
             amountIn = amountRemainingLessFee
         else:
-            amountIn = liquidity * (2**96) / priceX96
+            # Reverse math to figure out the max AmountIn that can be swapped in this tick
+            if zeroForOne:
+                amountIn = mulDiv(liquidity, 2**96, priceX96)
+            else:
+                amountIn = mulDiv(liquidity, priceX96, 2**96)
+            # Health check
+            assert amountIn < amountRemaining
             amountOut = liquidity
 
         tickCrossed = amountOut == liquidity
-
     else:
         assert False, "We are not handling exactOut for now"
 
@@ -176,5 +181,3 @@ def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroFor
         feeAmount = mulDivRoundingUp(amountIn, feePips, ONE_IN_PIPS - feePips)
 
     return (amountIn, amountOut, feeAmount, tickCrossed)
-
-    # Liquidity should be on the opposite token so we might not care here about zeroForOne

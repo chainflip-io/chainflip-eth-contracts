@@ -280,7 +280,7 @@ class ChainflipPool(UniswapPool):
             getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
             0,
         )
-
+        print("ticksLinearMap", ticksLinearMap)
         print("limitTicks: ", state.linearTicks)
 
         loopCounter = 0
@@ -576,14 +576,17 @@ def getLinearTicks(tickMapping, tick, lte):
             else:
                 return []
         else:
-            # Return all the limitOrder ticks to the left including the current one
-            return sortedKeyList[0 : indexCurrentTick + 1]
+            # Return all the limitOrder ticks to the left including the current one if it was not faked
+            if tickMapping.__contains__(tick):
+                return sortedKeyList[0 : indexCurrentTick + 1]
+            else:
+                return sortedKeyList[0:indexCurrentTick]
+
     else:
         if indexCurrentTick == len(sortedKeyList) - 1:
             # No tick to the right
             return []
         else:
-            print("APU")
             # Return all the limitOrders to the right not including the the current one
             return sortedKeyList[indexCurrentTick + 1 : len(sortedKeyList)]
 

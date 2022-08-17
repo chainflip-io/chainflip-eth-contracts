@@ -1899,6 +1899,29 @@ def test_removing_belowCurrentPrice(initializedMediumPool, accounts):
 
 # Initial tick == -23028
 # Initially no LO
+
+# Not sure what I am testing here, just minting?
+def test_multipleTicks_zeroForOne(initializedMediumPoolNoLO, accounts):
+    print("addLiquidity to liquidity left")
+    (
+        pool,
+        _,
+        _,
+        _,
+        tickSpacing,
+        closeAligniniTickiRDown,
+        closeAligniniTickRUp,
+    ) = initializedMediumPoolNoLO
+
+    tickLO = closeAligniniTickRUp + tickSpacing * 10
+    tickLO1 = closeAligniniTickRUp + tickSpacing * 2
+
+    initialLiquidity = expandTo18Decimals(1)
+
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO, initialLiquidity)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO1, initialLiquidity)
+
+
 def test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
     print("addLiquidity to liquidity left")
     (
@@ -2004,7 +2027,7 @@ def test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts):
     pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO, initialLiquidity)
     pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO1, initialLiquidity)
 
-    # To cross the first tick (=== first position tickL0)
+    # To cross the first tick (=== first position tickL0) and part of the second (tickL01)
     amountToSwap = expandTo18Decimals(1) * 10
     (
         _,
@@ -2077,11 +2100,103 @@ def test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts):
     ].liquiditySwapped == abs(amount1)
 
 
+def test_swap1For0_fullSwap(initializedMediumPoolNoLO, accounts):
+    print("addLiquidity to liquidity left")
+    (
+        pool,
+        _,
+        _,
+        _,
+        tickSpacing,
+        closeAligniniTickiRDown,
+        closeAligniniTickRUp,
+    ) = initializedMediumPoolNoLO
+
+    iniLiquidity = pool.liquidity
+    iniSlot0 = pool.slot0
+
+    tickLO = closeAligniniTickiRDown - tickSpacing * 10
+    tickLO1 = closeAligniniTickiRDown - tickSpacing * 2
+    initialLiquidity = expandTo18Decimals(1)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLO, initialLiquidity)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLO1, initialLiquidity)
+
+    # To cross the first tick (=== first position tickL0) and part of the second (tickL01)
+    amountToSwap = expandTo18Decimals(1) // 10
+    (
+        _,
+        amount0,
+        amount1,
+        sqrtPriceX96,
+        liquidity,
+        tick,
+    ) = swapExact1For0(pool, amountToSwap, accounts[0], None)
+
+    # This should have partially swapped the limit order placed
+    priceLO = TickMath.getPriceAtTick(tickLO)
+    priceLO1 = TickMath.getPriceAtTick(tickLO1)
+    # Pool has been initialized at around 1 : 10.
+    priceIni = TickMath.getPriceAtTick(-23028)
+    priceCloseTickUp = TickMath.getPriceAtTick(closeAligniniTickiRDown)
+
+    # The price of tickLO should be a bit above the initialized price (tickSpacing*10) and the closest tick up
+    # Here we are just comparing sqrtPrices, but that good.
+    assert priceLO < priceCloseTickUp
+    assert priceLO < priceIni
+    assert priceLO < priceLO1
+
+    ## Check swap outcomes
+    # Tick, sqrtPrice and liquidity haven't changed (range order pool)
+    assert pool.liquidity == iniLiquidity == liquidity
+    assert pool.slot0 == iniSlot0
+    assert pool.slot0.sqrtPriceX96 == sqrtPriceX96
+    assert pool.slot0.tick == tick
+
+    # Check amounts
+    assert amount1 == amountToSwap
+
+    amountRemainingLessFee = (
+        (amountToSwap) * (SwapMath.ONE_IN_PIPS - pool.fee) // SwapMath.ONE_IN_PIPS
+    )
+
+    # Swapped mul/div because the price is token0->token1
+    amountOutL0 = mulDiv(amountRemainingLessFee, 2**96, priceLO)
+    amountOutLO1 = mulDiv(amountRemainingLessFee, 2**96, priceLO1)
+
+    # Part will be swapped from tickLO and part from tickLO1. Price will be worse than if it was fully swapped
+    # from tickLO but better than if it was fully swapped in tick LO1
+    assert abs(amount0) < amountOutL0
+    assert abs(amount0) > amountOutLO1
+
+    # Check LO position and tick
+    assert pool.linearPositions[
+        getLimitPositionKey(accounts[0], tickLO, True)
+    ].liquidity == expandTo18Decimals(1)
+    assert pool.linearPositions[
+        getLimitPositionKey(accounts[0], tickLO1, True)
+    ].liquidity == expandTo18Decimals(1)
+    assert pool.ticksLinearTokens0[tickLO].liquidityLeft == 0
+    assert pool.ticksLinearTokens0[tickLO1].liquidityLeft == initialLiquidity * 2 - abs(
+        amount0
+    )
+    # If all had been swapped at a better price (for the user) there would be less liquidity left
+    assert (
+        pool.ticksLinearTokens0[tickLO1].liquidityLeft
+        > initialLiquidity * 2 - amountOutL0
+    )
+    assert (
+        pool.ticksLinearTokens0[tickLO1].liquidityLeft
+        < initialLiquidity * 2 - amountOutLO1
+    )
+
+    assert pool.ticksLinearTokens0[tickLO].liquiditySwapped + pool.ticksLinearTokens0[
+        tickLO1
+    ].liquiditySwapped == abs(amount0)
+
+
 # TO continue:
 
-# Mint and then swap a full position
 # Mint multiple LOs and check that the correct one is used
-# Try swapping across one position and a half
 # Mint multiple positions in the same tick and check that the swapping goes well
 # Try minting on top of an already half-swappped tick
 # Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine
