@@ -63,6 +63,8 @@ class SwapState:
     ## the current liquidity in range
     liquidity: int
 
+    # indicate that all relevant LinearOrders have been swapped
+    linearTicks: list
     # Linear fees - unclear how we will calculate them for now
     linearFees: int
 

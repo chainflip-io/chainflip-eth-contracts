@@ -31,7 +31,8 @@ class TickInfo:
 class TickInfoLinear:
     ## amount of liquidity that has not been yet swapped
     liquidityLeft: int
-    # Liquidity that has been swapped
+    # Liquidity that has been swapped => for now we keep in the same token as liquidityLeft but we should
+    # probably change it to the swapped token
     liquiditySwapped: int
 
     # TODO: How to keep track of fees?

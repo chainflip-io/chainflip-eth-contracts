@@ -143,7 +143,7 @@ def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroFor
         )
 
         # Swap amountRemainingLessFee
-        amountOut = (amountRemainingLessFee * priceX96) // (2**96)
+        amountOut = mulDiv(amountRemainingLessFee, priceX96, 2**96)
 
         # MAX amountIn that can be swapped in this tick
         if amountOut <= liquidity:

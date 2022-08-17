@@ -1927,12 +1927,13 @@ def test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
     ) = swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
 
     # This should have partially swapped the limit order placed
-    priceLO = TickMath.getPriceAtTick(tickLO) / (2**96)
+    priceLO = TickMath.getPriceAtTick(tickLO)
     # Pool has been initialized at around 1 : 10.
-    priceIni = TickMath.getPriceAtTick(-23028) / (2**96)
-    priceCloseTickUp = TickMath.getPriceAtTick(closeAligniniTickRUp) / (2**96)
+    priceIni = TickMath.getPriceAtTick(-23028)
+    priceCloseTickUp = TickMath.getPriceAtTick(closeAligniniTickRUp)
 
     # The price of tickLO should be a bit above the initialized price (tickSpacing*10) and the closest tick up
+    # Here we are just comparing sqrtPrices, but that good.
     assert priceLO > priceCloseTickUp
     assert priceLO > priceIni
 
@@ -1946,12 +1947,12 @@ def test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
     # Check amounts
     assert amount0 == expandTo18Decimals(1) // 10
 
-    amountRemainingLessFee = (
-        (expandTo18Decimals(1) // 10)
-        * (SwapMath.ONE_IN_PIPS - pool.fee)
-        / SwapMath.ONE_IN_PIPS
+    amountRemainingLessFee = mulDiv(
+        (expandTo18Decimals(1) // 10),
+        (SwapMath.ONE_IN_PIPS - pool.fee),
+        SwapMath.ONE_IN_PIPS,
     )
-    amountOut = -amountRemainingLessFee * priceLO
+    amountOut = -mulDiv(amountRemainingLessFee, priceLO, 2**96)
 
     assert amount1 == amountOut
 
@@ -1959,13 +1960,13 @@ def test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
     assert pool.linearPositions[
         getLimitPositionKey(accounts[0], tickLO, False)
     ].liquidity == expandTo18Decimals(1)
-    assert pool.ticksLinearTokens1[tickLO].liquidityLeft == expandTo18Decimals(1) - int(
+    assert pool.ticksLinearTokens1[tickLO].liquidityLeft == expandTo18Decimals(1) - abs(
         amountOut
     )
     assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == abs(amount1)
 
 
-def test_mintBadLO(initializedMediumPoolNoLO, accounts):
+def test_mintWorseLO(initializedMediumPoolNoLO, accounts):
     print("check that LO with bad pricing is not used")
     pool, _, _, _, _, closeAligniniTickiRDown, _ = initializedMediumPoolNoLO
     pool.mintLinearOrder(
@@ -1980,6 +1981,100 @@ def test_mintBadLO(initializedMediumPoolNoLO, accounts):
         closeAligniniTickiRDown
     ].liquidityLeft == expandTo18Decimals(1)
     assert pool.ticksLinearTokens1[closeAligniniTickiRDown].liquiditySwapped == 0
+
+
+def test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts):
+    print("addLiquidity to liquidity left")
+    (
+        pool,
+        _,
+        _,
+        _,
+        tickSpacing,
+        closeAligniniTickiRDown,
+        closeAligniniTickRUp,
+    ) = initializedMediumPoolNoLO
+
+    iniLiquidity = pool.liquidity
+    iniSlot0 = pool.slot0
+
+    tickLO = closeAligniniTickRUp + tickSpacing * 10
+    tickLO1 = closeAligniniTickRUp + tickSpacing * 2
+    initialLiquidity = expandTo18Decimals(1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO, initialLiquidity)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO1, initialLiquidity)
+
+    # To cross the first tick (=== first position tickL0)
+    amountToSwap = expandTo18Decimals(1) * 10
+    (
+        _,
+        amount0,
+        amount1,
+        sqrtPriceX96,
+        liquidity,
+        tick,
+    ) = swapExact0For1(pool, amountToSwap, accounts[0], None)
+
+    # This should have partially swapped the limit order placed
+    priceLO = TickMath.getPriceAtTick(tickLO)
+    priceLO1 = TickMath.getPriceAtTick(tickLO1)
+    # Pool has been initialized at around 1 : 10.
+    priceIni = TickMath.getPriceAtTick(-23028)
+    priceCloseTickUp = TickMath.getPriceAtTick(closeAligniniTickRUp)
+
+    # The price of tickLO should be a bit above the initialized price (tickSpacing*10) and the closest tick up
+    # Here we are just comparing sqrtPrices, but that good.
+    assert priceLO > priceCloseTickUp
+    assert priceLO > priceIni
+
+    assert priceLO > priceLO1
+
+    ## Check swap outcomes
+    # Tick, sqrtPrice and liquidity haven't changed (range order pool)
+    assert pool.liquidity == iniLiquidity == liquidity
+    assert pool.slot0 == iniSlot0
+    assert pool.slot0.sqrtPriceX96 == sqrtPriceX96
+    assert pool.slot0.tick == tick
+
+    # Check amounts
+    assert amount0 == amountToSwap
+
+    amountRemainingLessFee = (
+        (amountToSwap) * (SwapMath.ONE_IN_PIPS - pool.fee) // SwapMath.ONE_IN_PIPS
+    )
+
+    amountOut = mulDiv(amountRemainingLessFee, priceLO, 2**96)
+    amountOutLO1 = mulDiv(amountRemainingLessFee, priceLO1, 2**96)
+
+    # Part will be swapped from tickLO and part from tickLO1. Price will be worse than if it was fully swapped
+    # from tickLO but better than if it was fully swapped in tick LO1
+    assert abs(amount1) < amountOut
+    assert abs(amount1) > amountOutLO1
+
+    # Check LO position and tick
+    assert pool.linearPositions[
+        getLimitPositionKey(accounts[0], tickLO, False)
+    ].liquidity == expandTo18Decimals(1)
+    assert pool.linearPositions[
+        getLimitPositionKey(accounts[0], tickLO1, False)
+    ].liquidity == expandTo18Decimals(1)
+    assert pool.ticksLinearTokens1[tickLO].liquidityLeft == 0
+    assert pool.ticksLinearTokens1[tickLO1].liquidityLeft == initialLiquidity * 2 - abs(
+        amount1
+    )
+    # If all had been swapped at a better price (for the user) there would be less liquidity left
+    assert (
+        pool.ticksLinearTokens1[tickLO1].liquidityLeft
+        > initialLiquidity * 2 - amountOut
+    )
+    assert (
+        pool.ticksLinearTokens1[tickLO1].liquidityLeft
+        < initialLiquidity * 2 - amountOutLO1
+    )
+
+    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped + pool.ticksLinearTokens1[
+        tickLO1
+    ].liquiditySwapped == abs(amount1)
 
 
 # TO continue:

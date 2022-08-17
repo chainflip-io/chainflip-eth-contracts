@@ -277,8 +277,11 @@ class ChainflipPool(UniswapPool):
             self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
             0,
             cache.liquidityStart,
+            getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
             0,
         )
+
+        print("limitTicks: ", state.linearTicks)
 
         loopCounter = 0
 
@@ -289,6 +292,11 @@ class ChainflipPool(UniswapPool):
             print("SWAP LOOP")
             # We give priority to limit orders being executed first if they offer a better price for the user.
 
+            # Temporal to prevent infinite loop
+            loopCounter += 1
+            if loopCounter == 5:
+                assert False
+
             ######################################################
             #################### LIMIT ORDERS ####################
             ######################################################
@@ -297,92 +305,98 @@ class ChainflipPool(UniswapPool):
             stepLinear = StepComputations(0, 0, 0, 0, 0, 0, 0)
             stepLinear.sqrtPriceStartX96 = state.sqrtPriceX96
 
-            # I think we can reuse the nextTick funcion but swapping the zeroForOne input. We want he exact opposite
-            # and seems like when zeroForOne we want tick > current one, and when not zeroFor one we want tick <= current one.
-            (stepLinear.tickNext, stepLinear.initialized) = bestTickLimitOrder(
-                ticksLinearMap, state.tick, not zeroForOne
-            )
-
-            if stepLinear.initialized:
-                print("Swapping limit orders")
-
-                # Health check (just in case)
-                tickLinearInfo = ticksLinearMap[stepLinear.tickNext]
-                assert tickLinearInfo.liquidityLeft > 0
-
-                # TODO: Implement this function (math) also updating the tick values (handling crossed and not crossed)
-                # Update the fees in the tick here?? We don't keep track of global fees and we cannot update tick fees
-                # only when crossed, so we probably need to do it inside this function
-
-                # Get price at that tick
-                priceX96 = TickMath.getPriceAtTick(stepLinear.tickNext)
-                (
-                    stepLinear.amountIn,
-                    stepLinear.amountOut,
-                    stepLinear.feeAmount,
-                    tickCrossed,
-                ) = SwapMath.computeLinearSwapStep(
-                    priceX96,
-                    tickLinearInfo.liquidityLeft,
-                    state.amountSpecifiedRemaining,
-                    self.fee,
-                    zeroForOne,
+            # Just to not try finding a limit order if there aren't any
+            if len(state.linearTicks) != 0:
+                # Find the next linear order tick with liquidityLeft > 0
+                (stepLinear.tickNext, stepLinear.initialized) = nextLinearTick(
+                    state.linearTicks, not zeroForOne, ticksLinearMap
                 )
 
-                # Update the tick
-                tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
-                    tickLinearInfo.liquidityLeft, stepLinear.amountOut
-                )
-                tickLinearInfo.liquiditySwapped = LiquidityMath.addDelta(
-                    tickLinearInfo.liquiditySwapped, stepLinear.amountOut
-                )
+                print("Next tick: ", stepLinear.tickNext)
 
-                if tickCrossed:
+                # If !initialized then there are no more linear ticks with liquidityLeft > 0
+                if stepLinear.initialized:
+                    tickLinearInfo = ticksLinearMap[stepLinear.tickNext]
+
                     # Health check
-                    assert stepLinear.amountOut == tickLinearInfo.liquidityLeft
-                    assert tickLinearInfo.liquidityLeft == 0
-                    # TODO: Remove all positions in that tick?
-                    # I'm not even sure it's necessary in this setup, since they won't be swapped again
-                    # We can maybe wait for users to remove them
+                    assert tickLinearInfo.liquidityLeft > 0
 
-                if exactInput:
-                    state.amountSpecifiedRemaining -= (
-                        stepLinear.amountIn + stepLinear.feeAmount
+                    print("Swapping limit orders")
+
+                    # Get price at that tick
+                    priceX96 = TickMath.getPriceAtTick(stepLinear.tickNext)
+                    (
+                        stepLinear.amountIn,
+                        stepLinear.amountOut,
+                        stepLinear.feeAmount,
+                        tickCrossed,
+                    ) = SwapMath.computeLinearSwapStep(
+                        priceX96,
+                        tickLinearInfo.liquidityLeft,
+                        state.amountSpecifiedRemaining,
+                        self.fee,
+                        zeroForOne,
                     )
-                    state.amountCalculated = SafeMath.subInts(
-                        state.amountCalculated, stepLinear.amountOut
+
+                    # Update the tick liquidity
+                    # amountOut > 0 here
+                    tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
+                        tickLinearInfo.liquidityLeft, -stepLinear.amountOut
                     )
-                else:
-                    state.amountSpecifiedRemaining += stepLinear.amountOut
-                    state.amountCalculated = SafeMath.addInts(
-                        state.amountCalculated,
-                        stepLinear.amountIn + stepLinear.feeAmount,
+                    tickLinearInfo.liquiditySwapped = LiquidityMath.addDelta(
+                        tickLinearInfo.liquiditySwapped, stepLinear.amountOut
                     )
 
-                # if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
-                if cache.feeProtocol > 0:
-                    delta = abs(stepLinear.feeAmount // cache.feeProtocol)
-                    stepLinear.feeAmount -= delta
-                    state.protocolFee += delta & (2**128 - 1)
+                    if tickCrossed:
+                        # Health check
+                        assert tickLinearInfo.liquidityLeft == 0
+                        # TODO: Remove all positions in that tick?
+                        # I'm not even sure it's necessary in this setup. They won't be swapped again
+                        # since we handle crossed ticks. And they are not range orders so they won't
+                        # be crossed in the opposite direction. We can maybe wait for users to remove them.
 
-                # Calculate linear fees should probably be done also inside the Tick.computeLinearSwapStep function since it
-                # will be stored within a tick (most likely)
+                    if exactInput:
+                        state.amountSpecifiedRemaining -= (
+                            stepLinear.amountIn + stepLinear.feeAmount
+                        )
+                        state.amountCalculated = SafeMath.subInts(
+                            state.amountCalculated, stepLinear.amountOut
+                        )
+                    else:
+                        state.amountSpecifiedRemaining += stepLinear.amountOut
+                        state.amountCalculated = SafeMath.addInts(
+                            state.amountCalculated,
+                            stepLinear.amountIn + stepLinear.feeAmount,
+                        )
 
-                # ## update global fee tracker. No need to check for liquidity, otherwise we would not have swapped a LO
-                # #if stateLinear.liquidity > 0:
-                # state.linearFees += mulDiv(
-                #     stepLinear.feeAmount, FixedPoint128_Q128, tickLiquidity
-                # )
-                # # Addition can overflow in Solidity - mimic it
-                # state.linearFees = toUint256(state.linearFees)
+                    # if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+                    if cache.feeProtocol > 0:
+                        delta = abs(stepLinear.feeAmount // cache.feeProtocol)
+                        stepLinear.feeAmount -= delta
+                        state.protocolFee += delta & (2**128 - 1)
 
-                if not tickCrossed:
-                    # Health check - swap should be completed
-                    assert state.amountSpecifiedRemaining == 0
-                    # Prevent from altering anythign in the range order pool
-                    break
+                    # Calculate linear fees should probably be done also inside the Tick.computeLinearSwapStep function since it
+                    # will be stored within a tick (most likely)
+
+                    # ## update global fee tracker. No need to check for liquidity, otherwise we would not have swapped a LO
+                    # #if stateLinear.liquidity > 0:
+                    # state.linearFees += mulDiv(
+                    #     stepLinear.feeAmount, FixedPoint128_Q128, tickLiquidity
+                    # )
+                    # # Addition can overflow in Solidity - mimic it
+                    # state.linearFees = toUint256(state.linearFees)
+
+                    if not tickCrossed:
+                        # Health check - swap should be completed
+                        assert state.amountSpecifiedRemaining == 0
+                        # Prevent from altering anythign in the range order pool
+                        break
+                    else:
+                        # There might be another Limit order that is better than range orders
+                        continue
 
             print("Starting with Range Orders")
+            assert False, "We should not go into range orders"
 
             ######################################################
             #################### RANGE ORDERS ####################
@@ -481,7 +495,7 @@ class ChainflipPool(UniswapPool):
 
             # Temporal to prevent infinite loop
             loopCounter += 1
-            if loopCounter == 5:
+            if loopCounter == 2:
                 assert False
 
         ## End of swap loop
@@ -542,7 +556,9 @@ class ChainflipPool(UniswapPool):
         )
 
 
-def bestTickLimitOrder(tickMapping, tick, lte):
+# Ticks that have been crossed but positions not removed will still appear in the mapping. For now we do it similar to UniswapV3,
+# where if we get a tick with liquidity 0 we will just continue the loop and run it again.
+def getLinearTicks(tickMapping, tick, lte):
     checkInputTypes(int24=(tick), bool=(lte))
 
     if not tickMapping.__contains__(tick):
@@ -555,19 +571,38 @@ def bestTickLimitOrder(tickMapping, tick, lte):
 
     if lte:
         if indexCurrentTick == 0:
-            # No tick to the left
             if tickMapping.__contains__(tick):
-                return tick, True
+                return [tick]
             else:
-                return TickMath.MIN_TICK, False
+                return []
         else:
-            nextTick = sortedKeyList[0]
+            # Return all the limitOrder ticks to the left including the current one
+            return sortedKeyList[0 : indexCurrentTick + 1]
     else:
         if indexCurrentTick == len(sortedKeyList) - 1:
             # No tick to the right
-            return TickMath.MAX_TICK, False
+            return []
         else:
-            nextTick = sortedKeyList[len(sortedKeyList) - 1]
+            print("APU")
+            # Return all the limitOrders to the right not including the the current one
+            return sortedKeyList[indexCurrentTick + 1 : len(sortedKeyList)]
 
-    # Return tick within the boundaries
-    return nextTick, True
+
+# Find the next linearTick with liquidityLeft > 0 and pop them from the list
+def nextLinearTick(linearTicks, lte, ticksLinearMap):
+    checkInputTypes(bool=(lte))
+
+    while len(linearTicks) > 0:
+        if lte:
+            # Start from the most left
+            nextTick = linearTicks.pop(0)
+        else:
+            # Start from the most right
+            nextTick = linearTicks.pop(-1)
+
+        # Probably I could just cache the liquidity left of those ticks in getLinearTicks
+        if ticksLinearMap[nextTick].liquidityLeft > 0:
+            return nextTick, True
+
+    # Will only reach here if we have not found a succesful tick
+    return None, False
