@@ -1902,7 +1902,7 @@ def test_removing_belowCurrentPrice(initializedMediumPool, accounts):
 
 
 def test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
-    print("addLiquidity to liquidity left")
+    print("swap a partial LO zeroForOne")
     (
         pool,
         _,
@@ -1986,7 +1986,7 @@ def test_mintWorseLO(initializedMediumPoolNoLO, accounts):
 
 
 def test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts):
-    print("addLiquidity to liquidity left")
+    print("swap a full LO zeroForOne")
     (
         pool,
         _,
@@ -2080,7 +2080,7 @@ def test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts):
 
 
 def test_swap1For0_fullSwap(initializedMediumPoolNoLO, accounts):
-    print("addLiquidity to liquidity left")
+    print("swap a full LO OneForZero")
     (
         pool,
         _,
@@ -2175,7 +2175,7 @@ def test_swap1For0_fullSwap(initializedMediumPoolNoLO, accounts):
 
 # Mint multiple positions and check that the correct ones are used
 def test_multiplePositions_zeroForOne(initializedMediumPoolNoLO, accounts):
-    print("addLiquidity to liquidity left")
+    print("mint multiple positions zeroForOne")
     (
         pool,
         _,
@@ -2239,7 +2239,7 @@ def test_multiplePositions_zeroForOne(initializedMediumPoolNoLO, accounts):
 
 # Mint multiple positions and check that the correct ones are used
 def test_multiplePositions_oneForZero(initializedMediumPoolNoLO, accounts):
-    print("addLiquidity to liquidity left")
+    print("mint multiple positions oneForZero")
     (
         pool,
         _,
@@ -2331,6 +2331,31 @@ def test_mint_partialSwappedTick(initializedMediumPoolNoLO, accounts):
     assert pool.linearPositions[
         getLimitPositionKey(accounts[1], tickLO, False)
     ].liquidity == expandTo18Decimals(1)
+
+
+def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
+    print("Mint a position, swap, mint another one on top, and remove the latest one")
+    (
+        pool,
+        _,
+        _,
+        _,
+        tickSpacing,
+        closeAligniniTickiRDown,
+        closeAligniniTickRUp,
+    ) = initializedMediumPoolNoLO
+
+    # This mints a LO on top of a half-swapped tick
+    test_mint_partialSwappedTick(initializedMediumPoolNoLO, accounts)
+
+    tickLO = closeAligniniTickRUp + tickSpacing * 10
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1))
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[1], TEST_TOKENS[1], tickLO, MAX_UINT128, MAX_UINT128
+    )
+
+    assert amount0 == 0
+    assert amount1 == expandTo18Decimals(1)
 
 
 # TO continue:
