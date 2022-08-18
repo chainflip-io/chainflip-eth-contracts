@@ -122,7 +122,7 @@ class ChainflipPool(UniswapPool):
         # Initialize values
         flipped = False
 
-        ## if we need to update the ticks, do it
+        ## if we need to update the ticks, do it.
         if liquidityDelta != 0:
             (flipped) = Tick.updateLinear(
                 ticksLinearMap,
@@ -358,7 +358,8 @@ class ChainflipPool(UniswapPool):
                     )
 
                     # Update tick liquidity
-                    # amountOut > 0 here
+                    ## Health check
+                    assert stepLinear.amountOut > 0
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut
                     )

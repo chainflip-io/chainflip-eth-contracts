@@ -1957,7 +1957,7 @@ def test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
         getLimitPositionKey(accounts[0], tickLO, False)
     ].liquidity == expandTo18Decimals(1)
     assert pool.ticksLinearTokens1[tickLO].liquidityLeft == expandTo18Decimals(1) - abs(
-        amountOut
+        amount1
     )
     assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == abs(amount1)
 
@@ -2358,11 +2358,13 @@ def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
     # Check that amount calculated in burn is the same as collected in collect
     assert amountBurnt0 == amount0
     assert amountBurnt1 == amount1
-
+    # No swap should have been done in this position
     assert amount0 == 0
     assert amount1 == expandTo18Decimals(1)
 
     # Burn first position
+    print(pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)])
+    print(pool.ticksLinearTokens1[tickLO])
     (_, _, amountBurnt0, amountBurnt1, _, _) = pool.burnLimitOrder(
         TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1)
     )
