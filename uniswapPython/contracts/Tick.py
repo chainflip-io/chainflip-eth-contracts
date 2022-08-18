@@ -136,7 +136,9 @@ def update(
 def updateLinear(
     self,
     tick,
-    liquidityDelta,
+    liquidityLeftDelta,
+    liquiditySwappedDelta,
+    # liquidityDelta,
     # feeGrowthGlobalX128,
     maxLiquidity,
     # isToken0,
@@ -144,7 +146,7 @@ def updateLinear(
     checkInputTypes(
         dict=self,
         int24=(tick),
-        int128=liquidityDelta,
+        int128=(liquidityLeftDelta, liquiditySwappedDelta),
         # uint256=(feeGrowthGlobalX128),
         # bool=(isToken0),
         uint128=maxLiquidity,
@@ -152,40 +154,19 @@ def updateLinear(
 
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):
-        assert liquidityDelta > 0, "Avoid creating empty tick"
+        assert liquidityLeftDelta > 0, "Avoid creating empty tick"
         insertUninitializedLinearTickstoMapping(self, [tick])
+
+    print("UPDATING LINEAR TICK")
+    print("self.liquidityLeft", self[tick].liquidityLeft)
+    print("self.liquiditySwapped", self[tick].liquiditySwapped)
+    print("liquidityLeftDelta", liquidityLeftDelta)
+    print("liquiditySwappedDelta", liquiditySwappedDelta)
 
     info = self[tick]
 
     liquidityLeftBefore = info.liquidityLeft
-
-    # if we are miinting
-    if liquidityDelta > 0:
-        liquidityLeftAfter = toUint128(
-            LiquidityMath.addDelta(liquidityLeftBefore, liquidityDelta)
-        )
-        amountSwappedDelta = 0
-        amountLeftDelta = liquidityDelta
-
-    # if we are burning
-    else:
-        liquidityToRemove = abs(liquidityDelta)
-        # we burn a proportional part of the remaining liquidity in the tick
-        # liquidityDelta * (position.liquidity / totalLiquidity)
-        totalLiquidity = LiquidityMath.addDelta(
-            info.liquidityLeft, info.liquiditySwapped
-        )
-        amountSwappedDelta = mulDiv(
-            liquidityToRemove, info.liquiditySwapped, totalLiquidity
-        )
-        amountLeftDelta = mulDiv(liquidityToRemove, info.liquidityLeft, totalLiquidity)
-        # Remove those amounts from the tick
-        info.liquiditySwapped = LiquidityMath.addDelta(
-            info.liquiditySwapped, -amountSwappedDelta
-        )
-        liquidityLeftAfter = LiquidityMath.addDelta(
-            info.liquidityLeft, -amountLeftDelta
-        )
+    liquidityLeftAfter = LiquidityMath.addDelta(liquidityLeftBefore, liquidityLeftDelta)
 
     assert liquidityLeftAfter <= maxLiquidity, "LO"
 
@@ -198,9 +179,12 @@ def updateLinear(
     #         info.feeGrowthOutside0X128 = feeGrowthGlobalX128
 
     info.liquidityLeft = liquidityLeftAfter
+    info.liquiditySwapped = LiquidityMath.addDelta(
+        info.liquiditySwapped, liquiditySwappedDelta
+    )
 
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
-    return flipped, amountSwappedDelta, amountLeftDelta
+    return flipped
 
 
 ### @notice Clears tick data

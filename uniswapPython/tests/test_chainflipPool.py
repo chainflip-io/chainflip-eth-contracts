@@ -403,11 +403,11 @@ def test_removeLiquidity_fromLiquidityLeft(initializedMediumPool, accounts):
     assert pool.ticksLinearTokens0[0].liquidityLeft == 10
 
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].tokensOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].positionOwed0
         == 90
     )
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].tokensOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].positionOwed0
         == 30
     )
 
@@ -420,11 +420,11 @@ def test_removeLiquidity_fromLiquidityLeft(initializedMediumPool, accounts):
     assert pool.ticksLinearTokens0[0].liquidityLeft == 10
 
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].tokensOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].positionOwed0
         == 90
     )
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].tokensOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].positionOwed0
         == 30
     )
 
@@ -2343,8 +2343,9 @@ def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
     test_mint_partialSwappedTick(initializedMediumPoolNoLO, accounts)
 
     tickLO = closeAligniniTickRUp + tickSpacing * 10
-    pool.burnLimitOrder(TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1))
-
+    (_, _, amountBurnt0, amountBurnt1, _, _) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1)
+    )
     assert (
         pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, False)].liquidity
         == 0
@@ -2354,11 +2355,15 @@ def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
         accounts[1], TEST_TOKENS[1], tickLO, MAX_UINT128, MAX_UINT128
     )
 
+    # Check that amount calculated in burn is the same as collected in collect
+    assert amountBurnt0 == amount0
+    assert amountBurnt1 == amount1
+
     assert amount0 == 0
     assert amount1 == expandTo18Decimals(1)
 
     # Burn first position
-    (_, _, tokensOwed0, tokensOwed1) = pool.burnLimitOrder(
+    (_, _, amountBurnt0, amountBurnt1, _, _) = pool.burnLimitOrder(
         TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1)
     )
 
