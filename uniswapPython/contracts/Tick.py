@@ -162,7 +162,7 @@ def updateLinear(
     print("self.liquiditySwapped", self[tick].liquiditySwapped)
     print("liquidityLeftDelta", liquidityLeftDelta)
     print("liquiditySwappedDelta", liquiditySwappedDelta)
-
+    print(self[tick].liquidityLeft + liquidityLeftDelta)
     info = self[tick]
 
     liquidityLeftBefore = info.liquidityLeft

@@ -162,6 +162,7 @@ def updateLinear(
         uint256=(amountSwappedInsideX128),
         bool=(isToken0),
     )
+
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
     if self == PositionLinearInfo(0, 0, 0, 0, 0, 0, 0):
@@ -210,7 +211,8 @@ def updateLinear(
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
         # amountSwappedPrev in token base (self.liquidity)
-        amountSwappedPrev = mulDiv(
+        # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
+        amountSwappedPrev = mulDivRoundingUp(
             toUint256(amountSwappedInsideX128 - self.amountSwappedInsideLastX128),
             self.liquidity,
             FixedPoint128_Q128,
@@ -266,7 +268,7 @@ def updateLinear(
         self.amountSwappedInsideLastX128 = amountSwappedInsideX128
 
         if isToken0:
-            # Update position owed
+            # Update position owed in their tokens
             self.positionOwed0 += abs(liquidityLeftDelta)
             self.positionOwed1 += mulDiv(
                 abs(liquiditySwappedDelta), sqrtPricex96, 2**96

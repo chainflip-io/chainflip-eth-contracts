@@ -352,7 +352,7 @@ class ChainflipPool(UniswapPool):
                     # Update the tick amountSwappedInsideLastX128 - For now we dont handle overflow (?)
                     # Using liquidityLeft before it has been updated
                     tickLinearInfo.amountSwappedInsideX128 += mulDiv(
-                        stepLinear.amountIn,
+                        stepLinear.amountOut,
                         FixedPoint128_Q128,
                         tickLinearInfo.liquidityLeft,
                     )
