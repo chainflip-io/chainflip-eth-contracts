@@ -576,7 +576,8 @@ class ChainflipPool(UniswapPool):
         )
 
 
-# Ticks that have been crossed but positions not removed will still appear in the mapping. For now we do it similar to UniswapV3,
+# Ticks that have been crossed but positions not removed will still appear in the mapping, since atm we don't
+# remove all positions (and therefore the tick) when a tick is crossed. For now we do it similar to UniswapV3,
 # where if we get a tick with liquidity 0 we will just continue the loop and run it again.
 def getLinearTicks(tickMapping, tick, lte):
     checkInputTypes(int24=(tick), bool=(lte))

@@ -2328,7 +2328,7 @@ def test_mint_partialSwappedTick(initializedMediumPoolNoLO, accounts):
 
 
 def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
-    print("Mint a position, swap, mint another one on top, and remove the latest one")
+    print("Mint a position, swap, mint another one on top, and burn+collect them")
     (
         pool,
         _,
@@ -2342,6 +2342,7 @@ def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
     # This mints a LO on top of a half-swapped tick
     test_mint_partialSwappedTick(initializedMediumPoolNoLO, accounts)
 
+    # Burn newly minted position
     tickLO = closeAligniniTickRUp + tickSpacing * 10
     (_, _, amountBurnt0, amountBurnt1, _, _) = pool.burnLimitOrder(
         TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1)
@@ -2361,90 +2362,87 @@ def test_burn_positionMintedAfterSwap(initializedMediumPoolNoLO, accounts):
     # No swap should have been done in this position
     assert amount0 == 0
     assert amount1 == expandTo18Decimals(1)
-
-    # Burn first position
-    (_, _, amountBurnt0, amountBurnt1, _, _) = pool.burnLimitOrder(
-        TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1)
+    # No liquidity left and all tokensOwed collected
+    assert (
+        pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, False)].liquidity
+        == 0
+    )
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(accounts[1], tickLO, False)
+        ].tokensOwed0
+        == 0
+    )
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(accounts[1], tickLO, False)
+        ].tokensOwed1
+        == 0
     )
 
-    # TODO: Check that the burning works well. Same checking as next function
-
-
-def test_DEBUG_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts):
-    # Copied from swap0For1_partialSwap but adding a burn
-    print("swap a partial LO zeroForOne and burn the position")
-    (
-        pool,
-        _,
-        _,
-        _,
-        tickSpacing,
-        closeAligniniTickiRDown,
-        closeAligniniTickRUp,
-    ) = initializedMediumPoolNoLO
-
-    iniLiquidity = pool.liquidity
-    iniSlot0 = pool.slot0
-
-    tickLO = closeAligniniTickRUp + tickSpacing * 10
-    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1))
-
-    (
-        _,
-        amount0,
-        amount1,
-        sqrtPriceX96,
-        liquidity,
-        tick,
-    ) = swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
-
-    # This should have partially swapped the limit order placed
-    priceLO = TickMath.getPriceAtTick(tickLO)
-    # Pool has been initialized at around 1 : 10.
-    priceIni = TickMath.getPriceAtTick(-23028)
-    priceCloseTickUp = TickMath.getPriceAtTick(closeAligniniTickRUp)
-
-    # The price of tickLO should be a bit above the initialized price (tickSpacing*10) and the closest tick up
-    # Here we are just comparing sqrtPrices, but that good.
-    assert priceLO > priceCloseTickUp
-    assert priceLO > priceIni
-
-    ## Check swap outcomes
-    # Tick, sqrtPrice and liquidity haven't changed (range order pool)
-    assert pool.liquidity == iniLiquidity == liquidity
-    assert pool.slot0 == iniSlot0
-    assert pool.slot0.sqrtPriceX96 == sqrtPriceX96
-    assert pool.slot0.tick == tick
-
-    # Check amounts
-    assert amount0 == expandTo18Decimals(1) // 10
+    # Check amounts - same check as in test_swap0For1_partialSwap for the first minted position. Nothing
+    # should have changed by minting and burning an extra position on top after the swap has taken place.
 
     amountRemainingLessFee = mulDiv(
         (expandTo18Decimals(1) // 10),
         (SwapMath.ONE_IN_PIPS - pool.fee),
         SwapMath.ONE_IN_PIPS,
     )
+    # This should have partially swapped the limit order placed
+    priceLO = TickMath.getPriceAtTick(tickLO)
     amountOut = -mulDiv(amountRemainingLessFee, priceLO, 2**96)
-
-    assert amount1 == amountOut
 
     # Check LO position and tick
     assert pool.linearPositions[
         getLimitPositionKey(accounts[0], tickLO, False)
     ].liquidity == expandTo18Decimals(1)
     assert pool.ticksLinearTokens1[tickLO].liquidityLeft == expandTo18Decimals(1) - abs(
-        amount1
+        amountOut
     )
-    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == abs(amount1)
+    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == abs(amountOut)
 
-    print(pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)])
-    print(pool.ticksLinearTokens1[tickLO])
+    # Burn first position (partially swapped)
     (_, _, amountBurnt0, amountBurnt1, _, _) = pool.burnLimitOrder(
         TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1)
     )
 
-    # TODO: Check that the burning works well.
-    # TODO: Add the same checking to the previous function
+    assert amountBurnt1 == expandTo18Decimals(1) - abs(amountOut)
+    # Should be === to amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10)
+    assert amountBurnt0 == mulDiv(abs(amountOut), 2**96, priceLO)
+
+    # Check LO position and tick
+    assert (
+        pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)].liquidity
+        == 0
+    )
+    assert not pool.ticksLinearTokens1.__contains__(tickLO)
+
+    # Collect position
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], tickLO, MAX_UINT128, MAX_UINT128
+    )
+
+    # Check that amount calculated in burn is the same as collected in collect
+    assert amountBurnt0 == amount0
+    assert amountBurnt1 == amount1
+
+    # No liquidity left and all tokensOwed collected
+    assert (
+        pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)].liquidity
+        == 0
+    )
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(accounts[0], tickLO, False)
+        ].tokensOwed0
+        == 0
+    )
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(accounts[0], tickLO, False)
+        ].tokensOwed1
+        == 0
+    )
 
 
 # TO continue:
