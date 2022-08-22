@@ -19,7 +19,7 @@ class PositionInfo:
     ## fee growth per unit of liquidity as of the last update to liquidity or fees owed
     feeGrowthInside0LastX128: int
     feeGrowthInside1LastX128: int
-    ## the fees owed to the position owner in token0#token1 => uin128
+    ## the fees owed to the position owner in token0#token1 => uint128
     tokensOwed0: int
     tokensOwed1: int
 
@@ -37,10 +37,9 @@ class PositionLinearInfo:
     # TODO: How to keep track of the fees
     ## fee growth per unit of liquidity as of the last update to liquidity or fees owed
     feeGrowthInsideLastX128: int
-    ## the fees owed to the position owner in token0#token1 => uint128
-    # Since we can burn a position half swapped, we need both tokensOwed0 and tokensOwed1
-    tokensOwed0: int
-    tokensOwed1: int
+    ## the fees owed to the position owner in liquidity tokens => uint128
+    # TODO: We might want to merge this with positionOwed0 and positionOwed1
+    tokensOwed: int
     # Not strictly necessary since we need to pass the bool (isToken0) to generate the key
     # isToken0: bool
 
@@ -75,7 +74,7 @@ def getLinear(self, owner, tick, isToken0):
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
-        self[key] = PositionLinearInfo(0, 0, 0, 0, 0, 0, 0)
+        self[key] = PositionLinearInfo(0, 0, 0, 0, 0, 0)
     return self[key]
 
 
@@ -89,7 +88,7 @@ def assertLimitPositionExists(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=(tick), bool=isToken0)
     positionInfo = getLinear(self, owner, tick, isToken0)
     assert positionInfo != PositionLinearInfo(
-        0, 0, 0, 0, 0, 0, 0
+        0, 0, 0, 0, 0, 0
     ), "Position doesn't exist"
 
 
@@ -151,8 +150,8 @@ def updateLinear(
     liquidityDelta,
     amountSwappedInsideX128,
     isToken0,
-    sqrtPricex96
-    # feeGrowthInsideX128
+    sqrtPricex96,
+    feeGrowthInsideX128,
 ):
     checkInputTypes(
         int128=(
@@ -165,8 +164,9 @@ def updateLinear(
 
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
-    if self == PositionLinearInfo(0, 0, 0, 0, 0, 0, 0):
+    if self == PositionLinearInfo(0, 0, 0, 0, 0, 0):
         self.amountSwappedInsideLastX128 = amountSwappedInsideX128
+        self.feegrowthInsideLastX128 = feeGrowthInsideX128
 
     if liquidityDelta == 0:
         # Removed because a check is added for burn 0 uninitialized position
@@ -175,23 +175,19 @@ def updateLinear(
     else:
         liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)
 
-    # TODO: Add fee calculation
-
-    # TODO: Does this make sense? If the method works for amountsSwapped then do the same
-    ## calculate accumulated fees. Add toUint256 because there can be an underflow
-    # tokensOwed = mulDiv(
-    #     toUint256(feeGrowthInsideX128 - self.feeGrowthInsideLastX128),
-    #     self.liquidity,
-    #     FixedPoint128_Q128,
-    # )
+    tokensOwed = mulDiv(
+        toUint256(feeGrowthInsideX128 - self.feeGrowthInsideLastX128),
+        self.liquidity,
+        FixedPoint128_Q128,
+    )
 
     # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
     # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
     # acceptable to save gas. TODO: Is this OK for us?
 
     # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
-    # if tokensOwed > MAX_UINT128:
-    #     tokensOwed = tokensOwed & (2**128 - 1)
+    if tokensOwed > MAX_UINT128:
+        tokensOwed = tokensOwed & (2**128 - 1)
 
     # In the case of mint, we only need to add liquidityDelta to LiquidityLeft. No need to update
     # anything else.
@@ -243,7 +239,7 @@ def updateLinear(
 
         # Amount of swapped liquidity in liquidityToken (same as in tick LiquiditySwapped)
         # TODO: We should probably have tick.liquiditySwapped in tokenSwapped amount so we don't
-        # need to do conversions
+        # need to do conversions. Maybe we will remove liquiditySwapped so maybe we can't
         liquiditySwappedDelta = -mulDiv(
             liquidityToRemove, amountSwappedPrev, self.liquidity
         )
@@ -263,7 +259,6 @@ def updateLinear(
         if currentPosition1 > MAX_UINT128:
             currentPosition1 = currentPosition1 & (2**128 - 1)
 
-        # self.feeGrowthInsideLastX128 = feeGrowthInsideX128
         # Only update this if we have burned part or the whole position
         self.amountSwappedInsideLastX128 = amountSwappedInsideX128
 
@@ -282,6 +277,12 @@ def updateLinear(
     ## update the position
     if liquidityDelta != 0:
         self.liquidity = liquidityNext
+
+    # Update position fees
+    self.feeGrowthInsideLastX128 = feeGrowthInsideX128
+
+    if tokensOwed > 0:
+        self.tokensOwed += tokensOwed
 
     # Negative if we are burning. liquiditySwappedDelta in tokenSwapped
     return (liquidityLeftDelta, liquiditySwappedDelta)

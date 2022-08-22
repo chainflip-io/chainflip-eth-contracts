@@ -115,8 +115,11 @@ class ChainflipPool(UniswapPool):
             if ticksLinearMap.__contains__(tick)
             else 0,
             token == self.token0,
-            TickMath.getPriceAtTick(tick)
-            # feeGrowthInsideX128
+            TickMath.getPriceAtTick(tick),
+            # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
+            ticksLinearMap[tick].feeGrowthOutsideX128
+            if ticksLinearMap.__contains__(tick)
+            else 0,
         )
 
         # Initialize values
@@ -176,12 +179,19 @@ class ChainflipPool(UniswapPool):
             tick,
             position.positionOwed0,
             position.positionOwed1,
-            position.tokensOwed0,
-            position.tokensOwed1,
+            position.tokensOwed,
         )
 
     ### @inheritdoc IUniswapV3PoolActions
-    def collectLinear(self, recipient, token, tick, amount0Requested, amount1Requested):
+    def collectLinear(
+        self,
+        recipient,
+        token,
+        tick,
+        amount0Requested,
+        amount1Requested,
+        feeAmountRequested,
+    ):
         checkInputTypes(
             string=token,
             accounts=(recipient),
@@ -199,23 +209,18 @@ class ChainflipPool(UniswapPool):
             self.linearPositions, recipient, tick, token == self.token0
         )
 
-        amount0 = (
-            position.tokensOwed0
-            if (amount0Requested > position.tokensOwed0)
-            else amount0Requested
-        )
-        amount1 = (
-            position.tokensOwed1
-            if (amount1Requested > position.tokensOwed1)
-            else amount1Requested
+        feeAmount = (
+            position.tokensOwed
+            if (feeAmountRequested > position.tokensOwed)
+            else feeAmountRequested
         )
 
-        if amount0 > 0:
-            position.tokensOwed0 -= amount0
-            self.transferToken(recipient, self.token0, amount0)
-        if amount1 > 0:
-            position.tokensOwed1 -= amount1
-            self.transferToken(recipient, self.token1, amount1)
+        if feeAmount > 0:
+            position.tokensOwed -= feeAmount
+            if token == self.token0:
+                self.transferToken(recipient, self.token0, feeAmount)
+            else:
+                self.transferToken(recipient, self.token1, feeAmount)
 
         # Add collection of positionOwed and substraction from position.positionOwed{0,1}. We can probably
         # merge that with tokensOwed, but for now keeping it separate for clarity.
@@ -578,7 +583,7 @@ class ChainflipPool(UniswapPool):
 
 # Ticks that have been crossed but positions not removed will still appear in the mapping, since atm we don't
 # remove all positions (and therefore the tick) when a tick is crossed. For now we do it similar to UniswapV3,
-# where if we get a tick with liquidity 0 we will just continue the loop and run it again.
+# where if we get a tick with liquidityLeft == 0 we will just continue the loop (skipping range orders) and run it again.
 def getLinearTicks(tickMapping, tick, lte):
     checkInputTypes(int24=(tick), bool=(lte))
 

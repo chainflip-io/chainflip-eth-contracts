@@ -1,4 +1,4 @@
-import sys
+import sys, os
 
 import traceback
 
@@ -32,13 +32,12 @@ class TickInfoLinear:
     ## amount of liquidity that has not been yet swapped
     liquidityLeft: int
     # Liquidity that has been swapped => for now we keep in the same token as liquidityLeft but we should
-    # probably change it to the swapped token. TODO: We might not need this!
+    # probably change it to the swapped token. TODO: I think we can remove this!!
     liquiditySwapped: int
 
     # amount swapped per unit of liquidity in this tick. Only has relative meaning, not absolute.
     amountSwappedInsideX128: int
 
-    # TODO: How to keep track of fees?
     ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
     ## only has relative meaning, not absolute — the value depends on when the tick is initialized
     feeGrowthOutsideX128: int
@@ -384,3 +383,113 @@ def formatAsInSnapshot(number):
 def formatPriceWithPrecision(price, precision):
     fraction = (price / (2**96)) ** 2
     return round(fraction, precision)
+
+
+################ Chainflip pool test utilities ################
+
+# Testing logic to verify limit order swapping (
+
+
+# Check partially swapped single limit order
+def check_limitOrderSwap_oneTick_exactIn(
+    pool,
+    position,
+    tickLO,
+    amountToSwap,
+    iniLiquidityTick,
+    amountSwappedIn,
+    amountSwappedOut,
+    zeroForOne,
+    one_in_pips,
+    priceLO,
+):
+    assert amountSwappedIn == amountToSwap
+
+    amountRemainingLessFee = mulDiv(
+        (amountToSwap),
+        (one_in_pips - pool.fee),
+        one_in_pips,
+    )
+
+    if zeroForOne:
+        amountOut = -mulDiv(amountRemainingLessFee, priceLO, 2**96)
+        ticksLinearTokens = pool.ticksLinearTokens1
+    else:
+        amountOut = -mulDiv(amountRemainingLessFee, 2**96, priceLO)
+        ticksLinearTokens = pool.ticksLinearTokens0
+    assert amountSwappedOut == amountOut
+
+    # Check LO position and tick
+    assert pool.linearPositions[position].liquidity == iniLiquidityTick
+    assert ticksLinearTokens[tickLO].liquidityLeft == iniLiquidityTick - abs(
+        amountSwappedOut
+    )
+    assert ticksLinearTokens[tickLO].liquiditySwapped == abs(amountSwappedOut)
+
+
+# Fully burn a partially swapped position
+def check_burn_limitOrderSwap_oneTick_exactIn(
+    pool,
+    owner,
+    tickLO,
+    iniLiquidityPosition,
+    amountSwapped,
+    zeroForOne,
+    priceLO,
+    tickToBeCleared,
+):
+    token = TEST_TOKENS[1] if zeroForOne else TEST_TOKENS[0]
+    (_, _, amountBurnt0, amountBurnt1, _) = pool.burnLimitOrder(
+        token, owner, tickLO, iniLiquidityPosition
+    )
+
+    if zeroForOne:
+        assert amountBurnt1 == iniLiquidityPosition - abs(amountSwapped)
+        # Should be === to amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10)
+        assert amountBurnt0 == mulDiv(abs(amountSwapped), 2**96, priceLO)
+        if tickToBeCleared:
+            assert not pool.ticksLinearTokens1.__contains__(tickLO)
+
+    else:
+        assert amountBurnt0 == iniLiquidityPosition - abs(amountSwapped)
+        # Should be === to amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10)
+        assert amountBurnt1 == mulDiv(abs(amountSwapped), priceLO, 2**96)
+        if tickToBeCleared:
+            assert not pool.ticksLinearTokens0.__contains__(tickLO)
+
+    # Check LO position and tick
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(owner, tickLO, not zeroForOne)
+        ].liquidity
+        == 0
+    )
+
+    # Collect position
+    (_, _, amount0, amount1) = pool.collectLinear(
+        owner, token, tickLO, MAX_UINT128, MAX_UINT128, 0
+    )
+
+    # Check that amount calculated in burn is the same as collected in collect
+    assert amountBurnt0 == amount0
+    assert amountBurnt1 == amount1
+
+    # No liquidity left and all positionOwed collected
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(owner, tickLO, not zeroForOne)
+        ].liquidity
+        == 0
+    )
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(owner, tickLO, not zeroForOne)
+        ].positionOwed0
+        == 0
+    )
+    assert (
+        pool.linearPositions[
+            getLimitPositionKey(owner, tickLO, not zeroForOne)
+        ].positionOwed1
+        == 0
+    )
