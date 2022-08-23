@@ -440,21 +440,23 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
     tickToBeCleared,
 ):
     token = TEST_TOKENS[1] if zeroForOne else TEST_TOKENS[0]
-    (_, _, amountBurnt0, amountBurnt1, _) = pool.burnLimitOrder(
+    (_, _, amountOwed0, amountOwed1) = pool.burnLimitOrder(
         token, owner, tickLO, iniLiquidityPosition
     )
 
     if zeroForOne:
-        assert amountBurnt1 == iniLiquidityPosition - abs(amountSwapped)
-        # Should be === to amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10)
-        assert amountBurnt0 == mulDiv(abs(amountSwapped), 2**96, priceLO)
+        assert amountOwed1 == iniLiquidityPosition - abs(amountSwapped)
+        # Should be === to fees + amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10 difference)
+        # TODO: Add calculation for fees so we can assert ==
+        assert amountOwed0 >= mulDiv(abs(amountSwapped), 2**96, priceLO)
         if tickToBeCleared:
             assert not pool.ticksLinearTokens1.__contains__(tickLO)
 
     else:
-        assert amountBurnt0 == iniLiquidityPosition - abs(amountSwapped)
-        # Should be === to amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10)
-        assert amountBurnt1 == mulDiv(abs(amountSwapped), priceLO, 2**96)
+        assert amountOwed0 == iniLiquidityPosition - abs(amountSwapped)
+        # Should be === to fees + amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10 difference)
+        # TODO: Add calculation for fees so we can assert ==
+        assert amountOwed1 >= mulDiv(abs(amountSwapped), priceLO, 2**96)
         if tickToBeCleared:
             assert not pool.ticksLinearTokens0.__contains__(tickLO)
 
@@ -467,15 +469,15 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
     )
 
     # Collect position
-    (_, _, amount0, amount1, feeAmount) = pool.collectLinear(
-        owner, token, tickLO, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        owner, token, tickLO, MAX_UINT128, MAX_UINT128
     )
 
     # Check that amount calculated in burn is the same as collected in collect
-    assert amountBurnt0 == amount0
-    assert amountBurnt1 == amount1
+    assert amountOwed0 == amount0
+    assert amountOwed1 == amount1
 
-    # No liquidity left and all positionOwed collected
+    # No liquidity left and all tokensOwed collected
     assert (
         pool.linearPositions[
             getLimitPositionKey(owner, tickLO, not zeroForOne)
@@ -485,16 +487,12 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
     assert (
         pool.linearPositions[
             getLimitPositionKey(owner, tickLO, not zeroForOne)
-        ].positionOwed0
+        ].tokensOwed0
         == 0
     )
     assert (
         pool.linearPositions[
             getLimitPositionKey(owner, tickLO, not zeroForOne)
-        ].positionOwed1
+        ].tokensOwed1
         == 0
     )
-
-    # TODO: Improve this check
-    if amountSwapped > 0:
-        assert feeAmount > 0

@@ -171,15 +171,11 @@ class ChainflipPool(UniswapPool):
             ModifyLinearPositionParams(recipient, tick, -amount),
         )
 
-        # The function below has already updated the fees owed (tokensOwed) and the positionOwed.
-        # Also, it has updated the positions liquidity and the tick's liquidityLeft and liquiditySwapped.
-
         return (
             recipient,
             tick,
-            position.positionOwed0,
-            position.positionOwed1,
-            position.tokensOwed,
+            position.tokensOwed0,
+            position.tokensOwed1,
         )
 
     ### @inheritdoc IUniswapV3PoolActions
@@ -190,7 +186,6 @@ class ChainflipPool(UniswapPool):
         tick,
         amount0Requested,
         amount1Requested,
-        feeAmountRequested,
     ):
         checkInputTypes(
             string=token,
@@ -209,43 +204,27 @@ class ChainflipPool(UniswapPool):
             self.linearPositions, recipient, tick, token == self.token0
         )
 
-        feeAmount = (
-            position.tokensOwed
-            if (feeAmountRequested > position.tokensOwed)
-            else feeAmountRequested
-        )
-
-        if feeAmount > 0:
-            position.tokensOwed -= feeAmount
-            # Inverted token0 and token1 because fees are not in liquidityToken
-            if token == self.token0:
-                self.transferToken(recipient, self.token1, feeAmount)
-            else:
-                self.transferToken(recipient, self.token0, feeAmount)
-
-        # Add collection of positionOwed and substraction from position.positionOwed{0,1}. We can probably
-        # merge that with tokensOwed, but for now keeping it separate for clarity.
         amountPos0 = (
-            position.positionOwed0
-            if (amount0Requested > position.positionOwed0)
+            position.tokensOwed0
+            if (amount0Requested > position.tokensOwed0)
             else amount0Requested
         )
         amountPos1 = (
-            position.positionOwed1
-            if (amount1Requested > position.positionOwed1)
+            position.tokensOwed1
+            if (amount1Requested > position.tokensOwed1)
             else amount1Requested
         )
 
         if amountPos0 > 0:
-            position.positionOwed0 -= amountPos0
+            position.tokensOwed0 -= amountPos0
             self.transferToken(recipient, self.token0, amountPos0)
         if amountPos1 > 0:
-            position.positionOwed1 -= amountPos1
+            position.tokensOwed1 -= amountPos1
             self.transferToken(recipient, self.token1, amountPos1)
 
         # For debugging doing it like this, but we probably need to return both (or merge them)
         # return (recipient, tick, amount0, amount1, amountPos0, amountPos1)
-        return (recipient, tick, amountPos0, amountPos1, feeAmount)
+        return (recipient, tick, amountPos0, amountPos1)
 
     # Overriding UniswapPool's swap function
     def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
@@ -350,7 +329,7 @@ class ChainflipPool(UniswapPool):
                         self.fee,
                         zeroForOne,
                     )
-                    print("priceX96: ", priceX96)
+
                     # Update the tick - we can consider to only update when we cross tick
                     # and keep global variables in state (like uniswap does)
 

@@ -333,13 +333,13 @@ def test_remove_aboveCurrentPrice_token0(initializedMediumPool, accounts):
     pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], 0, 10001)
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], -240, 10000)
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], 0, 10001)
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[0], -240, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], -240, MAX_UINT128, MAX_UINT128
     )
     assert amount0 == 10000
     assert amount1 == 0
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[0], 0, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], 0, MAX_UINT128, MAX_UINT128
     )
     assert amount0 == 10001
     assert amount1 == 0
@@ -352,13 +352,13 @@ def test_remove_aboveCurrentPrice_token1(initializedMediumPool, accounts):
     pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], 0, 10001)
     pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], -240, 10000)
     pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], 0, 10001)
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[1], -240, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], -240, MAX_UINT128, MAX_UINT128
     )
     assert amount0 == 0
     assert amount1 == 10000
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[1], 0, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], 0, MAX_UINT128, MAX_UINT128
     )
     assert amount0 == 0
     assert amount1 == 10001
@@ -401,11 +401,11 @@ def test_removeLiquidity_fromLiquidityLeft(initializedMediumPool, accounts):
     assert pool.ticksLinearTokens0[0].liquidityLeft == 10
 
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].positionOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].tokensOwed0
         == 90
     )
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].positionOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].tokensOwed0
         == 30
     )
 
@@ -418,11 +418,11 @@ def test_removeLiquidity_fromLiquidityLeft(initializedMediumPool, accounts):
     assert pool.ticksLinearTokens0[0].liquidityLeft == 10
 
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].positionOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], -240, True)].tokensOwed0
         == 90
     )
     assert (
-        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].positionOwed0
+        pool.linearPositions[getLimitPositionKey(accounts[0], 0, True)].tokensOwed0
         == 30
     )
 
@@ -583,14 +583,14 @@ def test_removing_includesCurrentPrice(initializedMediumPool, accounts):
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], minTick + tickSpacing, 100)
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], maxTick - tickSpacing, 101)
 
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[0], minTick + tickSpacing, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], minTick + tickSpacing, MAX_UINT128, MAX_UINT128
     )
     assert amount0 == 100
     assert amount1 == 0
 
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[0], maxTick - tickSpacing, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], maxTick - tickSpacing, MAX_UINT128, MAX_UINT128
     )
 
     assert amount0 == 101
@@ -640,14 +640,14 @@ def test_removing_belowCurrentPrice(initializedMediumPool, accounts):
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], -46080, 10000)
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], -46020, 10001)
 
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[0], -46080, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], -46080, MAX_UINT128, MAX_UINT128
     )
     assert amount0 == 10000
     assert amount1 == 0
 
-    (_, _, amount0, amount1, _) = pool.collectLinear(
-        accounts[0], TEST_TOKENS[0], -46020, MAX_UINT128, MAX_UINT128, 0
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], -46020, MAX_UINT128, MAX_UINT128
     )
     assert amount0 == 10001
     assert amount1 == 0
@@ -791,12 +791,10 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     assert (
         positionLinear1.feeGrowthInsideLastX128 == 10208471007628153903901238222953046
     )
-    assert positionLinear0.tokensOwed == 0, "tokens owed 0 before"
-    assert positionLinear1.tokensOwed == 0, "tokens owed 1 before"
-    assert positionLinear0.positionOwed0 == 0, "position owed 0 before"
-    assert positionLinear0.positionOwed1 == 1, "position owed 1 before"
-    assert positionLinear1.positionOwed0 == 1, "position owed 0 before"
-    assert positionLinear1.positionOwed1 == 0, "position owed 1 before"
+    assert positionLinear0.tokensOwed0 == 0, "tokens owed 0 before"
+    assert positionLinear0.tokensOwed1 == 0, "tokens owed 1 before"
+    assert positionLinear1.tokensOwed0 == 0, "tokens owed 0 before"
+    assert positionLinear1.tokensOwed1 == 0, "tokens owed 1 before"
 
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], closeIniTickRDown, 1)
     pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], closeIniTickRUp, 1)
@@ -817,12 +815,10 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     assert (
         positionLinear1.feeGrowthInsideLastX128 == 10208471007628153903901238222953046
     )
-    assert positionLinear0.tokensOwed == 0, "tokens owed 0 before"
-    assert positionLinear1.tokensOwed == 0, "tokens owed 1 before"
-    assert positionLinear0.positionOwed0 == 0, "position owed 0 before"
-    assert positionLinear0.positionOwed1 == 1, "position owed 1 before"
-    assert positionLinear1.positionOwed0 == 1, "position owed 0 before"
-    assert positionLinear1.positionOwed1 == 0, "position owed 1 before"
+    assert positionLinear0.tokensOwed0 == 0, "tokens owed 0 before"
+    assert positionLinear0.tokensOwed1 == 1, "tokens owed 1 before"
+    assert positionLinear1.tokensOwed0 == 1, "tokens owed 0 before"
+    assert positionLinear1.tokensOwed1 == 0, "tokens owed 1 before"
 
 
 # # Burn

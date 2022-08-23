@@ -157,12 +157,6 @@ def updateLinear(
         assert liquidityLeftDelta > 0, "Avoid creating empty tick"
         insertUninitializedLinearTickstoMapping(self, [tick])
 
-    print("UPDATING LINEAR TICK")
-    print("self.liquidityLeft", self[tick].liquidityLeft)
-    print("self.liquiditySwapped", self[tick].liquiditySwapped)
-    print("liquidityLeftDelta", liquidityLeftDelta)
-    print("liquiditySwappedDelta", liquiditySwappedDelta)
-    print(self[tick].liquidityLeft + liquidityLeftDelta)
     info = self[tick]
 
     liquidityLeftBefore = info.liquidityLeft
@@ -171,12 +165,6 @@ def updateLinear(
     assert liquidityLeftAfter <= maxLiquidity, "LO"
 
     flipped = (liquidityLeftAfter == 0) != (liquidityLeftBefore == 0)
-
-    # TODO: How to account for fees
-    # if liquidityGrossBefore == 0:
-    #     ## by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-    #     if tick <= tickCurrent:
-    #         info.feeGrowthOutside0X128 = feeGrowthGlobalX128
 
     info.liquidityLeft = liquidityLeftAfter
     info.liquiditySwapped = LiquidityMath.addDelta(

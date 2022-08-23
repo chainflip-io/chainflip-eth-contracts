@@ -32,15 +32,11 @@ class PositionLinearInfo:
     amountSwappedInsideLastX128: int
     ## the position owed to the position owner in token0#token1 => uint128
     # Since we can burn a position half swapped, we need both tokensOwed0 and tokensOwed1
-    positionOwed0: int
-    positionOwed1: int
+    tokensOwed0: int
+    tokensOwed1: int
     ## fee growth per unit of liquidity as of the last update to liquidity or fees owed.
     ## In the token opposite to the liquidity token.
     feeGrowthInsideLastX128: int
-    ## the fees owed to the position owner in liquidity tokens => uint128
-    # TODO: We might want to merge this with positionOwed (0 or 1). So when we burn, in
-    # position.updateLinear, add the computed amount to positionOwed instead of tokensOwed.
-    tokensOwed: int
     # Not strictly necessary since we need to pass the bool (isToken0) to generate the key
     # isToken0: bool
 
@@ -75,7 +71,7 @@ def getLinear(self, owner, tick, isToken0):
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
-        self[key] = PositionLinearInfo(0, 0, 0, 0, 0, 0)
+        self[key] = PositionLinearInfo(0, 0, 0, 0, 0)
     return self[key]
 
 
@@ -88,9 +84,7 @@ def assertPositionExists(self, owner, tickLower, tickUpper):
 def assertLimitPositionExists(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=(tick), bool=isToken0)
     positionInfo = getLinear(self, owner, tick, isToken0)
-    assert positionInfo != PositionLinearInfo(
-        0, 0, 0, 0, 0, 0
-    ), "Position doesn't exist"
+    assert positionInfo != PositionLinearInfo(0, 0, 0, 0, 0), "Position doesn't exist"
 
 
 ### @notice Credits accumulated fees to a user's position
@@ -165,7 +159,7 @@ def updateLinear(
 
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
-    if self == PositionLinearInfo(0, 0, 0, 0, 0, 0):
+    if self == PositionLinearInfo(0, 0, 0, 0, 0):
         self.amountSwappedInsideLastX128 = amountSwappedInsideX128
         self.feegrowthInsideLastX128 = feeGrowthInsideX128
 
@@ -266,15 +260,15 @@ def updateLinear(
 
         if isToken0:
             # Update position owed in their tokens
-            self.positionOwed0 += abs(liquidityLeftDelta)
-            self.positionOwed1 += mulDiv(
+            self.tokensOwed0 += abs(liquidityLeftDelta)
+            self.tokensOwed1 += mulDiv(
                 abs(liquiditySwappedDelta), sqrtPricex96, 2**96
             )
         else:
-            self.positionOwed0 += mulDiv(
+            self.tokensOwed0 += mulDiv(
                 abs(liquiditySwappedDelta), 2**96, sqrtPricex96
             )
-            self.positionOwed1 += abs(liquidityLeftDelta)
+            self.tokensOwed1 += abs(liquidityLeftDelta)
 
     ## update the position
     if liquidityDelta != 0:
@@ -283,8 +277,13 @@ def updateLinear(
     # Update position fees
     self.feeGrowthInsideLastX128 = feeGrowthInsideX128
 
+    # Add token fees to the position (added to burnt tokens if we are burning)
+    # TokensOwed is not in liquidity token
     if tokensOwed > 0:
-        self.tokensOwed += tokensOwed
+        if isToken0:
+            self.tokensOwed1 += tokensOwed
+        else:
+            self.tokensOwed0 += tokensOwed
 
     # Negative if we are burning. liquiditySwappedDelta in tokenSwapped
     return (liquidityLeftDelta, liquiditySwappedDelta)
