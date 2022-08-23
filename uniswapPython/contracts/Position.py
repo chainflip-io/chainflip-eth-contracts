@@ -34,11 +34,12 @@ class PositionLinearInfo:
     # Since we can burn a position half swapped, we need both tokensOwed0 and tokensOwed1
     positionOwed0: int
     positionOwed1: int
-    # TODO: How to keep track of the fees
-    ## fee growth per unit of liquidity as of the last update to liquidity or fees owed
+    ## fee growth per unit of liquidity as of the last update to liquidity or fees owed.
+    ## In the token opposite to the liquidity token.
     feeGrowthInsideLastX128: int
     ## the fees owed to the position owner in liquidity tokens => uint128
-    # TODO: We might want to merge this with positionOwed0 and positionOwed1
+    # TODO: We might want to merge this with positionOwed (0 or 1). So when we burn, in
+    # position.updateLinear, add the computed amount to positionOwed instead of tokensOwed.
     tokensOwed: int
     # Not strictly necessary since we need to pass the bool (isToken0) to generate the key
     # isToken0: bool
@@ -175,6 +176,7 @@ def updateLinear(
     else:
         liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)
 
+    # TokensOwed is not in liquidity token
     tokensOwed = mulDiv(
         toUint256(feeGrowthInsideX128 - self.feeGrowthInsideLastX128),
         self.liquidity,

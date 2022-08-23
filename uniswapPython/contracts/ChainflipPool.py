@@ -117,7 +117,7 @@ class ChainflipPool(UniswapPool):
             token == self.token0,
             TickMath.getPriceAtTick(tick),
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLinearMap[tick].feeGrowthOutsideX128
+            ticksLinearMap[tick].feeGrowthInsideX128
             if ticksLinearMap.__contains__(tick)
             else 0,
         )
@@ -217,10 +217,11 @@ class ChainflipPool(UniswapPool):
 
         if feeAmount > 0:
             position.tokensOwed -= feeAmount
+            # Inverted token0 and token1 because fees are not in liquidityToken
             if token == self.token0:
-                self.transferToken(recipient, self.token0, feeAmount)
-            else:
                 self.transferToken(recipient, self.token1, feeAmount)
+            else:
+                self.transferToken(recipient, self.token0, feeAmount)
 
         # Add collection of positionOwed and substraction from position.positionOwed{0,1}. We can probably
         # merge that with tokensOwed, but for now keeping it separate for clarity.
@@ -244,7 +245,7 @@ class ChainflipPool(UniswapPool):
 
         # For debugging doing it like this, but we probably need to return both (or merge them)
         # return (recipient, tick, amount0, amount1, amountPos0, amountPos1)
-        return (recipient, tick, amountPos0, amountPos1)
+        return (recipient, tick, amountPos0, amountPos1, feeAmount)
 
     # Overriding UniswapPool's swap function
     def swap(self, recipient, zeroForOne, amountSpecified, sqrtPriceLimitX96):
@@ -293,7 +294,6 @@ class ChainflipPool(UniswapPool):
             0,
             cache.liquidityStart,
             getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
-            0,
         )
 
         loopCounter = 0
@@ -350,7 +350,7 @@ class ChainflipPool(UniswapPool):
                         self.fee,
                         zeroForOne,
                     )
-
+                    print("priceX96: ", priceX96)
                     # Update the tick - we can consider to only update when we cross tick
                     # and keep global variables in state (like uniswap does)
 
@@ -365,6 +365,8 @@ class ChainflipPool(UniswapPool):
                     # Update tick liquidity
                     ## Health check
                     assert stepLinear.amountOut > 0
+                    # Cache initial liquidity (can probably rearange this to not need this)
+                    iniLiquiditySwap = tickLinearInfo.liquidityLeft
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut
                     )
@@ -400,16 +402,19 @@ class ChainflipPool(UniswapPool):
                         stepLinear.feeAmount -= delta
                         state.protocolFee += delta & (2**128 - 1)
 
-                    # Calculate linear fees should probably be done also inside the Tick.computeLinearSwapStep function since it
-                    # will be stored within a tick (most likely)
+                    # Calculate linear fees can probably be done inside the Tick.computeLinearSwapStep function since it
+                    # will be stored within a tick (most likely). For now we keep it here to have the same structure.
 
-                    # ## update global fee tracker. No need to check for liquidity, otherwise we would not have swapped a LO
-                    # #if stateLinear.liquidity > 0:
-                    # state.linearFees += mulDiv(
-                    #     stepLinear.feeAmount, FixedPoint128_Q128, tickLiquidity
-                    # )
-                    # # Addition can overflow in Solidity - mimic it
-                    # state.linearFees = toUint256(state.linearFees)
+                    ## update global fee tracker. No need to check for liquidity, otherwise we would not have swapped a LO
+                    # if stateLinear.liquidity > 0:
+                    # feeAmount is in amountIn tokens => therefore feeGrowthInsideX128 is not in liquidityTokens
+                    tickLinearInfo.feeGrowthInsideX128 += mulDiv(
+                        stepLinear.feeAmount, FixedPoint128_Q128, iniLiquiditySwap
+                    )
+                    # Addition can overflow in Solidity - mimic it
+                    tickLinearInfo.feeGrowthInsideX128 = toUint256(
+                        tickLinearInfo.feeGrowthInsideX128
+                    )
 
                     if not tickCrossed:
                         # Health check - swap should be completed

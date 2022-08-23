@@ -65,8 +65,6 @@ class SwapState:
 
     # indicate that all relevant LinearOrders have been swapped
     linearTicks: list
-    # Linear fees - unclear how we will calculate them for now
-    linearFees: int
 
 
 @dataclass
@@ -389,6 +387,7 @@ class UniswapPool(Account):
             self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
             0,
             cache.liquidityStart,
+            [],
         )
 
         while (

@@ -39,8 +39,9 @@ class TickInfoLinear:
     amountSwappedInsideX128: int
 
     ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
-    ## only has relative meaning, not absolute — the value depends on when the tick is initialized
-    feeGrowthOutsideX128: int
+    ## only has relative meaning, not absolute — the value depends on when the tick is initialized.
+    ## In the token opposite to the liquidity token.
+    feeGrowthInsideX128: int
 
 
 # MAX type values
@@ -466,7 +467,7 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
     )
 
     # Collect position
-    (_, _, amount0, amount1) = pool.collectLinear(
+    (_, _, amount0, amount1, feeAmount) = pool.collectLinear(
         owner, token, tickLO, MAX_UINT128, MAX_UINT128, 0
     )
 
@@ -493,3 +494,7 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
         ].positionOwed1
         == 0
     )
+
+    # TODO: Improve this check
+    if amountSwapped > 0:
+        assert feeAmount > 0
