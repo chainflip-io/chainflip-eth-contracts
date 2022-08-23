@@ -275,19 +275,12 @@ class ChainflipPool(UniswapPool):
             getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
         )
 
-        loopCounter = 0
-
         while (
             state.amountSpecifiedRemaining != 0
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
             print("SWAP LOOP")
-            # We give priority to limit orders being executed first if they offer a better price for the user.
-
-            # Temporal to prevent infinite loop
-            loopCounter += 1
-            if loopCounter == 5:
-                assert False
+            # First limit orders are checked since they can offer a better price for the user.
 
             ######################################################
             #################### LIMIT ORDERS ####################
@@ -405,7 +398,7 @@ class ChainflipPool(UniswapPool):
                         continue
 
             print("Starting with Range Orders")
-            assert False, "We should not go into range orders"
+            # assert False, "We should not go into range orders"
 
             ######################################################
             #################### RANGE ORDERS ####################
@@ -415,9 +408,7 @@ class ChainflipPool(UniswapPool):
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
-            (step.tickNext, step.initialized) = UniswapPool.nextTick(
-                state.tick, zeroForOne
-            )
+            (step.tickNext, step.initialized) = self.nextTick(state.tick, zeroForOne)
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
@@ -501,11 +492,6 @@ class ChainflipPool(UniswapPool):
             elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
                 ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
                 state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
-
-            # Temporal to prevent infinite loop
-            loopCounter += 1
-            if loopCounter == 2:
-                assert False
 
         ## End of swap loop
         # Set final tick as the range tick

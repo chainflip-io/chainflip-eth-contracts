@@ -4,11 +4,30 @@ from utilities import *
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
 from UniswapPool import *
+from ChainflipPool import *
+
 import SwapMath
 import TickMath
 
 import pytest
 import copy
+
+# This will run the same tests (range orders) in the UniswapPool and in the ChainflipPool.
+
+
+@pytest.fixture(params=[*range(0, 2, 1)])
+def TEST_POOLS(request):
+    return request.getfixturevalue("pools{}".format(request.param))
+
+
+@pytest.fixture
+def pools0():
+    return UniswapPool
+
+
+@pytest.fixture
+def pools1():
+    return ChainflipPool
 
 
 @pytest.fixture
@@ -20,22 +39,22 @@ def accounts():
     return account0, account1, account2
 
 
-def createPool(feeAmount, tickSpacing):
+def createPool(TEST_POOLS, feeAmount, tickSpacing):
     feeAmount = feeAmount
-    pool = UniswapPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
+    pool = TEST_POOLS(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
     minTick = getMinTick(tickSpacing)
     maxTick = getMaxTick(tickSpacing)
     return pool, minTick, maxTick, feeAmount, tickSpacing
 
 
 @pytest.fixture
-def createPoolMedium():
-    return createPool(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
+def createPoolMedium(TEST_POOLS):
+    return createPool(TEST_POOLS, FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
 
 
 @pytest.fixture
-def createPoolLow():
-    return createPool(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
+def createPoolLow(TEST_POOLS):
+    return createPool(TEST_POOLS, FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
 
 
 @pytest.fixture
@@ -1251,8 +1270,8 @@ def test_feesCollected_combination1(initializedLowPoolCollectFees, accounts):
 
 
 @pytest.fixture
-def createPoolMedium12TickSpacing():
-    return createPool(FeeAmount.MEDIUM, 12)
+def createPoolMedium12TickSpacing(TEST_POOLS):
+    return createPool(TEST_POOLS, FeeAmount.MEDIUM, 12)
 
 
 @pytest.fixture
@@ -1317,11 +1336,11 @@ def test_swapGaps_zeroForOne(initializedPoolMedium12TickSpacing, accounts):
 
 
 ## https://github.com/Uniswap/uniswap-v3-core/issues/214
-def test_noTickTransitionTwice(accounts):
+def test_noTickTransitionTwice(TEST_POOLS, accounts):
     print(
         "tick transition cannot run twice if zero for one swap ends at fractional price just below tick"
     )
-    pool, _, _, _, _ = createPool(FeeAmount.MEDIUM, 1)
+    pool, _, _, _, _ = createPool(TEST_POOLS, FeeAmount.MEDIUM, 1)
 
     p0 = TickMath.getSqrtRatioAtTick(-24081) + 1
     ## initialize at a price of ~0.3 token1/token0
