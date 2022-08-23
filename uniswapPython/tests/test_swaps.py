@@ -13,7 +13,7 @@ import pytest
 import copy
 import decimal
 
-# Doing only one pool now to debug
+
 @pytest.fixture(params=[*range(0, 15, 1)])
 def TEST_POOLS(request, accounts):
     poolFixture = request.getfixturevalue("pool{}".format(request.param))

@@ -535,17 +535,15 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
     print("does not clear the position fee growth snapshot if no more liquidity")
     ## some activity that would make the ticks non-zero
     pool.mint(accounts[1], minTick, maxTick, expandTo18Decimals(1))
-    print(pool.slot0.tick)
     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
     pool.burn(accounts[1], minTick, maxTick, expandTo18Decimals(1))
-    tickInfo = pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
-    assert tickInfo.liquidity == 0
-    assert tickInfo.tokensOwed0 != 0
-    assert tickInfo.tokensOwed1 != 0
-    assert tickInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
-    # Original value: 340282366920938463463374607431768211
-    assert tickInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
+    positionInfo = pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
+    assert positionInfo.liquidity == 0
+    assert positionInfo.tokensOwed0 != 0
+    assert positionInfo.tokensOwed1 != 0
+    assert positionInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
+    assert positionInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
 
 
 # Continue UniswapV3Pool.spects.ts line 596

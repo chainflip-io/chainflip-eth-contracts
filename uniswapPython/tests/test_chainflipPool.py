@@ -791,6 +791,7 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     assert (
         positionLinear1.feeGrowthInsideLastX128 == 10208471007628153903901238222953046
     )
+    # No position burnt and no fees accured
     assert positionLinear0.tokensOwed0 == 0, "tokens owed 0 before"
     assert positionLinear0.tokensOwed1 == 0, "tokens owed 1 before"
     assert positionLinear1.tokensOwed0 == 0, "tokens owed 0 before"
@@ -815,79 +816,113 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     assert (
         positionLinear1.feeGrowthInsideLastX128 == 10208471007628153903901238222953046
     )
+    # 1 token from the positions burnt and no fees accured
     assert positionLinear0.tokensOwed0 == 0, "tokens owed 0 before"
     assert positionLinear0.tokensOwed1 == 1, "tokens owed 1 before"
     assert positionLinear1.tokensOwed0 == 1, "tokens owed 0 before"
     assert positionLinear1.tokensOwed1 == 0, "tokens owed 1 before"
 
 
-# # Burn
+# Burn
 
-# ## the combined amount of liquidity that the pool is initialized with (including the 1 minimum liquidity that is burned)
-# initializeLiquidityAmount = expandTo18Decimals(2)
-
-
-# def initializeAtZeroTick(pool, accounts):
-#     pool.initialize(encodePriceSqrt(1, 1))
-#     tickSpacing = pool.tickSpacing
-#     [min, max] = [getMinTick(tickSpacing), getMaxTick(tickSpacing)]
-#     pool.mintLinearOrder(
-#         TEST_TOKENS[0], accounts[0], pool.slot0.tick, max, initializeLiquidityAmount
-#     )
-#     pool.mintLinearOrder(
-#         TEST_TOKENS[1], accounts[0], min, pool.slot0.tick, initializeLiquidityAmount
-#     )
+## the combined amount of liquidity that the pool is initialized with (including the 1 minimum liquidity that is burned)
+initializeLiquidityAmount = expandTo18Decimals(2)
 
 
-# @pytest.fixture
-# def mediumPoolInitializedAtZero(createPoolMedium, accounts):
-#     pool, minTick, maxTick, _, _ = createPoolMedium
-#     initializeAtZeroTick(pool, accounts)
+def initializeAtZeroTick(pool, accounts):
+    pool.initialize(encodePriceSqrt(1, 1))
+    tickSpacing = pool.tickSpacing
+    # [min, max] = [getMinTick(tickSpacing), getMaxTick(tickSpacing)]
 
-#     pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], pool.slot0.tick, maxTick, 3161)
-#     pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], minTick, pool.slot0.tick, 3161)
+    # NOTE: For token0 (swap1for0) we can take a LO at the current tick, but not in the other direction.
+    pool.mintLinearOrder(
+        TEST_TOKENS[0], accounts[0], pool.slot0.tick, initializeLiquidityAmount
+    )
+    pool.mintLinearOrder(
+        TEST_TOKENS[1],
+        accounts[0],
+        pool.slot0.tick + tickSpacing,
+        initializeLiquidityAmount,
+    )
 
-#     return createPoolMedium
+
+@pytest.fixture
+def mediumPoolInitializedAtZero(createPoolMedium, accounts):
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    initializeAtZeroTick(pool, accounts)
+
+    # pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], pool.slot0.tick, 3161)
+    # pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], pool.slot0.tick, 3161)
+
+    return createPoolMedium
 
 
-# def checkTickIsClear(tickmap, tick):
-#     assert tickmap.__contains__(tick) == False
+def checkLinearTickIsClear(tickmap, tick):
+    assert tickmap.__contains__(tick) == False
 
 
-# def checkTickIsNotClear(tickmap, tick):
-#     # Make check explicit
-#     assert tickmap.__contains__(tick)
-#     assert tickmap[tick].liquidityGross != 0
+def checkLinearTickIsNotClear(tickmap, tick):
+    # Make check explicit
+    assert tickmap.__contains__(tick)
+    assert tickmap[tick].liquidityLeft != 0
 
-# def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
-#     pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
-#     print("does not clear the position fee growth snapshot if no more liquidity")
-#     ## some activity that would make the ticks non-zero
-#     pool.mint(accounts[1], minTick, maxTick, expandTo18Decimals(1))
 
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burn(accounts[1], minTick, maxTick, expandTo18Decimals(1))
-#     positionInfo = pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
-#     assert positionInfo.liquidity == 0
-#     assert positionInfo.tokensOwed0 != 0
-#     assert positionInfo.tokensOwed1 != 0
-#     assert positionInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
-#     assert positionInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
+def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
+    pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
+    print("does not clear the position fee growth snapshot if no more liquidity")
+    iniTick = pool.slot0.tick
+    ## some activity that would make the ticks non-zero
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[1], iniTick, expandTo18Decimals(1))
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[1], iniTick + pool.tickSpacing, expandTo18Decimals(1)
+    )
 
-# def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
-#     print("clears the tick if its the last position using it")
-#     pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
-#     tickLower = minTick + tickSpacing
-#     tickUpper = maxTick - tickSpacing
-#     ## some activity that would make the ticks non-zero
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], pool.slot0.tick, tickUpper, 1)
-#     pool.mintLinearOrder(TEST_TOKENS[1],accounts[0], tickLower, pool.slot0.tick, 1)
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], pool.slot0.tick, tickUpper, 1)
-#     pool.burnLimitOrder(TEST_TOKENS[1],accounts[0], tickLower, pool.slot0.tick, 1)
-#     checkTickIsClear(pool, tickLower)
-#     checkTickIsClear(pool, tickUpper)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[1], iniTick, expandTo18Decimals(1))
+    pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[1], iniTick + pool.tickSpacing, expandTo18Decimals(1)
+    )
+
+    positionLinearInfo0 = pool.linearPositions[
+        getLimitPositionKey(accounts[1], iniTick, True)
+    ]
+    positionLinearInfo1 = pool.linearPositions[
+        getLimitPositionKey(accounts[1], iniTick + pool.tickSpacing, False)
+    ]
+    assert positionLinearInfo0.liquidity == 0
+    assert positionLinearInfo0.tokensOwed0 != 0
+    assert positionLinearInfo0.tokensOwed1 != 0
+    assert (
+        positionLinearInfo0.feeGrowthInsideLastX128
+        == 340282366920938463463374607431768211
+    )
+
+    assert positionLinearInfo1.liquidity == 0
+    assert positionLinearInfo1.tokensOwed0 != 0
+    assert positionLinearInfo1.tokensOwed1 != 0
+    assert (
+        positionLinearInfo1.feeGrowthInsideLastX128
+        == 340282366920938463463374607431768211
+    )
+
+
+def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
+    print("clears the tick if its the last position using it")
+    pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    ## some activity that would make the ticks non-zero - make it different than mediumPoolInitializedAtZero positions
+    tickLow = pool.slot0.tick - tickSpacing * 10
+    tickHigh = pool.slot0.tick + tickSpacing * 10
+    # Check that ticks are cleared before minting
+    checkLinearTickIsClear(pool.ticksLinearTokens0, tickLow)
+    checkLinearTickIsClear(pool.ticksLinearTokens1, tickHigh)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLow, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickHigh, 1)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLow, 1)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickHigh, 1)
+    checkLinearTickIsClear(pool.ticksLinearTokens0, tickLow)
+    checkLinearTickIsClear(pool.ticksLinearTokens1, tickHigh)
 
 
 # def test_clearOnlyLower_ifUpperUsed(accounts, mediumPoolInitializedAtZero):
@@ -2589,4 +2624,6 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
 
 # TO continue:
 
+# Add test (very similar to initializeAtZeroTick fixture) testing that if we mint two positions on the current tick, in
+#     one direction it's used but not the other.
 # Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine

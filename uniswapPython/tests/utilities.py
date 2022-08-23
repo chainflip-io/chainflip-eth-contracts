@@ -32,7 +32,10 @@ class TickInfoLinear:
     ## amount of liquidity that has not been yet swapped
     liquidityLeft: int
     # Liquidity that has been swapped => for now we keep in the same token as liquidityLeft but we should
-    # probably change it to the swapped token. TODO: I think we can remove this!!
+    # probably change it to the swapped token.
+    # TODO: Think if we can remove this. It seems like it, but we probably need something else to fulfill
+    # the function that this is doing in Tick.updateLinear. So maybe we can't remove it, it's like
+    # liquidityGross and liquidityNet in TickInfo
     liquiditySwapped: int
 
     # amount swapped per unit of liquidity in this tick. Only has relative meaning, not absolute.
@@ -446,16 +449,16 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
 
     if zeroForOne:
         assert amountOwed1 == iniLiquidityPosition - abs(amountSwapped)
-        # Should be === to fees + amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10 difference)
-        # TODO: Add calculation for fees so we can assert ==
+        # Should be === to fees + amountRemainingLessFee . However, if no fees it is still not == due to rounding ( < 10^-10 difference)
+        # TODO: Add calculation for fees so we can assert == (or almost, since there is rounding)
         assert amountOwed0 >= mulDiv(abs(amountSwapped), 2**96, priceLO)
         if tickToBeCleared:
             assert not pool.ticksLinearTokens1.__contains__(tickLO)
 
     else:
         assert amountOwed0 == iniLiquidityPosition - abs(amountSwapped)
-        # Should be === to fees + amountRemainingLessFee but due to rounding it is a bit smaller ( < 10^-10 difference)
-        # TODO: Add calculation for fees so we can assert ==
+        # Should be === to fees + amountRemainingLessFee . However, if no fees it is still not == due to rounding ( < 10^-10 difference)
+        # TODO: Add calculation for fees so we can assert == (or almost, since there is rounding)
         assert amountOwed1 >= mulDiv(abs(amountSwapped), priceLO, 2**96)
         if tickToBeCleared:
             assert not pool.ticksLinearTokens0.__contains__(tickLO)

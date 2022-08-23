@@ -146,6 +146,7 @@ class ChainflipPool(UniswapPool):
         ## clear any tick data that is no longer needed
         if liquidityDelta < 0:
             if flipped:
+                print("DELETING TICK")
                 Tick.clear(ticksLinearMap, tick)
         return position
 
@@ -274,6 +275,11 @@ class ChainflipPool(UniswapPool):
             cache.liquidityStart,
             getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
         )
+        print("ticksLinearMap", ticksLinearMap)
+        print(
+            "LINEAR TICKS: ",
+            getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
+        )
 
         while (
             state.amountSpecifiedRemaining != 0
@@ -398,7 +404,9 @@ class ChainflipPool(UniswapPool):
                         continue
 
             print("Starting with Range Orders")
-            # assert False, "We should not go into range orders"
+
+            # For development purposes only
+            assert False, "We should not go into range orders"
 
             ######################################################
             #################### RANGE ORDERS ####################

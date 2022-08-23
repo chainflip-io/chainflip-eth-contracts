@@ -162,9 +162,23 @@ def updateLinear(
     liquidityLeftBefore = info.liquidityLeft
     liquidityLeftAfter = LiquidityMath.addDelta(liquidityLeftBefore, liquidityLeftDelta)
 
+    # Workaround to solve the issue of liquidityLeft being modified by the swap function. That causes that when we proceed to
+    # burn a position, the liquidityLeft might already by zero (we only remove swapped liquidity), but we can't tell if that
+    # is the last position (aka flip the tick) so we can clear it or not.
+    # The workaround is using liquiditySwapped to know if we are removing the last position or not.
+    # TODO: There is probably a smarter way to do this, but it feels like we need an extra variable (maybe liquiditySwapped is
+    # too much overhead, maybe some bool or counter might do the trick)
+    liquiditySwappedBefore = info.liquiditySwapped
+    liquiditySwappedAfter = LiquidityMath.addDelta(
+        info.liquiditySwapped, liquiditySwappedDelta
+    )
+
     assert liquidityLeftAfter <= maxLiquidity, "LO"
 
-    flipped = (liquidityLeftAfter == 0) != (liquidityLeftBefore == 0)
+    # flipped = (liquidityLeftAfter == 0) != (liquidityLeftBefore == 0)
+    flipped = (liquidityLeftAfter == 0 and liquiditySwappedAfter == 0) != (
+        liquidityLeftBefore == 0 and liquiditySwappedBefore == 0
+    )
 
     info.liquidityLeft = liquidityLeftAfter
     info.liquiditySwapped = LiquidityMath.addDelta(
