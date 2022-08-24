@@ -1333,6 +1333,8 @@ def test_limitSelling0For1_atTick0Thru1_feesOn(mediumPoolInitializedAtZero, acco
     assert amount1 == 5945956573874155 + feesAccrued
 
 
+# This doesn't make sense.
+
 # def test_limitSelling0For1_atTick0ThruMinus1_feesOn(
 #     mediumPoolInitializedAtZero, accounts
 # ):
@@ -1369,29 +1371,27 @@ def test_limitSelling0For1_atTick0Thru1_feesOn(mediumPoolInitializedAtZero, acco
 #     assert pool.slot0.tick <= -120
 
 
-# ## Collect
-# def test_multipleLPs(initializedLowPoolCollect, accounts):
-#     print("works with multiple LPs")
-#     pool, minTick, maxTick, _, tickSpacing = initializedLowPoolCollect
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, expandTo18Decimals(1))
-#     pool.mintLinearOrder(TEST_TOKENS[0],
-#         accounts[0], minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(2)
-#     )
+## Collect
+def test_multipleLPs(initializedLowPoolCollect, accounts):
+    print("works with multiple LPs")
+    pool, _, _, _, tickSpacing = initializedLowPoolCollect
 
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    tick = tickSpacing
 
-#     ## poke positions
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tick, expandTo18Decimals(1))
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tick, expandTo18Decimals(2))
 
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick + tickSpacing, maxTick - tickSpacing, 0)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
 
-#     position0 = pool.positions[getPositionKey(accounts[0], minTick, maxTick)]
-#     position1 = pool.positions[
-#         getPositionKey(accounts[0], minTick + tickSpacing, maxTick - tickSpacing)
-#     ]
+    ## poke linearPositions
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tick, 0)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[1], tick, 0)
 
-#     assert position0.tokensOwed0 == 166666666666666
-#     assert position1.tokensOwed0 == 333333333333333
+    position0 = pool.linearPositions[getLimitPositionKey(accounts[0], tick, False)]
+    position1 = pool.linearPositions[getLimitPositionKey(accounts[1], tick, False)]
+    
+    assert position0.tokensOwed0 == 166666666666666
+    assert position1.tokensOwed0 == 333333333333333
 
 
 # ## Works accross large increases
