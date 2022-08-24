@@ -273,12 +273,8 @@ class ChainflipPool(UniswapPool):
             self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
             0,
             cache.liquidityStart,
-            getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
-        )
-        print("ticksLinearMap", ticksLinearMap)
-        print(
-            "LINEAR TICKS: ",
-            getLinearTicks(ticksLinearMap, slot0Start.tick, not zeroForOne),
+            # Return a list of sorted keys with liquidityLeft > 0
+            getKeysLinearTicksWithLiquidity(ticksLinearMap)
         )
 
         while (
@@ -297,10 +293,10 @@ class ChainflipPool(UniswapPool):
             stepLinear.sqrtPriceStartX96 = state.sqrtPriceX96
 
             # Just to not try finding a limit order if there aren't any
-            if len(state.linearTicks) != 0:
-                # Find the next linear order tick with liquidityLeft > 0
+            if len(state.keysLinearTicks) != 0:
+                # Find the next linear order tick. initialized == False if not found
                 (stepLinear.tickNext, stepLinear.initialized) = nextLinearTick(
-                    state.linearTicks, not zeroForOne, ticksLinearMap
+                    state.keysLinearTicks, not zeroForOne, state.tick
                 )
 
                 print("Next tick: ", stepLinear.tickNext)
@@ -559,57 +555,34 @@ class ChainflipPool(UniswapPool):
         )
 
 
-# Ticks that have been crossed but positions not removed will still appear in the mapping, since atm we don't
-# remove all positions (and therefore the tick) when a tick is crossed. For now we do it similar to UniswapV3,
-# where if we get a tick with liquidityLeft == 0 we will just continue the loop (skipping range orders) and run it again.
-def getLinearTicks(tickMapping, tick, lte):
-    checkInputTypes(int24=(tick), bool=(lte))
+# Remove all ticks with LiquidityLeft == 0. Maybe we end up not needing that if we automatically remove the positions
+# after swap, but probably we won't
+def getKeysLinearTicksWithLiquidity(tickMapping):
+    # Dictionary with ticks that have liquidityLeft > 0
+    dictTicksWithLiq = {
+        k: v for k, v in tickMapping.items() if tickMapping[k].liquidityLeft > 0
+    }
 
-    if not tickMapping.__contains__(tick):
-        # If tick doesn't exist in the mapping we fake it (easier than searching for nearest value)
-        sortedKeyList = sorted(list(tickMapping.keys()) + [tick])
-    else:
-        sortedKeyList = sorted(list(tickMapping.keys()))
+    # Return a list of sorted keys
+    return sorted(list(dictTicksWithLiq.keys()))
 
-    indexCurrentTick = sortedKeyList.index(tick)
-
-    if lte:
-        if indexCurrentTick == 0:
-            if tickMapping.__contains__(tick):
-                return [tick]
-            else:
-                return []
-        else:
-            # Return all the limitOrder ticks to the left including the current one if it was not faked
-            if tickMapping.__contains__(tick):
-                return sortedKeyList[0 : indexCurrentTick + 1]
-            else:
-                return sortedKeyList[0:indexCurrentTick]
-
-    else:
-        if indexCurrentTick == len(sortedKeyList) - 1:
-            # No tick to the right
-            return []
-        else:
-            # Return all the limitOrders to the right not including the the current one
-            return sortedKeyList[indexCurrentTick + 1 : len(sortedKeyList)]
-
-
-# Find the next linearTick with liquidityLeft > 0 and pop them from the list
-def nextLinearTick(linearTicks, lte, ticksLinearMap):
+# Find the next linearTick (all should have liquidityLeft > 0) and pop them from the list. The input list
+# should be a list of sorted keys.
+def nextLinearTick(keysLinearTicks, lte, currentTick):
     checkInputTypes(bool=(lte))
 
-    while len(linearTicks) > 0:
-        if lte:
-            # Start from the most left
-            nextTick = linearTicks.pop(0)
-        else:
+    # Only pop the value if tick will be used
+    if lte:
+        # Start from the most left
+        if keysLinearTicks[0] <= currentTick:
+            nextTick = keysLinearTicks.pop(0)
+            return nextTick, True
+    else:
+        if keysLinearTicks[-1] > currentTick:
             # Start from the most right
-            nextTick = linearTicks.pop(-1)
-
-        # Probably I could just cache the liquidity left of those ticks in getLinearTicks
-        if ticksLinearMap[nextTick].liquidityLeft > 0:
+            nextTick = keysLinearTicks.pop(-1)
             return nextTick, True
 
-    # Will only reach here if we have not found a succesful tick
+    # If no tick with LO is found, then we're done - not modifying the keyList in case we can use
+    # any of the ticks later in the swap, since current tick on the rangeOrder pool can change
     return None, False

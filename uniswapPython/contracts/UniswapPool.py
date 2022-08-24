@@ -63,8 +63,8 @@ class SwapState:
     ## the current liquidity in range
     liquidity: int
 
-    # indicate that all relevant LinearOrders have been swapped
-    linearTicks: list
+    # Keys of ticks with liquidityLeft > 0
+    keysLinearTicks: list
 
 
 @dataclass
