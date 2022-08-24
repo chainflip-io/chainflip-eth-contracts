@@ -137,7 +137,7 @@ def updateLinear(
     self,
     tick,
     liquidityLeftDelta,
-    liquiditySwappedDelta,
+    liquidityDelta,
     # liquidityDelta,
     # feeGrowthGlobalX128,
     maxLiquidity,
@@ -146,7 +146,7 @@ def updateLinear(
     checkInputTypes(
         dict=self,
         int24=(tick),
-        int128=(liquidityLeftDelta, liquiditySwappedDelta),
+        int128=(liquidityDelta),
         # uint256=(feeGrowthGlobalX128),
         # bool=(isToken0),
         uint128=maxLiquidity,
@@ -154,37 +154,20 @@ def updateLinear(
 
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):
-        assert liquidityLeftDelta > 0, "Avoid creating empty tick"
+        assert liquidityDelta > 0, "Avoid creating empty tick"
         insertUninitializedLinearTickstoMapping(self, [tick])
 
     info = self[tick]
 
-    liquidityLeftBefore = info.liquidityLeft
-    liquidityLeftAfter = LiquidityMath.addDelta(liquidityLeftBefore, liquidityLeftDelta)
+    liquidityGrossBefore = info.liquidityGross
+    liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)
 
-    # Workaround to solve the issue of liquidityLeft not saying (when burning a position), if the tick should be removed.
-    # In Uniswap, liquidityGross is usedto know when a tick can be removed. So there is probably no way around it.
-    # The workaround here is using liquiditySwapped to know if we are removing the last position or not. This acts the same way
-    # as liquidityGross in Uniswap. We could do it that way if we wanted to, might be easier for the Math. Just leaving it like
-    # this for now in case we want to have the liquidity Swapped amount for something else.
-    # TODO: There is probably a smarter way to do this, but it feels like we need an extra variable (maybe liquiditySwapped is
-    # too much overhead, maybe some bool or counter might do the trick). However, it probably needs a variable anyway (like Uniswap)
-    liquiditySwappedBefore = info.liquiditySwapped
-    liquiditySwappedAfter = LiquidityMath.addDelta(
-        info.liquiditySwapped, liquiditySwappedDelta
-    )
+    assert liquidityGrossAfter <= maxLiquidity, "LO"
 
-    assert liquidityLeftAfter <= maxLiquidity, "LO"
+    flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0)
 
-    # flipped = (liquidityLeftAfter == 0) != (liquidityLeftBefore == 0)
-    flipped = (liquidityLeftAfter == 0 and liquiditySwappedAfter == 0) != (
-        liquidityLeftBefore == 0 and liquiditySwappedBefore == 0
-    )
-
-    info.liquidityLeft = liquidityLeftAfter
-    info.liquiditySwapped = LiquidityMath.addDelta(
-        info.liquiditySwapped, liquiditySwappedDelta
-    )
+    info.liquidityGross = liquidityGrossAfter
+    info.liquidityLeft = LiquidityMath.addDelta(info.liquidityLeft, liquidityLeftDelta)
 
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped

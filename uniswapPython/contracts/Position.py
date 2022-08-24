@@ -145,7 +145,7 @@ def updateLinear(
     liquidityDelta,
     amountSwappedInsideX128,
     isToken0,
-    sqrtPricex96,
+    pricex96,
     feeGrowthInsideX128,
 ):
     checkInputTypes(
@@ -193,12 +193,15 @@ def updateLinear(
     # if we are minting
     # NOTE: Burn0 (poke) will update the fees but won't update the positionOwed, since that is dependant
     # and calculated on the amount Burnt
-    if liquidityDelta >= 0:
-        liquidityLeftDelta = liquidityDelta
-        liquiditySwappedDelta = 0
+    # if liquidityDelta >= 0:
+    #     liquidityLeftDelta = liquidityDelta
+    #     liquiditySwappedDelta = 0
 
     # if we are burning calculate a proportional part of the position's liquidity
     # Then on the burn function we will remove them
+    if liquidityDelta >= 0:
+        liquidityLeftDelta = liquidityDelta
+        liquiditySwappedDelta = 0
     else:
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
@@ -210,22 +213,22 @@ def updateLinear(
             FixedPoint128_Q128,
         )
 
-        # Amount swapped in the actual swapped token
+        # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(
                 self.liquidity, -amountSwappedPrev
             )
-            currentPosition1 = mulDiv(amountSwappedPrev, sqrtPricex96, 2**96)
+            currentPosition1 = mulDiv(amountSwappedPrev, pricex96, 2**96)
 
         else:
             currentPosition1 = LiquidityMath.addDelta(
                 self.liquidity, -amountSwappedPrev
             )
             # Patch - there shouldn't be limit orders at the edges
-            if sqrtPricex96 == 0:
+            if pricex96 == 0:
                 currentPosition0 = amountSwappedPrev
             else:
-                currentPosition0 = mulDiv(amountSwappedPrev, 2**96, sqrtPricex96)
+                currentPosition0 = mulDiv(amountSwappedPrev, 2**96, pricex96)
 
         ### Calculate the amount of liquidity that should be burnt from liquidityLeft and liquiditySwapped
 
@@ -233,13 +236,10 @@ def updateLinear(
         # we burn a proportional part of the remaining liquidity in the tick
         # liquidityDelta / self.liquidity
 
-        # Amount of swapped liquidity in liquidityToken (same as in tick LiquiditySwapped)
-        # TODO: We should probably have tick.liquiditySwapped in tokenSwapped amount so we don't
-        # need to do conversions. Maybe we will remove liquiditySwapped so maybe we can't
+        # Amount of swapped liquidity in liquidity Token
         liquiditySwappedDelta = -mulDiv(
             liquidityToRemove, amountSwappedPrev, self.liquidity
         )
-
         if isToken0:
             liquidityLeftDelta = -mulDiv(
                 liquidityToRemove, currentPosition0, self.liquidity
@@ -248,7 +248,6 @@ def updateLinear(
             liquidityLeftDelta = -mulDiv(
                 liquidityToRemove, currentPosition1, self.liquidity
             )
-
         # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
         if currentPosition0 > MAX_UINT128:
             currentPosition0 = currentPosition0 & (2**128 - 1)
@@ -261,13 +260,15 @@ def updateLinear(
         if isToken0:
             # Update position owed in their tokens
             self.tokensOwed0 += abs(liquidityLeftDelta)
-            self.tokensOwed1 += mulDiv(
-                abs(liquiditySwappedDelta), sqrtPricex96, 2**96
+            liquiditySwappedDelta = mulDiv(
+                abs(liquiditySwappedDelta), pricex96, 2**96
             )
+            self.tokensOwed1 += liquiditySwappedDelta
         else:
-            self.tokensOwed0 += mulDiv(
-                abs(liquiditySwappedDelta), 2**96, sqrtPricex96
+            liquiditySwappedDelta = mulDiv(
+                abs(liquiditySwappedDelta), 2**96, pricex96
             )
+            self.tokensOwed0 += liquiditySwappedDelta
             self.tokensOwed1 += abs(liquidityLeftDelta)
 
     ## update the position
@@ -285,5 +286,5 @@ def updateLinear(
         else:
             self.tokensOwed0 += tokensOwed
 
-    # Negative if we are burning. liquiditySwappedDelta in tokenSwapped
-    return (liquidityLeftDelta, liquiditySwappedDelta)
+    # Returning liquiditySwappedDelta to return as a result of the burn function
+    return liquidityLeftDelta, liquiditySwappedDelta

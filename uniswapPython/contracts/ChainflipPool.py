@@ -115,10 +115,9 @@ class ChainflipPool(UniswapPool):
         else:
             ticksLinearMap = self.ticksLinearTokens1
 
-        # TODO: If doing this with amountSwapped works, do the same for fees
         # Update Position before updating the tick because we need to calculate how the liquidityDelta
-        # translates to difference of liquidity (liquidityLeft/LiquiditySwapped) when burning
-        (liquidityLeftDelta, liquiditySwappedDelta) = Position.updateLinear(
+        # translates to difference of liquidity (liquidityLeftDelta) when burning
+        liquidityLeftDelta, liquiditySwappedDelta = Position.updateLinear(
             position,
             liquidityDelta,
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
@@ -142,7 +141,7 @@ class ChainflipPool(UniswapPool):
                 ticksLinearMap,
                 tick,
                 liquidityLeftDelta,
-                liquiditySwappedDelta,
+                liquidityDelta,
                 # liquidityDelta,
                 # self.linearFeeGrowthGlobal1X128
                 # if token == self.token0
@@ -192,9 +191,6 @@ class ChainflipPool(UniswapPool):
             assert liquiditySwappedDelta == 0
 
         # As in uniswap we return the amount of tokens that were burned, that is without fees accrued.
-        # NOTE: liquiditySwappedDelta is in liquidityTokens currency (liquidityLeft).
-        # TODO: We should probably change the design and store LiquiditySwapped in the swapped token.
-        # Also so it is consistent with collect (and with Uniswap)
         return (
             recipient,
             tick,
@@ -367,9 +363,6 @@ class ChainflipPool(UniswapPool):
                     iniLiquiditySwap = tickLinearInfo.liquidityLeft
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut
-                    )
-                    tickLinearInfo.liquiditySwapped = LiquidityMath.addDelta(
-                        tickLinearInfo.liquiditySwapped, stepLinear.amountOut
                     )
 
                     if tickCrossed:

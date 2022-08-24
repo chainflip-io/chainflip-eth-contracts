@@ -31,12 +31,8 @@ class TickInfo:
 class TickInfoLinear:
     ## amount of liquidity that has not been yet swapped
     liquidityLeft: int
-    # Liquidity that has been swapped => for now we keep in the same token as liquidityLeft but we should
-    # probably change it to the swapped token.
-    # TODO: Think if we can remove this. It seems like it, but we probably need something else to fulfill
-    # the function that this is doing in Tick.updateLinear. So maybe we can't remove it, it's like
-    # liquidityGross and liquidityNet in TickInfo
-    liquiditySwapped: int
+    ## the total position liquidity that references this tick
+    liquidityGross: int
 
     # amount swapped per unit of liquidity in this tick. Only has relative meaning, not absolute.
     amountSwappedInsideX128: int
@@ -428,7 +424,7 @@ def check_limitOrderSwap_oneTick_exactIn(
     assert ticksLinearTokens[tickLO].liquidityLeft == iniLiquidityTick - abs(
         amountSwappedOut
     )
-    assert ticksLinearTokens[tickLO].liquiditySwapped == abs(amountSwappedOut)
+    assert ticksLinearTokens[tickLO].liquidityGross == iniLiquidityTick
 
 
 # Fully burn a partially swapped position
@@ -444,15 +440,9 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
 ):
     token = TEST_TOKENS[1] if zeroForOne else TEST_TOKENS[0]
 
-    print(
-        "POS", pool.linearPositions[getLimitPositionKey(owner, tickLO, not zeroForOne)]
-    )
     # Update fees
     (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
         token, owner, tickLO, 0
-    )
-    print(
-        "POS", pool.linearPositions[getLimitPositionKey(owner, tickLO, not zeroForOne)]
     )
     (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
         token, owner, tickLO, amountToBurn
@@ -486,23 +476,23 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
         owner, token, tickLO, MAX_UINT128, MAX_UINT128
     )
 
-    # Check that amount calculated in burn is smaller or equal than collected (due to fees).
-    # TODO: CANNOT COMPARE LIKE THIS => in burnt the return amounts are in tokenLiquidity while
-    # in collect they are in token Swapped currency
+    # Check that amount calculated in burn is smaller or equal than collected (due to fees). Probably we
+    # could do this in a better way.
+
     if zeroForOne:
         if amountSwapped:
-            assert mulDiv(amountBurnt1, 2**96, priceLO) < amount0
+            assert amountBurnt1 < amount0
             assert amountBurnt0 == amount1
         else:
-            assert mulDiv(amountBurnt1, 2**96, priceLO) == amount0
+            assert amountBurnt1 == amount0
             assert amountBurnt0 == amount1
     else:
         if amountSwapped:
             assert amountBurnt0 <= amount0
-            assert mulDiv(amountBurnt1, priceLO, 2**96) < amount1
+            assert amountBurnt1 < amount1
         else:
             assert amountBurnt0 == amount0
-            assert mulDiv(amountBurnt1, priceLO, 2**96) == amount1
+            assert amountBurnt1 == amount1
 
     # No liquidity left and all tokensOwed collected
     assert (

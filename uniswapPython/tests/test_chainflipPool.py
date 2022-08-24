@@ -869,7 +869,7 @@ def checkLinearTickIsClear(tickmap, tick):
 def checkLinearTickIsNotClear(tickmap, tick):
     # Make check explicit
     assert tickmap.__contains__(tick)
-    assert tickmap[tick].liquidityLeft != 0 or tickmap[tick].liquiditySwapped != 0
+    assert tickmap[tick].liquidityGross != 0
 
 
 def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
@@ -925,11 +925,11 @@ def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
     # Check that ticks are cleared before minting
     checkLinearTickIsClear(pool.ticksLinearTokens0, tickLow)
     checkLinearTickIsClear(pool.ticksLinearTokens1, tickHigh)
-    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLow, 1)
-    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickHigh, 1)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLow, expandTo18Decimals(1))
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickHigh, expandTo18Decimals(1))
     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLow, 1)
-    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickHigh, 1)
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLow, expandTo18Decimals(1))
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickHigh, expandTo18Decimals(1))
     checkLinearTickIsClear(pool.ticksLinearTokens0, tickLow)
     checkLinearTickIsClear(pool.ticksLinearTokens1, tickHigh)
 
@@ -1084,7 +1084,7 @@ def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
     assert afterTick0 == beforeTick0
     assert afterTick1 != beforeTick1
     assert afterTick1.liquidityLeft < beforeTick1.liquidityLeft
-    assert afterTick1.liquiditySwapped > beforeTick1.liquiditySwapped
+    assert afterTick1.liquidityGross == beforeTick1.liquidityGross
     assert afterTick1.amountSwappedInsideX128 > beforeTick1.amountSwappedInsideX128
     assert afterTick1.feeGrowthInsideX128 > beforeTick1.feeGrowthInsideX128
 
@@ -1266,10 +1266,8 @@ def test_limitSelling0For1_atTick0Thru1(mediumPoolInitializedAtZero, accounts):
     assert tick == -pool.tickSpacing
     assert amount == liquidityToMint
     assert amount0 == 0
-    # Orig value: 6017734268818165. Different because the tickPrice (-tickSpacing) is different. Trying
-    # to replicate the same number is a lot of hustle. Although our number is in the other currency,
-    # we would need to translate it (it doesn't match either, but close)
-    assert amount1 == 5981737760509663
+    # Orig value: 6017734268818165
+    assert amount1 == 5945956573874155
 
     (_, _, amount0, amount1) = pool.collectLinear(
         accounts[0], TEST_TOKENS[0], -pool.tickSpacing, MAX_UINT128, MAX_UINT128
@@ -1323,10 +1321,8 @@ def test_limitSelling0For1_atTick0Thru1_feesOn(mediumPoolInitializedAtZero, acco
     assert tick == -pool.tickSpacing
     assert amount == liquidityToMint
     assert amount0 == 0
-    # Orig value: 6017734268818165. Different because the tickPrice (-tickSpacing) is different. Trying
-    # to replicate the same number is a lot of hustle. Although our number is in the other currency,
-    # we would need to translate it (it doesn't match either, but close)
-    assert amount1 == 5981737760509663
+    # Orig value: 6017734268818165
+    assert amount1 == 5945956573874155
 
     (_, _, amount0, amount1) = pool.collectLinear(
         accounts[0], TEST_TOKENS[0], -pool.tickSpacing, MAX_UINT128, MAX_UINT128
@@ -1334,13 +1330,7 @@ def test_limitSelling0For1_atTick0Thru1_feesOn(mediumPoolInitializedAtZero, acco
 
     # In Uniswap burning returns the amount burnt in that transaction, and collect returns
     assert amount0 == 0
-    assert (
-        amount1
-        == mulDiv(
-            abs(5981737760509663), TickMath.getPriceAtTick(-pool.tickSpacing), 2**96
-        )
-        + feesAccrued
-    )
+    assert amount1 == 5945956573874155 + feesAccrued
 
 
 # def test_limitSelling0For1_atTick0ThruMinus1_feesOn(
@@ -2228,7 +2218,9 @@ def test_mintWorseLO_zeroForOne(initializedMediumPoolNoLO, accounts):
     assert pool.ticksLinearTokens1[
         closeAligniniTickiRDown
     ].liquidityLeft == expandTo18Decimals(1)
-    assert pool.ticksLinearTokens1[closeAligniniTickiRDown].liquiditySwapped == 0
+    assert pool.ticksLinearTokens1[
+        closeAligniniTickiRDown
+    ].liquidityGross == expandTo18Decimals(1)
 
 
 def test_mintWorseLO_oneForZero(initializedMediumPoolNoLO, accounts):
@@ -2245,7 +2237,9 @@ def test_mintWorseLO_oneForZero(initializedMediumPoolNoLO, accounts):
     assert pool.ticksLinearTokens0[
         closeAligniniTickRUp
     ].liquidityLeft == expandTo18Decimals(1)
-    assert pool.ticksLinearTokens0[closeAligniniTickRUp].liquiditySwapped == 0
+    assert pool.ticksLinearTokens0[
+        closeAligniniTickRUp
+    ].liquidityGross == expandTo18Decimals(1)
 
 
 def test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts):
@@ -2339,9 +2333,11 @@ def test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts):
         < initialLiquidity * 2 - amountOutLO1
     )
 
-    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped + pool.ticksLinearTokens1[
-        tickLO1
-    ].liquiditySwapped == abs(amount1)
+    assert (
+        pool.ticksLinearTokens1[tickLO].liquidityGross
+        + pool.ticksLinearTokens1[tickLO1].liquidityGross
+        == initialLiquidity * 2
+    )
 
 
 def test_swap1For0_fullSwap(initializedMediumPoolNoLO, accounts):
@@ -2433,9 +2429,11 @@ def test_swap1For0_fullSwap(initializedMediumPoolNoLO, accounts):
         < initialLiquidity * 2 - amountOutLO1
     )
 
-    assert pool.ticksLinearTokens0[tickLO].liquiditySwapped + pool.ticksLinearTokens0[
-        tickLO1
-    ].liquiditySwapped == abs(amount0)
+    assert (
+        pool.ticksLinearTokens0[tickLO].liquidityGross
+        + pool.ticksLinearTokens0[tickLO1].liquidityGross
+        == initialLiquidity * 2
+    )
 
 
 # Mint multiple positions and check that the correct ones are used
@@ -2460,7 +2458,7 @@ def test_multiplePositions_zeroForOne(initializedMediumPoolNoLO, accounts):
 
     # Check tick before swapping
     assert pool.ticksLinearTokens1[tickLO].liquidityLeft == initialLiquidity * 2
-    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == 0
+    assert pool.ticksLinearTokens1[tickLO].liquidityGross == initialLiquidity * 2
 
     # To cross the first tick (=== first position tickL0) and part of the second (tickL01)
     amountToSwap = expandTo18Decimals(1) * 10
@@ -2499,7 +2497,7 @@ def test_multiplePositions_zeroForOne(initializedMediumPoolNoLO, accounts):
     assert pool.ticksLinearTokens1[tickLO].liquidityLeft == initialLiquidity * 2 - abs(
         amount1
     )
-    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == abs(amount1)
+    assert pool.ticksLinearTokens1[tickLO].liquidityGross == initialLiquidity * 2
 
 
 # Mint multiple positions and check that the correct ones are used
@@ -2524,7 +2522,7 @@ def test_multiplePositions_oneForZero(initializedMediumPoolNoLO, accounts):
 
     # Check tick before swapping
     assert pool.ticksLinearTokens0[tickLO].liquidityLeft == initialLiquidity * 2
-    assert pool.ticksLinearTokens0[tickLO].liquiditySwapped == 0
+    assert pool.ticksLinearTokens0[tickLO].liquidityGross == initialLiquidity * 2
 
     # To cross the first tick (=== first position tickL0) and part of the second (tickL01)
     amountToSwap = expandTo18Decimals(1) // 10
@@ -2563,7 +2561,7 @@ def test_multiplePositions_oneForZero(initializedMediumPoolNoLO, accounts):
     assert pool.ticksLinearTokens0[tickLO].liquidityLeft == initialLiquidity * 2 - abs(
         amount0
     )
-    assert pool.ticksLinearTokens0[tickLO].liquiditySwapped == abs(amount0)
+    assert pool.ticksLinearTokens0[tickLO].liquidityGross == initialLiquidity * 2
 
 
 def test_mint_partialSwappedTick_zeroForOne(initializedMediumPoolNoLO, accounts):
@@ -2577,14 +2575,17 @@ def test_mint_partialSwappedTick_zeroForOne(initializedMediumPoolNoLO, accounts)
         liquidityPosition,
     ) = test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts)
 
-    iniLiquiditySwapped = pool.ticksLinearTokens1[tickLO].liquiditySwapped
+    iniLiquidityGross = pool.ticksLinearTokens1[tickLO].liquidityGross
+    assert iniLiquidityGross == liquidityPosition
     iniLiquidityLeft = pool.ticksLinearTokens1[tickLO].liquidityLeft
-    assert iniLiquiditySwapped > 0
+    assert iniLiquidityGross > 0
     assert iniLiquidityLeft > 0
 
     pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1))
 
-    assert pool.ticksLinearTokens1[tickLO].liquiditySwapped == iniLiquiditySwapped
+    assert pool.ticksLinearTokens1[
+        tickLO
+    ].liquidityGross == iniLiquidityGross + expandTo18Decimals(1)
     assert pool.ticksLinearTokens1[
         tickLO
     ].liquidityLeft == iniLiquidityLeft + expandTo18Decimals(1)
@@ -2607,14 +2608,17 @@ def test_mint_partialSwappedTick_oneForZero(initializedMediumPoolNoLO, accounts)
         liquidityPosition,
     ) = test_swap1For0_partialSwap(initializedMediumPoolNoLO, accounts)
 
-    iniLiquiditySwapped = pool.ticksLinearTokens0[tickLO].liquiditySwapped
+    iniLiquidityGross = pool.ticksLinearTokens0[tickLO].liquidityGross
+    assert iniLiquidityGross == liquidityPosition
     iniLiquidityLeft = pool.ticksLinearTokens0[tickLO].liquidityLeft
-    assert iniLiquiditySwapped > 0
+    assert iniLiquidityGross > 0
     assert iniLiquidityLeft > 0
 
     pool.mintLinearOrder(TEST_TOKENS[0], accounts[1], tickLO, expandTo18Decimals(1))
 
-    assert pool.ticksLinearTokens0[tickLO].liquiditySwapped == iniLiquiditySwapped
+    assert pool.ticksLinearTokens0[
+        tickLO
+    ].liquidityGross == iniLiquidityGross + expandTo18Decimals(1)
     assert pool.ticksLinearTokens0[
         tickLO
     ].liquidityLeft == iniLiquidityLeft + expandTo18Decimals(1)
