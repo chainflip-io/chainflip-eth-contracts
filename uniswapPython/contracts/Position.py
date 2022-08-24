@@ -48,7 +48,7 @@ class PositionLinearInfo:
 ### @param tickUpper The upper tick boundary of the position
 ### @return position The position info struct of the given owners' position
 def get(self, owner, tickLower, tickUpper):
-    checkInputTypes(account=owner, int24=(tickLower, tickLower))
+    checkInputTypes(account=owner, int24=(tickLower, tickUpper))
 
     # Need to handle non-existing positions in Python
     key = hash((owner, tickLower, tickUpper))

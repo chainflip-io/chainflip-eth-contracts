@@ -59,7 +59,7 @@ MIN_INT128 = -(2**128)
 MAX_INT128 = 2**127 - 1
 MAX_UINT8 = 2**8 - 1
 
-TEST_TOKENS = ["TokenA", "TokenB"]
+TEST_TOKENS = ["Token0", "Token1"]
 
 
 def getMinTick(tickSpacing):
@@ -436,30 +436,40 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
     pool,
     owner,
     tickLO,
-    iniLiquidityPosition,
+    amountToBurn,
     amountSwapped,
     zeroForOne,
     priceLO,
     tickToBeCleared,
 ):
     token = TEST_TOKENS[1] if zeroForOne else TEST_TOKENS[0]
-    (_, _, amountOwed0, amountOwed1) = pool.burnLimitOrder(
-        token, owner, tickLO, iniLiquidityPosition
+
+    print(
+        "POS", pool.linearPositions[getLimitPositionKey(owner, tickLO, not zeroForOne)]
     )
+    # Update fees
+    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+        token, owner, tickLO, 0
+    )
+    print(
+        "POS", pool.linearPositions[getLimitPositionKey(owner, tickLO, not zeroForOne)]
+    )
+    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+        token, owner, tickLO, amountToBurn
+    )
+    assert amount == amountToBurn
 
     if zeroForOne:
-        assert amountOwed1 == iniLiquidityPosition - abs(amountSwapped)
-        # Should be === to fees + amountRemainingLessFee . However, if no fees it is still not == due to rounding ( < 10^-10 difference)
-        # TODO: Add calculation for fees so we can assert == (or almost, since there is rounding)
-        assert amountOwed0 >= mulDiv(abs(amountSwapped), 2**96, priceLO)
+        # Should be >== amountRemainingLessFee . not == due to rounding ( < 10^-10 difference)
+        # TODO: Try it so it becomes ==?
+        assert amountBurnt0 >= mulDiv(abs(amountSwapped), 2**96, priceLO)
         if tickToBeCleared:
             assert not pool.ticksLinearTokens1.__contains__(tickLO)
 
     else:
-        assert amountOwed0 == iniLiquidityPosition - abs(amountSwapped)
-        # Should be === to fees + amountRemainingLessFee . However, if no fees it is still not == due to rounding ( < 10^-10 difference)
-        # TODO: Add calculation for fees so we can assert == (or almost, since there is rounding)
-        assert amountOwed1 >= mulDiv(abs(amountSwapped), priceLO, 2**96)
+        # Should be >== amountRemainingLessFee . not == due to rounding ( < 10^-10 difference)
+        # TODO: Try it so it becomes ==?
+        assert amountBurnt1 >= mulDiv(abs(amountSwapped), priceLO, 2**96)
         if tickToBeCleared:
             assert not pool.ticksLinearTokens0.__contains__(tickLO)
 
@@ -476,9 +486,23 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
         owner, token, tickLO, MAX_UINT128, MAX_UINT128
     )
 
-    # Check that amount calculated in burn is the same as collected in collect
-    assert amountOwed0 == amount0
-    assert amountOwed1 == amount1
+    # Check that amount calculated in burn is smaller or equal than collected (due to fees).
+    # TODO: CANNOT COMPARE LIKE THIS => in burnt the return amounts are in tokenLiquidity while
+    # in collect they are in token Swapped currency
+    if zeroForOne:
+        if amountSwapped:
+            assert mulDiv(amountBurnt1, 2**96, priceLO) < amount0
+            assert amountBurnt0 == amount1
+        else:
+            assert mulDiv(amountBurnt1, 2**96, priceLO) == amount0
+            assert amountBurnt0 == amount1
+    else:
+        if amountSwapped:
+            assert amountBurnt0 <= amount0
+            assert mulDiv(amountBurnt1, priceLO, 2**96) < amount1
+        else:
+            assert amountBurnt0 == amount0
+            assert mulDiv(amountBurnt1, priceLO, 2**96) == amount1
 
     # No liquidity left and all tokensOwed collected
     assert (

@@ -162,12 +162,13 @@ def updateLinear(
     liquidityLeftBefore = info.liquidityLeft
     liquidityLeftAfter = LiquidityMath.addDelta(liquidityLeftBefore, liquidityLeftDelta)
 
-    # Workaround to solve the issue of liquidityLeft being modified by the swap function. That causes that when we proceed to
-    # burn a position, the liquidityLeft might already by zero (we only remove swapped liquidity), but we can't tell if that
-    # is the last position (aka flip the tick) so we can clear it or not.
-    # The workaround is using liquiditySwapped to know if we are removing the last position or not.
+    # Workaround to solve the issue of liquidityLeft not saying (when burning a position), if the tick should be removed.
+    # In Uniswap, liquidityGross is usedto know when a tick can be removed. So there is probably no way around it.
+    # The workaround here is using liquiditySwapped to know if we are removing the last position or not. This acts the same way
+    # as liquidityGross in Uniswap. We could do it that way if we wanted to, might be easier for the Math. Just leaving it like
+    # this for now in case we want to have the liquidity Swapped amount for something else.
     # TODO: There is probably a smarter way to do this, but it feels like we need an extra variable (maybe liquiditySwapped is
-    # too much overhead, maybe some bool or counter might do the trick)
+    # too much overhead, maybe some bool or counter might do the trick). However, it probably needs a variable anyway (like Uniswap)
     liquiditySwappedBefore = info.liquiditySwapped
     liquiditySwappedAfter = LiquidityMath.addDelta(
         info.liquiditySwapped, liquiditySwappedDelta

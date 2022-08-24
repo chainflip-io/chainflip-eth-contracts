@@ -56,9 +56,16 @@ class ChainflipPool(UniswapPool):
             token == self.token0 or token == self.token1
         ), "Token not part of the pool"
 
-        position = self._modifyPositionLinearOrder(
+        (
+            position,
+            liquidityLeftDelta,
+            liquiditySwappedDelta,
+        ) = self._modifyPositionLinearOrder(
             token, ModifyLinearPositionParams(recipient, tick, amount)
         )
+        # Health check (these values are not very relevant in minting)
+        assert liquidityLeftDelta == amount
+        assert liquiditySwappedDelta == 0
 
         amountIn = toUint256(abs(amount))
 
@@ -79,14 +86,18 @@ class ChainflipPool(UniswapPool):
 
         ChainflipPool.checkTick(params.tick)
 
-        position = self._updatePositionLinearOrder(
+        (
+            position,
+            liquidityLeftDelta,
+            liquiditySwappedDelta,
+        ) = self._updatePositionLinearOrder(
             token,
             params.owner,
             params.tick,
             params.liquidityDelta,
         )
 
-        return position
+        return position, liquidityLeftDelta, liquiditySwappedDelta
 
     def _updatePositionLinearOrder(self, token, owner, tick, liquidityDelta):
         checkInputTypes(
@@ -146,9 +157,8 @@ class ChainflipPool(UniswapPool):
         ## clear any tick data that is no longer needed
         if liquidityDelta < 0:
             if flipped:
-                print("DELETING TICK")
                 Tick.clear(ticksLinearMap, tick)
-        return position
+        return position, liquidityLeftDelta, liquiditySwappedDelta
 
     # This can only be run if the tick has only been partially crossed (or not used). If fully crossed, the positions
     # will have been burnt automatically.
@@ -167,16 +177,30 @@ class ChainflipPool(UniswapPool):
         )
 
         # Added extra recipient input variable to mimic msg.sender
-        position = self._modifyPositionLinearOrder(
+        (
+            position,
+            liquidityLeftDelta,
+            liquiditySwappedDelta,
+        ) = self._modifyPositionLinearOrder(
             token,
             ModifyLinearPositionParams(recipient, tick, -amount),
         )
 
+        # Health check
+        if amount == 0:
+            assert liquidityLeftDelta == 0
+            assert liquiditySwappedDelta == 0
+
+        # As in uniswap we return the amount of tokens that were burned, that is without fees accrued.
+        # NOTE: liquiditySwappedDelta is in liquidityTokens currency (liquidityLeft).
+        # TODO: We should probably change the design and store LiquiditySwapped in the swapped token.
+        # Also so it is consistent with collect (and with Uniswap)
         return (
             recipient,
             tick,
-            position.tokensOwed0,
-            position.tokensOwed1,
+            amount,
+            abs(liquidityLeftDelta),
+            abs(liquiditySwappedDelta),
         )
 
     ### @inheritdoc IUniswapV3PoolActions
@@ -274,7 +298,7 @@ class ChainflipPool(UniswapPool):
             0,
             cache.liquidityStart,
             # Return a list of sorted keys with liquidityLeft > 0
-            getKeysLinearTicksWithLiquidity(ticksLinearMap)
+            getKeysLinearTicksWithLiquidity(ticksLinearMap),
         )
 
         while (
@@ -565,6 +589,7 @@ def getKeysLinearTicksWithLiquidity(tickMapping):
 
     # Return a list of sorted keys
     return sorted(list(dictTicksWithLiq.keys()))
+
 
 # Find the next linearTick (all should have liquidityLeft > 0) and pop them from the list. The input list
 # should be a list of sorted keys.

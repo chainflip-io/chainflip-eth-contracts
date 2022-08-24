@@ -834,14 +834,19 @@ def initializeAtZeroTick(pool, accounts):
     tickSpacing = pool.tickSpacing
     # [min, max] = [getMinTick(tickSpacing), getMaxTick(tickSpacing)]
 
+    # Using this instead because the prices at min and max Tick for LO are really off (zero or infinite). Setting them
+    # closest to current tick so they are used as LO fallbacks.
+    tickLow = pool.slot0.tick
+    tickHigh = pool.slot0.tick + tickSpacing
+
     # NOTE: For token0 (swap1for0) we can take a LO at the current tick, but not in the other direction.
     pool.mintLinearOrder(
-        TEST_TOKENS[0], accounts[0], pool.slot0.tick, initializeLiquidityAmount
+        TEST_TOKENS[0], accounts[0], tickLow, initializeLiquidityAmount
     )
     pool.mintLinearOrder(
         TEST_TOKENS[1],
         accounts[0],
-        pool.slot0.tick + tickSpacing,
+        tickHigh,
         initializeLiquidityAmount,
     )
 
@@ -864,7 +869,7 @@ def checkLinearTickIsClear(tickmap, tick):
 def checkLinearTickIsNotClear(tickmap, tick):
     # Make check explicit
     assert tickmap.__contains__(tick)
-    assert tickmap[tick].liquidityLeft != 0
+    assert tickmap[tick].liquidityLeft != 0 or tickmap[tick].liquiditySwapped != 0
 
 
 def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
@@ -907,11 +912,15 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
     )
 
 
+# NOTE: These three tests don't make a lot of sense in limit orders, since there is not a low and high tick for each
+# position. So we are just testing the mint/burn functionality.
+
+
 def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
     print("clears the tick if its the last position using it")
     pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
     ## some activity that would make the ticks non-zero - make it different than mediumPoolInitializedAtZero positions
-    tickLow = pool.slot0.tick - tickSpacing * 10
+    tickLow = pool.slot0.tick + tickSpacing * 5
     tickHigh = pool.slot0.tick + tickSpacing * 10
     # Check that ticks are cleared before minting
     checkLinearTickIsClear(pool.ticksLinearTokens0, tickLow)
@@ -925,179 +934,236 @@ def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
     checkLinearTickIsClear(pool.ticksLinearTokens1, tickHigh)
 
 
-# def test_clearOnlyLower_ifUpperUsed(accounts, mediumPoolInitializedAtZero):
-#     print("clears only the lower tick if upper is still used")
-#     pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
-#     tickLower = minTick + tickSpacing
-#     tickUpper = maxTick - tickSpacing
-#     ## some activity that would make the ticks non-zero
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], tickLower, tickUpper, 1)
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], tickLower + tickSpacing, tickUpper, 1)
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], tickLower, tickUpper, 1)
-#     checkTickIsClear(pool, tickLower)
-#     checkTickIsNotClear(pool, tickUpper)
+def test_clearOnlyLower_ifUpperUsed(accounts, mediumPoolInitializedAtZero):
+    print("clears only the lower tick if upper is still used")
+    pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    tickLow = pool.slot0.tick - tickSpacing * 10
+    tickHigh = pool.slot0.tick + tickSpacing * 10
+    ## some activity that would make the ticks non-zero
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLow, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickHigh, 1)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLow, 1)
+    checkLinearTickIsClear(pool.ticksLinearTokens0, tickLow)
+    checkLinearTickIsNotClear(pool.ticksLinearTokens1, tickHigh)
 
 
-# def test_clearsOnlyUpper_ifLowerUsed(accounts, mediumPoolInitializedAtZero):
-#     print("clears only the upper tick if lower is still used")
-#     pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
-#     tickLower = minTick + tickSpacing
-#     tickUpper = maxTick - tickSpacing
-#     ## some activity that would make the ticks non-zero
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], tickLower, tickUpper, 1)
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], tickLower, tickUpper - tickSpacing, 1)
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], tickLower, tickUpper, 1)
-#     checkTickIsNotClear(pool, tickLower)
-#     checkTickIsClear(pool, tickUpper)
+def test_clearsOnlyUpper_ifLowerUsed(accounts, mediumPoolInitializedAtZero):
+    print("clears only the upper tick if lower is still used")
+    pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    tickLow = pool.slot0.tick - tickSpacing * 10
+    tickHigh = pool.slot0.tick + tickSpacing * 10
+    ## some activity that would make the ticks non-zero
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLow, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickHigh, 1)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickHigh, 1)
+    checkLinearTickIsNotClear(pool.ticksLinearTokens0, tickLow)
+    checkLinearTickIsClear(pool.ticksLinearTokens1, tickHigh)
 
 
-# # Miscellaneous mint tests
-# @pytest.fixture
-# def lowPoolInitializedAtZero(createPoolLow, accounts):
-#     pool, _, _, _, _ = createPoolLow
-#     initializeAtZeroTick(pool, accounts)
-#     return createPoolLow
+# Miscellaneous mint tests
+@pytest.fixture
+def lowPoolInitializedAtZero(createPoolLow, accounts):
+    pool, _, _, _, _ = createPoolLow
+    initializeAtZeroTick(pool, accounts)
+    return createPoolLow
 
 
-# def test_mintRight_currentPrice(lowPoolInitializedAtZero, accounts):
-#     print("mint to the right of the current price")
-#     pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
-#     liquidityDelta = 1000
-#     lowerTick = tickSpacing
-#     upperTick = tickSpacing * 2
-#     liquidityBefore = pool.liquidity
-#     b0 = pool.balances[TEST_TOKENS[0]]
-#     b1 = pool.balances[TEST_TOKENS[1]]
+def test_mintGood_currentPrice(lowPoolInitializedAtZero, accounts):
+    print("mint to the right of the current price")
+    pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
+    liquidityDelta = 1000
+    lowerTick = tickSpacing
+    upperTick = tickSpacing * 2
+    liquidityBefore = pool.liquidity
+    b0 = pool.balances[TEST_TOKENS[0]]
+    b1 = pool.balances[TEST_TOKENS[1]]
 
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], lowerTick, upperTick, liquidityDelta)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], lowerTick, liquidityDelta)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], upperTick, liquidityDelta)
 
-#     liquidityAfter = pool.liquidity
-#     assert liquidityAfter >= liquidityBefore
+    liquidityAfter = pool.liquidity
+    assert liquidityAfter >= liquidityBefore
 
-#     assert pool.balances[TEST_TOKENS[0]] - b0 == 1
-#     assert pool.balances[TEST_TOKENS[1]] - b1 == 0
-
-
-# def test_mintLeft_currentPrice(lowPoolInitializedAtZero, accounts):
-#     print("mint to the right of the current price")
-#     pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
-#     liquidityDelta = 1000
-#     lowerTick = -tickSpacing * 2
-#     upperTick = -tickSpacing
-#     liquidityBefore = pool.liquidity
-#     b0 = pool.balances[TEST_TOKENS[0]]
-#     b1 = pool.balances[TEST_TOKENS[1]]
-
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], lowerTick, upperTick, liquidityDelta)
-
-#     liquidityAfter = pool.liquidity
-#     assert liquidityAfter >= liquidityBefore
-
-#     assert pool.balances[TEST_TOKENS[0]] - b0 == 0
-#     assert pool.balances[TEST_TOKENS[1]] - b1 == 1
+    assert pool.balances[TEST_TOKENS[0]] - b0 == liquidityDelta
+    assert pool.balances[TEST_TOKENS[1]] - b1 == liquidityDelta
 
 
-# def test_mint_withinCurrentPrice(lowPoolInitializedAtZero, accounts):
-#     print("mint within the current price")
-#     pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
-#     liquidityDelta = 1000
-#     lowerTick = -tickSpacing
-#     upperTick = tickSpacing
-#     liquidityBefore = pool.liquidity
-#     b0 = pool.balances[TEST_TOKENS[0]]
-#     b1 = pool.balances[TEST_TOKENS[1]]
+def test_mintBad_currentPrice(lowPoolInitializedAtZero, accounts):
+    print("mint to the right of the current price")
+    pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
+    liquidityDelta = 1000
+    lowerTick = -tickSpacing * 2
+    upperTick = -tickSpacing
+    liquidityBefore = pool.liquidity
+    b0 = pool.balances[TEST_TOKENS[0]]
+    b1 = pool.balances[TEST_TOKENS[1]]
 
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], lowerTick, upperTick, liquidityDelta)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], lowerTick, liquidityDelta)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], upperTick, liquidityDelta)
 
-#     liquidityAfter = pool.liquidity
-#     assert liquidityAfter >= liquidityBefore
+    liquidityAfter = pool.liquidity
+    assert liquidityAfter >= liquidityBefore
 
-#     assert pool.balances[TEST_TOKENS[0]] - b0 == 1
-#     assert pool.balances[TEST_TOKENS[1]] - b1 == 1
-
-
-# def test_cannotRemove_moreThanPosition(lowPoolInitializedAtZero, accounts):
-#     print("cannot remove more than the entire position")
-#     pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
-#     lowerTick = -tickSpacing
-#     upperTick = tickSpacing
-
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], lowerTick, upperTick, expandTo18Decimals(1000))
-
-#     tryExceptHandler(
-#         pool.burn, "LS", accounts[0], lowerTick, upperTick, expandTo18Decimals(1001)
-#     )
+    assert pool.balances[TEST_TOKENS[0]] - b0 == liquidityDelta
+    assert pool.balances[TEST_TOKENS[1]] - b1 == liquidityDelta
 
 
-# def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
-#     print("collect fees within the current price after swap")
-#     pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
-#     liquidityDelta = expandTo18Decimals(100)
-#     lowerTick = -tickSpacing * 100
-#     upperTick = tickSpacing * 100
+def test_mint_withinCurrentPrice(lowPoolInitializedAtZero, accounts):
+    print("mint within the current price")
+    pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
+    liquidityDelta = 1000
+    lowerTick = -tickSpacing
+    upperTick = tickSpacing
+    liquidityBefore = pool.liquidity
+    b0 = pool.balances[TEST_TOKENS[0]]
+    b1 = pool.balances[TEST_TOKENS[1]]
 
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], lowerTick, upperTick, liquidityDelta)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], lowerTick, liquidityDelta)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], upperTick, liquidityDelta)
 
-#     liquidityBefore = pool.liquidity
+    liquidityAfter = pool.liquidity
+    assert liquidityAfter >= liquidityBefore
 
-#     amount0In = expandTo18Decimals(1)
-
-#     swapExact0For1(pool, amount0In, accounts[0], None)
-
-#     liquidityAfter = pool.liquidity
-
-#     assert liquidityAfter >= liquidityBefore, "k increases"
-
-#     token0BalanceBeforePool = pool.balances[TEST_TOKENS[0]]
-#     token1BalanceBeforePool = pool.balances[TEST_TOKENS[1]]
-#     token0BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[0]]
-#     token1BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[1]]
-
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], lowerTick, upperTick, 0)
-#     pool.collect(accounts[0], lowerTick, upperTick, MAX_UINT128, MAX_UINT128)
-
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], lowerTick, upperTick, 0)
-
-#     (_, _, _, amount0, amount1) = pool.collect(
-#         accounts[0], lowerTick, upperTick, MAX_UINT128, MAX_UINT128
-#     )
-
-#     assert amount0 == 0
-#     assert amount1 == 0
-
-#     token0BalanceAfterPool = pool.balances[TEST_TOKENS[0]]
-#     token1BalanceAfterPool = pool.balances[TEST_TOKENS[1]]
-#     token0BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[0]]
-#     token1BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[1]]
-
-#     assert token0BalanceAfterWallet > token0BalanceBeforeWallet
-#     assert token1BalanceAfterWallet == token1BalanceBeforeWallet
-#     assert token0BalanceAfterPool < token0BalanceBeforePool
-#     assert token1BalanceAfterPool == token1BalanceBeforePool
+    assert pool.balances[TEST_TOKENS[0]] - b0 == liquidityDelta
+    assert pool.balances[TEST_TOKENS[1]] - b1 == liquidityDelta
 
 
-# # pre-initialize at medium fee
-# def test_preInitialized_mediumFee(createPoolMedium):
-#     print("pre-initialized at medium fee")
-#     pool, _, _, _, _, _ = createPoolMedium
-#     assert pool.liquidity == 0
+def test_cannotRemove_moreThanPosition(lowPoolInitializedAtZero, accounts):
+    print("cannot remove more than the entire position")
+    pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
+    lowerTick = -tickSpacing * 2
+    upperTick = tickSpacing * 2
+
+    pool.mintLinearOrder(
+        TEST_TOKENS[0], accounts[0], lowerTick, expandTo18Decimals(1000)
+    )
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[0], upperTick, expandTo18Decimals(1000)
+    )
+
+    tryExceptHandler(
+        pool.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[0],
+        accounts[0],
+        lowerTick,
+        expandTo18Decimals(1001),
+    )
+    tryExceptHandler(
+        pool.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[1],
+        accounts[0],
+        upperTick,
+        expandTo18Decimals(1001),
+    )
 
 
-# # post-initialize at medium fee
-# def test_initialLiquidity(mediumPoolInitializedAtZero):
-#     print("returns initial liquidity")
-#     pool, _, _, _, _ = mediumPoolInitializedAtZero
-#     assert pool.liquidity == expandTo18Decimals(2)
+def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
+    print("collect fees within the current price after swap")
+    pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
+    liquidityDelta = expandTo18Decimals(100)
+    lowerTick = -tickSpacing * 100
+    upperTick = tickSpacing * 100
+
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], lowerTick, liquidityDelta)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], upperTick, liquidityDelta)
+
+    beforeTick0 = copy.deepcopy(pool.ticksLinearTokens0[lowerTick])
+    beforeTick1 = copy.deepcopy(pool.ticksLinearTokens1[upperTick])
+
+    amount0In = expandTo18Decimals(1)
+
+    swapExact0For1(pool, amount0In, accounts[0], None)
+
+    afterTick0 = pool.ticksLinearTokens0[lowerTick]
+    afterTick1 = pool.ticksLinearTokens1[upperTick]
+
+    assert afterTick0 == beforeTick0
+    assert afterTick1 != beforeTick1
+    assert afterTick1.liquidityLeft < beforeTick1.liquidityLeft
+    assert afterTick1.liquiditySwapped > beforeTick1.liquiditySwapped
+    assert afterTick1.amountSwappedInsideX128 > beforeTick1.amountSwappedInsideX128
+    assert afterTick1.feeGrowthInsideX128 > beforeTick1.feeGrowthInsideX128
+
+    token0BalanceBeforePool = pool.balances[TEST_TOKENS[0]]
+    token1BalanceBeforePool = pool.balances[TEST_TOKENS[1]]
+    token0BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[0]]
+    token1BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[1]]
+
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], lowerTick, 0)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], upperTick, 0)
+    pool.collectLinear(accounts[0], TEST_TOKENS[0], lowerTick, MAX_UINT128, MAX_UINT128)
+    pool.collectLinear(accounts[0], TEST_TOKENS[1], upperTick, MAX_UINT128, MAX_UINT128)
+
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], lowerTick, 0)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], upperTick, 0)
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], lowerTick, MAX_UINT128, MAX_UINT128
+    )
+    assert amount0 == 0
+    assert amount1 == 0
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], upperTick, MAX_UINT128, MAX_UINT128
+    )
+
+    assert amount0 == 0
+    assert amount1 == 0
+
+    token0BalanceAfterPool = pool.balances[TEST_TOKENS[0]]
+    token1BalanceAfterPool = pool.balances[TEST_TOKENS[1]]
+    token0BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[0]]
+    token1BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[1]]
+
+    assert token0BalanceAfterWallet > token0BalanceBeforeWallet
+    assert token1BalanceAfterWallet == token1BalanceBeforeWallet
+    assert token0BalanceAfterPool < token0BalanceBeforePool
+    assert token1BalanceAfterPool == token1BalanceBeforePool
 
 
-# def test_supplyInRange(mediumPoolInitializedAtZero, accounts):
-#     print("returns in supply in range")
-#     pool, _, _, _, tickSpacing = mediumPoolInitializedAtZero
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -tickSpacing, tickSpacing, expandTo18Decimals(3))
-#     assert pool.liquidity == expandTo18Decimals(5)
+# pre-initialize at medium fee
+def test_preInitialized_mediumFee(createPoolMedium):
+    print("pre-initialized at medium fee")
+    pool, _, _, _, _ = createPoolMedium
+    assert pool.liquidity == 0
 
+
+# post-initialize at medium fee
+def test_initialLiquidity(mediumPoolInitializedAtZero):
+    print("returns initial liquidity")
+    pool, _, _, _, _ = mediumPoolInitializedAtZero
+    assert pool.liquidity == 0
+    tickLow = pool.slot0.tick
+    tickHigh = pool.slot0.tick + pool.tickSpacing
+    assert (
+        pool.ticksLinearTokens0[tickLow].liquidityLeft
+        + pool.ticksLinearTokens1[tickHigh].liquidityLeft
+        == expandTo18Decimals(2) * 2
+    )
+
+
+def test_supplyInRange(mediumPoolInitializedAtZero, accounts):
+    print("returns in supply in range")
+    pool, _, _, _, tickSpacing = mediumPoolInitializedAtZero
+    pool.mintLinearOrder(
+        TEST_TOKENS[0], accounts[0], -tickSpacing, expandTo18Decimals(3)
+    )
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[0], tickSpacing, expandTo18Decimals(3)
+    )
+    assert (
+        pool.ticksLinearTokens0[0].liquidityLeft
+        + pool.ticksLinearTokens0[-tickSpacing].liquidityLeft
+        + pool.ticksLinearTokens1[tickSpacing].liquidityLeft
+        == expandTo18Decimals(5) * 2
+    )
+
+
+# These tests don't make sense for LO
 
 # def test_excludeSupply_tickAboveCurrentTick(mediumPoolInitializedAtZero, accounts):
 #     print("excludes supply at tick above current tick")
@@ -1162,75 +1228,119 @@ def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
 #     assert kAfterSwap == expandTo18Decimals(3)
 
 
-# # Limit orders
+# Limit orders (still uniswap tests)
 
 
-# def test_limitSelling0For1_atTick0Thru1(mediumPoolInitializedAtZero, accounts):
-#     print("limit selling 0 for 1 at tick 0 thru 1")
-#     pool, _, _, _, _ = mediumPoolInitializedAtZero
+def test_limitSelling0For1_atTick0Thru1(mediumPoolInitializedAtZero, accounts):
+    print("limit selling 0 for 1 at tick 0 thru 1")
+    pool, _, _, _, _ = mediumPoolInitializedAtZero
 
-#     (amount0, amount1) = pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], 0, 120, expandTo18Decimals(1))
-#     assert amount0 == 5981737760509663
-#     assert amount1 == 0
+    # Value to emulate minted liquidity in Uniswap
+    liquidityToMint = 5981737760509663
+    amount0 = pool.mintLinearOrder(
+        TEST_TOKENS[0], accounts[0], -pool.tickSpacing, liquidityToMint
+    )
+    assert amount0 == liquidityToMint
 
-#     ## somebody takes the limit order
-#     swapExact1For0(pool, expandTo18Decimals(2), accounts[0], None)
-#     (recipient, tickLower, tickUpper, amount, amount0, amount1) = pool.burnLimitOrder(TEST_TOKENS[0],
-#         accounts[0], 0, 120, expandTo18Decimals(1)
-#     )
-#     assert (recipient, tickLower, tickUpper, amount, amount0, amount1) == (
-#         accounts[0],
-#         0,
-#         120,
-#         expandTo18Decimals(1),
-#         0,
-#         6017734268818165,
-#     )
+    ## somebody takes the limit order
+    swapExact1For0(pool, expandTo18Decimals(2), accounts[0], None)
 
-#     (recipient, _, _, amount0, amount1) = pool.collect(
-#         accounts[0], 0, 120, MAX_UINT128, MAX_UINT128
-#     )
+    # Poke to update the fees
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], -pool.tickSpacing, 0
+    )
 
-#     assert amount0 == 0
-#     assert amount1 == 6017734268818165 + 18107525382602
-#     assert recipient == accounts[0]
+    feesAccrued = pool.linearPositions[
+        getLimitPositionKey(accounts[0], -pool.tickSpacing, True)
+    ].tokensOwed1
+    # Original value: 18107525382602. Slightly different because the amount swapped in the position/tick will be
+    # slightly different (tick will be crossed with slightly different amounts)
+    assert feesAccrued == 17891544354686
+    # Check if the fees here match
 
-#     assert pool.slot0.tick >= 120
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], -pool.tickSpacing, liquidityToMint
+    )
+
+    assert recipient == accounts[0]
+    assert tick == -pool.tickSpacing
+    assert amount == liquidityToMint
+    assert amount0 == 0
+    # Orig value: 6017734268818165. Different because the tickPrice (-tickSpacing) is different. Trying
+    # to replicate the same number is a lot of hustle. Although our number is in the other currency,
+    # we would need to translate it (it doesn't match either, but close)
+    assert amount1 == 5981737760509663
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], -pool.tickSpacing, MAX_UINT128, MAX_UINT128
+    )
+
+    # In Uniswap burning returns the amount burnt in that transaction, and collect returns
+    assert amount0 == 0
+    assert (
+        amount1
+        == mulDiv(
+            abs(5981737760509663), TickMath.getPriceAtTick(-pool.tickSpacing), 2**96
+        )
+        + feesAccrued
+    )
 
 
 # # Fee is ON
-# def test_limitSelling0For1_atTick0Thru1_feesOn(mediumPoolInitializedAtZero, accounts):
-#     print("limit selling 0 for 1 at tick 0 thru 1 - fees on")
-#     pool, _, _, _, _ = mediumPoolInitializedAtZero
-#     pool.setFeeProtocol(6, 6)
+def test_limitSelling0For1_atTick0Thru1_feesOn(mediumPoolInitializedAtZero, accounts):
+    print("limit selling 0 for 1 at tick 0 thru 1 - fees on")
+    pool, _, _, _, _ = mediumPoolInitializedAtZero
+    pool.setFeeProtocol(6, 6)
 
-#     (amount0, amount1) = pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], 0, 120, expandTo18Decimals(1))
-#     assert amount0 == 5981737760509663
-#     assert amount1 == 0
+    # Value to emulate minted liquidity in Uniswap
+    liquidityToMint = 5981737760509663
+    amount0 = pool.mintLinearOrder(
+        TEST_TOKENS[0], accounts[0], -pool.tickSpacing, liquidityToMint
+    )
+    assert amount0 == liquidityToMint
 
-#     ## somebody takes the limit order
-#     swapExact1For0(pool, expandTo18Decimals(2), accounts[0], None)
+    ## somebody takes the limit order
+    swapExact1For0(pool, expandTo18Decimals(2), accounts[0], None)
 
-#     (recipient, tickLower, tickUpper, amount, amount0, amount1) = pool.burnLimitOrder(TEST_TOKENS[0],
-#         accounts[0], 0, 120, expandTo18Decimals(1)
-#     )
-#     assert recipient == accounts[0]
-#     assert tickLower == 0
-#     assert tickUpper == 120
-#     assert amount == expandTo18Decimals(1)
-#     assert amount0 == 0
-#     assert amount1 == 6017734268818165
+    # Poke to update the fees
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], -pool.tickSpacing, 0
+    )
 
-#     (recipient, _, _, amount0, amount1) = pool.collect(
-#         accounts[0], 0, 120, MAX_UINT128, MAX_UINT128
-#     )
-#     assert recipient == accounts[0]
-#     assert amount0 == 0
-#     assert (
-#         amount1 == 6017734268818165 + 15089604485501
-#     )  ## roughly 0.25% despite other liquidity
+    feesAccrued = pool.linearPositions[
+        getLimitPositionKey(accounts[0], -pool.tickSpacing, True)
+    ].tokensOwed1
+    # Original value: 15089604485501. Slightly different because the amount swapped in the position/tick will be
+    # slightly different (tick will be crossed with slightly different amounts)
+    ## roughly 0.25% despite other liquidity - same percentatge difference as in Uniswap
+    assert feesAccrued == 14909620295572
+    # Check if the fees here match
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], -pool.tickSpacing, liquidityToMint
+    )
 
-#     assert pool.slot0.tick >= 120
+    assert recipient == accounts[0]
+    assert tick == -pool.tickSpacing
+    assert amount == liquidityToMint
+    assert amount0 == 0
+    # Orig value: 6017734268818165. Different because the tickPrice (-tickSpacing) is different. Trying
+    # to replicate the same number is a lot of hustle. Although our number is in the other currency,
+    # we would need to translate it (it doesn't match either, but close)
+    assert amount1 == 5981737760509663
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], -pool.tickSpacing, MAX_UINT128, MAX_UINT128
+    )
+
+    # In Uniswap burning returns the amount burnt in that transaction, and collect returns
+    assert amount0 == 0
+    assert (
+        amount1
+        == mulDiv(
+            abs(5981737760509663), TickMath.getPriceAtTick(-pool.tickSpacing), 2**96
+        )
+        + feesAccrued
+    )
 
 
 # def test_limitSelling0For1_atTick0ThruMinus1_feesOn(
@@ -2626,4 +2736,5 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
 
 # Add test (very similar to initializeAtZeroTick fixture) testing that if we mint two positions on the current tick, in
 #     one direction it's used but not the other.
+# Write a test described in the paper (lack of range order but there is limit orders)
 # Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine
