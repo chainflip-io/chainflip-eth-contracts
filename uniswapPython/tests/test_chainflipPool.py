@@ -3161,7 +3161,7 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
 
 def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
     print("current orders on current tick")
-    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+    pool, minTick, maxTick, _, _ = initializedPoolMedium12TickSpacing
     # Tick == 0
     initick = pool.slot0.tick
 
@@ -3179,12 +3179,16 @@ def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
     # In one direction the limit order is taken
     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
 
+    assert initick == pool.slot0.tick
+
     assert tick0.liquidityGross == expandTo18Decimals(1)
     # Should be almost zero (since there are fees). Just checking that it has been used.
     assert tick0.liquidityLeft < expandTo18Decimals(1)
     assert tick1.liquidityGross == tick1.liquidityLeft == expandTo18Decimals(1)
 
-    # In the other direction it is not taken
+    print("------------SWAAAAPPPPING-----------")
+    # In the other direction it is taken but not until the range orders don't change the
+    # pool price
     (
         _,
         amount0,
@@ -3192,16 +3196,41 @@ def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
         _,
         _,
         _,
-    ) = swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
-
-    assert amount0 == 0
-    assert amount1 == 0
+    ) = swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    print("amount0", amount0)
+    print("amount1", amount1)
+    assert initick != pool.slot0.tick
+    # assert pool.slot0.tick == TickMath.MIN_TICK
+    assert pool.slot0.tick == -1
 
     # Tick 0 not altered
     assert tick0.liquidityGross == expandTo18Decimals(1)
     assert tick0.liquidityLeft < expandTo18Decimals(1)
-    # Tick1 not used
-    assert tick1.liquidityGross == tick1.liquidityLeft == expandTo18Decimals(1)
+    # Tick1 used
+    assert tick1.liquidityGross == expandTo18Decimals(1)
+    # Should be almost zero (since there are fees). Just checking that it has been used.
+    assert tick1.liquidityLeft < expandTo18Decimals(1)
+
+    assert tick0.liquidityLeft == tick1.liquidityLeft
+
+
+# def test_noRangeOrder_limitOrderWorsePrice(initializedPoolMedium12TickSpacing, accounts):
+#     print("current orders on current tick")
+#     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+#     # Tick == 0
+#     initick = pool.slot0.tick
+
+#     assert pool.ticksLinearTokens0 == {}
+#     assert pool.ticksLinearTokens1 == {}
+
+#     pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], initick + pool.tickSpacing, expandTo18Decimals(1))
+#     #pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], initick, expandTo18Decimals(1))
+
+#     # In the current price we won't take the limit order, but we should be able to take it if there are no
+#     # range orders.
+#     print(swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None))
+#     print("pool.slot0.tick", pool.slot0.tick)
+#     assert False
 
 
 # TO continue:
