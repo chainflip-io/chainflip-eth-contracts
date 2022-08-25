@@ -853,7 +853,7 @@ def initializeAtZeroTick(pool, accounts):
 
 @pytest.fixture
 def mediumPoolInitializedAtZero(createPoolMedium, accounts):
-    pool, minTick, maxTick, _, _ = createPoolMedium
+    pool, _, _, _, _ = createPoolMedium
     initializeAtZeroTick(pool, accounts)
 
     # pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], pool.slot0.tick, 3161)
@@ -873,7 +873,7 @@ def checkLinearTickIsNotClear(tickmap, tick):
 
 
 def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZero):
-    pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
+    pool, _, _, _, _ = mediumPoolInitializedAtZero
     print("does not clear the position fee growth snapshot if no more liquidity")
     iniTick = pool.slot0.tick
     ## some activity that would make the ticks non-zero
@@ -918,7 +918,7 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
 
 def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
     print("clears the tick if its the last position using it")
-    pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    pool, _, _, _, tickSpacing = mediumPoolInitializedAtZero
     ## some activity that would make the ticks non-zero - make it different than mediumPoolInitializedAtZero positions
     tickLow = pool.slot0.tick + tickSpacing * 5
     tickHigh = pool.slot0.tick + tickSpacing * 10
@@ -936,7 +936,7 @@ def test_clearsTick_ifLastPosition(accounts, mediumPoolInitializedAtZero):
 
 def test_clearOnlyLower_ifUpperUsed(accounts, mediumPoolInitializedAtZero):
     print("clears only the lower tick if upper is still used")
-    pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    pool, _, _, _, tickSpacing = mediumPoolInitializedAtZero
     tickLow = pool.slot0.tick - tickSpacing * 10
     tickHigh = pool.slot0.tick + tickSpacing * 10
     ## some activity that would make the ticks non-zero
@@ -950,7 +950,7 @@ def test_clearOnlyLower_ifUpperUsed(accounts, mediumPoolInitializedAtZero):
 
 def test_clearsOnlyUpper_ifLowerUsed(accounts, mediumPoolInitializedAtZero):
     print("clears only the upper tick if lower is still used")
-    pool, minTick, maxTick, _, tickSpacing = mediumPoolInitializedAtZero
+    pool, _, _, _, tickSpacing = mediumPoolInitializedAtZero
     tickLow = pool.slot0.tick - tickSpacing * 10
     tickHigh = pool.slot0.tick + tickSpacing * 10
     ## some activity that would make the ticks non-zero
@@ -1389,142 +1389,176 @@ def test_multipleLPs(initializedLowPoolCollect, accounts):
 
     position0 = pool.linearPositions[getLimitPositionKey(accounts[0], tick, False)]
     position1 = pool.linearPositions[getLimitPositionKey(accounts[1], tick, False)]
-    
+
     assert position0.tokensOwed0 == 166666666666666
     assert position1.tokensOwed0 == 333333333333333
 
 
-# ## Works accross large increases
+## Works accross large increases
 
-# ## type(uint128).max * 2**128 / 1e18
-# ## https://www.wolframalpha.com/input/?i=%282**128+-+1%29+*+2**128+%2F+1e18
-# magicNumber = 115792089237316195423570985008687907852929702298719625575994
-
-
-# def test_justBeforeCapBinds(initializedLowPoolCollect, accounts):
-#     print("works just before the cap binds")
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollect
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, expandTo18Decimals(1))
-
-#     pool.feeGrowthGlobal0X128 = magicNumber
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)
-#     positionInfo = pool.positions[getPositionKey(accounts[0], minTick, maxTick)]
-#     assert positionInfo.tokensOwed0 == MAX_UINT128 - 1
-#     assert positionInfo.tokensOwed1 == 0
+## type(uint128).max * 2**128 / 1e18
+## https://www.wolframalpha.com/input/?i=%282**128+-+1%29+*+2**128+%2F+1e18
+magicNumber = 115792089237316195423570985008687907852929702298719625575994
 
 
-# def test_justAfterCapBinds(initializedLowPoolCollect, accounts):
-#     print("works just after the cap binds")
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollect
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, expandTo18Decimals(1))
-
-#     pool.feeGrowthGlobal0X128 = magicNumber + 1
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)
-
-#     positionInfo = pool.positions[getPositionKey(accounts[0], minTick, maxTick)]
-
-#     assert positionInfo.tokensOwed0 == MAX_UINT128
-#     assert positionInfo.tokensOwed1 == 0
-
-
-# # Causes overflow on the position.update() for tokensOwed0. In Uniswap the overflow is
-# # acceptable because it is expected for the LP to collect the tokens before it happens.
-# def test_afterCapBinds(initializedLowPoolCollect, accounts):
-#     print("works after the cap binds")
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollect
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, expandTo18Decimals(1))
-
-#     pool.feeGrowthGlobal0X128 = MAX_UINT256
-
-#     # Overflown tokensOwed0 - added code to Position.py to handle this
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)
-
-#     positionInfo = pool.positions[getPositionKey(accounts[0], minTick, maxTick)]
-
-#     assert positionInfo.tokensOwed0 == MAX_UINT128
-#     assert positionInfo.tokensOwed1 == 0
+def test_justBeforeCapBinds(initializedLowPoolCollect, accounts):
+    print("works just before the cap binds")
+    pool, _, _, _, _ = initializedLowPoolCollect
+    iniTick = pool.slot0.tick
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], iniTick, expandTo18Decimals(1))
+    pool.ticksLinearTokens0[iniTick].feeGrowthInsideX128 = magicNumber
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], iniTick, 0)
+    positionInfo = pool.linearPositions[getLimitPositionKey(accounts[0], iniTick, True)]
+    # Reversed tokens since a position0 will accrue tokens1 fees
+    assert positionInfo.tokensOwed1 == MAX_UINT128 - 1
+    assert positionInfo.tokensOwed0 == 0
 
 
-# # Works across overflow boundaries
-# @pytest.fixture
-# def initializedLowPoolCollectGrowthFees(initializedLowPoolCollect, accounts):
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollect
-#     pool.feeGrowthGlobal0X128 = MAX_UINT256
-#     pool.feeGrowthGlobal1X128 = MAX_UINT256
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, expandTo18Decimals(10))
-#     return initializedLowPoolCollect
+def test_justAfterCapBinds(initializedLowPoolCollect, accounts):
+    print("works just after the cap binds")
+    pool, _, _, _, _ = initializedLowPoolCollect
+    iniTick = pool.slot0.tick
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], iniTick, expandTo18Decimals(1))
+
+    pool.ticksLinearTokens0[iniTick].feeGrowthInsideX128 = magicNumber + 1
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], iniTick, 0)
+
+    positionInfo = pool.linearPositions[getPositionKey(accounts[0], iniTick, True)]
+
+    # Reversed tokens since a position0 will accrue tokens1 fees
+    assert positionInfo.tokensOwed1 == MAX_UINT128
+    assert positionInfo.tokensOwed0 == 0
 
 
-# def test_token0(initializedLowPoolCollectGrowthFees, accounts):
-#     print("token0")
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollectGrowthFees
+# Causes overflow on the position.update() for tokensOwed0. In Uniswap the overflow is
+# acceptable because it is expected for the LP to collect the tokens before it happens.
+def test_afterCapBinds(initializedLowPoolCollect, accounts):
+    print("works after the cap binds")
+    pool, _, _, _, _ = initializedLowPoolCollect
+    iniTick = pool.slot0.tick
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], iniTick, expandTo18Decimals(1))
 
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)
-#     (_, _, _, amount0, amount1) = pool.collect(
-#         accounts[0], minTick, maxTick, MAX_UINT128, MAX_UINT128
-#     )
-#     assert amount0 == 499999999999999
-#     assert amount1 == 0
+    pool.ticksLinearTokens0[iniTick].feeGrowthInsideX128 = MAX_UINT256
 
+    # Overflown tokensOwed0 - added code to Position.py to handle this
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], iniTick, 0)
 
-# def test_token1(initializedLowPoolCollectGrowthFees, accounts):
-#     print("token1")
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollectGrowthFees
+    positionInfo = pool.linearPositions[getPositionKey(accounts[0], iniTick, True)]
 
-#     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)
-#     (_, _, _, amount0, amount1) = pool.collect(
-#         accounts[0], minTick, maxTick, MAX_UINT128, MAX_UINT128
-#     )
-#     assert amount0 == 0
-#     assert amount1 == 499999999999999
+    assert positionInfo.tokensOwed1 == MAX_UINT128
+    assert positionInfo.tokensOwed0 == 0
 
 
-# def test_token0_and_token1(initializedLowPoolCollectGrowthFees, accounts):
-#     print("token0 and token1")
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollectGrowthFees
+# Works across overflow boundaries
+@pytest.fixture
+def initializedLowPoolCollectGrowthFees(initializedLowPoolCollect, accounts):
+    pool, _, _, _, _ = initializedLowPoolCollect
+    iniTick = pool.slot0.tick
 
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)
-#     (_, _, _, amount0, amount1) = pool.collect(
-#         accounts[0], minTick, maxTick, MAX_UINT128, MAX_UINT128
-#     )
-#     assert amount0 == 499999999999999
-#     assert amount1 == 499999999999999
+    # Need to mint LO first before being able to set a tick's feeGrowthInsideX128
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], iniTick, expandTo18Decimals(10))
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], iniTick, expandTo18Decimals(10))
 
-
-# # Fee Protocol
-# liquidityAmount = expandTo18Decimals(1000)
+    pool.ticksLinearTokens0[iniTick].feeGrowthInsideX128 = MAX_UINT256
+    pool.ticksLinearTokens1[iniTick].feeGrowthInsideX128 = MAX_UINT256
+    return initializedLowPoolCollect
 
 
-# @pytest.fixture
-# def initializedLowPoolCollectFees(initializedLowPoolCollect, accounts):
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollect
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, liquidityAmount)
-#     return initializedLowPoolCollect
+def test_token0(initializedLowPoolCollectGrowthFees, accounts):
+    print("token0")
+    pool, _, _, _, _ = initializedLowPoolCollectGrowthFees
+    iniTick = pool.slot0.tick
+
+    # Change the direction of the swap to test token0 position
+    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], iniTick, 0)
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], iniTick, MAX_UINT128, MAX_UINT128
+    )
+    # Reversed tokens since a position0 will accrue tokens1 fees
+    assert amount1 == 499999999999999
+    assert amount0 == 0
 
 
-# def test_initiallyZero(initializedLowPoolCollectFees):
-#     print("is initially set to 0")
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
+def test_token1(initializedLowPoolCollectGrowthFees, accounts):
+    print("token1")
+    pool, _, _, _, _ = initializedLowPoolCollectGrowthFees
 
-#     assert pool.slot0.feeProtocol == 0
+    # Move tick so we can use the token1 LO set on tick0
+    iniTick = pool.slot0.tick
+    pool.slot0.tick = pool.slot0.tick - pool.tickSpacing
+
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], iniTick, 0)
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], iniTick, MAX_UINT128, MAX_UINT128
+    )
+
+    # Reversed tokens since a position1 will accrue tokens0 fees
+    assert amount1 == 0
+    assert amount0 == 499999999999999
 
 
-# def test_changeProtocolFee(initializedLowPoolCollectFees):
-#     print("can be changed")
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
+def test_token0_and_token1(initializedLowPoolCollectGrowthFees, accounts):
+    print("token0 and token1")
+    pool, _, _, _, _ = initializedLowPoolCollectGrowthFees
+    iniTick = pool.slot0.tick
 
-#     pool.setFeeProtocol(6, 6)
-#     assert pool.slot0.feeProtocol == 102
+    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
+
+    pool.slot0.tick = pool.slot0.tick - pool.tickSpacing
+
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], iniTick, 0)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], iniTick, 0)
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], iniTick, MAX_UINT128, MAX_UINT128
+    )
+    assert amount1 == 499999999999999
+    assert amount0 == 0
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], iniTick, MAX_UINT128, MAX_UINT128
+    )
+    assert amount1 == 0
+    assert amount0 == 499999999999999
 
 
-# def test_cannotOutOfBounds(initializedLowPoolCollectFees):
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
-#     tryExceptHandler(pool.setFeeProtocol, "", 3, 3)
-#     tryExceptHandler(pool.setFeeProtocol, "", 11, 11)
+# Fee Protocol
+liquidityAmount = expandTo18Decimals(1000)
+
+
+@pytest.fixture
+def initializedLowPoolCollectFees(initializedLowPoolCollect, accounts):
+    pool, _, _, _, _ = initializedLowPoolCollect
+
+    iniTick = pool.slot0.tick
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], iniTick, liquidityAmount)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], iniTick, liquidityAmount)
+
+    return initializedLowPoolCollect
+
+
+def test_initiallyZero(initializedLowPoolCollectFees):
+    print("is initially set to 0")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+
+    assert pool.slot0.feeProtocol == 0
+
+
+def test_changeProtocolFee(initializedLowPoolCollectFees):
+    print("can be changed")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+
+    pool.setFeeProtocol(6, 6)
+    assert pool.slot0.feeProtocol == 102
+
+
+def test_cannotOutOfBounds(initializedLowPoolCollectFees):
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    tryExceptHandler(pool.setFeeProtocol, "", 3, 3)
+    tryExceptHandler(pool.setFeeProtocol, "", 11, 11)
 
 
 # def swapAndGetFeesOwed(createPoolParams, amount, zeroForOne, poke, account):
