@@ -1571,6 +1571,8 @@ def swapAndGetFeesOwed(createPoolParams, amount, zeroForOne, poke, account, tick
         token = TEST_TOKENS[1]
 
     else:
+        # In case of multiple swaps, set the tick back to the tick where the LO is set
+        pool.slot0.tick = tick
         swapExact1For0(pool, amount, account, None)
         token = TEST_TOKENS[0]
 
@@ -1582,7 +1584,6 @@ def swapAndGetFeesOwed(createPoolParams, amount, zeroForOne, poke, account, tick
         (_, _, fees0, fees1) = copy.deepcopy(pool).collectLinear(
             account, token, tick, MAX_UINT128, MAX_UINT128
         )
-
     else:
         (_, _, fees0, fees1) = copy.deepcopy(pool).collectLinear(
             account, token, tick, MAX_UINT128, MAX_UINT128
@@ -1694,220 +1695,381 @@ def test_swapFeesAccomulate_zeroForOne_together1(
     assert token1Fees == 0
 
 
-# def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
-#     print("swap fees accumulate as expected (1 for 0)")
+def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
+    print("swap fees accumulate as expected (1 for 0)")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
 
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), False, True, accounts[0]
-#     )
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        False,
+        True,
+        accounts[0],
+        iniTick,
+    )
 
-#     assert token0Fees == 0
-#     assert token1Fees == 499999999999999
+    assert token0Fees == 0
+    assert token1Fees == 499999999999999
 
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), False, True, accounts[0]
-#     )
-#     assert token0Fees == 0
-#     assert token1Fees == 999999999999998
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        False,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 0
+    assert token1Fees == 999999999999998
 
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), False, True, accounts[0]
-#     )
-#     assert token0Fees == 0
-#     assert token1Fees == 1499999999999997
-
-
-# def test_partialFees_feeProtocolOn(initializedLowPoolCollectFees, accounts):
-#     print("position owner gets partial fees when protocol fee is on")
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
-
-#     pool.setFeeProtocol(6, 6)
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-#     assert token0Fees == 416666666666666
-#     assert token1Fees == 0
-
-
-# # Collect protocol
-
-
-# def test_returnsZero_noFees(initializedLowPoolCollectFees, accounts):
-#     print("returns 0 if no fees")
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
-#     pool.setFeeProtocol(6, 6)
-
-#     (_, amount0, amount1) = pool.collectProtocol(accounts[0], MAX_UINT128, MAX_UINT128)
-#     assert amount0 == 0
-#     assert amount1 == 0
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        False,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 0
+    assert token1Fees == 1499999999999997
 
 
-# def test_canCollectFees(initializedLowPoolCollectFees, accounts):
-#     print("can collect fees")
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
-#     pool.setFeeProtocol(6, 6)
+# check that swapping 1e18 multiple times adds to almost the same exact fees as swapping once
+def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
+    print("swap fees accumulate as expected (1 for 0)")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
 
-#     swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(2),
+        False,
+        True,
+        accounts[0],
+        iniTick,
+    )
 
-#     (_, amount0, amount1) = pool.collectProtocol(accounts[0], MAX_UINT128, MAX_UINT128)
-#     assert amount0 == 83333333333332
-#     assert amount1 == 0
-
-
-# def test_feesDifferToken0Token1(initializedLowPoolCollectFees, accounts):
-#     print("fees collected can differ between token0 and token1")
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
-#     pool.setFeeProtocol(8, 5)
-
-#     swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, False, accounts[0]
-#     )
-
-#     swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), False, False, accounts[0]
-#     )
-
-#     (_, amount0, amount1) = pool.collectProtocol(accounts[0], MAX_UINT128, MAX_UINT128)
-#     ## more token0 fees because it's 1/5th the swap fees
-#     assert amount0 == 62499999999999
-#     ## less token1 fees because it's 1/8th the swap fees
-#     assert amount1 == 99999999999999
+    assert token0Fees == 0
+    assert token1Fees == 999999999999999
 
 
-# def test_doubleFees(initializedLowPoolCollectFees, accounts):
-#     print("fees collected by lp after two swaps should be double one swap")
+def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
+    print("swap fees accumulate as expected (1 for 0)")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
 
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(3),
+        False,
+        True,
+        accounts[0],
+        iniTick,
+    )
 
-#     swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-
-#     ## 6 bips * 2e18
-#     assert token0Fees == 999999999999998
-#     assert token1Fees == 0
-
-
-# def test_feesCollected_combination0(initializedLowPoolCollectFees, accounts):
-#     print(
-#         "fees collected after two swaps with fee turned on in middle are fees from last swap (not confiscatory)"
-#     )
-#     pool, _, _, _, _ = initializedLowPoolCollectFees
-
-#     swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, False, accounts[0]
-#     )
-#     pool.setFeeProtocol(6, 6)
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-#     assert token0Fees == 916666666666666
-#     assert token1Fees == 0
+    assert token0Fees == 0
+    assert token1Fees == 1499999999999999
 
 
-# def test_feesCollected_combination1(initializedLowPoolCollectFees, accounts):
-#     print("fees collected by lp after two swaps with intermediate withdrawal")
-#     pool, minTick, maxTick, _, _ = initializedLowPoolCollectFees
-#     pool.setFeeProtocol(6, 6)
+def test_partialFees_feeProtocolOn(initializedLowPoolCollectFees, accounts):
+    print("position owner gets partial fees when protocol fee is on")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
 
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-#     assert token0Fees == 416666666666666
-#     assert token1Fees == 0
-
-#     pool.collect(accounts[0], minTick, maxTick, MAX_UINT128, MAX_UINT128)
-
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, False, accounts[0]
-#     )
-#     assert token0Fees == 0
-#     assert token1Fees == 0
-
-#     assert pool.protocolFees.token0 == 166666666666666
-#     assert pool.protocolFees.token1 == 0
-
-#     pool.burnLimitOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, 0)  ## poke to update fees
-
-#     (recipient, _, _, amount0, amount1) = pool.collect(
-#         accounts[0], minTick, maxTick, MAX_UINT128, MAX_UINT128
-#     )
-#     assert (recipient, amount0, amount1) == (accounts[0], 416666666666666, 0)
-
-#     assert pool.protocolFees.token0 == 166666666666666
-#     assert pool.protocolFees.token1 == 0
+    pool.setFeeProtocol(6, 6)
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 416666666666666
+    assert token1Fees == 0
 
 
-# @pytest.fixture
-# def createPoolMedium12TickSpacing():
-#     return createPool(FeeAmount.MEDIUM, 12)
+# Collect protocol
 
 
-# @pytest.fixture
-# def initializedPoolMedium12TickSpacing(createPoolMedium12TickSpacing):
-#     pool, _, _, _, _, _ = createPoolMedium12TickSpacing
-#     pool.initialize(encodePriceSqrt(1, 1))
-#     return createPoolMedium12TickSpacing
+def test_returnsZero_noFees(initializedLowPoolCollectFees, accounts):
+    print("returns 0 if no fees")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    pool.setFeeProtocol(6, 6)
+
+    (_, amount0, amount1) = pool.collectProtocol(accounts[0], MAX_UINT128, MAX_UINT128)
+    assert amount0 == 0
+    assert amount1 == 0
 
 
-# def test_mint_onlyMultiplesOf12(initializedPoolMedium12TickSpacing, accounts):
-#     print("mint can only be called for multiples of 12")
-#     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
-#     tryExceptHandler(pool.mintLinearOrder, "", accounts[0], -6, 0, 1)
-#     tryExceptHandler(pool.mintLinearOrder, "", accounts[0], 0, 6, 1)
+def test_canCollectFees(initializedLowPoolCollectFees, accounts):
+    print("can collect fees")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
+    pool.setFeeProtocol(6, 6)
+
+    swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+
+    (_, amount0, amount1) = pool.collectProtocol(accounts[0], MAX_UINT128, MAX_UINT128)
+    assert amount0 == 83333333333332
+    assert amount1 == 0
 
 
-# def test_mint_multiplesOf12(initializedPoolMedium12TickSpacing, accounts):
-#     print("mint can be called for multiples of 12")
-#     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], 12, 24, 1)
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -144, -120, 1)
+def test_feesDifferToken0Token1(initializedLowPoolCollectFees, accounts):
+    print("fees collected can differ between token0 and token1")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
+
+    pool.setFeeProtocol(8, 5)
+
+    swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        False,
+        accounts[0],
+        iniTick,
+    )
+
+    swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        False,
+        False,
+        accounts[0],
+        iniTick,
+    )
+
+    (_, amount0, amount1) = pool.collectProtocol(accounts[0], MAX_UINT128, MAX_UINT128)
+    ## more token0 fees because it's 1/5th the swap fees
+    assert amount0 == 62499999999999
+    ## less token1 fees because it's 1/8th the swap fees
+    assert amount1 == 99999999999999
 
 
-# def test_swapGaps_oneForZero(initializedPoolMedium12TickSpacing, accounts):
-#     print("swapping across gaps works in 1 for 0 direction")
-#     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
-#     liquidityAmount = expandTo18Decimals(1) // 4
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], 120000, 121200, liquidityAmount)
-#     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
-#     (recipient, tickLower, tickUpper, amount, amount0, amount1) = pool.burnLimitOrder(TEST_TOKENS[0],
-#         accounts[0], 120000, 121200, liquidityAmount
-#     )
-#     assert (recipient, tickLower, tickUpper, amount, amount0, amount1) == (
-#         accounts[0],
-#         120000,
-#         121200,
-#         liquidityAmount,
-#         30027458295511,
-#         996999999999999999,
-#     )
-#     assert pool.slot0.tick == 120196
+def test_doubleFees(initializedLowPoolCollectFees, accounts):
+    print("fees collected by lp after two swaps should be double one swap")
+
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
+
+    swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+
+    ## 6 bips * 2e18
+    assert token0Fees == 999999999999998
+    assert token1Fees == 0
 
 
-# def test_swapGaps_zeroForOne(initializedPoolMedium12TickSpacing, accounts):
-#     print("swapping across gaps works in 0 for 1 direction")
-#     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
-#     liquidityAmount = expandTo18Decimals(1) // 4
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], -121200, -120000, liquidityAmount)
-#     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-#     (recipient, tickLower, tickUpper, amount, amount0, amount1) = pool.burnLimitOrder(TEST_TOKENS[0],
-#         accounts[0], -121200, -120000, liquidityAmount
-#     )
-#     assert (recipient, tickLower, tickUpper, amount, amount0, amount1) == (
-#         accounts[0],
-#         -121200,
-#         -120000,
-#         liquidityAmount,
-#         996999999999999999,
-#         30027458295511,
-#     )
-#     assert pool.slot0.tick == -120197
+def test_feesCollected_combination0(initializedLowPoolCollectFees, accounts):
+    print(
+        "fees collected after two swaps with fee turned on in middle are fees from last swap (not confiscatory)"
+    )
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
+
+    swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        False,
+        accounts[0],
+        iniTick,
+    )
+    pool.setFeeProtocol(6, 6)
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 916666666666666
+    assert token1Fees == 0
+
+
+def test_feesCollected_combination1(initializedLowPoolCollectFees, accounts):
+    print("fees collected by lp after two swaps with intermediate withdrawal")
+    pool, minTick, maxTick, _, _ = initializedLowPoolCollectFees
+    iniTick = pool.slot0.tick
+    pool.setFeeProtocol(6, 6)
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 416666666666666
+    assert token1Fees == 0
+
+    pool.collectLinear(accounts[0], TEST_TOKENS[0], iniTick, MAX_UINT128, MAX_UINT128)
+    pool.collectLinear(accounts[0], TEST_TOKENS[1], iniTick, MAX_UINT128, MAX_UINT128)
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        False,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 0
+    assert token1Fees == 0
+
+    assert pool.protocolFees.token0 == 166666666666666
+    assert pool.protocolFees.token1 == 0
+
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], iniTick, 0)  ## poke to update fees
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], iniTick, 0)  ## poke to update fees
+
+    (recipient, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], iniTick, MAX_UINT128, MAX_UINT128
+    )
+    assert (recipient, amount0, amount1) == (accounts[0], 0, 0)
+
+    (recipient, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], iniTick, MAX_UINT128, MAX_UINT128
+    )
+    assert (recipient, amount0, amount1) == (accounts[0], 416666666666666, 0)
+
+    assert pool.protocolFees.token0 == 166666666666666
+    assert pool.protocolFees.token1 == 0
+
+
+@pytest.fixture
+def createPoolMedium12TickSpacing():
+    return createPool(FeeAmount.MEDIUM, 12)
+
+
+@pytest.fixture
+def initializedPoolMedium12TickSpacing(createPoolMedium12TickSpacing):
+    pool, _, _, _, _ = createPoolMedium12TickSpacing
+    pool.initialize(encodePriceSqrt(1, 1))
+    return createPoolMedium12TickSpacing
+
+
+def test_mint_onlyMultiplesOf12(initializedPoolMedium12TickSpacing, accounts):
+    print("mint can only be called for multiples of 12")
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+    tryExceptHandler(pool.mintLinearOrder, "", TEST_TOKENS[0], accounts[0], -6, 1)
+    tryExceptHandler(pool.mintLinearOrder, "", TEST_TOKENS[1], accounts[0], -6, 1)
+
+
+def test_mint_multiplesOf12(initializedPoolMedium12TickSpacing, accounts):
+    print("mint can be called for multiples of 12")
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], 12, 1)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], 24, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], 12, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], 24, 1)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], -144, 1)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], -120, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], -144, 1)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], -120, 1)
+
+
+def test_swapGaps_oneForZero(initializedPoolMedium12TickSpacing, accounts):
+    print("swapping across gaps works in 1 for 0 direction")
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+    # Change pool current tick so it uses the correct LO orders
+    pool.slot0.tick = 150000
+    # Liquidity gotten from the amount minted in the Uniswap test
+    # liquidityAmount = expandTo18Decimals(1) // 4
+    liquidityAmount = 36096898321357
+    # Mint two orders and check that it uses the correct one.
+    # 120192 being the closest tick to the price that is swapped at Uniswap test
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], 120192, liquidityAmount)
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], 121200, liquidityAmount)
+    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
+
+    # This order should not have been used
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], 121200, liquidityAmount
+    )
+    assert recipient == accounts[0]
+    assert tick == 121200
+    assert amount == liquidityAmount
+    assert amount0 == liquidityAmount
+    assert amount1 == 0
+
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], 120192, liquidityAmount
+    )
+    assert recipient == accounts[0]
+    assert tick == 120192
+    assert amount == liquidityAmount
+    # Slightly different amounts because of price difference
+    # Orig value: 30027458295511
+    assert amount0 == 30083999478255
+    assert amount1 == 996999999999848369
+
+    # Tick should not have changed
+    assert pool.slot0.tick == 150000
+
+
+def test_swapGaps_zeroForOne(initializedPoolMedium12TickSpacing, accounts):
+    print("swapping across gaps works in 0 for 1 direction")
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+    # Change pool current tick so it uses the correct LO orders
+    pool.slot0.tick = -150000
+    # Liquidity gotten from the amount minted in the Uniswap test
+    # liquidityAmount = expandTo18Decimals(1) // 4
+    liquidityAmount = 36096898321357
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], -121200, liquidityAmount)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], -120192, liquidityAmount)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+
+    # This order should not have been used
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], -121200, liquidityAmount
+    )
+    assert recipient == accounts[0]
+    assert tick == -121200
+    assert amount == liquidityAmount
+    assert amount0 == 0
+    assert amount1 == liquidityAmount
+
+    (recipient, tick, amount, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], -120192, liquidityAmount
+    )
+    assert recipient == accounts[0]
+    assert tick == -120192
+    # Slightly different amounts because of price difference
+    assert amount == liquidityAmount
+    # Slightly different amounts because of price difference
+    # Orig value: 30027458295511
+    assert amount0 == 996999999999848369
+    assert amount1 == 30083999478255
+
+    # Tick should not have changed
+    assert pool.slot0.tick == -150000
 
 
 # ## https://github.com/Uniswap/uniswap-v3-core/issues/214

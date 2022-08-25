@@ -476,22 +476,21 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
         owner, token, tickLO, MAX_UINT128, MAX_UINT128
     )
 
-    # Check that amount calculated in burn is smaller or equal than collected (due to fees). Probably we
-    # could do this in a better way.
+    # Check that amount calculated in burn against the amount collected - fees accrued
 
     if zeroForOne:
-        if amountSwapped:
-            assert amountBurnt1 < amount0
-            assert amountBurnt0 == amount1
-        else:
-            assert amountBurnt1 == amount0
-            assert amountBurnt0 == amount1
-    else:
-        if amountSwapped:
-            assert amountBurnt0 <= amount0
-            assert amountBurnt1 < amount1
+        assert amountBurnt1 == amount1
+        if amountSwapped != 0:
+            # Fees accrued in token0
+            assert amountBurnt0 < amount0
         else:
             assert amountBurnt0 == amount0
+    else:
+        assert amountBurnt0 == amount0
+        if amountSwapped != 0:
+            # Fees accrued in token1
+            assert amountBurnt1 < amount1
+        else:
             assert amountBurnt1 == amount1
 
     # No liquidity left and all tokensOwed collected

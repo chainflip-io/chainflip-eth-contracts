@@ -190,13 +190,20 @@ class ChainflipPool(UniswapPool):
             assert liquidityLeftDelta == 0
             assert liquiditySwappedDelta == 0
 
+        # Return amounts in the right order token0#token1
+        (amountBurnt0, amountBurnt1) = (
+            (abs(liquidityLeftDelta), abs(liquiditySwappedDelta))
+            if token == self.token0
+            else (abs(liquiditySwappedDelta), abs(liquidityLeftDelta))
+        )
+
         # As in uniswap we return the amount of tokens that were burned, that is without fees accrued.
         return (
             recipient,
             tick,
             amount,
-            abs(liquidityLeftDelta),
-            abs(liquiditySwappedDelta),
+            amountBurnt0,
+            amountBurnt1,
         )
 
     ### @inheritdoc IUniswapV3PoolActions
@@ -419,7 +426,7 @@ class ChainflipPool(UniswapPool):
             print("Starting with Range Orders")
 
             # For development purposes only
-            assert False, "We should not go into range orders"
+            # assert False, "We should not go into range orders"
 
             ######################################################
             #################### RANGE ORDERS ####################

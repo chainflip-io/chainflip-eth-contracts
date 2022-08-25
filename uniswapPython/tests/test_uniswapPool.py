@@ -1128,7 +1128,7 @@ def test_swapFeesAccomulate_zeroForOne_together0(
     assert token1Fees == 0
 
 
-# check that swapping 1e18 three times adds to almost the same exact fees as swapping 3e18 once
+# check that swapping 1e18 multiple times adds to almost the same exact fees as swapping once
 def test_swapFeesAccomulate_zeroForOne_together1(
     initializedLowPoolCollectFees, accounts
 ):
@@ -1162,6 +1162,33 @@ def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
     )
     assert token0Fees == 0
     assert token1Fees == 1499999999999997
+
+
+# check that swapping 1e18 multiple times adds to almost the same exact fees as swapping once
+def test_swapFeesAccomulate_OneForZero_together0(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (1 for 0)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(2), False, True, accounts[0]
+    )
+
+    assert token0Fees == 0
+    assert token1Fees == 999999999999999
+
+
+def test_swapFeesAccomulate_OneForZero_together1(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (1 for 0)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(3), False, True, accounts[0]
+    )
+
+    assert token0Fees == 0
+    assert token1Fees == 1499999999999999
 
 
 def test_partialFees_feeProtocolOn(initializedLowPoolCollectFees, accounts):
@@ -1322,7 +1349,7 @@ def test_swapGaps_oneForZero(initializedPoolMedium12TickSpacing, accounts):
     print("swapping across gaps works in 1 for 0 direction")
     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
     liquidityAmount = expandTo18Decimals(1) // 4
-    pool.mint(accounts[0], 120000, 121200, liquidityAmount)
+    amount0, amount1 = pool.mint(accounts[0], 120000, 121200, liquidityAmount)
     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
     (recipient, tickLower, tickUpper, amount, amount0, amount1) = pool.burn(
         accounts[0], 120000, 121200, liquidityAmount
