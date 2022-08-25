@@ -1093,7 +1093,6 @@ def test_positionOwner_fullFees_feeProtocolOff(initializedLowPoolCollectFees, ac
     assert token1Fees == 0
 
 
-# TODO: DEBUG THIS - with poking = True it doesnt make sense that we expect the fees to accrue
 def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
     print("swap fees accumulate as expected (0 for 1)")
 
@@ -1113,6 +1112,32 @@ def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
     )
     assert token0Fees == 1499999999999997
+    assert token1Fees == 0
+
+
+# check that swapping 1e18 twice adds to almost the same exact fees as swapping 2e18 once
+def test_swapFeesAccomulate_zeroForOne_together0(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (0 for 1)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(2), True, True, accounts[0]
+    )
+    assert token0Fees == 999999999999999
+    assert token1Fees == 0
+
+
+# check that swapping 1e18 three times adds to almost the same exact fees as swapping 3e18 once
+def test_swapFeesAccomulate_zeroForOne_together1(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (0 for 1)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(3), True, True, accounts[0]
+    )
+    assert token0Fees == 1499999999999999
     assert token1Fees == 0
 
 

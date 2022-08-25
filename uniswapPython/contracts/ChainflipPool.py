@@ -359,8 +359,6 @@ class ChainflipPool(UniswapPool):
                     # Update tick liquidity
                     ## Health check
                     assert stepLinear.amountOut > 0
-                    # Cache initial liquidity (can probably rearange this to not need this)
-                    iniLiquiditySwap = tickLinearInfo.liquidityLeft
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut
                     )
@@ -400,7 +398,9 @@ class ChainflipPool(UniswapPool):
                     # if stateLinear.liquidity > 0:
                     # feeAmount is in amountIn tokens => therefore feeGrowthInsideX128 is not in liquidityTokens
                     tickLinearInfo.feeGrowthInsideX128 += mulDiv(
-                        stepLinear.feeAmount, FixedPoint128_Q128, iniLiquiditySwap
+                        stepLinear.feeAmount,
+                        FixedPoint128_Q128,
+                        tickLinearInfo.liquidityGross,
                     )
                     # Addition can overflow in Solidity - mimic it
                     tickLinearInfo.feeGrowthInsideX128 = toUint256(

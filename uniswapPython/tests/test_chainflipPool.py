@@ -1484,8 +1484,8 @@ def test_token1(initializedLowPoolCollectGrowthFees, accounts):
     print("token1")
     pool, _, _, _, _ = initializedLowPoolCollectGrowthFees
 
-    # Move tick so we can use the token1 LO set on tick0
     iniTick = pool.slot0.tick
+    # Move tick so we can use the token1 LO set on tick0
     pool.slot0.tick = pool.slot0.tick - pool.tickSpacing
 
     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
@@ -1561,57 +1561,137 @@ def test_cannotOutOfBounds(initializedLowPoolCollectFees):
     tryExceptHandler(pool.setFeeProtocol, "", 11, 11)
 
 
-# def swapAndGetFeesOwed(createPoolParams, amount, zeroForOne, poke, account):
-#     pool, minTick, maxTick, _, _ = createPoolParams
-#     if zeroForOne:
-#         swapExact0For1(pool, amount, account, None)
-#     else:
-#         swapExact1For0(pool, amount, account, None)
+def swapAndGetFeesOwed(createPoolParams, amount, zeroForOne, poke, account, tick):
+    pool, _, _, _, _ = createPoolParams
 
-#     if poke:
-#         pool.burnLimitOrder(TEST_TOKENS[0],account, minTick, maxTick, 0)
+    if zeroForOne:
+        # Move tick so we can use the token1 LO set on tick0
+        pool.slot0.tick = tick - pool.tickSpacing
+        swapExact0For1(pool, amount, account, None)
+        token = TEST_TOKENS[1]
 
-#     # Copy pool instance to check that the accrued fees are correct but allowing to accumulate
-#     (_, _, _, fees0, fees1) = copy.deepcopy(pool).collect(
-#         account, minTick, maxTick, MAX_UINT128, MAX_UINT128
-#     )
+    else:
+        swapExact1For0(pool, amount, account, None)
+        token = TEST_TOKENS[0]
 
-#     assert fees0 >= 0, "fees owed in token0 are greater than 0"
-#     assert fees1 >= 0, "fees owed in token1 are greater than 0"
+    if poke:
+        pool.burnLimitOrder(token, account, tick, 0)
 
-#     return (fees0, fees1)
+    # Copy pool instance to check that the accrued fees are correct but allowing to accumulate
+    if zeroForOne:
+        (_, _, fees0, fees1) = copy.deepcopy(pool).collectLinear(
+            account, token, tick, MAX_UINT128, MAX_UINT128
+        )
+
+    else:
+        (_, _, fees0, fees1) = copy.deepcopy(pool).collectLinear(
+            account, token, tick, MAX_UINT128, MAX_UINT128
+        )
+
+    assert fees0 >= 0, "fees owed in token0 are greater than 0"
+    assert fees1 >= 0, "fees owed in token1 are greater than 0"
+
+    return (fees0, fees1)
 
 
-# def test_positionOwner_fullFees_feeProtocolOff(initializedLowPoolCollectFees, accounts):
-#     print("position owner gets full fees when protocol fee is off")
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-#     ## 6 bips * 1e18
-#     assert token0Fees == 499999999999999
-#     assert token1Fees == 0
+def test_positionOwner_fullFees_feeProtocolOff(initializedLowPoolCollectFees, accounts):
+    print("position owner gets full fees when protocol fee is off")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        pool.slot0.tick,
+    )
+    ## 6 bips * 1e18
+    assert token0Fees == 499999999999999
+    assert token1Fees == 0
 
 
-# def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
-#     print("swap fees accumulate as expected (0 for 1)")
+def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
+    print("swap fees accumulate as expected (0 for 1)")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
 
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-#     assert token0Fees == 499999999999999
-#     assert token1Fees == 0
+    iniTick = pool.slot0.tick
 
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-#     assert token0Fees == 999999999999998
-#     assert token1Fees == 0
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 499999999999999
+    assert token1Fees == 0
 
-#     (token0Fees, token1Fees) = swapAndGetFeesOwed(
-#         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
-#     )
-#     assert token0Fees == 1499999999999997
-#     assert token1Fees == 0
+    # TODO: Debugging - why fees are higher swapping twice than doing one bigger swap?
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 999999999999998
+    assert token1Fees == 0
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(1),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 1499999999999997
+    assert token1Fees == 0
+
+
+# TO debug - check that swapping 1e18 twice adds to the same fees as swapping 2e18 once
+def test_swapFeesAccomulate_zeroForOne_together0(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (0 for 1)")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+
+    iniTick = pool.slot0.tick
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(2),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 999999999999999
+    assert token1Fees == 0
+
+
+# check that swapping 1e18 three times adds to almost the same exact fees as swapping 3e18 once
+def test_swapFeesAccomulate_zeroForOne_together1(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (0 for 1)")
+    pool, _, _, _, _ = initializedLowPoolCollectFees
+
+    iniTick = pool.slot0.tick
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees,
+        expandTo18Decimals(3),
+        True,
+        True,
+        accounts[0],
+        iniTick,
+    )
+    assert token0Fees == 1499999999999999
+    assert token1Fees == 0
 
 
 # def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
