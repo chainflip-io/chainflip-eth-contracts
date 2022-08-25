@@ -1620,7 +1620,7 @@ def test_collectEmpty_noPositionCreated_initializedPool(
         "Check that new positions are not created (reverts) when we collect an empty position"
     )
     pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
-    initialTicks = pool.ticks
+    initialTicks = copy.deepcopy(pool.ticks)
     tryExceptHandler(
         pool.collect, "Position doesn't exist", accounts[1], minTick, maxTick, 0, 0
     )

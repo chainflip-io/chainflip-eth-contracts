@@ -2072,6 +2072,8 @@ def test_swapGaps_zeroForOne(initializedPoolMedium12TickSpacing, accounts):
     assert pool.slot0.tick == -150000
 
 
+# Doesn't make sense with limit orders
+
 # ## https://github.com/Uniswap/uniswap-v3-core/issues/214
 # def test_noTickTransitionTwice(accounts):
 #     print(
@@ -2104,250 +2106,395 @@ def test_swapGaps_zeroForOne(initializedPoolMedium12TickSpacing, accounts):
 #     assert amountOut == 0, "zero amount out"
 
 
-# # setFeeProtocol
-# @pytest.fixture
-# def initializedSetFeeProtPool(createPoolMedium):
-#     pool, _, _, _, _, _ = createPoolMedium
-#     pool.initialize(encodePriceSqrt(1, 1))
-#     return createPoolMedium
+# setFeeProtocol
+@pytest.fixture
+def initializedSetFeeProtPool(createPoolMedium):
+    pool, _, _, _, _ = createPoolMedium
+    pool.initialize(encodePriceSqrt(1, 1))
+    return createPoolMedium
 
 
-# def test_failsFeeLt4OrGt10(initializedSetFeeProtPool, accounts):
-#     print("fails if fee is lt 4 or gt 10")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     tryExceptHandler(pool.setFeeProtocol, "", 3, 3)
-#     tryExceptHandler(pool.setFeeProtocol, "", 6, 3)
-#     tryExceptHandler(pool.setFeeProtocol, "", 3, 6)
-#     tryExceptHandler(pool.setFeeProtocol, "", 11, 11)
-#     tryExceptHandler(pool.setFeeProtocol, "", 6, 11)
-#     tryExceptHandler(pool.setFeeProtocol, "", 11, 6)
+def test_failsFeeLt4OrGt10(initializedSetFeeProtPool, accounts):
+    print("fails if fee is lt 4 or gt 10")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    tryExceptHandler(pool.setFeeProtocol, "", 3, 3)
+    tryExceptHandler(pool.setFeeProtocol, "", 6, 3)
+    tryExceptHandler(pool.setFeeProtocol, "", 3, 6)
+    tryExceptHandler(pool.setFeeProtocol, "", 11, 11)
+    tryExceptHandler(pool.setFeeProtocol, "", 6, 11)
+    tryExceptHandler(pool.setFeeProtocol, "", 11, 6)
 
 
-# def test_setFeeProtocol_4(initializedSetFeeProtPool):
-#     print("succeeds for fee of 4")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(4, 4)
+def test_setFeeProtocol_4(initializedSetFeeProtPool):
+    print("succeeds for fee of 4")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(4, 4)
 
 
-# def test_setFeeProtocol_10(initializedSetFeeProtPool):
-#     print("succeeds for fee of 10")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(10, 10)
+def test_setFeeProtocol_10(initializedSetFeeProtPool):
+    print("succeeds for fee of 10")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(10, 10)
 
 
-# def test_setFeeProtocol_7(initializedSetFeeProtPool):
-#     print("succeeds for fee of 7")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(7, 7)
-#     assert pool.slot0.feeProtocol == 119
+def test_setFeeProtocol_7(initializedSetFeeProtPool):
+    print("succeeds for fee of 7")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(7, 7)
+    assert pool.slot0.feeProtocol == 119
 
 
-# def test_changeProtocolFee(initializedSetFeeProtPool):
-#     print("can change protocol fee")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(7, 7)
-#     pool.setFeeProtocol(5, 8)
-#     assert pool.slot0.feeProtocol == 133
+def test_changeProtocolFee(initializedSetFeeProtPool):
+    print("can change protocol fee")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(7, 7)
+    pool.setFeeProtocol(5, 8)
+    assert pool.slot0.feeProtocol == 133
 
 
-# def test_turnOffProtocolFee(initializedSetFeeProtPool):
-#     print("can turn off protocol fee")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(4, 4)
-#     pool.setFeeProtocol(0, 0)
-#     assert pool.slot0.feeProtocol == 0
+def test_turnOffProtocolFee(initializedSetFeeProtPool):
+    print("can turn off protocol fee")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(4, 4)
+    pool.setFeeProtocol(0, 0)
+    assert pool.slot0.feeProtocol == 0
 
 
-# def test_turnOnProtocolFee_returns(initializedSetFeeProtPool):
-#     print("returns when turned on")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
-#         7, 7
-#     )
-#     assert feeProtocolOld0 == 0
-#     assert feeProtocolOld1 == 0
-#     assert feeProtocol0 == 7
-#     assert feeProtocol1 == 7
+def test_turnOnProtocolFee_returns(initializedSetFeeProtPool):
+    print("returns when turned on")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
+        7, 7
+    )
+    assert feeProtocolOld0 == 0
+    assert feeProtocolOld1 == 0
+    assert feeProtocol0 == 7
+    assert feeProtocol1 == 7
 
 
-# def test_turnOffProtocolFee_returns(initializedSetFeeProtPool):
-#     print("returns when turned off")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(7, 5)
-#     feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
-#         0, 0
-#     )
-#     assert feeProtocolOld0 == 7
-#     assert feeProtocolOld1 == 5
-#     assert feeProtocol0 == 0
-#     assert feeProtocol1 == 0
+def test_turnOffProtocolFee_returns(initializedSetFeeProtPool):
+    print("returns when turned off")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(7, 5)
+    feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
+        0, 0
+    )
+    assert feeProtocolOld0 == 7
+    assert feeProtocolOld1 == 5
+    assert feeProtocol0 == 0
+    assert feeProtocol1 == 0
 
 
-# def test_changeProtocolFee_returns(initializedSetFeeProtPool):
-#     print("returns when changed")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(4, 10)
-#     feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
-#         6, 8
-#     )
-#     assert feeProtocolOld0 == 4
-#     assert feeProtocolOld1 == 10
-#     assert feeProtocol0 == 6
-#     assert feeProtocol1 == 8
+def test_changeProtocolFee_returns(initializedSetFeeProtPool):
+    print("returns when changed")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(4, 10)
+    feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
+        6, 8
+    )
+    assert feeProtocolOld0 == 4
+    assert feeProtocolOld1 == 10
+    assert feeProtocol0 == 6
+    assert feeProtocol1 == 8
 
 
-# def test_unchangedProtocolFee_returns(initializedSetFeeProtPool):
-#     print("returns when unchanged")
-#     pool, _, _, _, _ = initializedSetFeeProtPool
-#     pool.setFeeProtocol(5, 9)
-#     feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
-#         5, 9
-#     )
-#     assert feeProtocolOld0 == 5
-#     assert feeProtocolOld1 == 9
-#     assert feeProtocol0 == 5
-#     assert feeProtocol1 == 9
+def test_unchangedProtocolFee_returns(initializedSetFeeProtPool):
+    print("returns when unchanged")
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    pool.setFeeProtocol(5, 9)
+    feeProtocolOld0, feeProtocolOld1, feeProtocol0, feeProtocol1 = pool.setFeeProtocol(
+        5, 9
+    )
+    assert feeProtocolOld0 == 5
+    assert feeProtocolOld1 == 9
+    assert feeProtocol0 == 5
+    assert feeProtocol1 == 9
 
 
-# # fees overflow scenarios => they seem to test the feeGrowth overflow in the
-# # flash function so we can skip those tests.
+# fees overflow scenarios => they seem to test the feeGrowth overflow in the
+# flash function so we can skip those tests.
 
 
-# # Swap underpayment tests => we don't really need to replicate those since we don't
-# # use callbacks, we just do the transfer in the pool itself. However, it is useful to
-# # check that we can't transfer more than the balances
+# Swap underpayment tests => we don't really need to replicate those since we don't
+# use callbacks, we just do the transfer in the pool itself. However, it is useful to
+# check that we can't transfer more than the balances
 
 
-# @pytest.fixture
-# def initializedPoolSwapBalances(initializedSetFeeProtPool, accounts):
-#     pool, minTick, maxTick, _, _ = initializedSetFeeProtPool
-#     pool.mintLinearOrder(TEST_TOKENS[0],accounts[0], minTick, maxTick, expandTo18Decimals(1))
-#     return initializedSetFeeProtPool
+@pytest.fixture
+def initializedPoolSwapBalances(initializedSetFeeProtPool, accounts):
+    pool, _, _, _, _ = initializedSetFeeProtPool
+    iniTick = pool.slot0.tick
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], iniTick, expandTo18Decimals(1))
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], iniTick, expandTo18Decimals(1))
+    return initializedSetFeeProtPool
 
 
-# def test_enoughBalance_token0(initializedPoolSwapBalances, accounts):
-#     print("swapper swaps all token0")
-#     pool, _, _, _, _ = initializedPoolSwapBalances
-
-#     swapExact0For1(pool, accounts[2].balances[TEST_TOKENS[0]], accounts[2], None)
-#     assert accounts[2].balances[TEST_TOKENS[0]] == 0
-
-
-# def test_enoughBalance_token1(initializedPoolSwapBalances, accounts):
-#     print("swapper doesn't have enough token0")
-#     pool, _, _, _, _ = initializedPoolSwapBalances
-
-#     swapExact1For0(pool, accounts[2].balances[TEST_TOKENS[1]], accounts[2], None)
-#     assert accounts[2].balances[TEST_TOKENS[1]] == 0
+def test_enoughBalance_token0(initializedPoolSwapBalances, accounts):
+    print("swapper swaps all token0")
+    pool, _, _, _, _ = initializedPoolSwapBalances
+    # Change current tick so it picks up the LO placed on pool.slot0.tick
+    pool.slot0.tick = -pool.tickSpacing
+    swapExact0For1(pool, accounts[2].balances[TEST_TOKENS[0]], accounts[2], None)
+    assert accounts[2].balances[TEST_TOKENS[0]] == 0
 
 
-# def test_notEnoughBalance_token0(initializedPoolSwapBalances, accounts):
-#     print("swapper doesn't have enough token0")
-#     pool, _, _, _, _ = initializedPoolSwapBalances
-#     initialBalanceToken0 = accounts[2].balances[TEST_TOKENS[0]]
-#     tryExceptHandler(
-#         swapExact0For1,
-#         "Insufficient balance",
-#         pool,
-#         accounts[2].balances[TEST_TOKENS[0]] + 1,
-#         accounts[2],
-#         None,
-#     )
-#     assert accounts[2].balances[TEST_TOKENS[0]] == initialBalanceToken0
+def test_enoughBalance_token1(initializedPoolSwapBalances, accounts):
+    print("swapper doesn't have enough token0")
+    pool, _, _, _, _ = initializedPoolSwapBalances
+
+    swapExact1For0(pool, accounts[2].balances[TEST_TOKENS[1]], accounts[2], None)
+    assert accounts[2].balances[TEST_TOKENS[1]] == 0
 
 
-# def test_notEnoughBalance_token1(initializedPoolSwapBalances, accounts):
-#     print("swapper doesn't have enough token1")
-#     pool, _, _, _, _ = initializedPoolSwapBalances
-#     initialBalanceToken1 = accounts[2].balances[TEST_TOKENS[1]]
-#     tryExceptHandler(
-#         swapExact1For0,
-#         "Insufficient balance",
-#         pool,
-#         accounts[2].balances[TEST_TOKENS[1]] + 1,
-#         accounts[2],
-#         None,
-#     )
-#     assert accounts[2].balances[TEST_TOKENS[1]] == initialBalanceToken1
+def test_notEnoughBalance_token0(initializedPoolSwapBalances, accounts):
+    print("swapper doesn't have enough token0")
+    pool, _, _, _, _ = initializedPoolSwapBalances
+    initialBalanceToken0 = accounts[2].balances[TEST_TOKENS[0]]
+    # Change current tick so it picks up the LO placed on pool.slot0.tick
+    pool.slot0.tick = -pool.tickSpacing
+    tryExceptHandler(
+        swapExact0For1,
+        "Insufficient balance",
+        pool,
+        accounts[2].balances[TEST_TOKENS[0]] + 1,
+        accounts[2],
+        None,
+    )
+    assert accounts[2].balances[TEST_TOKENS[0]] == initialBalanceToken0
 
 
-# # Extra tests since there are modifications in the python ChainflipPool
-
-# # Due to the difference in mappings between the python and the solidity we
-# # have added an assertion when positions don't exist (to not create it)
-# def test_fails_collectEmpty(createPoolMedium, accounts):
-#     print("Cannot collect a non-existent position")
-#     pool, minTick, maxTick, _, _, _ = createPoolMedium
-#     tryExceptHandler(
-#         pool.collect, "Position doesn't exist", accounts[0], minTick, maxTick, 0, 0
-#     )
-#     tryExceptHandler(
-#         pool.collect, "Position doesn't exist", accounts[0], minTick, maxTick, 1, 1
-#     )
-#     tryExceptHandler(pool.collect, "Position doesn't exist", accounts[0], 0, 0, 0, 0)
-
-
-# def test_collectEmpty_noPositionCreated_emptyPool(createPoolMedium, accounts):
-#     print(
-#         "Check that new positions are not created (reverts) when we collect an empty position"
-#     )
-#     pool, minTick, maxTick, _, _, _ = createPoolMedium
-#     assert pool.ticks == {}
-#     tryExceptHandler(
-#         pool.collect, "Position doesn't exist", accounts[0], minTick, maxTick, 0, 0
-#     )
-#     # Check that no position has been created
-#     assert pool.ticks == {}
+def test_notEnoughBalance_token1(initializedPoolSwapBalances, accounts):
+    print("swapper doesn't have enough token1")
+    pool, _, _, _, _ = initializedPoolSwapBalances
+    initialBalanceToken1 = accounts[2].balances[TEST_TOKENS[1]]
+    tryExceptHandler(
+        swapExact1For0,
+        "Insufficient balance",
+        pool,
+        accounts[2].balances[TEST_TOKENS[1]] + 1,
+        accounts[2],
+        None,
+    )
+    assert accounts[2].balances[TEST_TOKENS[1]] == initialBalanceToken1
 
 
-# def test_collectEmpty_noPositionCreated_initializedPool(
-#     mediumPoolInitializedAtZero, accounts
-# ):
-#     print(
-#         "Check that new positions are not created (reverts) when we collect an empty position"
-#     )
-#     pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
-#     initialTicks = pool.ticks
-#     tryExceptHandler(
-#         pool.collect, "Position doesn't exist", accounts[1], minTick, maxTick, 0, 0
-#     )
-#     # Check that no position has been created
-#     assert initialTicks == pool.ticks
+# Extra tests since there are modifications in the python ChainflipPool
+
+# Due to the difference in mappings between the python and the solidity we
+# have added an assertion when positions don't exist (to not create it)
+def test_fails_collectEmpty(createPoolMedium, accounts):
+    print("Cannot collect a non-existent position")
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[0],
+        pool.slot0.tick,
+        0,
+        0,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[0],
+        minTick,
+        1,
+        1,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[0],
+        maxTick,
+        1,
+        1,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[0],
+        0,
+        0,
+        0,
+    )
+
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[1],
+        pool.slot0.tick,
+        0,
+        0,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[1],
+        minTick,
+        1,
+        1,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[1],
+        maxTick,
+        1,
+        1,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[1],
+        0,
+        0,
+        0,
+    )
 
 
-# # Not allow burning >0 in a non-existent position
-# def test_burnGtZero_noPositionCreated_initializedPool(createPoolMedium, accounts):
-#     print(
-#         "test that burn > 0 a non-existent position doesn't create a new position(reverts)"
-#     )
-#     pool, minTick, maxTick, _, _, _ = createPoolMedium
-#     initialTicks = pool.ticks
-#     tryExceptHandler(
-#         pool.burn, "Position doesn't exist", accounts[1], minTick, maxTick, 1
-#     )
-#     assert initialTicks == pool.ticks
+def test_collectEmpty_noPositionCreated_emptyPool(createPoolMedium, accounts):
+    print(
+        "Check that new positions are not created (reverts) when we collect an empty position"
+    )
+    pool, _, _, _, _ = createPoolMedium
+    assert pool.ticksLinearTokens0 == {}
+    assert pool.ticksLinearTokens1 == {}
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[0],
+        pool.slot0.tick,
+        0,
+        0,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[1],
+        pool.slot0.tick,
+        0,
+        0,
+    )
+    # Check that no position has been created
+    assert pool.ticksLinearTokens0 == {}
+    assert pool.ticksLinearTokens1 == {}
 
 
-# # Allow burning zero in an existing position (poke) but make sure no new position is created if
-# # burn zero is done on a non-existent position
-# def test_burnZero_noPositionCreated_initializedPool(createPoolMedium, accounts):
-#     print(
-#         "test that burn zero (== poke) a non-existent position doesn't create a new position(reverts)"
-#     )
-#     pool, minTick, maxTick, _, _, _ = createPoolMedium
-#     initialTicks = pool.ticks
-#     tryExceptHandler(
-#         pool.burn,
-#         "Position doesn't exist",
-#         accounts[1],
-#         minTick,
-#         maxTick,
-#         0,
-#     )
-#     assert initialTicks == pool.ticks
+def test_collectEmpty_noPositionCreated_initializedPool(
+    mediumPoolInitializedAtZero, accounts
+):
+    print(
+        "Check that new positions are not created (reverts) when we collect an empty position"
+    )
+    pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
+    initialTicks0 = copy.deepcopy(pool.ticksLinearTokens0)
+    initialTicks1 = copy.deepcopy(pool.ticksLinearTokens1)
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[0],
+        minTick,
+        0,
+        0,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[0],
+        maxTick,
+        0,
+        0,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[1],
+        minTick,
+        0,
+        0,
+    )
+    tryExceptHandler(
+        pool.collectLinear,
+        "Position doesn't exist",
+        accounts[0],
+        TEST_TOKENS[1],
+        maxTick,
+        0,
+        0,
+    )
+    # Check that no position has been created
+    assert initialTicks0 == pool.ticksLinearTokens0
+    assert initialTicks1 == pool.ticksLinearTokens1
 
 
-### Own tests for limit orders
+# Not allow burning >0 in a non-existent position
+def test_burnGtZero_noPositionCreated_initializedPool(createPoolMedium, accounts):
+    print(
+        "test that burn > 0 a non-existent position doesn't create a new position(reverts)"
+    )
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    initialTicks = pool.ticks
+    tryExceptHandler(
+        pool.burnLimitOrder,
+        "Position doesn't exist",
+        TEST_TOKENS[0],
+        accounts[1],
+        minTick,
+        1,
+    )
+    tryExceptHandler(
+        pool.burnLimitOrder,
+        "Position doesn't exist",
+        TEST_TOKENS[1],
+        accounts[1],
+        maxTick,
+        1,
+    )
+
+    assert initialTicks == pool.ticks
+
+
+# Allow burning zero in an existing position (poke) but make sure no new position is created if
+# burn zero is done on a non-existent position
+def test_burnZero_noPositionCreated_initializedPool(createPoolMedium, accounts):
+    print(
+        "test that burn zero (== poke) a non-existent position doesn't create a new position(reverts)"
+    )
+    pool, minTick, maxTick, _, _ = createPoolMedium
+    initialTicks = pool.ticks
+    tryExceptHandler(
+        pool.burnLimitOrder,
+        "Position doesn't exist",
+        TEST_TOKENS[0],
+        accounts[1],
+        minTick,
+        0,
+    )
+    tryExceptHandler(
+        pool.burnLimitOrder,
+        "Position doesn't exist",
+        TEST_TOKENS[1],
+        accounts[1],
+        minTick,
+        0,
+    )
+    assert initialTicks == pool.ticks
+
+
+######################## Tests added for limit orders ####################################
 
 # Initial tick == -23028
 # Initially no LO
@@ -3012,9 +3159,53 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
     )
 
 
+def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
+    print("current orders on current tick")
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+    # Tick == 0
+    initick = pool.slot0.tick
+
+    assert pool.ticksLinearTokens0 == {}
+    assert pool.ticksLinearTokens1 == {}
+
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], initick, expandTo18Decimals(1))
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], initick, expandTo18Decimals(1))
+
+    tick0 = pool.ticksLinearTokens0[initick]
+    tick1 = pool.ticksLinearTokens1[initick]
+    assert tick0.liquidityGross == tick0.liquidityLeft == expandTo18Decimals(1)
+    assert tick1.liquidityGross == tick1.liquidityLeft == expandTo18Decimals(1)
+
+    # In one direction the limit order is taken
+    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
+
+    assert tick0.liquidityGross == expandTo18Decimals(1)
+    # Should be almost zero (since there are fees). Just checking that it has been used.
+    assert tick0.liquidityLeft < expandTo18Decimals(1)
+    assert tick1.liquidityGross == tick1.liquidityLeft == expandTo18Decimals(1)
+
+    # In the other direction it is not taken
+    (
+        _,
+        amount0,
+        amount1,
+        _,
+        _,
+        _,
+    ) = swapExact0For1(pool, expandTo18Decimals(1) // 10, accounts[0], None)
+
+    assert amount0 == 0
+    assert amount1 == 0
+
+    # Tick 0 not altered
+    assert tick0.liquidityGross == expandTo18Decimals(1)
+    assert tick0.liquidityLeft < expandTo18Decimals(1)
+    # Tick1 not used
+    assert tick1.liquidityGross == tick1.liquidityLeft == expandTo18Decimals(1)
+
+
 # TO continue:
 
-# Add test (very similar to initializeAtZeroTick fixture) testing that if we mint two positions on the current tick, in
-#     one direction it's used but not the other.
-# Write a test described in the paper (lack of range order but there is limit orders)
+# Write the test described in the sheet of paper - problem1 (lack of range order but there is limit orders)
+# Write the test described in the sheet of paper - problem2 (limit order placed beyond the current tick but that should become active)
 # Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine
