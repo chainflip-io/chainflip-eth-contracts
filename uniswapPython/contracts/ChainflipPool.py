@@ -360,7 +360,7 @@ class ChainflipPool(UniswapPool):
                     tickLinearInfo.amountSwappedInsideX128 += mulDiv(
                         stepLinear.amountOut,
                         FixedPoint128_Q128,
-                        tickLinearInfo.liquidityLeft,
+                        tickLinearInfo.liquidityGross,
                     )
 
                     # Update tick liquidity
