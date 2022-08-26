@@ -442,10 +442,10 @@ class ChainflipPool(UniswapPool):
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
 
             if not step.initialized:
-                # We know it's a border and we have no liquidity, so we rather just zero-swap until there
+                # We know it's a border and we have no liquidity, so instead of zero-swapping until there
+                # we just stop at the LO tick.
                 assert self.liquidity == 0
                 # if we have the next best LO
-                print("stepLinear", stepLinear)
                 if not stepLinear.initialized and stepLinear.tickNext != None:
                     if zeroForOne:
                         sqrtRatioTargetX96 = TickMath.getSqrtRatioAtTick(
@@ -456,10 +456,14 @@ class ChainflipPool(UniswapPool):
                             stepLinear.tickNext - 1
                         )
             else:
-                # We could set the TickMath.getSqrtRatioAtTick(stepLinear.tickNext) also as a limit price, so if we reach
-                # there by swapping a RO, we stop, jump to the LO, and then come back to the RO if needed. Otherwise, we
-                # can just leave it like this, so it will swap until the limit/next price. Then on a future swap, that LO
-                # will be able to be used. TODO: Explore this.
+                # Here the tickNext is not a border. We could use the TickMath.getSqrtRatioAtTick(stepLinear.tickNext)
+                # also as a limit price, so if we reach there by swapping a RO, we stop, jump to the LO, and then come back
+                # to the RO if needed. Otherwise, we can just leave it like this, so it will swap until the limit/next price.
+                # Then on a future swap, that LO will be able to be used. TODO: Explore this. I think the first option is
+                # better - we split the swap of range orders, but it can only happen when reaching a tick, so it won't be too often.
+                # NOTE: This is probably the same mechanism as if the tick is a border, so we probably don't need the
+                # if not step.initialized. For now just separating it for clarity and to make sure that the case above only
+                # happens when there is no liquidity.
 
                 ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted.
                 if zeroForOne:

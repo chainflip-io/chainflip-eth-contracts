@@ -3161,7 +3161,7 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
 
 def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
     print("current orders on current tick")
-    pool, minTick, maxTick, _, _ = initializedPoolMedium12TickSpacing
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
     # Tick == 0
     initick = pool.slot0.tick
 
@@ -3186,22 +3186,13 @@ def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
     assert tick0.liquidityLeft < expandTo18Decimals(1)
     assert tick1.liquidityGross == tick1.liquidityLeft == expandTo18Decimals(1)
 
-    print("------------SWAAAAPPPPING-----------")
     # In the other direction it is taken but not until the range orders don't change the
     # pool price
-    (
-        _,
-        amount0,
-        amount1,
-        _,
-        _,
-        _,
-    ) = swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-    print("amount0", amount0)
-    print("amount1", amount1)
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+
     assert initick != pool.slot0.tick
     # assert pool.slot0.tick == TickMath.MIN_TICK
-    assert pool.slot0.tick == -1
+    assert pool.slot0.tick == initick - 1
 
     # Tick 0 not altered
     assert tick0.liquidityGross == expandTo18Decimals(1)
