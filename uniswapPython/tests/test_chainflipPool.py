@@ -3191,7 +3191,7 @@ def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
 
     assert initick != pool.slot0.tick
-    # assert pool.slot0.tick == TickMath.MIN_TICK
+    # Not ending at the border (MIN_TICK) but rather going to the next best LO tick - 1
     assert pool.slot0.tick == initick - 1
 
     # Tick 0 not altered
@@ -3205,27 +3205,65 @@ def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
     assert tick0.liquidityLeft == tick1.liquidityLeft
 
 
-# def test_noRangeOrder_limitOrderWorsePrice(initializedPoolMedium12TickSpacing, accounts):
-#     print("current orders on current tick")
-#     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
-#     # Tick == 0
-#     initick = pool.slot0.tick
+def test_noRangeOrder_limitOrderWorsePrice_token0(
+    initializedPoolMedium12TickSpacing, accounts
+):
+    print("token0 LO worse than current price")
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
 
-#     assert pool.ticksLinearTokens0 == {}
-#     assert pool.ticksLinearTokens1 == {}
+    # Tick == 0
+    initick = pool.slot0.tick
+    tickLO = initick + pool.tickSpacing * 10
 
-#     pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], initick + pool.tickSpacing, expandTo18Decimals(1))
-#     #pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], initick, expandTo18Decimals(1))
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1))
 
-#     # In the current price we won't take the limit order, but we should be able to take it if there are no
-#     # range orders.
-#     print(swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None))
-#     print("pool.slot0.tick", pool.slot0.tick)
-#     assert False
+    tick0 = pool.ticksLinearTokens0[tickLO]
+    assert tick0.liquidityGross == tick0.liquidityLeft == expandTo18Decimals(1)
+
+    # In the other direction it is taken but not until the range orders don't change the
+    # pool price
+    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
+
+    assert initick != pool.slot0.tick
+    # Not ending at the border (MIN_TICK) but rather going to the next best LO tick - 1
+    assert pool.slot0.tick == tickLO
+
+    # Tick0 used
+    assert tick0.liquidityGross == expandTo18Decimals(1)
+    # Should be almost zero (since there are fees). Just checking that it has been used.
+    assert tick0.liquidityLeft < expandTo18Decimals(1)
+
+
+# For token1 similar test to test_limitOrder_currentTick
+def test_noRangeOrder_limitOrderWorsePrice_token1(
+    initializedPoolMedium12TickSpacing, accounts
+):
+    print("token1 LO worse than current price")
+    pool, _, _, _, _ = initializedPoolMedium12TickSpacing
+
+    # Tick == 0
+    initick = pool.slot0.tick
+    tickLO = initick - pool.tickSpacing * 10
+
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1))
+
+    tick1 = pool.ticksLinearTokens1[tickLO]
+    assert tick1.liquidityGross == tick1.liquidityLeft == expandTo18Decimals(1)
+
+    # In the other direction it is taken but not until the range orders don't change the
+    # pool price
+    swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
+
+    assert initick != pool.slot0.tick
+    # Not ending at the border (MIN_TICK) but rather going to the next best LO tick - 1
+    assert pool.slot0.tick == tickLO - 1
+
+    # Tick1 used
+    assert tick1.liquidityGross == expandTo18Decimals(1)
+    # Should be almost zero (since there are fees). Just checking that it has been used.
+    assert tick1.liquidityLeft < expandTo18Decimals(1)
 
 
 # TO continue:
 
-# Write the test described in the sheet of paper - problem1 (lack of range order but there is limit orders)
-# Write the test described in the sheet of paper - problem2 (limit order placed beyond the current tick but that should become active)
 # Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine

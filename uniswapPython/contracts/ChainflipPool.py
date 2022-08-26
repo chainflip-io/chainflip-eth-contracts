@@ -316,7 +316,7 @@ class ChainflipPool(UniswapPool):
             ######################################################
 
             # Probably we can do a simplified version of StepComputations
-            stepLinear = StepComputations(0, 0, False, 0, None, 0, 0)
+            stepLinear = StepComputations(0, None, False, 0, 0, 0, 0)
             stepLinear.sqrtPriceStartX96 = state.sqrtPriceX96
 
             # Just to not try finding a limit order if there aren't any
@@ -326,7 +326,7 @@ class ChainflipPool(UniswapPool):
                     state.keysLinearTicks, not zeroForOne, state.tick
                 )
 
-                print("Next tick: ", stepLinear.tickNext)
+                print("Next LIMIT order swapped tick: ", stepLinear.tickNext)
 
                 # If !initialized then there are no more linear ticks with liquidityLeft > 0 that we can swap for now
                 if stepLinear.initialized:
@@ -417,7 +417,7 @@ class ChainflipPool(UniswapPool):
                     if not tickCrossed:
                         # Health check - swap should be completed
                         assert state.amountSpecifiedRemaining == 0
-                        # Prevent from altering anythign in the range order pool
+                        # Prevent from altering anything in the range order pool
                         break
                     else:
                         # There might be another Limit order that is better than range orders
@@ -441,43 +441,40 @@ class ChainflipPool(UniswapPool):
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
 
+            # TODO: Remove this. Doing this just to understand more about when the pool tends towards the limit with
+            # no liquidity.  Regardless of whether this is a border or not, the same logic should apply.
             if not step.initialized:
                 # We know it's a border and we have no liquidity, so instead of zero-swapping until there
                 # we just stop at the LO tick.
                 assert self.liquidity == 0
-                # if we have the next best LO
-                if not stepLinear.initialized and stepLinear.tickNext != None:
-                    if zeroForOne:
-                        sqrtRatioTargetX96 = TickMath.getSqrtRatioAtTick(
-                            stepLinear.tickNext - 1
-                        )
-                    else:
-                        sqrtRatioTargetX96 = TickMath.getSqrtRatioAtTick(
-                            stepLinear.tickNext - 1
-                        )
-            else:
-                # Here the tickNext is not a border. We could use the TickMath.getSqrtRatioAtTick(stepLinear.tickNext)
-                # also as a limit price, so if we reach there by swapping a RO, we stop, jump to the LO, and then come back
-                # to the RO if needed. Otherwise, we can just leave it like this, so it will swap until the limit/next price.
-                # Then on a future swap, that LO will be able to be used. TODO: Explore this. I think the first option is
-                # better - we split the swap of range orders, but it can only happen when reaching a tick, so it won't be too often.
-                # NOTE: This is probably the same mechanism as if the tick is a border, so we probably don't need the
-                # if not step.initialized. For now just separating it for clarity and to make sure that the case above only
-                # happens when there is no liquidity.
 
-                ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted.
+            # If there is a "next best" LO, use the TickMath.getSqrtRatioAtTick(stepLinear.tickNext)
+            # also as a limit price, so if we reach there by swapping a RO, we stop, jump to the LO, and then come back
+            # to the RO if needed.
+            # This is because we can't know the RO final price, and it could be a lot worse than the LO price. We could also
+            # calculate the range order final price, compare it with the LO price, and then decide whether to swap the LO.
+            # TODO: Think about this.
+            if not stepLinear.initialized and stepLinear.tickNext != None:
                 if zeroForOne:
-                    sqrtRatioTargetX96 = (
-                        sqrtPriceLimitX96
-                        if step.sqrtPriceNextX96 < sqrtPriceLimitX96
-                        else step.sqrtPriceNextX96
-                    )
+                    # -1 so it takes that limit order
+                    nextLOatTick = stepLinear.tickNext - 1
+
                 else:
-                    sqrtRatioTargetX96 = (
-                        sqrtPriceLimitX96
-                        if step.sqrtPriceNextX96 > sqrtPriceLimitX96
-                        else step.sqrtPriceNextX96
-                    )
+                    nextLOatTick = stepLinear.tickNext
+
+                nextLOatPrice = TickMath.getSqrtRatioAtTick(nextLOatTick)
+            else:
+                nextLOatPrice = sqrtPriceLimitX96
+
+            ## compute values to swap to the target tick, price limit, or point where input#output amount is exhausted.
+            if zeroForOne:
+                sqrtRatioTargetX96 = max(
+                    sqrtPriceLimitX96, step.sqrtPriceNextX96, nextLOatPrice
+                )
+            else:
+                sqrtRatioTargetX96 = min(
+                    sqrtPriceLimitX96, step.sqrtPriceNextX96, nextLOatPrice
+                )
 
             (
                 state.sqrtPriceX96,
