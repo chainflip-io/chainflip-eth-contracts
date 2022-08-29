@@ -34,7 +34,7 @@ class TickInfoLinear:
     ## the total position liquidity that references this tick
     liquidityGross: int
 
-    # accoumlated percentatge of the pool swapped - relative meaning
+    # accomulated percentatge of the pool swapped - relative meaning
     amountPercSwappedInsideX128: int
 
     ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)

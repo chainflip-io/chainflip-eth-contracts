@@ -3705,7 +3705,52 @@ def test_burnPartiallySwapped_multipleSteps_oneForZero(
     )
 
 
-# TO continue:
+def test_mintOnSwappedPosition_zeroForOne(initializedMediumPoolNoLO, accounts):
+    print("mint on top of a swapped position/tick - zeroForOne")
+
+    (
+        pool,
+        tickLO,
+        priceLO,
+        amountToSwap,
+        amount1,
+        liquidityPosition,
+    ) = test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts)
+
+    pos = pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)]
+
+    poolCopy = copy.deepcopy(pool)
+
+    # Amount of swapped tokens that should be even if we mint orders on top
+    (_, _, _, amount0_0, amount1_0) = poolCopy.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], tickLO, liquidityPosition
+    )
+
+    print("liquidityPosition*1001", liquidityPosition)
+    print("amount0_0", amount0_0)
+    print("amount1_0", amount1_0)
+
+    # Mint on top of the previous position
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], tickLO, liquidityPosition * 1000)
+
+    # Burn small amount to check if now the entire position gets swapped by the percentatge
+    # swapped in the first swap
+    assert pos.liquidity == liquidityPosition * (1 + 1000)
+
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], tickLO, pos.liquidity
+    )
+
+    # Right now we get too much amount0 because part of the second mint is being swapped. As a result,
+    # we are getting too little amount1.
+    assert amount0_0 == amount0
+    assert amount1 == amount1_0 + liquidityPosition * 1000
+
+    assert False
+
+
+# To continue:
+
 
 # Minting on top of a partially swapped position will most likely not work now since amountSwappedInsideLastX128 is not updated on mint. Check if it works and fix?
-# Minting on top of a fully swapped tick won't work. To think how to handle it (force burn positions+tick, or other solution). For now asserting error.
+# Minting on top of a fully swapped tick won't work. To think how to handle it (force burn positions+tick, limit position amountPerc and continue >1, etc..). For now asserting error.

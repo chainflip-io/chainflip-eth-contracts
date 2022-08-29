@@ -195,10 +195,6 @@ def updateLinear(
         # the same math that is done in the burning, just without calculating liquidityLeftDelta and liquiditySwappedDelta.
 
     else:
-        # TODO: Does this still work if we only burn half the position?
-        # I don't think so - need to modify the self.amountPercSwappedInsideMintedX128
-        # accordingly or only allow the burning of the entire postion.
-
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
         # amountSwappedPrev in token base (self.liquidity)
@@ -206,13 +202,6 @@ def updateLinear(
         # amountPercSwappedInsideMintedX128 + (1-amountPercSwappedInsideMintedX128) * percSwapped = amountSwappedInsideX128
         # percSwapped = (amountSwappedInsideX128 - amountPercSwappedInsideMintedX128) / (1-amountPercSwappedInsideMintedX128)
         # totalAmountSwapped = percSwapped * self.liquidity
-        print(
-            "DIFF", amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
-        )
-        print(
-            "self.amountPercSwappedInsideMintedX128",
-            self.amountPercSwappedInsideMintedX128,
-        )
         amountSwappedPrev = mulDivRoundingUp(
             toUint256(
                 amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
