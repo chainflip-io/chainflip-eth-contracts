@@ -3058,14 +3058,17 @@ def test_mint_partialSwappedTick_oneForZero(initializedMediumPoolNoLO, accounts)
     return pool, tickLO, priceLO, amountToSwap, amount0, liquidityPosition
 
 
-
-def test_mint_fullSwappedTick_zeroForOne_diffAccount(initializedMediumPoolNoLO, accounts):
-    print("mint a new position with another account on top of a full-swapped tick zeroForOne and burn it")
+def test_mint_fullSwappedTick_zeroForOne_diffAccount(
+    initializedMediumPoolNoLO, accounts
+):
+    print(
+        "mint a new position with another account on top of a full-swapped tick zeroForOne and burn it"
+    )
     (
         pool,
-        tickLO, # fullySwapped
-        tickLO1, # partiallySwapped
-        initialLiquidity
+        tickLO,  # fullySwapped
+        tickLO1,  # partiallySwapped
+        initialLiquidity,
     ) = test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts)
 
     # Check that tickLO is fully swapped but not removed
@@ -3093,12 +3096,8 @@ def test_mint_fullSwappedTick_zeroForOne_diffAccount(initializedMediumPoolNoLO, 
     # This will fully swap the newly minted position and part of the backup LO1 position
     swapExact0For1(pool, amountToSwap, accounts[0], None)
     print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
-    print(pool.linearPositions[
-        getLimitPositionKey(accounts[0], tickLO, False)
-    ])        
-    print(pool.linearPositions[
-        getLimitPositionKey(accounts[1], tickLO, False)
-    ])    
+    print(pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)])
+    print(pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, False)])
 
     # Check that the newly minted pos and the old one return same amount of tokens and fees
     (
@@ -3142,13 +3141,6 @@ def test_mint_fullSwappedTick_zeroForOne_diffAccount(initializedMediumPoolNoLO, 
     # ].liquidity == expandTo18Decimals(1)
 
     # return pool, tickLO, priceLO, amountToSwap, amount1, liquidityPosition
-
-
-
-
-
-
-
 
 
 def test_burn_positionMintedAfterSwap_zeroForOne(initializedMediumPoolNoLO, accounts):
@@ -3368,4 +3360,3 @@ def test_noRangeOrder_limitOrderWorsePrice_token1(
 #        to mint on top (add liquidity), then burn all. Compare that to swap, burn (since the extra mint should not change anything)
 # Se
 # Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine
-

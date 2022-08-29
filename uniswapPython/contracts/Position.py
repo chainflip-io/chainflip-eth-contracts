@@ -191,10 +191,10 @@ def updateLinear(
     # the amount to burn for each token. This is because the burn is position dependant (not like
     # in Uniswap where it depends on the currentPrice)
     # if we are minting
-    # TODO: In the case of mint on top of an already existing position we must also somehow track 
-    # how much has been swapped until that point  aka update the amountSwappedInsideLastX128 accordingly. 
-    # One solution is to update amountSwappedInsideLastX128 with math that accounts for the already swapped 
-    # amounts, another solution could be to add a traker (tokensSwapped) that gets updated, similar to 
+    # TODO: In the case of mint on top of an already existing position we must also somehow track
+    # how much has been swapped until that point  aka update the amountSwappedInsideLastX128 accordingly.
+    # One solution is to update amountSwappedInsideLastX128 with math that accounts for the already swapped
+    # amounts, another solution could be to add a traker (tokensSwapped) that gets updated, similar to
     # currentPosition calculated.
     # TODO: However, there is already a problem before that when we mint two positions in the same tick with
     # a swap between. The amountSwappedInsideX128 breaks, doesn't work. We need to find a way to fix that.
