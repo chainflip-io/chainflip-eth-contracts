@@ -97,8 +97,8 @@ def test_substractUpperTick_ifBelow():
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
         tickMapping, -2, 2, 0, 15, 15
     )
-    feeGrowthInside0X128 == 13
-    feeGrowthInside1X128 == 12
+    assert feeGrowthInside0X128 == 13
+    assert feeGrowthInside1X128 == 12
 
 
 def test_substractLowerTick_ifAbove():
@@ -109,8 +109,8 @@ def test_substractLowerTick_ifAbove():
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
         tickMapping, -2, 2, 0, 15, 15
     )
-    feeGrowthInside0X128 == 13
-    feeGrowthInside1X128 == 12
+    assert feeGrowthInside0X128 == 13
+    assert feeGrowthInside1X128 == 12
 
 
 def test_substractUpperAndLower_ifInside():
@@ -123,8 +123,8 @@ def test_substractUpperAndLower_ifInside():
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
         tickMapping, -2, 2, 0, 15, 15
     )
-    feeGrowthInside0X128 == 9
-    feeGrowthInside1X128 == 11
+    assert feeGrowthInside0X128 == 9
+    assert feeGrowthInside1X128 == 11
 
 
 def test_overflow_insideTick():
@@ -139,8 +139,8 @@ def test_overflow_insideTick():
     (feeGrowthInside0X128, feeGrowthInside1X128) = Tick.getFeeGrowthInside(
         tickMapping, -2, 2, 0, 15, 15
     )
-    feeGrowthInside0X128 == 16
-    feeGrowthInside1X128 == 13
+    assert feeGrowthInside0X128 == 16
+    assert feeGrowthInside1X128 == 13
 
 
 # update
