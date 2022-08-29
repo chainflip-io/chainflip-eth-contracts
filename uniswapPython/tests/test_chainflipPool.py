@@ -3557,6 +3557,155 @@ def test_noRangeOrder_limitOrderWorsePrice_token1(
     assert tick1.liquidityLeft < expandTo18Decimals(1)
 
 
+def test_burnPartiallySwapped_multipleSteps_zeroForOne(
+    initializedMediumPoolNoLO, accounts
+):
+    print("burn partially swapped positions in multiple steps - zeroForOne")
+    (
+        pool,
+        tickLO,
+        priceLO,
+        amountToSwap,
+        amount1,
+        liquidityPosition,
+    ) = test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts)
+
+    poolCopy = copy.deepcopy(pool)
+
+    (_, _, amount, correctAmountBurnt0, correctAmountBurnt1) = poolCopy.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1)
+    )
+
+    tryExceptHandler(
+        poolCopy.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[1],
+        accounts[0],
+        tickLO,
+        1,
+    )
+
+    poolCopy2 = copy.deepcopy(pool)
+
+    (_, _, amount, amountBurnt0_0, amountBurnt1_0) = poolCopy2.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1) // 2
+    )
+
+    (_, _, amount, amountBurnt0_1, amountBurnt1_1) = poolCopy2.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1) // 2
+    )
+
+    # Small rounding error
+    assert correctAmountBurnt0 == amountBurnt0_0 + amountBurnt0_1 + 1
+    assert correctAmountBurnt1 == amountBurnt1_0 + amountBurnt1_1
+
+    tryExceptHandler(
+        poolCopy2.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[1],
+        accounts[0],
+        tickLO,
+        1,
+    )
+
+    amountBurnt0Accum = 0
+    amountBurnt1Accum = 0
+    for i in range(4):
+        (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+            TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1) // 4
+        )
+        amountBurnt0Accum += amountBurnt0
+        amountBurnt1Accum += amountBurnt1
+
+    # Small rounding error
+    assert correctAmountBurnt0 == amountBurnt0Accum + 12
+    assert correctAmountBurnt1 == amountBurnt1Accum + 2
+
+    tryExceptHandler(
+        poolCopy2.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[1],
+        accounts[0],
+        tickLO,
+        1,
+    )
+
+
+def test_burnPartiallySwapped_multipleSteps_oneForZero(
+    initializedMediumPoolNoLO, accounts
+):
+    print("burn partially swapped positions in multiple steps - oneForZero")
+    (
+        pool,
+        tickLO,
+        priceLO,
+        amountToSwap,
+        amount1,
+        liquidityPosition,
+    ) = test_swap1For0_partialSwap(initializedMediumPoolNoLO, accounts)
+
+    poolCopy = copy.deepcopy(pool)
+
+    (_, _, amount, correctAmountBurnt0, correctAmountBurnt1) = poolCopy.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)
+    )
+
+    tryExceptHandler(
+        poolCopy.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[0],
+        accounts[0],
+        tickLO,
+        1,
+    )
+
+    poolCopy2 = copy.deepcopy(pool)
+
+    (_, _, amount, amountBurnt0_0, amountBurnt1_0) = poolCopy2.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1) // 2
+    )
+
+    (_, _, amount, amountBurnt0_1, amountBurnt1_1) = poolCopy2.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1) // 2
+    )
+
+    # Small rounding error
+    assert correctAmountBurnt0 == amountBurnt0_0 + amountBurnt0_1
+    assert correctAmountBurnt1 == amountBurnt1_0 + amountBurnt1_1 + 1
+
+    tryExceptHandler(
+        poolCopy2.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[0],
+        accounts[0],
+        tickLO,
+        1,
+    )
+
+    amountBurnt0Accum = 0
+    amountBurnt1Accum = 0
+    for i in range(4):
+        (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+            TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1) // 4
+        )
+        amountBurnt0Accum += amountBurnt0
+        amountBurnt1Accum += amountBurnt1
+
+    # Small rounding error
+    assert correctAmountBurnt0 == amountBurnt0Accum + 2
+    assert correctAmountBurnt1 == amountBurnt1Accum + 1
+
+    tryExceptHandler(
+        poolCopy2.burnLimitOrder,
+        "LS",
+        TEST_TOKENS[0],
+        accounts[0],
+        tickLO,
+        1,
+    )
+
+
 # TO continue:
 
-# Minting on top of a fully swapped tick won't work. To think how to handle it (force burn positions+tick, or other solution)
+# Minting on top of a partially swapped position will most likely not work now since amountSwappedInsideLastX128 is not updated on mint. Check if it works and fix?
+# Minting on top of a fully swapped tick won't work. To think how to handle it (force burn positions+tick, or other solution). For now asserting error.

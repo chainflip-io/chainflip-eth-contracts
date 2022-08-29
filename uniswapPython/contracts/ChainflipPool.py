@@ -383,6 +383,10 @@ class ChainflipPool(UniswapPool):
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut
                     )
 
+                    # Health check
+                    if tickLinearInfo.amountPercSwappedInsideX128 == FixedPoint128_Q128:
+                        assert tickLinearInfo.liquidityLeft == 0
+
                     if tickCrossed:
                         # Health check
                         assert tickLinearInfo.liquidityLeft == 0

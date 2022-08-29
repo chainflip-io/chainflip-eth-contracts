@@ -28,8 +28,8 @@ class PositionInfo:
 class PositionLinearInfo:
     ## the amount of liquidity owned by this position in the token provided
     liquidity: int
-    ## amount swapped per unit of liquidity as of the last update to liquidity or amount swapped
-    amountPercSwappedInsideLastX128: int
+    ## percentatge swapped in the pool when the position was minted. Relative meaning.
+    amountPercSwappedInsideMintedX128: int
     ## the position owed to the position owner in token0#token1 => uint128
     # Since we can burn a position half swapped, we need both tokensOwed0 and tokensOwed1
     tokensOwed0: int
@@ -160,7 +160,7 @@ def updateLinear(
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
     if self == PositionLinearInfo(0, 0, 0, 0, 0):
-        self.amountPercSwappedInsideLastX128 = amountPercSwappedInsideX128
+        self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
         self.feegrowthInsideLastX128 = feeGrowthInsideX128
 
     if liquidityDelta == 0:
@@ -196,22 +196,29 @@ def updateLinear(
 
     else:
         # TODO: Does this still work if we only burn half the position?
-        # I don't think so - need to modify the self.amountPercSwappedInsideLastX128
+        # I don't think so - need to modify the self.amountPercSwappedInsideMintedX128
         # accordingly or only allow the burning of the entire postion.
 
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
         # amountSwappedPrev in token base (self.liquidity)
         # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
-        # amountPercSwappedInsideLastX128 + (1-amountPercSwappedInsideLastX128) * percSwapped = amountSwappedInsideX128
-        # percSwapped = (amountSwappedInsideX128 - amountPercSwappedInsideLastX128) / (1-amountPercSwappedInsideLastX128)
+        # amountPercSwappedInsideMintedX128 + (1-amountPercSwappedInsideMintedX128) * percSwapped = amountSwappedInsideX128
+        # percSwapped = (amountSwappedInsideX128 - amountPercSwappedInsideMintedX128) / (1-amountPercSwappedInsideMintedX128)
         # totalAmountSwapped = percSwapped * self.liquidity
+        print(
+            "DIFF", amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
+        )
+        print(
+            "self.amountPercSwappedInsideMintedX128",
+            self.amountPercSwappedInsideMintedX128,
+        )
         amountSwappedPrev = mulDivRoundingUp(
             toUint256(
-                amountPercSwappedInsideX128 - self.amountPercSwappedInsideLastX128
+                amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
             ),
             self.liquidity,
-            toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideLastX128),
+            toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
         )
 
         # Calculate current position ratio
@@ -230,8 +237,7 @@ def updateLinear(
                 currentPosition0 = amountSwappedPrev
             else:
                 currentPosition0 = mulDiv(amountSwappedPrev, 2**96, pricex96)
-        print("currentPosition0", currentPosition0)
-        print("currentPosition1", currentPosition1)
+
         ### Calculate the amount of liquidity that should be burnt from liquidityLeft and liquiditySwapped
 
         liquidityToRemove = abs(liquidityDelta)
@@ -256,8 +262,9 @@ def updateLinear(
         if currentPosition1 > MAX_UINT128:
             currentPosition1 = currentPosition1 & (2**128 - 1)
 
-        # Only update this if we have burned part or the whole position
-        self.amountSwappedInsideLastX128 = amountPercSwappedInsideX128
+        # No need to update this. We should update this when the position is fully burnt (1)
+        # but we can't burn more than that anyway, so no need to
+        # self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
 
         if isToken0:
             # Update position owed in their tokens
@@ -287,6 +294,8 @@ def updateLinear(
             self.tokensOwed1 += tokensOwed
         else:
             self.tokensOwed0 += tokensOwed
+
+    # TODO: Should we clear the position if it is fully swapped?
 
     # Returning liquiditySwappedDelta to return as a result of the burn function
     return liquidityLeftDelta, liquiditySwappedDelta
