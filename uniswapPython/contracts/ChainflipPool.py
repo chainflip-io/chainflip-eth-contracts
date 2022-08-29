@@ -116,7 +116,7 @@ class ChainflipPool(UniswapPool):
             ticksLinearMap = self.ticksLinearTokens1
 
         # Update Position before updating the tick because we need to calculate how the liquidityDelta
-        # translates to difference of liquidity (liquidityLeftDelta) when burning
+        # translates to difference of liquidity (liquidityLeftDelta) when burning.
         liquidityLeftDelta, liquiditySwappedDelta = Position.updateLinear(
             position,
             liquidityDelta,
@@ -358,18 +358,18 @@ class ChainflipPool(UniswapPool):
                     # Update the tick amountSwappedInsideLastX128 - For now we dont handle overflow (?)
                     # Using liquidityLeft before it has been updated
 
+                    # Health check
+                    assert (
+                        tickLinearInfo.amountPercSwappedInsideX128 < FixedPoint128_Q128
+                    )
+
                     # currentPercSwapped = amountSwapped / liquidityLeft
-                    # percSwapped = percSwapped + (1-percSwapped) * currentPercSwapped
                     currentPercSwapped128_Q128 = mulDiv(
                         stepLinear.amountOut,
                         FixedPoint128_Q128,
                         tickLinearInfo.liquidityLeft,
                     )
-
-                    # Health check
-                    assert (
-                        FixedPoint128_Q128 > tickLinearInfo.amountPercSwappedInsideX128
-                    )
+                    # tick.amountPercSwappedInsideX128 = percSwapped + (1-percSwapped) * currentPercSwapped128_Q128
                     tickLinearInfo.amountPercSwappedInsideX128 += mulDiv(
                         FixedPoint128_Q128 - tickLinearInfo.amountPercSwappedInsideX128,
                         currentPercSwapped128_Q128,

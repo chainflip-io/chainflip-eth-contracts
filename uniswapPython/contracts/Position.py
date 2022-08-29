@@ -190,18 +190,67 @@ def updateLinear(
     if liquidityDelta >= 0:
         liquidityLeftDelta = liquidityDelta
         liquiditySwappedDelta = 0
-        # TODO: Think about problem when minting on top of an already minted position (same POS, same owner, same tick)
-        # I think we can fix the math (update the position.amountSwappedInsideLastX128 accordingly). Might even be
-        # the same math that is done in the burning, just without calculating liquidityLeftDelta and liquiditySwappedDelta.
+        # If there has been any swap in this position before recompute the amountPercSwappedInsideX128. Only
+        # needed if there is a > 0 mint
+        if liquidityDelta > 0 and amountPercSwappedInsideX128 > self.amountPercSwappedInsideMintedX128:
+            amountSwappedPrev = mulDivRoundingUp(
+                toUint256(
+                    amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
+                ),
+                self.liquidity,
+                toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
+            )
+            # When burnt the next time, the calculation will be like explained below. So we need to modify the 
+            # self.amountPercSwappedInsideMintedX128 so with the new liquidity we get the same amount swapped.
 
+            # mulDivRoundingUp(
+            #           amountPercSwappedInsideX128 - X),
+            #           self.liquidity,
+            #           toUint256(FixedPoint128_Q128 - X),
+            # )  == mulDivRoundingUp(
+            #           amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128,
+            #           (self.liquidity + liquidityDelta),
+            #           toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
+            # )
+
+            # TODO: Polish this, also using mulDivRoundingUp or similar. Debug failing tests.
+            print("self.liquidity", self.liquidity)
+            print("liquidityNext", liquidityNext)
+
+            print("amountSwappedPrev", amountSwappedPrev)
+            print("amountPercSwappedInsideX128", amountPercSwappedInsideX128)
+            print("self.amountPercSwappedInsideMintedX128", self.amountPercSwappedInsideMintedX128)
+            result = ((liquidityNext * amountPercSwappedInsideX128) -  amountSwappedPrev * FixedPoint128_Q128)//(liquidityNext - amountSwappedPrev)
+            print("self.amountPercSwappedInsideMintedX128", self.amountPercSwappedInsideMintedX128)
+            print("result", self.amountPercSwappedInsideMintedX128 * FixedPoint128_Q128)
+            
+            debugAmount = mulDivRoundingUp(
+                toUint256(
+                    amountPercSwappedInsideX128 - result
+                ),
+                liquidityNext,
+                toUint256(FixedPoint128_Q128 - result),
+            )
+            print("debugAmount", debugAmount)
+
+            self.amountPercSwappedInsideMintedX128 = result
+            # Health check
+            assert self.amountPercSwappedInsideMintedX128 < amountPercSwappedInsideX128
+            
     else:
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
         # amountSwappedPrev in token base (self.liquidity)
         # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
-        # amountPercSwappedInsideMintedX128 + (1-amountPercSwappedInsideMintedX128) * percSwapped = amountSwappedInsideX128
-        # percSwapped = (amountSwappedInsideX128 - amountPercSwappedInsideMintedX128) / (1-amountPercSwappedInsideMintedX128)
-        # totalAmountSwapped = percSwapped * self.liquidity
+        # Current pool amountPercSwappedInsideX128 is adjusted so we need to reverse engineer it to get the positionn's swap%.
+        # We know in swap, the new amountPercSwappedInsideX128 gets calculated like this: 
+        # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
+        # We know that when the position was minted, amountPercSwappedInsideX128 == self.amountPercSwappedInsideMintedX128
+        # So we need to calculate the average % swapped in the tick after mint - will equate to currentPercSwap in the previous formula
+        # That should encapsulate the average of all swaps performed after that.
+        # amountPercSwappedInsideX128 = self.amountPercSwappedInsideMintedX128 + (1-self.amountPercSwappedInsideMintedX128) * percSwappedAfterMint
+        # percSwappedAfterMint = (amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128) / (1-self.amountPercSwappedInsideMintedX128)
+        # totalAmountSwapped = percSwappedAfterMint * self.liquidity
         amountSwappedPrev = mulDivRoundingUp(
             toUint256(
                 amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
