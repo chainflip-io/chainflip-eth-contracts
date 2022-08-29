@@ -121,7 +121,7 @@ class ChainflipPool(UniswapPool):
             position,
             liquidityDelta,
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLinearMap[tick].amountSwappedInsideX128
+            ticksLinearMap[tick].amountPercSwappedInsideX128
             if ticksLinearMap.__contains__(tick)
             else 0,
             token == self.token0,
@@ -357,10 +357,23 @@ class ChainflipPool(UniswapPool):
 
                     # Update the tick amountSwappedInsideLastX128 - For now we dont handle overflow (?)
                     # Using liquidityLeft before it has been updated
-                    tickLinearInfo.amountSwappedInsideX128 += mulDiv(
+
+                    # currentPercSwapped = amountSwapped / liquidityLeft
+                    # percSwapped = percSwapped + (1-percSwapped) * currentPercSwapped
+                    currentPercSwapped128_Q128 = mulDiv(
                         stepLinear.amountOut,
                         FixedPoint128_Q128,
-                        tickLinearInfo.liquidityGross,
+                        tickLinearInfo.liquidityLeft,
+                    )
+
+                    # Health check
+                    assert (
+                        FixedPoint128_Q128 > tickLinearInfo.amountPercSwappedInsideX128
+                    )
+                    tickLinearInfo.amountPercSwappedInsideX128 += mulDiv(
+                        FixedPoint128_Q128 - tickLinearInfo.amountPercSwappedInsideX128,
+                        currentPercSwapped128_Q128,
+                        FixedPoint128_Q128,
                     )
 
                     # Update tick liquidity

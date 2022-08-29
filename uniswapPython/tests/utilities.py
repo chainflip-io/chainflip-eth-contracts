@@ -34,8 +34,8 @@ class TickInfoLinear:
     ## the total position liquidity that references this tick
     liquidityGross: int
 
-    # amount swapped per unit of liquidity in this tick. Only has relative meaning, not absolute.
-    amountSwappedInsideX128: int
+    # amounted percentatge of the pool swapped
+    amountPercSwappedInsideX128: int
 
     ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
     ## only has relative meaning, not absolute — the value depends on when the tick is initialized.
@@ -440,10 +440,10 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
 ):
     token = TEST_TOKENS[1] if zeroForOne else TEST_TOKENS[0]
 
-    # Update fees
-    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
-        token, owner, tickLO, 0
-    )
+    # # Update fees
+    # (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+    #     token, owner, tickLO, 0
+    # )
     (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
         token, owner, tickLO, amountToBurn
     )
@@ -451,7 +451,7 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
 
     if zeroForOne:
         # Should be >== amountRemainingLessFee . not == due to rounding ( < 10^-10 difference)
-        # TODO: Try it so it becomes ==?
+        # TODO: Try it so it becomes ==?. E.g. getting the fees after the poking
         assert amountBurnt0 >= mulDiv(abs(amountSwapped), 2**96, priceLO)
         if tickToBeCleared:
             assert not pool.ticksLinearTokens1.__contains__(tickLO)

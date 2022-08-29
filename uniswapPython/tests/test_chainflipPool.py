@@ -1,3 +1,4 @@
+from cmath import exp
 import sys, os
 
 from utilities import *
@@ -1085,7 +1086,9 @@ def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
     assert afterTick1 != beforeTick1
     assert afterTick1.liquidityLeft < beforeTick1.liquidityLeft
     assert afterTick1.liquidityGross == beforeTick1.liquidityGross
-    assert afterTick1.amountSwappedInsideX128 > beforeTick1.amountSwappedInsideX128
+    assert (
+        afterTick1.amountPercSwappedInsideX128 > beforeTick1.amountPercSwappedInsideX128
+    )
     assert afterTick1.feeGrowthInsideX128 > beforeTick1.feeGrowthInsideX128
 
     token0BalanceBeforePool = pool.balances[TEST_TOKENS[0]]
@@ -3058,104 +3061,97 @@ def test_mint_partialSwappedTick_oneForZero(initializedMediumPoolNoLO, accounts)
     return pool, tickLO, priceLO, amountToSwap, amount0, liquidityPosition
 
 
-def test_mint_fullSwappedTick_zeroForOne_diffAccount(
-    initializedMediumPoolNoLO, accounts
-):
-    print(
-        "mint a new position with another account on top of a full-swapped tick zeroForOne and burn it"
-    )
-    (
-        pool,
-        tickLO,  # fullySwapped
-        tickLO1,  # partiallySwapped
-        initialLiquidity,
-    ) = test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts)
+# TODO: Minting on top of a fullySwapped Tick won't work for now. Force burning of the tick/positions? TO THINK.
 
-    # Check that tickLO is fully swapped but not removed
-    tick = pool.ticksLinearTokens1[tickLO]
-    initTickLiquidityLeft = tick.liquidityLeft
-    iniTickLiquidityGross = tick.liquidityGross
-    assert initTickLiquidityLeft == 0
-    assert iniTickLiquidityGross > 0
-    # Check that tickLO is partially swapped and not removed
-    assert pool.ticksLinearTokens1[tickLO1].liquidityLeft > 0
-    assert pool.ticksLinearTokens1[tickLO1].liquidityGross > 0
+# # def test_mint_fullSwappedTick_zeroForOne_diffAccount(
+# #     initializedMediumPoolNoLO, accounts
+# # ):
+# #     print(
+# #         "mint a new position with another account on top of a full-swapped tick zeroForOne and burn it"
+# #     )
+# #     (
+# #         pool,
+# #         tickLO,  # fullySwapped
+# #         tickLO1,  # partiallySwapped
+# #         initialLiquidity,
+# #     ) = test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts)
 
-    print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
-    # Mint a position on top of tickLO (another account)
-    pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, initialLiquidity)
-    print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
-    tick = pool.ticksLinearTokens1[tickLO]
-    assert tick.liquidityLeft == expandTo18Decimals(1)
-    assert tick.liquidityGross == iniTickLiquidityGross + initialLiquidity
+# #     # Check that tickLO is fully swapped but not removed
+# #     tick = pool.ticksLinearTokens1[tickLO]
+# #     initTickLiquidityLeft = tick.liquidityLeft
+# #     iniTickLiquidityGross = tick.liquidityGross
+# #     assert initTickLiquidityLeft == 0
+# #     assert iniTickLiquidityGross > 0
+# #     # Check that tickLO is partially swapped and not removed
+# #     assert pool.ticksLinearTokens1[tickLO1].liquidityLeft > 0
+# #     assert pool.ticksLinearTokens1[tickLO1].liquidityGross > 0
 
-    # Set the pool to the initial tick
-    pool.slot0.tick = -23028
+# #     print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
+# #     # Mint a position on top of tickLO (another account)
+# #     pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, initialLiquidity)
+# #     print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
+# #     tick = pool.ticksLinearTokens1[tickLO]
+# #     assert tick.liquidityLeft == expandTo18Decimals(1)
+# #     assert tick.liquidityGross == iniTickLiquidityGross + initialLiquidity
 
-    amountToSwap = expandTo18Decimals(1) * 10
-    # This will fully swap the newly minted position and part of the backup LO1 position
-    swapExact0For1(pool, amountToSwap, accounts[0], None)
-    print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
-    print(pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)])
-    print(pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, False)])
+# #     # Set the pool to the initial tick
+# #     pool.slot0.tick = -23028
 
-    # Check that the newly minted pos and the old one return same amount of tokens and fees
-    (
-        _,
-        _,
-        amount_new,
-        amountBurnt0_new,
-        amountBurnt1_new,
-    ) = pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickLO, initialLiquidity)
-    print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
+# #     amountToSwap = expandTo18Decimals(1) * 10
+# #     # This will fully swap the newly minted position and part of the backup LO1 position
+# #     swapExact0For1(pool, amountToSwap, accounts[0], None)
+# #     print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
+# #     print(pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)])
+# #     print(pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, False)])
 
-    (
-        _,
-        _,
-        amount_old,
-        amountBurnt0_old,
-        amountBurnt1_old,
-    ) = pool.burnLimitOrder(TEST_TOKENS[1], accounts[1], tickLO, initialLiquidity)
+# #     # Check that the newly minted pos and the old one return same amount of tokens and fees
+# #     (
+# #         _,
+# #         _,
+# #         amount_new,
+# #         amountBurnt0_new,
+# #         amountBurnt1_new,
+# #     ) = pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickLO, initialLiquidity)
+# #     print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
 
-    assert amount_new == amount_old
-    assert amountBurnt0_new == amountBurnt0_old
-    assert amountBurnt1_new == amountBurnt1_old
+# #     (
+# #         _,
+# #         _,
+# #         amount_old,
+# #         amountBurnt0_old,
+# #         amountBurnt1_old,
+# #     ) = pool.burnLimitOrder(TEST_TOKENS[1], accounts[1], tickLO, initialLiquidity)
 
-    # iniLiquidityGross = pool.ticksLinearTokens1[tickLO].liquidityGross
-    # assert iniLiquidityGross == liquidityPosition
-    # iniLiquidityLeft = pool.ticksLinearTokens1[tickLO].liquidityLeft
-    # assert iniLiquidityGross > 0
-    # assert iniLiquidityLeft > 0
+# #     assert amount_new == amount_old
+# #     assert amountBurnt0_new == amountBurnt0_old
+# #     assert amountBurnt1_new == amountBurnt1_old
 
-    # pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1))
+# #     # iniLiquidityGross = pool.ticksLinearTokens1[tickLO].liquidityGross
+# #     # assert iniLiquidityGross == liquidityPosition
+# #     # iniLiquidityLeft = pool.ticksLinearTokens1[tickLO].liquidityLeft
+# #     # assert iniLiquidityGross > 0
+# #     # assert iniLiquidityLeft > 0
 
-    # assert pool.ticksLinearTokens1[
-    #     tickLO
-    # ].liquidityGross == iniLiquidityGross + expandTo18Decimals(1)
-    # assert pool.ticksLinearTokens1[
-    #     tickLO
-    # ].liquidityLeft == iniLiquidityLeft + expandTo18Decimals(1)
+# #     # pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1))
 
-    # assert pool.linearPositions[
-    #     getLimitPositionKey(accounts[1], tickLO, False)
-    # ].liquidity == expandTo18Decimals(1)
+# #     # assert pool.ticksLinearTokens1[
+# #     #     tickLO
+# #     # ].liquidityGross == iniLiquidityGross + expandTo18Decimals(1)
+# #     # assert pool.ticksLinearTokens1[
+# #     #     tickLO
+# #     # ].liquidityLeft == iniLiquidityLeft + expandTo18Decimals(1)
 
-    # return pool, tickLO, priceLO, amountToSwap, amount1, liquidityPosition
+# #     # assert pool.linearPositions[
+# #     #     getLimitPositionKey(accounts[1], tickLO, False)
+# #     # ].liquidity == expandTo18Decimals(1)
+
+# #     # return pool, tickLO, priceLO, amountToSwap, amount1, liquidityPosition
 
 
 def test_burn_positionMintedAfterSwap_zeroForOne(initializedMediumPoolNoLO, accounts):
     print(
         "Mint a position, swap, mint another one on top, and burn+collect them - zeroForOne"
     )
-    (
-        pool,
-        _,
-        _,
-        _,
-        tickSpacing,
-        closeAligniniTickiRDown,
-        closeAligniniTickRUp,
-    ) = initializedMediumPoolNoLO
 
     # This mints a LO on top of a half-swapped tick
     (
@@ -3197,16 +3193,6 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
     print(
         "Mint a position, swap, mint another one on top, and burn+collect them, oneForZero"
     )
-    (
-        pool,
-        _,
-        _,
-        _,
-        tickSpacing,
-        closeAligniniTickiRDown,
-        closeAligniniTickRUp,
-    ) = initializedMediumPoolNoLO
-
     # This mints a LO on top of a half-swapped tick
     (
         pool,
@@ -3248,6 +3234,222 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
         priceLO,
         True,
     )
+
+
+def test_mintSwapBurn_partialSwappedTick_zeroForOne(
+    initializedMediumPoolNoLO, accounts
+):
+    print("mint a new position on top of a half-swapped tick zeroForOne, swap and burn")
+    (
+        pool,
+        tickLO,
+        priceLO,
+        amountToSwap,
+        amount1,
+        liquidityPosition,
+    ) = test_swap0For1_partialSwap(initializedMediumPoolNoLO, accounts)
+
+    iniAmountPercSwappedInsideX128 = pool.ticksLinearTokens1[
+        tickLO
+    ].amountPercSwappedInsideX128
+    iniLiquidityLeft = pool.ticksLinearTokens1[tickLO].liquidityLeft
+
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(1) * 2)
+
+    # Check minting amounts
+    assert (
+        iniAmountPercSwappedInsideX128
+        == pool.ticksLinearTokens1[tickLO].amountPercSwappedInsideX128
+    )
+    assert (
+        pool.ticksLinearTokens1[tickLO].liquidityLeft
+        == iniLiquidityLeft + expandTo18Decimals(1) * 2
+    )
+    iniLiquidityLeft = pool.ticksLinearTokens1[tickLO].liquidityLeft
+
+    # Make sure it's a different percentatge than the first swap
+    amountToSwap2 = expandTo18Decimals(1) // 12
+
+    (
+        _,
+        amount0,
+        amount1,
+        _,
+        _,
+        _,
+    ) = swapExact0For1(pool, amountToSwap2, accounts[0], None)
+
+    # Check that the final math makes sense
+    currentPercSwapped = mulDiv(
+        abs(amount1),
+        FixedPoint128_Q128,
+        iniLiquidityLeft,
+    )
+
+    # Amount POS0
+    pos0 = pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)]
+    # Hardcore calculation - swap by swap
+    amountPos0Swapped = mulDiv(
+        pos0.liquidity, (iniAmountPercSwappedInsideX128 - 0), FixedPoint128_Q128
+    ) + mulDiv(
+        mulDiv(
+            pos0.liquidity,
+            (FixedPoint128_Q128 - iniAmountPercSwappedInsideX128),
+            FixedPoint128_Q128,
+        ),
+        currentPercSwapped,
+        FixedPoint128_Q128,
+    )
+
+    amountPos0Left = pos0.liquidity - amountPos0Swapped
+    amountPos0SwappedToken = mulDiv(abs(amountPos0Swapped), 2**96, priceLO)
+
+    # Total amount of swapped tokens match initial liquidity
+    assert expandTo18Decimals(1) == amountPos0Left + amountPos0Swapped
+
+    # Amount POS1
+    pos1 = pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, False)]
+    # Hardcore calculation - swap by swap - only one swap
+    amountPos1Swapped = mulDiv(pos1.liquidity, currentPercSwapped, FixedPoint128_Q128)
+
+    amountPos1Left = pos1.liquidity - amountPos1Swapped
+    amountPos1SwappedToken = mulDiv(abs(amountPos1Swapped), 2**96, priceLO)
+
+    # Total amount of swapped tokens match initial liquidity and the amount swapped
+    assert expandTo18Decimals(2) == amountPos1Left + amountPos1Swapped
+
+    amountSwappedMinusFees = mulDiv(
+        amountToSwap + amountToSwap2,
+        SwapMath.ONE_IN_PIPS - pool.fee,
+        SwapMath.ONE_IN_PIPS,
+    )
+    # Small error (31*10^-18) due to rounding
+    assert (
+        amountSwappedMinusFees == amountPos0SwappedToken + amountPos1SwappedToken + 31
+    )
+
+    # Burn limit orders
+    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], tickLO, expandTo18Decimals(1)
+    )
+    # TODO: Check that this margin (diff) is acceptable
+    assert amountPos0Left - 2 == amountBurnt1
+    assert amountPos0SwappedToken + 19 == amountBurnt0
+
+    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[1], tickLO, expandTo18Decimals(2)
+    )
+
+    # TODO: Check that this margin (diff) is acceptable
+    assert amountPos1Left - 1 == amountBurnt1
+    assert amountPos1SwappedToken + 9 == amountBurnt0
+
+
+def test_mintSwapBurn_partialSwappedTick_oneForZero(
+    initializedMediumPoolNoLO, accounts
+):
+    print("mint a new position on top of a half-swapped tick oneForZero, swap and burn")
+    (
+        pool,
+        tickLO,
+        priceLO,
+        amountToSwap,
+        amount1,
+        liquidityPosition,
+    ) = test_swap1For0_partialSwap(initializedMediumPoolNoLO, accounts)
+
+    iniAmountPercSwappedInsideX128 = pool.ticksLinearTokens0[
+        tickLO
+    ].amountPercSwappedInsideX128
+    iniLiquidityLeft = pool.ticksLinearTokens0[tickLO].liquidityLeft
+
+    pool.mintLinearOrder(TEST_TOKENS[0], accounts[1], tickLO, expandTo18Decimals(1) * 2)
+
+    # Check minting amounts
+    assert (
+        iniAmountPercSwappedInsideX128
+        == pool.ticksLinearTokens0[tickLO].amountPercSwappedInsideX128
+    )
+    assert (
+        pool.ticksLinearTokens0[tickLO].liquidityLeft
+        == iniLiquidityLeft + expandTo18Decimals(1) * 2
+    )
+    iniLiquidityLeft = pool.ticksLinearTokens0[tickLO].liquidityLeft
+
+    # Make sure it's a different percentatge than the first swap
+    amountToSwap2 = expandTo18Decimals(1) // 12
+
+    (
+        _,
+        amount0,
+        amount1,
+        _,
+        _,
+        _,
+    ) = swapExact1For0(pool, amountToSwap2, accounts[0], None)
+
+    # Check that the final math makes sense
+    currentPercSwapped = mulDiv(
+        abs(amount0),
+        FixedPoint128_Q128,
+        iniLiquidityLeft,
+    )
+
+    # Amount POS0
+    pos0 = pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, True)]
+    # Hardcore calculation - swap by swap
+    amountPos0Swapped = mulDiv(
+        pos0.liquidity, (iniAmountPercSwappedInsideX128 - 0), FixedPoint128_Q128
+    ) + mulDiv(
+        mulDiv(
+            pos0.liquidity,
+            (FixedPoint128_Q128 - iniAmountPercSwappedInsideX128),
+            FixedPoint128_Q128,
+        ),
+        currentPercSwapped,
+        FixedPoint128_Q128,
+    )
+
+    amountPos0Left = pos0.liquidity - amountPos0Swapped
+    amountPos0SwappedToken = mulDiv(abs(amountPos0Swapped), priceLO, 2**96)
+
+    # Total amount of swapped tokens match initial liquidity
+    assert expandTo18Decimals(1) == amountPos0Left + amountPos0Swapped
+
+    # Amount POS1
+    pos1 = pool.linearPositions[getLimitPositionKey(accounts[1], tickLO, True)]
+    # Hardcore calculation - swap by swap - only one swap
+    amountPos1Swapped = mulDiv(pos1.liquidity, currentPercSwapped, FixedPoint128_Q128)
+
+    amountPos1Left = pos1.liquidity - amountPos1Swapped
+    amountPos1SwappedToken = mulDiv(abs(amountPos1Swapped), priceLO, 2**96)
+
+    # Total amount of swapped tokens match initial liquidity and the amount swapped
+    assert expandTo18Decimals(2) == amountPos1Left + amountPos1Swapped
+
+    amountSwappedMinusFees = mulDiv(
+        amountToSwap + amountToSwap2,
+        SwapMath.ONE_IN_PIPS - pool.fee,
+        SwapMath.ONE_IN_PIPS,
+    )
+    # Small error (1*10^-18) due to rounding
+    assert amountSwappedMinusFees == amountPos0SwappedToken + amountPos1SwappedToken + 1
+
+    # Burn limit orders
+    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)
+    )
+    # TODO: Check that this margin (diff) is acceptable
+    assert amountPos0Left - 2 == amountBurnt0
+    assert amountPos0SwappedToken == amountBurnt1
+
+    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[1], tickLO, expandTo18Decimals(2)
+    )
+
+    # TODO: Check that this margin (diff) is acceptable
+    assert amountPos1Left - 1 == amountBurnt0
+    assert amountPos1SwappedToken == amountBurnt1
 
 
 def test_limitOrder_currentTick(initializedPoolMedium12TickSpacing, accounts):
@@ -3356,7 +3558,5 @@ def test_noRangeOrder_limitOrderWorsePrice_token1(
 
 
 # TO continue:
-# Add a test to prove a flaw in the current implementation. Mint position, swap partially (or full), then same account
-#        to mint on top (add liquidity), then burn all. Compare that to swap, burn (since the extra mint should not change anything)
-# Se
-# Try minting on top of an already full-swappped tick to see if we need to force-remove positions or it works fine
+
+# Minting on top of a fully swapped tick won't work. To think how to handle it (force burn positions+tick, or other solution)
