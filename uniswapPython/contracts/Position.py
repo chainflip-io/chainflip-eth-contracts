@@ -94,7 +94,7 @@ def assertLimitPositionExists(self, owner, tick, isToken0):
 ### @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
 def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
     checkInputTypes(
-        int128=(liquidityDelta), uin256=(feeGrowthInside0X128, feeGrowthInside1X128)
+        int128=(liquidityDelta), uint256=(feeGrowthInside0X128, feeGrowthInside1X128)
     )
 
     if liquidityDelta == 0:
@@ -149,11 +149,8 @@ def updateLinear(
     feeGrowthInsideX128,
 ):
     checkInputTypes(
-        int128=(
-            liquidityDelta
-            # uin256=(feeGrowthInsideX128)
-        ),
-        uint256=(amountPercSwappedInsideX128),
+        int128=(liquidityDelta),
+        uint256=(feeGrowthInsideX128, amountPercSwappedInsideX128, pricex96),
         bool=(isToken0),
     )
 
@@ -228,6 +225,7 @@ def updateLinear(
             # max amount swapped including new liquidity.
             # NOTE: it is possible that this becomes negative if the amount minted is extremely small (< 10-12) due to rounding errors.
             # In this cases it will revert anyway.
+            # TODO: Alastair mentioned this potentially being able to be calculated in a simpler way. To discuss.
 
             newPercSwappedMintX128 = divRoundingUp(
                 (liquidityNext * amountPercSwappedInsideX128)

@@ -369,7 +369,7 @@ class ChainflipPool(UniswapPool):
                         FixedPoint128_Q128,
                         tickLinearInfo.liquidityLeft,
                     )
-                    # tick.amountPercSwappedInsideX128 = percSwapped + (1-percSwapped) * currentPercSwapped128_Q128
+                    # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
                     tickLinearInfo.amountPercSwappedInsideX128 += mulDiv(
                         FixedPoint128_Q128 - tickLinearInfo.amountPercSwappedInsideX128,
                         currentPercSwapped128_Q128,
@@ -391,9 +391,8 @@ class ChainflipPool(UniswapPool):
                         # Health check
                         assert tickLinearInfo.liquidityLeft == 0
                         # TODO: Remove all positions in that tick?
-                        # I'm not even sure it's necessary in this setup. They won't be swapped again
-                        # since we handle crossed ticks. And they are not range orders so they won't
-                        # be crossed in the opposite direction. We can maybe wait for users to remove them.
+                        # They won't be swapped again since it's not range orders. However, the problem
+                        # is that they will continue accruing fees (since fees are a function of liqGross).
 
                     if exactInput:
                         state.amountSpecifiedRemaining -= (

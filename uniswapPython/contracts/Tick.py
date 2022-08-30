@@ -147,7 +147,7 @@ def updateLinear(
     checkInputTypes(
         dict=self,
         int24=(tick),
-        int128=(liquidityDelta),
+        int128=(liquidityDelta, liquidityLeftDelta),
         # uint256=(feeGrowthGlobalX128),
         # bool=(isToken0),
         uint128=maxLiquidity,
