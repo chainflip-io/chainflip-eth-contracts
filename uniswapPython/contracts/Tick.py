@@ -160,8 +160,8 @@ def updateLinear(
 
     info = self[tick]
 
-    if liquidityDelta > 0 and info.amountPercSwappedInsideX128 == FixedPoint128_Q128:
-        assert False, "Can't handle adding liquidity to an already swapped Tick for now"
+    # if liquidityDelta > 0 and info.amountPercSwappedInsideX128 == FixedPoint128_Q128:
+    #     assert False, "Can't handle adding liquidity to an already swapped Tick for now"
 
     liquidityGrossBefore = info.liquidityGross
     liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)

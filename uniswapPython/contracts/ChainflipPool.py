@@ -359,9 +359,9 @@ class ChainflipPool(UniswapPool):
                     # Using liquidityLeft before it has been updated
 
                     # Health check
-                    assert (
-                        tickLinearInfo.amountPercSwappedInsideX128 < FixedPoint128_Q128
-                    )
+                    # assert (
+                    #     tickLinearInfo.amountPercSwappedInsideX128 < FixedPoint128_Q128
+                    # )
 
                     # currentPercSwapped = amountSwapped / liquidityLeft
                     currentPercSwapped128_Q128 = mulDiv(
@@ -369,13 +369,17 @@ class ChainflipPool(UniswapPool):
                         FixedPoint128_Q128,
                         tickLinearInfo.liquidityLeft,
                     )
+                    
+                    intNumber = tickLinearInfo.amountPercSwappedInsideX128 // FixedPoint128_Q128
+                    closestIntFullSwap = (intNumber + 1) * FixedPoint128_Q128
+
                     # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
                     tickLinearInfo.amountPercSwappedInsideX128 += mulDiv(
-                        FixedPoint128_Q128 - tickLinearInfo.amountPercSwappedInsideX128,
+                        closestIntFullSwap - tickLinearInfo.amountPercSwappedInsideX128,
                         currentPercSwapped128_Q128,
                         FixedPoint128_Q128,
                     )
-
+                    
                     # Update tick liquidity
                     ## Health check
                     assert stepLinear.amountOut > 0

@@ -253,12 +253,17 @@ def updateLinear(
         # amountPercSwappedInsideX128 = self.amountPercSwappedInsideMintedX128 + (1-self.amountPercSwappedInsideMintedX128) * percSwappedAfterMint
         # percSwappedAfterMint = (amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128) / (1-self.amountPercSwappedInsideMintedX128)
         # totalAmountSwapped = percSwappedAfterMint * self.liquidity
+        intNumber = self.amountPercSwappedInsideMintedX128 // FixedPoint128_Q128
+        amountPercSwappedInsideX128_max = (intNumber + 1) * FixedPoint128_Q128
+
+        amountPercSwappedInsideX128_util = min(amountPercSwappedInsideX128_max,amountPercSwappedInsideX128) 
+
         amountSwappedPrev = mulDivRoundingUp(
             toUint256(
-                amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
+                amountPercSwappedInsideX128_util - self.amountPercSwappedInsideMintedX128
             ),
             self.liquidity,
-            toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
+            toUint256(amountPercSwappedInsideX128_max - self.amountPercSwappedInsideMintedX128),
         )
 
         # Calculate current position ratio
