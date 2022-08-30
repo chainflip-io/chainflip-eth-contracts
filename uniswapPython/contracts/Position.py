@@ -190,9 +190,12 @@ def updateLinear(
     if liquidityDelta >= 0:
         liquidityLeftDelta = liquidityDelta
         liquiditySwappedDelta = 0
-        # If there has been any swap in this position before recompute the amountPercSwappedInsideX128. Only
-        # needed if there is a > 0 mint
-        if liquidityDelta > 0 and amountPercSwappedInsideX128 > self.amountPercSwappedInsideMintedX128:
+        # If there has been any swap in this position before this added mint, recompute the amountPercSwappedInsideX128. Only
+        # needed if there is a > 0 mint.
+        if (
+            liquidityDelta > 0
+            and amountPercSwappedInsideX128 > self.amountPercSwappedInsideMintedX128
+        ):
             amountSwappedPrev = mulDivRoundingUp(
                 toUint256(
                     amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
@@ -200,50 +203,51 @@ def updateLinear(
                 self.liquidity,
                 toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
             )
-            # When burnt the next time, the calculation will be like explained below. So we need to modify the 
+            # When burnt the next time, the calculation will be like explained below. So we need to modify the
             # self.amountPercSwappedInsideMintedX128 so with the new liquidity we get the same amount swapped.
 
-            # mulDivRoundingUp(
-            #           amountPercSwappedInsideX128 - X),
+            # amountSwappedPrev = mulDivRoundingUp(
+            #           amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128),
             #           self.liquidity,
-            #           toUint256(FixedPoint128_Q128 - X),
-            # )  == mulDivRoundingUp(
-            #           amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128,
-            #           (self.liquidity + liquidityDelta),
             #           toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
+            # )  == mulDivRoundingUp(
+            #           amountPercSwappedInsideX128 - X,
+            #           liquidityNext,
+            #           FixedPoint128_Q128 - X,
             # )
 
-            # TODO: Polish this, also using mulDivRoundingUp or similar. Debug failing tests.
-            print("self.liquidity", self.liquidity)
-            print("liquidityNext", liquidityNext)
+            # Resolving for X ( X === newly minted percentatge to be stored in the postion -> self.amountPercSwappedInsideMintedX128)
+            # X = ((liquidityNext * amountPercSwappedInsideX128) -  (amountSwappedPrev * FixedPoint128_Q128))/(liquidityNext - amountSwappedPrev)
 
-            print("amountSwappedPrev", amountSwappedPrev)
-            print("amountPercSwappedInsideX128", amountPercSwappedInsideX128)
-            print("self.amountPercSwappedInsideMintedX128", self.amountPercSwappedInsideMintedX128)
-            result = ((liquidityNext * amountPercSwappedInsideX128) -  amountSwappedPrev * FixedPoint128_Q128)//(liquidityNext - amountSwappedPrev)
-            print("self.amountPercSwappedInsideMintedX128", self.amountPercSwappedInsideMintedX128)
-            print("result", self.amountPercSwappedInsideMintedX128 * FixedPoint128_Q128)
-            
-            debugAmount = mulDivRoundingUp(
-                toUint256(
-                    amountPercSwappedInsideX128 - result
-                ),
-                liquidityNext,
-                toUint256(FixedPoint128_Q128 - result),
+            # Denonimator cannot be <=0 given that:
+            # liquidityNext > amountSwappedPrev, since amountSwappedPrev is in the same currency as liquidity and liquidityNext > liquidity.
+            # Numerator cannot be <= 0:
+            # liquidityNext * amountPercSwappedInsideX128 > amountSwappedPrev * FixedPoint128_Q128
+            # Left term would give is the maximum amount (upper limit) that might have been swapped in the pool including new liquidity.
+            # On the right, the amount swapped of that same token before this new mint. Amount swapped before cannot be bigger than the
+            # max amount swapped including new liquidity.
+            # NOTE: it is possible that this becomes negative if the amount minted is extremely small (< 10-12) due to rounding errors.
+            # In this cases it will revert anyway.
+
+            newPercSwappedMintX128 = divRoundingUp(
+                (liquidityNext * amountPercSwappedInsideX128)
+                - (amountSwappedPrev * FixedPoint128_Q128),
+                (liquidityNext - amountSwappedPrev),
             )
-            print("debugAmount", debugAmount)
 
-            self.amountPercSwappedInsideMintedX128 = result
-            # Health check
-            assert self.amountPercSwappedInsideMintedX128 < amountPercSwappedInsideX128
-            
+            # Health checks
+            assert newPercSwappedMintX128 > self.amountPercSwappedInsideMintedX128
+            assert newPercSwappedMintX128 < amountPercSwappedInsideX128
+
+            self.amountPercSwappedInsideMintedX128 = newPercSwappedMintX128
+
     else:
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
         # amountSwappedPrev in token base (self.liquidity)
         # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
         # Current pool amountPercSwappedInsideX128 is adjusted so we need to reverse engineer it to get the positionn's swap%.
-        # We know in swap, the new amountPercSwappedInsideX128 gets calculated like this: 
+        # We know in swap, the new amountPercSwappedInsideX128 gets calculated like this:
         # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
         # We know that when the position was minted, amountPercSwappedInsideX128 == self.amountPercSwappedInsideMintedX128
         # So we need to calculate the average % swapped in the tick after mint - will equate to currentPercSwap in the previous formula
