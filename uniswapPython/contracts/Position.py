@@ -7,6 +7,8 @@ from utilities import *
 
 from dataclasses import dataclass
 
+ONE_IN_PIPS = 1000000
+
 ### @title Position
 ### @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
 ### @dev Positions store additional state for tracking fees owed to the position
@@ -34,9 +36,6 @@ class PositionLinearInfo:
     # Since we can burn a position half swapped, we need both tokensOwed0 and tokensOwed1
     tokensOwed0: int
     tokensOwed1: int
-    ## fee growth per unit of liquidity as of the last update to liquidity or fees owed.
-    ## In the token opposite to the liquidity token.
-    feeGrowthInsideLastX128: int
     # Not strictly necessary since we need to pass the bool (isToken0) to generate the key
     # isToken0: bool
 
@@ -71,7 +70,7 @@ def getLinear(self, owner, tick, isToken0):
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
-        self[key] = PositionLinearInfo(0, 0, 0, 0, 0)
+        self[key] = PositionLinearInfo(0, 0, 0, 0)
     return self[key]
 
 
@@ -84,7 +83,7 @@ def assertPositionExists(self, owner, tickLower, tickUpper):
 def assertLimitPositionExists(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=(tick), bool=isToken0)
     positionInfo = getLinear(self, owner, tick, isToken0)
-    assert positionInfo != PositionLinearInfo(0, 0, 0, 0, 0), "Position doesn't exist"
+    assert positionInfo != PositionLinearInfo(0, 0, 0, 0), "Position doesn't exist"
 
 
 ### @notice Credits accumulated fees to a user's position
@@ -141,24 +140,18 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
 
 # This updates the tokensOwed (current position ratio), the position.liquidity and the fees
 def updateLinear(
-    self,
-    liquidityDelta,
-    amountPercSwappedInsideX128,
-    isToken0,
-    pricex96,
-    feeGrowthInsideX128,
+    self, liquidityDelta, amountPercSwappedInsideX128, isToken0, pricex96, feePips
 ):
     checkInputTypes(
         int128=(liquidityDelta),
-        uint256=(feeGrowthInsideX128, amountPercSwappedInsideX128, pricex96),
+        uint256=(amountPercSwappedInsideX128, pricex96),
         bool=(isToken0),
     )
 
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
-    if self == PositionLinearInfo(0, 0, 0, 0, 0):
+    if self == PositionLinearInfo(0, 0, 0, 0):
         self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
-        self.feegrowthInsideLastX128 = feeGrowthInsideX128
 
     if liquidityDelta == 0:
         # Removed because a check is added for burn 0 uninitialized position
@@ -166,21 +159,6 @@ def updateLinear(
         liquidityNext = self.liquidity
     else:
         liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta)
-
-    # TokensOwed is not in liquidity token
-    tokensOwed = mulDiv(
-        toUint256(feeGrowthInsideX128 - self.feeGrowthInsideLastX128),
-        self.liquidity,
-        FixedPoint128_Q128,
-    )
-
-    # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
-    # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
-    # acceptable to save gas. TODO: Is this OK for us?
-
-    # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
-    if tokensOwed > MAX_UINT128:
-        tokensOwed = tokensOwed & (2**128 - 1)
 
     ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
@@ -212,6 +190,48 @@ def updateLinear(
             amountPercSwappedInsideX128_ceiling - self.amountPercSwappedInsideMintedX128
         ),
     )
+    print("amountSwappedPrev", amountSwappedPrev)
+    # Calculate tokensOwed (fees using percentage of position swapped)
+
+    # TokensOwed is not in liquidity token
+    # Check math in paper - feesAmount = liquidity * (fee * price)
+    if pricex96 != 0 and self.liquidity > 0:
+        # We should probably calculate this before, but just doing here for now
+        percSwapped = mulDivRoundingUp(
+            toUint256(
+                amountPercSwappedInsideX128_util
+                - self.amountPercSwappedInsideMintedX128
+            ),
+            FixedPoint128_Q128,
+            toUint256(
+                amountPercSwappedInsideX128_ceiling
+                - self.amountPercSwappedInsideMintedX128
+            ),
+        )
+        if percSwapped > 0:
+            # This will depend on the direction
+            amountInMAX = mulDiv(self.liquidity, 2**96, pricex96)
+            AmountInMaxWithFees = mulDivRoundingUp(
+                amountInMAX, ONE_IN_PIPS - feePips, ONE_IN_PIPS
+            )
+            actualAmountIn = int(AmountInMaxWithFees * percSwapped / FixedPoint128_Q128)
+            tokensOwed = mulDivRoundingUp(
+                actualAmountIn, feePips, ONE_IN_PIPS - feePips
+            )
+        else:
+            # Nothing swapped
+            tokensOwed = 0
+    else:
+        # There should not be LO on the edge of the pool
+        tokensOwed = 0
+
+    # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
+    # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
+    # acceptable to save gas. TODO: Is this OK for us?
+
+    # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
+    if tokensOwed > MAX_UINT128:
+        tokensOwed = tokensOwed & (2**128 - 1)
 
     # if we are burning calculate a proportional part of the position's liquidity
     # Then on the burn function we will remove them
@@ -337,9 +357,6 @@ def updateLinear(
     ## update the position
     if liquidityDelta != 0:
         self.liquidity = liquidityNext
-
-    # Update position fees
-    self.feeGrowthInsideLastX128 = feeGrowthInsideX128
 
     # Add token fees to the position (added to burnt tokens if we are burning)
     # TokensOwed is not in liquidity token

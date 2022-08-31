@@ -126,10 +126,7 @@ class ChainflipPool(UniswapPool):
             else 0,
             token == self.token0,
             TickMath.getPriceAtTick(tick),
-            # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLinearMap[tick].feeGrowthInsideX128
-            if ticksLinearMap.__contains__(tick)
-            else 0,
+            self.fee,
         )
 
         # Initialize values
@@ -421,22 +418,6 @@ class ChainflipPool(UniswapPool):
                         delta = abs(stepLinear.feeAmount // cache.feeProtocol)
                         stepLinear.feeAmount -= delta
                         state.protocolFee += delta & (2**128 - 1)
-
-                    # Calculate linear fees can probably be done inside the Tick.computeLinearSwapStep function since it
-                    # will be stored within a tick (most likely). For now we keep it here to have the same structure.
-
-                    ## update global fee tracker. No need to check for liquidity, otherwise we would not have swapped a LO
-                    # if stateLinear.liquidity > 0:
-                    # feeAmount is in amountIn tokens => therefore feeGrowthInsideX128 is not in liquidityTokens
-                    tickLinearInfo.feeGrowthInsideX128 += mulDiv(
-                        stepLinear.feeAmount,
-                        FixedPoint128_Q128,
-                        tickLinearInfo.liquidityGross,
-                    )
-                    # Addition can overflow in Solidity - mimic it
-                    tickLinearInfo.feeGrowthInsideX128 = toUint256(
-                        tickLinearInfo.feeGrowthInsideX128
-                    )
 
                     if not tickCrossed:
                         # Health check - swap should be completed

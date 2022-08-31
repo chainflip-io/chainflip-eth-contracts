@@ -34,13 +34,11 @@ class TickInfoLinear:
     ## the total position liquidity that references this tick
     liquidityGross: int
 
-    # accomulated percentatge of the pool swapped - relative meaning
+    # accomulated percentatge of the pool swapped - relative meaning. If we want to allow it to be >1 and keep increasing
+    # per every tick crossed, we need to think how many extra bits we need.
+    # TODO: Think about precision problem as this will converge to 1 but the precision needed will increase linearly or exponentially
+    # with every swap performed.
     amountPercSwappedInsideX128: int
-
-    ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
-    ## only has relative meaning, not absolute — the value depends on when the tick is initialized.
-    ## In the token opposite to the liquidity token.
-    feeGrowthInsideX128: int
 
 
 # MAX type values
@@ -259,7 +257,7 @@ def insertUninitializedTickstoMapping(mapping, keys):
 
 def insertUninitializedLinearTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0, 0))
+        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0))
 
 
 def insertTickInMapping(mapping, key, value):
