@@ -182,6 +182,37 @@ def updateLinear(
     if tokensOwed > MAX_UINT128:
         tokensOwed = tokensOwed & (2**128 - 1)
 
+    ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
+
+    # amountSwappedPrev in token base (self.liquidity)
+    # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
+    # Current pool amountPercSwappedInsideX128 is adjusted so we need to reverse engineer it to get the positionn's swap%.
+    # We know in swap, the new amountPercSwappedInsideX128 gets calculated like this:
+    # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
+    # We know that when the position was minted, amountPercSwappedInsideX128 == self.amountPercSwappedInsideMintedX128
+    # So we need to calculate the average % swapped in the tick after mint - will equate to currentPercSwap in the previous formula
+    # That should encapsulate the average of all swaps performed after that.
+    # amountPercSwappedInsideX128 = self.amountPercSwappedInsideMintedX128 + (1-self.amountPercSwappedInsideMintedX128) * percSwappedAfterMint
+    # percSwappedAfterMint = (amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128) / (1-self.amountPercSwappedInsideMintedX128)
+    # totalAmountSwapped = percSwappedAfterMint * self.liquidity
+    intNumber = self.amountPercSwappedInsideMintedX128 // FixedPoint128_Q128
+    # We will need to check for overflow and potentially amountPercSwappedInsideX128_ceiling should have one bit extra
+    amountPercSwappedInsideX128_ceiling = (intNumber + 1) * FixedPoint128_Q128
+
+    amountPercSwappedInsideX128_util = min(
+        amountPercSwappedInsideX128_ceiling, amountPercSwappedInsideX128
+    )
+
+    amountSwappedPrev = mulDivRoundingUp(
+        toUint256(
+            amountPercSwappedInsideX128_util - self.amountPercSwappedInsideMintedX128
+        ),
+        self.liquidity,
+        toUint256(
+            amountPercSwappedInsideX128_ceiling - self.amountPercSwappedInsideMintedX128
+        ),
+    )
+
     # if we are burning calculate a proportional part of the position's liquidity
     # Then on the burn function we will remove them
     if liquidityDelta >= 0:
@@ -193,13 +224,15 @@ def updateLinear(
             liquidityDelta > 0
             and amountPercSwappedInsideX128 > self.amountPercSwappedInsideMintedX128
         ):
-            amountSwappedPrev = mulDivRoundingUp(
-                toUint256(
-                    amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
-                ),
-                self.liquidity,
-                toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
-            )
+            # Do not allow a mint on top of a fully-swapped position. LP needs to burn it first. There might be a way around this
+            # by adjusting self.amountPercSwappedInsideMintedX128 and allowing it to cross amountPercSwappedInsideX128_util. But for now
+            # we avoid that scenario. This should only happen if the position is fully-swapped. If the position is partially swapped then
+            # it should never happen that newPercSwappedMintX128 > amountPercSwappedInsideX128_ceiling.
+            # TODO: Figure out the math if this is something we want to have.
+            assert (
+                amountPercSwappedInsideX128 < amountPercSwappedInsideX128_ceiling
+            ), "Not allowed to mint on top of fully-swapped position. To burn first"
+
             # When burnt the next time, the calculation will be like explained below. So we need to modify the
             # self.amountPercSwappedInsideMintedX128 so with the new liquidity we get the same amount swapped.
 
@@ -236,35 +269,11 @@ def updateLinear(
             # Health checks
             assert newPercSwappedMintX128 > self.amountPercSwappedInsideMintedX128
             assert newPercSwappedMintX128 < amountPercSwappedInsideX128
+            assert newPercSwappedMintX128 < amountPercSwappedInsideX128_ceiling
 
             self.amountPercSwappedInsideMintedX128 = newPercSwappedMintX128
 
     else:
-        ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
-
-        # amountSwappedPrev in token base (self.liquidity)
-        # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
-        # Current pool amountPercSwappedInsideX128 is adjusted so we need to reverse engineer it to get the positionn's swap%.
-        # We know in swap, the new amountPercSwappedInsideX128 gets calculated like this:
-        # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
-        # We know that when the position was minted, amountPercSwappedInsideX128 == self.amountPercSwappedInsideMintedX128
-        # So we need to calculate the average % swapped in the tick after mint - will equate to currentPercSwap in the previous formula
-        # That should encapsulate the average of all swaps performed after that.
-        # amountPercSwappedInsideX128 = self.amountPercSwappedInsideMintedX128 + (1-self.amountPercSwappedInsideMintedX128) * percSwappedAfterMint
-        # percSwappedAfterMint = (amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128) / (1-self.amountPercSwappedInsideMintedX128)
-        # totalAmountSwapped = percSwappedAfterMint * self.liquidity
-        intNumber = self.amountPercSwappedInsideMintedX128 // FixedPoint128_Q128
-        amountPercSwappedInsideX128_max = (intNumber + 1) * FixedPoint128_Q128
-
-        amountPercSwappedInsideX128_util = min(amountPercSwappedInsideX128_max,amountPercSwappedInsideX128) 
-
-        amountSwappedPrev = mulDivRoundingUp(
-            toUint256(
-                amountPercSwappedInsideX128_util - self.amountPercSwappedInsideMintedX128
-            ),
-            self.liquidity,
-            toUint256(amountPercSwappedInsideX128_max - self.amountPercSwappedInsideMintedX128),
-        )
 
         # Calculate current position ratio
         if isToken0:

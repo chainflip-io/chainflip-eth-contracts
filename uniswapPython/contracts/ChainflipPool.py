@@ -150,6 +150,7 @@ class ChainflipPool(UniswapPool):
                 # token == self.token0,
             )
 
+        # I think checking is flipped is not necessary, it is done here for gas-saving purposes.
         if flipped:
             assert tick % self.tickSpacing == 0  ## ensure that the tick is spaced
 
@@ -369,8 +370,11 @@ class ChainflipPool(UniswapPool):
                         FixedPoint128_Q128,
                         tickLinearInfo.liquidityLeft,
                     )
-                    
-                    intNumber = tickLinearInfo.amountPercSwappedInsideX128 // FixedPoint128_Q128
+
+                    intNumber = (
+                        tickLinearInfo.amountPercSwappedInsideX128 // FixedPoint128_Q128
+                    )
+                    # We will need to check for overflow and potentially intNumber should have one bit extra
                     closestIntFullSwap = (intNumber + 1) * FixedPoint128_Q128
 
                     # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
@@ -379,7 +383,7 @@ class ChainflipPool(UniswapPool):
                         currentPercSwapped128_Q128,
                         FixedPoint128_Q128,
                     )
-                    
+
                     # Update tick liquidity
                     ## Health check
                     assert stepLinear.amountOut > 0

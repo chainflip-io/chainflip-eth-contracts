@@ -2867,6 +2867,8 @@ def test_swap1For0_fullSwap(initializedMediumPoolNoLO, accounts):
         == initialLiquidity * 2
     )
 
+    return pool, tickLO, tickLO1, initialLiquidity
+
 
 # Mint multiple positions and check that the correct ones are used
 def test_multiplePositions_zeroForOne(initializedMediumPoolNoLO, accounts):
@@ -3061,9 +3063,7 @@ def test_mint_partialSwappedTick_oneForZero(initializedMediumPoolNoLO, accounts)
     return pool, tickLO, priceLO, amountToSwap, amount0, liquidityPosition
 
 
-# TODO: Minting on top of a fullySwapped Tick won't work for now. Force burning of the tick/positions? TO THINK.
-
-def test_mint_fullSwappedTick_zeroForOne_diffAccount(
+def test_mint_fullSwappedTick_mintDiffAccount_zeroForOne(
     initializedMediumPoolNoLO, accounts
 ):
     print(
@@ -3086,10 +3086,8 @@ def test_mint_fullSwappedTick_zeroForOne_diffAccount(
     assert pool.ticksLinearTokens1[tickLO1].liquidityLeft > 0
     assert pool.ticksLinearTokens1[tickLO1].liquidityGross > 0
 
-    print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
     # Mint a position on top of tickLO (another account)
     pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, initialLiquidity)
-    print("pool.ticksLinearTokens1[tickLO]", pool.ticksLinearTokens1[tickLO])
     tick = pool.ticksLinearTokens1[tickLO]
     assert tick.liquidityLeft == expandTo18Decimals(1)
     assert tick.liquidityGross == iniTickLiquidityGross + initialLiquidity
@@ -3099,10 +3097,15 @@ def test_mint_fullSwappedTick_zeroForOne_diffAccount(
 
     amountToSwap = expandTo18Decimals(1) * 10
 
-    assert pool.ticksLinearTokens1[tickLO].amountPercSwappedInsideX128 == FixedPoint128_Q128
+    assert (
+        pool.ticksLinearTokens1[tickLO].amountPercSwappedInsideX128
+        == FixedPoint128_Q128
+    )
     # This will fully swap the newly minted position and part of the backup LO1 position
     swapExact0For1(pool, amountToSwap, accounts[0], None)
-    assert pool.ticksLinearTokens1[tickLO].amountPercSwappedInsideX128 > FixedPoint128_Q128
+    assert (
+        pool.ticksLinearTokens1[tickLO].amountPercSwappedInsideX128 > FixedPoint128_Q128
+    )
 
     # Check that the newly minted pos and the old one return same amount of tokens and fees
     (
@@ -3130,17 +3133,92 @@ def test_mint_fullSwappedTick_zeroForOne_diffAccount(
     assert amountBurnt0_new == amountBurnt0_old
     assert amountBurnt1_new == amountBurnt1_old
 
-    # TODO: To expand here - especially I need to check if the mint on top of the same position, adjusting the
-    # amountPercSwappedInsideX128 can work accross limits (accross crossed ticks).
     # TODO: Then I need to assess if the fee system can be done in a similar way as the swap system, so the
     # liquidityGross staying in the tick is not a problem (otherwise it would continue accruing fees). If this works
-    # then all this might work because liquidityGross is only being used for feesAccounting and for knowing when the 
+    # then all this might work because liquidityGross is only being used for feesAccounting and for knowing when the
     # tick can be cleared.
     # TODO: Assess if the amountPercSwappedInsideX128 always increasing is OK. I guess we can just make it bigger
-    # if we wanted so we can handle an enourmous amount of crossed ticks. Also, it will be cleared if once all the
-    # liquidity is removed. So I think that should be fine.
-    assert False
+    # (more bits) if we wanted so we can handle an enourmous amount of crossed ticks. Also, it will be cleared if
+    # once all the liquidity is removed. So I think that should be fine.
+    # TODO: Check that any amount of swapping after an order& tick is crossed doesn't affect that position when removed.
+    # assert False
 
+
+# TODO: Copy paste test_mint_fullSwappedTick_mintDiffAccount_zeroForOne but with oneForZero
+
+
+def test_mint_fullSwappedPos_zeroForOne(initializedMediumPoolNoLO, accounts):
+    print(
+        "mint a new position with same account on top of a full-swapped tick zeroForOne should not be allowed for now"
+    )
+    (
+        pool,
+        tickLO,  # fullySwapped
+        tickLO1,  # partiallySwapped
+        initialLiquidity,
+    ) = test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts)
+
+    tick = pool.ticksLinearTokens1[tickLO]
+    pos = pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)]
+    assert pos.amountPercSwappedInsideMintedX128 == 0
+    # Fully swapped tick (and therefore positions)
+    assert tick.amountPercSwappedInsideX128 == FixedPoint128_Q128
+
+    # Check that tickLO is fully swapped but not removed
+    initTickLiquidityLeft = tick.liquidityLeft
+    iniTickLiquidityGross = tick.liquidityGross
+    assert initTickLiquidityLeft == 0
+    assert iniTickLiquidityGross > 0
+    # Check that tickLO is partially swapped and not removed
+    assert pool.ticksLinearTokens1[tickLO1].liquidityLeft > 0
+    assert pool.ticksLinearTokens1[tickLO1].liquidityGross > 0
+
+    # Mint a position on top of tickLO (same account)
+    tryExceptHandler(
+        pool.mintLinearOrder,
+        "Not allowed to mint on top of fully-swapped position. To burn first",
+        TEST_TOKENS[1],
+        accounts[0],
+        tickLO,
+        initialLiquidity,
+    )
+
+
+def test_mint_fullSwappedPos_oneForZero(initializedMediumPoolNoLO, accounts):
+    print(
+        "mint a new position with same account on top of a full-swapped tick zeroForOne should not be allowed for now"
+    )
+    (
+        pool,
+        tickLO,  # fullySwapped
+        tickLO1,  # partiallySwapped
+        initialLiquidity,
+    ) = test_swap1For0_fullSwap(initializedMediumPoolNoLO, accounts)
+
+    tick = pool.ticksLinearTokens0[tickLO]
+    pos = pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, True)]
+    assert pos.amountPercSwappedInsideMintedX128 == 0
+    # Fully swapped tick (and therefore positions)
+    assert tick.amountPercSwappedInsideX128 == FixedPoint128_Q128
+
+    # Check that tickLO is fully swapped but not removed
+    initTickLiquidityLeft = tick.liquidityLeft
+    iniTickLiquidityGross = tick.liquidityGross
+    assert initTickLiquidityLeft == 0
+    assert iniTickLiquidityGross > 0
+    # Check that tickLO is partially swapped and not removed
+    assert pool.ticksLinearTokens0[tickLO1].liquidityLeft > 0
+    assert pool.ticksLinearTokens0[tickLO1].liquidityGross > 0
+
+    # Mint a position on top of tickLO (same account)
+    tryExceptHandler(
+        pool.mintLinearOrder,
+        "Not allowed to mint on top of fully-swapped position. To burn first",
+        TEST_TOKENS[0],
+        accounts[0],
+        tickLO,
+        initialLiquidity,
+    )
 
 
 def test_burn_positionMintedAfterSwap_zeroForOne(initializedMediumPoolNoLO, accounts):
@@ -3777,6 +3855,53 @@ def test_mintOnSwappedPosition_oneForZero(initializedMediumPoolNoLO, accounts):
     assert amount0 == amount0_0 + liquidityPosition * 1000
 
 
-# TODO: 
+def test_noBurnSwappedPositions_feesAccumulation_zeroForOne(
+    initializedMediumPoolNoLO, accounts
+):
+    print(
+        "mint on top of a fully-swapped position. Then swap more and check fees accrual on initial swapped position"
+    )
+
+    (
+        pool,
+        tickLO,  # fullySwapped
+        tickLO1,  # partiallySwapped
+        initialLiquidity,
+    ) = test_swap0For1_fullSwap(initializedMediumPoolNoLO, accounts)
+
+    tick = pool.ticksLinearTokens1[tickLO]
+    pos = pool.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)]
+
+    assert tick.amountPercSwappedInsideX128 == FixedPoint128_Q128
+
+    poolCopy = copy.deepcopy(pool)
+    # Get position fees after swap
+    poolCopy.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickLO, 0)
+    posCopy = poolCopy.linearPositions[getLimitPositionKey(accounts[0], tickLO, False)]
+    iniFees0 = posCopy.tokensOwed0
+    iniFees1 = posCopy.tokensOwed1
+    assert iniFees0 > 0
+    assert iniFees1 == 0
+
+    # Mint a position on top of tickLO (another account)
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[1], tickLO, initialLiquidity)
+
+    amountToSwap = expandTo18Decimals(1) * 10
+
+    # This will fully swap the newly minted position and part of the backup LO1 position
+    swapExact0For1(pool, amountToSwap, accounts[0], None)
+
+    assert (
+        pool.ticksLinearTokens1[tickLO].amountPercSwappedInsideX128 > FixedPoint128_Q128
+    )
+    # Get position fees after swap
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], tickLO, 0)
+    fees0 = pos.tokensOwed0
+    fees1 = pos.tokensOwed1
+    assert iniFees1 == fees1
+    assert iniFees0 == fees0
+
+
+# TODO:
 
 # Minting on top of a fully swapped tick won't work. To think how to handle it (force burn positions+tick, limit position amountPerc and continue >1, etc..). For now asserting error.
