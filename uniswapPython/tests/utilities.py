@@ -132,19 +132,28 @@ def mulDiv(a, b, c):
 
 
 # @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert
-# so we will need to handle that separately if we want to artifially revert to the previous state.
-def tryExceptHandler(pool, fcnName, assertMessage, *args):
-    checkInputTypes(string = fcnName)
+# as in the blockchain. So we will create a hard copy of the current pool and call the same method there.
+def tryExceptHandler(fcn, assertMessage, *args):
 
     reverted = False
 
-    # hard copy to prevent state changes in the pool
-    poolCopy = copy.deepcopy(pool)
-
     try:
-        fcn = getattr(poolCopy, fcnName)
-    except AttributeError:
-        assert "Function not found in pool: " + fcnName
+        # reference to object
+        pool = fcn.__self__
+        fcnName = fcn.__name__
+
+        # hard copy to prevent state changes in the pool
+        poolCopy = copy.deepcopy(pool)
+
+        try:
+            fcn = getattr(poolCopy, fcnName)
+        except AttributeError:
+            assert "Function not found in pool: " + fcnName
+    except:
+        # e.g. case when swapExact1ForZero is expected to revert
+        print(
+            "Non-pool class function passed - expect pool to be copied as part of the call"
+        )
 
     try:
         fcn(*args)

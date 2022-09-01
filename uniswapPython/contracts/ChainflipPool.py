@@ -118,7 +118,11 @@ class ChainflipPool(UniswapPool):
 
         # Update Position before updating the tick because we need to calculate how the liquidityDelta
         # translates to difference of liquidity (liquidityLeftDelta) when burning.
-        liquidityLeftDelta, liquiditySwappedDelta, initializedPosition = Position.updateLinear(
+        (
+            liquidityLeftDelta,
+            liquiditySwappedDelta,
+            initializedPosition,
+        ) = Position.updateLinear(
             position,
             liquidityDelta,
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
@@ -150,7 +154,7 @@ class ChainflipPool(UniswapPool):
                 self.maxLiquidityPerTick,
                 # token == self.token0,
                 initializedPosition,
-                Position.getHashLinear( owner, tick, token == self.token0)
+                Position.getHashLinear(owner, tick, token == self.token0),
             )
 
         if flipped:
