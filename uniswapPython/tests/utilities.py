@@ -43,8 +43,10 @@ class TickInfoLinear:
     ## In the token opposite to the liquidity token.
     feeGrowthInsideX128: int
 
-    # list of hash of each position contained in this tick
-    hashPositions: list
+    # list of owners of positions contained in this tick. We can't just store the hash because then we can't
+    # know who is the owner. So we need to recalculate the hash when we burn the position. We only require the
+    # owner since we figure out the isToken0 and the tick.
+    ownerPositions: list
 
 
 # MAX type values

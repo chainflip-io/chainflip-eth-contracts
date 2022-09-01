@@ -92,6 +92,12 @@ def assertLimitPositionExists(self, owner, tick, isToken0):
     assert positionInfo != PositionLinearInfo(0, 0, 0, 0, 0), "Position doesn't exist"
 
 
+def assertLimitPositionIsBurnt(self, owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
+    key = getHashLinear(owner, tick, isToken0)
+    assert not self.__contains__(key)
+
+
 ### @notice Credits accumulated fees to a user's position
 ### @param self The individual position to update
 ### @param liquidityDelta The change in pool liquidity as a result of the position update
