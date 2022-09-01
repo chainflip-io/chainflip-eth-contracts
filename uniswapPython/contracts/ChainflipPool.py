@@ -229,11 +229,11 @@ class ChainflipPool(UniswapPool):
             uint128=(amount0Requested, amount1Requested),
         )
 
-        # NOTE: We will be removing the position anyway if liquidity === 0
         # Add this check to prevent creating a new position if the position doesn't exist or it's empty
-        # Position.assertLimitPositionExists(
-        #     self.linearPositions, recipient, tick, token == self.token0
-        # )
+        # even thought we would remove anyway at the end, but just for clarity.
+        Position.assertLimitPositionExists(
+            self.linearPositions, recipient, tick, token == self.token0
+        )
 
         ## we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
         ## Hardcoded recipient == msg.sender.
@@ -630,7 +630,8 @@ class ChainflipPool(UniswapPool):
             self.ledger.transferToken(recipient, self, self.token1, abs(amount1))
             assert balanceBefore + abs(amount1) == self.balances[self.token1], "IIA"
 
-        # Doing this at the end of the swap so we have recieved the tokens from the swap
+        # Doing this at the end of the swap so we have recieved the tokens from the swap.
+        # We could do this as a separate TX to get all the results of the positionBurning.
         for tick in state.ticksCrossed:
             self.burnCrossedPositions(
                 ticksLinearMap, tick, self.token1 if zeroForOne else self.token0
@@ -658,7 +659,8 @@ class ChainflipPool(UniswapPool):
             )
             # Burn the entire order and collect tokens === remove position
             self.burnLimitOrder(token, owner, tick, position.liquidity)
-            self.collectLinear(owner, token, tick, MAX_UINT128, MAX_UINT128)
+            print(position)
+            print(self.collectLinear(owner, token, tick, MAX_UINT128, MAX_UINT128))
             # TODO: think if we want collect to delete it or not.
             # Check that position is deleted - not necessary to delete but we do it to not keep increasing memory
             # assert not self.linearPositions.__contains__(Position.getHashLinear(owner, tick, token == self.token0))

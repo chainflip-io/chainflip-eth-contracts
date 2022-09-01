@@ -46,7 +46,6 @@ class Ledger:
     # Add transfer and receive tokens functions
     def transferToken(self, sender, recipient, token, amount):
         checkInputTypes(account=(recipient), string=(token), uint256=(amount))
-
         if type(recipient) == str:
             recipient = self.getAccountWithAddress(recipient)
         if type(sender) == str:
