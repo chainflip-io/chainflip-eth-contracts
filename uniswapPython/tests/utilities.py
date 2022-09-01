@@ -4,6 +4,7 @@ import traceback
 
 import math
 from dataclasses import dataclass
+import copy
 
 ### The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
 MIN_SQRT_RATIO = 4295128739
@@ -41,6 +42,9 @@ class TickInfoLinear:
     ## only has relative meaning, not absolute — the value depends on when the tick is initialized.
     ## In the token opposite to the liquidity token.
     feeGrowthInsideX128: int
+
+    # list of hash of each position contained in this tick
+    hashPositions: list
 
 
 # MAX type values
@@ -129,9 +133,19 @@ def mulDiv(a, b, c):
 
 # @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert
 # so we will need to handle that separately if we want to artifially revert to the previous state.
-# E.g a hard copy of the contract instance can be created before making the tryExceptHandle call
-def tryExceptHandler(fcn, assertMessage, *args):
+def tryExceptHandler(pool, fcnName, assertMessage, *args):
+    checkInputTypes(string = fcnName)
+
     reverted = False
+
+    # hard copy to prevent state changes in the pool
+    poolCopy = copy.deepcopy(pool)
+
+    try:
+        fcn = getattr(poolCopy, fcnName)
+    except AttributeError:
+        assert "Function not found in pool: " + fcnName
+
     try:
         fcn(*args)
     except AssertionError as msg:
@@ -259,7 +273,7 @@ def insertUninitializedTickstoMapping(mapping, keys):
 
 def insertUninitializedLinearTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0, 0))
+        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0, 0, []))
 
 
 def insertTickInMapping(mapping, key, value):

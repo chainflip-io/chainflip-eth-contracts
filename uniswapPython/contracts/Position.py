@@ -65,7 +65,7 @@ def getLinear(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=tick, bool=isToken0)
 
     # Need to handle non-existing positions in Python
-    key = hash((owner, tick, isToken0))
+    key = getHashLinear( owner, tick, isToken0)
     if not self.__contains__(key):
         # We don't want to create a new position if it doesn't exist!
         # In the case of collect we add an assert after that so it reverts.
@@ -74,6 +74,9 @@ def getLinear(self, owner, tick, isToken0):
         self[key] = PositionLinearInfo(0, 0, 0, 0, 0)
     return self[key]
 
+def getHashLinear( owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=tick, bool=isToken0)
+    return hash((owner, tick, isToken0))
 
 def assertPositionExists(self, owner, tickLower, tickUpper):
     checkInputTypes(account=owner, int24=(tickLower, tickLower))
@@ -153,13 +156,16 @@ def updateLinear(
         uint256=(feeGrowthInsideX128, amountPercSwappedInsideX128, pricex96),
         bool=(isToken0),
     )
-
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
     if self == PositionLinearInfo(0, 0, 0, 0, 0):
+        assert liquidityDelta > 0 # health check
         self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
         self.feegrowthInsideLastX128 = feeGrowthInsideX128
-
+        initialized = True
+    else:
+        initialized = False
+        
     if liquidityDelta == 0:
         # Removed because a check is added for burn 0 uninitialized position
         # assert self.liquidity > 0, "NP"  ## disallow pokes for 0 liquidity positions
@@ -335,7 +341,5 @@ def updateLinear(
         else:
             self.tokensOwed0 += tokensOwed
 
-    # TODO: Should we clear the position if it is fully swapped?
-
     # Returning liquiditySwappedDelta to return as a result of the burn function
-    return liquidityLeftDelta, liquiditySwappedDelta
+    return liquidityLeftDelta, liquiditySwappedDelta, initialized

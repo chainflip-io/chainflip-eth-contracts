@@ -143,13 +143,15 @@ def updateLinear(
     # feeGrowthGlobalX128,
     maxLiquidity,
     # isToken0,
+    initializedPosition,
+    hashPosition
 ):
     checkInputTypes(
         dict=self,
         int24=(tick),
         int128=(liquidityDelta, liquidityLeftDelta),
         # uint256=(feeGrowthGlobalX128),
-        # bool=(isToken0),
+        bool=(initializedPosition),
         uint128=maxLiquidity,
     )
 
@@ -172,6 +174,18 @@ def updateLinear(
 
     info.liquidityGross = liquidityGrossAfter
     info.liquidityLeft = LiquidityMath.addDelta(info.liquidityLeft, liquidityLeftDelta)
+
+    # Add position to hashPositions list if not already there - doing it in a more computationally cheaper way
+    # then checking if the position is in the list. Health checks should be removed after development.
+    if initializedPosition:
+        # Health check for development purposes
+        assert hashPosition not in info.hashPositions, "Position already in hashPositions"
+        info.hashPositions.append(hashPosition)
+    else:
+        # Health check for development purposes
+        assert hashPosition in info.hashPositions, "Position not in hashPositions"
+
+
 
     # No longer require flip to signal if it has been initialized but it is needed for when it is cleared
     return flipped
