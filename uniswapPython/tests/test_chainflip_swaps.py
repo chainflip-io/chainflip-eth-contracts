@@ -15,7 +15,7 @@ import copy
 import decimal
 
 
-@pytest.fixture(params=[*range(0, 2, 1)])
+@pytest.fixture(params=[*range(0, 4, 1)])
 def TEST_POOLS(request, accounts, ledger):
     poolFixture = request.getfixturevalue("poolCF{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -102,9 +102,10 @@ def test_uniswap_swaps(TEST_POOLS):
 
     for testCase in swapTests:
         print("-------------- NEW SWAP TEST -----------")
-        print("testCase", testCase)
+        print("swap testCase", testCase)
         print("ticks0 before: ", pool.ticksLinearTokens0)
         print("ticks1 before: ", pool.ticksLinearTokens1)
+        print("pool initial tick: ", pool.slot0.tick)
 
         slot0 = pool.slot0
         poolInstance = copy.deepcopy(pool)
@@ -133,10 +134,6 @@ def test_uniswap_swaps(TEST_POOLS):
             )
             assert float(dict["tickBefore"]) == slot0.tick
             continue
-        print(snapshotIndex)
-        print("ticks0 after: ", poolInstance.ticksLinearTokens0)
-        print("ticks1 after: ", poolInstance.ticksLinearTokens1)
-        print("zeroForOne", testCase["zeroForOne"])
 
         slot0After = poolInstance.slot0
 
@@ -152,54 +149,110 @@ def test_uniswap_swaps(TEST_POOLS):
         else:
             executionPrice = "-Infinity"
 
+        print(snapshotIndex)
+        print("ticks0 after: ", poolInstance.ticksLinearTokens0)
+        print("ticks1 after: ", poolInstance.ticksLinearTokens1)
+        print("pool final tick: ", poolInstance.slot0.tick)
+        print("zeroForOne", testCase["zeroForOne"])
+        print("executionPrice Uniswap", float(dict["executionPrice"]))
+        decimalPoints = decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
+        print("executionPrice Chainflip", round(executionPrice, -decimalPoints))
+        print("poolPrice Uniswap", float(dict["poolPriceAfter"]))
+        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+        print(
+            "poolPrice Chainflip",
+            formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints),
+        )
+        print("final tick Uniswap", float(dict["tickAfter"]))
+        print("final tick Chainflip", slot0After.tick)
+
         # Allowing some very small difference due to rounding errors
         assert float(dict["amount0Before"]) == pytest.approx(poolBalance0, rel=1e-12)
         assert float(dict["amount1Before"]) == pytest.approx(poolBalance1, rel=1e-12)
 
+        assert float(dict["tickBefore"]) == slot0.tick
+
         # Check that execution price is better than in only RO
         if dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
             assert executionPrice in ["Infinity", "-Infinity", "NaN"]
-        else:
-            decimalPoints = decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
-            print("executionPrice Uniswap", float(dict["executionPrice"]))
-            print("executionPrice Chainflip", round(executionPrice, -decimalPoints))
-            # Now execution price should always be better than the pool with noLO
+
+        # If it's a swap to the limit - aka can't be fulfilled
+        if not testCase.__contains__("exactOut"):
+            decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+            assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(
+                slot0After.sqrtPriceX96, -decimalPoints
+            )
+            assert float(dict["tickAfter"]) == slot0After.tick
+
+        if poolFixture.usedLO:
+            # Now execution price should always be better than the pool with noLO. PoolPrice after
+            # should be the same or better, but not worse.
             if testCase["zeroForOne"]:
-                assert float(dict["executionPrice"]) < round(
-                    executionPrice, -decimalPoints
-                )
+                if not dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
+                    decimalPoints = (
+                        decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
+                    )
+                    assert float(dict["executionPrice"]) < round(
+                        executionPrice, -decimalPoints
+                    )
+                if testCase.__contains__("exactOut"):
+                    decimalPoints = (
+                        decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+                    )
+                    assert float(dict["poolPriceAfter"]) < formatPriceWithPrecision(
+                        slot0After.sqrtPriceX96, -decimalPoints
+                    )
+                    assert float(dict["tickAfter"]) < slot0After.tick
+
             else:
-                assert float(dict["executionPrice"]) > round(
-                    executionPrice, -decimalPoints
-                )
-
-        # Rounding pool storage variables to the same amount of decimal points as the snapshots
-        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
-        print("poolPrice Uniswap", float(dict["poolPriceAfter"]))
-        print(
-            "PoolPrice Chainflip",
-            formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints),
-        )
-
-        decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent
-        assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(
-            slot0.sqrtPriceX96, -decimalPoints
-        )
-
-        assert float(dict["tickBefore"]) == slot0.tick
-        # Pool prices and tick should have moved less (less slippage due to LO). Doing less or equal since
-        # if only LO are used then the poolPrice will remain the same
-        if testCase["zeroForOne"]:
-            assert float(dict["poolPriceAfter"]) <= formatPriceWithPrecision(
-                slot0After.sqrtPriceX96, -decimalPoints
-            )
-            assert float(dict["tickAfter"]) <= slot0After.tick
-
+                if not dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
+                    decimalPoints = (
+                        decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
+                    )
+                    assert float(dict["executionPrice"]) > round(
+                        executionPrice, -decimalPoints
+                    )
+                if testCase.__contains__("exactOut"):
+                    decimalPoints = (
+                        decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+                    )
+                    assert float(dict["poolPriceAfter"]) > formatPriceWithPrecision(
+                        slot0After.sqrtPriceX96, -decimalPoints
+                    )
+                    assert float(dict["tickAfter"]) > slot0After.tick
         else:
-            assert float(dict["poolPriceAfter"]) >= formatPriceWithPrecision(
-                slot0After.sqrtPriceX96, -decimalPoints
-            )
-            assert float(dict["tickAfter"]) >= slot0After.tick
+            # Now execution price should be the same than the pool with noLO
+            if testCase["zeroForOne"]:
+                if not dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
+                    decimalPoints = (
+                        decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
+                    )
+                    assert float(dict["executionPrice"]) == round(
+                        executionPrice, -decimalPoints
+                    )
+                decimalPoints = (
+                    decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+                )
+                assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(
+                    slot0After.sqrtPriceX96, -decimalPoints
+                )
+                assert float(dict["tickAfter"]) == slot0After.tick
+            else:
+                if not dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
+                    decimalPoints = (
+                        decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
+                    )
+                    assert float(dict["executionPrice"]) == round(
+                        executionPrice, -decimalPoints
+                    )
+                if testCase.__contains__("exactOut"):
+                    decimalPoints = (
+                        decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+                    )
+                    assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(
+                        slot0After.sqrtPriceX96, -decimalPoints
+                    )
+                    assert float(dict["tickAfter"]) == slot0After.tick
 
 
 def executeSwap(pool, testCase, recipient):

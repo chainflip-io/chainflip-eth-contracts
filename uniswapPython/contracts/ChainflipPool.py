@@ -640,9 +640,6 @@ class ChainflipPool(UniswapPool):
                 ticksLinearMap, tick, self.token1 if zeroForOne else self.token0
             )
 
-        print("swap return")
-        print("amount0", amount0)
-        print("amount1", amount1)
         return (
             recipient,
             amount0,
