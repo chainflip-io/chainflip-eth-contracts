@@ -7,7 +7,6 @@ from ChainflipPool import *
 from Account import Ledger
 import SwapMath
 import TickMath
-from Position import assertLimitPositionIsBurnt
 
 import pytest
 import copy
@@ -46,7 +45,7 @@ def ledger():
         [MAX_INT256 // 100, MAX_INT256 // 100],
     ]  # LP Testing
     account5 = [
-        "FIN",
+        "FINN",
         TEST_TOKENS,
         [MAX_INT256 // 100, MAX_INT256 // 100],
     ]  # LP Testing2

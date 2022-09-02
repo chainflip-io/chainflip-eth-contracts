@@ -392,6 +392,7 @@ class UniswapPool(Account):
             0,
             cache.liquidityStart,
             [],
+            [],
         )
 
         while (
