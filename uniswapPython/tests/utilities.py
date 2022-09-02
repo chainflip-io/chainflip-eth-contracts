@@ -412,7 +412,25 @@ def formatPriceWithPrecision(price, precision):
 
 ################ Chainflip pool test utilities ################
 
-# Testing logic to verify limit order swapping (
+
+def getHashLinear(owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=tick, bool=isToken0)
+    return hash((owner, tick, isToken0))
+
+
+def assertLimitPositionExists(self, owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
+    key = getHashLinear(owner, tick, isToken0)
+    assert self.__contains__(key), "Position doesn't exist"
+
+
+def assertLimitPositionIsBurnt(self, owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
+    key = getHashLinear(owner, tick, isToken0)
+    assert not self.__contains__(key), "Position exists"
+
+
+###### Testing logic to verify limit order swapping
 
 
 # Check partially swapped single limit order
@@ -518,22 +536,5 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
         else:
             assert amountBurnt1 == amount1
 
-    # No liquidity left and all tokensOwed collected
-    assert (
-        pool.linearPositions[
-            getLimitPositionKey(owner, tickLO, not zeroForOne)
-        ].liquidity
-        == 0
-    )
-    assert (
-        pool.linearPositions[
-            getLimitPositionKey(owner, tickLO, not zeroForOne)
-        ].tokensOwed0
-        == 0
-    )
-    assert (
-        pool.linearPositions[
-            getLimitPositionKey(owner, tickLO, not zeroForOne)
-        ].tokensOwed1
-        == 0
-    )
+    # No liquidity left and all tokensOwed collected - check that the position is cleared
+    assertLimitPositionIsBurnt(pool.linearPositions, owner, tickLO, not zeroForOne)

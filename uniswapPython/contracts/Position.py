@@ -75,27 +75,10 @@ def getLinear(self, owner, tick, isToken0):
     return self[key]
 
 
-def getHashLinear(owner, tick, isToken0):
-    checkInputTypes(account=owner, int24=tick, bool=isToken0)
-    return hash((owner, tick, isToken0))
-
-
 def assertPositionExists(self, owner, tickLower, tickUpper):
     checkInputTypes(account=owner, int24=(tickLower, tickLower))
     positionInfo = get(self, owner, tickLower, tickUpper)
     assert positionInfo != PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
-
-
-def assertLimitPositionExists(self, owner, tick, isToken0):
-    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
-    key = getHashLinear(owner, tick, isToken0)
-    assert self.__contains__(key), "Position doesn't exist"
-
-
-def assertLimitPositionIsBurnt(self, owner, tick, isToken0):
-    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
-    key = getHashLinear(owner, tick, isToken0)
-    assert not self.__contains__(key), "Position exists"
 
 
 ### @notice Credits accumulated fees to a user's position
