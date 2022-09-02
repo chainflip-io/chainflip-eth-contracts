@@ -452,10 +452,15 @@ class ChainflipPool(UniswapPool):
                         state.ticksCrossed.append(stepLinear.tickNext)
                         # Tick.clear(ticksLinearMap, stepLinear.tickNext)
                         # There might be another Limit order that is better than range orders
-                        continue
+                        if state.amountSpecifiedRemaining != 0:
+                            continue
+                        else:
+                            # In case we cross the tick at the exact some time we complete the order
+                            break
                     else:
                         # Health check - swap should be completed
                         assert state.amountSpecifiedRemaining == 0
+                        print("----order completed with LO----")
                         # Prevent from altering anything in the range order pool
                         break
 
@@ -489,7 +494,7 @@ class ChainflipPool(UniswapPool):
             # to the RO if needed.
             # This is because we can't know the RO final price, and it could be a lot worse than the LO price. We could also
             # calculate the range order final price, compare it with the LO price, and then decide whether to swap the LO.
-            # TODO: Think about this.
+            # TODO: Think about this - e.g. we could add a margin #ticks before we jump into LO.
             if not stepLinear.initialized and stepLinear.tickNext != None:
                 if zeroForOne:
                     # -1 so it takes that limit order
@@ -512,6 +517,7 @@ class ChainflipPool(UniswapPool):
                     sqrtPriceLimitX96, step.sqrtPriceNextX96, nextLOatPrice
                 )
 
+            # Continue the range order swap as normal
             (
                 state.sqrtPriceX96,
                 step.amountIn,
@@ -524,9 +530,6 @@ class ChainflipPool(UniswapPool):
                 state.amountSpecifiedRemaining,
                 self.fee,
             )
-
-            # Continue the range order swap as normal
-            state.sqrtPriceX96 = state.sqrtPriceX96
 
             if exactInput:
                 state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
@@ -637,6 +640,9 @@ class ChainflipPool(UniswapPool):
                 ticksLinearMap, tick, self.token1 if zeroForOne else self.token0
             )
 
+        print("swap return")
+        print("amount0", amount0)
+        print("amount1", amount1)
         return (
             recipient,
             amount0,

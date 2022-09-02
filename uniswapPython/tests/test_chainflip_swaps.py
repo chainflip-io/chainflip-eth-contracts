@@ -3,7 +3,7 @@ import sys, os
 from utilities import *
 from poolFixturesChainflip import *
 from test_chainflipPool import accounts, ledger
-from ChainflipPoolSwaps import swapsSnapshot
+from UniswapV3PoolSwaps import swapsSnapshot
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
 from UniswapPool import *
@@ -15,7 +15,7 @@ import copy
 import decimal
 
 
-@pytest.fixture(params=[*range(0, 1, 1)])
+@pytest.fixture(params=[*range(0, 2, 1)])
 def TEST_POOLS(request, accounts, ledger):
     poolFixture = request.getfixturevalue("poolCF{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -26,12 +26,22 @@ def TEST_POOLS(request, accounts, ledger):
         pool.mint(
             accounts[0], position.tickLower, position.tickUpper, position.liquidity
         )
+
+    liquidity0LO = 0
+    liquidity1LO = 0
     for position in poolFixture.limitPositions:
         pool.mintLinearOrder(
             position.token, accounts[0], position.tick, position.liquidity
         )
-    poolBalance0 = pool.balances[TEST_TOKENS[0]]
-    poolBalance1 = pool.balances[TEST_TOKENS[1]]
+        if position.token == pool.token0:
+            liquidity0LO += position.liquidity
+        else:
+            liquidity1LO += position.liquidity
+
+    # Make up for limit order tokens so it can be checked against uniswap balances
+    poolBalance0 = pool.balances[TEST_TOKENS[0]] - liquidity0LO
+    poolBalance1 = pool.balances[TEST_TOKENS[1]] - liquidity1LO
+
     return (
         TEST_TOKENS[0],
         TEST_TOKENS[1],
@@ -59,18 +69,22 @@ def afterEach(accounts, TEST_POOLS):
             MAX_UINT128,
             MAX_UINT128,
         )
-    # Unclear since limitPositions can be burn during a swap
+
     for position in poolFixture.limitPositions:
-        pool.burnLimitOrder(
-            position.token, accounts[0], position.tick, position.liquidity
-        )
-        pool.collectLinear(
-            accounts[0],
-            position.token,
-            position.tick,
-            MAX_UINT128,
-            MAX_UINT128,
-        )
+        # TODO: This will also depend on if zeroForOne or not
+        if pool.linearPositions.__contains__(
+            getHashLinear(accounts[0], position.tick, position.tick == pool.token0)
+        ):
+            pool.burnLimitOrder(
+                position.token, accounts[0], position.tick, position.liquidity
+            )
+            pool.collectLinear(
+                accounts[0],
+                position.token,
+                position.tick,
+                MAX_UINT128,
+                MAX_UINT128,
+            )
 
 
 # UniswapV3Pool swap tests
@@ -87,6 +101,11 @@ def test_uniswap_swaps(TEST_POOLS):
         swapTests = poolFixture.swapTests
 
     for testCase in swapTests:
+        print("-------------- NEW SWAP TEST -----------")
+        print("testCase", testCase)
+        print("ticks0 before: ", pool.ticksLinearTokens0)
+        print("ticks1 before: ", pool.ticksLinearTokens1)
+
         slot0 = pool.slot0
         poolInstance = copy.deepcopy(pool)
 
@@ -99,6 +118,7 @@ def test_uniswap_swaps(TEST_POOLS):
         )
         dict = swapsSnapshot[snapshotIndex + 1]
 
+        ######## Execute swap ########
         try:
             recipient, amount0, amount1, _, _, _ = executeSwap(
                 poolInstance, testCase, recipient
@@ -113,70 +133,73 @@ def test_uniswap_swaps(TEST_POOLS):
             )
             assert float(dict["tickBefore"]) == slot0.tick
             continue
+        print(snapshotIndex)
+        print("ticks0 after: ", poolInstance.ticksLinearTokens0)
+        print("ticks1 after: ", poolInstance.ticksLinearTokens1)
+        print("zeroForOne", testCase["zeroForOne"])
 
-        poolBalance0After = poolInstance.balances[TEST_TOKENS[0]]
-        poolBalance1After = poolInstance.balances[TEST_TOKENS[1]]
         slot0After = poolInstance.slot0
-        liquidityAfter = poolInstance.liquidity
-        feeGrowthGlobal0X128 = poolInstance.feeGrowthGlobal0X128
-        feeGrowthGlobal1X128 = poolInstance.feeGrowthGlobal1X128
 
-        poolBalance0Delta = poolBalance0After - poolBalance0
-        poolBalance1Delta = poolBalance1After - poolBalance1
+        # Cannot really check balances because some positions will be burnt in some swaps
+        # but not others - too cumbersome
+        # Cannot really compare FeeGrowths either, because they will be split between LO and RO.
+        # Mainly comparing execution prices and poolPriceAfter
 
-        ## check all the events were emitted corresponding to balance changes
-        if poolBalance0Delta == 0:
-            amount0 == 0
-        elif poolBalance0Delta <= 0:
-            amount0 == -poolBalance0Delta
-        else:
-            amount0 == poolBalance0Delta
-
-        if poolBalance1Delta == 0:
-            amount1 == 0
-        elif poolBalance1Delta <= 0:
-            amount1 == -poolBalance1Delta
-        else:
-            amount1 == poolBalance1Delta
-
-        if poolBalance0Delta != 0:
-            executionPrice = -(poolBalance1Delta / poolBalance0Delta)
+        if amount0 != 0 and amount1 != 0:
+            # Execution price is no longer the same as the pool price, should be abs(assetOut / assetIn).
+            # To be able to compare it with uniswap ExecPrice (asset1/asset0) we calculate it the same way?
+            executionPrice = -(amount1 / amount0)
         else:
             executionPrice = "-Infinity"
 
         # Allowing some very small difference due to rounding errors
         assert float(dict["amount0Before"]) == pytest.approx(poolBalance0, rel=1e-12)
-        assert float(dict["amount0Delta"]) == pytest.approx(
-            poolBalance0Delta, rel=1e-12
-        )
         assert float(dict["amount1Before"]) == pytest.approx(poolBalance1, rel=1e-12)
-        assert float(dict["amount1Delta"]) == pytest.approx(
-            poolBalance1Delta, rel=1e-12
-        )
+
+        # Check that execution price is better than in only RO
         if dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
             assert executionPrice in ["Infinity", "-Infinity", "NaN"]
         else:
             decimalPoints = decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
-            assert float(dict["executionPrice"]) == round(
-                executionPrice, -decimalPoints
-            )
-        assert float(dict["feeGrowthGlobal0X128Delta"]) == pytest.approx(
-            feeGrowthGlobal0X128, rel=1e-12
-        )
-        assert float(dict["feeGrowthGlobal1X128Delta"]) == pytest.approx(
-            feeGrowthGlobal1X128, rel=1e-12
-        )
+            print("executionPrice Uniswap", float(dict["executionPrice"]))
+            print("executionPrice Chainflip", round(executionPrice, -decimalPoints))
+            # Now execution price should always be better than the pool with noLO
+            if testCase["zeroForOne"]:
+                assert float(dict["executionPrice"]) < round(
+                    executionPrice, -decimalPoints
+                )
+            else:
+                assert float(dict["executionPrice"]) > round(
+                    executionPrice, -decimalPoints
+                )
+
         # Rounding pool storage variables to the same amount of decimal points as the snapshots
         decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
-        assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(
-            slot0After.sqrtPriceX96, -decimalPoints
+        print("poolPrice Uniswap", float(dict["poolPriceAfter"]))
+        print(
+            "PoolPrice Chainflip",
+            formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints),
         )
+
         decimalPoints = decimal.Decimal(dict["poolPriceBefore"]).as_tuple().exponent
         assert float(dict["poolPriceBefore"]) == formatPriceWithPrecision(
             slot0.sqrtPriceX96, -decimalPoints
         )
-        assert float(dict["tickAfter"]) == slot0After.tick
+
         assert float(dict["tickBefore"]) == slot0.tick
+        # Pool prices and tick should have moved less (less slippage due to LO). Doing less or equal since
+        # if only LO are used then the poolPrice will remain the same
+        if testCase["zeroForOne"]:
+            assert float(dict["poolPriceAfter"]) <= formatPriceWithPrecision(
+                slot0After.sqrtPriceX96, -decimalPoints
+            )
+            assert float(dict["tickAfter"]) <= slot0After.tick
+
+        else:
+            assert float(dict["poolPriceAfter"]) >= formatPriceWithPrecision(
+                slot0After.sqrtPriceX96, -decimalPoints
+            )
+            assert float(dict["tickAfter"]) >= slot0After.tick
 
 
 def executeSwap(pool, testCase, recipient):

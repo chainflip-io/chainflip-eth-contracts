@@ -108,19 +108,8 @@ def test_uniswap_swaps(TEST_POOLS):
         poolBalance1Delta = poolBalance1After - poolBalance1
 
         ## check all the events were emitted corresponding to balance changes
-        if poolBalance0Delta == 0:
-            amount0 == 0
-        elif poolBalance0Delta <= 0:
-            amount0 == -poolBalance0Delta
-        else:
-            amount0 == poolBalance0Delta
-
-        if poolBalance1Delta == 0:
-            amount1 == 0
-        elif poolBalance1Delta <= 0:
-            amount1 == -poolBalance1Delta
-        else:
-            amount1 == poolBalance1Delta
+        assert amount0 == poolBalance0Delta
+        assert amount1 == poolBalance1Delta
 
         if poolBalance0Delta != 0:
             executionPrice = -(poolBalance1Delta / poolBalance0Delta)

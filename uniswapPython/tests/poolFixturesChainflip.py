@@ -48,11 +48,17 @@ def poolCF0():
                 liquidity=expandTo18Decimals(2),
             ),
         ],
+        # Smaller LO positions so they get crossed by the swap when in that direction
         limitPositions=[
             PositionLimit(
                 tick=0,
-                liquidity=expandTo18Decimals(2),
+                liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[0],
+            ),
+            PositionLimit(
+                tick=0,
+                liquidity=expandTo18Decimals(1) // 2,
+                token=TEST_TOKENS[1],
             ),
         ],
         swapTests=None,
@@ -71,6 +77,18 @@ def poolCF1():
                 tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
                 tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
                 liquidity=expandTo18Decimals(2),
+            ),
+        ],
+        limitPositions=[
+            PositionLimit(
+                tick=0,
+                liquidity=expandTo18Decimals(1) // 2,
+                token=TEST_TOKENS[0],
+            ),
+            PositionLimit(
+                tick=0,
+                liquidity=expandTo18Decimals(1) // 2,
+                token=TEST_TOKENS[1],
             ),
         ],
         swapTests=None,
@@ -347,16 +365,17 @@ DEFAULT_CFPOOL_SWAP_TESTS = [
         "exactOut": False,
         "amount1": expandTo18Decimals(1),
     },
-    {
-        "zeroForOne": True,
-        "exactOut": True,
-        "amount1": expandTo18Decimals(1),
-    },
-    {
-        "zeroForOne": False,
-        "exactOut": True,
-        "amount0": expandTo18Decimals(1),
-    },
+    ## NO exactOut for now
+    # {
+    #     "zeroForOne": True,
+    #     "exactOut": True,
+    #     "amount1": expandTo18Decimals(1),
+    # },
+    # {
+    #     "zeroForOne": False,
+    #     "exactOut": True,
+    #     "amount0": expandTo18Decimals(1),
+    # },
     ## swap large amounts in/out with a price limit
     {
         "zeroForOne": True,
@@ -370,18 +389,19 @@ DEFAULT_CFPOOL_SWAP_TESTS = [
         "amount1": expandTo18Decimals(1),
         "sqrtPriceLimit": encodePriceSqrt(200, 100),
     },
-    {
-        "zeroForOne": True,
-        "exactOut": True,
-        "amount1": expandTo18Decimals(1),
-        "sqrtPriceLimit": encodePriceSqrt(50, 100),
-    },
-    {
-        "zeroForOne": False,
-        "exactOut": True,
-        "amount0": expandTo18Decimals(1),
-        "sqrtPriceLimit": encodePriceSqrt(200, 100),
-    },
+    ## NO exactOut for now
+    # {
+    #     "zeroForOne": True,
+    #     "exactOut": True,
+    #     "amount1": expandTo18Decimals(1),
+    #     "sqrtPriceLimit": encodePriceSqrt(50, 100),
+    # },
+    # {
+    #     "zeroForOne": False,
+    #     "exactOut": True,
+    #     "amount0": expandTo18Decimals(1),
+    #     "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    # },
     # ## swap small amounts in/out
     # TODO: Swapping small amounts in/out can be off (e-5) - assuming it's due to rounding errors
     # Also, it is only off in extreme poolCFs, not in the ones closer to normal functioning.
@@ -395,16 +415,17 @@ DEFAULT_CFPOOL_SWAP_TESTS = [
     #   "exactOut": False,
     #   "amount1": 1000,
     # },
-    {
-        "zeroForOne": True,
-        "exactOut": True,
-        "amount1": 1000,
-    },
-    {
-        "zeroForOne": False,
-        "exactOut": True,
-        "amount0": 1000,
-    },
+    ## NO exactOut for now
+    # {
+    #     "zeroForOne": True,
+    #     "exactOut": True,
+    #     "amount1": 1000,
+    # },
+    # {
+    #     "zeroForOne": False,
+    #     "exactOut": True,
+    #     "amount0": 1000,
+    # },
     # ## swap arbitrary input to price
     {
         "sqrtPriceLimit": encodePriceSqrt(5, 2),
