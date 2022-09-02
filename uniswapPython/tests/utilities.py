@@ -254,10 +254,14 @@ def checkInputTypes(**kwargs):
         loopChecking(kwargs.get("int24"), checkInt24)
     if "uint256" in kwargs:
         loopChecking(kwargs.get("uint256"), checkUInt256)
+    if "int256" in kwargs:
+        loopChecking(kwargs.get("int256"), checkInt256)
     if "uint160" in kwargs:
         loopChecking(kwargs.get("uint160"), checkUInt160)
     if "uint128" in kwargs:
         loopChecking(kwargs.get("uint128"), checkUInt128)
+    if "int128" in kwargs:
+        loopChecking(kwargs.get("int128"), checkInt128)
     if "uint8" in kwargs:
         loopChecking(kwargs.get("uint8"), checkUInt8)
     if "dict" in kwargs:

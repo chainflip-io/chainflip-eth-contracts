@@ -15,7 +15,7 @@ import copy
 import decimal
 
 
-@pytest.fixture(params=[*range(0, 4, 1)])
+@pytest.fixture(params=[*range(9, 15, 1)])
 def TEST_POOLS(request, accounts, ledger):
     poolFixture = request.getfixturevalue("poolCF{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -105,6 +105,7 @@ def test_uniswap_swaps(TEST_POOLS):
         print("swap testCase", testCase)
         print("ticks0 before: ", pool.ticksLinearTokens0)
         print("ticks1 before: ", pool.ticksLinearTokens1)
+        print("ticks RO before: ", pool.ticks)
         print("pool initial tick: ", pool.slot0.tick)
 
         slot0 = pool.slot0

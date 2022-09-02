@@ -130,7 +130,6 @@ def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroFor
         uint24=feePips,
         bool=zeroForOne,
     )
-
     tickCrossed = False
 
     # exactIn < 0 means exactOut = True
@@ -142,8 +141,10 @@ def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroFor
         )
         # Swap amountRemainingLessFee
         if zeroForOne:
+            # Potential for overflow (> uint256) - in swap test it overflows
             amountOut = mulDiv(amountRemainingLessFee, priceX96, 2**96)
         else:
+            # Potential for overflow (> uint256)
             amountOut = mulDiv(amountRemainingLessFee, 2**96, priceX96)
         # MAX amountIn that can be swapped in this tick
         if amountOut <= liquidity:

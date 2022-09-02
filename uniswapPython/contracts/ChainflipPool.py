@@ -327,6 +327,8 @@ class ChainflipPool(UniswapPool):
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
             print("SWAP LOOP")
+            print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
+            print(expandTo18Decimals(2))
             # First limit orders are checked since they can offer a better price for the user.
 
             ######################################################
