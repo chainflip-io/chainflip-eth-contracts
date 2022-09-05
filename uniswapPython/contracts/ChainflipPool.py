@@ -327,8 +327,8 @@ class ChainflipPool(UniswapPool):
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
             print("SWAP LOOP")
+            print("current tick", state.tick)
             print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
-            print(expandTo18Decimals(2))
             # First limit orders are checked since they can offer a better price for the user.
 
             ######################################################
@@ -339,7 +339,7 @@ class ChainflipPool(UniswapPool):
             stepLinear = StepComputations(0, None, False, 0, 0, 0, 0)
             stepLinear.sqrtPriceStartX96 = state.sqrtPriceX96
 
-            # Just to not try finding a limit order if there aren't any
+            # Just to not try finding a limit order if there aren't any.
             if len(state.keysLinearTicks) != 0:
                 # Find the next linear order tick. initialized == False if not found and returning the next best
                 (stepLinear.tickNext, stepLinear.initialized) = nextLinearTick(
@@ -372,6 +372,8 @@ class ChainflipPool(UniswapPool):
                         zeroForOne,
                     )
 
+                    print("Amount computed: ", stepLinear.amountIn)
+
                     # Update the tick - we can consider to only update when we cross tick
                     # and keep global variables in state (like uniswap does)
 
@@ -397,8 +399,9 @@ class ChainflipPool(UniswapPool):
                     )
 
                     # Update tick liquidity
-                    ## Health check
-                    assert stepLinear.amountOut > 0
+                    ## Health check - probably not needed, since if the price is so bad it will both be zero and move on.
+                    assert stepLinear.amountIn > 0 or stepLinear.amountOut > 0
+
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut
                     )
@@ -443,6 +446,11 @@ class ChainflipPool(UniswapPool):
                         tickLinearInfo.feeGrowthInsideX128
                     )
 
+                    print(
+                        "amountSpecifiedRemaining after LO swap",
+                        state.amountSpecifiedRemaining,
+                    )
+
                     if tickCrossed:
                         # Health check
                         assert tickLinearInfo.liquidityLeft == 0
@@ -481,6 +489,10 @@ class ChainflipPool(UniswapPool):
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
             (step.tickNext, step.initialized) = self.nextTick(state.tick, zeroForOne)
 
+            print("Next tick RO: ", step.tickNext)
+            print("Initialized RO: ", step.initialized)
+            print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
+
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
 
@@ -489,7 +501,7 @@ class ChainflipPool(UniswapPool):
             if not step.initialized:
                 # We know it's a border and we have no liquidity, so instead of zero-swapping until there
                 # we just stop at the LO tick.
-                assert self.liquidity == 0
+                assert state.liquidity == 0
 
             # If there is a "next best" LO, use the TickMath.getSqrtRatioAtTick(stepLinear.tickNext)
             # also as a limit price, so if we reach there by swapping a RO, we stop, jump to the LO, and then come back
@@ -586,6 +598,10 @@ class ChainflipPool(UniswapPool):
             elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
                 ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
                 state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
+
+            print("LOOP ENDING --------------------")
+            print(state.amountSpecifiedRemaining != 0)
+            print(state.sqrtPriceX96 != sqrtPriceLimitX96)
 
         ## End of swap loop
         # Set final tick as the range tick

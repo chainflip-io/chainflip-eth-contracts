@@ -15,7 +15,7 @@ import copy
 import decimal
 
 
-@pytest.fixture(params=[*range(9, 15, 1)])
+@pytest.fixture(params=[*range(24, 25, 1)])
 def TEST_POOLS(request, accounts, ledger):
     poolFixture = request.getfixturevalue("poolCF{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -121,9 +121,14 @@ def test_uniswap_swaps(TEST_POOLS):
         dict = swapsSnapshot[snapshotIndex + 1]
 
         ######## Execute swap ########
+        sqrtPriceLimitX96 = (
+            None
+            if not testCase.__contains__("sqrtPriceLimit")
+            else testCase["sqrtPriceLimit"]
+        )
         try:
             recipient, amount0, amount1, _, _, _ = executeSwap(
-                poolInstance, testCase, recipient
+                poolInstance, testCase, recipient, sqrtPriceLimitX96
             )
         except AssertionError as msg:
             assert str(msg) == "SPL"
@@ -143,21 +148,31 @@ def test_uniswap_swaps(TEST_POOLS):
         # Cannot really compare FeeGrowths either, because they will be split between LO and RO.
         # Mainly comparing execution prices and poolPriceAfter
 
-        if amount0 != 0 and amount1 != 0:
+        if amount0 != 0:
             # Execution price is no longer the same as the pool price, should be abs(assetOut / assetIn).
             # To be able to compare it with uniswap ExecPrice (asset1/asset0) we calculate it the same way?
             executionPrice = -(amount1 / amount0)
         else:
             executionPrice = "-Infinity"
 
+        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
+        print(
+            "poolpriceBefore: ",
+            formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints),
+        )
+        print("amount0: ", amount0)
+        print("amount1: ", amount1)
+        print("executionPrice: ", executionPrice)
+        print("dictExecPrice:", dict["executionPrice"])
+
         print(snapshotIndex)
         print("ticks0 after: ", poolInstance.ticksLinearTokens0)
         print("ticks1 after: ", poolInstance.ticksLinearTokens1)
         print("pool final tick: ", poolInstance.slot0.tick)
         print("zeroForOne", testCase["zeroForOne"])
-        print("executionPrice Uniswap", float(dict["executionPrice"]))
+        # print("executionPrice Uniswap", float(dict["executionPrice"]))
         decimalPoints = decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
-        print("executionPrice Chainflip", round(executionPrice, -decimalPoints))
+        # print("executionPrice Chainflip", round(executionPrice, -decimalPoints))
         print("poolPrice Uniswap", float(dict["poolPriceAfter"]))
         decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
         print(
@@ -177,8 +192,29 @@ def test_uniswap_swaps(TEST_POOLS):
         if dict["executionPrice"] in ["Infinity", "-Infinity", "NaN"]:
             assert executionPrice in ["Infinity", "-Infinity", "NaN"]
 
-        # If it's a swap to the limit - aka can't be fulfilled
-        if not testCase.__contains__("exactOut"):
+        # If the swap can't be fulfilled (swapped to the pool limit or swapped to the price limit) then the
+        # final swap price and tick should be the same. (no exact out means it will swap to the pool limit)
+
+        if sqrtPriceLimitX96 == None:
+            sqrtPriceLimitX96 = (
+                getSqrtPriceLimitX96(TEST_TOKENS[0])
+                if testCase["zeroForOne"]
+                else getSqrtPriceLimitX96(TEST_TOKENS[1])
+            )
+        sqrtPriceLimitX96 = formatPriceWithPrecision(sqrtPriceLimitX96, -decimalPoints)
+        uniFinalPrice = float(dict["poolPriceAfter"])
+        cfFinalPrice = formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints)
+
+        # It can happen that due to the limit orders added the CF pool doesn't reach the limit but
+        # the uniswapPool was meant to reach it.
+        uniswapPoolLimit = (
+            uniFinalPrice == sqrtPriceLimitX96 or not testCase.__contains__("exactOut")
+        )
+        chainflipPoolLimit = (
+            cfFinalPrice == sqrtPriceLimitX96 or not testCase.__contains__("exactOut")
+        )
+
+        if uniswapPoolLimit and chainflipPoolLimit:
             decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
             assert float(dict["poolPriceAfter"]) == formatPriceWithPrecision(
                 slot0After.sqrtPriceX96, -decimalPoints
@@ -196,7 +232,7 @@ def test_uniswap_swaps(TEST_POOLS):
                     assert float(dict["executionPrice"]) < round(
                         executionPrice, -decimalPoints
                     )
-                if testCase.__contains__("exactOut"):
+                if not (uniswapPoolLimit and chainflipPoolLimit):
                     decimalPoints = (
                         decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
                     )
@@ -213,7 +249,7 @@ def test_uniswap_swaps(TEST_POOLS):
                     assert float(dict["executionPrice"]) > round(
                         executionPrice, -decimalPoints
                     )
-                if testCase.__contains__("exactOut"):
+                if not (uniswapPoolLimit and chainflipPoolLimit):
                     decimalPoints = (
                         decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
                     )
@@ -246,7 +282,7 @@ def test_uniswap_swaps(TEST_POOLS):
                     assert float(dict["executionPrice"]) == round(
                         executionPrice, -decimalPoints
                     )
-                if testCase.__contains__("exactOut"):
+                if not (uniswapPoolLimit and chainflipPoolLimit):
                     decimalPoints = (
                         decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
                     )
@@ -256,12 +292,7 @@ def test_uniswap_swaps(TEST_POOLS):
                     assert float(dict["tickAfter"]) == slot0After.tick
 
 
-def executeSwap(pool, testCase, recipient):
-    sqrtPriceLimit = (
-        None
-        if not testCase.__contains__("sqrtPriceLimit")
-        else testCase["sqrtPriceLimit"]
-    )
+def executeSwap(pool, testCase, recipient, sqrtPriceLimit):
     if testCase.__contains__("exactOut"):
         if testCase["exactOut"]:
             if testCase["zeroForOne"]:
@@ -283,9 +314,9 @@ def executeSwap(pool, testCase, recipient):
                 )
     else:
         if testCase["zeroForOne"]:
-            return swapToLowerPrice(pool, recipient, testCase["sqrtPriceLimit"])
+            return swapToLowerPrice(pool, recipient, sqrtPriceLimit)
         else:
-            return swapToHigherPrice(pool, recipient, testCase["sqrtPriceLimit"])
+            return swapToHigherPrice(pool, recipient, sqrtPriceLimit)
 
 
 def swapCaseToDescription(testCase):

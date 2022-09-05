@@ -512,7 +512,8 @@ def poolCF13():
     )
 
 
-# TODO: Debug this - something is a bit off with this swap
+# In some of the swaps in this pool the amountSwapped > liquidity and it will end up
+# in the pool limits. Therefore, there is no way to add limitOrders that are not used.
 @pytest.fixture
 def poolCF14():
     return poolCFTestCase(
@@ -544,44 +545,119 @@ def poolCF14():
     )
 
 
+@pytest.fixture
+def poolCF15():
+    return poolCFTestCase(
+        description="medium fee, token0 liquidity only",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=0,
+                tickUpper=2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        limitPositions=[
+            PositionLimit(
+                tick=0,
+                liquidity=expandTo18Decimals(1) // 2,
+                token=TEST_TOKENS[0],
+            ),
+        ],
+        swapTests=None,
+        usedLO=True,
+    )
+
+
+@pytest.fixture
+def poolCF16():
+    return poolCFTestCase(
+        description="medium fee, token0 liquidity only",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=0,
+                tickUpper=2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        limitPositions=[
+            PositionLimit(
+                tick=10020,
+                liquidity=expandTo18Decimals(1) // 2,
+                token=TEST_TOKENS[0],
+            ),
+        ],
+        swapTests=None,
+        usedLO=False,
+    )
+
+
+@pytest.fixture
+def poolCF17():
+    return poolCFTestCase(
+        description="medium fee, token1 liquidity only",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=-2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+                tickUpper=0,
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        limitPositions=[
+            PositionLimit(
+                tick=0,
+                liquidity=expandTo18Decimals(1) // 2,
+                token=TEST_TOKENS[1],
+            ),
+        ],
+        swapTests=None,
+        usedLO=True,
+    )
+
+
+@pytest.fixture
+def poolCF18():
+    return poolCFTestCase(
+        description="medium fee, token1 liquidity only",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=-2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+                tickUpper=0,
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        limitPositions=[
+            PositionLimit(
+                tick=-10020,
+                liquidity=expandTo18Decimals(1) // 2,
+                token=TEST_TOKENS[1],
+            ),
+        ],
+        swapTests=None,
+        usedLO=False,
+    )
+
+
+# It is not possible to put a better LO on token1 that changes the execution price
+# more than the precision of the execution price (4 decimals) since the pool is
+# almost at the limit already - so even though the orders are taken, we signal
+# usedLO as False as it doesn't make a significant impact on the outcome.
+# Therefore only checking the usedLO=False case.
+
+# TODO: Look into solving this - same overflow as previous tests
 # @pytest.fixture
-# def poolCF8():
-#     return poolCFTestCase(
-#         description="medium fee, token0 liquidity only",
-#         feeAmount=FeeAmount.MEDIUM,
-#         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-#         startingPrice=encodePriceSqrt(1, 1),
-#         positions=[
-#             Position(
-#                 tickLower=0,
-#                 tickUpper=2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
-#                 liquidity=expandTo18Decimals(2),
-#             )
-#         ],
-#         swapTests=None,
-#     )
-
-
-# @pytest.fixture
-# def poolCF9():
-#     return poolCFTestCase(
-#         description="medium fee, token1 liquidity only",
-#         feeAmount=FeeAmount.MEDIUM,
-#         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-#         startingPrice=encodePriceSqrt(1, 1),
-#         positions=[
-#             Position(
-#                 tickLower=-2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
-#                 tickUpper=0,
-#                 liquidity=expandTo18Decimals(2),
-#             )
-#         ],
-#         swapTests=None,
-#     )
-
-
-# @pytest.fixture
-# def poolCF10():
+# def poolCF19():
 #     return poolCFTestCase(
 #         description="close to max price",
 #         feeAmount=FeeAmount.MEDIUM,
@@ -594,14 +670,30 @@ def poolCF14():
 #                 liquidity=expandTo18Decimals(2),
 #             )
 #         ],
+#         limitPositions=[
+#             PositionLimit(
+#                 tick=880340-20,
+#                 liquidity=expandTo18Decimals(1) // 10,
+#                 token=TEST_TOKENS[0],
+#             ),
+#             PositionLimit(
+#                 tick=880340-20,
+#                 liquidity=expandTo18Decimals(1) // 10,
+#                 token=TEST_TOKENS[1],
+#             ),
+#         ],
 #         swapTests=None,
+#         usedLO=False,
 #     )
 
 
-# # This poolCF with such low starting price (or someething else) ends up with a bigger
-# # than normal rounding error when comparing amount0before (and possibly others)
+# It is not possible to put a better LO on token1 that changes the execution price
+# more than the precision of the execution price (4 decimals) since the pool is
+# almost at the limit already - so even though the orders are taken, we signal
+# usedLO as False as it doesn't make a significant impact on the outcome.
+# TODO: Look into solving this - same overflow (now its division by zero) as previous tests
 # @pytest.fixture
-# def poolCF11():
+# def poolCF20():
 #     return poolCFTestCase(
 #         description="close to min price",
 #         feeAmount=FeeAmount.MEDIUM,
@@ -614,12 +706,29 @@ def poolCF14():
 #                 liquidity=expandTo18Decimals(2),
 #             )
 #         ],
+#         limitPositions=[
+#             PositionLimit(
+#                 tick=-880340+20,
+#                 liquidity=expandTo18Decimals(1) // 10,
+#                 token=TEST_TOKENS[0],
+#             ),
+#             PositionLimit(
+#                 tick=-880340+20,
+#                 liquidity=expandTo18Decimals(1) // 10,
+#                 token=TEST_TOKENS[1],
+#             ),
+#         ],
 #         swapTests=None,
+#         usedLO=False,
 #     )
 
 
+# RO has pretty much infinite liquidity so the RO swap won't even change the
+# pool price. So when using LO the RO pool price will be the same as the LO.
+# Therefore it fails the poolPrice check.
+# TODO: Fix this - maybe adding a result case in swap results ( adding "CF to description)
 # @pytest.fixture
-# def poolCF12():
+# def poolCF21():
 #     return poolCFTestCase(
 #         description="max full range liquidity at 1:1 price with default fee",
 #         feeAmount=FeeAmount.MEDIUM,
@@ -632,44 +741,128 @@ def poolCF14():
 #                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
 #             )
 #         ],
-#         swapTests=None,
-#     )
-
-
-# @pytest.fixture
-# def poolCF13():
-#     return poolCFTestCase(
-#         description="initialized at the max ratio",
-#         feeAmount=FeeAmount.MEDIUM,
-#         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-#         startingPrice=MAX_SQRT_RATIO - 1,
-#         positions=[
-#             Position(
-#                 tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 liquidity=expandTo18Decimals(2),
-#             )
+#         # Added extra liquidity to LO so it makes a difference.
+#         limitPositions=[
+#             PositionLimit(
+#                 tick=0,
+#                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+#                 token=TEST_TOKENS[0],
+#             ),
+#             PositionLimit(
+#                 tick=TICK_SPACINGS[FeeAmount.MEDIUM],
+#                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+#                 token=TEST_TOKENS[1],
+#             ),
 #         ],
 #         swapTests=None,
+#         usedLO=True,
 #     )
 
 
-# @pytest.fixture
-# def poolCF14():
-#     return poolCFTestCase(
-#         description="initialized at the min ratio",
-#         feeAmount=FeeAmount.MEDIUM,
-#         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-#         startingPrice=MIN_SQRT_RATIO,
-#         positions=[
-#             Position(
-#                 tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 liquidity=expandTo18Decimals(2),
-#             )
-#         ],
-#         swapTests=None,
-#     )
+@pytest.fixture
+def poolCF22():
+    return poolCFTestCase(
+        description="max full range liquidity at 1:1 price with default fee",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            )
+        ],
+        # Added extra liquidity to LO so it makes a difference.
+        limitPositions=[
+            PositionLimit(
+                tick=10020,
+                liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                token=TEST_TOKENS[0],
+            ),
+            PositionLimit(
+                tick=-10020,
+                liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                token=TEST_TOKENS[1],
+            ),
+        ],
+        swapTests=None,
+        usedLO=False,
+    )
+
+
+# It is not possible to put a better LO on token1 that changes the execution price
+# more than the precision of the execution price (4 decimals) since the pool is
+# almost at the limit already - so even though the orders are taken, we signal
+# usedLO as False as it doesn't make a significant impact on the outcome.
+# Therefore only checking the usedLO=False case.
+# TODO: Look into solving this - same overflow (now its division by zero) as previous tests
+@pytest.fixture
+def poolCF23():
+    return poolCFTestCase(
+        description="initialized at the max ratio",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=MAX_SQRT_RATIO - 1,
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        limitPositions=[
+            PositionLimit(
+                tick=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(1) // 10,
+                token=TEST_TOKENS[0],
+            ),
+            PositionLimit(
+                tick=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(1) // 10,
+                token=TEST_TOKENS[1],
+            ),
+        ],
+        swapTests=None,
+        usedLO=False,
+    )
+
+
+# It is not possible to put a better LO on token1 that changes the execution price
+# more than the precision of the execution price (4 decimals) since the pool is
+# almost at the limit already - so even though the orders are taken, we signal
+# usedLO as False as it doesn't make a significant impact on the outcome.
+# Therefore only checking the usedLO=False case.
+# TODO: Look into solving this - same overflow as previous test.
+@pytest.fixture
+def poolCF24():
+    return poolCFTestCase(
+        description="initialized at the min ratio",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=MIN_SQRT_RATIO,
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(2),
+            )
+        ],
+        limitPositions=[
+            PositionLimit(
+                tick=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(1) // 10,
+                token=TEST_TOKENS[0],
+            ),
+            PositionLimit(
+                tick=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=expandTo18Decimals(1) // 10,
+                token=TEST_TOKENS[1],
+            ),
+        ],
+        swapTests=None,
+        usedLO=False,
+    )
 
 
 @dataclass
