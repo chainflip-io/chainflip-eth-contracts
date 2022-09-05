@@ -43,6 +43,9 @@ class ChainflipPool(UniswapPool):
         checkInputTypes(int24=(tick))
         assert tick >= TickMath.MIN_TICK, "TLM"
         assert tick <= TickMath.MAX_TICK, "TUM"
+        # Check that priceTick > 0 to simplify edge cases (this happens because pricex96 can be zero
+        # in some ticks while sqrtPricex96 will not.
+        assert TickMath.getPriceAtTick(tick) > 0, "Price must be > 0"
 
     def mintLinearOrder(self, token, recipient, tick, amount):
         checkInputTypes(

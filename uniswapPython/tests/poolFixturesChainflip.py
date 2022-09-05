@@ -688,7 +688,6 @@ def poolCF19():
 # more than the precision of the execution price (4 decimals) since the pool is
 # almost at the limit already - so even though the orders are taken, we signal
 # usedLO as False as it doesn't make a significant impact on the outcome.
-# TODO: Look into solving this - same overflow (now its division by zero) as previous tests
 @pytest.fixture
 def poolCF20():
     return poolCFTestCase(
@@ -705,12 +704,12 @@ def poolCF20():
         ],
         limitPositions=[
             PositionLimit(
-                tick=-880340 + 20,
+                tick=-580340 + 20,
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=-880340 + 20,
+                tick=-580340 + 20,
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[1],
             ),

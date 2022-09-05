@@ -4,6 +4,7 @@ import LiquidityMath
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "tests"))
 from utilities import *
+import SqrtPriceMath
 
 from dataclasses import dataclass
 
@@ -263,17 +264,17 @@ def updateLinear(
             currentPosition0 = LiquidityMath.addDelta(
                 self.liquidity, -amountSwappedPrev
             )
-            currentPosition1 = mulDiv(amountSwappedPrev, pricex96, 2**96)
+            currentPosition1 = SqrtPriceMath.calculateAmount1LO(
+                amountSwappedPrev, pricex96
+            )
 
         else:
             currentPosition1 = LiquidityMath.addDelta(
                 self.liquidity, -amountSwappedPrev
             )
-            # Patch - there shouldn't be limit orders at the edges
-            if pricex96 == 0:
-                currentPosition0 = amountSwappedPrev
-            else:
-                currentPosition0 = mulDiv(amountSwappedPrev, 2**96, pricex96)
+            currentPosition0 = SqrtPriceMath.calculateAmount0LO(
+                amountSwappedPrev, pricex96
+            )
 
         ### Calculate the amount of liquidity that should be burnt from liquidityLeft and liquiditySwapped
 
@@ -303,16 +304,19 @@ def updateLinear(
         # but we can't burn more than that anyway, so no need to
         # self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
 
+        # TODO: Add tests for boundary postions to check that LP's don't get too many tokens back when burning.
+        # In good price for user (bad for LP), they will get maximum the LP liquidity. Then LP wont get much.
+        # In bad price for user, user will give everything and not get much. Then LP might get too much back (potentially).
         if isToken0:
             # Update position owed in their tokens
             self.tokensOwed0 += abs(liquidityLeftDelta)
-            liquiditySwappedDelta = mulDiv(
-                abs(liquiditySwappedDelta), pricex96, 2**96
+            liquiditySwappedDelta = SqrtPriceMath.calculateAmount1LO(
+                abs(liquiditySwappedDelta), pricex96
             )
             self.tokensOwed1 += liquiditySwappedDelta
         else:
-            liquiditySwappedDelta = mulDiv(
-                abs(liquiditySwappedDelta), 2**96, pricex96
+            liquiditySwappedDelta = SqrtPriceMath.calculateAmount0LO(
+                abs(liquiditySwappedDelta), pricex96
             )
             self.tokensOwed0 += liquiditySwappedDelta
             self.tokensOwed1 += abs(liquidityLeftDelta)
