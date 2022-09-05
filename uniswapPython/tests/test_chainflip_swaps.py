@@ -15,7 +15,7 @@ import copy
 import decimal
 
 
-@pytest.fixture(params=[*range(24, 25, 1)])
+@pytest.fixture(params=[*range(0, 21, 1)])
 def TEST_POOLS(request, accounts, ledger):
     poolFixture = request.getfixturevalue("poolCF{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -107,6 +107,13 @@ def test_uniswap_swaps(TEST_POOLS):
         print("ticks1 before: ", pool.ticksLinearTokens1)
         print("ticks RO before: ", pool.ticks)
         print("pool initial tick: ", pool.slot0.tick)
+
+        print("LO swapping price", TickMath.getPriceAtTick(-880340 + 20))
+        print("LO swapping sqrtPrice", TickMath.getSqrtRatioAtTick(-880340 + 20))
+        print(
+            "LO swapping sqrtPrice",
+            ((TickMath.getSqrtRatioAtTick(-880340 + 20)) ** 2) / (2**96),
+        )
 
         slot0 = pool.slot0
         poolInstance = copy.deepcopy(pool)

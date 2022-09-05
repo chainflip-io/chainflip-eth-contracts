@@ -141,19 +141,29 @@ def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroFor
         )
         # Swap amountRemainingLessFee
         if zeroForOne:
-            # Potential for overflow (> uint256) - in swap test it overflows
-            amountOut = mulDiv(amountRemainingLessFee, priceX96, 2**96)
+            # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
+            amountOut = (amountRemainingLessFee * priceX96) // 2**96
         else:
-            # Potential for overflow (> uint256)
-            amountOut = mulDiv(amountRemainingLessFee, 2**96, priceX96)
+            if priceX96 != 0:
+                # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
+                amountOut = (amountRemainingLessFee * 2**96) // priceX96
+            else:
+                # Just trigger the reverse math computations
+                amountOut = (
+                    liquidity + 1
+                )  
+
         # MAX amountIn that can be swapped in this tick
         if amountOut <= liquidity:
             amountIn = amountRemainingLessFee
         else:
-            # Reverse math to figure out the max AmountIn that can be swapped in this tick
+            # Reverse math to figure out the max AmountIn that can be swapped in this tick.
+            # This one should not overflow.
             if zeroForOne:
+                # This cannot be divided by zero since with price == 0 the amountOut == 0 so <= liquidity
                 amountIn = mulDiv(liquidity, 2**96, priceX96)
             else:
+                # This won't overflow because for really big prices the amountOut will be very small, <= liquidity
                 amountIn = mulDiv(liquidity, priceX96, 2**96)
             # Health check
             assert amountIn < amountRemaining
