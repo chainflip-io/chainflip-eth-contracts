@@ -15,7 +15,7 @@ import copy
 import decimal
 
 
-@pytest.fixture(params=[*range(0, 21, 1)])
+@pytest.fixture(params=[*range(0, 25, 1)])
 def TEST_POOLS(request, accounts, ledger):
     poolFixture = request.getfixturevalue("poolCF{}".format(request.param))
     feeAmount = poolFixture.feeAmount
@@ -102,17 +102,11 @@ def test_uniswap_swaps(TEST_POOLS):
 
     for testCase in swapTests:
         print("-------------- NEW SWAP TEST -----------")
-        print("swap testCase", testCase)
-        print("ticks0 before: ", pool.ticksLinearTokens0)
-        print("ticks1 before: ", pool.ticksLinearTokens1)
-        print("ticks RO before: ", pool.ticks)
-        print("pool initial tick: ", pool.slot0.tick)
-
-        print("LO swapping price", TickMath.getPriceAtTick(-880340 + 20))
-        print("LO swapping sqrtPrice", TickMath.getSqrtRatioAtTick(-880340 + 20))
         print(
-            "LO swapping sqrtPrice",
-            ((TickMath.getSqrtRatioAtTick(-880340 + 20)) ** 2) / (2**96),
+            "UniswapV3Pool swap tests "
+            + poolFixture.description
+            + " "
+            + swapCaseToDescription(testCase)
         )
 
         slot0 = pool.slot0
@@ -162,33 +156,6 @@ def test_uniswap_swaps(TEST_POOLS):
         else:
             executionPrice = "-Infinity"
 
-        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
-        print(
-            "poolpriceBefore: ",
-            formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints),
-        )
-        print("amount0: ", amount0)
-        print("amount1: ", amount1)
-        print("executionPrice: ", executionPrice)
-        print("dictExecPrice:", dict["executionPrice"])
-
-        print(snapshotIndex)
-        print("ticks0 after: ", poolInstance.ticksLinearTokens0)
-        print("ticks1 after: ", poolInstance.ticksLinearTokens1)
-        print("pool final tick: ", poolInstance.slot0.tick)
-        print("zeroForOne", testCase["zeroForOne"])
-        # print("executionPrice Uniswap", float(dict["executionPrice"]))
-        decimalPoints = decimal.Decimal(dict["executionPrice"]).as_tuple().exponent
-        # print("executionPrice Chainflip", round(executionPrice, -decimalPoints))
-        print("poolPrice Uniswap", float(dict["poolPriceAfter"]))
-        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
-        print(
-            "poolPrice Chainflip",
-            formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints),
-        )
-        print("final tick Uniswap", float(dict["tickAfter"]))
-        print("final tick Chainflip", slot0After.tick)
-
         # Allowing some very small difference due to rounding errors
         assert float(dict["amount0Before"]) == pytest.approx(poolBalance0, rel=1e-12)
         assert float(dict["amount1Before"]) == pytest.approx(poolBalance1, rel=1e-12)
@@ -208,6 +175,7 @@ def test_uniswap_swaps(TEST_POOLS):
                 if testCase["zeroForOne"]
                 else getSqrtPriceLimitX96(TEST_TOKENS[1])
             )
+        decimalPoints = decimal.Decimal(dict["poolPriceAfter"]).as_tuple().exponent
         sqrtPriceLimitX96 = formatPriceWithPrecision(sqrtPriceLimitX96, -decimalPoints)
         uniFinalPrice = float(dict["poolPriceAfter"])
         cfFinalPrice = formatPriceWithPrecision(slot0After.sqrtPriceX96, -decimalPoints)

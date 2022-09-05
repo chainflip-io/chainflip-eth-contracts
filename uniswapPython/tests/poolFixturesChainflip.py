@@ -721,38 +721,39 @@ def poolCF20():
 
 # RO has pretty much infinite liquidity so the RO swap won't even change the
 # pool price. So when using LO the RO pool price will be the same as the LO.
-# Therefore it fails the poolPrice check.
-# TODO: Fix this - maybe adding a result case in swap results ( adding "CF to description)
-# @pytest.fixture
-# def poolCF21():
-#     return poolCFTestCase(
-#         description="max full range liquidity at 1:1 price with default fee",
-#         feeAmount=FeeAmount.MEDIUM,
-#         tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
-#         startingPrice=encodePriceSqrt(1, 1),
-#         positions=[
-#             Position(
-#                 tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#             )
-#         ],
-#         # Added extra liquidity to LO so it makes a difference.
-#         limitPositions=[
-#             PositionLimit(
-#                 tick=0,
-#                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 token=TEST_TOKENS[0],
-#             ),
-#             PositionLimit(
-#                 tick=TICK_SPACINGS[FeeAmount.MEDIUM],
-#                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-#                 token=TEST_TOKENS[1],
-#             ),
-#         ],
-#         swapTests=None,
-#         usedLO=True,
-#     )
+# So it fails the poolPrice check and some other parameters
+# Therefore, just minting some good-price low liquidity orders which will get used
+# but given it's liquidity is small it won't make a difference.
+@pytest.fixture
+def poolCF21():
+    return poolCFTestCase(
+        description="max full range liquidity at 1:1 price with default fee",
+        feeAmount=FeeAmount.MEDIUM,
+        tickSpacing=TICK_SPACINGS[FeeAmount.MEDIUM],
+        startingPrice=encodePriceSqrt(1, 1),
+        positions=[
+            Position(
+                tickLower=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tickUpper=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+            )
+        ],
+        # Added extra liquidity to LO and move it to a better price so it makes a difference.
+        limitPositions=[
+            PositionLimit(
+                tick=-TICK_SPACINGS[FeeAmount.MEDIUM],
+                liquidity=100,
+                token=TEST_TOKENS[0],
+            ),
+            PositionLimit(
+                tick=TICK_SPACINGS[FeeAmount.MEDIUM],
+                liquidity=100,
+                token=TEST_TOKENS[1],
+            ),
+        ],
+        swapTests=None,
+        usedLO=False,
+    )
 
 
 @pytest.fixture
@@ -792,7 +793,6 @@ def poolCF22():
 # almost at the limit already - so even though the orders are taken, we signal
 # usedLO as False as it doesn't make a significant impact on the outcome.
 # Therefore only checking the usedLO=False case.
-# TODO: Look into solving this - same overflow (now its division by zero) as previous tests
 @pytest.fixture
 def poolCF23():
     return poolCFTestCase(
@@ -829,7 +829,6 @@ def poolCF23():
 # almost at the limit already - so even though the orders are taken, we signal
 # usedLO as False as it doesn't make a significant impact on the outcome.
 # Therefore only checking the usedLO=False case.
-# TODO: Look into solving this - same overflow as previous test.
 @pytest.fixture
 def poolCF24():
     return poolCFTestCase(
@@ -844,14 +843,15 @@ def poolCF24():
                 liquidity=expandTo18Decimals(2),
             )
         ],
+        # Using a tick close to the limit but with price != 0
         limitPositions=[
             PositionLimit(
-                tick=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tick=-580340 + 20,
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tick=-580340 + 20,
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[1],
             ),
