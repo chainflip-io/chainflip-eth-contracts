@@ -72,6 +72,14 @@ def getMaxTick(tickSpacing):
     return math.floor(887272 / tickSpacing) * tickSpacing
 
 
+def getMinTickLO(tickSpacing):
+    return math.ceil(-665455 / tickSpacing) * tickSpacing
+
+
+def getMaxTickLO(tickSpacing):
+    return math.floor(665455 / tickSpacing) * tickSpacing
+
+
 def getMaxLiquidityPerTick(tickSpacing):
     denominator = (getMaxTick(tickSpacing) - getMinTick(tickSpacing)) // tickSpacing + 1
     return (2**128 - 1) // denominator

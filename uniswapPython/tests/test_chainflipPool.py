@@ -56,8 +56,8 @@ def ledger():
 def createPool(feeAmount, tickSpacing, ledger):
     feeAmount = feeAmount
     pool = ChainflipPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing, ledger)
-    minTick = getMinTick(tickSpacing)
-    maxTick = getMaxTick(tickSpacing)
+    minTick = getMinTickLO(tickSpacing)
+    maxTick = getMaxTickLO(tickSpacing)
     return pool, minTick, maxTick, feeAmount, tickSpacing
 
 
@@ -188,6 +188,9 @@ def test_fails_tick_ltMinTick(initializedMediumPool, accounts):
     tryExceptHandler(
         pool.mintLinearOrder, "TLM", TEST_TOKENS[0], accounts[0], -887273, 1
     )
+    tryExceptHandler(
+        pool.mintLinearOrder, "TLM", TEST_TOKENS[0], accounts[0], -887271, 1
+    )
 
 
 def test_fails_tick_gtMaxTick(initializedMediumPool, accounts):
@@ -195,6 +198,9 @@ def test_fails_tick_gtMaxTick(initializedMediumPool, accounts):
     pool, _, _, _, _, _, _ = initializedMediumPool
     tryExceptHandler(
         pool.mintLinearOrder, "TUM", TEST_TOKENS[0], accounts[0], 887273, 1
+    )
+    tryExceptHandler(
+        pool.mintLinearOrder, "TUM", TEST_TOKENS[0], accounts[0], 887271, 1
     )
 
 
@@ -861,7 +867,7 @@ initializeLiquidityAmount = expandTo18Decimals(2)
 def initializeAtZeroTick(pool, accounts):
     pool.initialize(encodePriceSqrt(1, 1))
     tickSpacing = pool.tickSpacing
-    # [min, max] = [getMinTick(tickSpacing), getMaxTick(tickSpacing)]
+    # [min, max] = [getMinTickLO(tickSpacing), getMaxTickLO(tickSpacing)]
 
     # Using this instead because the prices at min and max Tick for LO are really off (zero or infinite). Setting them
     # closest to current tick so they are used as LO fallbacks.

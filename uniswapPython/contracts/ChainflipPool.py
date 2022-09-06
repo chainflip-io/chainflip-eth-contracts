@@ -41,11 +41,10 @@ class ChainflipPool(UniswapPool):
     ### @dev Common checks for valid tick inputs.
     def checkTick(tick):
         checkInputTypes(int24=(tick))
-        assert tick >= TickMath.MIN_TICK, "TLM"
-        assert tick <= TickMath.MAX_TICK, "TUM"
         # Check that priceTick > 0 to simplify edge cases (this happens because pricex96 can be zero
-        # in some ticks while sqrtPricex96 will not.
-        assert TickMath.getPriceAtTick(tick) > 0, "Price must be > 0"
+        # in some ticks while sqrtPricex96 will not).
+        assert tick >= TickMath.MIN_TICK_LO, "TLM"
+        assert tick <= TickMath.MAX_TICK_LO, "TUM"
 
     def mintLinearOrder(self, token, recipient, tick, amount):
         checkInputTypes(

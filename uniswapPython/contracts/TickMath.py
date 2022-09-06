@@ -5,6 +5,12 @@ MIN_TICK = -887272
 ### The maximum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**128
 MAX_TICK = -MIN_TICK
 
+### The minimum tick that may be passed to #getPriceAtTick so the price obtained is > 0. This happens because pricex96 can be zero
+# in some ticks while sqrtPricex96 will not).
+MIN_TICK_LO = -665455
+### The maximum tick that may be passed to #getPriceAtTick - symetric to MIN_TICK_LO
+MAX_TICK_LO = -MIN_TICK_LO
+
 ### @notice Calculates sqrt(1.0001^tick) * 2^96
 ### @dev Throws if |tick| > max tick
 ### @param tick The input tick for the above formula
@@ -158,6 +164,6 @@ def add_fractional_bit(r, log_2, bit):
     return (r, log_2)
 
 
-# We might come up with a smarter way to do this (e.g. for linear orders just store the price per tick)
+# There might be a better way to do this (e.g. get the price from the tick or calculate it directly)
 def getPriceAtTick(tick):
     return ((getSqrtRatioAtTick(tick)) ** 2) // (2**96)
