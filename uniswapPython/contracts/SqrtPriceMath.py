@@ -217,17 +217,20 @@ def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
 
 
 def calculateAmount1LO(amountInToken0, priceX96):
+    checkInputTypes(uint256=(priceX96), int256=amountInToken0)
     # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
     return (amountInToken0 * priceX96) // 2**96
 
 
 def calculateAmount0LO(amountInToken1, priceX96):
+    checkInputTypes(uint256=(priceX96), int256=amountInToken1)
     # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
     # Should never be divided by zero because it is not allowed to mint positions at price 0.
     return (amountInToken1 * 2**96) // priceX96
 
 
 def getAmount1LO(amountInToken0, priceX96, liquidityToken1):
+    checkInputTypes(uint256=(priceX96, liquidityToken1), int256=(amountInToken0))
     # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
     amountOut = calculateAmount1LO(amountInToken0, priceX96)
 
@@ -249,7 +252,7 @@ def getAmount1LO(amountInToken0, priceX96, liquidityToken1):
 
 
 def getAmount0LO(amountInToken1, priceX96, liquidityToken0):
-
+    checkInputTypes(uint256=(priceX96, liquidityToken0), int256=(amountInToken1))
     # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
     amountOut = calculateAmount0LO(amountInToken1, priceX96)
 
@@ -268,11 +271,3 @@ def getAmount0LO(amountInToken1, priceX96, liquidityToken0):
         assert amountIn <= amountInToken1
 
     return amountIn, amountOut
-
-
-def getCurrentPositionLiquidity0LO(amountInToken0, priceX96, liquidityToken1):
-    # Calculating for position 1
-    # We have the amount of token 1 swapped
-    # We want to calculate how much token0 might have been given for the swap.
-    currentPositon0 = calculateAmount0LO(amountInToken0, priceX96)
-    maxPosition0 = calculateAmount0LO(liquidityToken1, priceX96)

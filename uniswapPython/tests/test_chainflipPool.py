@@ -3677,8 +3677,6 @@ def test_mintOnSwappedPosition_zeroForOne(initializedMediumPoolNoLO, accounts):
         TEST_TOKENS[1], accounts[0], tickLO, pos.liquidity
     )
 
-    # Right now we get too much amount0 because part of the second mint is being swapped. As a result,
-    # we are getting too little amount1.
     assert amount0_0 == amount0
     assert amount1 == amount1_0 + liquidityPosition * 1000
 
@@ -3714,7 +3712,172 @@ def test_mintOnSwappedPosition_oneForZero(initializedMediumPoolNoLO, accounts):
         TEST_TOKENS[0], accounts[0], tickLO, pos.liquidity
     )
 
-    # Right now we get too much amount0 because part of the second mint is being swapped. As a result,
-    # we are getting too little amount1.
     assert amount1_0 == amount1
     assert amount0 == amount0_0 + liquidityPosition * 1000
+
+
+# Tests for LO on boundary/limit positions to check that LP's don't get too many tokens back when burning.
+# In good price for user (bad for LP), they will get maximum the LP liquidity. Then LP wont get much.
+# In bad price for user, user will give everything and not get much or anything. LO position should not
+# have been swapped in that case and therefore the LP's position should remain the same, except accruing some fees.
+
+
+def test_limitLO_badSwapPrice_zeroForOne(createPoolLow, accounts, ledger):
+    pool, minTick, maxTick, _, _ = createPoolLow
+    # Pool initialized at the far right - pool RO current tick > MAX LO tick
+    pool.initialize(encodePriceSqrt(2**127, 1))
+    tickSpacing = pool.tickSpacing
+
+    [min, max] = [getMinTickLO(tickSpacing), getMaxTickLO(tickSpacing)]
+    assert max < pool.slot0.tick
+
+    iniBalance0LP = ledger.balanceOf(accounts[0], TEST_TOKENS[0])
+    iniBalance1LP = ledger.balanceOf(accounts[0], TEST_TOKENS[1])
+
+    pool.mintLinearOrder(
+        TEST_TOKENS[0], accounts[0], TickMath.MAX_TICK_LO - 5, expandTo18Decimals(1)
+    )
+
+    assert pool.ticksLinearTokens0.__contains__(TickMath.MAX_TICK_LO - 5)
+    # This should not happen since there should be a limit price, but checking behaviour anyway.
+    (
+        _,
+        amount0,
+        amount1,
+        _,
+        _,
+        _,
+    ) = swapExact1For0(pool, expandTo18Decimals(1), accounts[1], None)
+
+    # All swapped for nothing
+    assert amount0 == 0
+    assert amount1 == expandTo18Decimals(1)
+
+    # Position is not even burnt since the price is so high - percentatgeSwapped == 0
+    assert pool.ticksLinearTokens0.__contains__(TickMath.MAX_TICK_LO - 5)
+    assert (
+        pool.ticksLinearTokens0[TickMath.MAX_TICK_LO - 5].amountPercSwappedInsideX128
+        == 0
+    )
+
+    # Burn the position and check results
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], TickMath.MAX_TICK_LO - 5, expandTo18Decimals(1)
+    )
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[0], TickMath.MAX_TICK_LO - 5, MAX_UINT128, MAX_UINT128
+    )
+
+    # Final balance equal to the initial one plus fees (no actual swap has taken place)
+    assert iniBalance0LP == ledger.balanceOf(accounts[0], TEST_TOKENS[0])
+    assert (
+        iniBalance1LP == ledger.balanceOf(accounts[0], TEST_TOKENS[1]) - 499999999999999
+    )
+
+
+def test_limitLO_badSwapPrice_OneForZero(createPoolLow, accounts, ledger):
+    pool, minTick, maxTick, _, _ = createPoolLow
+    # Pool initialized at the far right - pool RO current tick > MAX LO tick
+    pool.initialize(encodePriceSqrt(1, 2**127))
+    tickSpacing = pool.tickSpacing
+
+    [min, max] = [getMinTickLO(tickSpacing), getMaxTickLO(tickSpacing)]
+    assert min > pool.slot0.tick
+
+    iniBalance0LP = ledger.balanceOf(accounts[0], TEST_TOKENS[0])
+    iniBalance1LP = ledger.balanceOf(accounts[0], TEST_TOKENS[1])
+
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[0], TickMath.MIN_TICK_LO + 5, expandTo18Decimals(1)
+    )
+
+    assert pool.ticksLinearTokens1.__contains__(TickMath.MIN_TICK_LO + 5)
+    # This should not happen since there should be a limit price, but checking behaviour anyway.
+    (
+        _,
+        amount0,
+        amount1,
+        _,
+        _,
+        _,
+    ) = swapExact0For1(pool, expandTo18Decimals(1), accounts[1], None)
+
+    # All swapped for nothing
+    assert amount1 == 0
+    assert amount0 == expandTo18Decimals(1)
+
+    # Position is not even burnt since the price is so high - percentatgeSwapped == 0
+    assert pool.ticksLinearTokens1.__contains__(TickMath.MIN_TICK_LO + 5)
+    assert (
+        pool.ticksLinearTokens1[TickMath.MIN_TICK_LO + 5].amountPercSwappedInsideX128
+        == 0
+    )
+
+    # Burn the position and check results
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], TickMath.MIN_TICK_LO + 5, expandTo18Decimals(1)
+    )
+
+    (_, _, amount0, amount1) = pool.collectLinear(
+        accounts[0], TEST_TOKENS[1], TickMath.MIN_TICK_LO + 5, MAX_UINT128, MAX_UINT128
+    )
+
+    # Final balance equal to the initial one plus fees (no actual swap has taken place)
+    assert (
+        iniBalance0LP == ledger.balanceOf(accounts[0], TEST_TOKENS[0]) - 499999999999999
+    )
+    assert iniBalance1LP == ledger.balanceOf(accounts[0], TEST_TOKENS[1])
+
+
+# Precision test - try to determine at which point the loss of precision is relevant.
+def test_precision(createPoolLow, accounts, ledger):
+    print("Check precision in tick.amountPercSwappedInsideX128")
+    pool, minTick, maxTick, _, _ = createPoolLow
+    pool.initialize(encodePriceSqrt(1, 1))
+
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[0], pool.tickSpacing, expandTo18Decimals(10000)
+    )
+
+    # Intiial swap to get closet to the full swapped position
+    swapExact0For1(pool, expandTo18Decimals(9800), accounts[1], None)
+    print("percSwapped0to1: ", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 / FixedPoint128_Q128)
+
+    numberOfSwaps = 10**4
+    # Approach to the full position swap (taking into account some fees)
+    amountPerSwap = (expandTo18Decimals(10000) - expandTo18Decimals(9800))// (numberOfSwaps + numberOfSwaps*0.05)
+    # All swaps get the same price as long as the LO has liquidity
+    amount0Prev = 1.904761904761905e+16
+    amount1Prev = -1.9057141902761164e+16
+    percSwappedPrev = 0
+    for i in range(numberOfSwaps):
+        print("i", i)
+        (
+            _,
+            amount0,
+            amount1,
+            _,
+            _,
+            _,
+        ) = swapExact0For1(pool, amountPerSwap, accounts[1], None)
+        assert amount0Prev == amount0
+        assert amount1Prev == amount1
+        print("percSwappedDiff", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 - percSwappedPrev)
+        print("percSwappedDiff0to1", (pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 - percSwappedPrev)/ FixedPoint128_Q128)
+        print("percSwappedAbs", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128)
+        print("percSwapped0to1", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 / FixedPoint128_Q128)
+        percSwappedPrev = pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128
+    
+
+    #Backup order
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(100)
+    )
+    print(pool.ticksLinearTokens1)
+    swapExact0For1(pool, expandTo18Decimals(100), accounts[1], None)
+    print(pool.ticksLinearTokens1)
+
+    assert not pool.ticksLinearTokens1.__contains__(pool.tickSpacing)
+
+    #assert False

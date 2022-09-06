@@ -300,13 +300,11 @@ def updateLinear(
         if currentPosition1 > MAX_UINT128:
             currentPosition1 = currentPosition1 & (2**128 - 1)
 
-        # No need to update this. We should update this when the position is fully burnt (1)
-        # but we can't burn more than that anyway, so no need to
-        # self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
+        # No need to update amountPercSwappedInsideMintedX128. We should update this
+        # when the position is fully burnt (1) but we can't burn more than that anyway,
+        # so no need to self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
 
-        # TODO: Add tests for boundary postions to check that LP's don't get too many tokens back when burning.
-        # In good price for user (bad for LP), they will get maximum the LP liquidity. Then LP wont get much.
-        # In bad price for user, user will give everything and not get much. Then LP might get too much back (potentially).
+        # TODO: Check that this is correct
         if isToken0:
             # Update position owed in their tokens
             self.tokensOwed0 += abs(liquidityLeftDelta)

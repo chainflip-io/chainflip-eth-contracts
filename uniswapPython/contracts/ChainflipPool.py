@@ -374,8 +374,6 @@ class ChainflipPool(UniswapPool):
                         zeroForOne,
                     )
 
-                    print("Amount computed: ", stepLinear.amountIn)
-
                     # Update the tick - we can consider to only update when we cross tick
                     # and keep global variables in state (like uniswap does)
 
