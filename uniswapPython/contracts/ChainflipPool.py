@@ -391,6 +391,7 @@ class ChainflipPool(UniswapPool):
                         FixedPoint128_Q128,
                         tickLinearInfo.liquidityLeft,
                     )
+
                     # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
                     tickLinearInfo.amountPercSwappedInsideX128 += mulDiv(
                         FixedPoint128_Q128 - tickLinearInfo.amountPercSwappedInsideX128,
@@ -491,7 +492,6 @@ class ChainflipPool(UniswapPool):
 
             print("Next tick RO: ", step.tickNext)
             print("Initialized RO: ", step.initialized)
-            print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
@@ -681,7 +681,7 @@ class ChainflipPool(UniswapPool):
             # Burn the entire order and collect tokens === remove position
             self.burnLimitOrder(token, owner, tick, position.liquidity)
             print(position)
-            print(self.collectLinear(owner, token, tick, MAX_UINT128, MAX_UINT128))
+            self.collectLinear(owner, token, tick, MAX_UINT128, MAX_UINT128)
             # TODO: think if we want collect to delete it or not.
             # Check that position is deleted - not necessary to delete but we do it to not keep increasing memory
             # assert not self.linearPositions.__contains__(Position.getHashLinear(owner, tick, token == self.token0))

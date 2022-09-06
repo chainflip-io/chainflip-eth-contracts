@@ -3830,8 +3830,8 @@ def test_limitLO_badSwapPrice_OneForZero(createPoolLow, accounts, ledger):
     assert iniBalance1LP == ledger.balanceOf(accounts[0], TEST_TOKENS[1])
 
 
-# Precision test - try to determine at which point the loss of precision is relevant.
-def test_precision(createPoolLow, accounts, ledger):
+# Precision test - seems like the number of swaps is not causing a decrease in precision.
+def test_precision_numberOfSwaps(createPoolLow, accounts, ledger):
     print("Check precision in tick.amountPercSwappedInsideX128")
     pool, minTick, maxTick, _, _ = createPoolLow
     pool.initialize(encodePriceSqrt(1, 1))
@@ -3839,17 +3839,23 @@ def test_precision(createPoolLow, accounts, ledger):
     pool.mintLinearOrder(
         TEST_TOKENS[1], accounts[0], pool.tickSpacing, expandTo18Decimals(10000)
     )
+    tick = pool.ticksLinearTokens1[pool.tickSpacing]
 
     # Intiial swap to get closet to the full swapped position
     swapExact0For1(pool, expandTo18Decimals(9800), accounts[1], None)
-    print("percSwapped0to1: ", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 / FixedPoint128_Q128)
+    print(
+        "percSwapped0to1: ",
+        tick.amountPercSwappedInsideX128 / FixedPoint128_Q128,
+    )
 
     numberOfSwaps = 10**4
     # Approach to the full position swap (taking into account some fees)
-    amountPerSwap = (expandTo18Decimals(10000) - expandTo18Decimals(9800))// (numberOfSwaps + numberOfSwaps*0.05)
+    amountPerSwap = (expandTo18Decimals(10000) - expandTo18Decimals(9800)) // (
+        numberOfSwaps + numberOfSwaps * 0.05
+    )
     # All swaps get the same price as long as the LO has liquidity
-    amount0Prev = 1.904761904761905e+16
-    amount1Prev = -1.9057141902761164e+16
+    amount0Prev = 1.904761904761905e16
+    amount1Prev = -1.9057141902761164e16
     percSwappedPrev = 0
     for i in range(numberOfSwaps):
         print("i", i)
@@ -3863,21 +3869,97 @@ def test_precision(createPoolLow, accounts, ledger):
         ) = swapExact0For1(pool, amountPerSwap, accounts[1], None)
         assert amount0Prev == amount0
         assert amount1Prev == amount1
-        print("percSwappedDiff", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 - percSwappedPrev)
-        print("percSwappedDiff0to1", (pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 - percSwappedPrev)/ FixedPoint128_Q128)
-        print("percSwappedAbs", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128)
-        print("percSwapped0to1", pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128 / FixedPoint128_Q128)
-        percSwappedPrev = pool.ticksLinearTokens1[pool.tickSpacing].amountPercSwappedInsideX128
-    
+        print(
+            "percSwappedDiff",
+            tick.amountPercSwappedInsideX128 - percSwappedPrev,
+        )
+        print(
+            "percSwappedDiff0to1",
+            (tick.amountPercSwappedInsideX128 - percSwappedPrev) / FixedPoint128_Q128,
+        )
+        print(
+            "percSwappedAbs",
+            tick.amountPercSwappedInsideX128,
+        )
+        print(
+            "percSwapped0to1",
+            tick.amountPercSwappedInsideX128 / FixedPoint128_Q128,
+        )
+        percSwappedPrev = pool.ticksLinearTokens1[
+            pool.tickSpacing
+        ].amountPercSwappedInsideX128
 
-    #Backup order
-    pool.mintLinearOrder(
-        TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(100)
-    )
+    # Backup order to make sure we can cross the previous order succesfully.
+    pool.mintLinearOrder(TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(100))
     print(pool.ticksLinearTokens1)
     swapExact0For1(pool, expandTo18Decimals(100), accounts[1], None)
     print(pool.ticksLinearTokens1)
 
     assert not pool.ticksLinearTokens1.__contains__(pool.tickSpacing)
 
-    #assert False
+    # assert False
+
+
+# Precision test - seems like the closer the amountPercSwappedInsideX128 is to 1 the more precision we lose per swap.
+# TODO: Think about this
+def test_precision_closeTo1(createPoolLow, accounts, ledger):
+    print("Check precision in tick.amountPercSwappedInsideX128")
+    pool, minTick, maxTick, _, _ = createPoolLow
+    pool.initialize(encodePriceSqrt(1, 1))
+
+    pool.mintLinearOrder(
+        TEST_TOKENS[1], accounts[0], pool.tickSpacing, expandTo18Decimals(10000)
+    )
+    # This swap changes the amountPercSwappedInsideX128
+    tick = pool.ticksLinearTokens1[pool.tickSpacing]
+    assert tick.amountPercSwappedInsideX128 == 0
+    print("percSwapped0to1: ", tick.amountPercSwappedInsideX128 / FixedPoint128_Q128)
+    print("percSwappedAbs: ", tick.amountPercSwappedInsideX128)
+    print("tick: ", tick)
+    swapExact0For1(pool, 100, accounts[1], None)
+    print("percSwapped0to1: ", tick.amountPercSwappedInsideX128 / FixedPoint128_Q128)
+    print("percSwappedAbs: ", tick.amountPercSwappedInsideX128)
+    print("tick: ", tick)
+    assert tick.amountPercSwappedInsideX128 > 0
+
+    print("--SWAP2--")
+    # This swap still changes the amountPercSwappedInsideX128
+    swapExact0For1(pool, 10, accounts[1], None)
+    print("percSwapped0to1: ", tick.amountPercSwappedInsideX128 / FixedPoint128_Q128)
+    print("percSwappedAbs: ", tick.amountPercSwappedInsideX128)
+    print("tick: ", tick)
+    assert tick.amountPercSwappedInsideX128 > 0
+    previousPerc = tick.amountPercSwappedInsideX128
+
+    print("--SWAP3--")
+    # Swap to get closet to the full swapped position
+    swapExact0For1(
+        pool,
+        expandTo18Decimals(10000) - expandTo18Decimals(10000) * 0.0005,
+        accounts[1],
+        None,
+    )
+    print("percSwapped0to1: ", tick.amountPercSwappedInsideX128 / FixedPoint128_Q128)
+    print("percSwappedAbs: ", tick.amountPercSwappedInsideX128)
+    print("tick: ", tick)
+    assert tick.amountPercSwappedInsideX128 > 0
+    assert tick.amountPercSwappedInsideX128 > previousPerc
+    previousPerc = tick.amountPercSwappedInsideX128
+
+    # This swap (way bigger than the first swap) does not alter the amountPercSwappedInsideX128 because the precision is lost
+    # when amountPercSwapped is close to 1, since doing (1-amountPercSwappedInsideX128)*currentPercSwapped128_Q128//2**128
+    # requires "too many decimals" - aka the precision is lost.
+    # That lost of precision happens when we update amountPercSwappedInsideX128 += muldiv.... => currentPercentatge should
+    # have the precision but when multiplying by (1-amountPercSwappedInsideX128) we lose it.
+    # For swaps a bit bigger (100000*10) the amountPercSwappedInsideX128 increases but we still lose precision.
+    # So basically it looks like the more orders of magnitude we get close to 1, the more orders of magnitude we lose in the
+    # precision, which moves the precision achievable in each swap - problematic for smaller swaps. So it does not seem to be
+    # dependant on the number of swaps but rather the magnitude of those in relation to the total amountPercSwappedInsideX128.
+    print("--SWAP4--")
+    swapExact0For1(pool, 100000, accounts[1], None)
+    print("percSwapped0to1: ", tick.amountPercSwappedInsideX128 / FixedPoint128_Q128)
+    print("percSwappedAbs: ", tick.amountPercSwappedInsideX128)
+    print("tick: ", tick)
+    assert tick.amountPercSwappedInsideX128 > 0
+    # This is where it fails because amountPercSwappedInsideX128 has not changed.
+    assert tick.amountPercSwappedInsideX128 > previousPerc
