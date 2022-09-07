@@ -669,12 +669,12 @@ def poolCF19():
         ],
         limitPositions=[
             PositionLimit(
-                tick=880340 - 20,
+                tick=580340 - 20,
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=880340 - 20,
+                tick=580340 - 20,
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[1],
             ),
@@ -809,12 +809,12 @@ def poolCF23():
         ],
         limitPositions=[
             PositionLimit(
-                tick=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tick=getMaxTickLO(TICK_SPACINGS[FeeAmount.MEDIUM]),
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+                tick=getMaxTickLO(TICK_SPACINGS[FeeAmount.MEDIUM]),
                 liquidity=expandTo18Decimals(1) // 10,
                 token=TEST_TOKENS[1],
             ),

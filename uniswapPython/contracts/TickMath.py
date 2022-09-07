@@ -76,7 +76,7 @@ def getSqrtRatioAtTick(tick):
     remainder = 1 if ratio % 2**32 != 0 else 0
     # For some reason doing the division rounding up doesn't give the exact number
     result = (ratio >> 32) + remainder
-    assert result <= MAX_UINT160
+    checkUInt160(result)
     return result
 
 
@@ -164,6 +164,16 @@ def add_fractional_bit(r, log_2, bit):
     return (r, log_2)
 
 
-# There might be a better way to do this (e.g. get the price from the tick or calculate it directly)
+# There is probably a be a better way to do this (e.g. calculate the prices the same way
+# sqrtPrices are calculated but with different values)
 def getPriceAtTick(tick):
-    return ((getSqrtRatioAtTick(tick)) ** 2) // (2**96)
+    checkInt24(tick)
+    sqrtPriceX96 = getSqrtRatioAtTick(tick)
+    # Writing explicit muldiv to show that this the multiplication will "overflow"
+    priceX96 = mulDiv(sqrtPriceX96, sqrtPriceX96, FixedPoint96_Q96)
+    # sqrtPriceX96 is a uint160 with 96 decimals. For priceX96 we keep the 96 decimals
+    # so we need extra bits => 160-96 = 64 bits. So we need 160+64 = 224 bits
+    # We check for 256 here.
+    checkUInt256(priceX96)
+
+    return priceX96
