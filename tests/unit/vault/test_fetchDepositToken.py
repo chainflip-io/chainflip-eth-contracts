@@ -94,3 +94,23 @@ def test_fetchDepositToken_grief(cf, token, DepositToken):
 
     # Check addresses are the same
     assert addr0 == addr1
+    return addr0
+
+
+# Check if fetching another token changes the deployment address
+def test_fetchDepositToken_addressesDiffTokens(cf, token, token2, DepositToken):
+    addr = test_fetchDepositToken_grief(cf, token, DepositToken)
+
+    assert token2.balanceOf(cf.vault) == 0
+
+    addr0 = test_fetchDepositToken(cf, token2, DepositToken)
+    assert token2.balanceOf(cf.vault) == TEST_AMNT
+
+    addr1 = test_fetchDepositToken(cf, token2, DepositToken, amount=TEST_AMNT * 200)
+    assert token2.balanceOf(cf.vault) == TEST_AMNT * (200 + 1)
+
+    # Check addresses are the same for token2
+    assert addr0 == addr1
+
+    # Check that addresses are not the same for token1 and token2
+    assert addr0 != addr
