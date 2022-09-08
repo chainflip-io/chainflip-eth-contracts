@@ -12,7 +12,7 @@ For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
 
 ## Setup
 
-First, ensure you have [Poetry](https://python-poetry.org) and [Yarn](https://yarnpkg.com) installed.
+First, ensure you have [Poetry](https://python-poetry.org), [Yarn](https://yarnpkg.com) and Ganache (`npm install -g ganache-cli`) are installed.
 
 ```bash
 git clone git@github.com:chainflip-io/chainflip-eth-contracts.git
