@@ -349,6 +349,7 @@ class ChainflipPool(UniswapPool):
                 )
 
                 print("Next LIMIT order swapped tick: ", stepLinear.tickNext)
+                print("Next LIMIT order initialized tick: ", stepLinear.initialized)
 
                 # If !initialized then there are no more linear ticks with liquidityLeft > 0 that we can swap for now
                 if stepLinear.initialized:
@@ -399,10 +400,11 @@ class ChainflipPool(UniswapPool):
                         FixedPoint128_Q128,
                     )
 
-                    # Update tick liquidity
-                    ## Health check - probably not needed, since if the price is so bad it will both be zero and move on.
-                    assert stepLinear.amountIn > 0 or stepLinear.amountOut > 0
+                    ## Health check - not always correct since in some case where amountRemaining is 1 we can end up with amountIn ==0,
+                    ## amountOut==0 and stepLinear.feeAmount == amountRemaining == 1
+                    #assert stepLinear.amountIn > 0 or stepLinear.amountOut > 0
 
+                    # Update tick liquidity
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLinearInfo.liquidityLeft, -stepLinear.amountOut
                     )
@@ -491,7 +493,6 @@ class ChainflipPool(UniswapPool):
             (step.tickNext, step.initialized) = self.nextTick(state.tick, zeroForOne)
 
             print("Next tick RO: ", step.tickNext)
-            print("Initialized RO: ", step.initialized)
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
