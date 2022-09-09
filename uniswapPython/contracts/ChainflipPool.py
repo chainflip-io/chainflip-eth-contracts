@@ -328,9 +328,6 @@ class ChainflipPool(UniswapPool):
             state.amountSpecifiedRemaining != 0
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
-            print("SWAP LOOP")
-            print("current tick", state.tick)
-            print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
             # First limit orders are checked since they can offer a better price for the user.
 
             ######################################################
@@ -348,17 +345,12 @@ class ChainflipPool(UniswapPool):
                     state.keysLinearTicks, not zeroForOne, state.tick
                 )
 
-                print("Next LIMIT order swapped tick: ", stepLinear.tickNext)
-                print("Next LIMIT order initialized tick: ", stepLinear.initialized)
-
                 # If !initialized then there are no more linear ticks with liquidityLeft > 0 that we can swap for now
                 if stepLinear.initialized:
                     tickLinearInfo = ticksLinearMap[stepLinear.tickNext]
 
                     # Health check
                     assert tickLinearInfo.liquidityLeft > 0
-
-                    print("Swapping limit orders")
 
                     # Get price at that tick
                     priceX96 = TickMath.getPriceAtTick(stepLinear.tickNext)
@@ -449,17 +441,7 @@ class ChainflipPool(UniswapPool):
                         tickLinearInfo.feeGrowthInsideX128
                     )
 
-                    print(
-                        "amountSpecifiedRemaining after LO swap",
-                        state.amountSpecifiedRemaining,
-                    )
-
                     if tickCrossed:
-                        print("TICK CROSSED!!!!")
-                        print(
-                            "state.amountSpecifiedRemaining",
-                            state.amountSpecifiedRemaining,
-                        )
                         # Health check
                         assert tickLinearInfo.liquidityLeft == 0
                         # Burn all the positions in that tick and clear the tick itself. This could be also done
@@ -478,11 +460,8 @@ class ChainflipPool(UniswapPool):
                     else:
                         # Health check - swap should be completed
                         assert state.amountSpecifiedRemaining == 0
-                        print("----order completed with LO----")
                         # Prevent from altering anything in the range order pool
                         break
-
-            print("Starting with Range Orders")
 
             # For development purposes only
             # assert False, "We should not go into range orders"
@@ -496,8 +475,6 @@ class ChainflipPool(UniswapPool):
 
             # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
             (step.tickNext, step.initialized) = self.nextTick(state.tick, zeroForOne)
-
-            print("Next tick RO: ", step.tickNext)
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
@@ -537,8 +514,6 @@ class ChainflipPool(UniswapPool):
                     sqrtPriceLimitX96, step.sqrtPriceNextX96, nextLOatPrice
                 )
 
-            print("DEBUGGING COMPUTESWAP STEP")
-            print("state.sqrtPriceX96", state.sqrtPriceX96)
             # Continue the range order swap as normal
             (
                 state.sqrtPriceX96,
@@ -552,14 +527,7 @@ class ChainflipPool(UniswapPool):
                 state.amountSpecifiedRemaining,
                 self.fee,
             )
-            print("state.sqrtPriceX96", state.sqrtPriceX96)
-            print("sqrtRatioTargetX96", sqrtRatioTargetX96)
-            print("state.liquidity", state.liquidity)
-            print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
-            print("self.fee", self.fee)
-            print("step.amountIn", step.amountIn)
-            print("step.feeAmount", step.feeAmount)
-
+            
             if exactInput:
                 state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
                 state.amountCalculated = SafeMath.subInts(
@@ -614,11 +582,6 @@ class ChainflipPool(UniswapPool):
                 ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
                 state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
 
-            print("LOOP ENDING --------------------")
-            print(state.amountSpecifiedRemaining != 0)
-            print(state.sqrtPriceX96 != sqrtPriceLimitX96)
-
-        print("END OF SWAP")
         ## End of swap loop
         # Set final tick as the range tick
         if state.tick != slot0Start.tick:
@@ -690,7 +653,6 @@ class ChainflipPool(UniswapPool):
             # We should probably create a new burnLimit function for this to make it more efficient
             # e.g. that it burns position.liquidity instead of passing an amount.
             # For now just reusing it for simplicity.
-            print("------------------ BURNING POSITION ------------------")
             position = Position.getLinear(
                 self.linearPositions, owner, tick, token == self.token0
             )
@@ -704,7 +666,6 @@ class ChainflipPool(UniswapPool):
             Position.assertLimitPositionIsBurnt(
                 self.linearPositions, owner, tick, token == self.token0
             )
-            # assert self.linearPositions[Position.getHashLinear(owner, tick, token == self.token0)].liquidity == 0
 
 
 # Remove all ticks with LiquidityLeft == 0. Maybe we end up not needing that if we automatically remove the positions
