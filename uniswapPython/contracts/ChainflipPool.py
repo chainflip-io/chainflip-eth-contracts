@@ -455,6 +455,8 @@ class ChainflipPool(UniswapPool):
                     )
 
                     if tickCrossed:
+                        print("TICK CROSSED!!!!")
+                        print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
                         # Health check
                         assert tickLinearInfo.liquidityLeft == 0
                         # Burn all the positions in that tick and clear the tick itself. This could be also done
@@ -532,6 +534,8 @@ class ChainflipPool(UniswapPool):
                     sqrtPriceLimitX96, step.sqrtPriceNextX96, nextLOatPrice
                 )
 
+            print("DEBUGGING COMPUTESWAP STEP")
+            print("state.sqrtPriceX96", state.sqrtPriceX96)
             # Continue the range order swap as normal
             (
                 state.sqrtPriceX96,
@@ -544,7 +548,12 @@ class ChainflipPool(UniswapPool):
                 state.liquidity,
                 state.amountSpecifiedRemaining,
                 self.fee,
-            )
+            )          
+            print("state.sqrtPriceX96", state.sqrtPriceX96)
+            print("sqrtRatioTargetX96", sqrtRatioTargetX96)
+            print("state.liquidity", state.liquidity)
+            print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
+            print("self.fee", self.fee)
 
             if exactInput:
                 state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
@@ -681,7 +690,7 @@ class ChainflipPool(UniswapPool):
             )
             # Burn the entire order and collect tokens === remove position
             self.burnLimitOrder(token, owner, tick, position.liquidity)
-            print(position)
+            # This should also clear the tick
             self.collectLinear(owner, token, tick, MAX_UINT128, MAX_UINT128)
             # TODO: think if we want collect to delete it or not.
             # Check that position is deleted - not necessary to delete but we do it to not keep increasing memory
