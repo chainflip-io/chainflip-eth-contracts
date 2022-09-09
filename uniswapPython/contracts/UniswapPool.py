@@ -64,7 +64,7 @@ class SwapState:
     liquidity: int
 
     # Keys of ticks with liquidityLeft > 0
-    keysLinearTicks: list
+    keysLimitTicks: list
     # ticksCrossed
     ticksCrossed: list
 

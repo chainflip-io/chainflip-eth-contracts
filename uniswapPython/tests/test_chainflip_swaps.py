@@ -30,7 +30,7 @@ def TEST_POOLS(request, accounts, ledger):
     liquidity0LO = 0
     liquidity1LO = 0
     for position in poolFixture.limitPositions:
-        pool.mintLinearOrder(
+        pool.mintLimitOrder(
             position.token, accounts[0], position.tick, position.liquidity
         )
         if position.token == pool.token0:
@@ -72,13 +72,13 @@ def afterEach(accounts, TEST_POOLS):
 
     for position in poolFixture.limitPositions:
         # TODO: This will also depend on if zeroForOne or not
-        if pool.linearPositions.__contains__(
-            getHashLinear(accounts[0], position.tick, position.tick == pool.token0)
+        if pool.limitOrders.__contains__(
+            getHashLimit(accounts[0], position.tick, position.tick == pool.token0)
         ):
             pool.burnLimitOrder(
                 position.token, accounts[0], position.tick, position.liquidity
             )
-            pool.collectLinear(
+            pool.collectLimitOrder(
                 accounts[0],
                 position.token,
                 position.tick,

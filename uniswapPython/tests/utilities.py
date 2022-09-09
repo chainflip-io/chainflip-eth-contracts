@@ -29,7 +29,7 @@ class TickInfo:
 
 
 @dataclass
-class TickInfoLinear:
+class TickInfoLimit:
     ## amount of liquidity that has not been yet swapped
     liquidityLeft: int
     ## the total position liquidity that references this tick
@@ -294,9 +294,9 @@ def insertUninitializedTickstoMapping(mapping, keys):
         insertTickInMapping(mapping, key, TickInfo(0, 0, 0, 0))
 
 
-def insertUninitializedLinearTickstoMapping(mapping, keys):
+def insertUninitializedLimitTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0, 0, []))
+        insertTickInMapping(mapping, key, TickInfoLimit(0, 0, 0, 0, []))
 
 
 def insertTickInMapping(mapping, key, value):
@@ -425,18 +425,18 @@ def formatPriceWithPrecision(price, precision):
 ################ Chainflip pool utilities ################
 
 
-def getHashLinear(owner, tick, isToken0):
+def getHashLimit(owner, tick, isToken0):
     checkInputTypes(account=owner, int24=tick, bool=isToken0)
     return hash((owner, tick, isToken0))
 
 
 def assertLimitPositionExists(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=(tick), bool=isToken0)
-    key = getHashLinear(owner, tick, isToken0)
+    key = getHashLimit(owner, tick, isToken0)
     assert self.__contains__(key), "Position doesn't exist"
 
 
 def assertLimitPositionIsBurnt(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=(tick), bool=isToken0)
-    key = getHashLinear(owner, tick, isToken0)
+    key = getHashLimit(owner, tick, isToken0)
     assert not self.__contains__(key), "Position exists"

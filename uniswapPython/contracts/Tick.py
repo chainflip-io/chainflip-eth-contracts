@@ -134,7 +134,7 @@ def update(
     return flipped
 
 
-def updateLinear(
+def updateLimit(
     self,
     tick,
     liquidityLeftDelta,
@@ -157,7 +157,7 @@ def updateLinear(
     # Tick might not exist - create it. Make sure tick is not created unless it is then initialized with liquidityDelta > 0
     if not self.__contains__(tick):
         assert liquidityDelta > 0, "Avoid creating empty tick"
-        insertUninitializedLinearTickstoMapping(self, [tick])
+        insertUninitializedLimitTickstoMapping(self, [tick])
 
     info = self[tick]
 
