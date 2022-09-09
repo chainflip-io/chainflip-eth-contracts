@@ -122,7 +122,7 @@ def computeSwapStep(
     return (sqrtRatioNextX96, amountIn, amountOut, feeAmount)
 
 
-def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForOne):
+def computeLimitSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForOne):
     checkInputTypes(
         uint256=priceX96,
         uint128=liquidity,

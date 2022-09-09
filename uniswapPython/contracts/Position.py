@@ -26,7 +26,7 @@ class PositionInfo:
 
 
 @dataclass
-class PositionLinearInfo:
+class PositionLimitInfo:
     ## the amount of liquidity owned by this position in the token provided
     liquidity: int
     ## percentatge swapped in the pool when the position was minted. Relative meaning.
@@ -62,17 +62,17 @@ def get(self, owner, tickLower, tickUpper):
     return self[key]
 
 
-def getLinear(self, owner, tick, isToken0):
+def getLimit(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=tick, bool=isToken0)
 
     # Need to handle non-existing positions in Python
-    key = getHashLinear(owner, tick, isToken0)
+    key = getHashLimit(owner, tick, isToken0)
     if not self.__contains__(key):
         # We don't want to create a new position if it doesn't exist!
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
-        self[key] = PositionLinearInfo(0, 0, 0, 0, 0)
+        self[key] = PositionLimitInfo(0, 0, 0, 0, 0)
     return self[key]
 
 
@@ -135,7 +135,7 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
 
 
 # This updates the tokensOwed (current position ratio), the position.liquidity and the fees
-def updateLinear(
+def updateLimit(
     self,
     liquidityDelta,
     amountPercSwappedInsideX128,
@@ -150,7 +150,7 @@ def updateLinear(
     )
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
-    if self == PositionLinearInfo(0, 0, 0, 0, 0):
+    if self == PositionLimitInfo(0, 0, 0, 0, 0):
         assert liquidityDelta > 0  # health check
         self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
         self.feegrowthInsideLastX128 = feeGrowthInsideX128
