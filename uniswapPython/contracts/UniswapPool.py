@@ -63,6 +63,11 @@ class SwapState:
     ## the current liquidity in range
     liquidity: int
 
+    # Keys of ticks with liquidityLeft > 0
+    keysLinearTicks: list
+    # ticksCrossed
+    ticksCrossed: list
+
 
 @dataclass
 class StepComputations:
@@ -91,7 +96,7 @@ class ProtocolFees:
 class UniswapPool(Account):
 
     # Constructor
-    def __init__(self, token0, token1, fee, tickSpacing):
+    def __init__(self, token0, token1, fee, tickSpacing, ledger):
         checkInputTypes(string=(token0, token1), uint24=(fee), int24=(tickSpacing))
         # Contract storage variables
         super().__init__("UniswapPool", [token0, token1], [0, 0])
@@ -110,6 +115,8 @@ class UniswapPool(Account):
         # dict ( int24 => Tick.Info)
         self.ticks = dict()
         self.positions = dict()
+
+        self.ledger = ledger
 
     ### @dev Common checks for valid tick inputs.
     def checkTicks(tickLower, tickUpper):
@@ -276,8 +283,8 @@ class UniswapPool(Account):
         amount1 = toUint256(abs(amount1Int))
 
         # Transfer tokens - including safety checks
-        recipient.transferToken(self, self.token0, amount0)
-        recipient.transferToken(self, self.token1, amount1)
+        self.ledger.transferToken(recipient, self, self.token0, amount0)
+        self.ledger.transferToken(recipient, self, self.token1, amount1)
 
         return (amount0, amount1)
 
@@ -310,10 +317,10 @@ class UniswapPool(Account):
 
         if amount0 > 0:
             position.tokensOwed0 -= amount0
-            self.transferToken(recipient, self.token0, amount0)
+            self.ledger.transferToken(self, recipient, self.token0, amount0)
         if amount1 > 0:
             position.tokensOwed1 -= amount1
-            self.transferToken(recipient, self.token1, amount1)
+            self.ledger.transferToken(self, recipient, self.token1, amount1)
 
         return (recipient, tickLower, tickUpper, amount0, amount1)
 
@@ -384,6 +391,8 @@ class UniswapPool(Account):
             self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
             0,
             cache.liquidityStart,
+            [],
+            [],
         )
 
         while (
@@ -516,16 +525,16 @@ class UniswapPool(Account):
         ## do the transfers and collect payment
         if zeroForOne:
             if amount1 < 0:
-                self.transferToken(recipient, self.token1, abs(amount1))
+                self.ledger.transferToken(self, recipient, self.token1, abs(amount1))
             balanceBefore = self.balances[self.token0]
-            recipient.transferToken(self, self.token0, abs(amount0))
+            self.ledger.transferToken(recipient, self, self.token0, abs(amount0))
             assert balanceBefore + abs(amount0) == self.balances[self.token0], "IIA"
         else:
             if amount0 < 0:
-                self.transferToken(recipient, self.token0, abs(amount0))
+                self.ledger.transferToken(self, recipient, self.token0, abs(amount0))
 
             balanceBefore = self.balances[self.token1]
-            recipient.transferToken(self, self.token1, abs(amount1))
+            self.ledger.transferToken(recipient, self, self.token1, abs(amount1))
             assert balanceBefore + abs(amount1) == self.balances[self.token1], "IIA"
 
         return (
@@ -569,13 +578,13 @@ class UniswapPool(Account):
             if amount0 == self.protocolFees.token0:
                 amount0 -= 1  ##ensure that the slot is not cleared, for gas savings
             self.protocolFees.token0 -= amount0
-            self.transferToken(recipient, self.token0, amount0)
+            self.ledger.transferToken(self, recipient, self.token0, amount0)
 
         if amount1 > 0:
             if amount1 == self.protocolFees.token1:
                 amount1 -= 1  ## ensure that the slot is not cleared, for gas savings
             self.protocolFees.token1 -= amount1
-            self.transferToken(recipient, self.token1, amount1)
+            self.ledger.transferToken(self, recipient, self.token1, amount1)
 
         return recipient, amount0, amount1
 

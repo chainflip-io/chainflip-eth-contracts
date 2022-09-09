@@ -4,38 +4,88 @@ from utilities import *
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
 from UniswapPool import *
+from ChainflipPool import *
+from Account import Ledger
+
 import SwapMath
 import TickMath
 
 import pytest
 import copy
 
+# This will run the same tests (range orders) in the UniswapPool and in the ChainflipPool.
+
+
+@pytest.fixture(params=[*range(0, 2, 1)])
+def TEST_POOLS(request):
+    return request.getfixturevalue("pools{}".format(request.param))
+
 
 @pytest.fixture
-def accounts():
+def pools0():
+    return UniswapPool
+
+
+@pytest.fixture
+def pools1():
+    return ChainflipPool
+
+
+@pytest.fixture
+def accounts(ledger):
+    # return [ledger.accounts[account] for account in ledger.accounts.keys()]
+    # list of raw addresses
+    return list(ledger.accounts.keys())
+
+
+# TODO: Improve this
+@pytest.fixture
+def ledger():
     # Fund them with infinite tokens
-    account0 = Account("ALICE", TEST_TOKENS, [MAX_INT256, MAX_INT256])
-    account1 = Account("BOB", TEST_TOKENS, [MAX_INT256, MAX_INT256])
-    account2 = Account("CHARLIE", TEST_TOKENS, [1000, 2000])
-    return account0, account1, account2
+    account0 = [
+        "ALICE",
+        TEST_TOKENS,
+        [MAX_INT256 // 100, MAX_INT256 // 100 // 100],
+    ]  # LP0 - backup liquidity
+    account1 = ["BOB", TEST_TOKENS, [MAX_INT256 // 100, MAX_INT256 // 100]]  # LP1
+    account2 = ["CHARLIE", TEST_TOKENS, [1000, 2000]]  # Small amount
+    account3 = [
+        "DENICE",
+        TEST_TOKENS,
+        [expandTo18Decimals(10), expandTo18Decimals(10)],
+    ]  # Swapper
+    account4 = [
+        "EVA",
+        TEST_TOKENS,
+        [MAX_INT256 // 100, MAX_INT256 // 100],
+    ]  # LP Testing
+    account5 = [
+        "FINN",
+        TEST_TOKENS,
+        [MAX_INT256 // 100, MAX_INT256 // 100],
+    ]  # LP Testing2
+    ledger = Ledger([account0, account1, account2, account3, account4, account5])
+    return ledger
 
 
-def createPool(feeAmount, tickSpacing):
+def createPool(TEST_POOLS, feeAmount, tickSpacing, ledger):
     feeAmount = feeAmount
-    pool = UniswapPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
+    pool = TEST_POOLS(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing, ledger)
     minTick = getMinTick(tickSpacing)
     maxTick = getMaxTick(tickSpacing)
     return pool, minTick, maxTick, feeAmount, tickSpacing
 
 
 @pytest.fixture
-def createPoolMedium():
-    return createPool(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
+def createPoolMedium(TEST_POOLS, ledger):
+    return createPool(
+        TEST_POOLS, FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM], ledger
+    )
 
 
 @pytest.fixture
-def createPoolLow():
-    return createPool(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
+def createPoolLow(TEST_POOLS, ledger):
+    return createPool(TEST_POOLS, FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW], ledger)
 
 
 @pytest.fixture
@@ -516,17 +566,15 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
     print("does not clear the position fee growth snapshot if no more liquidity")
     ## some activity that would make the ticks non-zero
     pool.mint(accounts[1], minTick, maxTick, expandTo18Decimals(1))
-    print(pool.slot0.tick)
     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
     pool.burn(accounts[1], minTick, maxTick, expandTo18Decimals(1))
-    tickInfo = pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
-    assert tickInfo.liquidity == 0
-    assert tickInfo.tokensOwed0 != 0
-    assert tickInfo.tokensOwed1 != 0
-    assert tickInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
-    # Original value: 340282366920938463463374607431768211
-    assert tickInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
+    positionInfo = pool.positions[getPositionKey(accounts[1], minTick, maxTick)]
+    assert positionInfo.liquidity == 0
+    assert positionInfo.tokensOwed0 != 0
+    assert positionInfo.tokensOwed1 != 0
+    assert positionInfo.feeGrowthInside0LastX128 == 340282366920938463463374607431768211
+    assert positionInfo.feeGrowthInside1LastX128 == 340282366920938463463374607431768211
 
 
 # Continue UniswapV3Pool.spects.ts line 596
@@ -649,7 +697,7 @@ def test_cannotRemove_moreThanPosition(lowPoolInitializedAtZero, accounts):
     )
 
 
-def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
+def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts, ledger):
     print("collect fees within the current price after swap")
     pool, _, _, _, tickSpacing = lowPoolInitializedAtZero
     liquidityDelta = expandTo18Decimals(100)
@@ -670,8 +718,8 @@ def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
 
     token0BalanceBeforePool = pool.balances[TEST_TOKENS[0]]
     token1BalanceBeforePool = pool.balances[TEST_TOKENS[1]]
-    token0BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[0]]
-    token1BalanceBeforeWallet = accounts[0].balances[TEST_TOKENS[1]]
+    token0BalanceBeforeWallet = ledger.balanceOf(accounts[0], TEST_TOKENS[0])
+    token1BalanceBeforeWallet = ledger.balanceOf(accounts[0], TEST_TOKENS[1])
 
     pool.burn(accounts[0], lowerTick, upperTick, 0)
     pool.collect(accounts[0], lowerTick, upperTick, MAX_UINT128, MAX_UINT128)
@@ -687,8 +735,8 @@ def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts):
 
     token0BalanceAfterPool = pool.balances[TEST_TOKENS[0]]
     token1BalanceAfterPool = pool.balances[TEST_TOKENS[1]]
-    token0BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[0]]
-    token1BalanceAfterWallet = accounts[0].balances[TEST_TOKENS[1]]
+    token0BalanceAfterWallet = ledger.balanceOf(accounts[0], TEST_TOKENS[0])
+    token1BalanceAfterWallet = ledger.balanceOf(accounts[0], TEST_TOKENS[1])
 
     assert token0BalanceAfterWallet > token0BalanceBeforeWallet
     assert token1BalanceAfterWallet == token1BalanceBeforeWallet
@@ -1076,7 +1124,6 @@ def test_positionOwner_fullFees_feeProtocolOff(initializedLowPoolCollectFees, ac
     assert token1Fees == 0
 
 
-# TODO: DEBUG THIS - with poking = True it doesnt make sense that we expect the fees to accrue
 def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
     print("swap fees accumulate as expected (0 for 1)")
 
@@ -1096,6 +1143,32 @@ def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
         initializedLowPoolCollectFees, expandTo18Decimals(1), True, True, accounts[0]
     )
     assert token0Fees == 1499999999999997
+    assert token1Fees == 0
+
+
+# check that swapping 1e18 twice adds to almost the same exact fees as swapping 2e18 once
+def test_swapFeesAccomulate_zeroForOne_together0(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (0 for 1)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(2), True, True, accounts[0]
+    )
+    assert token0Fees == 999999999999999
+    assert token1Fees == 0
+
+
+# check that swapping 1e18 multiple times adds to almost the same exact fees as swapping once
+def test_swapFeesAccomulate_zeroForOne_together1(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (0 for 1)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(3), True, True, accounts[0]
+    )
+    assert token0Fees == 1499999999999999
     assert token1Fees == 0
 
 
@@ -1120,6 +1193,33 @@ def test_swapFeesAccomulate_OneForZero(initializedLowPoolCollectFees, accounts):
     )
     assert token0Fees == 0
     assert token1Fees == 1499999999999997
+
+
+# check that swapping 1e18 multiple times adds to almost the same exact fees as swapping once
+def test_swapFeesAccomulate_OneForZero_together0(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (1 for 0)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(2), False, True, accounts[0]
+    )
+
+    assert token0Fees == 0
+    assert token1Fees == 999999999999999
+
+
+def test_swapFeesAccomulate_OneForZero_together1(
+    initializedLowPoolCollectFees, accounts
+):
+    print("swap fees accumulate as expected (1 for 0)")
+
+    (token0Fees, token1Fees) = swapAndGetFeesOwed(
+        initializedLowPoolCollectFees, expandTo18Decimals(3), False, True, accounts[0]
+    )
+
+    assert token0Fees == 0
+    assert token1Fees == 1499999999999999
 
 
 def test_partialFees_feeProtocolOn(initializedLowPoolCollectFees, accounts):
@@ -1251,8 +1351,8 @@ def test_feesCollected_combination1(initializedLowPoolCollectFees, accounts):
 
 
 @pytest.fixture
-def createPoolMedium12TickSpacing():
-    return createPool(FeeAmount.MEDIUM, 12)
+def createPoolMedium12TickSpacing(TEST_POOLS, ledger):
+    return createPool(TEST_POOLS, FeeAmount.MEDIUM, 12, ledger)
 
 
 @pytest.fixture
@@ -1280,7 +1380,7 @@ def test_swapGaps_oneForZero(initializedPoolMedium12TickSpacing, accounts):
     print("swapping across gaps works in 1 for 0 direction")
     pool, _, _, _, _ = initializedPoolMedium12TickSpacing
     liquidityAmount = expandTo18Decimals(1) // 4
-    pool.mint(accounts[0], 120000, 121200, liquidityAmount)
+    amount0, amount1 = pool.mint(accounts[0], 120000, 121200, liquidityAmount)
     swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
     (recipient, tickLower, tickUpper, amount, amount0, amount1) = pool.burn(
         accounts[0], 120000, 121200, liquidityAmount
@@ -1317,11 +1417,11 @@ def test_swapGaps_zeroForOne(initializedPoolMedium12TickSpacing, accounts):
 
 
 ## https://github.com/Uniswap/uniswap-v3-core/issues/214
-def test_noTickTransitionTwice(accounts):
+def test_noTickTransitionTwice(TEST_POOLS, accounts, ledger):
     print(
         "tick transition cannot run twice if zero for one swap ends at fractional price just below tick"
     )
-    pool, _, _, _, _ = createPool(FeeAmount.MEDIUM, 1)
+    pool, _, _, _, _ = createPool(TEST_POOLS, FeeAmount.MEDIUM, 1, ledger)
 
     p0 = TickMath.getSqrtRatioAtTick(-24081) + 1
     ## initialize at a price of ~0.3 token1/token0
@@ -1469,50 +1569,54 @@ def initializedPoolSwapBalances(initializedSetFeeProtPool, accounts):
     return initializedSetFeeProtPool
 
 
-def test_enoughBalance_token0(initializedPoolSwapBalances, accounts):
+def test_enoughBalance_token0(initializedPoolSwapBalances, accounts, ledger):
     print("swapper swaps all token0")
     pool, _, _, _, _ = initializedPoolSwapBalances
 
-    swapExact0For1(pool, accounts[2].balances[TEST_TOKENS[0]], accounts[2], None)
-    assert accounts[2].balances[TEST_TOKENS[0]] == 0
+    swapExact0For1(
+        pool, ledger.balanceOf(accounts[2], TEST_TOKENS[0]), accounts[2], None
+    )
+    assert ledger.balanceOf(accounts[2], TEST_TOKENS[0]) == 0
 
 
-def test_enoughBalance_token1(initializedPoolSwapBalances, accounts):
+def test_enoughBalance_token1(initializedPoolSwapBalances, accounts, ledger):
     print("swapper doesn't have enough token0")
     pool, _, _, _, _ = initializedPoolSwapBalances
 
-    swapExact1For0(pool, accounts[2].balances[TEST_TOKENS[1]], accounts[2], None)
-    assert accounts[2].balances[TEST_TOKENS[1]] == 0
+    swapExact1For0(
+        pool, ledger.balanceOf(accounts[2], TEST_TOKENS[1]), accounts[2], None
+    )
+    assert ledger.balanceOf(accounts[2], TEST_TOKENS[1]) == 0
 
 
-def test_notEnoughBalance_token0(initializedPoolSwapBalances, accounts):
+def test_notEnoughBalance_token0(initializedPoolSwapBalances, accounts, ledger):
     print("swapper doesn't have enough token0")
     pool, _, _, _, _ = initializedPoolSwapBalances
-    initialBalanceToken0 = accounts[2].balances[TEST_TOKENS[0]]
+    initialBalanceToken0 = ledger.balanceOf(accounts[2], TEST_TOKENS[0])
     tryExceptHandler(
         swapExact0For1,
         "Insufficient balance",
         pool,
-        accounts[2].balances[TEST_TOKENS[0]] + 1,
+        ledger.balanceOf(accounts[2], TEST_TOKENS[0]) + 1,
         accounts[2],
         None,
     )
-    assert accounts[2].balances[TEST_TOKENS[0]] == initialBalanceToken0
+    assert ledger.balanceOf(accounts[2], TEST_TOKENS[0]) == initialBalanceToken0
 
 
-def test_notEnoughBalance_token1(initializedPoolSwapBalances, accounts):
+def test_notEnoughBalance_token1(initializedPoolSwapBalances, accounts, ledger):
     print("swapper doesn't have enough token1")
     pool, _, _, _, _ = initializedPoolSwapBalances
-    initialBalanceToken1 = accounts[2].balances[TEST_TOKENS[1]]
+    initialBalanceToken1 = ledger.balanceOf(accounts[2], TEST_TOKENS[1])
     tryExceptHandler(
         swapExact1For0,
         "Insufficient balance",
         pool,
-        accounts[2].balances[TEST_TOKENS[1]] + 1,
+        ledger.balanceOf(accounts[2], TEST_TOKENS[1]) + 1,
         accounts[2],
         None,
     )
-    assert accounts[2].balances[TEST_TOKENS[1]] == initialBalanceToken1
+    assert ledger.balanceOf(accounts[2], TEST_TOKENS[1]) == initialBalanceToken1
 
 
 # Extra tests since there are modifications in the python UniswapPool
@@ -1551,7 +1655,7 @@ def test_collectEmpty_noPositionCreated_initializedPool(
         "Check that new positions are not created (reverts) when we collect an empty position"
     )
     pool, minTick, maxTick, _, _ = mediumPoolInitializedAtZero
-    initialTicks = pool.ticks
+    initialTicks = copy.deepcopy(pool.ticks)
     tryExceptHandler(
         pool.collect, "Position doesn't exist", accounts[1], minTick, maxTick, 0, 0
     )

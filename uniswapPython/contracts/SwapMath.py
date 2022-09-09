@@ -120,3 +120,55 @@ def computeSwapStep(
         feeAmount = mulDivRoundingUp(amountIn, feePips, ONE_IN_PIPS - feePips)
 
     return (sqrtRatioNextX96, amountIn, amountOut, feeAmount)
+
+
+def computeLinearSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForOne):
+    checkInputTypes(
+        uint256=priceX96,
+        uint128=liquidity,
+        int256=amountRemaining,
+        uint24=feePips,
+        bool=zeroForOne,
+    )
+    tickCrossed = False
+
+    # exactIn < 0 means exactOut = True
+    exactIn = amountRemaining >= 0
+
+    if exactIn:
+        amountRemainingLessFee = mulDiv(
+            amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
+        )
+        # Swap amountRemainingLessFee
+        if zeroForOne:
+            amountIn, amountOut = SqrtPriceMath.getAmount1LO(
+                amountRemainingLessFee, priceX96, liquidity
+            )
+        else:
+            amountIn, amountOut = SqrtPriceMath.getAmount0LO(
+                amountRemainingLessFee, priceX96, liquidity
+            )
+
+        tickCrossed = amountOut == liquidity
+    else:
+        assert False, "We are not handling exactOut for now"
+
+    ## For now we just handle the exact in
+
+    # else:
+    #     # Exact out
+
+    #     # liquidity == maxAmountOut
+    #     if abs(amountRemaining) >= liquidity:
+    #         amountOut = liquidity
+    #     else:
+    #         amountOut = abs(amountRemaining)
+
+    if exactIn and not tickCrossed:
+        ## we didn't reach the target, so take the remainder of the maximum input as fee
+        checkUInt256(amountRemaining)
+        feeAmount = abs(amountRemaining) - amountIn
+    else:
+        feeAmount = mulDivRoundingUp(amountIn, feePips, ONE_IN_PIPS - feePips)
+
+    return (amountIn, amountOut, feeAmount, tickCrossed)

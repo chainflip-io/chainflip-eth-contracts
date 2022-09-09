@@ -2,7 +2,7 @@ import sys, os
 
 from utilities import *
 from poolFixtures import *
-from test_uniswapPool import accounts
+from test_uniswapPool import accounts, ledger
 from UniswapV3PoolSwaps import swapsSnapshot
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "contracts"))
@@ -13,13 +13,13 @@ import pytest
 import copy
 import decimal
 
-# Doing only one pool now to debug
+
 @pytest.fixture(params=[*range(0, 15, 1)])
-def TEST_POOLS(request, accounts):
+def TEST_POOLS(request, accounts, ledger):
     poolFixture = request.getfixturevalue("pool{}".format(request.param))
     feeAmount = poolFixture.feeAmount
     tickSpacing = poolFixture.tickSpacing
-    pool = UniswapPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing)
+    pool = UniswapPool(TEST_TOKENS[0], TEST_TOKENS[1], feeAmount, tickSpacing, ledger)
     pool.initialize(poolFixture.startingPrice)
     for position in poolFixture.positions:
         pool.mint(
@@ -60,7 +60,7 @@ def afterEach(accounts, TEST_POOLS):
 
 
 @pytest.mark.usefixtures("afterEach")
-def test_testing(TEST_POOLS, accounts):
+def test_uniswap_swaps(TEST_POOLS):
     (_, _, pool, poolBalance0, poolBalance1, recipient, poolFixture) = TEST_POOLS
     print(poolFixture.description)
 
@@ -108,19 +108,8 @@ def test_testing(TEST_POOLS, accounts):
         poolBalance1Delta = poolBalance1After - poolBalance1
 
         ## check all the events were emitted corresponding to balance changes
-        if poolBalance0Delta == 0:
-            amount0 == 0
-        elif poolBalance0Delta <= 0:
-            amount0 == -poolBalance0Delta
-        else:
-            amount0 == poolBalance0Delta
-
-        if poolBalance1Delta == 0:
-            amount1 == 0
-        elif poolBalance1Delta <= 0:
-            amount1 == -poolBalance1Delta
-        else:
-            amount1 == poolBalance1Delta
+        assert amount0 == poolBalance0Delta
+        assert amount1 == poolBalance1Delta
 
         if poolBalance0Delta != 0:
             executionPrice = -(poolBalance1Delta / poolBalance0Delta)

@@ -5,6 +5,12 @@ MIN_TICK = -887272
 ### The maximum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**128
 MAX_TICK = -MIN_TICK
 
+### The minimum tick that may be passed to #getPriceAtTick so the price obtained is > 0. This happens because pricex96 can be zero
+# in some ticks while sqrtPricex96 will not).
+MIN_TICK_LO = -665455
+### The maximum tick that may be passed to #getPriceAtTick - symetric to MIN_TICK_LO
+MAX_TICK_LO = -MIN_TICK_LO
+
 ### @notice Calculates sqrt(1.0001^tick) * 2^96
 ### @dev Throws if |tick| > max tick
 ### @param tick The input tick for the above formula
@@ -70,7 +76,7 @@ def getSqrtRatioAtTick(tick):
     remainder = 1 if ratio % 2**32 != 0 else 0
     # For some reason doing the division rounding up doesn't give the exact number
     result = (ratio >> 32) + remainder
-    assert result <= MAX_UINT160
+    checkUInt160(result)
     return result
 
 
@@ -156,3 +162,18 @@ def add_fractional_bit(r, log_2, bit):
     if bit != 50:
         r = r >> f
     return (r, log_2)
+
+
+# There is probably a be a better way to do this (e.g. calculate the prices the same way
+# sqrtPrices are calculated but with different values)
+def getPriceAtTick(tick):
+    checkInt24(tick)
+    sqrtPriceX96 = getSqrtRatioAtTick(tick)
+    # Writing explicit muldiv to show that this the multiplication will "overflow"
+    priceX96 = mulDiv(sqrtPriceX96, sqrtPriceX96, FixedPoint96_Q96)
+    # sqrtPriceX96 is a uint160 with 96 decimals. For priceX96 we keep the 96 decimals
+    # so we need extra bits => 160-96 = 64 bits. So we need 160+64 = 224 bits
+    # We check for 256 here.
+    checkUInt256(priceX96)
+
+    return priceX96

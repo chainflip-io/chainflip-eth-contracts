@@ -1,9 +1,10 @@
-import sys
+import sys, os
 
 import traceback
 
 import math
 from dataclasses import dataclass
+import copy
 
 ### The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
 MIN_SQRT_RATIO = 4295128739
@@ -27,6 +28,27 @@ class TickInfo:
     feeGrowthOutside1X128: int
 
 
+@dataclass
+class TickInfoLinear:
+    ## amount of liquidity that has not been yet swapped
+    liquidityLeft: int
+    ## the total position liquidity that references this tick
+    liquidityGross: int
+
+    # accomulated percentatge of the pool swapped - relative meaning
+    amountPercSwappedInsideX128: int
+
+    ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
+    ## only has relative meaning, not absolute — the value depends on when the tick is initialized.
+    ## In the token opposite to the liquidity token.
+    feeGrowthInsideX128: int
+
+    # list of owners of positions contained in this tick. We can't just store the hash because then we can't
+    # know who is the owner. So we need to recalculate the hash when we burn the position. We only require the
+    # owner since we figure out the isToken0 and the tick.
+    ownerPositions: list
+
+
 # MAX type values
 MAX_UINT128 = 2**128 - 1
 MAX_UINT256 = 2**256 - 1
@@ -39,7 +61,7 @@ MIN_INT128 = -(2**128)
 MAX_INT128 = 2**127 - 1
 MAX_UINT8 = 2**8 - 1
 
-TEST_TOKENS = ["TokenA", "TokenB"]
+TEST_TOKENS = ["Token0", "Token1"]
 
 
 def getMinTick(tickSpacing):
@@ -48,6 +70,14 @@ def getMinTick(tickSpacing):
 
 def getMaxTick(tickSpacing):
     return math.floor(887272 / tickSpacing) * tickSpacing
+
+
+def getMinTickLO(tickSpacing):
+    return math.ceil(-665455 / tickSpacing) * tickSpacing
+
+
+def getMaxTickLO(tickSpacing):
+    return math.floor(665455 / tickSpacing) * tickSpacing
 
 
 def getMaxLiquidityPerTick(tickSpacing):
@@ -112,10 +142,29 @@ def mulDiv(a, b, c):
 
 
 # @dev This function will handle reverts (aka assert failures) in the tests. However, in python there is no revert
-# so we will need to handle that separately if we want to artifially revert to the previous state.
-# E.g a hard copy of the contract instance can be created before making the tryExceptHandle call
+# as in the blockchain. So we will create a hard copy of the current pool and call the same method there.
 def tryExceptHandler(fcn, assertMessage, *args):
+
     reverted = False
+
+    try:
+        # reference to object
+        pool = fcn.__self__
+        fcnName = fcn.__name__
+
+        # hard copy to prevent state changes in the pool
+        poolCopy = copy.deepcopy(pool)
+
+        try:
+            fcn = getattr(poolCopy, fcnName)
+        except AttributeError:
+            assert "Function not found in pool: " + fcnName
+    except:
+        # e.g. case when swapExact1ForZero is expected to revert
+        print(
+            "Non-pool class function passed - expect pool to be copied as part of the call"
+        )
+
     try:
         fcn(*args)
     except AssertionError as msg:
@@ -194,6 +243,15 @@ def toUint256(number):
     return number
 
 
+def toUint128(number):
+    try:
+        checkUInt128(number)
+    except:
+        number = number & (2**128 - 1)
+        checkUInt128(number)
+    return number
+
+
 # General checkInput function for all functions that take input parameters
 def checkInputTypes(**kwargs):
     if "string" in kwargs:
@@ -204,10 +262,14 @@ def checkInputTypes(**kwargs):
         loopChecking(kwargs.get("int24"), checkInt24)
     if "uint256" in kwargs:
         loopChecking(kwargs.get("uint256"), checkUInt256)
+    if "int256" in kwargs:
+        loopChecking(kwargs.get("int256"), checkInt256)
     if "uint160" in kwargs:
         loopChecking(kwargs.get("uint160"), checkUInt160)
     if "uint128" in kwargs:
         loopChecking(kwargs.get("uint128"), checkUInt128)
+    if "int128" in kwargs:
+        loopChecking(kwargs.get("int128"), checkInt128)
     if "uint8" in kwargs:
         loopChecking(kwargs.get("uint8"), checkUInt8)
     if "dict" in kwargs:
@@ -232,6 +294,11 @@ def insertUninitializedTickstoMapping(mapping, keys):
         insertTickInMapping(mapping, key, TickInfo(0, 0, 0, 0))
 
 
+def insertUninitializedLinearTickstoMapping(mapping, keys):
+    for key in keys:
+        insertTickInMapping(mapping, key, TickInfoLinear(0, 0, 0, 0, []))
+
+
 def insertTickInMapping(mapping, key, value):
     assert mapping.__contains__(key) == False
     mapping[key] = value
@@ -246,6 +313,10 @@ def insertInitializedTicksToMapping(mapping, keys, ticksInfo):
 
 def getPositionKey(address, lowerTick, upperTick):
     return hash((address, lowerTick, upperTick))
+
+
+def getLimitPositionKey(address, tick, isToken0):
+    return hash((address, tick, isToken0))
 
 
 ### POOL SWAPS ###
@@ -349,3 +420,23 @@ def formatAsInSnapshot(number):
 def formatPriceWithPrecision(price, precision):
     fraction = (price / (2**96)) ** 2
     return round(fraction, precision)
+
+
+################ Chainflip pool utilities ################
+
+
+def getHashLinear(owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=tick, bool=isToken0)
+    return hash((owner, tick, isToken0))
+
+
+def assertLimitPositionExists(self, owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
+    key = getHashLinear(owner, tick, isToken0)
+    assert self.__contains__(key), "Position doesn't exist"
+
+
+def assertLimitPositionIsBurnt(self, owner, tick, isToken0):
+    checkInputTypes(account=owner, int24=(tick), bool=isToken0)
+    key = getHashLinear(owner, tick, isToken0)
+    assert not self.__contains__(key), "Position exists"
