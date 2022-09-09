@@ -402,7 +402,7 @@ class ChainflipPool(UniswapPool):
 
                     ## Health check - not always correct since in some case where amountRemaining is 1 we can end up with amountIn ==0,
                     ## amountOut==0 and stepLinear.feeAmount == amountRemaining == 1
-                    #assert stepLinear.amountIn > 0 or stepLinear.amountOut > 0
+                    # assert stepLinear.amountIn > 0 or stepLinear.amountOut > 0
 
                     # Update tick liquidity
                     tickLinearInfo.liquidityLeft = LiquidityMath.addDelta(
@@ -456,7 +456,10 @@ class ChainflipPool(UniswapPool):
 
                     if tickCrossed:
                         print("TICK CROSSED!!!!")
-                        print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
+                        print(
+                            "state.amountSpecifiedRemaining",
+                            state.amountSpecifiedRemaining,
+                        )
                         # Health check
                         assert tickLinearInfo.liquidityLeft == 0
                         # Burn all the positions in that tick and clear the tick itself. This could be also done
@@ -548,12 +551,14 @@ class ChainflipPool(UniswapPool):
                 state.liquidity,
                 state.amountSpecifiedRemaining,
                 self.fee,
-            )          
+            )
             print("state.sqrtPriceX96", state.sqrtPriceX96)
             print("sqrtRatioTargetX96", sqrtRatioTargetX96)
             print("state.liquidity", state.liquidity)
             print("state.amountSpecifiedRemaining", state.amountSpecifiedRemaining)
             print("self.fee", self.fee)
+            print("step.amountIn", step.amountIn)
+            print("step.feeAmount", step.feeAmount)
 
             if exactInput:
                 state.amountSpecifiedRemaining -= step.amountIn + step.feeAmount
@@ -613,6 +618,7 @@ class ChainflipPool(UniswapPool):
             print(state.amountSpecifiedRemaining != 0)
             print(state.sqrtPriceX96 != sqrtPriceLimitX96)
 
+        print("END OF SWAP")
         ## End of swap loop
         # Set final tick as the range tick
         if state.tick != slot0Start.tick:
