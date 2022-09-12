@@ -1,4 +1,4 @@
-# Chainflip Ethereum Contracts
+## Chainflip Ethereum Contracts
 
 This repository contains the Ethereum smart contracts which are used to handle deposits and withdrawals based on signatures submitted via the vault nodes.
 
