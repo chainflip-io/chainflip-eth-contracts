@@ -328,6 +328,8 @@ class ChainflipPool(UniswapPool):
             state.amountSpecifiedRemaining != 0
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
+            print("beginning loop type of state.amountSpecifiedRemaining", type(state.amountSpecifiedRemaining))
+
             # First limit orders are checked since they can offer a better price for the user.
 
             ######################################################
@@ -384,13 +386,32 @@ class ChainflipPool(UniswapPool):
                         FixedPoint128_Q128,
                         tickLimitInfo.liquidityLeft,
                     )
+                    # This could overflow when we approach low levels of liquidityLeft. When merging the calculation we 
+                    # should have fixed this - it should not overflow then. Just having this for debug/investigation purposes.
+                    checkUInt256(currentPercSwapped128_Q128)
+                    print("currentPercSwapped128_Q128", currentPercSwapped128_Q128)
+                    print("amountPercSwappedInsideX128", tickLimitInfo.amountPercSwappedInsideX128)
+                    print("FIXEDPOINT", FixedPoint128_Q128)
+                    print("Minus", FixedPoint128_Q128- tickLimitInfo.amountPercSwappedInsideX128)
+                    print("increasePercSwappedInsideX128", mulDiv(
+                        FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128,
+                        stepLimit.amountOut,
+                        tickLimitInfo.liquidityLeft,
+                    ))
+                    # As we can see, liquidityLeft decreases but FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128
+                    # can decrease orders of magnitude when close to 1.
 
+                    # currentPercSwapped128_Q128 = amountOut * FixedPoint128_Q128 / liquidityLeft
                     # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
                     tickLimitInfo.amountPercSwappedInsideX128 += mulDiv(
                         FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128,
-                        currentPercSwapped128_Q128,
-                        FixedPoint128_Q128,
+                        stepLimit.amountOut,
+                        tickLimitInfo.liquidityLeft,
                     )
+                    print("after increase", tickLimitInfo.amountPercSwappedInsideX128)
+
+                    # Health check
+                    assert tickLimitInfo.amountPercSwappedInsideX128 <= FixedPoint128_Q128
 
                     ## Health check - not always correct since in some case where amountRemaining is 1 we can end up with amountIn ==0,
                     ## amountOut==0 and stepLimit.feeAmount == amountRemaining == 1
@@ -469,6 +490,8 @@ class ChainflipPool(UniswapPool):
             ######################################################
             #################### RANGE ORDERS ####################
             ######################################################
+
+            print("Starting limit orders")
 
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
