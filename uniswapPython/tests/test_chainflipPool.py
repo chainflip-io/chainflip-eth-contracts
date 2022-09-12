@@ -14,7 +14,7 @@ import copy
 
 
 # NOTE: These tests are adapted from the original UniswapPool tests but chainging the range orders minted
-# for limit orders. Therefore, in the majority of cases the liit orders are not crossed - add more tests for that.
+# for limit orders. More tests have been added in order to test limit orders.
 
 
 @pytest.fixture
@@ -3957,10 +3957,8 @@ def test_precision_closeTo1(createPoolLow, accounts):
 
 # Trying random LO positions on top of RO and check behaviour. Also check that pool RO pool behaves the same
 # if there are LO that are not used as if there were are none.
-# TODO: Add oneForZeroCase (either expanding this one or creating another test for oneForZero)
 @given(
     st_isToken0=strategy("bool"),
-    st_zeroForOne=strategy("bool"),
     # Using reasonable ticks
     st_tick=strategy("int128", min_value=-1000, max_value=1000),
     st_mintAmount=strategy("uint128", min_value=100, max_value=expandTo18Decimals(1)),
@@ -3969,18 +3967,9 @@ def test_precision_closeTo1(createPoolLow, accounts):
         "uint128[]", min_value=1000, max_value=expandTo18Decimals(1)
     ),
 )
-def test_randomLO_onRO_zeroForOne(
-    st_isToken0, st_zeroForOne, st_swapAmounts, st_tick, st_mintAmount
-):
-
-    # st_isToken0=False
-    # st_zeroForOne=False
-    # st_tick=0
-    # st_mintAmount=100
-    # st_swapAmounts=[1000, 1000]
-
+def test_randomLO_onRO_zeroForOne(st_isToken0, st_swapAmounts, st_tick, st_mintAmount):
     print(
-        "Trying random LO position on top of RO and random swaps in the same direction"
+        "Trying random LO position on top of RO and random swaps in the zeroForOne direction"
     )
 
     # Create accounts, ledger and pool because there is issues when using fixtures
@@ -4014,13 +4003,11 @@ def test_randomLO_onRO_zeroForOne(
 
     # Get close stick at correct tickSpacing and mint LO
     LOtickSpaced = st_tick - st_tick % pool.tickSpacing
-    print("LO TICK", LOtickSpaced)
 
     # Price in which the LO will be taken
     LOPrice = TickMath.getPriceAtTick(LOtickSpaced)
     LOatSqrtPrice = TickMath.getSqrtRatioAtTick(LOtickSpaced - 1)
     LOSqrtPrice = TickMath.getSqrtRatioAtTick(LOtickSpaced)
-    print("LO TICK price", LOatSqrtPrice)
 
     # Figure out if LO should be used
     if st_isToken0 == True:
@@ -4034,15 +4021,6 @@ def test_randomLO_onRO_zeroForOne(
             sum(st_swapAmounts),  # All swaps bundled
             pool.fee,
         )
-        print("DEBUGGING TEST COMPUTESWAP STEP")
-        print("state.sqrtPriceX96", pool.slot0.sqrtPriceX96)
-        print("state.sqrtPriceX96", finalSqrtPriceX96)
-        print("sqrtRatioTargetX96", LOatSqrtPrice)
-        print("state.liquidity", pool.liquidity)
-        print("state.amountSpecifiedRemaining", sum(st_swapAmounts))
-        print("self.fee", pool.fee)
-        print("amountIn", amountIn)
-        print("feeAmount", feeAmount)
 
         if LOatSqrtPrice == finalSqrtPriceX96:
             ROtickCrossedExactly = True
@@ -4052,11 +4030,9 @@ def test_randomLO_onRO_zeroForOne(
         # Due to the nature of zeroForOne, in multiple swaps, if one of them moves the pool a bit
         # then the tick becomes -1 which makes it use the LO.
         if finalSqrtPriceX96 < LOSqrtPrice or LOtickSpaced > pool.slot0.tick:
-            print("SHOULD USE LO")
             # Reached limit order
             limitOrderUsed = True
         else:
-            print("SHOULD NOT USE LO")
             limitOrderUsed = False
 
         # Get if LO tick should be crossed
@@ -4090,31 +4066,16 @@ def test_randomLO_onRO_zeroForOne(
     ]
     iniPosition = copy.deepcopy(position)
 
-    # Get Results if LO is not used - final tick, final price and LP burnt position (RO)
-    # Depending on zeroForOne, mntLimitTick and previous final tick, determine if LO should be used
-    # If used, check the basic swap results and then the basic burn results for both RO and LO.
-    # If not used check that results are the ones that we calculated initially and that LO
-    # has been untouched (aka burn and get the same amount)
-
-    print("Starting swaps on real pool")
     for swapAmount in st_swapAmounts:
         swapExact0For1(pool, swapAmount, accounts[2], None)
-
-    print("final tick pool.slot0.tick:", pool.slot0.tick)
-    print("final price pool.slot0.sqrtPriceX96:", pool.slot0.sqrtPriceX96)
 
     if not limitOrderUsed:
         assert tick.liquidityGross == st_mintAmount
         assert tick.liquidityLeft == st_mintAmount
         assert tick.amountPercSwappedInsideX128 == 0
         assert tick.feeGrowthInsideX128 == 0
-        assert tick.feeGrowthInsideX128 == 0
         # Nothing has changed in the position
         assert position == iniPosition
-        # # Check that RO ticks and pool state are the same as if the LO was not there
-        # assert pool.ticks[minTick] == poolCopy.ticks[minTick]
-        # assert pool.ticks[maxTick] == poolCopy.ticks[maxTick]
-        # assert pool.slot0 == poolCopy.slot0
 
         balanceBeforeBurn0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
         balanceBeforeBurn1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
@@ -4162,6 +4123,185 @@ def test_randomLO_onRO_zeroForOne(
                 # but the amounts would need to be extremely exact. Could also be not swapped but
                 # then we should not be in this case)
                 if ROtickCrossedExactly:
+                    assert tick.amountPercSwappedInsideX128 > 0
+                    assertLimitPositionExists(
+                        pool.limitOrders, accounts[1], LOtickSpaced, st_isToken0
+                    )
+                else:
+                    # Could be any scenario (partially swapped and fully-swapped). Almost impossible
+                    # to predict without doing all the math - we skip the check for now.
+                    assert True
+            else:
+                # Shoul not reach here anyway bc it's certain that LO has not been used.
+                assert False, "Should never reach this"
+
+
+@given(
+    st_isToken0=strategy("bool"),
+    # Using reasonable ticks
+    st_tick=strategy("int128", min_value=-1000, max_value=1000),
+    st_mintAmount=strategy("uint128", min_value=100, max_value=expandTo18Decimals(1)),
+    # By default the max amount of elements is 8 === number of swaps. Making swaps of a relevant size
+    st_swapAmounts=strategy(
+        "uint128[]", min_value=1000, max_value=expandTo18Decimals(1)
+    ),
+)
+def test_randomLO_onRO_oneForZero(st_isToken0, st_swapAmounts, st_tick, st_mintAmount):
+
+    print(
+        "Trying random LO position on top of RO and random swaps in the OneForZero direction"
+    )
+
+    # Create accounts, ledger and pool because there is issues when using fixtures
+    account0 = [
+        "ALICE",
+        TEST_TOKENS,
+        [MAX_INT256 // 100, MAX_INT256 // 100 // 100],
+    ]  # LP0 - backup liquidity
+    account1 = ["BOB", TEST_TOKENS, [MAX_INT256 // 100, MAX_INT256 // 100]]  # LP1
+    account2 = [
+        "CHARLIE",
+        TEST_TOKENS,
+        [MAX_INT256 // 100, MAX_INT256 // 100],
+    ]  # Swapper
+
+    ledger = Ledger([account0, account1, account2])
+    accounts = list(ledger.accounts.keys())
+
+    pool, minTick, maxTick, _, _ = createPool(
+        FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM], ledger
+    )
+
+    pool.initialize(encodePriceSqrt(1, 1))
+
+    # Add some RO Liquidity as a base
+    pool.mint(accounts[0], minTick, maxTick, expandTo18Decimals(100))
+
+    token = TEST_TOKENS[0] if st_isToken0 else TEST_TOKENS[1]
+    iniBalance0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
+    iniBalance1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
+
+    # Get close stick at correct tickSpacing and mint LO
+    LOtickSpaced = st_tick - st_tick % pool.tickSpacing
+
+    # Price in which the LO will be taken
+    LOPrice = TickMath.getPriceAtTick(LOtickSpaced)
+    LOSqrtPrice = TickMath.getSqrtRatioAtTick(LOtickSpaced)
+
+    # Figure out if LO should be used
+    if st_isToken0 == False:
+        limitOrderUsed = False
+        ROtickCrossedExactly = False
+    else:
+        (finalSqrtPriceX96, amountIn, amountOut, feeAmount,) = SwapMath.computeSwapStep(
+            pool.slot0.sqrtPriceX96,  # tick 0
+            LOSqrtPrice,
+            pool.liquidity,
+            sum(st_swapAmounts),  # All swaps bundled
+            pool.fee,
+        )
+
+        if LOSqrtPrice == finalSqrtPriceX96:
+            ROtickCrossedExactly = True
+        else:
+            ROtickCrossedExactly = False
+
+        # Due to the nature of zeroForOne, in multiple swaps, if one of them moves the pool a bit
+        # then the tick becomes -1 which makes it use the LO.
+        if finalSqrtPriceX96 >= LOSqrtPrice or LOtickSpaced <= pool.slot0.tick:
+            # Reached limit order
+            limitOrderUsed = True
+        else:
+            limitOrderUsed = False
+
+        # Get if LO tick should be crossed
+        (_, _, _, tickCrossed,) = SwapMath.computeLimitSwapStep(
+            LOPrice,
+            st_mintAmount,
+            sum(st_swapAmounts),
+            pool.fee,
+            True,  # zeroForOne
+        )
+
+    # Mint Limit Order on top
+    pool.mintLimitOrder(token, accounts[1], LOtickSpaced, st_mintAmount)
+
+    # Check the st_mintAmount is transferred correctly
+    if st_isToken0:
+        assert iniBalance0LOLP - st_mintAmount == ledger.balanceOf(
+            accounts[1], TEST_TOKENS[0]
+        )
+        assert iniBalance1LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[1])
+    else:
+        assert iniBalance0LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[0])
+        assert iniBalance1LOLP - st_mintAmount == ledger.balanceOf(
+            accounts[1], TEST_TOKENS[1]
+        )
+
+    ticksLimit = pool.ticksLimitTokens0 if st_isToken0 else pool.ticksLimitTokens1
+    tick = ticksLimit[LOtickSpaced]
+    position = pool.limitOrders[
+        getLimitPositionKey(accounts[1], LOtickSpaced, st_isToken0)
+    ]
+    iniPosition = copy.deepcopy(position)
+
+    for swapAmount in st_swapAmounts:
+        swapExact1For0(pool, swapAmount, accounts[2], None)
+
+    if not limitOrderUsed:
+        assert tick.liquidityGross == st_mintAmount
+        assert tick.liquidityLeft == st_mintAmount
+        assert tick.amountPercSwappedInsideX128 == 0
+        assert tick.feeGrowthInsideX128 == 0
+        # Nothing has changed in the position
+        assert position == iniPosition
+
+        balanceBeforeBurn0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
+        balanceBeforeBurn1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
+        # Burn LO LP position
+        pool.burnLimitOrder(token, accounts[1], LOtickSpaced, st_mintAmount)
+        # Burn does not change the balances
+        assert balanceBeforeBurn0LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[0])
+        assert balanceBeforeBurn1LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[1])
+        pool.collectLimitOrder(
+            accounts[1], token, LOtickSpaced, MAX_UINT128, MAX_UINT128
+        )
+        finalBalance0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
+        finalBalance1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
+        # Assert that final balance == initial value since there's been no swap on that tick/position
+        assert finalBalance0LOLP == iniBalance0LOLP
+        assert finalBalance1LOLP == iniBalance1LOLP
+    else:
+        # Assert that the LO has been partially or fully used
+        if LOtickSpaced <= 0:  # 0 == intial tick
+            if pool.slot0.tick != 0:  # != initial tick
+                assertLimitPositionIsBurnt(
+                    pool.limitOrders, accounts[1], LOtickSpaced, st_isToken0
+                )
+            else:
+                # Tick/position partially swapped or fully swapped. It can be that it crossed the tick at the exact same
+                # time that the swap is complete.
+                if tickCrossed:
+                    assertLimitPositionIsBurnt(
+                        pool.limitOrders, accounts[1], LOtickSpaced, st_isToken0
+                    )
+                else:
+                    assert tick.amountPercSwappedInsideX128 > 0
+                    assertLimitPositionExists(
+                        pool.limitOrders, accounts[1], LOtickSpaced, st_isToken0
+                    )
+        # RO are swapped first
+        else:
+            if pool.slot0.tick > LOtickSpaced:
+                # Position swapped if pool reaches tick after the tick where LO will be used
+                assertLimitPositionIsBurnt(
+                    pool.limitOrders, accounts[1], LOtickSpaced, st_isToken0
+                )
+            elif pool.slot0.tick == LOtickSpaced:
+                # Tick/position most likely partially swapped (could be fully swapped too
+                # but the amounts would need to be extremely exact. Could also be not swapped but
+                # then we should not be in this case)
+                if not ROtickCrossedExactly:
                     assert tick.amountPercSwappedInsideX128 > 0
                     assertLimitPositionExists(
                         pool.limitOrders, accounts[1], LOtickSpaced, st_isToken0
