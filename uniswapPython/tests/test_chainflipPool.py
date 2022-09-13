@@ -11,7 +11,7 @@ import TickMath
 
 import pytest
 import copy
-
+import random
 
 # NOTE: These tests are adapted from the original UniswapPool tests but chainging the range orders minted
 # for limit orders. More tests have been added in order to test limit orders.
@@ -3873,8 +3873,8 @@ def test_precision_numberOfSwaps_sameAmount(createPoolLow, accounts, ledger):
             # This is only because the swaps are the same I believe. If they were different amounts we would start losing precision.
             assert tick.amountPercSwappedInsideX128 - percSwappedPrev == 648480935341976477991928071539899 or tick.amountPercSwappedInsideX128 - percSwappedPrev == 648480935341976477991928071539900
         print(
-            "percSwappedDiff",
-            tick.amountPercSwappedInsideX128 - percSwappedPrev,
+            "tick.liquidityLeft",
+            tick.liquidityLeft,
         )
         percSwappedPrev = tick.amountPercSwappedInsideX128
 
@@ -3884,11 +3884,71 @@ def test_precision_numberOfSwaps_sameAmount(createPoolLow, accounts, ledger):
     print(pool.ticksLimitTokens1)
 
     assert not pool.ticksLimitTokens1.__contains__(pool.tickSpacing)
+
+
+# Precision test - AmountPercSwapped doesn't affect the swap amounts but we lose precision along the way
+def test_precision_numberOfSwaps_diffAmount(createPoolLow, accounts, ledger):
+    print("Check precision in tick.amountPercSwappedInsideX128")
+    pool, minTick, maxTick, _, _ = createPoolLow
+    pool.initialize(encodePriceSqrt(1, 1))
+    pool.slot0.tick = -1
+
+    pool.mintLimitOrder(
+        TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(10000)
+    )
+    tick = pool.ticksLimitTokens1[0]
+
+    print("tick.liquidityLeft", tick.liquidityLeft)
+    counter = 0
+    percSwappedPrev = 0
+    precList = [0]
+
+    while pool.ticksLimitTokens1[0].liquidityLeft > 1000:
+        print("tick", tick)
+        amount = random.randint(1000,pool.ticksLimitTokens1[0].liquidityLeft)
+        liqLeftBeforeSwap = pool.ticksLimitTokens1[0].liquidityLeft
+        (
+            _,
+            amount0,
+            amount1,
+            sqrtPriceX96,
+            liquidity,
+            tick,
+        ) =swapExact0For1(
+            pool,
+            amount,
+            accounts[1],
+            None,
+        )
+
+        print("tick", pool.ticksLimitTokens1[0])
+
+        perc = (FixedPoint128_Q128 * abs(amount1)) // liqLeftBeforeSwap
+        print("perc", perc)
+        print("diff", pool.ticksLimitTokens1[0].amountPercSwappedInsideX128 - percSwappedPrev)
+        print("tick.liquidityLeft", pool.ticksLimitTokens1[0].liquidityLeft)
+
+        # Manual calculation of swapped perc done when position is burnt (if it was minted bnefore this current swap)
+        percCalcul = mulDivRoundingUp(
+            toUint256(
+                pool.ticksLimitTokens1[0].amountPercSwappedInsideX128 - percSwappedPrev
+            ),
+            FixedPoint128_Q128,
+            toUint256(FixedPoint128_Q128 - percSwappedPrev),
+        )
+        print("percCalcul", percCalcul)
+        #assert percCalcul == perc
+        precisionError = abs(percCalcul - perc)
+        print("Precision error", precisionError)
+        # Error doesn't necessarily increase in each swap (some might be lower) but in general the trend is that it keeps increasing
+        precList.append(precisionError)
+
+        percSwappedPrev = pool.ticksLimitTokens1[0].amountPercSwappedInsideX128
+        counter += 1
+        print("counter", counter)
+
+    print("Precision error list", precList)
     assert False
-
-# TODO: Replicate the same test as above with different swap amounts to verify that we will have precision problems
-# TODO: Think. AmountOut/LiqLet * (1-...) is what can lose precision. 
-
 
 # Precision test - it might be that the closer the amountPercSwappedInsideX128 is to 1 the more precision we lose per swap.
 # However, in this test it seems that we lose some precision but not relevant, extremely difficult to hit (so many decimals).
