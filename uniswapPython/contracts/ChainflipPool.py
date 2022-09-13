@@ -328,7 +328,6 @@ class ChainflipPool(UniswapPool):
             state.amountSpecifiedRemaining != 0
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
-            print("beginning loop type of state.amountSpecifiedRemaining", type(state.amountSpecifiedRemaining))
 
             # First limit orders are checked since they can offer a better price for the user.
 
@@ -368,6 +367,11 @@ class ChainflipPool(UniswapPool):
                         self.fee,
                         zeroForOne,
                     )
+                    print("amountToSwap", mulDiv(
+                        state.amountSpecifiedRemaining, SwapMath.ONE_IN_PIPS - self.fee, SwapMath.ONE_IN_PIPS
+                    ))
+                    print("amountIn", stepLimit.amountIn)
+                    print("amountOut", stepLimit.amountOut)
 
                     # Update the tick - we can consider to only update when we cross tick
                     # and keep global variables in state (like uniswap does)
@@ -380,35 +384,49 @@ class ChainflipPool(UniswapPool):
                         tickLimitInfo.amountPercSwappedInsideX128 < FixedPoint128_Q128
                     )
 
-                    # currentPercSwapped = amountSwapped / liquidityLeft
-                    currentPercSwapped128_Q128 = mulDiv(
-                        stepLimit.amountOut,
-                        FixedPoint128_Q128,
-                        tickLimitInfo.liquidityLeft,
-                    )
-                    # This could overflow when we approach low levels of liquidityLeft. When merging the calculation we 
-                    # should have fixed this - it should not overflow then. Just having this for debug/investigation purposes.
-                    checkUInt256(currentPercSwapped128_Q128)
-                    print("currentPercSwapped128_Q128", currentPercSwapped128_Q128)
-                    print("amountPercSwappedInsideX128", tickLimitInfo.amountPercSwappedInsideX128)
-                    print("FIXEDPOINT", FixedPoint128_Q128)
-                    print("Minus", FixedPoint128_Q128- tickLimitInfo.amountPercSwappedInsideX128)
-                    print("increasePercSwappedInsideX128", mulDiv(
-                        FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128,
-                        stepLimit.amountOut,
-                        tickLimitInfo.liquidityLeft,
-                    ))
-                    # As we can see, liquidityLeft decreases but FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128
-                    # can decrease orders of magnitude when close to 1.
+                    # The calculations work correctly when the tick is crossed, but no need to do them. Maybe good
+                    # anyway to make sure that when the calculation crosses the tick, amountPercSwappedInsideX128 = 1.
+                    if tickCrossed:
+                        tickLimitInfo.amountPercSwappedInsideX128 = FixedPoint128_Q128
+                    else:
 
-                    # currentPercSwapped128_Q128 = amountOut * FixedPoint128_Q128 / liquidityLeft
-                    # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
-                    tickLimitInfo.amountPercSwappedInsideX128 += mulDiv(
-                        FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128,
-                        stepLimit.amountOut,
-                        tickLimitInfo.liquidityLeft,
-                    )
-                    print("after increase", tickLimitInfo.amountPercSwappedInsideX128)
+                        # currentPercSwapped = amountSwapped / liquidityLeft
+                        currentPercSwapped128_Q128 = mulDiv(
+                            stepLimit.amountOut,
+                            FixedPoint128_Q128,
+                            tickLimitInfo.liquidityLeft,
+                        )
+                        # This could overflow when we approach low levels of liquidityLeft. When merging the calculation we 
+                        # should have fixed this - it should not overflow then. Just having this for debug/investigation purposes.
+                        checkUInt256(currentPercSwapped128_Q128)
+                        print("currentPercSwapped128_Q128", currentPercSwapped128_Q128)
+                        print("amountPercSwappedInsideX128", tickLimitInfo.amountPercSwappedInsideX128)
+                        print("amountPercSwappedInsidex1", tickLimitInfo.amountPercSwappedInsideX128 / FixedPoint128_Q128)
+                        print("FIXEDPOINT", FixedPoint128_Q128)
+                        print("Minus", FixedPoint128_Q128- tickLimitInfo.amountPercSwappedInsideX128)
+                        print("increasePercSwappedInsideX128", mulDiv(
+                            FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128,
+                            stepLimit.amountOut,
+                            tickLimitInfo.liquidityLeft,
+                        ))
+                        # As we can see, liquidityLeft decreases but FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128
+                        # can decrease orders of magnitude when close to 1.
+
+                        # currentPercSwapped128_Q128 = amountOut * FixedPoint128_Q128 / liquidityLeft
+                        # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
+                        tickLimitInfo.amountPercSwappedInsideX128 += mulDiv(
+                            FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128,
+                            stepLimit.amountOut,
+                            tickLimitInfo.liquidityLeft,
+                        )
+                        print("stepLimit.amountOut", stepLimit.amountOut)
+                        print("tickLimitInfo.liquidityLeft", tickLimitInfo.liquidityLeft)
+                        print("division", stepLimit.amountOut / tickLimitInfo.liquidityLeft)
+                        print("after increase", tickLimitInfo.amountPercSwappedInsideX128)
+                        print("after increasex1", tickLimitInfo.amountPercSwappedInsideX128/ FixedPoint128_Q128)
+
+                        # Health check
+                        assert tickLimitInfo.amountPercSwappedInsideX128 < FixedPoint128_Q128
 
                     # Health check
                     assert tickLimitInfo.amountPercSwappedInsideX128 <= FixedPoint128_Q128
@@ -417,10 +435,13 @@ class ChainflipPool(UniswapPool):
                     ## amountOut==0 and stepLimit.feeAmount == amountRemaining == 1
                     # assert stepLimit.amountIn > 0 or stepLimit.amountOut > 0
 
+                    print("tickLimitInfo.liquidityLeft", tickLimitInfo.liquidityLeft)
+                    print("stepLimit.amountOut", stepLimit.amountOut)
                     # Update tick liquidity
                     tickLimitInfo.liquidityLeft = LiquidityMath.addDelta(
                         tickLimitInfo.liquidityLeft, -stepLimit.amountOut
                     )
+                    print("tickLimitInfo.liquidityLeft", tickLimitInfo.liquidityLeft)
 
                     # Health check
                     if tickLimitInfo.amountPercSwappedInsideX128 == FixedPoint128_Q128:
