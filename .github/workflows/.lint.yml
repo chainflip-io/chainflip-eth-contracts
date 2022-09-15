@@ -11,7 +11,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v3
         with:
-          python-version: "3.9.7"
+          python-version: "3.7.3"
 
       - name: Setup Node
         uses: actions/setup-node@v3
