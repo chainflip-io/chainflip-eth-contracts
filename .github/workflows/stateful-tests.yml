@@ -10,7 +10,7 @@ jobs:
 
   stateful-tests:
     needs: lint
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     timeout-minutes: 3600
     strategy:
       matrix:
@@ -29,34 +29,21 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v3
         with:
-          python-version: "3.9.7"
+          python-version: "3.7"
 
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: "14"
-          cache: npm
-
-      - name: Restore Cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
-
-      - name: Cache Packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
 
       - run: npm install
       - run: npm install --global ganache-cli
       - run: pip3 install eth-brownie
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-      - run: poetry install --quiet
+      - run: poetry install
       - run: sudo snap install solc --edge
       # Spinning hardhat node externally because there's some intermittent nasty bug when the node is shut down at
       # the end of some stateful test causing the tests to fail - it is confusingly logged as a Flaky inconsistent
