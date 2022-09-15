@@ -8,7 +8,7 @@ jobs:
   stateless-tests:
     name: Stateless Tests
     needs: lint
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     timeout-minutes: 360
     steps:
       - name: Checkout
@@ -44,8 +44,8 @@ jobs:
       - run: npm install --global ganache-cli
       - run: pip3 install cython
       - run: pip3 install cytoolz
-      - run: pip3 install eth-brownie
       - run: poetry install
+      - run: pip3 install eth-brownie
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: sudo snap install solc --edge
       - run: npx hardhat node &
