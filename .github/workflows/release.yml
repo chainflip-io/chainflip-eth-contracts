@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -37,7 +37,7 @@ jobs:
 
       - run: pip3 install eth-brownie
 
-      - run: poetry install --quiet
+      - run: poetry install
 
       - run: poetry run brownie compile
 

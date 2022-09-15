@@ -3,7 +3,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -23,5 +23,5 @@ jobs:
 
       - run: npm install
       - run: npx solhint -w 0 'contracts/**/*.sol'
-      - run: poetry install --quiet
+      - run: poetry install
       - run: poetry run black . --check
