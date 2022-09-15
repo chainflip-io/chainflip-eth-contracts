@@ -8,7 +8,7 @@ jobs:
   stateless-tests:
     name: Stateless Tests
     needs: lint
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     timeout-minutes: 360
     steps:
       - name: Checkout
@@ -34,19 +34,17 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-      - name: Cache Packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
+      # - name: Cache Packages
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ~/.cache/pypoetry
+      #     key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
 
       - run: npm install
       - run: npm install --global ganache-cli
-      - run: pip3 install cython
-      - run: pip3 install cytoolz
-      - run: poetry install
       - run: pip3 install eth-brownie
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+      - run: poetry install
       - run: sudo snap install solc --edge
       - run: npx hardhat node &
       - run: sleep 2
