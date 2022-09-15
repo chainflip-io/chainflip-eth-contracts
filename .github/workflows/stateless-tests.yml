@@ -44,7 +44,7 @@ jobs:
       - run: npm install --global ganache-cli
       - run: pip3 install eth-brownie
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
-      - run: poetry install --quiet
+      - run: poetry install
       - run: sudo snap install solc --edge
       - run: npx hardhat node &
       - run: sleep 2
