@@ -259,6 +259,8 @@ def updateLimit(
             toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
         )
 
+        checkUInt256(amountSwappedPrev)
+
         # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(

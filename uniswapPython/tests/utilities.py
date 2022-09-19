@@ -193,30 +193,37 @@ def tryExceptHandler(fcn, assertMessage, *args):
 
 def checkUInt128(number):
     assert number >= 0 and number <= MAX_UINT128, "OF or UF of UINT128"
+    assert type(number) == int, "Not an integer"
 
 
 def checkInt128(number):
     assert number >= MIN_INT128 and number <= MAX_INT128, "OF or UF of INT128"
+    assert type(number) == int, "Not an integer"
 
 
 def checkInt256(number):
     assert number >= MIN_INT256 and number <= MAX_INT256, "OF or UF of INT256"
+    assert type(number) == int, "Not an integer"
 
 
 def checkUInt160(number):
     assert number >= 0 and number <= MAX_UINT160, "OF or UF of UINT160"
+    assert type(number) == int, "Not an integer"
 
 
 def checkUInt256(number):
     assert number >= 0 and number <= MAX_UINT256, "OF or UF of UINT256"
+    assert type(number) == int, "Not an integer"
 
 
 def checkUInt8(number):
     assert number >= 0 and number <= MAX_UINT8, "OF or UF of UINT8"
+    assert type(number) == int, "Not an integer"
 
 
 def checkInt24(number):
     assert number >= MIN_INT24 and number <= MAX_INT24, "OF or UF of INT24"
+    assert type(number) == int, "Not an integer"
 
 
 def checkString(input):
