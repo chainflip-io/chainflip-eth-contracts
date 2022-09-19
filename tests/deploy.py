@@ -92,7 +92,7 @@ def deploy_set_Chainflip_contracts(
 
     return cf
 
-
+# Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, Token, accounts):
 
     usdc = deployer.deploy(Token, "USD Coin", "USDC", INIT_USDC_SUPPLY)
