@@ -161,8 +161,9 @@ def updateLimit(
 
     info = self[tick]
 
-    if liquidityDelta > 0 and info.amountPercSwappedInsideX128 == FixedPoint128_Q128:
-        assert False, "Can't handle adding liquidity to an already swapped Tick for now"
+    # Health check - if tick is swapped it should have been burnt.
+    if liquidityDelta > 0:
+        assert info.oneMinusPercSwap > 0
 
     liquidityGrossBefore = info.liquidityGross
     liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta)
@@ -172,6 +173,8 @@ def updateLimit(
     flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0)
 
     info.liquidityGross = liquidityGrossAfter
+    print("info.liquidityLeft", info.liquidityLeft)
+    print("liquidityLeftDelta", liquidityLeftDelta)
     info.liquidityLeft = LiquidityMath.addDelta(info.liquidityLeft, liquidityLeftDelta)
 
     # Add owner to ownerPosition list if not already there. Doing a hashlist has the problem that

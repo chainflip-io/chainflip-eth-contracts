@@ -7,6 +7,7 @@ from utilities import *
 import SqrtPriceMath
 
 from dataclasses import dataclass
+from decimal import *
 
 ### @title Position
 ### @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
@@ -30,7 +31,11 @@ class PositionLimitInfo:
     ## the amount of liquidity owned by this position in the token provided
     liquidity: int
     ## percentatge swapped in the pool when the position was minted. Relative meaning.
-    amountPercSwappedInsideMintedX128: int
+    # Storing 1 minus the value.
+    # Possibly using floating point number with 256 in both the mantissa and the exponent.
+    # For now, in python using Decimal to get more precision than a simple float and to be able
+    # to achieve better rounding. Initial value should be one.
+    oneMinusPercSwapMint: Decimal
     ## the position owed to the position owner in token0#token1 => uint128
     # Since we can burn a position half swapped, we need both tokensOwed0 and tokensOwed1
     tokensOwed0: int
@@ -72,7 +77,7 @@ def getLimit(self, owner, tick, isToken0):
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
-        self[key] = PositionLimitInfo(0, 0, 0, 0, 0)
+        self[key] = PositionLimitInfo(0, Decimal(1), 0, 0, 0)
     return self[key]
 
 
@@ -138,21 +143,24 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
 def updateLimit(
     self,
     liquidityDelta,
-    amountPercSwappedInsideX128,
+    oneMinusPercSwap,
     isToken0,
     pricex96,
     feeGrowthInsideX128,
 ):
     checkInputTypes(
         int128=(liquidityDelta),
-        uint256=(feeGrowthInsideX128, amountPercSwappedInsideX128, pricex96),
+        uint256=(feeGrowthInsideX128, pricex96),
+        float = oneMinusPercSwap,
         bool=(isToken0),
     )
+    print("oneMinusPercSwap", oneMinusPercSwap)
+    print("self.oneMinusPercSwapMint", self.oneMinusPercSwapMint)
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
-    if self == PositionLimitInfo(0, 0, 0, 0, 0):
+    if self == PositionLimitInfo(0, Decimal(1), 0, 0, 0):
         assert liquidityDelta > 0  # health check
-        self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
+        self.oneMinusPercSwapMint = oneMinusPercSwap
         self.feegrowthInsideLastX128 = feeGrowthInsideX128
         initialized = True
     else:
@@ -185,81 +193,88 @@ def updateLimit(
     if liquidityDelta >= 0:
         liquidityLeftDelta = liquidityDelta
         liquiditySwappedDelta = 0
-        # If there has been any swap in this position before this added mint, recompute the amountPercSwappedInsideX128. Only
+        # If there has been any swap in this position before this added mint, recompute the oneMinusPercSwap. Only
         # needed if there is a > 0 mint.
         if (
             liquidityDelta > 0
-            and amountPercSwappedInsideX128 > self.amountPercSwappedInsideMintedX128
-        ):
-            amountSwappedPrev = mulDivRoundingUp(
-                toUint256(
-                    amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
-                ),
-                self.liquidity,
-                toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
-            )
+            and oneMinusPercSwap < self.oneMinusPercSwapMint
+        ):  
+            perc = (Decimal((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint)).quantize(Decimal('1e-28'), rounding=ROUND_UP)
+            amountSwappedPrev =  math.ceil(self.liquidity * perc)
+            # amountSwappedPrev = math.floor(
+            #     # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
+            #     (self.oneMinusPercSwapMint - oneMinusPercSwap) * self.liquidity / self.oneMinusPercSwapMint
+            # )
             # When burnt the next time, the calculation will be like explained below. So we need to modify the
-            # self.amountPercSwappedInsideMintedX128 so with the new liquidity we get the same amount swapped.
+            # self.percSwapMint so with the new liquidity we get the same amount swapped.
 
             # amountSwappedPrev = mulDivRoundingUp(
-            #           amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128),
+            #           percSwap - self.percSwapMint),
             #           self.liquidity,
-            #           toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
+            #           toUint256(FixedPoint128_Q128 - self.percSwapMint),
             # )  == mulDivRoundingUp(
-            #           amountPercSwappedInsideX128 - X,
+            #           percSwap - X,
             #           liquidityNext,
             #           FixedPoint128_Q128 - X,
             # )
 
-            # Resolving for X ( X === newly minted percentatge to be stored in the postion -> self.amountPercSwappedInsideMintedX128)
-            # X = ((liquidityNext * amountPercSwappedInsideX128) -  (amountSwappedPrev * FixedPoint128_Q128))/(liquidityNext - amountSwappedPrev)
+            # Resolving for X ( X === newly minted percentatge to be stored in the postion -> self.percSwapMint)
+            # X = ((liquidityNext * percSwap) -  (amountSwappedPrev * FixedPoint128_Q128))/(liquidityNext - amountSwappedPrev)
 
             # Denonimator cannot be <=0 given that:
             # liquidityNext > amountSwappedPrev, since amountSwappedPrev is in the same currency as liquidity and liquidityNext > liquidity.
             # Numerator cannot be <= 0:
-            # liquidityNext * amountPercSwappedInsideX128 > amountSwappedPrev * FixedPoint128_Q128
+            # liquidityNext * percSwap > amountSwappedPrev * FixedPoint128_Q128
             # Left term would give is the maximum amount (upper limit) that might have been swapped in the pool including new liquidity.
             # On the right, the amount swapped of that same token before this new mint. Amount swapped before cannot be bigger than the
             # max amount swapped including new liquidity.
             # NOTE: it is possible that this becomes negative if the amount minted is extremely small (< 10-12) due to rounding errors.
             # In this cases it will revert anyway.
             # TODO: Alastair mentioned this potentially being able to be calculated in a simpler way. To discuss.
-
-            newPercSwappedMintX128 = divRoundingUp(
-                (liquidityNext * amountPercSwappedInsideX128)
-                - (amountSwappedPrev * FixedPoint128_Q128),
-                (liquidityNext - amountSwappedPrev),
+            # TODO: Check after changing to oneMinusPercSwap if we can calculate it in a better way
+            #print("//////////////////DEBUG//////////////////")
+            print("oneMinusPercSwap", oneMinusPercSwap)
+            print("amountSwappedPrev", amountSwappedPrev)
+            print("liquidityNext", liquidityNext)
+            newOneMinusPercSwapMint = Decimal(1) - (
+                (liquidityNext * (1-oneMinusPercSwap)  - amountSwappedPrev) / (liquidityNext - amountSwappedPrev)
             )
+            newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(Decimal('1e-28'), rounding=ROUND_DOWN)
 
             # Health checks
-            assert newPercSwappedMintX128 > self.amountPercSwappedInsideMintedX128
-            assert newPercSwappedMintX128 < amountPercSwappedInsideX128
+            print("newOneMinusPercSwapMint", newOneMinusPercSwapMint)
+            print("self.oneMinusPercSwapMint", self.oneMinusPercSwapMint)
+            assert newOneMinusPercSwapMint < self.oneMinusPercSwapMint
+            assert newOneMinusPercSwapMint > oneMinusPercSwap
+            assert newOneMinusPercSwapMint > 0
 
-            self.amountPercSwappedInsideMintedX128 = newPercSwappedMintX128
+            self.oneMinusPercSwapMint = newOneMinusPercSwapMint
 
     else:
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
         # amountSwappedPrev in token base (self.liquidity)
         # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
-        # Current pool amountPercSwappedInsideX128 is adjusted so we need to reverse engineer it to get the positionn's swap%.
-        # We know in swap, the new amountPercSwappedInsideX128 gets calculated like this:
-        # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
-        # We know that when the position was minted, amountPercSwappedInsideX128 == self.amountPercSwappedInsideMintedX128
+        # Current pool percSwap is adjusted so we need to reverse engineer it to get the positionn's swap%.
+        # We know in swap, the new percSwap gets calculated like this:
+        # tick.percSwap = tick.percSwap + (1-tick.percSwap) * currentPercSwapped128_Q128
+        # We know that when the position was minted, percSwap == self.percSwapMint
         # So we need to calculate the average % swapped in the tick after mint - will equate to currentPercSwap in the previous formula
         # That should encapsulate the average of all swaps performed after that.
-        # amountPercSwappedInsideX128 = self.amountPercSwappedInsideMintedX128 + (1-self.amountPercSwappedInsideMintedX128) * percSwappedAfterMint
-        # percSwappedAfterMint = (amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128) / (1-self.amountPercSwappedInsideMintedX128)
+        # percSwap = self.percSwapMint + (1-self.percSwapMint) * percSwappedAfterMint
+        # percSwappedAfterMint = (percSwap - self.percSwapMint) / (1-self.percSwapMint)
         # totalAmountSwapped = percSwappedAfterMint * self.liquidity
-        amountSwappedPrev = mulDivRoundingUp(
-            toUint256(
-                amountPercSwappedInsideX128 - self.amountPercSwappedInsideMintedX128
-            ),
-            self.liquidity,
-            toUint256(FixedPoint128_Q128 - self.amountPercSwappedInsideMintedX128),
-        )
 
-        checkUInt256(amountSwappedPrev)
+        # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
+        assert self.oneMinusPercSwapMint > 0
+
+        print("//////////////////DEBUG//////////////////")
+
+        perc = (Decimal((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint)).quantize(Decimal('1e-28'), rounding=ROUND_UP)
+        # Rounding down here since the calculation to store the new oneMinusPercSwapMint round up
+        amountSwappedPrev =  math.floor(self.liquidity * perc)
+        
+        print("amountSwappedPrev", amountSwappedPrev)
 
         # Calculate current position ratio
         if isToken0:
@@ -302,9 +317,9 @@ def updateLimit(
         if currentPosition1 > MAX_UINT128:
             currentPosition1 = currentPosition1 & (2**128 - 1)
 
-        # No need to update amountPercSwappedInsideMintedX128. We should update this
+        # No need to update oneMinusPercSwapMint. We should update this
         # when the position is fully burnt (1) but we can't burn more than that anyway,
-        # so no need to self.amountPercSwappedInsideMintedX128 = amountPercSwappedInsideX128
+        # so no need to self.oneMinusPercSwapMint = oneMinusPercSwap
 
         # TODO: Check that this is correct
         if isToken0:
@@ -335,6 +350,7 @@ def updateLimit(
             self.tokensOwed1 += tokensOwed
         else:
             self.tokensOwed0 += tokensOwed
+
 
     # Returning liquiditySwappedDelta to return as a result of the burn function
     return liquidityLeftDelta, liquiditySwappedDelta, initialized

@@ -5,6 +5,7 @@ import traceback
 import math
 from dataclasses import dataclass
 import copy
+from decimal import Decimal
 
 ### The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
 MIN_SQRT_RATIO = 4295128739
@@ -35,8 +36,11 @@ class TickInfoLimit:
     ## the total position liquidity that references this tick
     liquidityGross: int
 
-    # accomulated percentatge of the pool swapped - relative meaning
-    amountPercSwappedInsideX128: int
+    # accomulated percentatge of the pool swapped - relative meaning. Storing 1 minus the value
+    # Possibly using floating point number with 256 in both the mantissa and the exponent.
+    # For now, in python using Decimal to get more precision than a simple float and to be able
+    # to achieve better rounding. Initial value should be one.
+    oneMinusPercSwap: Decimal
 
     ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
     ## only has relative meaning, not absolute — the value depends on when the tick is initialized.
@@ -225,6 +229,8 @@ def checkInt24(number):
     assert number >= MIN_INT24 and number <= MAX_INT24, "OF or UF of INT24"
     assert type(number) == int, "Not an integer"
 
+def checkfloat(input):
+    assert type(input) == float
 
 def checkString(input):
     assert type(input) == str
@@ -245,7 +251,7 @@ def toUint256(number):
     try:
         checkUInt256(number)
     except:
-        number = number & (2**128 - 1)
+        number = number & (2**256 - 1)
         checkUInt256(number)
     return number
 
@@ -303,7 +309,7 @@ def insertUninitializedTickstoMapping(mapping, keys):
 
 def insertUninitializedLimitTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfoLimit(0, 0, 0, 0, []))
+        insertTickInMapping(mapping, key, TickInfoLimit(0, 0, Decimal(1), 0, []))
 
 
 def insertTickInMapping(mapping, key, value):

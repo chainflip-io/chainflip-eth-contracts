@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "tests"))
 from utilities import *
 
 from dataclasses import dataclass
-
+from decimal import *
 
 @dataclass
 class ModifyLimitPositionParams:
@@ -128,9 +128,9 @@ class ChainflipPool(UniswapPool):
             position,
             liquidityDelta,
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLimitMap[tick].amountPercSwappedInsideX128
+            ticksLimitMap[tick].oneMinusPercSwap
             if ticksLimitMap.__contains__(tick)
-            else 0,
+            else 1,
             token == self.token0,
             TickMath.getPriceAtTick(tick),
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
@@ -375,22 +375,48 @@ class ChainflipPool(UniswapPool):
 
                     # Health check
                     assert (
-                        tickLimitInfo.amountPercSwappedInsideX128 < FixedPoint128_Q128
+                        tickLimitInfo.oneMinusPercSwap <= FixedPoint128_Q128
                     )
 
-                    # currentPercSwapped = amountSwapped / liquidityLeft
-                    currentPercSwapped128_Q128 = mulDiv(
-                        stepLimit.amountOut,
-                        FixedPoint128_Q128,
-                        tickLimitInfo.liquidityLeft,
-                    )
+                    # If tick is crossed no need to do the computations. Also makes sure it will be aligned
+                    # and in no case tickCrossed but then not burnt (e.g. due to precision)
+                    if tickCrossed:
+                        tickLimitInfo.oneMinusPercSwap = 0
+                    else:
 
-                    # tick.amountPercSwappedInsideX128 = tick.amountPercSwappedInsideX128 + (1-tick.amountPercSwappedInsideX128) * currentPercSwapped128_Q128
-                    tickLimitInfo.amountPercSwappedInsideX128 += mulDiv(
-                        FixedPoint128_Q128 - tickLimitInfo.amountPercSwappedInsideX128,
-                        currentPercSwapped128_Q128,
-                        FixedPoint128_Q128,
-                    )
+
+                        # TODO: Remove this - leaving it for debugging purposes
+                        # currentPercSwapped = amountSwapped / liquidityLeft
+                        currentPercSwapped128_Q128 = mulDiv(
+                            stepLimit.amountOut,
+                            FixedPoint128_Q128,
+                            tickLimitInfo.liquidityLeft,
+                        )
+                        print("--DEBUGGING--")
+                        print("tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
+                        print("Amount swapped: ", stepLimit.amountOut)
+                        print("Liquidity left: ", tickLimitInfo.liquidityLeft)
+                        print("Calculation", tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft)
+                        # currentPercSwapped = amountSwapped / liquidityLeft
+                        # tick.percSwap = tick.percSwap + (1-tick.percSwap) * currentPercSwapped128_Q128
+                        # tick.oneMinusPercSwap = tick.oneMinusPercSwap - tick.oneMinusPercSwap * currentPercSwapped128_Q128
+                        # Not using mulDiv because we are using floats. Python float has 18 decimals, so we are losing precision here.
+                        # We can use Decimal to get 28 decimals precision, but we will still need to round.
+                        # Liquidity Left in Tick needs to match, so we round percSwap up => round down oneMinusPercSwap
+                        percSwapDecrease = tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft
+                        percSwapDecrease = percSwapDecrease.quantize(Decimal('1e-28'), rounding=ROUND_UP)
+                        tickLimitInfo.oneMinusPercSwap -= percSwapDecrease
+                        print("final tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
+
+                        # Health check
+                        assert tickLimitInfo.oneMinusPercSwap > 0 
+                        # TODO: One difference with RO is that in RO it can be ensured that priceX96 changes even
+                        # in very small swaps, ensuring that each swap is accounted for. However, here there can be
+                        # the case that tickPerc doesn't increase. We can't do like RO and move the price (update position)
+                        # and then backcalculate amounts, since tickPerc won't change amounts calculated. We either
+                        # consider that this is not a problem (e.g. swap  would need to be unrealistically small) or
+                        # we assert to make sure so small swaps are not happening.
+                        assert tickLimitInfo.oneMinusPercSwap <= 1
 
                     ## Health check - not always correct since in some case where amountRemaining is 1 we can end up with amountIn ==0,
                     ## amountOut==0 and stepLimit.feeAmount == amountRemaining == 1
@@ -402,7 +428,7 @@ class ChainflipPool(UniswapPool):
                     )
 
                     # Health check
-                    if tickLimitInfo.amountPercSwappedInsideX128 == FixedPoint128_Q128:
+                    if tickLimitInfo.oneMinusPercSwap == FixedPoint128_Q128:
                         assert tickLimitInfo.liquidityLeft == 0
 
                     if exactInput:
@@ -648,7 +674,7 @@ class ChainflipPool(UniswapPool):
 
     # Once we cross a tick, automatically burn all the positions that are in the tick.
     def burnCrossedPositions(self, tickLimitInfo, tick, token):
-        assert tickLimitInfo[tick].amountPercSwappedInsideX128 == FixedPoint128_Q128
+        assert tickLimitInfo[tick].oneMinusPercSwap == 0
         for owner in tickLimitInfo[tick].ownerPositions:
             # We should probably create a new burnLimit function for this to make it more efficient
             # e.g. that it burns position.liquidity instead of passing an amount.
