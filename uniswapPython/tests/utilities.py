@@ -16,6 +16,9 @@ FixedPoint128_Q128 = 0x100000000000000000000000000000000
 FixedPoint96_RESOLUTION = 96
 FixedPoint96_Q96 = 0x1000000000000000000000000
 
+# Context precision should be at least 1 factor bigger
+decimalPrecision = '1e-28'
+contextPrecision = 29
 
 @dataclass
 class TickInfo:

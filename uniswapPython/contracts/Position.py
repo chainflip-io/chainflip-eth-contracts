@@ -199,8 +199,8 @@ def updateLimit(
             liquidityDelta > 0
             and oneMinusPercSwap < self.oneMinusPercSwapMint
         ):  
-            perc = (Decimal((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint)).quantize(Decimal('1e-28'), rounding=ROUND_UP)
-            amountSwappedPrev =  math.ceil(self.liquidity * perc)
+            perc = ((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint).quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+            amountSwappedPrev =  math.floor(self.liquidity * perc)
             # amountSwappedPrev = math.floor(
             #     # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
             #     (self.oneMinusPercSwapMint - oneMinusPercSwap) * self.liquidity / self.oneMinusPercSwapMint
@@ -232,18 +232,13 @@ def updateLimit(
             # In this cases it will revert anyway.
             # TODO: Alastair mentioned this potentially being able to be calculated in a simpler way. To discuss.
             # TODO: Check after changing to oneMinusPercSwap if we can calculate it in a better way
-            #print("//////////////////DEBUG//////////////////")
-            print("oneMinusPercSwap", oneMinusPercSwap)
-            print("amountSwappedPrev", amountSwappedPrev)
-            print("liquidityNext", liquidityNext)
             newOneMinusPercSwapMint = Decimal(1) - (
-                (liquidityNext * (1-oneMinusPercSwap)  - amountSwappedPrev) / (liquidityNext - amountSwappedPrev)
+                (liquidityNext * (1-oneMinusPercSwap) - amountSwappedPrev) / (liquidityNext - amountSwappedPrev)
             )
-            newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(Decimal('1e-28'), rounding=ROUND_DOWN)
+            # Liquidity Left in Tick needs to match, so we round down oneMinusPercSwap
+            newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
 
             # Health checks
-            print("newOneMinusPercSwapMint", newOneMinusPercSwapMint)
-            print("self.oneMinusPercSwapMint", self.oneMinusPercSwapMint)
             assert newOneMinusPercSwapMint < self.oneMinusPercSwapMint
             assert newOneMinusPercSwapMint > oneMinusPercSwap
             assert newOneMinusPercSwapMint > 0
@@ -264,25 +259,19 @@ def updateLimit(
         # percSwap = self.percSwapMint + (1-self.percSwapMint) * percSwappedAfterMint
         # percSwappedAfterMint = (percSwap - self.percSwapMint) / (1-self.percSwapMint)
         # totalAmountSwapped = percSwappedAfterMint * self.liquidity
-
+            
         # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
         assert self.oneMinusPercSwapMint > 0
-
-        print("//////////////////DEBUG//////////////////")
-
-        perc = (Decimal((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint)).quantize(Decimal('1e-28'), rounding=ROUND_UP)
-        # Rounding down here since the calculation to store the new oneMinusPercSwapMint round up
-        amountSwappedPrev =  math.floor(self.liquidity * perc)
+        perc = ((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint).quantize(Decimal(decimalPrecision), rounding=ROUND_UP, context=Context(prec=contextPrecision))
+        amountSwappedPrev = math.ceil(self.liquidity * perc)
         
-        print("amountSwappedPrev", amountSwappedPrev)
-
         # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(
                 self.liquidity, -amountSwappedPrev
             )
             currentPosition1 = SqrtPriceMath.calculateAmount1LO(
-                amountSwappedPrev, pricex96
+                amountSwappedPrev, pricex96, False
             )
 
         else:
@@ -290,7 +279,7 @@ def updateLimit(
                 self.liquidity, -amountSwappedPrev
             )
             currentPosition0 = SqrtPriceMath.calculateAmount0LO(
-                amountSwappedPrev, pricex96
+                amountSwappedPrev, pricex96, False
             )
 
         ### Calculate the amount of liquidity that should be burnt from liquidityLeft and liquiditySwapped
@@ -326,12 +315,12 @@ def updateLimit(
             # Update position owed in their tokens
             self.tokensOwed0 += abs(liquidityLeftDelta)
             liquiditySwappedDelta = SqrtPriceMath.calculateAmount1LO(
-                abs(liquiditySwappedDelta), pricex96
+                abs(liquiditySwappedDelta), pricex96, False
             )
             self.tokensOwed1 += liquiditySwappedDelta
         else:
             liquiditySwappedDelta = SqrtPriceMath.calculateAmount0LO(
-                abs(liquiditySwappedDelta), pricex96
+                abs(liquiditySwappedDelta), pricex96, False
             )
             self.tokensOwed0 += liquiditySwappedDelta
             self.tokensOwed1 += abs(liquidityLeftDelta)

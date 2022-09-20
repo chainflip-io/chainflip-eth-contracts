@@ -359,12 +359,14 @@ class ChainflipPool(UniswapPool):
                         stepLimit.amountOut,
                         stepLimit.feeAmount,
                         tickCrossed,
+                        percSwapDecrease
                     ) = SwapMath.computeLimitSwapStep(
                         priceX96,
                         tickLimitInfo.liquidityLeft,
                         state.amountSpecifiedRemaining,
                         self.fee,
                         zeroForOne,
+                        tickLimitInfo.oneMinusPercSwap
                     )
 
                     # Update the tick - we can consider to only update when we cross tick
@@ -381,30 +383,31 @@ class ChainflipPool(UniswapPool):
                     # If tick is crossed no need to do the computations. Also makes sure it will be aligned
                     # and in no case tickCrossed but then not burnt (e.g. due to precision)
                     if tickCrossed:
-                        tickLimitInfo.oneMinusPercSwap = 0
+                        print("Tick crossed")
+                        tickLimitInfo.oneMinusPercSwap = Decimal(0)
                     else:
 
 
                         # TODO: Remove this - leaving it for debugging purposes
                         # currentPercSwapped = amountSwapped / liquidityLeft
-                        currentPercSwapped128_Q128 = mulDiv(
-                            stepLimit.amountOut,
-                            FixedPoint128_Q128,
-                            tickLimitInfo.liquidityLeft,
-                        )
-                        print("--DEBUGGING--")
-                        print("tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
-                        print("Amount swapped: ", stepLimit.amountOut)
-                        print("Liquidity left: ", tickLimitInfo.liquidityLeft)
-                        print("Calculation", tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft)
+                        # currentPercSwapped128_Q128 = mulDiv(
+                        #     stepLimit.amountOut,
+                        #     FixedPoint128_Q128,
+                        #     tickLimitInfo.liquidityLeft,
+                        # )
+                        # print("--DEBUGGING--")
+                        # print("tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
+                        # print("Amount swapped: ", stepLimit.amountOut)
+                        # print("Liquidity left: ", tickLimitInfo.liquidityLeft)
+                        # print("Calculation", tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft)
                         # currentPercSwapped = amountSwapped / liquidityLeft
                         # tick.percSwap = tick.percSwap + (1-tick.percSwap) * currentPercSwapped128_Q128
                         # tick.oneMinusPercSwap = tick.oneMinusPercSwap - tick.oneMinusPercSwap * currentPercSwapped128_Q128
                         # Not using mulDiv because we are using floats. Python float has 18 decimals, so we are losing precision here.
                         # We can use Decimal to get 28 decimals precision, but we will still need to round.
                         # Liquidity Left in Tick needs to match, so we round percSwap up => round down oneMinusPercSwap
-                        percSwapDecrease = tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft
-                        percSwapDecrease = percSwapDecrease.quantize(Decimal('1e-28'), rounding=ROUND_UP)
+                        #percSwapDecrease = tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft
+                        #percSwapDecrease = percSwapDecrease.quantize(Decimal('decimalPrecision'), rounding=ROUND_UP, context=Context(prec=contextPrecision))
                         tickLimitInfo.oneMinusPercSwap -= percSwapDecrease
                         print("final tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
 

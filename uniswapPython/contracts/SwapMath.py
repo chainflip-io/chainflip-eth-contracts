@@ -1,5 +1,6 @@
 import SqrtPriceMath
 from utilities import *
+from decimal import *
 
 ### @title Computes the result of a swap within ticks
 ### @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
@@ -122,7 +123,7 @@ def computeSwapStep(
     return (sqrtRatioNextX96, amountIn, amountOut, feeAmount)
 
 
-def computeLimitSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForOne):
+def computeLimitSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForOne,oneMinusPercSwap):
     checkInputTypes(
         uint256=priceX96,
         uint128=liquidity,
@@ -139,15 +140,51 @@ def computeLimitSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForO
         amountRemainingLessFee = mulDiv(
             amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
         )
-        # Swap amountRemainingLessFee
+        # # Swap amountRemainingLessFee
+        # if zeroForOne:
+        #     amountIn, amountOut = SqrtPriceMath.getAmount1LO(
+        #         amountRemainingLessFee, priceX96, liquidity
+        #     )
+        # else:
+        #     amountIn, amountOut = SqrtPriceMath.getAmount0LO(
+        #         amountRemainingLessFee, priceX96, liquidity
+        #     )
         if zeroForOne:
-            amountIn, amountOut = SqrtPriceMath.getAmount1LO(
-                amountRemainingLessFee, priceX96, liquidity
-            )
+            # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
+            amountOut = SqrtPriceMath.calculateAmount1LO(amountRemainingLessFee, priceX96, False)
         else:
-            amountIn, amountOut = SqrtPriceMath.getAmount0LO(
-                amountRemainingLessFee, priceX96, liquidity
-            )
+            amountOut = SqrtPriceMath.calculateAmount0LO(amountRemainingLessFee, priceX96, False)
+        
+        if amountOut >= liquidity:
+            if amountOut == liquidity:
+                amountIn = amountRemainingLessFee
+            else:
+                # Recalculate amountIn
+                if zeroForOne:
+                    amountIn = SqrtPriceMath.calculateAmount0LO(liquidity, priceX96, True)
+                else:
+                    amountIn = SqrtPriceMath.calculateAmount1LO(liquidity, priceX96, True)
+                assert amountIn < amountRemainingLessFee
+            # no need to calculate percSwap Increase since we can set it to one outside this function if tickCrossed == 1
+            # just initialize it
+            percSwapDecrease = 1
+            amountOut = liquidity
+
+        else:
+            amountIn = amountRemainingLessFee
+            # Calculate percSwapDecrease rounding down
+            percSwapDecrease = oneMinusPercSwap * amountOut / liquidity
+            percSwapDecreaseCalc = percSwapDecrease.quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+
+            # Recalculate amountOut roundingDown from the percSwapDecreaseCalc
+            factor = (percSwapDecreaseCalc/ oneMinusPercSwap).quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+            # Round down favorable to the pool
+            amountOut = math.floor(liquidity * factor)
+
+            # Calculate percSwapDecrease to be set outside this function
+            # Liquidity Left in Tick needs to match, so we round percSwap down => round up oneMinusPercSwap => round down percSwapDecrease
+            percSwapDecrease = percSwapDecrease.quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+
 
         tickCrossed = amountOut == liquidity
     else:
@@ -171,4 +208,4 @@ def computeLimitSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForO
     else:
         feeAmount = mulDivRoundingUp(amountIn, feePips, ONE_IN_PIPS - feePips)
 
-    return (amountIn, amountOut, feeAmount, tickCrossed)
+    return (amountIn, amountOut, feeAmount, tickCrossed, percSwapDecrease)
