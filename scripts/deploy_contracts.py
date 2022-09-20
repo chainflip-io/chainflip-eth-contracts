@@ -4,7 +4,7 @@ import json
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
-from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP, Token
+from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP, MockUSDC
 from deploy import deploy_set_Chainflip_contracts, deploy_usdc_contract
 
 
@@ -35,9 +35,10 @@ def main():
 
     # Deploy USDC mimic token only on private ETH network
     if chain.id == 10997:
-        cf.usdc = deploy_usdc_contract(DEPLOYER, Token, cf_accs[0:10])
-        print(f"USDC: {cf.usdc.address}")
-        addressDump["USDC_ADDRESS"] = cf.usdc.address
+        cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
+        print(f"USDC: {cf.mockUSDC.address}")
+        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
+
 
     if DEPLOY_ARTEFACT_ID:
         json_content = json.dumps(addressDump)
