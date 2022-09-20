@@ -66,7 +66,7 @@ def test_revoke_rev_revoker(a, addrs, cf, tokenVestingStaking):
 
 
 def test_revoke_rev_revokable(addrs, cf, TokenVesting):
-    start = 1622400000
+    start = getChainTime()
     end = start + QUARTER_YEAR + YEAR
     cliff = end
 

@@ -63,6 +63,8 @@ def test_govWithdraw(
 
     chain.sleep(st_sleepTime)
     if getChainTime() - cf.keyManager.getLastValidateTime() < AGG_KEY_EMERGENCY_TIMEOUT:
+        # Add a sleep to ensure that it will revert (brownie is inconsistent with chain time)
+        chain.sleep(3)
         with reverts(REV_MSG_VAULT_DELAY):
             cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
     else:
