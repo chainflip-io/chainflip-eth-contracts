@@ -94,12 +94,12 @@ def deploy_set_Chainflip_contracts(
 
 
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
-def deploy_usdc_contract(deployer, Token, accounts):
+def deploy_usdc_contract(deployer, MockUSDC, accounts):
 
-    usdc = deployer.deploy(Token, "USD Coin", "USDC", INIT_USDC_SUPPLY)
+    mockUsdc = deployer.deploy(MockUSDC, "USD Coin", "USDC", INIT_USDC_SUPPLY)
     # Distribute tokens to other accounts
     for account in accounts:
-        if account != deployer and usdc.balanceOf(deployer) >= INIT_USDC_ACCOUNT:
-            usdc.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
+        if account != deployer and mockUsdc.balanceOf(deployer) >= INIT_USDC_ACCOUNT:
+            mockUsdc.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
 
-    return usdc
+    return mockUsdc
