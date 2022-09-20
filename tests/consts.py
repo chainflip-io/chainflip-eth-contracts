@@ -17,6 +17,9 @@ AGG = "Agg"
 INIT_TOKEN_SUPPLY = int(10**8 * E_18)
 INIT_ETH_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
+# USDC uses 6 decimals
+INIT_USDC_SUPPLY = int(20 * 10**6 * 10**6)
+INIT_USDC_ACCOUNT = int(10**6 * 10**6)
 
 # Time in seconds
 HOUR = 60 * 60

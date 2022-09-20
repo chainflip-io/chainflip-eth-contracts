@@ -4,8 +4,8 @@ import json
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
-from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP
-from deploy import deploy_set_Chainflip_contracts
+from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP, Token
+from deploy import deploy_set_Chainflip_contracts, deploy_usdc_contract
 
 
 def main():
@@ -26,15 +26,21 @@ def main():
     print(f"FLIP: {cf.flip.address}")
     print(f"Vault: {cf.vault.address}")
 
+    addressDump = {
+        "KEY_MANAGER_ADDRESS": cf.keyManager.address,
+        "STAKE_MANAGER_ADDRESS": cf.stakeManager.address,
+        "VAULT_ADDRESS": cf.vault.address,
+        "FLIP_ADDRESS": cf.flip.address,
+    }
+
+    # Deploy USDC mimic token only on private ETH network
+    if chain.id == 10997:
+        cf.usdc = deploy_usdc_contract(DEPLOYER, Token, cf_accs[0:10])
+        print(f"USDC: {cf.usdc.address}")
+        addressDump["USDC_ADDRESS"] = cf.usdc.address
+
     if DEPLOY_ARTEFACT_ID:
-        json_content = json.dumps(
-            {
-                "KEY_MANAGER_ADDRESS": cf.keyManager.address,
-                "STAKE_MANAGER_ADDRESS": cf.stakeManager.address,
-                "VAULT_ADDRESS": cf.vault.address,
-                "FLIP_ADDRESS": cf.flip.address,
-            }
-        )
+        json_content = json.dumps(addressDump)
 
         dir_path = os.path.dirname(os.path.abspath(__file__)) + "/.artefacts/"
 
