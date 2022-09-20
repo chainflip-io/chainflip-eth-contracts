@@ -39,7 +39,6 @@ def main():
         print(f"USDC: {cf.mockUSDC.address}")
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
-
     if DEPLOY_ARTEFACT_ID:
         json_content = json.dumps(addressDump)
 
