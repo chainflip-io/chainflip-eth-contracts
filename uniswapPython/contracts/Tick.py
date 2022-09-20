@@ -137,7 +137,6 @@ def update(
 def updateLimit(
     self,
     tick,
-    liquidityLeftDelta,
     liquidityDelta,
     # feeGrowthGlobalX128,
     maxLiquidity,
@@ -148,7 +147,7 @@ def updateLimit(
     checkInputTypes(
         dict=self,
         int24=(tick),
-        int128=(liquidityDelta, liquidityLeftDelta),
+        int128=(liquidityDelta),
         # uint256=(feeGrowthGlobalX128),
         bool=(initializedPosition),
         uint128=maxLiquidity,
@@ -173,7 +172,6 @@ def updateLimit(
     flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0)
 
     info.liquidityGross = liquidityGrossAfter
-    info.liquidityLeft = LiquidityMath.addDelta(info.liquidityLeft, liquidityLeftDelta)
 
     # Add owner to ownerPosition list if not already there. Doing a hashlist has the problem that
     # when burning we don't know who is the owner of the position. We store the address instead of a reference

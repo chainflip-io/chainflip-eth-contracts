@@ -34,8 +34,6 @@ class TickInfo:
 
 @dataclass
 class TickInfoLimit:
-    ## amount of liquidity that has not been yet swapped
-    liquidityLeft: int
     ## the total position liquidity that references this tick
     liquidityGross: int
 
@@ -312,7 +310,7 @@ def insertUninitializedTickstoMapping(mapping, keys):
 
 def insertUninitializedLimitTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfoLimit(0, 0, Decimal(1), 0, []))
+        insertTickInMapping(mapping, key, TickInfoLimit(0, Decimal(1), 0, []))
 
 
 def insertTickInMapping(mapping, key, value):

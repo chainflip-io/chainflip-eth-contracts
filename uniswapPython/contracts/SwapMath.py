@@ -123,14 +123,18 @@ def computeSwapStep(
     return (sqrtRatioNextX96, amountIn, amountOut, feeAmount)
 
 
-def computeLimitSwapStep(priceX96, liquidity, amountRemaining, feePips, zeroForOne,oneMinusPercSwap):
+def computeLimitSwapStep(priceX96, liquidityGross, amountRemaining, feePips, zeroForOne,oneMinusPercSwap):
     checkInputTypes(
         uint256=priceX96,
-        uint128=liquidity,
+        uint128=liquidityGross,
         int256=amountRemaining,
         uint24=feePips,
         bool=zeroForOne,
     )
+    # Calculate liquidityLeft (available) from liquidityGross and oneMinusPercSwap
+    liquidity = math.floor(liquidityGross * oneMinusPercSwap)
+    checkUInt128(liquidity)
+
     tickCrossed = False
 
     # exactIn < 0 means exactOut = True

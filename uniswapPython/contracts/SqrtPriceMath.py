@@ -219,10 +219,11 @@ def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
 def calculateAmount1LO(amountInToken0, priceX96, roundUp):
     checkInputTypes(uint256=(priceX96), int256=amountInToken0)
     # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
+    # NOTE: Not using MulDiv because of the potential overflow
     if roundUp:
         return mulDivRoundingUp(amountInToken0, priceX96, FixedPoint96_Q96)
     else:
-        return mulDiv(amountInToken0, priceX96, FixedPoint96_Q96)
+        return (amountInToken0 * priceX96) // FixedPoint96_Q96
     #return (amountInToken0 * priceX96) // 2**96
 
 
@@ -230,10 +231,11 @@ def calculateAmount0LO(amountInToken1, priceX96, roundUp):
     checkInputTypes(uint256=(priceX96), int256=amountInToken1)
     # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
     # Should never be divided by zero because it is not allowed to mint positions at price 0.
+    # NOTE: Not using MulDiv because of the potential overflow
     if roundUp:
         return mulDivRoundingUp(amountInToken1, FixedPoint96_Q96, priceX96)
     else:
-        return mulDiv(amountInToken1, FixedPoint96_Q96, priceX96)
+        return (amountInToken1 * FixedPoint96_Q96) // priceX96
     #return (amountInToken1 * 2**96) // priceX96
 
 

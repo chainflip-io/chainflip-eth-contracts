@@ -147,7 +147,6 @@ class ChainflipPool(UniswapPool):
             (flipped) = Tick.updateLimit(
                 ticksLimitMap,
                 tick,
-                liquidityLeftDelta,
                 liquidityDelta,
                 # liquidityDelta,
                 # self.linearFeeGrowthGlobal1X128
@@ -350,7 +349,7 @@ class ChainflipPool(UniswapPool):
                     tickLimitInfo = ticksLimitMap[stepLimit.tickNext]
 
                     # Health check
-                    assert tickLimitInfo.liquidityLeft > 0
+                    assert tickLimitInfo.oneMinusPercSwap > 0
 
                     # Get price at that tick
                     priceX96 = TickMath.getPriceAtTick(stepLimit.tickNext)
@@ -362,7 +361,7 @@ class ChainflipPool(UniswapPool):
                         percSwapDecrease
                     ) = SwapMath.computeLimitSwapStep(
                         priceX96,
-                        tickLimitInfo.liquidityLeft,
+                        tickLimitInfo.liquidityGross,                  
                         state.amountSpecifiedRemaining,
                         self.fee,
                         zeroForOne,
@@ -425,14 +424,9 @@ class ChainflipPool(UniswapPool):
                     ## amountOut==0 and stepLimit.feeAmount == amountRemaining == 1
                     # assert stepLimit.amountIn > 0 or stepLimit.amountOut > 0
 
-                    # Update tick liquidity
-                    tickLimitInfo.liquidityLeft = LiquidityMath.addDelta(
-                        tickLimitInfo.liquidityLeft, -stepLimit.amountOut
-                    )
-
                     # Health check
                     if tickLimitInfo.oneMinusPercSwap == FixedPoint128_Q128:
-                        assert tickLimitInfo.liquidityLeft == 0
+                        assert tickLimitInfo.oneMinusPercSwap == 0
 
                     if exactInput:
                         state.amountSpecifiedRemaining -= (
@@ -472,7 +466,7 @@ class ChainflipPool(UniswapPool):
 
                     if tickCrossed:
                         # Health check
-                        assert tickLimitInfo.liquidityLeft == 0
+                        assert tickLimitInfo.oneMinusPercSwap == 0
                         # Burn all the positions in that tick and clear the tick itself. This could be also done
                         # in a separate call if desired, but then it needs to be right after the swap.
                         # The last position burnt should already clear the tick, no need to do it here.
@@ -697,19 +691,19 @@ class ChainflipPool(UniswapPool):
             )
 
 
-# Remove all ticks with LiquidityLeft == 0. Maybe we end up not needing that if we automatically remove the positions
+# Remove all ticks with oneMinusPercSwap == 0. Maybe we end up not needing that if we automatically remove the positions
 # after swap, but probably we won't
 def getKeysLimitTicksWithLiquidity(tickMapping):
-    # Dictionary with ticks that have liquidityLeft > 0
+    # Dictionary with ticks that have oneMinusPercSwap > 0
     dictTicksWithLiq = {
-        k: v for k, v in tickMapping.items() if tickMapping[k].liquidityLeft > 0
+        k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
     }
 
     # Return a list of sorted keys
     return sorted(list(dictTicksWithLiq.keys()))
 
 
-# Find the next linearTick (all should have liquidityLeft > 0) and pop them from the list. The input list
+# Find the next linearTick (all should have oneMinusPercSwap > 0) and pop them from the list. The input list
 # should be a list of sorted keys.
 def nextLimitTick(keysLimitTicks, lte, currentTick):
     checkInputTypes(bool=(lte))
