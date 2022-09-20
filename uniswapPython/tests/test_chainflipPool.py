@@ -3507,7 +3507,7 @@ def test_burnPartiallySwapped_multipleSteps_zeroForOne(
 
     tryExceptHandler(
         poolCopy.burnLimitOrder,
-        "LS",
+        "Avoid creating empty tick",
         TEST_TOKENS[1],
         accounts[0],
         tickLO,
@@ -3530,7 +3530,7 @@ def test_burnPartiallySwapped_multipleSteps_zeroForOne(
 
     tryExceptHandler(
         poolCopy2.burnLimitOrder,
-        "LS",
+        "Avoid creating empty tick",
         TEST_TOKENS[1],
         accounts[0],
         tickLO,
@@ -3552,7 +3552,7 @@ def test_burnPartiallySwapped_multipleSteps_zeroForOne(
 
     tryExceptHandler(
         poolCopy2.burnLimitOrder,
-        "LS",
+        "Avoid creating empty tick",
         TEST_TOKENS[1],
         accounts[0],
         tickLO,
@@ -3579,9 +3579,10 @@ def test_burnPartiallySwapped_multipleSteps_oneForZero(
         TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)
     )
 
+    # Modified because of order in _updatePositionLimitOrder
     tryExceptHandler(
         poolCopy.burnLimitOrder,
-        "LS",
+        "Avoid creating empty tick",
         TEST_TOKENS[0],
         accounts[0],
         tickLO,
@@ -3605,7 +3606,7 @@ def test_burnPartiallySwapped_multipleSteps_oneForZero(
 
     tryExceptHandler(
         poolCopy2.burnLimitOrder,
-        "LS",
+        "Avoid creating empty tick",
         TEST_TOKENS[0],
         accounts[0],
         tickLO,
@@ -3627,7 +3628,7 @@ def test_burnPartiallySwapped_multipleSteps_oneForZero(
 
     tryExceptHandler(
         poolCopy2.burnLimitOrder,
-        "LS",
+        "Avoid creating empty tick",
         TEST_TOKENS[0],
         accounts[0],
         tickLO,

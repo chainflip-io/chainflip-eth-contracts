@@ -162,9 +162,6 @@ def updateLimit(
         assert liquidityDelta > 0  # health check
         self.oneMinusPercSwapMint = oneMinusPercSwap
         self.feegrowthInsideLastX128 = feeGrowthInsideX128
-        initialized = True
-    else:
-        initialized = False
 
     if liquidityDelta == 0:
         # Removed because a check is added for burn 0 uninitialized position
@@ -342,4 +339,4 @@ def updateLimit(
 
 
     # Returning liquiditySwappedDelta to return as a result of the burn function
-    return liquidityLeftDelta, liquiditySwappedDelta, initialized
+    return liquidityLeftDelta, liquiditySwappedDelta

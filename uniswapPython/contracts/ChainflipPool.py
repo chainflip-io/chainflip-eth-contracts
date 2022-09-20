@@ -112,32 +112,17 @@ class ChainflipPool(UniswapPool):
         position = Position.getLimit(
             self.limitOrders, owner, tick, token == self.token0
         )
+        # We could return a bool to assert if position has just been created
+        if position == Position.PositionLimitInfo(0, Decimal(1), 0, 0, 0):
+            assert liquidityDelta > 0
+            initializedPosition = True
+        else:
+            initializedPosition = False
 
         if token == self.token0:
             ticksLimitMap = self.ticksLimitTokens0
         else:
             ticksLimitMap = self.ticksLimitTokens1
-
-        # Update Position before updating the tick because we need to calculate how the liquidityDelta
-        # translates to difference of liquidity (liquidityLeftDelta) when burning.
-        (
-            liquidityLeftDelta,
-            liquiditySwappedDelta,
-            initializedPosition,
-        ) = Position.updateLimit(
-            position,
-            liquidityDelta,
-            # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLimitMap[tick].oneMinusPercSwap
-            if ticksLimitMap.__contains__(tick)
-            else 1,
-            token == self.token0,
-            TickMath.getPriceAtTick(tick),
-            # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLimitMap[tick].feeGrowthInsideX128
-            if ticksLimitMap.__contains__(tick)
-            else 0,
-        )
 
         # Initialize values
         flipped = False
@@ -157,6 +142,22 @@ class ChainflipPool(UniswapPool):
                 initializedPosition,
                 owner,
             )
+
+        (
+            liquidityLeftDelta,
+            liquiditySwappedDelta,
+        ) = Position.updateLimit(
+            position,
+            liquidityDelta,
+            # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
+            ticksLimitMap[tick].oneMinusPercSwap
+            if ticksLimitMap.__contains__(tick)
+            else 1,
+            token == self.token0,
+            TickMath.getPriceAtTick(tick),
+            # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
+            ticksLimitMap[tick].feeGrowthInsideX128
+        )
 
         if flipped:
             assert tick % self.tickSpacing == 0  ## ensure that the tick is spaced
@@ -695,6 +696,7 @@ class ChainflipPool(UniswapPool):
 # after swap, but probably we won't
 def getKeysLimitTicksWithLiquidity(tickMapping):
     # Dictionary with ticks that have oneMinusPercSwap > 0
+    #TODO: if we end up burning all ticks after swap, we can remove the check of oneMinusPercSwap > 0
     dictTicksWithLiq = {
         k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
     }
