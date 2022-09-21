@@ -154,8 +154,7 @@ def updateLimit(
         float=oneMinusPercSwap,
         bool=(isToken0),
     )
-    print("oneMinusPercSwap", oneMinusPercSwap)
-    print("self.oneMinusPercSwapMint", self.oneMinusPercSwapMint)
+
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
     if self == PositionLimitInfo(0, Decimal(1), 0, 0, 0):
@@ -193,10 +192,12 @@ def updateLimit(
         # If there has been any swap in this position before this added mint, recompute the oneMinusPercSwap. Only
         # needed if there is a > 0 mint.
         if liquidityDelta > 0 and oneMinusPercSwap < self.oneMinusPercSwapMint:
+            # Round down
             amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
                 self.oneMinusPercSwapMint - oneMinusPercSwap,
                 self.oneMinusPercSwapMint,
                 self.liquidity,
+                False
             )
 
             # amountSwappedPrev = math.floor(
@@ -234,7 +235,7 @@ def updateLimit(
                 (liquidityNext * (1 - oneMinusPercSwap) - amountSwappedPrev)
                 / (liquidityNext - amountSwappedPrev)
             )
-            # Consistency: Rounding percSwap down equates to rounding oneMinusPercSwap up
+            # Consistency: Rounding percSwap up equates to rounding oneMinusPercSwap down
             newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(
                 Decimal(decimalPrecision),
                 rounding=ROUND_UP,
@@ -269,8 +270,8 @@ def updateLimit(
             self.oneMinusPercSwapMint - oneMinusPercSwap,
             self.oneMinusPercSwapMint,
             self.liquidity,
+            False
         )
-        print("amountSwappedPrev", amountSwappedPrev)
         # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(

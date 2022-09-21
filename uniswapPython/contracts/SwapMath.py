@@ -146,15 +146,6 @@ def computeLimitSwapStep(
         amountRemainingLessFee = mulDiv(
             amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
         )
-        # # Swap amountRemainingLessFee
-        # if zeroForOne:
-        #     amountIn, amountOut = SqrtPriceMath.getAmount1LO(
-        #         amountRemainingLessFee, priceX96, liquidity
-        #     )
-        # else:
-        #     amountIn, amountOut = SqrtPriceMath.getAmount0LO(
-        #         amountRemainingLessFee, priceX96, liquidity
-        #     )
         if zeroForOne:
             # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
             amountOut = SqrtPriceMath.calculateAmount1LO(
@@ -164,14 +155,8 @@ def computeLimitSwapStep(
             amountOut = SqrtPriceMath.calculateAmount0LO(
                 amountRemainingLessFee, priceX96, False
             )
-        print("amountRemainingLessFee: ", amountRemainingLessFee)
-        print("amountOut: ", amountOut)
+
         if amountOut >= liquidity:
-            # Tick crossed - percSwapped doesn't matter since we will cross and burn
-            # if amountOut == liquidity:
-            #     amountIn = amountRemainingLessFee
-            # else:
-            # Recalculate amountIn
             if zeroForOne:
                 amountIn = SqrtPriceMath.calculateAmount0LO(liquidity, priceX96, True)
             else:
@@ -188,27 +173,28 @@ def computeLimitSwapStep(
             # Calculate percSwapDecrease rounding down in favour of the pool (less amount out). This could be rounded up if end up
             # to recalculate amountIn afterwards.
             percSwapDecrease = oneMinusPercSwap * amountOut / liquidity
-
             percSwapDecrease = percSwapDecrease.quantize(
                 Decimal(decimalPrecision),
                 rounding=ROUND_DOWN,
                 context=Context(prec=contextPrecision),
             )
-
             # To ensure amountOut it will match the burn calculation
             amountOut = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
-                percSwapDecrease, oneMinusPercSwap, liquidityGross
+                percSwapDecrease, oneMinusPercSwap, liquidity, False
             )
-
+    
             amountIn = amountRemainingLessFee
-            # TODO: Should we recalculate this as follows?? To then take abs(amountRemaining) - amountIn as fees. There are some "issues" in
-            # extreme prices (amountOut=0, amountIn=all), where if recalculated amountIn = Zero, it not recalculated amountIn = All
+            # TODO: Should we recalculate amountIn as follows?? To then take abs(amountRemaining) - amountIn as fees. There are some "issues" in
+            # extreme prices (amountOut=0, amountIn=all), where if recalculated amountIn = Zero, it not recalculated amountIn = All.
             # Recalculate amountIn from amountOut, rounding up
             # if zeroForOne:
             #     amountIn = SqrtPriceMath.calculateAmount0LO(amountOut, priceX96, True)
             # else:
             #     amountIn = SqrtPriceMath.calculateAmount1LO(amountOut, priceX96, True)
             # assert amountIn <= amountRemainingLessFee
+
+            # Or recalculate amountIn from percSwapDecrease?
+            
 
         tickCrossed = amountOut == liquidity
     else:

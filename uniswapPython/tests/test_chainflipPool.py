@@ -11,6 +11,7 @@ import TickMath
 
 import pytest
 import copy
+import random
 
 # NOTE: These tests are adapted from the original UniswapPool tests but chainging the range orders minted
 # for limit orders. More tests have been added in order to test limit orders.
@@ -3165,6 +3166,7 @@ def test_burn_positionMintedAfterSwap_oneForZero(initializedMediumPoolNoLO, acco
         True,
     )
 
+#TODO: Update these two tests
 
 # def test_mintSwapBurn_partialSwappedTick_zeroForOne(
 #     initializedMediumPoolNoLO, accounts
@@ -3829,128 +3831,130 @@ def test_limitLO_badSwapPrice_OneForZero(createPoolLow, accounts, ledger):
     assert iniBalance1LP == ledger.balanceOf(accounts[0], TEST_TOKENS[1])
 
 
-# # Precision test - AmountPercSwapped doesn't affect the swap amounts but we lose precision along the way
-# def test_precision_numberOfSwaps_sameAmount(createPoolLow, accounts, ledger):
-#     print("Check precision in tick.oneMinusPercSwap")
-#     pool, minTick, maxTick, _, _ = createPoolLow
-#     pool.initialize(encodePriceSqrt(1, 1))
+# Precision test - AmountPercSwapped doesn't affect the swap amounts but we lose precision along the way
+def test_precision_numberOfSwaps_sameAmount(createPoolLow, accounts, ledger):
+    print("Check precision in tick.oneMinusPercSwap")
+    pool, minTick, maxTick, _, _ = createPoolLow
+    pool.initialize(encodePriceSqrt(1, 1))
 
-#     pool.mintLimitOrder(
-#         TEST_TOKENS[1], accounts[0], pool.tickSpacing, expandTo18Decimals(10000)
-#     )
-#     tick = pool.ticksLimitTokens1[pool.tickSpacing]
+    pool.mintLimitOrder(
+        TEST_TOKENS[1], accounts[0], pool.tickSpacing, expandTo18Decimals(10000)
+    )
+    tick = pool.ticksLimitTokens1[pool.tickSpacing]
 
-#     # Intial swap to get closet to the full swapped position
-#     swapExact0For1(pool, expandTo18Decimals(9800), accounts[1], None)
+    # Intial swap to get closet to the full swapped position
+    swapExact0For1(pool, expandTo18Decimals(9800), accounts[1], None)
 
-#     numberOfSwaps = 10**4
-#     # Approach to the full position swap (taking into account some fees)
-#     amountPerSwap = int(
-#         (expandTo18Decimals(10000) - expandTo18Decimals(9800))
-#         // (numberOfSwaps + numberOfSwaps * 0.05)
-#     )
-#     # All swaps get the same price as long as the LO has liquidity
-#     amount0Prev = 1.904761904761905e16
-#     amount1Prev = -19057141902761161
-#     percSwappedPrev = 0
-#     # just the right amount before we cross the tick/position
-#     for i in range(numberOfSwaps+237):
-#         print("i", i)
-#         (
-#             _,
-#             amount0,
-#             amount1,
-#             _,
-#             _,
-#             _,
-#         ) = swapExact0For1(pool, amountPerSwap, accounts[1], None)
-#         # AmountPercSwapped doesn't affect the swap amounts
-#         assert amount0Prev == amount0
-#         assert amount1Prev == amount1
-#         if i == 0:
-#             # First swap sets the oneMinusPercSwap
-#             assert tick.oneMinusPercSwap - percSwappedPrev == 333644089714382253081950632032915180131
-#         else:
-#             print("tick.oneMinusPercSwap", tick.oneMinusPercSwap)
-#             print("diff", tick.oneMinusPercSwap - percSwappedPrev )
-#             #assert tick.oneMinusPercSwap - percSwappedPrev == 648480935341976477991928071539899
-#             # Since amounts are the same, liquidity left keeps decreasing, which means in each swap the percentatge swap increased is constant.
-#             # In some swaps the precision is a bit off due to rounding - around 1/3 fulfill the first one, 2/3rds the second one.
-#             # But precision doesnt keep decreasing, it seems like a rounding on the compute Math.
-#             # This is only because the swaps are the same I believe. If they were different amounts we would start losing precision.
-#             assert tick.oneMinusPercSwap - percSwappedPrev == 648480935341976477991928071539899 or tick.oneMinusPercSwap - percSwappedPrev == 648480935341976477991928071539900
-#         print(
-#             "tick.liquidityLeft",
-#             tick.liquidityLeft,
-#         )
-#         percSwappedPrev = tick.oneMinusPercSwap
+    numberOfSwaps = 10**4
+    # Approach to the full position swap (taking into account some fees)
+    amountPerSwap = int(
+        (expandTo18Decimals(10000) - expandTo18Decimals(9800))
+        // (numberOfSwaps + numberOfSwaps * 0.05)
+    )
+    # All swaps get the same price as long as the LO has liquidity
+    amount0Prev = 1.904761904761905e16
+    amount1Prev = -19057141902761161
+    percSwappedPrev = 0
+    swapPerc = Decimal('0.0195081433887479517054000000')
+    # just the right amount before we cross the tick/position
+    for i in range(numberOfSwaps+237):
+        print("i", i)
+        (
+            _,
+            amount0,
+            amount1,
+            _,
+            _,
+            _,
+        ) = swapExact0For1(pool, amountPerSwap, accounts[1], None)
+        print("tick.oneMinusPercSwap", tick.oneMinusPercSwap)
+        print("percSwappedPrev", percSwappedPrev)
+        print("diff", tick.oneMinusPercSwap - percSwappedPrev )        
+        # AmountPercSwapped doesn't affect the swap amounts
+        assert amount0Prev == amount0
+        assert amount1Prev == amount1 or amount1Prev == amount1-1
+        if i == 0:
+            # First swap sets the oneMinusPercSwap
+            assert tick.oneMinusPercSwap - percSwappedPrev == Decimal('0.0195081433887479517054000000')
+        percSwappedPrev = tick.oneMinusPercSwap
 
-#     # Backup order to make sure we can cross the previous order succesfully.
-#     pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(100))
-#     swapExact0For1(pool, expandTo18Decimals(100), accounts[1], None)
-#     print(pool.ticksLimitTokens1)
+    # Backup order to make sure we can cross the previous order succesfully.
+    pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(100))
+    swapExact0For1(pool, expandTo18Decimals(100), accounts[1], None)
+    assert not pool.ticksLimitTokens1.__contains__(pool.tickSpacing)
 
-#     assert not pool.ticksLimitTokens1.__contains__(pool.tickSpacing)
+# Precision test - AmountPercSwapped doesn't affect the swap amounts but we lose precision along the way
+def test_precision_numberOfSwaps_diffAmount(createPoolLow, accounts, ledger):
+    print("Check precision in tick.oneMinusPercSwap")
+    pool, minTick, maxTick, _, _ = createPoolLow
+    pool.initialize(encodePriceSqrt(1, 1))
+    pool.slot0.tick = -1
+
+    pool.mintLimitOrder(
+        TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(10000)
+    )
+    tick = pool.ticksLimitTokens1[0]
+
+    counter = 0
+    oneMinusPercSwappedPrev = Decimal(1)
+    precListCalc = []
+    errorListCalc = []
+
+    #while pool.ticksLimitTokens1[0].oneMinusPercSwap > Decimal('0.00000000000001'):
+    while len(precListCalc) < 200:
+        print("tick", tick)
+        liquidityLeft = math.floor(pool.ticksLimitTokens1[0].liquidityGross * pool.ticksLimitTokens1[0].oneMinusPercSwap)
+        amount = random.randint(1000,liquidityLeft//10)
+        #amount = liquidityLeft//100
+        liqLeftBeforeSwap = liquidityLeft
+        (
+            _,
+            amount0,
+            amount1,
+            sqrtPriceX96,
+            liquidity,
+            tick,
+        ) =swapExact0For1(
+            pool,
+            amount,
+            accounts[1],
+            None,
+        )
+
+        print("tick", pool.ticksLimitTokens1[0])
+        print("amount1", amount1)
+        print("liqLeftBeforeSwap", liqLeftBeforeSwap)
+
+        currentPercSwapped = Decimal((abs(amount1)) / (liqLeftBeforeSwap)).quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+        perc = (oneMinusPercSwappedPrev * abs(amount1) / liqLeftBeforeSwap).quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+        print("currentPercSwapped", currentPercSwapped)
+        print("testpercSwapDecrease", perc)
+        finalPerc = oneMinusPercSwappedPrev - perc
+        print("finalPerc", finalPerc)
+        print("real perc", pool.ticksLimitTokens1[0].oneMinusPercSwap)
+        realPerc = pool.ticksLimitTokens1[0].oneMinusPercSwap
+
+        # This error should be small and constant, only due to some rounding potentially.
+        precisionError = abs(finalPerc - realPerc)
+        precListCalc.append(precisionError)
 
 
-# # Precision test - AmountPercSwapped doesn't affect the swap amounts but we lose precision along the way
-# def test_precision_numberOfSwaps_diffAmount(createPoolLow, accounts, ledger):
-#     print("Check precision in tick.oneMinusPercSwap")
-#     pool, minTick, maxTick, _, _ = createPoolLow
-#     pool.initialize(encodePriceSqrt(1, 1))
-#     pool.slot0.tick = -1
+        # Manual calculation of swapped perc done when position is burnt (if it was minted before this current swap).
+        # Error doesn't necessarily increase in each swap (some might be lower) but in general the trend is that it keeps increasing
+        percCalcul = ((oneMinusPercSwappedPrev - pool.ticksLimitTokens1[0].oneMinusPercSwap) / oneMinusPercSwappedPrev).quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+        percCalcul = percCalcul.quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+        print("percCalcul", percCalcul)
+        errorCalcul = abs(currentPercSwapped - percCalcul)
+        errorListCalc.append(errorCalcul)
 
-#     pool.mintLimitOrder(
-#         TEST_TOKENS[1], accounts[0], 0, expandTo18Decimals(10000)
-#     )
-#     tick = pool.ticksLimitTokens1[0]
 
-#     print("tick.liquidityLeft", tick.liquidityLeft)
-#     counter = 0
-#     oneMinusPercSwappedPrev = 1
-#     precList = [0]
+        oneMinusPercSwappedPrev = pool.ticksLimitTokens1[0].oneMinusPercSwap
+        counter += 1
+        print("counter", counter)
 
-#     while pool.ticksLimitTokens1[0].liquidityLeft > 1000:
-#         print("tick", tick)
-#         amount = random.randint(1000,pool.ticksLimitTokens1[0].liquidityLeft)
-#         liqLeftBeforeSwap = pool.ticksLimitTokens1[0].liquidityLeft
-#         (
-#             _,
-#             amount0,
-#             amount1,
-#             sqrtPriceX96,
-#             liquidity,
-#             tick,
-#         ) =swapExact0For1(
-#             pool,
-#             amount,
-#             accounts[1],
-#             None,
-#         )
-
-#         print("tick", pool.ticksLimitTokens1[0])
-
-#         perc = Decimal(abs(amount1) / liqLeftBeforeSwap).quantize(Decimal(decimalPrecision), rounding=ROUND_UP, context=Context(prec=contextPrecision))
-#         print("perc", perc)
-#         print("diff", pool.ticksLimitTokens1[0].oneMinusPercSwap - oneMinusPercSwappedPrev)
-#         print("tick.liquidityLeft", pool.ticksLimitTokens1[0].liquidityLeft)
-
-#         # Manual calculation of swapped perc done when position is burnt (if it was minted before this current swap)
-#         percCalcul = ((oneMinusPercSwappedPrev - pool.ticksLimitTokens1[0].oneMinusPercSwap) / oneMinusPercSwappedPrev).quantize(Decimal(decimalPrecision), rounding=ROUND_UP, context=Context(prec=contextPrecision))
-
-#         print("percCalcul", percCalcul)
-#         #assert percCalcul == perc
-#         precisionError = abs(percCalcul - perc)
-#         print("Precision error", precisionError)
-#         # Error doesn't necessarily increase in each swap (some might be lower) but in general the trend is that it keeps increasing
-#         precList.append(precisionError)
-
-#         oneMinusPercSwappedPrev = pool.ticksLimitTokens1[0].oneMinusPercSwap
-#         counter += 1
-#         print("counter", counter)
-
-#     print("Precision error list", precList)
-#     assert False
+    print("Precision list calculation vs real", precListCalc)
+    print("Precision list if burnt vs position", errorListCalc)
+    print(Decimal(pool.ticksLimitTokens1[0].oneMinusPercSwap))
 
 # # Precision test - it might be that the closer the oneMinusPercSwap is to 1 the more precision we lose per swap.
 # # However, in this test it seems that we lose some precision but not relevant, extremely difficult to hit (so many decimals).
