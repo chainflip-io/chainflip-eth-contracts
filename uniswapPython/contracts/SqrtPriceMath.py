@@ -2,7 +2,7 @@ import SafeMath
 import math
 
 from TickMath import *
-
+from decimal import *
 
 ### @title defs based on Q64.96 sqrt price and liquidity
 ### @notice Contains the math that uses square root of price as a Q64.96 and liquidity to compute deltas
@@ -224,7 +224,7 @@ def calculateAmount1LO(amountInToken0, priceX96, roundUp):
         return mulDivRoundingUp(amountInToken0, priceX96, FixedPoint96_Q96)
     else:
         return (amountInToken0 * priceX96) // FixedPoint96_Q96
-    #return (amountInToken0 * priceX96) // 2**96
+    # return (amountInToken0 * priceX96) // 2**96
 
 
 def calculateAmount0LO(amountInToken1, priceX96, roundUp):
@@ -236,7 +236,7 @@ def calculateAmount0LO(amountInToken1, priceX96, roundUp):
         return mulDivRoundingUp(amountInToken1, FixedPoint96_Q96, priceX96)
     else:
         return (amountInToken1 * FixedPoint96_Q96) // priceX96
-    #return (amountInToken1 * 2**96) // priceX96
+    # return (amountInToken1 * 2**96) // priceX96
 
 
 # def getAmount1LO(amountInToken0, priceX96, liquidityToken1):
@@ -281,3 +281,16 @@ def calculateAmount0LO(amountInToken1, priceX96, roundUp):
 #         assert amountIn <= amountInToken1
 
 #     return amountIn, amountOut
+
+
+def getAmountSwappedFromTickPercentatge(
+    percSwapChange, oneMinusPercSwap, liquidityGross
+):
+    # Rounding down. Could be changed depending on the math in SwapMath.
+    perc = (percSwapChange / oneMinusPercSwap).quantize(
+        Decimal(decimalPrecision),
+        rounding=ROUND_DOWN,
+        context=Context(prec=contextPrecision),
+    )
+    amountSwappedPrev = math.floor(liquidityGross * perc)
+    return amountSwappedPrev

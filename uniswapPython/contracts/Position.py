@@ -151,7 +151,7 @@ def updateLimit(
     checkInputTypes(
         int128=(liquidityDelta),
         uint256=(feeGrowthInsideX128, pricex96),
-        float = oneMinusPercSwap,
+        float=oneMinusPercSwap,
         bool=(isToken0),
     )
     print("oneMinusPercSwap", oneMinusPercSwap)
@@ -192,12 +192,13 @@ def updateLimit(
         liquiditySwappedDelta = 0
         # If there has been any swap in this position before this added mint, recompute the oneMinusPercSwap. Only
         # needed if there is a > 0 mint.
-        if (
-            liquidityDelta > 0
-            and oneMinusPercSwap < self.oneMinusPercSwapMint
-        ):  
-            perc = ((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint).quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
-            amountSwappedPrev =  math.floor(self.liquidity * perc)
+        if liquidityDelta > 0 and oneMinusPercSwap < self.oneMinusPercSwapMint:
+            amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
+                self.oneMinusPercSwapMint - oneMinusPercSwap,
+                self.oneMinusPercSwapMint,
+                self.liquidity,
+            )
+
             # amountSwappedPrev = math.floor(
             #     # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
             #     (self.oneMinusPercSwapMint - oneMinusPercSwap) * self.liquidity / self.oneMinusPercSwapMint
@@ -230,10 +231,15 @@ def updateLimit(
             # TODO: Alastair mentioned this potentially being able to be calculated in a simpler way. To discuss.
             # TODO: Check after changing to oneMinusPercSwap if we can calculate it in a better way
             newOneMinusPercSwapMint = Decimal(1) - (
-                (liquidityNext * (1-oneMinusPercSwap) - amountSwappedPrev) / (liquidityNext - amountSwappedPrev)
+                (liquidityNext * (1 - oneMinusPercSwap) - amountSwappedPrev)
+                / (liquidityNext - amountSwappedPrev)
             )
-            # Liquidity Left in Tick needs to match, so we round down oneMinusPercSwap
-            newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(Decimal(decimalPrecision), rounding=ROUND_DOWN, context=Context(prec=contextPrecision))
+            # Consistency: Rounding percSwap down equates to rounding oneMinusPercSwap up
+            newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(
+                Decimal(decimalPrecision),
+                rounding=ROUND_UP,
+                context=Context(prec=contextPrecision),
+            )
 
             # Health checks
             assert newOneMinusPercSwapMint < self.oneMinusPercSwapMint
@@ -256,12 +262,15 @@ def updateLimit(
         # percSwap = self.percSwapMint + (1-self.percSwapMint) * percSwappedAfterMint
         # percSwappedAfterMint = (percSwap - self.percSwapMint) / (1-self.percSwapMint)
         # totalAmountSwapped = percSwappedAfterMint * self.liquidity
-            
+
         # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
         assert self.oneMinusPercSwapMint > 0
-        perc = ((self.oneMinusPercSwapMint - oneMinusPercSwap)/self.oneMinusPercSwapMint).quantize(Decimal(decimalPrecision), rounding=ROUND_UP, context=Context(prec=contextPrecision))
-        amountSwappedPrev = math.ceil(self.liquidity * perc)
-        
+        amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
+            self.oneMinusPercSwapMint - oneMinusPercSwap,
+            self.oneMinusPercSwapMint,
+            self.liquidity,
+        )
+        print("amountSwappedPrev", amountSwappedPrev)
         # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(
@@ -336,7 +345,6 @@ def updateLimit(
             self.tokensOwed1 += tokensOwed
         else:
             self.tokensOwed0 += tokensOwed
-
 
     # Returning liquiditySwappedDelta to return as a result of the burn function
     return liquidityLeftDelta, liquiditySwappedDelta

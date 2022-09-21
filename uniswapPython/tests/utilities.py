@@ -17,8 +17,9 @@ FixedPoint96_RESOLUTION = 96
 FixedPoint96_Q96 = 0x1000000000000000000000000
 
 # Context precision should be at least 1 factor bigger
-decimalPrecision = '1e-28'
+decimalPrecision = "1e-28"
 contextPrecision = 29
+
 
 @dataclass
 class TickInfo:
@@ -230,8 +231,10 @@ def checkInt24(number):
     assert number >= MIN_INT24 and number <= MAX_INT24, "OF or UF of INT24"
     assert type(number) == int, "Not an integer"
 
+
 def checkfloat(input):
     assert type(input) == float
+
 
 def checkString(input):
     assert type(input) == str

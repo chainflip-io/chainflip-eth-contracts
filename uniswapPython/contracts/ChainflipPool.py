@@ -15,6 +15,7 @@ from utilities import *
 from dataclasses import dataclass
 from decimal import *
 
+
 @dataclass
 class ModifyLimitPositionParams:
     ## the address that owns the position
@@ -143,10 +144,7 @@ class ChainflipPool(UniswapPool):
                 owner,
             )
 
-        (
-            liquidityLeftDelta,
-            liquiditySwappedDelta,
-        ) = Position.updateLimit(
+        (liquidityLeftDelta, liquiditySwappedDelta,) = Position.updateLimit(
             position,
             liquidityDelta,
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
@@ -156,7 +154,7 @@ class ChainflipPool(UniswapPool):
             token == self.token0,
             TickMath.getPriceAtTick(tick),
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLimitMap[tick].feeGrowthInsideX128
+            ticksLimitMap[tick].feeGrowthInsideX128,
         )
 
         if flipped:
@@ -359,14 +357,14 @@ class ChainflipPool(UniswapPool):
                         stepLimit.amountOut,
                         stepLimit.feeAmount,
                         tickCrossed,
-                        percSwapDecrease
+                        percSwapDecrease,
                     ) = SwapMath.computeLimitSwapStep(
                         priceX96,
-                        tickLimitInfo.liquidityGross,                  
+                        tickLimitInfo.liquidityGross,
                         state.amountSpecifiedRemaining,
                         self.fee,
                         zeroForOne,
-                        tickLimitInfo.oneMinusPercSwap
+                        tickLimitInfo.oneMinusPercSwap,
                     )
 
                     # Update the tick - we can consider to only update when we cross tick
@@ -376,9 +374,7 @@ class ChainflipPool(UniswapPool):
                     # Using liquidityLeft before it has been updated
 
                     # Health check
-                    assert (
-                        tickLimitInfo.oneMinusPercSwap <= FixedPoint128_Q128
-                    )
+                    assert tickLimitInfo.oneMinusPercSwap <= FixedPoint128_Q128
 
                     # If tick is crossed no need to do the computations. Also makes sure it will be aligned
                     # and in no case tickCrossed but then not burnt (e.g. due to precision)
@@ -386,7 +382,6 @@ class ChainflipPool(UniswapPool):
                         print("Tick crossed")
                         tickLimitInfo.oneMinusPercSwap = Decimal(0)
                     else:
-
 
                         # TODO: Remove this - leaving it for debugging purposes
                         # currentPercSwapped = amountSwapped / liquidityLeft
@@ -406,13 +401,16 @@ class ChainflipPool(UniswapPool):
                         # Not using mulDiv because we are using floats. Python float has 18 decimals, so we are losing precision here.
                         # We can use Decimal to get 28 decimals precision, but we will still need to round.
                         # Liquidity Left in Tick needs to match, so we round percSwap up => round down oneMinusPercSwap
-                        #percSwapDecrease = tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft
-                        #percSwapDecrease = percSwapDecrease.quantize(Decimal('decimalPrecision'), rounding=ROUND_UP, context=Context(prec=contextPrecision))
+                        # percSwapDecrease = tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft
+                        # percSwapDecrease = percSwapDecrease.quantize(Decimal('decimalPrecision'), rounding=ROUND_UP, context=Context(prec=contextPrecision))
                         tickLimitInfo.oneMinusPercSwap -= percSwapDecrease
-                        print("final tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
+                        print(
+                            "final tickLimitInfo.oneMinusPercSwap",
+                            tickLimitInfo.oneMinusPercSwap,
+                        )
 
                         # Health check
-                        assert tickLimitInfo.oneMinusPercSwap > 0 
+                        assert tickLimitInfo.oneMinusPercSwap > 0
                         # TODO: One difference with RO is that in RO it can be ensured that priceX96 changes even
                         # in very small swaps, ensuring that each swap is accounted for. However, here there can be
                         # the case that tickPerc doesn't increase. We can't do like RO and move the price (update position)
@@ -696,7 +694,7 @@ class ChainflipPool(UniswapPool):
 # after swap, but probably we won't
 def getKeysLimitTicksWithLiquidity(tickMapping):
     # Dictionary with ticks that have oneMinusPercSwap > 0
-    #TODO: if we end up burning all ticks after swap, we can remove the check of oneMinusPercSwap > 0
+    # TODO: if we end up burning all ticks after swap, we can remove the check of oneMinusPercSwap > 0
     dictTicksWithLiq = {
         k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
     }
