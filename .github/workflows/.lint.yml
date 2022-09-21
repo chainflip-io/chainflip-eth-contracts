@@ -13,7 +13,8 @@ jobs:
         with:
           node-version: "14"
 
-      - run: pip install virtualenv
+      - name: Install Python virtualenv
+        run: pip install virtualenv
 
       - name: Install and configure Poetry
         uses: snok/install-poetry@v1
