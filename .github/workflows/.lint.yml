@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: "14"
 
-      - run: sudo apt install python3-pip
+      - run: sudo apt install -y python3-pip
       - run: python3 -m pip install virtualenv
 
       - name: Install and configure Poetry
