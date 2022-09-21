@@ -8,23 +8,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: "14"
 
       - run: sudo apt install -y python3-pip
-      - run: python3 -m pip install virtualenv
+      - run: pip install virtualenv
 
       - name: Install and configure Poetry
         uses: snok/install-poetry@v1
-
-      # - run: curl -sSL https://install.python-poetry.org | python3 -
 
       - run: npm install
       - run: npx solhint -w 0 'contracts/**/*.sol'
