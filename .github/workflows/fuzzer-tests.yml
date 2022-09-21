@@ -12,7 +12,7 @@ jobs:
     name: Fuzzer
     needs: lint
     # Running on a github runner because for some reason self-hosted fails to run crytic-compile <contract>
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     timeout-minutes: 30
     strategy:
       matrix:
@@ -23,10 +23,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
+      - name: Install Python virtualenv
+        run: pip install virtualenv
 
       - name: Setup Node
         uses: actions/setup-node@v3
