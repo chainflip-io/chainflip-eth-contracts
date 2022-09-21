@@ -301,5 +301,5 @@ def getAmountSwappedFromTickPercentatge(
             rounding=ROUND_DOWN,
             context=Context(prec=contextPrecision),
         )
-        amountSwappedPrev = math.floor(liquidityGross * perc)        
+        amountSwappedPrev = math.floor(liquidityGross * perc)
     return amountSwappedPrev

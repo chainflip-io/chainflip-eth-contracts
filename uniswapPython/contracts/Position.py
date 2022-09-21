@@ -197,7 +197,7 @@ def updateLimit(
                 self.oneMinusPercSwapMint - oneMinusPercSwap,
                 self.oneMinusPercSwapMint,
                 self.liquidity,
-                False
+                False,
             )
 
             # amountSwappedPrev = math.floor(
@@ -270,7 +270,7 @@ def updateLimit(
             self.oneMinusPercSwapMint - oneMinusPercSwap,
             self.oneMinusPercSwapMint,
             self.liquidity,
-            False
+            False,
         )
         # Calculate current position ratio
         if isToken0:

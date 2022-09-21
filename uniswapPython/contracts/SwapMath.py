@@ -161,7 +161,7 @@ def computeLimitSwapStep(
                 amountIn = SqrtPriceMath.calculateAmount0LO(liquidity, priceX96, True)
             else:
                 amountIn = SqrtPriceMath.calculateAmount1LO(liquidity, priceX96, True)
-            assert amountIn < amountRemainingLessFee
+            assert amountIn <= amountRemainingLessFee
             # no need to calculate percSwap Increase since we can set it to one outside this function if tickCrossed == 1
             # just initialize it
             percSwapDecrease = 1
@@ -182,7 +182,7 @@ def computeLimitSwapStep(
             amountOut = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
                 percSwapDecrease, oneMinusPercSwap, liquidity, False
             )
-    
+
             amountIn = amountRemainingLessFee
             # TODO: Should we recalculate amountIn as follows?? To then take abs(amountRemaining) - amountIn as fees. There are some "issues" in
             # extreme prices (amountOut=0, amountIn=all), where if recalculated amountIn = Zero, it not recalculated amountIn = All.
@@ -194,7 +194,6 @@ def computeLimitSwapStep(
             # assert amountIn <= amountRemainingLessFee
 
             # Or recalculate amountIn from percSwapDecrease?
-            
 
         tickCrossed = amountOut == liquidity
     else:
@@ -222,5 +221,4 @@ def computeLimitSwapStep(
         feeAmount = abs(amountRemaining) - amountIn
     else:
         feeAmount = mulDivRoundingUp(amountIn, feePips, ONE_IN_PIPS - feePips)
-
     return (amountIn, amountOut, feeAmount, tickCrossed, percSwapDecrease)
