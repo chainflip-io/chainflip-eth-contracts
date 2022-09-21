@@ -18,13 +18,10 @@ jobs:
         with:
           node-version: "14"
 
+      - run: python3 -m pip install virtualenv
+
       - name: Install and configure Poetry
         uses: snok/install-poetry@v1
-        with:
-          version: 1.1.10
-          virtualenvs-create: false
-          virtualenvs-in-project: false
-          installer-parallel: true
 
       # - run: curl -sSL https://install.python-poetry.org | python3 -
 
