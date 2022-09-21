@@ -3,22 +3,20 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
 
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: "14"
 
-      - name: Install Poetry
+      - name: Install Python virtualenv
+        run: pip install virtualenv
+
+      - name: Install and configure Poetry
         uses: snok/install-poetry@v1
 
       - run: npm install
