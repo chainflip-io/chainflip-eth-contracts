@@ -37,7 +37,7 @@ def computeSwapStep(
         amountRemainingLessFee = mulDiv(
             amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
         )
-
+        amountRemainingLessFee = amountIn
         amountIn = (
             SqrtPriceMath.getAmount0Delta(
                 sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, True
@@ -143,9 +143,11 @@ def computeLimitSwapStep(
     exactIn = amountRemaining >= 0
 
     if exactIn:
-        amountRemainingLessFee = mulDiv(
-            amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
-        )
+        # amountRemainingLessFee = mulDiv(
+        #     amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
+        # )
+        # For testing precision. TODO: REMOVE THIS
+        amountRemainingLessFee = amountRemaining
         if zeroForOne:
             # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
             amountOut = SqrtPriceMath.calculateAmount1LO(
@@ -170,14 +172,32 @@ def computeLimitSwapStep(
         else:
             # Tick not crossed
 
-            # Calculate percSwapDecrease rounding down in favour of the pool (less amount out). This could be rounded up if end up
-            # to recalculate amountIn afterwards.
-            percSwapDecrease = oneMinusPercSwap * amountOut / liquidity
-            percSwapDecrease = percSwapDecrease.quantize(
-                Decimal(decimalPrecision),
-                rounding=ROUND_DOWN,
-                context=Context(prec=contextPrecision),
-            )
+            # Calculate percSwapDecrease rounding down in favour of the pool (less amount out). This could maybe be rounded 
+            # up if end up recalculating amountIn afterwards.
+
+            # Doing the operation in two steps because otherwise Decimal gets rounded before quantiz.
+            #percSwapDecrease = oneMinusPercSwap * amountOut / liquidity
+            division = Decimal(amountOut) / Decimal(liquidity)
+            print("amountOut: ", amountOut)
+            print("liquidity: ", liquidity)
+            # just to make the last swap very small
+            if division < Decimal('0.000001'):
+                division = Decimal('0.00000001')
+            else:
+                division = Decimal('0.00001')
+            print("division: ", division)
+            print("oneMinusPercSwap",oneMinusPercSwap)
+            # TODO: Testing
+            # By default rounded down - truncated
+            percSwapDecrease = oneMinusPercSwap * division
+            print("percSwapDecrease: ", percSwapDecrease)
+            # percSwapDecrease = (oneMinusPercSwap * division).quantize(
+            #     Decimal(decimalPrecision),
+            #     rounding=ROUND_DOWN,
+            #     context=Context(prec=contextPrecision),
+            # )
+            #print("percSwapDecrease quantized: ", percSwapDecrease)
+
             # To ensure amountOut it will match the burn calculation
             amountOut = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
                 percSwapDecrease, oneMinusPercSwap, liquidity, False

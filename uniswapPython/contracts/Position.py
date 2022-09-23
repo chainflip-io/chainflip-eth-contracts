@@ -231,16 +231,18 @@ def updateLimit(
             # In this cases it will revert anyway.
             # TODO: Alastair mentioned this potentially being able to be calculated in a simpler way. To discuss.
             # TODO: Check after changing to oneMinusPercSwap if we can calculate it in a better way
+            
+            #TODO: Do we need to round up here?
             newOneMinusPercSwapMint = Decimal(1) - (
                 (liquidityNext * (1 - oneMinusPercSwap) - amountSwappedPrev)
                 / (liquidityNext - amountSwappedPrev)
             )
             # Consistency: Rounding percSwap up equates to rounding oneMinusPercSwap down
-            newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(
-                Decimal(decimalPrecision),
-                rounding=ROUND_UP,
-                context=Context(prec=contextPrecision),
-            )
+            # newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(
+            #     Decimal(decimalPrecision),
+            #     rounding=ROUND_UP,
+            #     context=Context(prec=contextPrecision),
+            # )
 
             # Health checks
             assert newOneMinusPercSwapMint < self.oneMinusPercSwapMint

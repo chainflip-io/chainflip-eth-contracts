@@ -13,7 +13,6 @@ sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "tests"))
 from utilities import *
 
 from dataclasses import dataclass
-from decimal import *
 
 
 @dataclass
@@ -35,6 +34,15 @@ class ChainflipPool(UniswapPool):
         # Creating two different dicts, one for each type of limit orders (token0 and token1)
         self.ticksLimitTokens0 = dict()
         self.ticksLimitTokens1 = dict()
+        getcontext().prec = contextPrecision
+        getcontext().Emin = -999999999999999999
+        getcontext().Emax = 999999999999999999
+        getcontext().rounding = ROUND_DOWN
+        # Set all new contexts to the same default contexts
+        DefaultContext.prec = contextPrecision
+        DefaultContext.Emin = -999999999999999999
+        DefaultContext.Emax = 999999999999999999
+        DefaultContext.rounding = ROUND_DOWN
 
         # Pass all paramaters to UniswapPool's constructor
         super().__init__(token0, token1, fee, tickSpacing, ledger)
@@ -380,7 +388,7 @@ class ChainflipPool(UniswapPool):
                     # and in no case tickCrossed but then not burnt (e.g. due to precision)
                     if tickCrossed:
                         print("Tick crossed")
-                        tickLimitInfo.oneMinusPercSwap = Decimal(0)
+                        tickLimitInfo.oneMinusPercSwap = Decimal('0')
                     else:
 
                         # TODO: Remove this - leaving it for debugging purposes
@@ -400,14 +408,21 @@ class ChainflipPool(UniswapPool):
                         # tick.oneMinusPercSwap = tick.oneMinusPercSwap - tick.oneMinusPercSwap * currentPercSwapped128_Q128
                         # Not using mulDiv because we are using floats. Python float has 18 decimals, so we are losing precision here.
                         # We can use Decimal to get 28 decimals precision, but we will still need to round.
-                        # Liquidity Left in Tick needs to match, so we round percSwap up => round down oneMinusPercSwap
                         # percSwapDecrease = tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft
                         # percSwapDecrease = percSwapDecrease.quantize(Decimal('decimalPrecision'), rounding=ROUND_UP, context=Context(prec=contextPrecision))
+                        
+                        # NOTE: Here is where precision is lost because beforeSwapOneMinus is 0.something while percSwapDecrease is 0.00000something and
+                        # This operation will round according to getcontext().rounding. If rounding_down then it will swap "more that intended".
+                        # TODO:  We should probably use the final oneMinusPercSwap - initial to calculate amountIn and Out ????
+
+                        print("tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
+                        getcontext().rounding = ROUND_UP
                         tickLimitInfo.oneMinusPercSwap -= percSwapDecrease
                         print(
                             "final tickLimitInfo.oneMinusPercSwap",
                             tickLimitInfo.oneMinusPercSwap,
                         )
+                        getcontext().rounding = ROUND_DOWN
 
                         # Health check
                         assert tickLimitInfo.oneMinusPercSwap > 0

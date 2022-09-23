@@ -5,7 +5,7 @@ import traceback
 import math
 from dataclasses import dataclass
 import copy
-from decimal import Decimal
+from decimal import *
 
 ### The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
 MIN_SQRT_RATIO = 4295128739
@@ -16,9 +16,9 @@ FixedPoint128_Q128 = 0x100000000000000000000000000000000
 FixedPoint96_RESOLUTION = 96
 FixedPoint96_Q96 = 0x1000000000000000000000000
 
-# Context precision should be at least 1 factor bigger
-decimalPrecision = "1e-28"
-contextPrecision = 29
+### This makes context 1 order of magnitude more precise so we can do the rounding with quantizes
+##decimalPrecision = "1e-256"
+contextPrecision = 77
 
 
 @dataclass
