@@ -365,7 +365,7 @@ class ChainflipPool(UniswapPool):
                         stepLimit.amountOut,
                         stepLimit.feeAmount,
                         tickCrossed,
-                        percSwapDecrease,
+                        resultingOneMinusPercSwap,
                     ) = SwapMath.computeLimitSwapStep(
                         priceX96,
                         tickLimitInfo.liquidityGross,
@@ -375,73 +375,12 @@ class ChainflipPool(UniswapPool):
                         tickLimitInfo.oneMinusPercSwap,
                     )
 
-                    # Update the tick - we can consider to only update when we cross tick
-                    # and keep global variables in state (like uniswap does)
-
-                    # Update the tick amountSwappedInsideLastX128 - For now we dont handle overflow (?)
-                    # Using liquidityLeft before it has been updated
-
                     # Health check
-                    assert tickLimitInfo.oneMinusPercSwap <= FixedPoint128_Q128
-
-                    # If tick is crossed no need to do the computations. Also makes sure it will be aligned
-                    # and in no case tickCrossed but then not burnt (e.g. due to precision)
-                    if tickCrossed:
-                        print("Tick crossed")
-                        tickLimitInfo.oneMinusPercSwap = Decimal('0')
-                    else:
-
-                        # TODO: Remove this - leaving it for debugging purposes
-                        # currentPercSwapped = amountSwapped / liquidityLeft
-                        # currentPercSwapped128_Q128 = mulDiv(
-                        #     stepLimit.amountOut,
-                        #     FixedPoint128_Q128,
-                        #     tickLimitInfo.liquidityLeft,
-                        # )
-                        # print("--DEBUGGING--")
-                        # print("tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
-                        # print("Amount swapped: ", stepLimit.amountOut)
-                        # print("Liquidity left: ", tickLimitInfo.liquidityLeft)
-                        # print("Calculation", tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft)
-                        # currentPercSwapped = amountSwapped / liquidityLeft
-                        # tick.percSwap = tick.percSwap + (1-tick.percSwap) * currentPercSwapped128_Q128
-                        # tick.oneMinusPercSwap = tick.oneMinusPercSwap - tick.oneMinusPercSwap * currentPercSwapped128_Q128
-                        # Not using mulDiv because we are using floats. Python float has 18 decimals, so we are losing precision here.
-                        # We can use Decimal to get 28 decimals precision, but we will still need to round.
-                        # percSwapDecrease = tickLimitInfo.oneMinusPercSwap * stepLimit.amountOut / tickLimitInfo.liquidityLeft
-                        # percSwapDecrease = percSwapDecrease.quantize(Decimal('decimalPrecision'), rounding=ROUND_UP, context=Context(prec=contextPrecision))
-                        
-                        # NOTE: Here is where precision is lost because beforeSwapOneMinus is 0.something while percSwapDecrease is 0.00000something and
-                        # This operation will round according to getcontext().rounding. If rounding_down then it will swap "more that intended".
-                        # TODO:  We should probably use the final oneMinusPercSwap - initial to calculate amountIn and Out ????
-
-                        print("tickLimitInfo.oneMinusPercSwap", tickLimitInfo.oneMinusPercSwap)
-                        getcontext().rounding = ROUND_UP
-                        tickLimitInfo.oneMinusPercSwap -= percSwapDecrease
-                        print(
-                            "final tickLimitInfo.oneMinusPercSwap",
-                            tickLimitInfo.oneMinusPercSwap,
-                        )
-                        getcontext().rounding = ROUND_DOWN
-
-                        # Health check
-                        assert tickLimitInfo.oneMinusPercSwap > 0
-                        # TODO: One difference with RO is that in RO it can be ensured that priceX96 changes even
-                        # in very small swaps, ensuring that each swap is accounted for. However, here there can be
-                        # the case that tickPerc doesn't increase. We can't do like RO and move the price (update position)
-                        # and then backcalculate amounts, since tickPerc won't change amounts calculated. We either
-                        # consider that this is not a problem (e.g. swap  would need to be unrealistically small) or
-                        # we assert to make sure so small swaps are not happening.
-                        assert tickLimitInfo.oneMinusPercSwap <= 1
-
-                    ## Health check - not always correct since in some case where amountRemaining is 1 we can end up with amountIn ==0,
-                    ## amountOut==0 and stepLimit.feeAmount == amountRemaining == 1
-                    # assert stepLimit.amountIn > 0 or stepLimit.amountOut > 0
-
-                    # Health check
-                    if tickLimitInfo.oneMinusPercSwap == FixedPoint128_Q128:
-                        assert tickLimitInfo.oneMinusPercSwap == 0
-
+                    assert tickLimitInfo.oneMinusPercSwap <= Decimal('1')
+                    
+                    # Update oneMinusPercSwap with the value calculated
+                    tickLimitInfo.oneMinusPercSwap = resultingOneMinusPercSwap
+                    
                     if exactInput:
                         state.amountSpecifiedRemaining -= (
                             stepLimit.amountIn + stepLimit.feeAmount
@@ -478,6 +417,7 @@ class ChainflipPool(UniswapPool):
                         tickLimitInfo.feeGrowthInsideX128
                     )
 
+                    # TODO: Leaving tickCrossed but it could be removed and use only oneMinusPercSwap.
                     if tickCrossed:
                         # Health check
                         assert tickLimitInfo.oneMinusPercSwap == 0

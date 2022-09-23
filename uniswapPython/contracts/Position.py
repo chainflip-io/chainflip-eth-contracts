@@ -268,12 +268,17 @@ def updateLimit(
 
         # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
         assert self.oneMinusPercSwapMint > 0
+        print("### DEBUGGING 1 ###")
+        print("percSwapDecrease: ", self.oneMinusPercSwapMint - oneMinusPercSwap)
+        print("oneMinusPercSwap: ", self.oneMinusPercSwapMint)
+        print("liquidity: ", self.liquidity)
         amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
             self.oneMinusPercSwapMint - oneMinusPercSwap,
             self.oneMinusPercSwapMint,
             self.liquidity,
             False,
         )
+        print("amountSwappedPrev: ", amountSwappedPrev)
         # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(

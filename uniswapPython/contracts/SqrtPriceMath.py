@@ -295,9 +295,9 @@ def getAmountSwappedFromTickPercentatge(
         #     context=Context(prec=contextPrecision),
         # )
         perc = percSwapChange / oneMinusPercSwap
-        getcontext().rounding = ROUND_DOWN
         print("perc", perc)
         amountSwappedPrev = math.ceil(liquidityGross * perc)
+        getcontext().rounding = ROUND_DOWN
     else:
         result = (percSwapChange / oneMinusPercSwap)
         print("result", result)
