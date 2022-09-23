@@ -203,8 +203,8 @@ def computeLimitSwapStep(
             # We have to use the oneMinusPercSwap - initial to calculate amountIn and Out instead of percSwapDecrease because 
             # precision is lost in the operation as explained above.
 
+            # We round up the calculation to round down the percSwapDecrease
             getcontext().rounding = ROUND_UP
-
             resultingOneMinusPercSwap = oneMinusPercSwap - percSwapDecrease
             getcontext().rounding = ROUND_DOWN
 

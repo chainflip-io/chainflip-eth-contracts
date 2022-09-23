@@ -272,8 +272,14 @@ def updateLimit(
         print("percSwapDecrease: ", self.oneMinusPercSwapMint - oneMinusPercSwap)
         print("oneMinusPercSwap: ", self.oneMinusPercSwapMint)
         print("liquidity: ", self.liquidity)
+
+        # We round up the calculation to round down the percSwapDecrease
+        getcontext().rounding = ROUND_UP
+        percSwapDecrease = self.oneMinusPercSwapMint - oneMinusPercSwap
+        getcontext().rounding = ROUND_DOWN
+
         amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
-            self.oneMinusPercSwapMint - oneMinusPercSwap,
+            percSwapDecrease,
             self.oneMinusPercSwapMint,
             self.liquidity,
             False,
