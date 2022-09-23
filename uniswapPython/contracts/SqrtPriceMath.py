@@ -286,7 +286,7 @@ def calculateAmount0LO(amountInToken1, priceX96, roundUp):
 def getAmountSwappedFromTickPercentatge(
     percSwapChange, oneMinusPercSwap, liquidityGross, roundUp
 ):
-    if roundUp:    
+    if roundUp:
         # not used for now
         getcontext().rounding = ROUND_UP
         # perc = (percSwapChange / oneMinusPercSwap).quantize(
@@ -295,19 +295,15 @@ def getAmountSwappedFromTickPercentatge(
         #     context=Context(prec=contextPrecision),
         # )
         perc = percSwapChange / oneMinusPercSwap
-        print("perc", perc)
         amountSwappedPrev = math.ceil(liquidityGross * perc)
         getcontext().rounding = ROUND_DOWN
     else:
-        result = (percSwapChange / oneMinusPercSwap)
-        print("result", result)
         # By default this will be rounded down - truncated
-        perc = result
+        perc = percSwapChange / oneMinusPercSwap
         # perc = Decimal(result).quantize(
         #     Decimal(decimalPrecision),
         #     rounding=ROUND_DOWN,
         #     context=Context(prec=contextPrecision),
         # )
-        print("perc", perc)
         amountSwappedPrev = math.floor(liquidityGross * perc)
     return amountSwappedPrev

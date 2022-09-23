@@ -142,11 +142,9 @@ def computeLimitSwapStep(
     exactIn = amountRemaining >= 0
 
     if exactIn:
-        # amountRemainingLessFee = mulDiv(
-        #     amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
-        # )
-        # For testing precision. TODO: REMOVE THIS
-        amountRemainingLessFee = amountRemaining
+        amountRemainingLessFee = mulDiv(
+            amountRemaining, ONE_IN_PIPS - feePips, ONE_IN_PIPS
+        )
         if zeroForOne:
             # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
             amountOut = SqrtPriceMath.calculateAmount1LO(
@@ -164,7 +162,7 @@ def computeLimitSwapStep(
                 amountIn = SqrtPriceMath.calculateAmount1LO(liquidity, priceX96, True)
             assert amountIn <= amountRemainingLessFee
             print("Tick crossed")
-            resultingOneMinusPercSwap = Decimal('0')
+            resultingOneMinusPercSwap = Decimal("0")
             amountOut = liquidity
 
         else:
@@ -172,35 +170,24 @@ def computeLimitSwapStep(
 
             # All decimal operations here are rounded down (truncated)
 
-            # Calculate percSwapDecrease rounding down in favour of the pool (less amount out). This could maybe be rounded 
+            # Calculate percSwapDecrease rounding down in favour of the pool (less amount out). This could maybe be rounded
             # up if end up recalculating amountIn afterwards.
-            
+
             # currentPercSwapped = amountSwapped / liquidityLeft
             # tick.percSwap = tick.percSwap + (1-tick.percSwap) * currentPercSwapped128_Q128
             # tick.oneMinusPercSwap = tick.oneMinusPercSwap - tick.oneMinusPercSwap * currentPercSwapped128_Q128
 
             # Doing the operation in two steps because otherwise Decimal gets rounded for some reason.
-            #percSwapDecrease = oneMinusPercSwap * amountOut / liquidity
+            # percSwapDecrease = oneMinusPercSwap * amountOut / liquidity
             division = Decimal(amountOut) / Decimal(liquidity)
-            print("amountOut: ", amountOut)
-            print("liquidity: ", liquidity)
-            # # just to make the last swap very small
-            # if division < Decimal('0.000001'):
-            #     division = Decimal('0.00000001')
-            # else:
-            #     division = Decimal('0.00001')
-            print("division: ", division)
-            print("oneMinusPercSwap",oneMinusPercSwap)
             # By default rounded down - truncated
             percSwapDecrease = oneMinusPercSwap * division
-            print("percSwapDecrease before rounding: ", percSwapDecrease)
-
 
             debuggingPercSwapDecrease = percSwapDecrease
-            
+
             # NOTE: Here is where precision is lost because oneMinusPercSwap can be 0.XYZ while percSwapDecrease can be 0.00000ZYX.
             # The precision that oneMinusPercSwap can store wil depend on how close to one it is (floating point precision).
-            # We have to use the oneMinusPercSwap - initial to calculate amountIn and Out instead of percSwapDecrease because 
+            # We have to use the oneMinusPercSwap - initial to calculate amountIn and Out instead of percSwapDecrease because
             # precision is lost in the operation as explained above.
 
             # We round up the calculation to round down the percSwapDecrease
@@ -209,39 +196,31 @@ def computeLimitSwapStep(
             getcontext().rounding = ROUND_DOWN
 
             # Health check
-            assert resultingOneMinusPercSwap > Decimal('0')
-            assert resultingOneMinusPercSwap <= Decimal('1')
-            # Could be equal if the amountOut/LiqLeft is many orders of magnitude smaller than oneMinusPercSwap. For now we leave
-            # the assertion to check behaviour
-            assert resultingOneMinusPercSwap < oneMinusPercSwap, "oneMinusPercSwap should decrease"
+            assert resultingOneMinusPercSwap > Decimal("0")
+            assert resultingOneMinusPercSwap <= Decimal("1")
+            # Could be equal if the amountOut/LiqLeft is many orders of magnitude smaller than oneMinusPercSwap or if it's
+            # equal to zero (extreme prices)
+            assert (
+                resultingOneMinusPercSwap <= oneMinusPercSwap
+            ), "oneMinusPercSwap should decrease or stay the same"
 
             # This will calculate the real percSwapDecrease that will be stored in the position. Then we use that to backcalculate
             # amount In and amount Out
-            percSwapDecrease = oneMinusPercSwap - resultingOneMinusPercSwap 
-            
+            percSwapDecrease = oneMinusPercSwap - resultingOneMinusPercSwap
 
             # Health check
-            assert debuggingPercSwapDecrease
-
-            print("Resulting OneMinusPercSwap: ", resultingOneMinusPercSwap)
-            print("percSwapDecrease after rounding: ", percSwapDecrease)
-
+            assert abs(debuggingPercSwapDecrease) >= percSwapDecrease
             # To ensure amountOut it will match the burn calculation
-            print("### DEBUGGING 0 ###")
-            print("percSwapDecrease: ", percSwapDecrease)
-            print("oneMinusPercSwap: ", oneMinusPercSwap)
-            print("liquidity: ", liquidity)
             amountOut = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
                 percSwapDecrease, oneMinusPercSwap, liquidity, False
             )
-            print("amountSwappedPrev: ", amountOut)
 
             amountIn = amountRemainingLessFee
-            # TODO: Should we recalculate amountIn as follows, or recalculate it from percSwappedDecrease to then 
-            # take abs(amountRemaining) - amountIn as fees. There are some "issues" in extreme prices (amountOut=0, amountIn=all), 
+            # TODO: Should we recalculate amountIn as follows, or recalculate it from percSwappedDecrease to then
+            # take abs(amountRemaining) - amountIn as fees. There are some "issues" in extreme prices (amountOut=0, amountIn=all),
             # where if recalculated amountIn = Zero, it not recalculated amountIn = All.
-            
-            # Recalculate amountIn from amountOut, rounding up    
+
+            # Recalculate amountIn from amountOut, rounding up
             # if zeroForOne:
             #     amountIn = SqrtPriceMath.calculateAmount0LO(amountOut, priceX96, True)
             # else:

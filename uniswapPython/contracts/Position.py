@@ -192,9 +192,14 @@ def updateLimit(
         # If there has been any swap in this position before this added mint, recompute the oneMinusPercSwap. Only
         # needed if there is a > 0 mint.
         if liquidityDelta > 0 and oneMinusPercSwap < self.oneMinusPercSwapMint:
-            # Round down
+
+            # newOneMinusPercSwapMint should be rounded up. Looking at the math, we need amountSwappedPrev to be rounded down
+
+            # We round up the calculation to round down the percSwapDecrease
+            percSwapDecrease = self.oneMinusPercSwapMint - oneMinusPercSwap
+
             amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
-                self.oneMinusPercSwapMint - oneMinusPercSwap,
+                percSwapDecrease,
                 self.oneMinusPercSwapMint,
                 self.liquidity,
                 False,
@@ -230,19 +235,14 @@ def updateLimit(
             # NOTE: it is possible that this becomes negative if the amount minted is extremely small (< 10-12) due to rounding errors.
             # In this cases it will revert anyway.
             # TODO: Alastair mentioned this potentially being able to be calculated in a simpler way. To discuss.
-            # TODO: Check after changing to oneMinusPercSwap if we can calculate it in a better way
-            
-            #TODO: Do we need to round up here?
-            newOneMinusPercSwapMint = Decimal(1) - (
-                (liquidityNext * (1 - oneMinusPercSwap) - amountSwappedPrev)
-                / (liquidityNext - amountSwappedPrev)
-            )
-            # Consistency: Rounding percSwap up equates to rounding oneMinusPercSwap down
-            # newOneMinusPercSwapMint = newOneMinusPercSwapMint.quantize(
-            #     Decimal(decimalPrecision),
-            #     rounding=ROUND_UP,
-            #     context=Context(prec=contextPrecision),
-            # )
+
+            # Round percSwap down which means rounding substrahend down and newOneMinusPercSwapMint up.
+            substrahend = (
+                liquidityNext * (1 - oneMinusPercSwap) - amountSwappedPrev
+            ) / (liquidityNext - amountSwappedPrev)
+            getcontext().rounding = ROUND_UP
+            newOneMinusPercSwapMint = Decimal("1") - substrahend
+            getcontext().rounding = ROUND_DOWN
 
             # Health checks
             assert newOneMinusPercSwapMint < self.oneMinusPercSwapMint
@@ -268,15 +268,9 @@ def updateLimit(
 
         # percSwap - percSwapMint === (1 - percSwapMint) - (1 - percSwap)
         assert self.oneMinusPercSwapMint > 0
-        print("### DEBUGGING 1 ###")
-        print("percSwapDecrease: ", self.oneMinusPercSwapMint - oneMinusPercSwap)
-        print("oneMinusPercSwap: ", self.oneMinusPercSwapMint)
-        print("liquidity: ", self.liquidity)
 
-        # We round up the calculation to round down the percSwapDecrease
-        getcontext().rounding = ROUND_UP
+        # We round down the calculation
         percSwapDecrease = self.oneMinusPercSwapMint - oneMinusPercSwap
-        getcontext().rounding = ROUND_DOWN
 
         amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
             percSwapDecrease,
@@ -284,7 +278,7 @@ def updateLimit(
             self.liquidity,
             False,
         )
-        print("amountSwappedPrev: ", amountSwappedPrev)
+
         # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(

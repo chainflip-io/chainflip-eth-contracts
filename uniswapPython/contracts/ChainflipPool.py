@@ -376,11 +376,11 @@ class ChainflipPool(UniswapPool):
                     )
 
                     # Health check
-                    assert tickLimitInfo.oneMinusPercSwap <= Decimal('1')
-                    
+                    assert tickLimitInfo.oneMinusPercSwap <= Decimal("1")
+
                     # Update oneMinusPercSwap with the value calculated
                     tickLimitInfo.oneMinusPercSwap = resultingOneMinusPercSwap
-                    
+
                     if exactInput:
                         state.amountSpecifiedRemaining -= (
                             stepLimit.amountIn + stepLimit.feeAmount
