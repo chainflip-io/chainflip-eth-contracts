@@ -189,8 +189,7 @@ def updateLimit(
     if liquidityDelta >= 0:
         liquidityLeftDelta = liquidityDelta
         liquiditySwappedDelta = 0
-        # If there has been any swap in this position before this added mint, recompute the oneMinusPercSwap. Only
-        # needed if there is a > 0 mint.
+        # If there has been any swap in this position before this mint, recompute the oneMinusPercSwap.
         if liquidityDelta > 0 and oneMinusPercSwap < self.oneMinusPercSwapMint:
 
             # newOneMinusPercSwapMint should be rounded up. Looking at the math, we need amountSwappedPrev to be rounded down
@@ -324,7 +323,6 @@ def updateLimit(
         # when the position is fully burnt (1) but we can't burn more than that anyway,
         # so no need to self.oneMinusPercSwapMint = oneMinusPercSwap
 
-        # TODO: Check that this is correct
         if isToken0:
             # Update position owed in their tokens
             self.tokensOwed0 += abs(liquidityLeftDelta)

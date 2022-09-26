@@ -156,9 +156,7 @@ class ChainflipPool(UniswapPool):
             position,
             liquidityDelta,
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
-            ticksLimitMap[tick].oneMinusPercSwap
-            if ticksLimitMap.__contains__(tick)
-            else 1,
+            ticksLimitMap[tick].oneMinusPercSwap,
             token == self.token0,
             TickMath.getPriceAtTick(tick),
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
