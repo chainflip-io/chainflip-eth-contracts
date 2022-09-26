@@ -215,17 +215,27 @@ def computeLimitSwapStep(
                 percSwapDecrease, oneMinusPercSwap, liquidity, False
             )
 
-            amountIn = amountRemainingLessFee
-            # TODO: Should we recalculate amountIn as follows, or recalculate it from percSwappedDecrease to then
-            # take abs(amountRemaining) - amountIn as fees. There are some "issues" in extreme prices (amountOut=0, amountIn=all),
-            # where if recalculated amountIn = Zero, it not recalculated amountIn = All.
+            #amountIn = amountRemainingLessFee
+
+            # Should recalculate amountIn to then take abs(amountRemaining) - amountIn as fees. There are some "issues" 
+            # in extreme prices (amountOut=0, amountIn=all), where if recalculated amountIn = Zero, it not recalculated 
+            # amountIn = All. Also, this recalculation makes amountIn potentially decrease by one, causing the fee to change.
+            # This recalculation causes slight changes in amountIn which causes a change in feeAmount.
 
             # Recalculate amountIn from amountOut, rounding up
-            # if zeroForOne:
-            #     amountIn = SqrtPriceMath.calculateAmount0LO(amountOut, priceX96, True)
-            # else:
-            #     amountIn = SqrtPriceMath.calculateAmount1LO(amountOut, priceX96, True)
-            # assert amountIn <= amountRemainingLessFee
+            if zeroForOne:
+                amountIn = SqrtPriceMath.calculateAmount0LO(amountOut, priceX96, True)
+            else:
+                amountIn = SqrtPriceMath.calculateAmount1LO(amountOut, priceX96, True)
+            assert amountIn <= amountRemainingLessFee
+            print("amountIn", amountIn)
+            print("amountRemainingLessFee", amountRemainingLessFee)
+            print("amountRemainingLessFee-amountIn", amountRemainingLessFee-amountIn)
+            # For debugging purposes: rounding difference < 1% (rounded up to 1) unless amountOut is 0.
+            if amountOut != 0:
+                assert abs(amountRemainingLessFee-amountIn) <= math.ceil(amountRemainingLessFee/100) 
+            else:
+                assert amountIn == 0
 
             # Health check
             assert amountOut < liquidity

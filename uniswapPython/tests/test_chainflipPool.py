@@ -400,42 +400,53 @@ def test_remove_aboveCurrentPrice_token1(initializedMediumPool, accounts):
     assert amount1 == 10001
 
 
-def test_addLiquidity_toLiquidityLeft(initializedMediumPool, accounts):
+def test_addLiquidity_toLiquidityGross(initializedMediumPool, accounts):
     print("addLiquidity to liquidity left")
     pool, _, _, _, tickSpacing, _, _ = initializedMediumPool
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], -240, 100)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], 0, 100)
-    # assert pool.ticksLimitTokens0[-240].liquidityLeft == 100
-    # assert pool.ticksLimitTokens0[0].liquidityLeft == 100
-    # No liquidityLeft === tick doesn't exist
+    assert pool.ticksLimitTokens0[-240].liquidityGross == 100
+    assert pool.ticksLimitTokens0[0].liquidityGross == 100    
+    assert pool.ticksLimitTokens0[-240].oneMinusPercSwap == Decimal('1')
+    assert pool.ticksLimitTokens0[0].oneMinusPercSwap == Decimal('1')
+    # No liquidityGross === tick doesn't exist
     assert not pool.ticksLimitTokens0.__contains__(tickSpacing)
     assert not pool.ticksLimitTokens0.__contains__(tickSpacing * 2)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], -240, 150)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], tickSpacing, 150)
-    # assert pool.ticksLimitTokens0[-240].liquidityLeft == 250
-    # assert pool.ticksLimitTokens0[0].liquidityLeft == 100
-    # assert pool.ticksLimitTokens0[tickSpacing].liquidityLeft == 150
-    # No liquidityLeft === tick doesn't exist
+    assert pool.ticksLimitTokens0[-240].liquidityGross == 250
+    assert pool.ticksLimitTokens0[0].liquidityGross == 100
+    assert pool.ticksLimitTokens0[tickSpacing].liquidityGross == 150    
+    assert pool.ticksLimitTokens0[-240].oneMinusPercSwap == Decimal('1')
+    assert pool.ticksLimitTokens0[0].oneMinusPercSwap == Decimal('1')
+    assert pool.ticksLimitTokens0[tickSpacing].oneMinusPercSwap == Decimal('1')
+    # No liquidityGross === tick doesn't exist
     assert not pool.ticksLimitTokens0.__contains__(tickSpacing * 2)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], 0, 60)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], tickSpacing * 2, 60)
-    # assert pool.ticksLimitTokens0[-240].liquidityLeft == 250
-    # assert pool.ticksLimitTokens0[0].liquidityLeft == 160
-    # assert pool.ticksLimitTokens0[tickSpacing].liquidityLeft == 150
-    # assert pool.ticksLimitTokens0[tickSpacing * 2].liquidityLeft == 60
+    assert pool.ticksLimitTokens0[-240].liquidityGross == 250
+    assert pool.ticksLimitTokens0[0].liquidityGross == 160
+    assert pool.ticksLimitTokens0[tickSpacing].liquidityGross == 150
+    assert pool.ticksLimitTokens0[tickSpacing * 2].liquidityGross == 60
+    assert pool.ticksLimitTokens0[-240].oneMinusPercSwap== Decimal('1')
+    assert pool.ticksLimitTokens0[0].oneMinusPercSwap == Decimal('1')
+    assert pool.ticksLimitTokens0[tickSpacing].oneMinusPercSwap== Decimal('1')
+    assert pool.ticksLimitTokens0[tickSpacing * 2].oneMinusPercSwap== Decimal('1')
 
 
-def test_removeLiquidity_fromLiquidityLeft(initializedMediumPool, accounts):
-    print("removes liquidity from liquidityLeft")
+def test_removeLiquidity_fromLiquidityGross(initializedMediumPool, accounts):
+    print("removes liquidity from liquidityGross")
     pool, _, _, _, _, _, _ = initializedMediumPool
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], -240, 100)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], 0, 40)
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], -240, 90)
     pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], 0, 30)
 
-    # assert pool.ticksLimitTokens0[-240].liquidityLeft == 10
-    # assert pool.ticksLimitTokens0[0].liquidityLeft == 10
 
+    assert pool.ticksLimitTokens0[-240].liquidityGross == 10
+    assert pool.ticksLimitTokens0[0].liquidityGross == 10
+    assert pool.ticksLimitTokens0[-240].oneMinusPercSwap  == Decimal('1')
+    assert pool.ticksLimitTokens0[0].oneMinusPercSwap  == Decimal('1')
     assert (
         pool.limitOrders[getLimitPositionKey(accounts[0], -240, True)].tokensOwed0 == 90
     )
@@ -446,8 +457,10 @@ def test_removeLiquidity_fromLiquidityLeft(initializedMediumPool, accounts):
     pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], -240, 90)
     pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], 0, 30)
 
-    # assert pool.ticksLimitTokens0[-240].liquidityLeft == 10
-    # assert pool.ticksLimitTokens0[0].liquidityLeft == 10
+    assert pool.ticksLimitTokens0[-240].liquidityGross == 10
+    assert pool.ticksLimitTokens0[0].liquidityGross == 10
+    assert pool.ticksLimitTokens0[-240].oneMinusPercSwap  == Decimal('1')
+    assert pool.ticksLimitTokens0[0].oneMinusPercSwap  == Decimal('1')
 
     assert (
         pool.limitOrders[getLimitPositionKey(accounts[0], -240, True)].tokensOwed0 == 90
@@ -501,7 +514,8 @@ def test_clearsTick_ifNotUsed(initializedMediumPool, accounts):
     # tick cleared == not in ticks
     assert not pool.ticksLimitTokens0.__contains__(-240)
     tickInfo = pool.ticksLimitTokens0[-tickSpacing]
-    # assert tickInfo.liquidityLeft == 250
+    assert tickInfo.liquidityGross == 250
+    assert tickInfo.oneMinusPercSwap == Decimal('1')
     assert tickInfo.feeGrowthInsideX128 == 0
 
     pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], -240, 100)
@@ -513,7 +527,8 @@ def test_clearsTick_ifNotUsed(initializedMediumPool, accounts):
     # tick cleared == not in ticks
     assert not pool.ticksLimitTokens1.__contains__(-240)
     tickInfo = pool.ticksLimitTokens1[-tickSpacing]
-    # assert tickInfo.liquidityLeft == 250
+    assert tickInfo.liquidityGross == 250
+    assert tickInfo.oneMinusPercSwap == Decimal('1')
     assert tickInfo.feeGrowthInsideX128 == 0
 
 
@@ -813,7 +828,7 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
 
     # Orig value: 102084710076281216349243831104605583
     assert (
-        positionLimit0.feeGrowthInsideLastX128 == 102084710076281539039012382229530463
+        positionLimit0.feeGrowthInsideLastX128 == 102084710076282900168480065983384316
     )
     # Orig value: 10208471007628121634924383110460558
     assert positionLimit1.feeGrowthInsideLastX128 == 10208471007628153903901238222953046
@@ -837,7 +852,7 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     assert positionLimit0.liquidity == 0
     assert positionLimit1.liquidity == 0
     assert (
-        positionLimit0.feeGrowthInsideLastX128 == 102084710076281539039012382229530463
+        positionLimit0.feeGrowthInsideLastX128 == 102084710076282900168480065983384316
     )
     assert positionLimit1.feeGrowthInsideLastX128 == 10208471007628153903901238222953046
     # 1 token from the positions burnt and no fees accured
@@ -905,8 +920,8 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
     )
 
     swapExact0For1(pool, expandTo18Decimals(1), accounts[0], None)
-    swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[1], iniTick, expandTo18Decimals(1))
+    print(swapExact1For0(pool, expandTo18Decimals(1), accounts[0], None))
+    print(pool.burnLimitOrder(TEST_TOKENS[0], accounts[1], iniTick, expandTo18Decimals(1)))
     pool.burnLimitOrder(
         TEST_TOKENS[1], accounts[1], iniTick + pool.tickSpacing, expandTo18Decimals(1)
     )
@@ -920,17 +935,21 @@ def test_notClearPosition_ifNoMoreLiquidity(accounts, mediumPoolInitializedAtZer
     assert positionLimitInfo0.liquidity == 0
     assert positionLimitInfo0.tokensOwed0 != 0
     assert positionLimitInfo0.tokensOwed1 != 0
+    # value changes due to amountIn in SwapMath changing by 1. That causes a change
+    # in feeGrowthInsideX128
+    # Orig value: 340282366920938463463374607431768211
     assert (
         positionLimitInfo0.feeGrowthInsideLastX128
-        == 340282366920938463463374607431768211
+        == 340282366920938576890830247744589365
     )
 
     assert positionLimitInfo1.liquidity == 0
     assert positionLimitInfo1.tokensOwed0 != 0
     assert positionLimitInfo1.tokensOwed1 != 0
+    # Orig value: 340282366920938463463374607431768211
     assert (
         positionLimitInfo1.feeGrowthInsideLastX128
-        == 340282366920938463463374607431768211
+        == 340282366920938576890830247744589365
     )
 
 
@@ -1094,7 +1113,7 @@ def test_collectFee_currentPrice(lowPoolInitializedAtZero, accounts, ledger):
 
     assert afterTick0 == beforeTick0
     assert afterTick1 != beforeTick1
-    # assert afterTick1.liquidityLeft < beforeTick1.liquidityLeft
+    assert afterTick1.oneMinusPercSwap < beforeTick1.oneMinusPercSwap
     assert afterTick1.liquidityGross == beforeTick1.liquidityGross
     assert afterTick1.oneMinusPercSwap < beforeTick1.oneMinusPercSwap
     assert afterTick1.feeGrowthInsideX128 > beforeTick1.feeGrowthInsideX128
@@ -1154,11 +1173,11 @@ def test_initialLiquidity(mediumPoolInitializedAtZero):
     assert pool.liquidity == 0
     tickLow = pool.slot0.tick
     tickHigh = pool.slot0.tick + pool.tickSpacing
-    # assert (
-    #     pool.ticksLimitTokens0[tickLow].liquidityLeft
-    #     + pool.ticksLimitTokens1[tickHigh].liquidityLeft
-    #     == expandTo18Decimals(2) * 2
-    # )
+    assert (
+        pool.ticksLimitTokens0[tickLow].liquidityGross
+        + pool.ticksLimitTokens1[tickHigh].liquidityGross
+        == expandTo18Decimals(2) * 2
+    )
 
 
 def test_supplyInRange(mediumPoolInitializedAtZero, accounts):
@@ -1168,12 +1187,12 @@ def test_supplyInRange(mediumPoolInitializedAtZero, accounts):
         TEST_TOKENS[0], accounts[0], -tickSpacing, expandTo18Decimals(3)
     )
     pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], tickSpacing, expandTo18Decimals(3))
-    # assert (
-    #     pool.ticksLimitTokens0[0].liquidityLeft
-    #     + pool.ticksLimitTokens0[-tickSpacing].liquidityLeft
-    #     + pool.ticksLimitTokens1[tickSpacing].liquidityLeft
-    #     == expandTo18Decimals(5) * 2
-    # )
+    assert (
+        pool.ticksLimitTokens0[0].liquidityGross
+        + pool.ticksLimitTokens0[-tickSpacing].liquidityGross
+        + pool.ticksLimitTokens1[tickSpacing].liquidityGross
+        == expandTo18Decimals(5) * 2
+    )
 
 
 # These tests don't make sense for LO
@@ -1620,7 +1639,7 @@ def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
         accounts[0],
         iniTick,
     )
-    assert token0Fees == 999999999999998
+    assert token0Fees == 999999999999999
     assert token1Fees == 0
 
     (token0Fees, token1Fees) = swapAndGetFeesOwed(
@@ -1631,7 +1650,7 @@ def test_swapFeesAccomulate_zeroForOne(initializedLowPoolCollectFees, accounts):
         accounts[0],
         iniTick,
     )
-    assert token0Fees == 1499999999999997
+    assert token0Fees == 1499999999999999
     assert token1Fees == 0
 
 
@@ -1861,7 +1880,7 @@ def test_doubleFees(initializedLowPoolCollectFees, accounts):
     )
 
     ## 6 bips * 2e18
-    assert token0Fees == 999999999999998
+    assert token0Fees == 999999999999999
     assert token1Fees == 0
 
 
@@ -1889,7 +1908,7 @@ def test_feesCollected_combination0(initializedLowPoolCollectFees, accounts):
         accounts[0],
         iniTick,
     )
-    assert token0Fees == 916666666666666
+    assert token0Fees == 916666666666667
     assert token1Fees == 0
 
 
@@ -1942,7 +1961,7 @@ def test_feesCollected_combination1(initializedLowPoolCollectFees, accounts):
     (recipient, _, amount0, amount1) = pool.collectLimitOrder(
         accounts[0], TEST_TOKENS[1], iniTick, MAX_UINT128, MAX_UINT128
     )
-    assert (recipient, amount0, amount1) == (accounts[0], 416666666666666, 0)
+    assert (recipient, amount0, amount1) == (accounts[0], 416666666666667, 0)
 
     assert pool.protocolFees.token0 == 166666666666666
     assert pool.protocolFees.token1 == 0
@@ -2633,9 +2652,9 @@ def test_mintWorseLO_zeroForOne(initializedMediumPoolNoLO, accounts):
     assert pool.limitOrders[
         getLimitPositionKey(accounts[0], closeAligniniTickiRDown, False)
     ].liquidity == expandTo18Decimals(1)
-    # assert pool.ticksLimitTokens1[
-    #     closeAligniniTickiRDown
-    # ].liquidityLeft == expandTo18Decimals(1)
+    assert pool.ticksLimitTokens1[
+        closeAligniniTickiRDown
+    ].oneMinusPercSwap == Decimal('1')
     assert pool.ticksLimitTokens1[
         closeAligniniTickiRDown
     ].liquidityGross == expandTo18Decimals(1)
@@ -2652,9 +2671,9 @@ def test_mintWorseLO_oneForZero(initializedMediumPoolNoLO, accounts):
     assert pool.limitOrders[
         getLimitPositionKey(accounts[0], closeAligniniTickRUp, True)
     ].liquidity == expandTo18Decimals(1)
-    # assert pool.ticksLimitTokens0[
-    #     closeAligniniTickRUp
-    # ].liquidityLeft == expandTo18Decimals(1)
+    assert pool.ticksLimitTokens0[
+        closeAligniniTickRUp
+    ].oneMinusPercSwap == Decimal('1')
     assert pool.ticksLimitTokens0[
         closeAligniniTickRUp
     ].liquidityGross == expandTo18Decimals(1)
@@ -3719,7 +3738,7 @@ def test_mintOnSwappedPosition_oneForZero(initializedMediumPoolNoLO, accounts):
 # have been swapped in that case and therefore the LP's position should remain the same, except accruing some fees.
 
 
-def test_limitLO_badSwapPrice_zeroForOne(createPoolLow, accounts, ledger):
+def test_limitLO_badSwapPrice_oneForZero(createPoolLow, accounts, ledger):
     pool, minTick, maxTick, _, _ = createPoolLow
     # Pool initialized at the far right - pool RO current tick > MAX LO tick
     pool.initialize(encodePriceSqrt(2**127, 1))
@@ -3754,6 +3773,8 @@ def test_limitLO_badSwapPrice_zeroForOne(createPoolLow, accounts, ledger):
     assert pool.ticksLimitTokens0.__contains__(TickMath.MAX_TICK_LO - 5)
     assert pool.ticksLimitTokens0[TickMath.MAX_TICK_LO - 5].oneMinusPercSwap == 1
 
+    print(pool.ticksLimitTokens0[TickMath.MAX_TICK_LO - 5])
+
     # Burn the position and check results
     (_, _, _, amount0, amount1) = pool.burnLimitOrder(
         TEST_TOKENS[0], accounts[0], TickMath.MAX_TICK_LO - 5, expandTo18Decimals(1)
@@ -3766,11 +3787,11 @@ def test_limitLO_badSwapPrice_zeroForOne(createPoolLow, accounts, ledger):
     # Final balance equal to the initial one plus fees (no actual swap has taken place)
     assert iniBalance0LP == ledger.balanceOf(accounts[0], TEST_TOKENS[0])
     assert (
-        iniBalance1LP == ledger.balanceOf(accounts[0], TEST_TOKENS[1]) - 499999999999999
+        iniBalance1LP + expandTo18Decimals(1) == ledger.balanceOf(accounts[0], TEST_TOKENS[1])
     )
 
 
-def test_limitLO_badSwapPrice_OneForZero(createPoolLow, accounts, ledger):
+def test_limitLO_badSwapPrice_zeroForOne(createPoolLow, accounts, ledger):
     pool, minTick, maxTick, _, _ = createPoolLow
     # Pool initialized at the far right - pool RO current tick > MAX LO tick
     pool.initialize(encodePriceSqrt(1, 2**127))
@@ -3818,7 +3839,7 @@ def test_limitLO_badSwapPrice_OneForZero(createPoolLow, accounts, ledger):
 
     # Final balance equal to the initial one plus fees (no actual swap has taken place)
     assert (
-        iniBalance0LP == ledger.balanceOf(accounts[0], TEST_TOKENS[0]) - 499999999999999
+        iniBalance0LP + expandTo18Decimals(1) == ledger.balanceOf(accounts[0], TEST_TOKENS[0])
     )
     assert iniBalance1LP == ledger.balanceOf(accounts[0], TEST_TOKENS[1])
 
@@ -3910,11 +3931,6 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
 
     pool.initialize(encodePriceSqrt(1, 1))
 
-    # pool, minTick, maxTick, _, _ = createPoolLow
-    # pool.initialize(encodePriceSqrt(1, 1))
-    # pool.slot0.tick = -1
-
-    # Setting a non-exact value to get non-exact numbers
     amountToMint = st_mintAmount
     pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], 0, amountToMint)
 
