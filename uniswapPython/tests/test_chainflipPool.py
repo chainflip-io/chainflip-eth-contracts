@@ -3919,7 +3919,7 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
     pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], 0, amountToMint)
 
     counter = 0
-
+    accomAmount0 = 0
     liquidityLeft = math.floor(
         pool.ticksLimitTokens1[0].liquidityGross
         * pool.ticksLimitTokens1[0].oneMinusPercSwap
@@ -3936,16 +3936,18 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             accounts[1],
             None,
         )
+        accomAmount0 += amount0
 
         # Check that the rounding of the burnt amount and tickSwapPercentage is correct when burning initial position
-        (_, _, _, _, amountBurnt1) = copy.deepcopy(pool).burnLimitOrder(
+        (_, _, _, amountBurnt0, amountBurnt1) = copy.deepcopy(pool).burnLimitOrder(
             TEST_TOKENS[1], accounts[0], 0, amountToMint
         )
 
         # Allow for a rounding of 1.
         # TODO: Look into if it should be only on the side of favouring the pool (amountBurnt1 < liquidityLeft - abs(amount1))
-        assert abs(amountBurnt1 - (liquidityLeft - abs(amount0)) <= 1)
+        assert abs(amountBurnt1 - (liquidityLeft - abs(amount1)) <= 1)
         # assert amountBurnt1 == liquidityLeft - abs(amount1) or amountBurnt1 == liquidityLeft - abs(amount1) -1
+        assert abs(amountBurnt0 - accomAmount0) <= 1
 
         # Check precision lost in each swap - it should not increase and it should be proportional to the factor of currentSwapPerc
         # in comparison to beforeSwapOneMinus as explained below.
@@ -4024,6 +4026,7 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], 0, amountToMint)
 
     counter = 0
+    accomAmount1 = 0
 
     liquidityLeft = math.floor(
         pool.ticksLimitTokens0[0].liquidityGross
@@ -4044,11 +4047,12 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             accounts[1],
             None,
         )
+        accomAmount1 += amount1
 
         print("liquidity", liquidityLeft)
 
         # Check that the rounding of the burnt amount and tickSwapPercentage is correct when burning initial position
-        (_, _, _, amountBurnt0, _) = copy.deepcopy(pool).burnLimitOrder(
+        (_, _, _, amountBurnt0, amountBurnt1) = copy.deepcopy(pool).burnLimitOrder(
             TEST_TOKENS[0], accounts[0], 0, amountToMint
         )
 
@@ -4056,6 +4060,7 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
         # TODO: Look into if it should be only on the side of favouring the pool (amountBurnt1 < liquidityLeft - abs(amount1))
         assert abs(amountBurnt0 - (liquidityLeft - abs(amount0)) <= 1)
         # assert amountBurnt0 == liquidityLeft - abs(amount0) or amountBurnt0 == liquidityLeft - abs(amount0) -1
+        assert abs(amountBurnt1 - accomAmount1) <= 1
 
         # Check precision lost in each swap - it should not increase and it should be proportional to the factor of currentSwapPerc
         # in comparison to beforeSwapOneMinus as explained below.
