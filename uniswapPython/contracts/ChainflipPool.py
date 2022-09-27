@@ -422,7 +422,6 @@ class ChainflipPool(UniswapPool):
                         tickLimitInfo.feeGrowthInsideX128
                     )
 
-                    # TODO: Leaving tickCrossed but it could be removed and use only oneMinusPercSwap.
                     if tickCrossed:
                         print("CROSSING LIMIT TICK")
                         # Health check
@@ -433,7 +432,6 @@ class ChainflipPool(UniswapPool):
                         # Since we don't transfer tokens until the end of the swap, we can't really burn and give tokens here.
                         # We will burn them at the end of the swap
                         state.ticksCrossed.append(stepLimit.tickNext)
-                        # Tick.clear(ticksLimitMap, stepLimit.tickNext)
                         # There might be another Limit order that is better than range orders
                         if state.amountSpecifiedRemaining != 0:
                             continue
