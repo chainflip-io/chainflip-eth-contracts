@@ -199,7 +199,7 @@ def test_uniswap_swaps(TEST_POOLS):
                 slot0After.sqrtPriceX96, -decimalPoints
             )
             assert float(dict["tickAfter"]) == slot0After.tick
-        
+
         if poolFixture.usedLO:
             # Now execution price should always be better than the pool with noLO. PoolPrice after
             # should be the same or better, but not worse.

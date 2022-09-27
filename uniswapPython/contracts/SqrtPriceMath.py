@@ -224,7 +224,6 @@ def calculateAmount1LO(amountInToken0, priceX96, roundUp):
         return mulDivRoundingUp(amountInToken0, priceX96, FixedPoint96_Q96)
     else:
         return (amountInToken0 * priceX96) // FixedPoint96_Q96
-    # return (amountInToken0 * priceX96) // 2**96
 
 
 def calculateAmount0LO(amountInToken1, priceX96, roundUp):
@@ -236,74 +235,34 @@ def calculateAmount0LO(amountInToken1, priceX96, roundUp):
         return mulDivRoundingUp(amountInToken1, FixedPoint96_Q96, priceX96)
     else:
         return (amountInToken1 * FixedPoint96_Q96) // priceX96
-    # return (amountInToken1 * 2**96) // priceX96
-
-
-# def getAmount1LO(amountInToken0, priceX96, liquidityToken1):
-#     checkInputTypes(uint256=(priceX96, liquidityToken1), int256=(amountInToken0))
-#     # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
-#     amountOut = calculateAmount1LO(amountInToken0, priceX96)
-
-#     # MAX amountIn that can be swapped in this tick
-#     if amountOut <= liquidityToken1:
-#         amountIn = amountInToken0
-#     # in case of overflow or if simply amountOut > liquidity
-#     else:
-#         # Reverse math to figure out the max AmountIn that can be swapped in this tick.
-#         # This one should not overflow.
-#         # This cannot be divided by zero since with price == 0 the amountOut == 0 so <= liquidity
-#         amountIn = calculateAmount0LO(liquidityToken1, priceX96)
-#         amountOut = liquidityToken1
-
-#         # Health check
-#         assert amountIn < amountInToken0
-
-#     return amountIn, amountOut
-
-
-# def getAmount0LO(amountInToken1, priceX96, liquidityToken0):
-#     checkInputTypes(uint256=(priceX96, liquidityToken0), int256=(amountInToken1))
-#     # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
-#     amountOut = calculateAmount0LO(amountInToken1, priceX96)
-
-#     # MAX amountIn that can be swapped in this tick
-#     if amountOut <= liquidityToken0:
-#         amountIn = amountInToken1
-#     # in case of overflow or if simply amountOut > liquidity
-#     else:
-#         # Reverse math to figure out the max AmountIn that can be swapped in this tick.
-#         # This one should not overflow.
-#         # This won't overflow because for really big prices the amountOut will be very small, <= liquidity
-#         amountIn = calculateAmount1LO(liquidityToken0, priceX96)
-#         amountOut = liquidityToken0
-
-#         # Health check - for SwapMath checking < should be enough but for Position we need <= ??
-#         assert amountIn <= amountInToken1
-
-#     return amountIn, amountOut
 
 
 def getAmountSwappedFromTickPercentatge(
-    percSwapChange, oneMinusPercSwap, liquidityGross, roundUp
+    percSwapChange, oneMinusPercSwap, liquidityGross
 ):
-    if roundUp:
-        # not used for now
-        getcontext().rounding = ROUND_UP
-        # perc = (percSwapChange / oneMinusPercSwap).quantize(
-        #     Decimal(decimalPrecision),
-        #     rounding=ROUND_UP,
-        #     context=Context(prec=contextPrecision),
-        # )
-        perc = percSwapChange / oneMinusPercSwap
-        amountSwappedPrev = math.ceil(liquidityGross * perc)
-        getcontext().rounding = ROUND_DOWN
-    else:
-        # By default this will be rounded down - truncated
-        perc = percSwapChange / oneMinusPercSwap
-        # perc = Decimal(result).quantize(
-        #     Decimal(decimalPrecision),
-        #     rounding=ROUND_DOWN,
-        #     context=Context(prec=contextPrecision),
-        # )
-        amountSwappedPrev = math.floor(liquidityGross * perc)
+    checkInputTypes(decimal=(percSwapChange, oneMinusPercSwap), uint128=liquidityGross)
+    # By default this will be rounded down - truncated
+    perc = percSwapChange / oneMinusPercSwap
+    amountSwappedPrev = math.floor(liquidityGross * perc)
     return amountSwappedPrev
+
+
+def setDecimalPrecRound(precision, rounding):
+    checkInputTypes(int=(precision))
+    assert rounding in ["ROUND_DOWN", "ROUND_UP"]
+
+    # Set decimal precision and rounding
+    # Set all new contexts to the same default contexts
+    DefaultContext.prec = precision
+    DefaultContext.Emin = -999999999999999999
+    DefaultContext.Emax = 999999999999999999
+    DefaultContext.rounding = rounding
+    setcontext(DefaultContext)
+
+
+def subtractDecimalRoundingUp(a, b):
+    checkInputTypes(decimal=(a, b))
+    setDecimalPrecRound(getcontext().prec, "ROUND_UP")
+    result = a - b
+    setDecimalPrecRound(getcontext().prec, "ROUND_DOWN")
+    return result

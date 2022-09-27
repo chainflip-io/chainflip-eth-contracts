@@ -3542,8 +3542,6 @@ def test_limitLO_badSwapPrice_oneForZero(createPoolLow, accounts, ledger):
     assert pool.ticksLimitTokens0.__contains__(TickMath.MAX_TICK_LO - 5)
     assert pool.ticksLimitTokens0[TickMath.MAX_TICK_LO - 5].oneMinusPercSwap == 1
 
-    print(pool.ticksLimitTokens0[TickMath.MAX_TICK_LO - 5])
-
     # Burn the position and check results
     (_, _, _, amount0, amount1) = pool.burnLimitOrder(
         TEST_TOKENS[0], accounts[0], TickMath.MAX_TICK_LO - 5, expandTo18Decimals(1)
@@ -3575,8 +3573,6 @@ def test_limitLO_badSwapPrice_zeroForOne(createPoolLow, accounts, ledger):
     pool.mintLimitOrder(
         TEST_TOKENS[1], accounts[0], TickMath.MIN_TICK_LO + 5, expandTo18Decimals(1)
     )
-    print(pool.ticksLimitTokens1)
-    print(pool.limitOrders)
 
     assert pool.ticksLimitTokens1.__contains__(TickMath.MIN_TICK_LO + 5)
     # This should not happen since there should be a limit price, but checking behaviour anyway.
@@ -3642,7 +3638,6 @@ def test_precision_numberOfSwaps_sameAmount(createPoolLow, accounts, ledger):
     )
     # just the right amount before we cross the tick/position
     for i in range(numberOfSwaps + 237):
-        print("i", i)
         (
             _,
             amount0,
@@ -3723,7 +3718,9 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
         percSwapDecrease = beforeSwapOneMinus * division
 
         # Adding extra precision here (compared to SwapMath) to calculate the amount of precision lost
-        getcontext().prec = 256  # This equates to (10E-256) precision
+        SqrtPriceMath.setDecimalPrecRound(
+            256, getcontext().rounding
+        )  # This equates to (10E-256) precision
 
         finalOneMinusPercSwap = beforeSwapOneMinus - percSwapDecrease
 
@@ -3735,12 +3732,12 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             pool.ticksLimitTokens1[0].oneMinusPercSwap - finalOneMinusPercSwap
         )
 
-        # Adding a +1 because the conversion to Decimal is shaky
+        # Adding a +1 because the conversion to Decimal is not precise enough
         assert precisionError <= Decimal(
             10 ** (-contextPrecision + 1)
         ), "Error too high"
 
-        getcontext().prec = contextPrecision
+        SqrtPriceMath.setDecimalPrecRound(contextPrecision, getcontext().rounding)
 
         liquidityLeft = math.floor(
             pool.ticksLimitTokens1[0].liquidityGross
@@ -3775,12 +3772,9 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
     )
 
     while counter < numberOfSwaps and liquidityLeft // st_swapAmountsPerc > 0:
-        print("counter", counter)
-        print("oneminus", pool.ticksLimitTokens0[0].oneMinusPercSwap)
         beforeSwapOneMinus = pool.ticksLimitTokens0[0].oneMinusPercSwap
 
         amount = liquidityLeft // st_swapAmountsPerc
-        print("amountToSwap", amount)
         liqLeftBeforeSwap = liquidityLeft
         (_, amount0, amount1, sqrtPriceX96, liquidity, tick,) = swapExact1For0(
             pool,
@@ -3789,8 +3783,6 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             None,
         )
         accomAmount1 += amount1
-
-        print("liquidity", liquidityLeft)
 
         # Check that the rounding of the burnt amount and tickSwapPercentage is correct when burning initial position
         (_, _, _, amountBurnt0, amountBurnt1) = copy.deepcopy(pool).burnLimitOrder(
@@ -3812,7 +3804,9 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
         percSwapDecrease = beforeSwapOneMinus * division
 
         # Adding extra precision here (compared to SwapMath) to calculate the amount of precision lost
-        getcontext().prec = 256  # This equates to (10E-256) precision
+        setDecimalPrecRound(
+            256, getcontext().rounding
+        )  # This equates to (10E-256) precision
 
         finalOneMinusPercSwap = beforeSwapOneMinus - percSwapDecrease
         # In SwapMath the OneMinusPercSwap is rounded up (record less swap) so finalOneMinusPercSwap will be smaller
@@ -3828,7 +3822,7 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             10 ** (-contextPrecision + 1)
         ), "Error too high"
 
-        getcontext().prec = contextPrecision
+        setDecimalPrecRound(contextPrecision, getcontext().rounding)
 
         liquidityLeft = math.floor(
             pool.ticksLimitTokens0[0].liquidityGross
@@ -4063,7 +4057,7 @@ def test_randomLO_onRO_zeroForOne(st_isToken0, st_swapAmounts, st_tick, st_mintA
                     # to predict without doing all the math - we skip the check for now.
                     assert True
             else:
-                # Shoul not reach here anyway bc it's certain that LO has not been used.
+                # Should not reach here anyway bc it's certain that LO has not been used.
                 assert False, "Should never reach this"
 
 

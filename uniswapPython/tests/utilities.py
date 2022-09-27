@@ -240,6 +240,10 @@ def checkString(input):
     assert type(input) == str
 
 
+def checkDecimal(input):
+    assert type(input) == Decimal
+
+
 def checkDict(input):
     assert type(input) == dict
 
@@ -273,6 +277,8 @@ def toUint128(number):
 def checkInputTypes(**kwargs):
     if "string" in kwargs:
         loopChecking(kwargs.get("string"), checkString)
+    if "decimal" in kwargs:
+        loopChecking(kwargs.get("decimal"), checkDecimal)
     if "accounts" in kwargs:
         loopChecking(kwargs.get("accounts"), checkAccount)
     if "int24" in kwargs:

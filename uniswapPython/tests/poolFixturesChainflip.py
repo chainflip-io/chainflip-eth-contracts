@@ -347,7 +347,7 @@ def poolCF9():
         # These limitPositions should be set in a tick that won't be reached. However, in some exactOut
         # tests the limit is reached, so we can't put a tick further away. The workaround is to set a low
         # amount of liquidity so it doesn't affect the final execution price. In the remaining cases the
-        # tick is not reached at all.        
+        # tick is not reached at all.
         limitPositions=[
             PositionLimit(
                 tick=(-23027 + 47) * -10,

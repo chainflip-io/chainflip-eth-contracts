@@ -201,7 +201,6 @@ def updateLimit(
                 percSwapDecrease,
                 self.oneMinusPercSwapMint,
                 self.liquidity,
-                False,
             )
 
             # amountSwappedPrev = math.floor(
@@ -239,9 +238,9 @@ def updateLimit(
             substrahend = (
                 liquidityNext * (1 - oneMinusPercSwap) - amountSwappedPrev
             ) / (liquidityNext - amountSwappedPrev)
-            getcontext().rounding = ROUND_UP
-            newOneMinusPercSwapMint = Decimal("1") - substrahend
-            getcontext().rounding = ROUND_DOWN
+            newOneMinusPercSwapMint = SqrtPriceMath.subtractDecimalRoundingUp(
+                Decimal("1"), substrahend
+            )
 
             # Health checks
             assert newOneMinusPercSwapMint < self.oneMinusPercSwapMint
@@ -275,7 +274,6 @@ def updateLimit(
             percSwapDecrease,
             self.oneMinusPercSwapMint,
             self.liquidity,
-            False,
         )
 
         # Calculate current position ratio

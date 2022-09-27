@@ -27,6 +27,9 @@ class ModifyLimitPositionParams:
 
 class ChainflipPool(UniswapPool):
     def __init__(self, token0, token1, fee, tickSpacing, ledger):
+
+        SqrtPriceMath.setDecimalPrecRound(contextPrecision, "ROUND_DOWN")
+
         # For now both token0 and token1 limit orders on the same mapping. Maybe we will need to keep them
         # somehow else to be able to remove them after a tick is crossed.
         self.limitOrders = dict()
@@ -34,15 +37,6 @@ class ChainflipPool(UniswapPool):
         # Creating two different dicts, one for each type of limit orders (token0 and token1)
         self.ticksLimitTokens0 = dict()
         self.ticksLimitTokens1 = dict()
-        getcontext().prec = contextPrecision
-        getcontext().Emin = -999999999999999999
-        getcontext().Emax = 999999999999999999
-        getcontext().rounding = ROUND_DOWN
-        # Set all new contexts to the same default contexts
-        DefaultContext.prec = contextPrecision
-        DefaultContext.Emin = -999999999999999999
-        DefaultContext.Emax = 999999999999999999
-        DefaultContext.rounding = ROUND_DOWN
 
         # Pass all paramaters to UniswapPool's constructor
         super().__init__(token0, token1, fee, tickSpacing, ledger)
@@ -563,7 +557,11 @@ class ChainflipPool(UniswapPool):
             elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
                 ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
                 state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
-            print("rangeORder completed swap", state.amountSpecifiedRemaining == 0 or state.sqrtPriceX96 == sqrtPriceLimitX96)
+            print(
+                "rangeORder completed swap",
+                state.amountSpecifiedRemaining == 0
+                or state.sqrtPriceX96 == sqrtPriceLimitX96,
+            )
 
         ## End of swap loop
         # Set final tick as the range tick
@@ -655,7 +653,7 @@ class ChainflipPool(UniswapPool):
 # after swap, but probably we won't
 def getKeysLimitTicksWithLiquidity(tickMapping):
     # Dictionary with ticks that have oneMinusPercSwap > 0
-    # TODO: if we end up burning all ticks after swap, we can remove the check of oneMinusPercSwap > 0
+    # TODO: if we end up burning all ticks after swap, we can remove the check/filter of oneMinusPercSwap > 0
     dictTicksWithLiq = {
         k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
     }
