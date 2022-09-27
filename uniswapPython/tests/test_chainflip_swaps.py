@@ -128,6 +128,7 @@ def test_uniswap_swaps(TEST_POOLS):
             else testCase["sqrtPriceLimit"]
         )
         try:
+            print("testCase: {}".format(testCase))
             recipient, amount0, amount1, _, _, _ = executeSwap(
                 poolInstance, testCase, recipient, sqrtPriceLimitX96
             )
@@ -153,6 +154,9 @@ def test_uniswap_swaps(TEST_POOLS):
             # Execution price is no longer the same as the pool price, should be abs(assetOut / assetIn).
             # To be able to compare it with uniswap ExecPrice (asset1/asset0) we calculate it the same way?
             executionPrice = -(amount1 / amount0)
+            if executionPrice > 1e25:
+                # To mimic infinity in original tests
+                executionPrice = "Infinity"
         else:
             executionPrice = "-Infinity"
 
@@ -195,7 +199,7 @@ def test_uniswap_swaps(TEST_POOLS):
                 slot0After.sqrtPriceX96, -decimalPoints
             )
             assert float(dict["tickAfter"]) == slot0After.tick
-
+        
         if poolFixture.usedLO:
             # Now execution price should always be better than the pool with noLO. PoolPrice after
             # should be the same or better, but not worse.

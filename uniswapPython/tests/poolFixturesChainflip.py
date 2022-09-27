@@ -87,12 +87,12 @@ def poolCF1():
         ],
         limitPositions=[
             PositionLimit(
-                tick=10000,
+                tick=14000,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=-10000,
+                tick=-14000,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[1],
             ),
@@ -149,12 +149,12 @@ def poolCF3():
         ],
         limitPositions=[
             PositionLimit(
-                tick=10020,
+                tick=14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=-10020,
+                tick=-14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[1],
             ),
@@ -211,12 +211,12 @@ def poolCF5():
         ],
         limitPositions=[
             PositionLimit(
-                tick=10000,
+                tick=14000,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=-10000,
+                tick=-14000,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[1],
             ),
@@ -274,17 +274,21 @@ def poolCF7():
                 liquidity=expandTo18Decimals(2),
             ),
         ],
+        # These limitPositions should be set in a tick that won't be reached. However, in some exactOut
+        # tests the limit is reached, so we can't put a tick further away. The workaround is to set a low
+        # amount of liquidity so it doesn't affect the final execution price. In the remaining cases the
+        # tick is not reached at all.
         limitPositions=[
             PositionLimit(
-                # Close tick to initial tick
+                # not close to initial tick
                 tick=(23027 - 47) * 10,
-                liquidity=expandTo18Decimals(1) // 2,
+                liquidity=1000000000000,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                # Close tick to initial tick
+                # not close to initial tick
                 tick=-(23027 - 47) * 10,
-                liquidity=expandTo18Decimals(1) // 2,
+                liquidity=1000000000000,
                 token=TEST_TOKENS[1],
             ),
         ],
@@ -340,15 +344,19 @@ def poolCF9():
                 liquidity=expandTo18Decimals(2),
             ),
         ],
+        # These limitPositions should be set in a tick that won't be reached. However, in some exactOut
+        # tests the limit is reached, so we can't put a tick further away. The workaround is to set a low
+        # amount of liquidity so it doesn't affect the final execution price. In the remaining cases the
+        # tick is not reached at all.        
         limitPositions=[
             PositionLimit(
                 tick=(-23027 + 47) * -10,
-                liquidity=expandTo18Decimals(1) // 2,
+                liquidity=1000000000000,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
                 tick=(-23027 + 47) * 10,
-                liquidity=expandTo18Decimals(1) // 2,
+                liquidity=1000000000000,
                 token=TEST_TOKENS[1],
             ),
         ],
@@ -414,12 +422,12 @@ def poolCF11():
         ],
         limitPositions=[
             PositionLimit(
-                tick=10020,
+                tick=14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=-10020,
+                tick=-14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[1],
             ),
@@ -496,12 +504,12 @@ def poolCF13():
         ],
         limitPositions=[
             PositionLimit(
-                tick=10020,
+                tick=14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=-10020,
+                tick=-14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[1],
             ),
@@ -586,7 +594,7 @@ def poolCF16():
         ],
         limitPositions=[
             PositionLimit(
-                tick=10020,
+                tick=14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[0],
             ),
@@ -638,7 +646,7 @@ def poolCF18():
         ],
         limitPositions=[
             PositionLimit(
-                tick=-10020,
+                tick=-14820,
                 liquidity=expandTo18Decimals(1) // 2,
                 token=TEST_TOKENS[1],
             ),
@@ -773,12 +781,12 @@ def poolCF22():
         # Added extra liquidity to LO so it makes a difference.
         limitPositions=[
             PositionLimit(
-                tick=10020,
+                tick=14820,
                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
                 token=TEST_TOKENS[0],
             ),
             PositionLimit(
-                tick=-10020,
+                tick=-14820,
                 liquidity=getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
                 token=TEST_TOKENS[1],
             ),
@@ -880,17 +888,16 @@ DEFAULT_CFPOOL_SWAP_TESTS = [
         "exactOut": False,
         "amount1": expandTo18Decimals(1),
     },
-    ## NO exactOut for now
-    # {
-    #     "zeroForOne": True,
-    #     "exactOut": True,
-    #     "amount1": expandTo18Decimals(1),
-    # },
-    # {
-    #     "zeroForOne": False,
-    #     "exactOut": True,
-    #     "amount0": expandTo18Decimals(1),
-    # },
+    {
+        "zeroForOne": True,
+        "exactOut": True,
+        "amount1": expandTo18Decimals(1),
+    },
+    {
+        "zeroForOne": False,
+        "exactOut": True,
+        "amount0": expandTo18Decimals(1),
+    },
     ## swap large amounts in/out with a price limit
     {
         "zeroForOne": True,
@@ -904,19 +911,18 @@ DEFAULT_CFPOOL_SWAP_TESTS = [
         "amount1": expandTo18Decimals(1),
         "sqrtPriceLimit": encodePriceSqrt(200, 100),
     },
-    ## NO exactOut for now
-    # {
-    #     "zeroForOne": True,
-    #     "exactOut": True,
-    #     "amount1": expandTo18Decimals(1),
-    #     "sqrtPriceLimit": encodePriceSqrt(50, 100),
-    # },
-    # {
-    #     "zeroForOne": False,
-    #     "exactOut": True,
-    #     "amount0": expandTo18Decimals(1),
-    #     "sqrtPriceLimit": encodePriceSqrt(200, 100),
-    # },
+    {
+        "zeroForOne": True,
+        "exactOut": True,
+        "amount1": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(50, 100),
+    },
+    {
+        "zeroForOne": False,
+        "exactOut": True,
+        "amount0": expandTo18Decimals(1),
+        "sqrtPriceLimit": encodePriceSqrt(200, 100),
+    },
     # ## swap small amounts in/out
     # TODO: Swapping small amounts in/out can be off (e-5) - assuming it's due to rounding errors
     # Also, it is only off in extreme poolCFs, not in the ones closer to normal functioning.
@@ -930,7 +936,6 @@ DEFAULT_CFPOOL_SWAP_TESTS = [
     #   "exactOut": False,
     #   "amount1": 1000,
     # },
-    ## NO exactOut for now
     # {
     #     "zeroForOne": True,
     #     "exactOut": True,
