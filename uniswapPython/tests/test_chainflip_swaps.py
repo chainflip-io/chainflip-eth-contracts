@@ -71,19 +71,12 @@ def afterEach(accounts, TEST_POOLS):
         )
 
     for position in poolFixture.limitPositions:
-        # TODO: This will also depend on if zeroForOne or not
         if pool.limitOrders.__contains__(
             getHashLimit(accounts[0], position.tick, position.tick == pool.token0)
         ):
+            # This will automatically collect the full amount
             pool.burnLimitOrder(
                 position.token, accounts[0], position.tick, position.liquidity
-            )
-            pool.collectLimitOrder(
-                accounts[0],
-                position.token,
-                position.tick,
-                MAX_UINT128,
-                MAX_UINT128,
             )
 
 

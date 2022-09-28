@@ -367,15 +367,13 @@ def test_remove_aboveCurrentPrice_token0(initializedMediumPool, accounts):
     pool, _, _, _, _, _, _ = initializedMediumPool
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], -240, 10000)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], 0, 10001)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], -240, 10000)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], 0, 10001)
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[0], -240, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], -240, 10000
     )
     assert amount0 == 10000
     assert amount1 == 0
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[0], 0, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], 0, 10001
     )
     assert amount0 == 10001
     assert amount1 == 0
@@ -386,15 +384,13 @@ def test_remove_aboveCurrentPrice_token1(initializedMediumPool, accounts):
     pool, _, _, _, _, _, _ = initializedMediumPool
     pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], -240, 10000)
     pool.mintLimitOrder(TEST_TOKENS[1], accounts[0], 0, 10001)
-    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], -240, 10000)
-    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], 0, 10001)
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[1], -240, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], -240, 10000
     )
     assert amount0 == 0
     assert amount1 == 10000
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[1], 0, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[1], accounts[0], 0, 10001
     )
     assert amount0 == 0
     assert amount1 == 10001
@@ -622,17 +618,15 @@ def test_removing_includesCurrentPrice(initializedMediumPool, accounts):
     pool, minTick, maxTick, _, tickSpacing, _, _ = initializedMediumPool
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], minTick + tickSpacing, 100)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], maxTick - tickSpacing, 101)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], minTick + tickSpacing, 100)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], maxTick - tickSpacing, 101)
 
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[0], minTick + tickSpacing, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], minTick + tickSpacing, 100
     )
     assert amount0 == 100
     assert amount1 == 0
 
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[0], maxTick - tickSpacing, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], maxTick - tickSpacing, 101
     )
 
     assert amount0 == 101
@@ -679,18 +673,16 @@ def test_removing_belowCurrentPrice(initializedMediumPool, accounts):
     pool, _, _, _, _, _, _ = initializedMediumPool
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], -46080, 10000)
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], -46020, 10001)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], -46080, 10000)
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], -46020, 10001)
-
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[0], -46080, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], -46080, 10000
     )
     assert amount0 == 10000
     assert amount1 == 0
 
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        accounts[0], TEST_TOKENS[0], -46020, MAX_UINT128, MAX_UINT128
+    (_, _, _, amount0, amount1) = pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], -46020, 10001
     )
+
     assert amount0 == 10001
     assert amount1 == 0
 
@@ -837,8 +829,9 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     assert positionLimit1.tokensOwed0 == 0, "tokens owed 0 before"
     assert positionLimit1.tokensOwed1 == 0, "tokens owed 1 before"
 
-    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], closeIniTickRDown, 1)
-    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], closeIniTickRUp, 1)
+    # Poke to update feeGrowthInsideLastX128
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], closeIniTickRDown, 0)
+    pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], closeIniTickRUp, 0)
 
     positionLimit1 = pool.limitOrders[
         getLimitPositionKey(accounts[0], closeIniTickRDown, True)
@@ -847,18 +840,36 @@ def test_notAllowPoke_uninitialized_position(initializedMediumPool, accounts):
     positionLimit0 = pool.limitOrders[
         getLimitPositionKey(accounts[0], closeIniTickRUp, False)
     ]
-
-    assert positionLimit0.liquidity == 0
-    assert positionLimit1.liquidity == 0
+    assert positionLimit0.liquidity == 1
+    assert positionLimit1.liquidity == 1
     assert (
         positionLimit0.feeGrowthInsideLastX128 == 102084710076282900168480065983384316
     )
     assert positionLimit1.feeGrowthInsideLastX128 == 10208471007628153903901238222953046
+
+    (
+        _,
+        _,
+        _,
+        amount0,
+        amount1,
+    ) = pool.burnLimitOrder(TEST_TOKENS[1], accounts[0], closeIniTickRUp, 1)
+
     # 1 token from the positions burnt and no fees accured
-    assert positionLimit0.tokensOwed0 == 0, "tokens owed 0 before"
-    assert positionLimit0.tokensOwed1 == 1, "tokens owed 1 before"
-    assert positionLimit1.tokensOwed0 == 1, "tokens owed 0 before"
-    assert positionLimit1.tokensOwed1 == 0, "tokens owed 1 before"
+    assert amount0 == 0, "tokens owed 0 before"
+    assert amount1 == 1, "tokens owed 1 before"
+
+    (
+        _,
+        _,
+        _,
+        amount0,
+        amount1,
+    ) = pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], closeIniTickRDown, 1)
+
+    # 1 token from the positions burnt and no fees accured
+    assert amount0 == 1, "tokens owed 0 before"
+    assert amount1 == 0, "tokens owed 1 before"
 
 
 # Burn
@@ -2995,7 +3006,6 @@ def test_tick_ownerPosition(initializedMediumPoolNoLO, accounts):
         closeAligniniTickRUp,
     ) = initializedMediumPoolNoLO
 
-
     tickLO = closeAligniniTickiRDown - tickSpacing * 10
 
     pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1))
@@ -3004,16 +3014,12 @@ def test_tick_ownerPosition(initializedMediumPoolNoLO, accounts):
     assert accounts[0] in pool.ticksLimitTokens0[tickLO].ownerPositions[0]
     assert not accounts[1] in pool.ticksLimitTokens0[tickLO].ownerPositions
 
-
-    pool.burnLimitOrder(
-        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
-    )
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1) // 2)
     assert accounts[0] in pool.ticksLimitTokens0[tickLO].ownerPositions
 
-    pool.burnLimitOrder(
-        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
-    )
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1) // 2)
     assert not pool.ticksLimitTokens0.__contains__(tickLO)
+
 
 def test_tick_ownerPositions(initializedMediumPoolNoLO, accounts):
     print("mint several positions, burn one and check tick ownerPositions")
@@ -3027,7 +3033,6 @@ def test_tick_ownerPositions(initializedMediumPoolNoLO, accounts):
         closeAligniniTickRUp,
     ) = initializedMediumPoolNoLO
 
-
     tickLO = closeAligniniTickiRDown - tickSpacing * 10
 
     # Mint multiple positions so tick doesn't get deleted
@@ -3036,14 +3041,10 @@ def test_tick_ownerPositions(initializedMediumPoolNoLO, accounts):
 
     assert pool.ticksLimitTokens0[tickLO].ownerPositions == [accounts[0], accounts[1]]
 
-    pool.burnLimitOrder(
-        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
-    )
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1) // 2)
     assert pool.ticksLimitTokens0[tickLO].ownerPositions == [accounts[0], accounts[1]]
 
-    pool.burnLimitOrder(
-        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
-    )
+    pool.burnLimitOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1) // 2)
     print(pool.ticksLimitTokens0[tickLO].ownerPositions)
     assert pool.ticksLimitTokens0[tickLO].ownerPositions == [accounts[1]]
     assert not accounts[0] in pool.ticksLimitTokens0[tickLO].ownerPositions

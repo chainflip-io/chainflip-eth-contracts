@@ -159,6 +159,12 @@ class ChainflipPool(UniswapPool):
         if liquidityDelta < 0:
             if flipped:
                 Tick.clear(ticksLimitMap, tick)
+            # If position is burnt but not tick, we need to remove the owner from tick.ownerPositions.
+            # Position will be removed later after tokens have been collected.
+            elif position.liquidity == 0:
+                print("")
+                # Tick should contain the owner
+                ticksLimitMap[tick].ownerPositions.remove(owner)
         return position, liquidityLeftDelta, liquiditySwappedDelta
 
     # This can only be run if the tick has only been partially crossed (or not used). If fully crossed, the positions
@@ -198,6 +204,14 @@ class ChainflipPool(UniswapPool):
             if token == self.token0
             else (abs(liquiditySwappedDelta), abs(liquidityLeftDelta))
         )
+
+        # If position is fully burnt, automatically collect all the fees. Probably could do a simplified version.
+        # At this point the tick might not exist (might have been burnt in the previous step)
+        # amountBurnt will be overwritten by collectLimitOrder if tick is fully burnt, and will also include fees
+        if position.liquidity == 0:
+            (recipient, tick, amountBurnt0, amountBurnt1) = self.collectLimitOrder(
+                recipient, token, tick, MAX_UINT128, MAX_UINT128
+            )
 
         # As in uniswap we return the amount of tokens that were burned, that is without fees accrued.
         return (
@@ -259,10 +273,6 @@ class ChainflipPool(UniswapPool):
         # usage/requirements doesn't really depend on clearing positions. In Python (and also Rust I suspect) this matters,
         # so we would rather clear the positions.
         if position.liquidity == 0:
-            # TODO: Remove owner reference from tick.ownerPositions. It can be that the tick no longer exists if this
-            # was the last position in the tick when burnt. Or should I do this when we burn??? When LP burns a position
-            # completely it should automatically collect, right? So collect function
-            
             # We should get the hash when getLimit is calculated before
             del self.limitOrders[key]
 
@@ -619,15 +629,13 @@ class ChainflipPool(UniswapPool):
             )
             # Health check
             assert not created
-            # NOTE: We could implement a twist to the buurnLimit function (or a combination of burn+collect)
+            # NOTE: We could implement a twist to the burnLimit function (or a combination of burn+collect)
             # that skips the decrement of tick liquidity and just burns the position. Then we burn the tick
             # separately at the end. This could save gas if we end up with this implementation.
             # Burn the entire order and collect tokens === remove position
             self.burnLimitOrder(token, owner, tick, position.liquidity)
-            # This should also clear the tick
-            self.collectLimitOrder(owner, token, tick, MAX_UINT128, MAX_UINT128)
-            # NOTE: As of now, collectLimitOrder clears the positions and tick. Therefore we can check
-            # that the position has been burnt.
+            # NOTE: BurnLimitOrder will automatically call collectLimitOrder. That will clear the positions
+            # and tick. Therefore we can check that the position has been burnt.
             Position.assertLimitPositionIsBurnt(
                 self.limitOrders, owner, tick, token == self.token0
             )
