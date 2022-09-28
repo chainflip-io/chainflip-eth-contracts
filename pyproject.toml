@@ -5,7 +5,7 @@ description = ""
 authors = ["Albert Llimos <albert@chainflip.io>"]
 
 [tool.poetry.dependencies]
-python = "3.8.10"
+python = ">=3.7.3, <3.11"
 umbral = "0.3.0"
 eth-brownie = "1.18.2"
 py-ecc = "5.2.0"
