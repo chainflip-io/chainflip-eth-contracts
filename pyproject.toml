@@ -7,7 +7,7 @@ authors = ["Albert Llimos <albert@chainflip.io>"]
 [tool.poetry.dependencies]
 python = "3.8.10"
 umbral = "0.3.0"
-eth-brownie = "1.19.1"
+eth-brownie = "1.18.2"
 py-ecc = "5.2.0"
 pre-commit = "2.20.0"
 slither-analyzer = "0.8.3"
