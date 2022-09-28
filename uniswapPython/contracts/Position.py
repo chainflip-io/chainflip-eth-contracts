@@ -1,10 +1,11 @@
 import sys, os
+from venv import create
 
 import LiquidityMath
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), "tests"))
 from utilities import *
-import SqrtPriceMath
+import LimitOrderMath
 
 from dataclasses import dataclass
 from decimal import *
@@ -72,19 +73,21 @@ def getLimit(self, owner, tick, isToken0):
 
     # Need to handle non-existing positions in Python
     key = getHashLimit(owner, tick, isToken0)
-    if not self.__contains__(key):
+    created = not self.__contains__(key)
+    if created:
         # We don't want to create a new position if it doesn't exist!
         # In the case of collect we add an assert after that so it reverts.
         # For mint there is an amount > 0 check so it is OK to initialize
         # In burn if the position is not initialized, when calling Position.update it will revert with "NP"
         self[key] = PositionLimitInfo(0, Decimal(1), 0, 0, 0)
-    return self[key]
+    return self[key], created
 
 
 def assertPositionExists(self, owner, tickLower, tickUpper):
     checkInputTypes(account=owner, int24=(tickLower, tickLower))
     positionInfo = get(self, owner, tickLower, tickUpper)
     assert positionInfo != PositionInfo(0, 0, 0, 0, 0), "Position doesn't exist"
+    return positionInfo
 
 
 ### @notice Credits accumulated fees to a user's position
@@ -116,9 +119,9 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
         FixedPoint128_Q128,
     )
 
-    # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
+    # NOTE: TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
     # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
-    # acceptable to save gas. TODO: Is this OK for us?
+    # acceptable to save gas. Is this OK for us?
 
     # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
     if tokensOwed0 > MAX_UINT128:
@@ -133,8 +136,8 @@ def update(self, liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128):
     self.feeGrowthInside1LastX128 = feeGrowthInside1X128
 
     if tokensOwed0 > 0 or tokensOwed1 > 0:
-        # TODO: Do we want to allow this overflow to happen - for now we allow it.
-        ## In uniswap: overflow is acceptable, have to withdraw before you hit type(uint128).max fees
+        # NOTE: For now we allow overflow to happen because in uniswap overflow is acceptable,
+        # LPs has to withdraw before you hit type(uint128).max fees
         self.tokensOwed0 += tokensOwed0
         self.tokensOwed1 += tokensOwed1
 
@@ -147,17 +150,18 @@ def updateLimit(
     isToken0,
     pricex96,
     feeGrowthInsideX128,
+    created,
 ):
     checkInputTypes(
         int128=(liquidityDelta),
         uint256=(feeGrowthInsideX128, pricex96),
         float=oneMinusPercSwap,
-        bool=(isToken0),
+        bool=(isToken0, created),
     )
 
     # If we have just created a position, we need to initialize the amountSwappedInsideLastX128.
     # We could probably do this somewhere else.
-    if self == PositionLimitInfo(0, Decimal(1), 0, 0, 0):
+    if created:
         assert liquidityDelta > 0  # health check
         self.oneMinusPercSwapMint = oneMinusPercSwap
         self.feegrowthInsideLastX128 = feeGrowthInsideX128
@@ -176,9 +180,9 @@ def updateLimit(
         FixedPoint128_Q128,
     )
 
-    # TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
+    # NOTE: TokensOwed can be > MAX_UINT128 and < MAX_UINT256. Uniswap cast tokensOwed into uint128. This in itself
     # is an overflow and it can overflow again when adding self.tokensOwed0 += tokensOwed0. Uniswap finds this
-    # acceptable to save gas. TODO: Is this OK for us?
+    # acceptable to save gas. Is this OK for us?
 
     # Mimic Uniswap's solidity code overflow - uint128(tokensOwed0)
     if tokensOwed > MAX_UINT128:
@@ -197,7 +201,7 @@ def updateLimit(
             # We round up the calculation to round down the percSwapDecrease
             percSwapDecrease = self.oneMinusPercSwapMint - oneMinusPercSwap
 
-            amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
+            amountSwappedPrev = LimitOrderMath.getAmountSwappedFromTickPercentatge(
                 percSwapDecrease,
                 self.oneMinusPercSwapMint,
                 self.liquidity,
@@ -238,7 +242,7 @@ def updateLimit(
             substrahend = (
                 liquidityNext * (1 - oneMinusPercSwap) - amountSwappedPrev
             ) / (liquidityNext - amountSwappedPrev)
-            newOneMinusPercSwapMint = SqrtPriceMath.subtractDecimalRoundingUp(
+            newOneMinusPercSwapMint = LimitOrderMath.subtractDecimalRoundingUp(
                 Decimal("1"), substrahend
             )
 
@@ -252,9 +256,7 @@ def updateLimit(
     else:
         ### Calculate positionOwed (position remaining after any previous swap) regardless of the new liquidityDelta
 
-        # amountSwappedPrev in token base (self.liquidity)
-        # round up to make sure liquidityDelta doesn't become too big (in absolute numbers)
-        # Current pool percSwap is adjusted so we need to reverse engineer it to get the positionn's swap%.
+        # Current pool percSwap is adjusted (not absolute number) so we need to reverse engineer it to get the position's swap%.
         # We know in swap, the new percSwap gets calculated like this:
         # tick.percSwap = tick.percSwap + (1-tick.percSwap) * currentPercSwapped128_Q128
         # We know that when the position was minted, percSwap == self.percSwapMint
@@ -270,7 +272,7 @@ def updateLimit(
         # We round down the calculation
         percSwapDecrease = self.oneMinusPercSwapMint - oneMinusPercSwap
 
-        amountSwappedPrev = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
+        amountSwappedPrev = LimitOrderMath.getAmountSwappedFromTickPercentatge(
             percSwapDecrease,
             self.oneMinusPercSwapMint,
             self.liquidity,
@@ -281,7 +283,7 @@ def updateLimit(
             currentPosition0 = LiquidityMath.addDelta(
                 self.liquidity, -amountSwappedPrev
             )
-            currentPosition1 = SqrtPriceMath.calculateAmount1LO(
+            currentPosition1 = LimitOrderMath.calculateAmount1LO(
                 amountSwappedPrev, pricex96, False
             )
 
@@ -289,7 +291,7 @@ def updateLimit(
             currentPosition1 = LiquidityMath.addDelta(
                 self.liquidity, -amountSwappedPrev
             )
-            currentPosition0 = SqrtPriceMath.calculateAmount0LO(
+            currentPosition0 = LimitOrderMath.calculateAmount0LO(
                 amountSwappedPrev, pricex96, False
             )
 
@@ -324,12 +326,12 @@ def updateLimit(
         if isToken0:
             # Update position owed in their tokens
             self.tokensOwed0 += abs(liquidityLeftDelta)
-            liquiditySwappedDelta = SqrtPriceMath.calculateAmount1LO(
+            liquiditySwappedDelta = LimitOrderMath.calculateAmount1LO(
                 abs(liquiditySwappedDelta), pricex96, False
             )
             self.tokensOwed1 += liquiditySwappedDelta
         else:
-            liquiditySwappedDelta = SqrtPriceMath.calculateAmount0LO(
+            liquiditySwappedDelta = LimitOrderMath.calculateAmount0LO(
                 abs(liquiditySwappedDelta), pricex96, False
             )
             self.tokensOwed0 += liquiditySwappedDelta

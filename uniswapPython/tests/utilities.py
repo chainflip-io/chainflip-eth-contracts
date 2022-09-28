@@ -16,8 +16,7 @@ FixedPoint128_Q128 = 0x100000000000000000000000000000000
 FixedPoint96_RESOLUTION = 96
 FixedPoint96_Q96 = 0x1000000000000000000000000
 
-### This makes context 1 order of magnitude more precise so we can do the rounding with quantizes
-##decimalPrecision = "1e-256"
+## Mimicking a float point number with a 256 bit mantissa (== 10E77)
 contextPrecision = 77
 
 
@@ -457,6 +456,7 @@ def assertLimitPositionExists(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=(tick), bool=isToken0)
     key = getHashLimit(owner, tick, isToken0)
     assert self.__contains__(key), "Position doesn't exist"
+    return key
 
 
 def assertLimitPositionIsBurnt(self, owner, tick, isToken0):

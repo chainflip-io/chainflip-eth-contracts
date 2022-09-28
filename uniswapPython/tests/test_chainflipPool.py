@@ -8,6 +8,7 @@ from ChainflipPool import *
 from Account import Ledger
 import SwapMath
 import TickMath
+import LimitOrderMath
 
 import pytest
 import copy
@@ -24,7 +25,6 @@ def accounts(ledger):
     return list(ledger.accounts.keys())
 
 
-# TODO: Improve this
 @pytest.fixture
 def ledger():
     # Fund them with infinite tokens
@@ -3718,7 +3718,7 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
         percSwapDecrease = beforeSwapOneMinus * division
 
         # Adding extra precision here (compared to SwapMath) to calculate the amount of precision lost
-        SqrtPriceMath.setDecimalPrecRound(
+        LimitOrderMath.setDecimalPrecRound(
             256, getcontext().rounding
         )  # This equates to (10E-256) precision
 
@@ -3737,7 +3737,7 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             10 ** (-contextPrecision + 1)
         ), "Error too high"
 
-        SqrtPriceMath.setDecimalPrecRound(contextPrecision, getcontext().rounding)
+        LimitOrderMath.setDecimalPrecRound(contextPrecision, getcontext().rounding)
 
         liquidityLeft = math.floor(
             pool.ticksLimitTokens1[0].liquidityGross
@@ -3804,7 +3804,7 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
         percSwapDecrease = beforeSwapOneMinus * division
 
         # Adding extra precision here (compared to SwapMath) to calculate the amount of precision lost
-        setDecimalPrecRound(
+        LimitOrderMath.setDecimalPrecRound(
             256, getcontext().rounding
         )  # This equates to (10E-256) precision
 
@@ -3822,7 +3822,7 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             10 ** (-contextPrecision + 1)
         ), "Error too high"
 
-        setDecimalPrecRound(contextPrecision, getcontext().rounding)
+        LimitOrderMath.setDecimalPrecRound(contextPrecision, getcontext().rounding)
 
         liquidityLeft = math.floor(
             pool.ticksLimitTokens0[0].liquidityGross
@@ -4272,12 +4272,12 @@ def check_limitOrderSwap_oneTick_exactIn(
     )
 
     if zeroForOne:
-        amountOut = -SqrtPriceMath.calculateAmount1LO(
+        amountOut = -LimitOrderMath.calculateAmount1LO(
             amountRemainingLessFee, priceLO, False
         )
         ticksLimitTokens = pool.ticksLimitTokens1
     else:
-        amountOut = -SqrtPriceMath.calculateAmount0LO(
+        amountOut = -LimitOrderMath.calculateAmount0LO(
             amountRemainingLessFee, priceLO, False
         )
         ticksLimitTokens = pool.ticksLimitTokens0
@@ -4307,14 +4307,14 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
     assert amount == amountToBurn
 
     if zeroForOne:
-        assert amountBurnt0 == SqrtPriceMath.calculateAmount0LO(
+        assert amountBurnt0 == LimitOrderMath.calculateAmount0LO(
             abs(amountSwapped), priceLO, False
         )
         if tickToBeCleared:
             assert not pool.ticksLimitTokens1.__contains__(tickLO)
 
     else:
-        assert amountBurnt1 == SqrtPriceMath.calculateAmount1LO(
+        assert amountBurnt1 == LimitOrderMath.calculateAmount1LO(
             abs(amountSwapped), priceLO, False
         )
         if tickToBeCleared:

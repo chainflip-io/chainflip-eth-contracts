@@ -138,18 +138,15 @@ def updateLimit(
     self,
     tick,
     liquidityDelta,
-    # feeGrowthGlobalX128,
     maxLiquidity,
-    # isToken0,
-    initializedPosition,
+    created,
     owner,
 ):
     checkInputTypes(
         dict=self,
         int24=(tick),
         int128=(liquidityDelta),
-        # uint256=(feeGrowthGlobalX128),
-        bool=(initializedPosition),
+        bool=(created),
         uint128=maxLiquidity,
     )
 
@@ -176,7 +173,7 @@ def updateLimit(
     # Add owner to ownerPosition list if not already there. Doing a hashlist has the problem that
     # when burning we don't know who is the owner of the position. We store the address instead of a reference
     # to the account because
-    if liquidityDelta > 0 and initializedPosition:
+    if liquidityDelta > 0 and created:
         # Health check for development purposes
         assert owner not in info.ownerPositions, "Position already in hashPositions"
         info.ownerPositions.append(owner)

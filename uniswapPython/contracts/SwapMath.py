@@ -1,4 +1,5 @@
 import SqrtPriceMath
+import LimitOrderMath
 from utilities import *
 from decimal import *
 
@@ -148,20 +149,20 @@ def computeLimitSwapStep(
         )
         if zeroForOne:
             # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
-            amountOut = SqrtPriceMath.calculateAmount1LO(
+            amountOut = LimitOrderMath.calculateAmount1LO(
                 amountRemainingLessFee, priceX96, False
             )
         else:
-            amountOut = SqrtPriceMath.calculateAmount0LO(
+            amountOut = LimitOrderMath.calculateAmount0LO(
                 amountRemainingLessFee, priceX96, False
             )
 
         if amountOut >= liquidity:
             # Tick crossed
             if zeroForOne:
-                amountIn = SqrtPriceMath.calculateAmount0LO(liquidity, priceX96, True)
+                amountIn = LimitOrderMath.calculateAmount0LO(liquidity, priceX96, True)
             else:
-                amountIn = SqrtPriceMath.calculateAmount1LO(liquidity, priceX96, True)
+                amountIn = LimitOrderMath.calculateAmount1LO(liquidity, priceX96, True)
             assert amountIn <= amountRemainingLessFee
             resultingOneMinusPercSwap = Decimal("0")
             amountOut = liquidity
@@ -193,9 +194,9 @@ def computeLimitSwapStep(
             resultingOneMinusPercSwap = Decimal("0")
             amountOut = liquidity
             if zeroForOne:
-                amountIn = SqrtPriceMath.calculateAmount0LO(amountOut, priceX96, True)
+                amountIn = LimitOrderMath.calculateAmount0LO(amountOut, priceX96, True)
             else:
-                amountIn = SqrtPriceMath.calculateAmount1LO(amountOut, priceX96, True)
+                amountIn = LimitOrderMath.calculateAmount1LO(amountOut, priceX96, True)
         else:
             # Tick not crossed
             amountIn, amountOut, resultingOneMinusPercSwap = calculateAmounts(
@@ -211,7 +212,7 @@ def computeLimitSwapStep(
 
     ## cap the output amount to not exceed the remaining output amount
     if (not exactIn) and (amountOut > abs(amountRemaining)):
-        assert False, "I don't think we should get here with the CF pool"
+        assert False, "We should not get here with the CF pool"
         checkUInt256(-amountRemaining)
         amountOut = abs(amountRemaining)
 
@@ -225,6 +226,14 @@ def computeLimitSwapStep(
 
 
 def calculateAmounts(amountOut, liquidity, oneMinusPercSwap, priceX96, zeroForOne):
+    checkInputTypes(
+        uint256=priceX96,
+        uint128=liquidity,
+        int256=amountOut,
+        bool=zeroForOne,
+        decimal=oneMinusPercSwap,
+    )
+
     # All decimal operations here are rounded down (truncated)
 
     # Calculate percSwapDecrease rounding down in favour of the pool (less amount out). This could maybe be rounded
@@ -248,7 +257,7 @@ def calculateAmounts(amountOut, liquidity, oneMinusPercSwap, priceX96, zeroForOn
     # precision is lost in the operation as explained above.
 
     # We round up the calculation to round down the percSwapDecrease
-    resultingOneMinusPercSwap = SqrtPriceMath.subtractDecimalRoundingUp(
+    resultingOneMinusPercSwap = LimitOrderMath.subtractDecimalRoundingUp(
         oneMinusPercSwap, percSwapDecrease
     )
 
@@ -268,7 +277,7 @@ def calculateAmounts(amountOut, liquidity, oneMinusPercSwap, priceX96, zeroForOn
     # Health check
     assert abs(auxPercSwapDecrease) >= percSwapDecrease
     # To ensure amountOut it will match the burn calculation
-    amountOut = SqrtPriceMath.getAmountSwappedFromTickPercentatge(
+    amountOut = LimitOrderMath.getAmountSwappedFromTickPercentatge(
         percSwapDecrease, oneMinusPercSwap, liquidity
     )
 
@@ -281,8 +290,8 @@ def calculateAmounts(amountOut, liquidity, oneMinusPercSwap, priceX96, zeroForOn
 
     # Recalculate amountIn from amountOut, rounding up
     if zeroForOne:
-        amountIn = SqrtPriceMath.calculateAmount0LO(amountOut, priceX96, True)
+        amountIn = LimitOrderMath.calculateAmount0LO(amountOut, priceX96, True)
     else:
-        amountIn = SqrtPriceMath.calculateAmount1LO(amountOut, priceX96, True)
+        amountIn = LimitOrderMath.calculateAmount1LO(amountOut, priceX96, True)
 
     return amountIn, amountOut, resultingOneMinusPercSwap

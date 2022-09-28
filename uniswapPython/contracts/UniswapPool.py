@@ -155,8 +155,7 @@ class UniswapPool(Account):
         UniswapPool.checkTicks(params.tickLower, params.tickUpper)
 
         # Initialize values
-        amount0 = 0
-        amount1 = 0
+        amount0 = amount1 = 0
 
         position = self._updatePosition(
             params.owner,
@@ -298,11 +297,9 @@ class UniswapPool(Account):
             uint128=(amount0Requested, amount1Requested),
         )
         # Add this check to prevent creating a new position if the position doesn't exist or it's empty
-        Position.assertPositionExists(self.positions, recipient, tickLower, tickUpper)
-
-        ## we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
-        ## Hardcoded recipient == msg.sender.
-        position = Position.get(self.positions, recipient, tickLower, tickUpper)
+        position = Position.assertPositionExists(
+            self.positions, recipient, tickLower, tickUpper
+        )
 
         amount0 = (
             position.tokensOwed0
@@ -402,7 +399,6 @@ class UniswapPool(Account):
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
-            # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
             (step.tickNext, step.initialized) = self.nextTick(state.tick, zeroForOne)
 
             ## get the price for the next tick
@@ -594,19 +590,20 @@ class UniswapPool(Account):
     # Then we need to return the initialized bool to indicate that we are at the boundary and it is not an initalized tick.
     ### @param self The mapping in which to compute the next initialized tick
     ### @param tick The starting tick
-    ### @param tickSpacing The spacing between usable ticks
     ### @param lte Whether to search for the next initialized tick to the left (less than or equal to the starting tick)
     ### @return next The next initialized or uninitialized tick => int24
     ### @return initialized Whether the next tick is initialized to signal if we have reached an initialized boundary
-
     def nextTick(self, tick, lte):
         checkInputTypes(int24=(tick), bool=(lte))
-        if not self.ticks.__contains__(tick):
-            # If tick doesn't exist in the mapping we fake it (easier than searching for nearest value)
-            sortedKeyList = sorted(list(self.ticks.keys()) + [tick])
-        else:
-            sortedKeyList = sorted(list(self.ticks.keys()))
 
+        keyList = list(self.ticks.keys())
+
+        # If tick doesn't exist in the mapping we fake it (easier than searching for nearest value)
+        # NOTE: There might be a better way to do this(with numPy or other) and maybe a better way in Rust.
+        # Just keeping it simple here
+        if not self.ticks.__contains__(tick):
+            keyList += [tick]
+        sortedKeyList = sorted(keyList)
         indexCurrentTick = sortedKeyList.index(tick)
 
         if lte:

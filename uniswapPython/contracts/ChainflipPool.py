@@ -5,7 +5,7 @@ import TickMath
 import SwapMath
 import LiquidityMath
 import Position
-import SqrtPriceMath
+import LimitOrderMath
 import SafeMath
 from UniswapPool import *
 
@@ -27,8 +27,10 @@ class ModifyLimitPositionParams:
 
 class ChainflipPool(UniswapPool):
     def __init__(self, token0, token1, fee, tickSpacing, ledger):
+        checkInputTypes(string=(token0, token1), uint24=(fee), int24=(tickSpacing))
 
-        SqrtPriceMath.setDecimalPrecRound(contextPrecision, "ROUND_DOWN")
+        # Setting default to rounding down as default since the majority of the math requires rounding down
+        LimitOrderMath.setDecimalPrecRound(contextPrecision, "ROUND_DOWN")
 
         # For now both token0 and token1 limit orders on the same mapping. Maybe we will need to keep them
         # somehow else to be able to remove them after a tick is crossed.
@@ -112,15 +114,12 @@ class ChainflipPool(UniswapPool):
             int128=(liquidityDelta),
         )
         # This will create a position if it doesn't exist
-        position = Position.getLimit(
+        position, created = Position.getLimit(
             self.limitOrders, owner, tick, token == self.token0
         )
         # We could return a bool to assert if position has just been created
-        if position == Position.PositionLimitInfo(0, Decimal(1), 0, 0, 0):
+        if created:
             assert liquidityDelta > 0
-            initializedPosition = True
-        else:
-            initializedPosition = False
 
         if token == self.token0:
             ticksLimitMap = self.ticksLimitTokens0
@@ -136,13 +135,8 @@ class ChainflipPool(UniswapPool):
                 ticksLimitMap,
                 tick,
                 liquidityDelta,
-                # liquidityDelta,
-                # self.linearFeeGrowthGlobal1X128
-                # if token == self.token0
-                # else self.linearFeeGrowthGlobal0X128,
                 self.maxLiquidityPerTick,
-                # token == self.token0,
-                initializedPosition,
+                created,
                 owner,
             )
 
@@ -155,6 +149,7 @@ class ChainflipPool(UniswapPool):
             TickMath.getPriceAtTick(tick),
             # If we mint for the first time and the corresponding tick doesn't exist, we initialize with 0
             ticksLimitMap[tick].feeGrowthInsideX128,
+            created,
         )
 
         if flipped:
@@ -231,13 +226,13 @@ class ChainflipPool(UniswapPool):
 
         # Add this check to prevent creating a new position if the position doesn't exist or it's empty
         # even thought we would remove anyway at the end, but just for clarity.
-        Position.assertLimitPositionExists(
+        key = Position.assertLimitPositionExists(
             self.limitOrders, recipient, tick, token == self.token0
         )
 
         ## we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
         ## Hardcoded recipient == msg.sender.
-        position = Position.getLimit(
+        position, _ = Position.getLimit(
             self.limitOrders, recipient, tick, token == self.token0
         )
 
@@ -259,13 +254,13 @@ class ChainflipPool(UniswapPool):
             position.tokensOwed1 -= amountPos1
             self.ledger.transferToken(self, recipient, self.token1, amountPos1)
 
-        # TODO: Think if we want to delete the position
-        # Clear the position for bookkeeping purposes (not strictly necessary)
+        # Clear the position for bookkeeping purposes
+        # NOTE: This is no strictly necessary, we could leave the position as UniSwap does. However, Solidity's memory
+        # usage/requirements doesn't really depend on clearing positions. In Python (and also Rust I suspect) this matters,
+        # so we would rather clear the positions.
         if position.liquidity == 0:
             # We should get the hash when getLimit is calculated before
-            del self.limitOrders[
-                Position.getHashLimit(recipient, tick, token == self.token0)
-            ]
+            del self.limitOrders[key]
 
         # For debugging doing it like this, but we probably need to return both (or merge them)
         # return (recipient, tick, amount0, amount1, amountPos0, amountPos1)
@@ -327,7 +322,6 @@ class ChainflipPool(UniswapPool):
             and state.sqrtPriceX96 != sqrtPriceLimitX96
         ):
             # First limit orders are checked since they can offer a better price for the user.
-            print("SWAP LOOP")
             ######################################################
             #################### LIMIT ORDERS ####################
             ######################################################
@@ -336,22 +330,14 @@ class ChainflipPool(UniswapPool):
             stepLimit = StepComputations(0, None, False, 0, 0, 0, 0)
             stepLimit.sqrtPriceStartX96 = state.sqrtPriceX96
 
-            print("state.keysLimitTicks", state.keysLimitTicks)
-            print("zeroForOne", zeroForOne)
-            print("state.tick", state.tick)
-
             # Just to not try finding a limit order if there aren't any.
             if len(state.keysLimitTicks) != 0:
                 # Find the next linear order tick. initialized == False if not found and returning the next best
                 (stepLimit.tickNext, stepLimit.initialized) = nextLimitTick(
                     state.keysLimitTicks, not zeroForOne, state.tick
                 )
-                print("Fetching LO's")
-                print("stepLimit.tickNext", stepLimit.tickNext)
-                print("stepLimit.initialized", stepLimit.initialized)
                 # If !initialized then there are no more linear ticks with liquidityLeft > 0 that we can swap for now
                 if stepLimit.initialized:
-                    print("SWAPPING LIMIT ORDER")
 
                     tickLimitInfo = ticksLimitMap[stepLimit.tickNext]
 
@@ -417,7 +403,6 @@ class ChainflipPool(UniswapPool):
                     )
 
                     if tickCrossed:
-                        print("CROSSING LIMIT TICK")
                         # Health check
                         assert tickLimitInfo.oneMinusPercSwap == 0
                         # Burn all the positions in that tick and clear the tick itself. This could be also done
@@ -433,41 +418,36 @@ class ChainflipPool(UniswapPool):
                             # In case we cross the tick at the exact some time we complete the order
                             break
                     else:
-                        print("NOT CROSSING LIMIT TICK - SWAP COMPLETE")
                         # Health check - swap should be completed
                         assert state.amountSpecifiedRemaining == 0
                         # Prevent from altering anything in the range order pool
                         break
 
-            # For development purposes only
-            # assert False, "We should not go into range orders"
-
             ######################################################
             #################### RANGE ORDERS ####################
             ######################################################
-            print("SWAPPING RANGE ORDERS")
             step = StepComputations(0, 0, 0, 0, 0, 0, 0)
             step.sqrtPriceStartX96 = state.sqrtPriceX96
 
-            # TODO: Will we need to check the returned initialized state in case we are in the TICK MIN or TICK MAX?
             (step.tickNext, step.initialized) = self.nextTick(state.tick, zeroForOne)
 
             ## get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext)
 
-            # TODO: Remove this. Doing this just to understand more about when the pool tends towards the limit with
-            # no liquidity.  Regardless of whether this is a border or not, the same logic should apply.
+            # NOTE: Having this check to understand the behaviour of the Range Order when the pool tends towards the limit with
+            # no liquidity. It is also a valid check regardless of whether this is a border or not - the same logic should apply.
+            # This check can be removed.
             if not step.initialized:
                 # We know it's a border and we have no liquidity, so instead of zero-swapping until there
                 # we just stop at the LO tick.
                 assert state.liquidity == 0
 
-            # If there is a "next best" LO, use the TickMath.getSqrtRatioAtTick(stepLimit.tickNext)
-            # also as a limit price, so if we reach there by swapping a RO, we stop, jump to the LO, and then come back
-            # to the RO if needed.
+            # If there is a "next best" LO, use the TickMath.getSqrtRatioAtTick(stepLimit.tickNext) also as a limit price,
+            # so if we reach there by swapping a RO, we stop, jump to the LO, and then come back to the RO if needed.
             # This is because we can't know the RO final price, and it could be a lot worse than the LO price. We could also
             # calculate the range order final price, compare it with the LO price, and then decide whether to swap the LO.
-            # TODO: Think about this - e.g. we could add a margin #ticks before we jump into LO.
+            # NOTE: A margin tick(s) could be added here before we jump into LO. Could potentially be used to tweak the
+            # incentivization of RO's vs LO's. The details (and this mechanism for that matter) can be subject to change.
             if not stepLimit.initialized and stepLimit.tickNext != None:
                 if zeroForOne:
                     # -1 so it takes that limit order
@@ -557,11 +537,6 @@ class ChainflipPool(UniswapPool):
             elif state.sqrtPriceX96 != step.sqrtPriceStartX96:
                 ## recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
                 state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96)
-            print(
-                "rangeORder completed swap",
-                state.amountSpecifiedRemaining == 0
-                or state.sqrtPriceX96 == sqrtPriceLimitX96,
-            )
 
         ## End of swap loop
         # Set final tick as the range tick
@@ -629,35 +604,45 @@ class ChainflipPool(UniswapPool):
 
     # Once we cross a tick, automatically burn all the positions that are in the tick.
     def burnCrossedPositions(self, tickLimitInfo, tick, token):
+        checkInputTypes(string=(token), int24=(tick))
         assert tickLimitInfo[tick].oneMinusPercSwap == 0
         for owner in tickLimitInfo[tick].ownerPositions:
             # We should probably create a new burnLimit function for this to make it more efficient
             # e.g. that it burns position.liquidity instead of passing an amount.
             # For now just reusing it for simplicity.
-            position = Position.getLimit(
+            position, created = Position.getLimit(
                 self.limitOrders, owner, tick, token == self.token0
             )
+            # Health check
+            assert not created
+            # NOTE: We could implement a twist to the buurnLimit function (or a combination of burn+collect)
+            # that skips the decrement of tick liquidity and just burns the position. Then we burn the tick
+            # separately at the end. This could save gas if we end up with this implementation.
             # Burn the entire order and collect tokens === remove position
             self.burnLimitOrder(token, owner, tick, position.liquidity)
             # This should also clear the tick
             self.collectLimitOrder(owner, token, tick, MAX_UINT128, MAX_UINT128)
-            # TODO: think if we want collect to delete it or not.
-            # Check that position is deleted - not necessary to delete but we do it to not keep increasing memory
-            # assert not self.limitOrders.__contains__(Position.getHashLimit(owner, tick, token == self.token0))
+            # NOTE: As of now, collectLimitOrder clears the positions and tick. Therefore we can check
+            # that the position has been burnt.
             Position.assertLimitPositionIsBurnt(
                 self.limitOrders, owner, tick, token == self.token0
             )
+        # Check that the tick has been cleared
+        assert not tickLimitInfo.__contains__(tick)
 
 
-# Remove all ticks with oneMinusPercSwap == 0. Maybe we end up not needing that if we automatically remove the positions
-# after swap, but probably we won't
+# Return all the position keys (ticks) that have liquidity, as a sorted list.
 def getKeysLimitTicksWithLiquidity(tickMapping):
-    # Dictionary with ticks that have oneMinusPercSwap > 0
-    # TODO: if we end up burning all ticks after swap, we can remove the check/filter of oneMinusPercSwap > 0
-    dictTicksWithLiq = {
-        k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
-    }
+    # NOTE: Right now we clear the positions (and therefore the tick) once a tick is fully swapped. Therefore,
+    # we don't need to check for tick having liquidity (oneMinusPercSwap > 0). If that changes, we need to add
+    # the "oneMinusPercSwap > 0" check back.
 
+    # Dictionary with ticks that have oneMinusPercSwap > 0
+    dictTicksWithLiq = {
+        k: v
+        for k, v in tickMapping.items()
+        #     k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
+    }
     # Return a list of sorted keys
     return sorted(list(dictTicksWithLiq.keys()))
 
@@ -665,7 +650,7 @@ def getKeysLimitTicksWithLiquidity(tickMapping):
 # Find the next linearTick (all should have oneMinusPercSwap > 0) and pop them from the list. The input list
 # should be a list of sorted keys.
 def nextLimitTick(keysLimitTicks, lte, currentTick):
-    checkInputTypes(bool=(lte))
+    checkInputTypes(bool=(lte), int24=(currentTick))
 
     # Only pop the value if tick will be used
     if lte:
