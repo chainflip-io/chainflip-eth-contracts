@@ -51,6 +51,7 @@ class TickInfoLimit:
     # list of owners of positions contained in this tick. We can't just store the hash because then we can't
     # know who is the owner. So we need to recalculate the hash when we burn the position. We only require the
     # owner since we figure out the isToken0 and the tick.
+    # NOTE: We could also store the hash(which is the key to the dict) to not keep straight reference to the LPs.
     ownerPositions: list
 
 

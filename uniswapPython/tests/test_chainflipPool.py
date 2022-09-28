@@ -2983,6 +2983,72 @@ def test_multiplePositions_oneForZero(initializedMediumPoolNoLO, accounts):
     assert pool.ticksLimitTokens0[tickLO].liquidityGross == initialLiquidity * 2
 
 
+def test_tick_ownerPosition(initializedMediumPoolNoLO, accounts):
+    print("mint and burn a position and check tick ownerPositions")
+    (
+        pool,
+        _,
+        _,
+        _,
+        tickSpacing,
+        closeAligniniTickiRDown,
+        closeAligniniTickRUp,
+    ) = initializedMediumPoolNoLO
+
+
+    tickLO = closeAligniniTickiRDown - tickSpacing * 10
+
+    pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1))
+
+    assert accounts[0] in pool.ticksLimitTokens0[tickLO].ownerPositions
+    assert accounts[0] in pool.ticksLimitTokens0[tickLO].ownerPositions[0]
+    assert not accounts[1] in pool.ticksLimitTokens0[tickLO].ownerPositions
+
+
+    pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
+    )
+    assert accounts[0] in pool.ticksLimitTokens0[tickLO].ownerPositions
+
+    pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
+    )
+    assert not pool.ticksLimitTokens0.__contains__(tickLO)
+
+def test_tick_ownerPositions(initializedMediumPoolNoLO, accounts):
+    print("mint several positions, burn one and check tick ownerPositions")
+    (
+        pool,
+        _,
+        _,
+        _,
+        tickSpacing,
+        closeAligniniTickiRDown,
+        closeAligniniTickRUp,
+    ) = initializedMediumPoolNoLO
+
+
+    tickLO = closeAligniniTickiRDown - tickSpacing * 10
+
+    # Mint multiple positions so tick doesn't get deleted
+    pool.mintLimitOrder(TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1))
+    pool.mintLimitOrder(TEST_TOKENS[0], accounts[1], tickLO, expandTo18Decimals(1))
+
+    assert pool.ticksLimitTokens0[tickLO].ownerPositions == [accounts[0], accounts[1]]
+
+    pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
+    )
+    assert pool.ticksLimitTokens0[tickLO].ownerPositions == [accounts[0], accounts[1]]
+
+    pool.burnLimitOrder(
+        TEST_TOKENS[0], accounts[0], tickLO, expandTo18Decimals(1)//2
+    )
+    print(pool.ticksLimitTokens0[tickLO].ownerPositions)
+    assert pool.ticksLimitTokens0[tickLO].ownerPositions == [accounts[1]]
+    assert not accounts[0] in pool.ticksLimitTokens0[tickLO].ownerPositions
+
+
 def test_mint_partialSwappedTick_zeroForOne(initializedMediumPoolNoLO, accounts):
     print("mint a new position on top of a half-swapped tick zeroForOne")
     (

@@ -259,6 +259,10 @@ class ChainflipPool(UniswapPool):
         # usage/requirements doesn't really depend on clearing positions. In Python (and also Rust I suspect) this matters,
         # so we would rather clear the positions.
         if position.liquidity == 0:
+            # TODO: Remove owner reference from tick.ownerPositions. It can be that the tick no longer exists if this
+            # was the last position in the tick when burnt. Or should I do this when we burn??? When LP burns a position
+            # completely it should automatically collect, right? So collect function
+            
             # We should get the hash when getLimit is calculated before
             del self.limitOrders[key]
 
