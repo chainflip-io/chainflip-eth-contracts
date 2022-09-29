@@ -208,6 +208,7 @@ class ChainflipPool(UniswapPool):
         # If position is fully burnt, automatically collect all the fees. Probably could do a simplified version.
         # At this point the tick might not exist (might have been burnt in the previous step)
         # amountBurnt will be overwritten by collectLimitOrder if tick is fully burnt, and will also include fees
+        # NOTE: We might want to return separate values instead of overwriting amountBurnt
         if position.liquidity == 0:
             (recipient, tick, amountBurnt0, amountBurnt1) = self.collectLimitOrder(
                 recipient, token, tick, MAX_UINT128, MAX_UINT128
@@ -260,6 +261,12 @@ class ChainflipPool(UniswapPool):
             if (amount1Requested > position.tokensOwed1)
             else amount1Requested
         )
+        print("balance token0", self.balances[self.token0])
+        print("amountPos0", amountPos0)
+        assert self.balances[self.token0] >= amountPos0
+        print("balance token1", self.balances[self.token1])
+        print("amountPos1", amountPos1)
+        assert self.balances[self.token1] >= amountPos1
 
         if amountPos0 > 0:
             position.tokensOwed0 -= amountPos0
@@ -327,6 +334,8 @@ class ChainflipPool(UniswapPool):
             0,
             cache.liquidityStart,
             # Return a list of sorted keys with liquidityLeft > 0
+            # NOTE: If storing an array with all the tick keys is too computationally expensive we can just
+            # get the next tick when running nextLimitTick every time.
             getKeysLimitTicksWithLiquidity(ticksLimitMap),
             [],
         )
@@ -629,6 +638,9 @@ class ChainflipPool(UniswapPool):
             )
             # Health check
             assert not created
+            # Health check - shouldn't be needed since burntPositions have automatically been collected
+            # and removed, but just checking to make sure behaviour is correct.
+            assert position.liquidity > 0
             # NOTE: We could implement a twist to the burnLimit function (or a combination of burn+collect)
             # that skips the decrement of tick liquidity and just burns the position. Then we burn the tick
             # separately at the end. This could save gas if we end up with this implementation.
