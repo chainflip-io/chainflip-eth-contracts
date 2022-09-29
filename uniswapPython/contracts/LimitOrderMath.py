@@ -36,6 +36,21 @@ def getAmountSwappedFromTickPercentatge(
     return amountSwappedPrev
 
 
+# TODO: To merge this with getAmountSwappedFromTickPercentatge if the solution works
+def getAmountSwappedFromTickPercentatgeRoundUp(
+    percSwapChange, oneMinusPercSwap, liquidityGross
+):
+    checkInputTypes(decimal=(percSwapChange, oneMinusPercSwap), uint128=liquidityGross)
+    setDecimalPrecRound(getcontext().prec, "ROUND_UP")
+    # By default this will be rounded down - truncated. These are Decimal types.
+    perc = percSwapChange / oneMinusPercSwap
+    setDecimalPrecRound(getcontext().prec, "ROUND_DOWN")
+    # Conversion to integer and rounded down.
+    amountSwappedPrev = math.ceil(liquidityGross * perc)
+
+    return amountSwappedPrev
+
+
 def setDecimalPrecRound(precision, rounding):
     checkInputTypes(int=(precision))
     assert rounding in ["ROUND_DOWN", "ROUND_UP"]

@@ -261,11 +261,8 @@ class ChainflipPool(UniswapPool):
             if (amount1Requested > position.tokensOwed1)
             else amount1Requested
         )
-        print("balance token0", self.balances[self.token0])
-        print("amountPos0", amountPos0)
+
         assert self.balances[self.token0] >= amountPos0
-        print("balance token1", self.balances[self.token1])
-        print("amountPos1", amountPos1)
         assert self.balances[self.token1] >= amountPos1
 
         if amountPos0 > 0:

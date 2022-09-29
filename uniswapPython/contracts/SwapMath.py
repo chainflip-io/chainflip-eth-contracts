@@ -175,15 +175,6 @@ def computeLimitSwapStep(
 
             assert amountIn <= amountRemainingLessFee
 
-            # NOTE: For debugging purposes, to remove.
-            # Rounding difference < 1% (rounded up to 1) unless amountOut is 0.
-            if amountOut != 0:
-                assert abs(amountRemainingLessFee - amountIn) <= math.ceil(
-                    amountRemainingLessFee / 100
-                )
-            else:
-                assert amountIn == 0
-
             # Health check
             assert amountOut < liquidity
 
@@ -281,17 +272,23 @@ def calculateAmounts(amountOut, liquidity, oneMinusPercSwap, priceX96, zeroForOn
         percSwapDecrease, oneMinusPercSwap, liquidity
     )
 
-    # amountIn = amountRemainingLessFee
+    # Should recalculate amountIn to then take abs(amountRemaining) - amountIn as fees.
+    # NOTE: There are some "issues" in extreme prices (where amountOut=0), where if recalculated amountIn = Zero, which
+    # then causes all amountIn to be taken as fee but no swap has happened. If it weren't recalculated, it would stay as
+    # amountIn, which would be money inside the pool. But since the position hasn't been affected I believe it's correct
+    # to take it as fees.
 
-    # Should recalculate amountIn to then take abs(amountRemaining) - amountIn as fees. There are some "issues"
-    # in extreme prices (amountOut=0, amountIn=all), where if recalculated amountIn = Zero, it not recalculated
-    # amountIn = All. Also, this recalculation makes amountIn potentially decrease by one, causing the fee to change.
-    # This recalculation causes slight changes in amountIn which causes a change in feeAmount.
+    # NOTE: An issue here is that amountOut being rounded down causes amountIn to not get rounded up properly. That impacts the burn
+    # calculation and potentially (when no fees at least) in some case the LP gets 1 token more than the pool has. Might not be an
+    # issue with fees and this might be unnecessary. As a workaround for now we use the amountOut rounded up for the calculation of amountIn.
+    amountOutRoundedUp = LimitOrderMath.getAmountSwappedFromTickPercentatgeRoundUp(
+        percSwapDecrease, oneMinusPercSwap, liquidity
+    )
 
-    # Recalculate amountIn from amountOut, rounding up
+    # Changing for amountOutOrig solves the problem but unclear if this is good
     if zeroForOne:
-        amountIn = LimitOrderMath.calculateAmount0LO(amountOut, priceX96, True)
+        amountIn = LimitOrderMath.calculateAmount0LO(amountOutRoundedUp, priceX96, True)
     else:
-        amountIn = LimitOrderMath.calculateAmount1LO(amountOut, priceX96, True)
+        amountIn = LimitOrderMath.calculateAmount1LO(amountOutRoundedUp, priceX96, True)
 
     return amountIn, amountOut, resultingOneMinusPercSwap
