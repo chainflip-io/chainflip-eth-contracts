@@ -4126,14 +4126,13 @@ def test_randomLO_onRO_zeroForOne(st_isToken0, st_swapAmounts, st_tick, st_mintA
 
         balanceBeforeBurn0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
         balanceBeforeBurn1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
-        # Burn LO LP position
-        pool.burnLimitOrder(token, accounts[1], LOtickSpaced, st_mintAmount)
-        # Burn does not change the balances
+        # Poke
+        pool.burnLimitOrder(token, accounts[1], LOtickSpaced, 0)
+        # Poking does not change the balances
         assert balanceBeforeBurn0LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[0])
         assert balanceBeforeBurn1LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[1])
-        pool.collectLimitOrder(
-            accounts[1], token, LOtickSpaced, MAX_UINT128, MAX_UINT128
-        )
+        # Burn LO LP position
+        pool.burnLimitOrder(token, accounts[1], LOtickSpaced, st_mintAmount)
         finalBalance0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
         finalBalance1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
         # Assert that final balance == initial value since there's been no swap on that tick/position
@@ -4286,13 +4285,13 @@ def test_randomLO_onRO_oneForZero(st_isToken0, st_swapAmounts, st_tick, st_mintA
         balanceBeforeBurn0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
         balanceBeforeBurn1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
         # Burn LO LP position
-        pool.burnLimitOrder(token, accounts[1], LOtickSpaced, st_mintAmount)
-        # Burn does not change the balances
+        pool.burnLimitOrder(token, accounts[1], LOtickSpaced, 0)
+        # Poking does not change the balances
         assert balanceBeforeBurn0LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[0])
         assert balanceBeforeBurn1LOLP == ledger.balanceOf(accounts[1], TEST_TOKENS[1])
-        pool.collectLimitOrder(
-            accounts[1], token, LOtickSpaced, MAX_UINT128, MAX_UINT128
-        )
+        # Burn LO LP position
+        pool.burnLimitOrder(token, accounts[1], LOtickSpaced, st_mintAmount)
+
         finalBalance0LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[0])
         finalBalance1LOLP = ledger.balanceOf(accounts[1], TEST_TOKENS[1])
         # Assert that final balance == initial value since there's been no swap on that tick/position
@@ -4423,51 +4422,48 @@ def check_burn_limitOrderSwap_oneTick_exactIn(
 ):
     token = TEST_TOKENS[1] if zeroForOne else TEST_TOKENS[0]
 
+    # Poke to get the fees
+    (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
+        token, owner, tickLO, 0
+    )
+
+    fees0 = pool.limitOrders[
+        getLimitPositionKey(owner, tickLO, not zeroForOne)
+    ].tokensOwed0
+    fees1 = pool.limitOrders[
+        getLimitPositionKey(owner, tickLO, not zeroForOne)
+    ].tokensOwed1
+
+    if amountSwapped == 0:
+        assert fees0 == 0
+        assert fees1 == 0
+    else:
+        if zeroForOne:
+            assert fees0 > 0
+            assert fees1 == 0
+        else:
+            assert fees0 == 0
+            assert fees1 > 0
+
+    # Burn LO
     (_, _, amount, amountBurnt0, amountBurnt1) = pool.burnLimitOrder(
         token, owner, tickLO, amountToBurn
     )
     assert amount == amountToBurn
 
     if zeroForOne:
-        assert amountBurnt0 == LimitOrderMath.calculateAmount0LO(
+        assert amountBurnt0 - fees0 == LimitOrderMath.calculateAmount0LO(
             abs(amountSwapped), priceLO, False
         )
         if tickToBeCleared:
             assert not pool.ticksLimitTokens1.__contains__(tickLO)
 
     else:
-        assert amountBurnt1 == LimitOrderMath.calculateAmount1LO(
+        assert amountBurnt1 - fees1 == LimitOrderMath.calculateAmount1LO(
             abs(amountSwapped), priceLO, False
         )
         if tickToBeCleared:
             assert not pool.ticksLimitTokens0.__contains__(tickLO)
-
-    # Check LO position and tick
-    assert (
-        pool.limitOrders[getLimitPositionKey(owner, tickLO, not zeroForOne)].liquidity
-        == 0
-    )
-
-    # Collect position
-    (_, _, amount0, amount1) = pool.collectLimitOrder(
-        owner, token, tickLO, MAX_UINT128, MAX_UINT128
-    )
-
-    # Check that amount calculated in burn against the amount collected - fees accrued
-    if zeroForOne:
-        assert amountBurnt1 == amount1
-        if amountSwapped != 0:
-            # Fees accrued in token0
-            assert amountBurnt0 < amount0
-        else:
-            assert amountBurnt0 == amount0
-    else:
-        assert amountBurnt0 == amount0
-        if amountSwapped != 0:
-            # Fees accrued in token1
-            assert amountBurnt1 < amount1
-        else:
-            assert amountBurnt1 == amount1
 
     # No liquidity left and all tokensOwed collected - check that the position is cleared
     assertLimitPositionIsBurnt(pool.limitOrders, owner, tickLO, not zeroForOne)

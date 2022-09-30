@@ -278,12 +278,15 @@ def calculateAmounts(amountOut, liquidity, oneMinusPercSwap, priceX96, zeroForOn
     # amountIn, which would be money inside the pool. But since the position hasn't been affected I believe it's correct
     # to take it as fees.
 
-    # NOTE: An issue here is that amountOut being rounded down causes amountIn to not get rounded up properly. That impacts the burn
+    # NOTE: The issue here is that amountOut being rounded down causes amountIn to not get rounded up properly. That impacts the burn
     # calculation and potentially (when no fees at least) in some case the LP gets 1 token more than the pool has. Might not be an
     # issue with fees and this might be unnecessary. As a workaround for now we use the amountOut rounded up for the calculation of amountIn.
     amountOutRoundedUp = LimitOrderMath.getAmountSwappedFromTickPercentatgeRoundUp(
         percSwapDecrease, oneMinusPercSwap, liquidity
     )
+    # Health check
+    assert amountOutRoundedUp >= amountOut
+    assert abs(amountOutRoundedUp - amountOut) <= 1
 
     # Changing for amountOutOrig solves the problem but unclear if this is good
     if zeroForOne:
