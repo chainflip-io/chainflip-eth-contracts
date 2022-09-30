@@ -234,8 +234,7 @@ def updateLimit(
             # Left term would give is the maximum amount (upper limit) that might have been swapped in the pool including new liquidity.
             # On the right, the amount swapped of that same token before this new mint. Amount swapped before cannot be bigger than the
             # max amount swapped including new liquidity.
-            # NOTE: it is possible that this becomes negative if the amount minted is extremely small (< 10-12) due to rounding errors.
-            # In this cases it will revert anyway.
+
             # TODO: Alastair mentioned this potentially being able to be calculated in a simpler way. To discuss.
 
             # Round percSwap down which means rounding substrahend down and newOneMinusPercSwapMint up.
@@ -278,10 +277,19 @@ def updateLimit(
             self.liquidity,
         )
 
+        # Same issue as in SwapMath
+        amountSwappedPrevRounding = (
+            LimitOrderMath.getAmountSwappedFromTickPercentatgeRoundUp(
+                percSwapDecrease,
+                self.oneMinusPercSwapMint,
+                self.liquidity,
+            )
+        )
+
         # Calculate current position ratio
         if isToken0:
             currentPosition0 = LiquidityMath.addDelta(
-                self.liquidity, -amountSwappedPrev
+                self.liquidity, -amountSwappedPrevRounding
             )
             currentPosition1 = LimitOrderMath.calculateAmount1LO(
                 amountSwappedPrev, pricex96, False
@@ -289,7 +297,7 @@ def updateLimit(
 
         else:
             currentPosition1 = LiquidityMath.addDelta(
-                self.liquidity, -amountSwappedPrev
+                self.liquidity, -amountSwappedPrevRounding
             )
             currentPosition0 = LimitOrderMath.calculateAmount0LO(
                 amountSwappedPrev, pricex96, False

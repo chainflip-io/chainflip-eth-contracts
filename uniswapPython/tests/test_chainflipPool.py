@@ -2059,7 +2059,7 @@ def test_swapGaps_oneForZero(initializedPoolMedium12TickSpacing, accounts):
     assert amount == liquidityAmount
     # Slightly different amounts because of price difference
     # Orig value: 30027458295511
-    assert amount0 == 30083999478256
+    assert amount0 == 30083999478255
     # Substracting fees
     # Orig value: 996999999999848369
     assert amount1 - fees == 996999999999682559
@@ -2109,7 +2109,7 @@ def test_swapGaps_zeroForOne(initializedPoolMedium12TickSpacing, accounts):
     # Orig value: 996999999999848369
     assert amount0 - fees == 996999999999682559
     # Orig value: 30027458295511
-    assert amount1 == 30083999478256
+    assert amount1 == 30083999478255
 
     # Tick should not have changed
     assert pool.slot0.tick == -150000
@@ -3463,7 +3463,7 @@ def test_burnPartiallySwapped_multipleSteps_zeroForOne(
 
     # Small rounding error
     assert correctAmountBurnt0 == amount0 + 21
-    assert correctAmountBurnt1 == amount1 + 1
+    assert correctAmountBurnt1 == amount1 + 2
 
     tryExceptHandler(
         poolCopy2.burnLimitOrder,
@@ -3535,7 +3535,7 @@ def test_burnPartiallySwapped_multipleSteps_oneForZero(
         )
 
     # Small rounding error
-    assert correctAmountBurnt0 == amount0 + 1
+    assert correctAmountBurnt0 == amount0 + 2
     assert correctAmountBurnt1 == amount1 + 1
 
     tryExceptHandler(
@@ -3581,7 +3581,8 @@ def test_mintOnSwappedPosition_zeroForOne(initializedMediumPoolNoLO, accounts):
 
     assert amount0_0 >= amount0
     assert amount0_0 == amount0
-    assert amount1 == amount1_0 + liquidityPosition * 1000
+    # +1 because of rounding
+    assert amount1 + 1 == amount1_0 + liquidityPosition * 1000
 
 
 def test_mintOnSwappedPosition_oneForZero(initializedMediumPoolNoLO, accounts):
@@ -3616,9 +3617,10 @@ def test_mintOnSwappedPosition_oneForZero(initializedMediumPoolNoLO, accounts):
         TEST_TOKENS[0], accounts[0], tickLO, pos.liquidity
     )
 
+    assert amount1_0 >= amount1
     assert amount1_0 == amount1
-    print(amount0_0 + liquidityPosition * 1000)
-    assert amount0 == amount0_0 + liquidityPosition * 1000
+    # +1 because of rounding
+    assert amount0 + 1 == amount0_0 + liquidityPosition * 1000
 
 
 # Tests for LO on boundary/limit positions to check that LP's don't get too many tokens back when burning.
@@ -3785,7 +3787,7 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
 
     print("Check precision in tick.oneMinusPercSwap")
 
-    # Initialize without fees
+    # Initialize without fees tp make the math and the checking easier
     pool, _, _, _, accounts = environmentRandomTesting(False)
 
     # Adding some initial liquidity because in some edge cases there is 1 in favour of user because there are no
@@ -3821,9 +3823,8 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             TEST_TOKENS[1], accounts[0], 0, amountToMint
         )
 
-        # TODO: Look into if it should be only on the side of favouring the pool (amountBurnt1 < liquidityLeft - abs(amount1)),
-        # althought this will probably not happen with fees.
-        # assert amountBurnt1 <= (liquidityLeft - abs(amount1))
+        # Allow a rounding difference of 1 in favour of the pool
+        assert amountBurnt1 <= (liquidityLeft - abs(amount1))
         assert abs(amountBurnt1 - (liquidityLeft - abs(amount1)) <= 1)
         # This one is correct
         assert amountBurnt0 <= accomAmount0
@@ -3877,6 +3878,7 @@ def test_precision_zeroForOne(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
 def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
     print("Check precision in tick.oneMinusPercSwap")
 
+    # Initialize without fees tp make the math and the checking easier
     pool, minTick, maxTick, ledger, accounts = environmentRandomTesting(False)
 
     # Setting a non-exact value to get non-exact numbers
@@ -3909,9 +3911,8 @@ def test_precision_oneForZero(st_swapAmountsPerc, st_mintAmount, numberOfSwaps):
             TEST_TOKENS[0], accounts[0], 0, amountToMint
         )
 
-        # TODO: Look into if it should be only on the side of favouring the pool (amountBurnt1 < liquidityLeft - abs(amount1)),
-        # althought this will probably not happen with fees.
-        # assert amountBurnt0 <= (liquidityLeft - abs(amount0))
+        # Allow a rounding difference of 1 in favour of the pool
+        assert amountBurnt0 <= (liquidityLeft - abs(amount0))
         assert abs(amountBurnt0 - (liquidityLeft - abs(amount0)) <= 1)
         # This one is correct
         assert amountBurnt1 <= accomAmount1
