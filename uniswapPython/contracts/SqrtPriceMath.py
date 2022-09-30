@@ -1,8 +1,8 @@
 import SafeMath
 import math
 
-from TickMath import *
-
+from decimal import *
+from utilities import *
 
 ### @title defs based on Q64.96 sqrt price and liquidity
 ### @notice Contains the math that uses square root of price as a Q64.96 and liquidity to compute deltas
@@ -214,60 +214,3 @@ def getAmount1DeltaHelper(sqrtRatioAX96, sqrtRatioBX96, liquidity):
         return -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), False)
     else:
         return getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, abs(liquidity), True)
-
-
-def calculateAmount1LO(amountInToken0, priceX96):
-    checkInputTypes(uint256=(priceX96), int256=amountInToken0)
-    # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
-    return (amountInToken0 * priceX96) // 2**96
-
-
-def calculateAmount0LO(amountInToken1, priceX96):
-    checkInputTypes(uint256=(priceX96), int256=amountInToken1)
-    # We let it overflow and we will cap it afterwards - maybe to be done like computeSwapStep in Rust
-    # Should never be divided by zero because it is not allowed to mint positions at price 0.
-    return (amountInToken1 * 2**96) // priceX96
-
-
-def getAmount1LO(amountInToken0, priceX96, liquidityToken1):
-    checkInputTypes(uint256=(priceX96, liquidityToken1), int256=(amountInToken0))
-    # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
-    amountOut = calculateAmount1LO(amountInToken0, priceX96)
-
-    # MAX amountIn that can be swapped in this tick
-    if amountOut <= liquidityToken1:
-        amountIn = amountInToken0
-    # in case of overflow or if simply amountOut > liquidity
-    else:
-        # Reverse math to figure out the max AmountIn that can be swapped in this tick.
-        # This one should not overflow.
-        # This cannot be divided by zero since with price == 0 the amountOut == 0 so <= liquidity
-        amountIn = calculateAmount0LO(liquidityToken1, priceX96)
-        amountOut = liquidityToken1
-
-        # Health check
-        assert amountIn < amountInToken0
-
-    return amountIn, amountOut
-
-
-def getAmount0LO(amountInToken1, priceX96, liquidityToken0):
-    checkInputTypes(uint256=(priceX96, liquidityToken0), int256=(amountInToken1))
-    # This might overflow - maybe to handle it differently in Rust (here we cap it afterwards)
-    amountOut = calculateAmount0LO(amountInToken1, priceX96)
-
-    # MAX amountIn that can be swapped in this tick
-    if amountOut <= liquidityToken0:
-        amountIn = amountInToken1
-    # in case of overflow or if simply amountOut > liquidity
-    else:
-        # Reverse math to figure out the max AmountIn that can be swapped in this tick.
-        # This one should not overflow.
-        # This won't overflow because for really big prices the amountOut will be very small, <= liquidity
-        amountIn = calculateAmount1LO(liquidityToken0, priceX96)
-        amountOut = liquidityToken0
-
-        # Health check - for SwapMath checking < should be enough but for Position we need <= ??
-        assert amountIn <= amountInToken1
-
-    return amountIn, amountOut

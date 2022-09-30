@@ -71,19 +71,12 @@ def afterEach(accounts, TEST_POOLS):
         )
 
     for position in poolFixture.limitPositions:
-        # TODO: This will also depend on if zeroForOne or not
         if pool.limitOrders.__contains__(
             getHashLimit(accounts[0], position.tick, position.tick == pool.token0)
         ):
+            # This will automatically collect the full amount
             pool.burnLimitOrder(
                 position.token, accounts[0], position.tick, position.liquidity
-            )
-            pool.collectLimitOrder(
-                accounts[0],
-                position.token,
-                position.tick,
-                MAX_UINT128,
-                MAX_UINT128,
             )
 
 
@@ -128,6 +121,7 @@ def test_uniswap_swaps(TEST_POOLS):
             else testCase["sqrtPriceLimit"]
         )
         try:
+            print("testCase: {}".format(testCase))
             recipient, amount0, amount1, _, _, _ = executeSwap(
                 poolInstance, testCase, recipient, sqrtPriceLimitX96
             )
@@ -153,6 +147,9 @@ def test_uniswap_swaps(TEST_POOLS):
             # Execution price is no longer the same as the pool price, should be abs(assetOut / assetIn).
             # To be able to compare it with uniswap ExecPrice (asset1/asset0) we calculate it the same way?
             executionPrice = -(amount1 / amount0)
+            if executionPrice > 1e25:
+                # To mimic infinity in original tests
+                executionPrice = "Infinity"
         else:
             executionPrice = "-Infinity"
 

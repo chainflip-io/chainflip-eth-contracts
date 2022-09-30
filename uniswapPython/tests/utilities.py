@@ -5,6 +5,7 @@ import traceback
 import math
 from dataclasses import dataclass
 import copy
+from decimal import *
 
 ### The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
 MIN_SQRT_RATIO = 4295128739
@@ -14,6 +15,9 @@ MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342
 FixedPoint128_Q128 = 0x100000000000000000000000000000000
 FixedPoint96_RESOLUTION = 96
 FixedPoint96_Q96 = 0x1000000000000000000000000
+
+## Mimicking a float point number with a 256 bit mantissa (== 10E77)
+contextPrecision = 77
 
 
 @dataclass
@@ -30,13 +34,14 @@ class TickInfo:
 
 @dataclass
 class TickInfoLimit:
-    ## amount of liquidity that has not been yet swapped
-    liquidityLeft: int
     ## the total position liquidity that references this tick
     liquidityGross: int
 
-    # accomulated percentatge of the pool swapped - relative meaning
-    amountPercSwappedInsideX128: int
+    # accomulated percentatge of the pool swapped - relative meaning. Storing 1 minus the value
+    # Possibly using floating point number with 256 in both the mantissa and the exponent.
+    # For now, in python using Decimal to get more precision than a simple float and to be able
+    # to achieve better rounding. Initial value should be one.
+    oneMinusPercSwap: Decimal
 
     ## fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
     ## only has relative meaning, not absolute — the value depends on when the tick is initialized.
@@ -46,6 +51,7 @@ class TickInfoLimit:
     # list of owners of positions contained in this tick. We can't just store the hash because then we can't
     # know who is the owner. So we need to recalculate the hash when we burn the position. We only require the
     # owner since we figure out the isToken0 and the tick.
+    # NOTE: We could also store the hash(which is the key to the dict) to not keep straight reference to the LPs.
     ownerPositions: list
 
 
@@ -193,34 +199,49 @@ def tryExceptHandler(fcn, assertMessage, *args):
 
 def checkUInt128(number):
     assert number >= 0 and number <= MAX_UINT128, "OF or UF of UINT128"
+    assert type(number) == int, "Not an integer"
 
 
 def checkInt128(number):
     assert number >= MIN_INT128 and number <= MAX_INT128, "OF or UF of INT128"
+    assert type(number) == int, "Not an integer"
 
 
 def checkInt256(number):
     assert number >= MIN_INT256 and number <= MAX_INT256, "OF or UF of INT256"
+    assert type(number) == int, "Not an integer"
 
 
 def checkUInt160(number):
     assert number >= 0 and number <= MAX_UINT160, "OF or UF of UINT160"
+    assert type(number) == int, "Not an integer"
 
 
 def checkUInt256(number):
     assert number >= 0 and number <= MAX_UINT256, "OF or UF of UINT256"
+    assert type(number) == int, "Not an integer"
 
 
 def checkUInt8(number):
     assert number >= 0 and number <= MAX_UINT8, "OF or UF of UINT8"
+    assert type(number) == int, "Not an integer"
 
 
 def checkInt24(number):
     assert number >= MIN_INT24 and number <= MAX_INT24, "OF or UF of INT24"
+    assert type(number) == int, "Not an integer"
+
+
+def checkfloat(input):
+    assert type(input) == float
 
 
 def checkString(input):
     assert type(input) == str
+
+
+def checkDecimal(input):
+    assert type(input) == Decimal
 
 
 def checkDict(input):
@@ -238,7 +259,7 @@ def toUint256(number):
     try:
         checkUInt256(number)
     except:
-        number = number & (2**128 - 1)
+        number = number & (2**256 - 1)
         checkUInt256(number)
     return number
 
@@ -256,6 +277,8 @@ def toUint128(number):
 def checkInputTypes(**kwargs):
     if "string" in kwargs:
         loopChecking(kwargs.get("string"), checkString)
+    if "decimal" in kwargs:
+        loopChecking(kwargs.get("decimal"), checkDecimal)
     if "accounts" in kwargs:
         loopChecking(kwargs.get("accounts"), checkAccount)
     if "int24" in kwargs:
@@ -296,7 +319,7 @@ def insertUninitializedTickstoMapping(mapping, keys):
 
 def insertUninitializedLimitTickstoMapping(mapping, keys):
     for key in keys:
-        insertTickInMapping(mapping, key, TickInfoLimit(0, 0, 0, 0, []))
+        insertTickInMapping(mapping, key, TickInfoLimit(0, Decimal(1), 0, []))
 
 
 def insertTickInMapping(mapping, key, value):
@@ -434,6 +457,7 @@ def assertLimitPositionExists(self, owner, tick, isToken0):
     checkInputTypes(account=owner, int24=(tick), bool=isToken0)
     key = getHashLimit(owner, tick, isToken0)
     assert self.__contains__(key), "Position doesn't exist"
+    return key
 
 
 def assertLimitPositionIsBurnt(self, owner, tick, isToken0):
