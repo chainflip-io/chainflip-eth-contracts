@@ -417,17 +417,12 @@ class ChainflipPool(UniswapPool):
                 )
 
                 if tickCrossed:
-                    # TODO: We should probably burn the tick here. This way we avoid the overhead of having to check
-                    # the ticks oneMinusSwapPerc in the next LO loop. Burning it at the end doesnøt have any advantage, it was
-                    # just clearer when debugging
-
                     # Health check
                     assert tickLimitInfo.oneMinusPercSwap == 0
-                    # Burn all the positions in that tick and clear the tick itself. This could be also done
-                    # in a separate call if desired, but then it needs to be right after the swap.
-                    # The last position burnt should already clear the tick, no need to do it here.
-                    # Since we don't transfer tokens until the end of the swap, we can't really burn and give tokens here.
-                    # We will burn them at the end of the swap
+                    # The positions (and tick) cannot be burnt here since the income swap tokens should be received
+                    # before sending tokens out to the LPs. Therefore, we just store an array of ticks crossed. The
+                    # burning will be done at the end of the swap.
+                    # There is probably a better way to do this in the Rust implementation.
                     state.ticksCrossed.append(stepLimit.tickNext)
                     # There might be another Limit order that is better than range orders
                     if state.amountSpecifiedRemaining != 0:
@@ -650,7 +645,7 @@ class ChainflipPool(UniswapPool):
         assert not tickLimitInfo.__contains__(tick)
 
 
-# Find the next linearTick (all should have oneMinusPercSwap > 0). Returning initialized bool signaling whether 
+# Find the next linearTick (all should have oneMinusPercSwap > 0). Returning initialized bool signaling whether
 # it should be used or not.
 # NOTE: This is probably far from the best efficient way, but this probably will be done very differently in Rust anyway.
 def nextLimitTick(tickMapping, lte, currentTick):
@@ -662,9 +657,11 @@ def nextLimitTick(tickMapping, lte, currentTick):
 
     # Dictionary with ticks that have oneMinusPercSwap > 0
     dictTicksWithLiq = {
-        #k: v
-        #for k, v in tickMapping.items()
-        k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
+        # k: v
+        # for k, v in tickMapping.items()
+        k: v
+        for k, v in tickMapping.items()
+        if tickMapping[k].oneMinusPercSwap > 0
     }
 
     keysLimitTicks = sorted(list(dictTicksWithLiq.keys()))
@@ -675,7 +672,7 @@ def nextLimitTick(tickMapping, lte, currentTick):
 
     if lte:
         # Start from the most left
-        nextTick = keysLimitTicks[0]        
+        nextTick = keysLimitTicks[0]
         if nextTick <= currentTick:
             return nextTick, True
     else:
@@ -684,7 +681,6 @@ def nextLimitTick(tickMapping, lte, currentTick):
         if nextTick > currentTick:
             return nextTick, True
 
-    # If no tick with LO is found, then we're done - not modifying the keyList in case we can use
-    # any of the ticks later in the swap, since current tick on the rangeOrder pool can change.
-    # However, we return the next best tick so the range orders know (without popping)
+    # If no tick with LO is found, then we're done - no LO will be used. However, we return the next best tick so
+    # the range orders know which is the next tick at which we should be using LOs.
     return nextTick, False
