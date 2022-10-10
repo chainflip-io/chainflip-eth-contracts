@@ -31,7 +31,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(bytes32 => Claim) private _pendingClaims;
     /// @dev   Time after registerClaim required to wait before call to executeClaim
-    uint48 public constant CLAIM_DELAY = 2 days;
+    uint48 public constant CLAIM_DELAY = 2 minutes;
     /// @dev   Deployer address that can call setFlip
     address private immutable deployer;
 
