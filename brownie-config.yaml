@@ -10,6 +10,9 @@ dependencies:
 compiler:
   evm_version: "london"
   solc:
+    optimizer:
+      enabled: true
+      runs: 800  
     version: 0.8.7
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
