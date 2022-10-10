@@ -330,10 +330,6 @@ class ChainflipPool(UniswapPool):
             self.feeGrowthGlobal0X128 if zeroForOne else self.feeGrowthGlobal1X128,
             0,
             cache.liquidityStart,
-            # Return a list of sorted keys with liquidityLeft > 0
-            # NOTE: If storing an array with all the tick keys is too computationally expensive we can just
-            # get the next tick when running nextLimitTick every time.
-            getKeysLimitTicksWithLiquidity(ticksLimitMap),
             [],
         )
 
@@ -350,98 +346,100 @@ class ChainflipPool(UniswapPool):
             stepLimit = StepComputations(0, None, False, 0, 0, 0, 0)
             stepLimit.sqrtPriceStartX96 = state.sqrtPriceX96
 
-            # Just to not try finding a limit order if there aren't any.
-            if len(state.keysLimitTicks) != 0:
-                # Find the next linear order tick. initialized == False if not found and returning the next best
-                (stepLimit.tickNext, stepLimit.initialized) = nextLimitTick(
-                    state.keysLimitTicks, not zeroForOne, state.tick
+            # Find the next linear order tick. initialized == False if not found and returning the next best
+            (stepLimit.tickNext, stepLimit.initialized) = nextLimitTick(
+                ticksLimitMap, not zeroForOne, state.tick
+            )
+            # If !initialized then there are no more linear ticks with liquidityLeft > 0 that we can swap for now
+            if stepLimit.initialized:
+
+                tickLimitInfo = ticksLimitMap[stepLimit.tickNext]
+
+                # Health check
+                assert tickLimitInfo.oneMinusPercSwap > 0
+                # Get price at that tick
+                priceX96 = TickMath.getPriceAtTick(stepLimit.tickNext)
+                (
+                    stepLimit.amountIn,
+                    stepLimit.amountOut,
+                    stepLimit.feeAmount,
+                    tickCrossed,
+                    resultingOneMinusPercSwap,
+                ) = SwapMath.computeLimitSwapStep(
+                    priceX96,
+                    tickLimitInfo.liquidityGross,
+                    state.amountSpecifiedRemaining,
+                    self.fee,
+                    zeroForOne,
+                    tickLimitInfo.oneMinusPercSwap,
                 )
-                # If !initialized then there are no more linear ticks with liquidityLeft > 0 that we can swap for now
-                if stepLimit.initialized:
 
-                    tickLimitInfo = ticksLimitMap[stepLimit.tickNext]
+                # Health check
+                assert tickLimitInfo.oneMinusPercSwap <= Decimal("1")
+
+                # Update oneMinusPercSwap with the value calculated
+                tickLimitInfo.oneMinusPercSwap = resultingOneMinusPercSwap
+
+                if exactInput:
+                    state.amountSpecifiedRemaining -= (
+                        stepLimit.amountIn + stepLimit.feeAmount
+                    )
+                    state.amountCalculated = SafeMath.subInts(
+                        state.amountCalculated, stepLimit.amountOut
+                    )
+                else:
+                    state.amountSpecifiedRemaining += stepLimit.amountOut
+                    state.amountCalculated = SafeMath.addInts(
+                        state.amountCalculated,
+                        stepLimit.amountIn + stepLimit.feeAmount,
+                    )
+
+                # if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+                if cache.feeProtocol > 0:
+                    delta = abs(stepLimit.feeAmount // cache.feeProtocol)
+                    stepLimit.feeAmount -= delta
+                    state.protocolFee += delta & (2**128 - 1)
+
+                # Calculate linear fees can probably be done inside the Tick.computeLimitSwapStep function since it
+                # will be stored within a tick (most likely). For now we keep it here to have the same structure.
+
+                ## update global fee tracker. No need to check for liquidity, otherwise we would not have swapped a LO
+                # if stateLimit.liquidity > 0:
+                # feeAmount is in amountIn tokens => therefore feeGrowthInsideX128 is not in liquidityTokens
+                tickLimitInfo.feeGrowthInsideX128 += mulDiv(
+                    stepLimit.feeAmount,
+                    FixedPoint128_Q128,
+                    tickLimitInfo.liquidityGross,
+                )
+                # Addition can overflow in Solidity - mimic it
+                tickLimitInfo.feeGrowthInsideX128 = toUint256(
+                    tickLimitInfo.feeGrowthInsideX128
+                )
+
+                if tickCrossed:
+                    # TODO: We should probably burn the tick here. This way we avoid the overhead of having to check
+                    # the ticks oneMinusSwapPerc in the next LO loop. Burning it at the end doesnøt have any advantage, it was
+                    # just clearer when debugging
 
                     # Health check
-                    assert tickLimitInfo.oneMinusPercSwap > 0
-                    # Get price at that tick
-                    priceX96 = TickMath.getPriceAtTick(stepLimit.tickNext)
-                    (
-                        stepLimit.amountIn,
-                        stepLimit.amountOut,
-                        stepLimit.feeAmount,
-                        tickCrossed,
-                        resultingOneMinusPercSwap,
-                    ) = SwapMath.computeLimitSwapStep(
-                        priceX96,
-                        tickLimitInfo.liquidityGross,
-                        state.amountSpecifiedRemaining,
-                        self.fee,
-                        zeroForOne,
-                        tickLimitInfo.oneMinusPercSwap,
-                    )
-
-                    # Health check
-                    assert tickLimitInfo.oneMinusPercSwap <= Decimal("1")
-
-                    # Update oneMinusPercSwap with the value calculated
-                    tickLimitInfo.oneMinusPercSwap = resultingOneMinusPercSwap
-
-                    if exactInput:
-                        state.amountSpecifiedRemaining -= (
-                            stepLimit.amountIn + stepLimit.feeAmount
-                        )
-                        state.amountCalculated = SafeMath.subInts(
-                            state.amountCalculated, stepLimit.amountOut
-                        )
+                    assert tickLimitInfo.oneMinusPercSwap == 0
+                    # Burn all the positions in that tick and clear the tick itself. This could be also done
+                    # in a separate call if desired, but then it needs to be right after the swap.
+                    # The last position burnt should already clear the tick, no need to do it here.
+                    # Since we don't transfer tokens until the end of the swap, we can't really burn and give tokens here.
+                    # We will burn them at the end of the swap
+                    state.ticksCrossed.append(stepLimit.tickNext)
+                    # There might be another Limit order that is better than range orders
+                    if state.amountSpecifiedRemaining != 0:
+                        continue
                     else:
-                        state.amountSpecifiedRemaining += stepLimit.amountOut
-                        state.amountCalculated = SafeMath.addInts(
-                            state.amountCalculated,
-                            stepLimit.amountIn + stepLimit.feeAmount,
-                        )
-
-                    # if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
-                    if cache.feeProtocol > 0:
-                        delta = abs(stepLimit.feeAmount // cache.feeProtocol)
-                        stepLimit.feeAmount -= delta
-                        state.protocolFee += delta & (2**128 - 1)
-
-                    # Calculate linear fees can probably be done inside the Tick.computeLimitSwapStep function since it
-                    # will be stored within a tick (most likely). For now we keep it here to have the same structure.
-
-                    ## update global fee tracker. No need to check for liquidity, otherwise we would not have swapped a LO
-                    # if stateLimit.liquidity > 0:
-                    # feeAmount is in amountIn tokens => therefore feeGrowthInsideX128 is not in liquidityTokens
-                    tickLimitInfo.feeGrowthInsideX128 += mulDiv(
-                        stepLimit.feeAmount,
-                        FixedPoint128_Q128,
-                        tickLimitInfo.liquidityGross,
-                    )
-                    # Addition can overflow in Solidity - mimic it
-                    tickLimitInfo.feeGrowthInsideX128 = toUint256(
-                        tickLimitInfo.feeGrowthInsideX128
-                    )
-
-                    if tickCrossed:
-                        # Health check
-                        assert tickLimitInfo.oneMinusPercSwap == 0
-                        # Burn all the positions in that tick and clear the tick itself. This could be also done
-                        # in a separate call if desired, but then it needs to be right after the swap.
-                        # The last position burnt should already clear the tick, no need to do it here.
-                        # Since we don't transfer tokens until the end of the swap, we can't really burn and give tokens here.
-                        # We will burn them at the end of the swap
-                        state.ticksCrossed.append(stepLimit.tickNext)
-                        # There might be another Limit order that is better than range orders
-                        if state.amountSpecifiedRemaining != 0:
-                            continue
-                        else:
-                            # In case we cross the tick at the exact some time we complete the order
-                            break
-                    else:
-                        # Health check - swap should be completed
-                        assert state.amountSpecifiedRemaining == 0
-                        # Prevent from altering anything in the range order pool
+                        # In case we cross the tick at the exact some time we complete the order
                         break
+                else:
+                    # Health check - swap should be completed
+                    assert state.amountSpecifiedRemaining == 0
+                    # Prevent from altering anything in the range order pool
+                    break
 
             ######################################################
             #################### RANGE ORDERS ####################
@@ -652,40 +650,39 @@ class ChainflipPool(UniswapPool):
         assert not tickLimitInfo.__contains__(tick)
 
 
-# Return all the position keys (ticks) that have liquidity, as a sorted list.
-def getKeysLimitTicksWithLiquidity(tickMapping):
-    # NOTE: Right now we clear the positions (and therefore the tick) once a tick is fully swapped. Therefore,
-    # we don't need to check for tick having liquidity (oneMinusPercSwap > 0). If that changes, we need to add
-    # the "oneMinusPercSwap > 0" check back.
+# Find the next linearTick (all should have oneMinusPercSwap > 0). Returning initialized bool signaling whether 
+# it should be used or not.
+# NOTE: This is probably far from the best efficient way, but this probably will be done very differently in Rust anyway.
+def nextLimitTick(tickMapping, lte, currentTick):
+    checkInputTypes(bool=(lte), int24=(currentTick))
+
+    # NOTE: We are fetching for the next tick in every swap loop. Since the ticks don't get burnt until the end
+    # of the swap, we will find some LO ticks that have been previously swapped. Therefore we need to get only
+    # the LO ticks with oneMinusPercSwap > 0.
 
     # Dictionary with ticks that have oneMinusPercSwap > 0
     dictTicksWithLiq = {
-        k: v
-        for k, v in tickMapping.items()
-        #     k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
+        #k: v
+        #for k, v in tickMapping.items()
+        k: v for k, v in tickMapping.items() if tickMapping[k].oneMinusPercSwap > 0
     }
-    # Return a list of sorted keys
-    return sorted(list(dictTicksWithLiq.keys()))
 
+    keysLimitTicks = sorted(list(dictTicksWithLiq.keys()))
 
-# Find the next linearTick (all should have oneMinusPercSwap > 0) and pop them from the list. The input list
-# should be a list of sorted keys.
-def nextLimitTick(keysLimitTicks, lte, currentTick):
-    checkInputTypes(bool=(lte), int24=(currentTick))
+    # Return an invalid tick if there are no ticks.
+    if len(keysLimitTicks) == 0:
+        return None, False
 
-    # Only pop the value if tick will be used
     if lte:
         # Start from the most left
-        if keysLimitTicks[0] <= currentTick:
-            nextTick = keysLimitTicks.pop(0)
+        nextTick = keysLimitTicks[0]        
+        if nextTick <= currentTick:
             return nextTick, True
-        nextTick = keysLimitTicks[0]
     else:
-        if keysLimitTicks[-1] > currentTick:
-            # Start from the most right
-            nextTick = keysLimitTicks.pop(-1)
-            return nextTick, True
+        # Start from the most right
         nextTick = keysLimitTicks[-1]
+        if nextTick > currentTick:
+            return nextTick, True
 
     # If no tick with LO is found, then we're done - not modifying the keyList in case we can use
     # any of the ticks later in the swap, since current tick on the rangeOrder pool can change.
