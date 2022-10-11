@@ -3,7 +3,7 @@ on:
 
 jobs:
   lint:
-    runs-on: [self-hosted, linux, x64, ephemeral]
+    runs-on: [self-hosted, linux, x64, ephemeal]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
