@@ -10,7 +10,7 @@ jobs:
 
   stateful-tests:
     needs: lint
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64, ephemeral]
     timeout-minutes: 3600
     strategy:
       matrix:

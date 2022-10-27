@@ -6,11 +6,14 @@ networks:
 dependencies:
   - OpenZeppelin/openzeppelin-contracts@4.0.0
 
-# Path remapping to support OpenZepplin imports with NPM-style path
 compiler:
   evm_version: "london"
   solc:
+    optimizer:
+      enabled: true
+      runs: 900
     version: 0.8.7
+    # Path remapping to support OpenZepplin imports with NPM-style path
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
 
