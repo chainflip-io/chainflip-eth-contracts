@@ -43,20 +43,20 @@ contract VaultEchidna is IShared {
         v.fetchDepositTokenBatch(sigData, fetchParamsArray);
     }
 
-    function swapETH(string calldata egressParams, bytes32 egressReceiver) external virtual {
-        v.swapETH(egressParams, egressReceiver);
-    }
+    // function swapETH(string calldata egressParams, bytes32 egressReceiver) external virtual {
+    //     v.swapETH(egressParams, egressReceiver);
+    // }
 
-    function swapToken(
-        string calldata egressParams,
-        bytes32 egressReceiver,
-        IERC20 ingressToken,
-        uint256 amount
-    ) external virtual {
-        v.swapToken(egressParams, egressReceiver, ingressToken, amount);
-    }
+    // function swapToken(
+    //     string calldata egressParams,
+    //     bytes32 egressReceiver,
+    //     IERC20 ingressToken,
+    //     uint256 amount
+    // ) external virtual {
+    //     v.swapToken(egressParams, egressReceiver, ingressToken, amount);
+    // }
 
-    function govWithdraw(IERC20[] calldata tokens) external virtual {
+    function govWithdraw(address[] calldata tokens) external virtual {
         v.govWithdraw(tokens);
     }
 

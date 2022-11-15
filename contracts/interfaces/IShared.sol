@@ -35,7 +35,7 @@ interface IShared {
      * @param amount    The amount to transfer, in wei (uint)
      */
     struct TransferParams {
-        IERC20 token;
+        address token;
         address payable recipient;
         uint256 amount;
     }
@@ -46,6 +46,6 @@ interface IShared {
      */
     struct FetchParams {
         bytes32 swapID;
-        IERC20 token;
+        address token;
     }
 }

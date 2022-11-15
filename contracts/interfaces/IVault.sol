@@ -1,6 +1,5 @@
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
 
@@ -45,14 +44,14 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function swapETH(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
+    // function swapETH(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
 
-    function swapToken(
-        string calldata egressChainAndToken,
-        bytes32 egressAddress,
-        IERC20 ingressToken,
-        uint256 amount
-    ) external;
+    // function swapToken(
+    //     string calldata egressChainAndToken,
+    //     bytes32 egressAddress,
+    //     IERC20 ingressToken,
+    //     uint256 amount
+    // ) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -60,7 +59,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function govWithdraw(IERC20[] calldata tokens) external;
+    function govWithdraw(address[] calldata tokens) external;
 
     function enableSwaps() external;
 
