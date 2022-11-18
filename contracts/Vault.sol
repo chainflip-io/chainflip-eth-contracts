@@ -461,6 +461,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         );
     }
 
+    // TODO: Checking msg.value!=0 is probably a waste of gas since we don't really prevent spamming. We check that in the token
+    // case because I have seen people saying they have seen isssues when fuzzing transfering zero tokens.
     function xswapNativeWithCall(
         string memory egressParams,
         string memory egressAddress,
@@ -501,6 +503,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                     Egress CCM                           //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    // TODO: To think what gating (swapsEnabled) we want to have if any, since that costs gas (sload).
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient and calls the receive
@@ -545,13 +549,52 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        // Copying the used parameters to mempory to avoid StackTooDeep error. To play a bit more with it
-        // since we are probably spending a bit more gas by doing that.
+        // Making an extra call to gain some stack room (avoid stackTooDeep error)
+        _egress(transferParams, ingressParams, ingressAddress, message);
+    }
+
+    function _egress(
+        TransferParams calldata transferParams,
+        string calldata ingressParams,
+        string calldata ingressAddress,
+        bytes calldata message
+    ) private {
+        // TODO: Originally we copied this parameters to avoid StackTooDeep error. But now that this function is
+        // separate we might have a bit more of a buffer. To play a bit more with it since we are probably
+        // spending a bit more gas by doing that. If we have to do this we can maybe just pass those as parameters
+        // to the _egress function anyway.
         uint256 amount = transferParams.amount;
         address token = address(transferParams.token);
         address payable recipient = transferParams.recipient;
-        _transfer(token, recipient, amount);
-        ICFReceiver(recipient).cfRecieve(ingressParams, ingressAddress, message, token, amount);
+
+        // NOTE: It's on the receiver to make sure this call doesn't revert. LiFi has a try-catch to a dex and
+        // if that fails it just forwards the tokens to the user.
+        // NOTE: That approach seems great for us. We could also consider doing like Thor-Chain with an extra
+        // check of the low-level call (like try-catch) and make the payment if that fails. Problem with that is
+        // in the case of LiFi they would need to handle a single transfer to decode and send to recipient.
+        // We probably want the user/protocol to decide if they want to ensure that the transaction will not
+        // revert and they get the tokens (try-catch), or if it can revert then it allows them to replay it.
+        // So by not doing that we allow the user/protocol to decide how it should be handled.
+
+        // TODO: LOOK INTO RANGO EXCHANGE TO SEE HOW THEY HANDLE THIS!!
+
+        // TODO: Two options here. Option two would be better gas-wise to avoid an extra externall call just
+        // to send the native tokens as part of _transfer. Also it is a try-catch (more gas). Sending it as
+        // part of the call seems a lot better and also easier for the receiver to get msg.value (which will
+        // match amount, but also so they can be sure of that.). Also, adding payable is not adding any extra
+        // gas to the call (actually it decresases it).
+
+        // OPTION 1:
+        // _transfer(token, recipient, amount);
+        // ICFReceiver(recipient).cfRecieve(ingressParams, ingressAddress, message, token, amount);
+
+        // OPTION 2:
+        if (token == _ETH_ADDR) {
+            ICFReceiver(recipient).cfRecieve{value: amount}(ingressParams, ingressAddress, message, token, amount);
+        } else {
+            IERC20(token).safeTransfer(recipient, amount);
+            ICFReceiver(recipient).cfRecieve(ingressParams, ingressAddress, message, token, amount);
+        }
     }
 
     /**
@@ -593,6 +636,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
+        // No need for handling a failure case. Better let it revert and allow the user to replay it.
         ICFReceiver(recipient).cfRecieveMessage(ingressParams, ingressAddress, message);
     }
 
@@ -601,6 +645,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                     Gas topup                            //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    // NOTE: To decide if we want this for the future or not.
 
     // Potentially we could use this two functions to allow the user to cancel an egress
     // transaction. This could be done by sending zero amount and signaling the swapID.

@@ -2,19 +2,19 @@ pragma solidity ^0.8.0;
 
 /**
  * @title    CF Receiver interface
- * @notice   The interface to recieve cross-message calls from the CF Vault.
+ * @notice   The interface to recieve cross-message swaps + message call from the CF Vault.
  */
 interface ICFReceiver {
     function cfRecieve(
-        string calldata ingressChain,
+        string calldata ingressParams,
         string calldata ingressAddress,
         bytes calldata message,
         address token,
         uint256 amount
-    ) external;
+    ) external payable;
 
     function cfRecieveMessage(
-        string calldata ingressChain,
+        string calldata ingressParams,
         string calldata ingressAddress,
         bytes calldata message
     ) external;
