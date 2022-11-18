@@ -400,7 +400,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///TODO: Should we have a separate function for adding liquidity?
 
     // TODO: if we refund we need to add a refund address. For example, if LiFi is in the middle, we want to refund the user, not LiFi.
-    //       This is the case if we do a retrospective refund. Even if we might launch without it, should we still have it for the future.
+    //       This is the case if we do a retrospective refund. I would not try to glump xswapTokenWithCall and xswapToken even if only
+    //       the message parameter differs to have different functions - makes it easier to signal if it's swap+CCM, only CCM or only swap.
+    //       We could glump them all into one (empty message = no CCM, no egressToken == noSwap) but it seems clearer to keep it separate.
+    //       Also because with DEX Aggregation we might want only a pre-swap, no postSwap and then setting empty messages is a waste of
+    //       gas. Better have two separate functions if we can afford it (bytecodesize-wise). We effectively make an only-swap cheaper,
+    //       which might be a very common use, especially when egressing to non-smart contract chains or for native egress tokens.
+    //       These are the two main cases where we offer a lot of value to the users, so it makes sense to optimize.
     // TODO: If we want to allow gas topups then a txHash parameter should be use as an input to match with the transaction. This way
     //       there wouldn't be a need to add a transferID at the smart contract level. Since the monitoring needs to be done off-chain
     //       anyway, I would suggest to use the swapID that CF will create to track swaps.
@@ -412,6 +418,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is super painful.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
 
+    // NOTE: Used for swap+CCM and also for pure CCM (by having an empty egressToken)
     /**
      * @notice  Swaps ERC20 Token for a token in another chain. Function call needs to specify the ingress and egress parameters.
      *          It also has a cross-chain message capability. An empty message signifies that only a token swap is to be performed.
@@ -461,8 +468,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         );
     }
 
-    // TODO: Checking msg.value!=0 is probably a waste of gas since we don't really prevent spamming. We check that in the token
-    // case because I have seen people saying they have seen isssues when fuzzing transfering zero tokens.
+    // TODO: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
+    // for users to understand that they should be paying gas. We check that in the token case because I have heard
+    // people saying they have seen isssues when fuzzing transfering zero tokens.
     function xswapNativeWithCall(
         string memory egressParams,
         string memory egressAddress,
@@ -472,6 +480,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         emit SwapNativeWithMessage(egressParams, egressAddress, msg.value, msg.sender, message, refundAddress);
     }
 
+    // NOTE: Used for swapOnly (also used in cross-chain aggregation when egressing to native asset or to non-smart
+    // contract chain.
     /**
      * @dev     If we end up having a refundAddress on the send functions, then we have two parameters that are
      *          useless for an onlySwap function (which can even come from LiFi). In that case, I would have these
@@ -488,6 +498,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         emit SwapToken(egressParams, egressAddress, address(ingressToken), amount, msg.sender);
     }
 
+    // TODO: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
+    // for users to understand that they should be paying an ingress native Token. We check that in the token
+    // case because I have heard people saying they have seen isssues when fuzzing transfering zero tokens.
     function xswapNative(string memory egressParams, string memory egressAddress)
         external
         payable
@@ -532,7 +545,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     )
         external
         onlyNotSuspended
-        nzAddr(address(transferParams.token))
+        nzAddr(transferParams.token)
         nzAddr(transferParams.recipient)
         nzUint(transferParams.amount)
         consumesKeyNonce(
