@@ -413,8 +413,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // TODO: Do we prefer uint for egressChain and egress token or a single string? Gaswise the uints are just a bit cheaper (not too
     //       relevant). Uints would be great for the egress part, since we only pass egress chain there. However, strings are useful to
     //       pass extra parameters in the future (similar to ThorChain's Memos)
-    // TODO: If we end up having a refundAddress on the send functions, then we have two parameters that are  useless for an onlySwap
-    //       function (which can even come from LiFi). In that case, I would have these two separate functions for swap-only.
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is super painful.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
 
@@ -588,8 +586,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // We probably want the user/protocol to decide if they want to ensure that the transaction will not
         // revert and they get the tokens (try-catch), or if it can revert then it allows them to replay it.
         // So by not doing that we allow the user/protocol to decide how it should be handled.
-
-        // TODO: LOOK INTO RANGO EXCHANGE TO SEE HOW THEY HANDLE THIS!!
+        // NOTE: Seems like RangeExchange also handles it the same way as LiFi, with a try-catch call to the
+        // DEXES and to the users/bridges. So we would be good with this approach (letting users or protocols
+        // do the try/catch on their side).
 
         // TODO: Two options here. Option two would be better gas-wise to avoid an extra externall call just
         // to send the native tokens as part of _transfer. Also it is a try-catch (more gas). Sending it as
@@ -659,10 +658,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    // NOTE: To decide if we want this for the future or not.
-
+    // NOTE: To decide if we want this for the future or not. Native gas would be great to offer
+    // gas topups on the egress chain. But non-native would be good because USDC is easier to
+    // handle/swap internally.
     // Potentially we could use this two functions to allow the user to cancel an egress
     // transaction. This could be done by sending zero amount and signaling the swapID.
+
     function addNativeGas(bytes32 swapID) external payable {
         emit AddNativeGas(swapID, msg.value);
     }
