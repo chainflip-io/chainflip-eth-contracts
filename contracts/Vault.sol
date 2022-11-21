@@ -397,7 +397,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
     ///      In our case reusing this function is not great anyway (due to message and refundAddress paramts)
     ///      but we could consider having a separate function for adding liquidity.
-    ///TODO: Should we have a separate function for adding liquidity?
+    ///TODO: Should we have a separate function for adding liquidity? Or we will do it through the ingressAddress method?
 
     // TODO: if we refund we need to add a refund address. For example, if LiFi is in the middle, we want to refund the user, not LiFi.
     //       This is the case if we do a retrospective refund. I would not try to glump xswapTokenWithCall and xswapToken even if only
@@ -466,10 +466,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         );
     }
 
-    // TODO: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
+    // NOTE: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
     // for users to understand that they should be paying gas. We check that in the token case because I have heard
     // people saying they have seen isssues when fuzzing transfering zero tokens.
-    function xswapNativeWithCall(
+    function xSwapNativeWithCall(
         string memory egressParams,
         string memory egressAddress,
         bytes calldata message,
@@ -486,7 +486,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          two separate functions for swap-only.
      *          No need to do that for a CCM only, since a payment needs ot be done anyway (so only egressToken shall be empty).
      */
-    function xswapToken(
+    function xSwapToken(
         string memory egressParams,
         string memory egressAddress,
         IERC20 ingressToken,
@@ -499,7 +499,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // TODO: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
     // for users to understand that they should be paying an ingress native Token. We check that in the token
     // case because I have heard people saying they have seen isssues when fuzzing transfering zero tokens.
-    function xswapNative(string memory egressParams, string memory egressAddress)
+    function xSwapNative(string memory egressParams, string memory egressAddress)
         external
         payable
         onlyNotSuspended
@@ -534,7 +534,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param ingressAddress      The address where the transfer originated from in the ingressParams.
      * @param message             The message to be passed to the recipient.
      */
-    function egress(
+    function egressxSwapWithCall(
         SigData calldata sigData,
         TransferParams calldata transferParams,
         string calldata ingressParams,
@@ -550,7 +550,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.egress.selector,
+                    this.egressxSwapWithCall.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     transferParams,
                     ingressParams,
@@ -561,10 +561,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // Making an extra call to gain some stack room (avoid stackTooDeep error)
-        _egress(transferParams, ingressParams, ingressAddress, message);
+        _egressxSwapWithCall(transferParams, ingressParams, ingressAddress, message);
     }
 
-    function _egress(
+    function _egressxSwapWithCall(
         TransferParams calldata transferParams,
         string calldata ingressParams,
         string calldata ingressAddress,
@@ -649,7 +649,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // No need for handling a failure case. Better let it revert and allow the user to replay it.
-        ICFReceiver(recipient).cfRecieveMessage(ingressParams, ingressAddress, message);
+        ICFReceiver(recipient).cfRecieveOnlyXCall(ingressParams, ingressAddress, message);
     }
 
     //////////////////////////////////////////////////////////////
