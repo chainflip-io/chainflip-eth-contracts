@@ -12,7 +12,7 @@ import "./interfaces/ICFReceiver.sol";
  *           parameters. However, anyone can bridge tokens to the reciever contract. Also,
  *           if msg.sender is not checked it could be any external call that is not really
  *           transferring the tokens before making the call. So an extra check of the
- *           ingressAddress is adviced to be done in the _cfRceive* function.
+ *           srcAddress is adviced to be done in the _cfRceive* function.
  *           In the case of receiving ETH, the user could instead check that msg.value
  *           is equal to the amount passed as parameter.
  */
@@ -26,34 +26,34 @@ contract CFReceiver is ICFReceiver {
     }
 
     function cfRecieve(
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message,
         address token,
         uint256 amount
     ) external payable override onlyCFSender {
-        _cfRecieve(ingressParams, ingressAddress, message, token, amount);
+        _cfRecieve(srcChain, srcAddress, message, token, amount);
     }
 
-    function cfRecieveOnlyxCall(
-        string calldata ingressParams,
-        string calldata ingressAddress,
+    function cfRecievexCall(
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     ) external override onlyCFSender {
-        _cfRecieveOnlyxCall(ingressParams, ingressAddress, message);
+        _cfRecievexCall(srcChain, srcAddress, message);
     }
 
     function _cfRecieve(
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message,
         address token,
         uint256 amount
     ) internal virtual {}
 
-    function _cfRecieveOnlyxCall(
-        string calldata ingressParams,
-        string calldata ingressAddress,
+    function _cfRecievexCall(
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     ) internal virtual {}
 

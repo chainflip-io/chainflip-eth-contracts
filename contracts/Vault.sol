@@ -23,30 +23,33 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    // We don't index the egressAddress because it's a string (dynamicType). If we index it to be able to filter,
+    // We don't index the dstAddress because it's a string (dynamicType). If we index it to be able to filter,
     // then unless we specically search for it we won't be able to decode it.
     // See: https://ethereum.stackexchange.com/questions/6840/indexed-event-with-string-not-getting-logged
-    event SwapNativeWithMessage(
-        string egressParams,
-        string egressAddress,
+    event SwapNativeAndCall(
+        uint32 dstChain,
+        string dstAddress,
+        string swapIntent,
         uint256 amount,
         address indexed sender,
         bytes message,
         address refundAddress
     );
-    event SwapTokenWithMessage(
-        string egressParams,
-        string egressAddress,
+    event SwapTokenAndCall(
+        uint32 dstChain,
+        string dstAddress,
+        string swapIntent,
         address ingressToken,
         uint256 amount,
         address indexed sender,
         bytes message,
         address refundAddress
     );
-    event SwapNative(string egressParams, string egressAddress, uint256 amount, address indexed sender);
+    event SwapNative(uint32 dstChain, string dstAddress, string swapIntent, uint256 amount, address indexed sender);
     event SwapToken(
-        string egressParams,
-        string egressAddress,
+        uint32 dstChain,
+        string dstAddress,
+        string swapIntent,
         address ingressToken,
         uint256 amount,
         address indexed sender
@@ -387,17 +390,16 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //               Ingress Swaps w/ or w/o message.           //
-    //                 Also potentially pure CCM                //
+    //                  SrcChain xSwap and call                  //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
     ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity!
-    ///      They do it because in the context of providing liquidity, the egressAddress doesn't make sense.
+    ///      They do it because in the context of providing liquidity, the dstAddress doesn't make sense.
     ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
     ///      In our case reusing this function is not great anyway (due to message and refundAddress paramts)
     ///      but we could consider having a separate function for adding liquidity.
-    ///TODO: Should we have a separate function for adding liquidity? Or we will do it through the ingressAddress method?
+    ///TODO: Should we have a separate function for adding liquidity? Or we will do it through the srcAddress method?
 
     // TODO: if we refund we need to add a refund address. For example, if LiFi is in the middle, we want to refund the user, not LiFi.
     //       This is the case if we do a retrospective refund. I would not try to glump xswapTokenWithCall and xswapToken even if only
@@ -415,50 +417,58 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //       pass extra parameters in the future (similar to ThorChain's Memos)
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is super painful.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
+    // TODO: To think what gating (swapsEnabled) we want to have if any, since that costs gas (sload).
 
     // NOTE: Used for swap+CCM and also for pure CCM (by having an empty egressToken)
+    // NOTE: SwapIntent is for now equal to dstToken, but the name is more generic for the future. Does that make sense?
+
     /**
-     * @notice  Swaps ERC20 Token for a token in another chain. Function call needs to specify the ingress and egress parameters.
-     *          It also has a cross-chain message capability. An empty message signifies that only a token swap is to be performed.
-     *          NOTE: If we end up going for an extra `xswapToken` function then an empty message will mean that an xcall is done
-     *          on the egress with an empty message - can be done for the user to react to an ERC20 transfer.
-     *          An empty egressToken signifies that only CCM is to be performed and the ingres Token shall be used for gas.
-     * @dev     There is not really a reason to create a special only CCM functions since an ingress payment needs to be done anyway.
-     *          Also, if only a swap is desired then the ingressAddress method can be used. Gas savings in both cases would be minimal.
-     *          The check for existing parameters shall be done in the CFE. Checking non-empty string (egressParams/egressAddress) is
-     *          a bit of a waste of gas also because a non-empty string doesn't mean it's a valid egressAddress anyway
-     * @param egressParams  String containing egressChain and egressToken. Most likely egressChain:egressToken. In
-     *                      the event of this not coming from external call, it can easily be concatenated after
-     *                      after solidity 8.12 with string.concat(). Actually, string(abi.encodePacked(a,":",b)) also works.
+     * @notice  Swaps ERC20 Token for a token in another chain and performs a xcall. Function call needs to specify the src and
+     *          destinatiopn parameters. It also has a cross-chain message capability. If no xcall is needed then xSwapToken should
+     *          be used. If xcall is needed but no message is needed then the message field can be left empty.
+     *          An empty dstToken (in swapIntent) signifies that only CCM is to be performed and the source Token shall be used for gas.
+     * @dev     At the moment we are not prioritizing pure ccm. If we want to do so, we could create a separate function without swapIntent.
+     * @dev     The check for existing parameters shall be done in the CFE. Checking non-empty string (swapIntent/dstAddress) is
+     *          a bit of a waste of gas also because a non-empty string doesn't mean it's a valid dstAddress anyway.
+     * @dev     dstChain and swapIntent (and even dstAddress) could be bundled together in a single string to shave a few hundred gas.
+     *          However, dstChain is nicer as a uint for the egress calls so it can be checked easily, since checking string is terrible.
+     *          Then, we could be including dstAddress inside swapIntent. I have kept it separate since swapIntent will most likely come
+     *          from calldata while dstAddress might be a string stored in another protocols' smart contract. It is easy to concatenate
+     *          via abi.encodePacked or via string.concat (0.8.12) so they could be bundled. But kept separately for now. TODO: Ponder?
+     * @dev     Swapintent only being dstToken for now, but it allows for more parameters in the future.
+     *
+     * @param dstChain      The destination chain according to the Chainflip protocol's nomenclature.
+     * @param dstAddress    String containing the egress address. An address type is not used since non-EVM chains don't follow this
+     *                      format. A string is used (instead of bytes32) given that not all chains have a user-friendly way to
+     *                      represent an address with bytes32.
+     * @param swapIntent    String containing the desired destination Token and potentially in the future other parameters, e.g.
+     *                      egressToken:MAXslippage:... If that is the case, when that is not coming from external call, it can
+     *                      easily be concatenated after solidity 8.12 with string.concat(). Otherwise, with
+     *                      string(abi.encodePacked(a,":",b)) as long as both a and b are stirings.
      *                      An empty egressToken signifies that only a CCM is performed and all ingress tokens are used for gas.
-     *                      We could also make this two parameters two uints which is slightly cheaper gas-wise. However, having
-     *                      strings is useful to be able to have extra parameters in the future (similar to ThorChain's Memos).
-     *                      For future functionality we could reuse egressParams. e.g. egressChain:egressToken:MAXslippage
-     * @param egressAddress String containing the egress address. Only problem is that in EVM converting an address to a string
-     *                      is not straightforward, but we have to live with it (unless we create specific EVM-friendly functions).
-     *                      I like the separation from egressParams because it's a bit more flexible, especially in cases where other
-     *                      protocols want to integrate and their egressAddress is always the same (stored in some other SC), while
-     *                      the other egressParams can be swap-specific (externally passed in each call).
+     *                      We can make a specific CCM without the swapIntent.
      * @param message       String containing the message to be sent to the egress chain. Can be empty if the user wants a xcall but
      *                      no message to be sent.
-     * @param ingressToken  Address of the token to swap.
+     * @param srcToken      Address of the token to swap.
      * @param amount        Amount of tokens to swap.
      * @param refundAddress Address to refund any excess gas. If we decide to refund on the egress, it would need to be a string.
-     *                      We would still need an egress address, since for DEX aggregation egressAddress != userAddress.
+     *                      We would still need an egress address, since for DEX aggregation dstAddress != userAddress.
      */
-    function xswapTokenWithCall(
-        string memory egressParams,
-        string memory egressAddress,
+    function xSwapTokenAndCall(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
         bytes calldata message,
-        IERC20 ingressToken,
+        IERC20 srcToken,
         uint256 amount,
         address refundAddress
     ) external override onlyNotSuspended swapsEnabled nzUint(amount) {
-        ingressToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit SwapTokenWithMessage(
-            egressParams,
-            egressAddress,
-            address(ingressToken),
+        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        emit SwapTokenAndCall(
+            dstChain,
+            dstAddress,
+            swapIntent,
+            address(srcToken),
             amount,
             msg.sender,
             message,
@@ -466,16 +476,23 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         );
     }
 
-    // NOTE: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
-    // for users to understand that they should be paying gas. We check that in the token case because I have heard
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                    SrcChain xSwap                        //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    // NOTE: Checking msg.value!=0 won't prevent spamming. However, it might be useful to ensure that users
+    // understand that they should be paying gas. We check that in the token case because I have heard
     // people saying they have seen isssues when fuzzing transfering zero tokens.
-    function xSwapNativeWithCall(
-        string memory egressParams,
-        string memory egressAddress,
+    function xSwapNativeAndCall(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
         bytes calldata message,
         address refundAddress
     ) external payable override onlyNotSuspended swapsEnabled nzUint(msg.value) {
-        emit SwapNativeWithMessage(egressParams, egressAddress, msg.value, msg.sender, message, refundAddress);
+        emit SwapNativeAndCall(dstChain, dstAddress, swapIntent, msg.value, msg.sender, message, refundAddress);
     }
 
     // NOTE: Used for swapOnly (also used in cross-chain aggregation when egressing to native asset or to non-smart
@@ -487,36 +504,32 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          No need to do that for a CCM only, since a payment needs ot be done anyway (so only egressToken shall be empty).
      */
     function xSwapToken(
-        string memory egressParams,
-        string memory egressAddress,
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
         IERC20 ingressToken,
         uint256 amount
     ) external override onlyNotSuspended swapsEnabled nzUint(amount) {
         ingressToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit SwapToken(egressParams, egressAddress, address(ingressToken), amount, msg.sender);
+        emit SwapToken(dstChain, dstAddress, swapIntent, address(ingressToken), amount, msg.sender);
     }
 
     // TODO: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
     // for users to understand that they should be paying an ingress native Token. We check that in the token
     // case because I have heard people saying they have seen isssues when fuzzing transfering zero tokens.
-    function xSwapNative(string memory egressParams, string memory egressAddress)
-        external
-        payable
-        override
-        onlyNotSuspended
-        swapsEnabled
-        nzUint(msg.value)
-    {
-        emit SwapNative(egressParams, egressAddress, msg.value, msg.sender);
+    function xSwapNative(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent
+    ) external payable override onlyNotSuspended swapsEnabled nzUint(msg.value) {
+        emit SwapNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender);
     }
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                   Egress xSwap with call                 //
+    //             DstChain receive xSwap and call              //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    // TODO: To think what gating (swapsEnabled) we want to have if any, since that costs gas (sload).
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient and calls the receive
@@ -524,22 +537,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          chain among other parameters that specify the source and parameters of the transfer.
      *          This is used for swaps with cross-chain messaging. Can also be user for xswapWithCall
      *          even if the message is empty.
-     * @dev     ingressParams and ingressAddress are separated to make it easier for the recipient to
-     *          do any checks without needing to split a string. IngressParams as of now it would only
-     *          be ingressChain (no need for ingressToken) but leaving it general in case we need it.
+     * @dev     srcChain and srcAddress are separated to make it easier for the recipient to
+     *          do any checks without needing to split a string.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param transferParams      The transfer parameters
-     * @param ingressParams       The ingress parameters.
-     * @param ingressAddress      The address where the transfer originated from in the ingressParams.
-     * @param message             The message to be passed to the recipient.
+     * @param transferParams  The transfer parameters
+     * @param srcChain        The source chain where the call originated from.
+     * @param srcAddress      The address where the transfer originated within the ingress chain.
+     * @param message         The message to be passed to the recipient.
      */
-    function sendxSwapWithCall(
+    function executexSwapAndCall(
         SigData calldata sigData,
         TransferParams calldata transferParams,
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     )
         external
@@ -552,24 +564,24 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.sendxSwapWithCall.selector,
+                    this.executexSwapAndCall.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     transferParams,
-                    ingressParams,
-                    ingressAddress,
+                    srcChain,
+                    srcAddress,
                     message
                 )
             )
         )
     {
         // Making an extra call to gain some stack room (avoid stackTooDeep error)
-        _sendxSwapWithCall(transferParams, ingressParams, ingressAddress, message);
+        _executexSwapAndCall(transferParams, srcChain, srcAddress, message);
     }
 
-    function _sendxSwapWithCall(
+    function _executexSwapAndCall(
         TransferParams calldata transferParams,
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     ) private {
         // TODO: Originally we copied this parameters to avoid StackTooDeep error. But now that this function is
@@ -580,40 +592,27 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address token = address(transferParams.token);
         address payable recipient = transferParams.recipient;
 
-        // NOTE: It's on the receiver to make sure this call doesn't revert. LiFi has a try-catch to a dex and
-        // if that fails it just forwards the tokens to the user.
-        // NOTE: That approach seems great for us. We could also consider doing like Thor-Chain with an extra
-        // check of the low-level call (like try-catch) and make the payment if that fails. Problem with that is
-        // in the case of LiFi they would need to handle a single transfer to decode and send to recipient.
-        // We probably want the user/protocol to decide if they want to ensure that the transaction will not
-        // revert and they get the tokens (try-catch), or if it can revert then it allows them to replay it.
-        // So by not doing that we allow the user/protocol to decide how it should be handled.
-        // NOTE: Seems like RangeExchange also handles it the same way as LiFi, with a try-catch call to the
-        // DEXES and to the users/bridges. So we would be good with this approach (letting users or protocols
-        // do the try/catch on their side).
+        // NOTE: It's on the receiver to make sure this call doesn't revert so they keep the tokens.
+        // This is done espeically for integrations with protocols (such as  LiFi) where we don't know the
+        // user/final address, so if we just transfer to the recipient in case of a revert, we might end up
+        // with tokens locked up in a DEX aggregator. Better to let it handle by the DEX or by the user's
+        // smart contract for more flexibility. Also because we allow them to replay it if they want to.
+        // NOTE: Seems like both LiFi and RangoExchange have the try-catch on their side to handle exactly
+        // this, so it seems like the best approach.
+        // NOTE: We don't use the _transfer function because we want to be able to embed the native token
+        // into the cfReceive call to avoid a double cross-contract call.
 
-        // TODO: Two options here. Option two would be better gas-wise to avoid an extra externall call just
-        // to send the native tokens as part of _transfer. Also it is a try-catch (more gas). Sending it as
-        // part of the call seems a lot better and also easier for the receiver to get msg.value (which will
-        // match amount, but also so they can be sure of that.). Also, adding payable is not adding any extra
-        // gas to the call (actually it decresases it).
-
-        // OPTION 1:
-        // _transfer(token, recipient, amount);
-        // ICFReceiver(recipient).cfRecieve(ingressParams, ingressAddress, message, token, amount);
-
-        // OPTION 2:
         if (token == _ETH_ADDR) {
-            ICFReceiver(recipient).cfRecieve{value: amount}(ingressParams, ingressAddress, message, token, amount);
+            ICFReceiver(recipient).cfRecieve{value: amount}(srcChain, srcAddress, message, token, amount);
         } else {
             IERC20(token).safeTransfer(recipient, amount);
-            ICFReceiver(recipient).cfRecieve(ingressParams, ingressAddress, message, token, amount);
+            ICFReceiver(recipient).cfRecieve(srcChain, srcAddress, message, token, amount);
         }
     }
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                      Egress xCall                        //
+    //                   DstChain receive xcall                 //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -622,21 +621,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          and the source of the call (ingress)
      *          This is used for pure cross-chain messaging.
      * @dev     We might not support this straight-away since we are focused on cross-chain swaps.
-     * @dev     ingressParams and ingressAddress are separated to make it easier for the recipient to
+     * @dev     ingressParams and srcAddress are separated to make it easier for the recipient to
      *          do any checks without needing to split a string. IngressParams as of now it would only
-     *          be ingressChain (no need for ingressToken) but leaving it general in case we need it.
+     *          be srcChain (no need for ingressToken) but leaving it general in case we need it.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param ingressParams       The ingress parameters.
-     * @param ingressAddress      The address where the transfer originated from in the ingressParams.
-     * @param message             The message to be passed to the recipient.
+     * @param srcChain       The source chain where the call originated from.
+     * @param srcAddress     The address where the transfer originated from in the ingressParams.
+     * @param message        The message to be passed to the recipient.
      */
-    function sendxCall(
+    function executexCall(
         SigData calldata sigData,
         address recipient,
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     )
         external
@@ -647,18 +646,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.sendxCall.selector,
+                    this.executexCall.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     recipient,
-                    ingressParams,
-                    ingressAddress,
+                    srcChain,
+                    srcAddress,
                     message
                 )
             )
         )
     {
-        // No need for handling a failure case. Better let it revert and allow the user to replay it.
-        ICFReceiver(recipient).cfRecieveOnlyxCall(ingressParams, ingressAddress, message);
+        ICFReceiver(recipient).cfRecievexCall(srcChain, srcAddress, message);
     }
 
     //////////////////////////////////////////////////////////////
@@ -672,6 +670,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // handle/swap internally.
     // Potentially we could use this two functions to allow the user to cancel an egress
     // transaction. This could be done by sending zero amount and signaling the swapID.
+    // NOTE: This could be features for later on, and together with the refundAddress it might
+    // be worth removing and maybe adding in the future.
 
     function addNativeGas(bytes32 swapID) external payable {
         emit AddNativeGas(swapID, msg.value);

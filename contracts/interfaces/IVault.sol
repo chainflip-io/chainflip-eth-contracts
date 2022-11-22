@@ -40,64 +40,72 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                Ingress swaps with CCM                    //
+    //                 SrcChain xSwap and call                  //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function xswapTokenWithCall(
-        string memory egressParams,
-        string memory egressAddress,
+    function xSwapTokenAndCall(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
         bytes calldata message,
-        IERC20 ingressToken,
+        IERC20 srcToken,
         uint256 amount,
         address refundAddress
     ) external;
 
-    function xSwapNativeWithCall(
-        string memory egressParams,
-        string memory egressAddress,
+    function xSwapNativeAndCall(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
         bytes calldata message,
         address refundAddress
     ) external payable;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                     Ingress Swaps                        //
+    //                    SrcChain xSwap                        //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
     function xSwapToken(
-        string memory egressParams,
-        string memory egressAddress,
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
         IERC20 ingressToken,
         uint256 amount
     ) external;
 
-    function xSwapNative(string memory egressParams, string memory egressAddress) external payable;
+    function xSwapNative(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent
+    ) external payable;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                   Egress xSwap with call                 //
+    //             DstChain receive xSwap and call              //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function sendxSwapWithCall(
+    function executexSwapAndCall(
         SigData calldata sigData,
         TransferParams calldata transferParams,
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     ) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                     Egress xCall                         //
+    //                   DstChain receive xcall                 //
     //                                                          //
     //////////////////////////////////////////////////////////////
-    function sendxCall(
+    function executexCall(
         SigData calldata sigData,
         address recipient,
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     ) external;
 

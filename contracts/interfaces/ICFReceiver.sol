@@ -7,16 +7,16 @@ pragma solidity ^0.8.0;
  */
 interface ICFReceiver {
     function cfRecieve(
-        string calldata ingressParams,
-        string calldata ingressAddress,
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message,
         address token,
         uint256 amount
     ) external payable;
 
-    function cfRecieveOnlyxCall(
-        string calldata ingressParams,
-        string calldata ingressAddress,
+    function cfRecievexCall(
+        uint32 srcChain,
+        string calldata srcAddress,
         bytes calldata message
     ) external;
 }
