@@ -9,12 +9,17 @@ import "./interfaces/ICFReceiver.sol";
  *           messages from the Chainflip Protocol. This contract checks that the sender is
  *           the Chainflip Vault.
  *           CF ensures that the reciever will be receving the amount of tokens passed as
- *           parameters. However, anyone can bridge tokens to the reciever contract. So
- *           an extra check of the ingressAddress shall be done in the _cfRceive function.
+ *           parameters. However, anyone can bridge tokens to the reciever contract. Also,
+ *           if msg.sender is not checked it could be any external call that is not really
+ *           transferring the tokens before making the call. So an extra check of the
+ *           ingressAddress is adviced to be done in the _cfRceive* function.
+ *           In the case of receiving ETH, the user could instead check that msg.value
+ *           is equal to the amount passed as parameter.
  */
 
 contract CFReceiver is ICFReceiver {
-    address private _cfSender;
+    /// @dev    Chainflip's Vault address where xCalls will be sent.
+    address public _cfSender;
 
     constructor(address cfSender) {
         _cfSender = cfSender;
@@ -30,12 +35,12 @@ contract CFReceiver is ICFReceiver {
         _cfRecieve(ingressParams, ingressAddress, message, token, amount);
     }
 
-    function cfRecieveOnlyXCall(
+    function cfRecieveOnlyxCall(
         string calldata ingressParams,
         string calldata ingressAddress,
         bytes calldata message
     ) external override onlyCFSender {
-        _cfRecieveOnlyXCall(ingressParams, ingressAddress, message);
+        _cfRecieveOnlyxCall(ingressParams, ingressAddress, message);
     }
 
     function _cfRecieve(
@@ -46,7 +51,7 @@ contract CFReceiver is ICFReceiver {
         uint256 amount
     ) internal virtual {}
 
-    function _cfRecieveOnlyXCall(
+    function _cfRecieveOnlyxCall(
         string calldata ingressParams,
         string calldata ingressAddress,
         bytes calldata message

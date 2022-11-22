@@ -453,7 +453,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         IERC20 ingressToken,
         uint256 amount,
         address refundAddress
-    ) external onlyNotSuspended swapsEnabled nzUint(amount) {
+    ) external override onlyNotSuspended swapsEnabled nzUint(amount) {
         ingressToken.safeTransferFrom(msg.sender, address(this), amount);
         emit SwapTokenWithMessage(
             egressParams,
@@ -474,7 +474,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string memory egressAddress,
         bytes calldata message,
         address refundAddress
-    ) external payable onlyNotSuspended swapsEnabled nzUint(msg.value) {
+    ) external payable override onlyNotSuspended swapsEnabled nzUint(msg.value) {
         emit SwapNativeWithMessage(egressParams, egressAddress, msg.value, msg.sender, message, refundAddress);
     }
 
@@ -491,7 +491,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string memory egressAddress,
         IERC20 ingressToken,
         uint256 amount
-    ) external onlyNotSuspended swapsEnabled nzUint(amount) {
+    ) external override onlyNotSuspended swapsEnabled nzUint(amount) {
         ingressToken.safeTransferFrom(msg.sender, address(this), amount);
         emit SwapToken(egressParams, egressAddress, address(ingressToken), amount, msg.sender);
     }
@@ -502,6 +502,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function xSwapNative(string memory egressParams, string memory egressAddress)
         external
         payable
+        override
         onlyNotSuspended
         swapsEnabled
         nzUint(msg.value)
@@ -511,7 +512,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                     Egress CCM                           //
+    //                   Egress xSwap with call                 //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -534,7 +535,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param ingressAddress      The address where the transfer originated from in the ingressParams.
      * @param message             The message to be passed to the recipient.
      */
-    function egressxSwapWithCall(
+    function sendxSwapWithCall(
         SigData calldata sigData,
         TransferParams calldata transferParams,
         string calldata ingressParams,
@@ -542,6 +543,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata message
     )
         external
+        override
         onlyNotSuspended
         nzAddr(transferParams.token)
         nzAddr(transferParams.recipient)
@@ -550,7 +552,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.egressxSwapWithCall.selector,
+                    this.sendxSwapWithCall.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     transferParams,
                     ingressParams,
@@ -561,10 +563,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // Making an extra call to gain some stack room (avoid stackTooDeep error)
-        _egressxSwapWithCall(transferParams, ingressParams, ingressAddress, message);
+        _sendxSwapWithCall(transferParams, ingressParams, ingressAddress, message);
     }
 
-    function _egressxSwapWithCall(
+    function _sendxSwapWithCall(
         TransferParams calldata transferParams,
         string calldata ingressParams,
         string calldata ingressAddress,
@@ -609,6 +611,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                      Egress xCall                        //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /**
      * @notice  Calls the receive function on the recipient's contract passing the message specified
      *          and the source of the call (ingress)
@@ -624,7 +632,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param ingressAddress      The address where the transfer originated from in the ingressParams.
      * @param message             The message to be passed to the recipient.
      */
-    function egressxCall(
+    function sendxCall(
         SigData calldata sigData,
         address recipient,
         string calldata ingressParams,
@@ -632,13 +640,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata message
     )
         external
+        override
         onlyNotSuspended
         nzAddr(recipient)
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.egressxCall.selector,
+                    this.sendxCall.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     recipient,
                     ingressParams,
@@ -649,7 +658,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // No need for handling a failure case. Better let it revert and allow the user to replay it.
-        ICFReceiver(recipient).cfRecieveOnlyXCall(ingressParams, ingressAddress, message);
+        ICFReceiver(recipient).cfRecieveOnlyxCall(ingressParams, ingressAddress, message);
     }
 
     //////////////////////////////////////////////////////////////

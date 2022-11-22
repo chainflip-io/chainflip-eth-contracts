@@ -14,7 +14,7 @@ interface ICFReceiver {
         uint256 amount
     ) external payable;
 
-    function cfRecieveOnlyXCall(
+    function cfRecieveOnlyxCall(
         string calldata ingressParams,
         string calldata ingressAddress,
         bytes calldata message

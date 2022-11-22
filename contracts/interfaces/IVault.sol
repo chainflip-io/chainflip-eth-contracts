@@ -40,18 +40,66 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                        Swaps                             //
+    //                Ingress swaps with CCM                    //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    // function swapETH(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
+    function xswapTokenWithCall(
+        string memory egressParams,
+        string memory egressAddress,
+        bytes calldata message,
+        IERC20 ingressToken,
+        uint256 amount,
+        address refundAddress
+    ) external;
 
-    // function swapToken(
-    //     string calldata egressChainAndToken,
-    //     bytes32 egressAddress,
-    //     IERC20 ingressToken,
-    //     uint256 amount
-    // ) external;
+    function xSwapNativeWithCall(
+        string memory egressParams,
+        string memory egressAddress,
+        bytes calldata message,
+        address refundAddress
+    ) external payable;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                     Ingress Swaps                        //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+    function xSwapToken(
+        string memory egressParams,
+        string memory egressAddress,
+        IERC20 ingressToken,
+        uint256 amount
+    ) external;
+
+    function xSwapNative(string memory egressParams, string memory egressAddress) external payable;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                   Egress xSwap with call                 //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function sendxSwapWithCall(
+        SigData calldata sigData,
+        TransferParams calldata transferParams,
+        string calldata ingressParams,
+        string calldata ingressAddress,
+        bytes calldata message
+    ) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                     Egress xCall                         //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+    function sendxCall(
+        SigData calldata sigData,
+        address recipient,
+        string calldata ingressParams,
+        string calldata ingressAddress,
+        bytes calldata message
+    ) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
