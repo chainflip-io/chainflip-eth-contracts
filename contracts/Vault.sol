@@ -412,12 +412,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // TODO: If we want to allow gas topups then a txHash parameter should be use as an input to match with the transaction. This way
     //       there wouldn't be a need to add a transferID at the smart contract level. Since the monitoring needs to be done off-chain
     //       anyway, I would suggest to use the swapID that CF will create to track swaps.
-    // TODO: Do we prefer uint for egressChain and egress token or a single string? Gaswise the uints are just a bit cheaper (not too
-    //       relevant). Uints would be great for the egress part, since we only pass egress chain there. However, strings are useful to
-    //       pass extra parameters in the future (similar to ThorChain's Memos)
-    // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is super painful.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
     // TODO: To think what gating (swapsEnabled) we want to have if any, since that costs gas (sload).
+
+    // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is very expensive
+    //       gas-wise, for example using OZ's Strings library.
+    // TODO: Lifi for some reason constructs the strings and message on-chain e.g. converting EVM address to string on-chain by using
+    //       OZ's string library. That is a huge waste of gas, instead of passing the address as a string directly. Why do they do
+    //       that? Seems like they are still not live with Axelar, so it might still be under development, since that doesn't make sense.
+    //       Maybe they have it to allow a direct swap to Axelar but it's still not integrated properly into the LiFi backend.
+    // TODO: Depending on LiFi (and also on us) we can explore having just one long string (like ThorChain memo). Better gas and
+    //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
+    //       it makes it cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the dstChain it is
+    //       a pain to check srcChain as a string.
 
     // NOTE: Used for swap+CCM and also for pure CCM (by having an empty egressToken)
     // NOTE: SwapIntent is for now equal to dstToken, but the name is more generic for the future. Does that make sense?
@@ -430,11 +437,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @dev     At the moment we are not prioritizing pure ccm. If we want to do so, we could create a separate function without swapIntent.
      * @dev     The check for existing parameters shall be done in the CFE. Checking non-empty string (swapIntent/dstAddress) is
      *          a bit of a waste of gas also because a non-empty string doesn't mean it's a valid dstAddress anyway.
-     * @dev     dstChain and swapIntent (and even dstAddress) could be bundled together in a single string to shave a few hundred gas.
+     * @dev     dstChain and swapIntent (and even dstAddress) could be bundled together in a single string to save gas.
      *          However, dstChain is nicer as a uint for the egress calls so it can be checked easily, since checking string is terrible.
      *          Then, we could be including dstAddress inside swapIntent. I have kept it separate since swapIntent will most likely come
      *          from calldata while dstAddress might be a string stored in another protocols' smart contract. It is easy to concatenate
-     *          via abi.encodePacked or via string.concat (0.8.12) so they could be bundled. But kept separately for now. TODO: Ponder?
+     *          via abi.encodePacked or via string.concat (0.8.12) so they could be bundled. But kept separately for now.
      * @dev     Swapintent only being dstToken for now, but it allows for more parameters in the future.
      *
      * @param dstChain      The destination chain according to the Chainflip protocol's nomenclature.
