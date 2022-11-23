@@ -49,191 +49,286 @@ def test_enableSwaps_rev_disabled(cf):
         cf.vault.disableSwaps({"from": cf.gov})
 
 
-# SwapETH
+# xSwapTokenAndCall
 
 
 @given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("string"),
+    st_swapIntent=strategy("string"),
+    st_message=strategy("bytes"),
+    st_amount=strategy("uint", max_value=TEST_AMNT),
+    st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32", exclude=(0).to_bytes(32, "big")),
-    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
 )
-def test_swapETH(cf, st_sender, st_egressParams, st_egressReceiver, st_amount):
+def test_swapTokenAndCall(
+    cf,
+    st_dstChain,
+    st_dstAddress,
+    st_swapIntent,
+    st_message,
+    token,
+    st_amount,
+    st_refundAddress,
+    st_sender,
+):
     cf.vault.enableSwaps({"from": cf.gov})
-    tx = cf.vault.swapETH(
-        st_egressParams, st_egressReceiver, {"from": st_sender, "amount": st_amount}
-    )
 
-    assert tx.events["SwapETH"]["amount"] == st_amount
-    assert tx.events["SwapETH"]["egressParams"] == st_egressParams
-    assert tx.events["SwapETH"]["egressReceiver"] == "0x" + cleanHexStr(
-        st_egressReceiver
-    )
+    if st_amount == 0:
+        with reverts(REV_MSG_NZ_UINT):
+            cf.vault.xSwapTokenAndCall(
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                st_message,
+                token,
+                st_amount,
+                st_refundAddress,
+                {"from": st_sender},
+            )
+    else:
+        # Fund st_sender account
+        token.transfer(st_sender, st_amount)
+
+        iniBalance = token.balanceOf(st_sender)
+
+        token.approve(cf.vault, st_amount, {"from": st_sender})
+        tx = cf.vault.xSwapTokenAndCall(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_message,
+            token,
+            st_amount,
+            st_refundAddress,
+            {"from": st_sender},
+        )
+        assert token.balanceOf(st_sender) == iniBalance - st_amount
+        assert tx.events["SwapTokenAndCall"][0].values() == [
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            token,
+            st_amount,
+            st_sender,
+            hexStr(st_message),
+            st_refundAddress,
+        ]
 
 
 @given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-)
-def test_swapETH_rev_suspended(cf, st_sender, st_egressParams, st_egressReceiver):
-    cf.vault.suspend({"from": cf.gov})
-    with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.swapETH(st_egressParams, st_egressReceiver, {"from": st_sender})
-
-
-@given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-)
-def test_swapETH_rev_disabled(cf, st_sender, st_egressParams, st_egressReceiver):
-    with reverts(REV_MSG_VAULT_SWAPS_DIS):
-        cf.vault.swapETH(st_egressParams, st_egressReceiver, {"from": st_sender})
-
-
-@given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-)
-def test_swapETH_rev_nzuint(cf, st_sender, st_egressParams, st_egressReceiver):
-    cf.vault.enableSwaps({"from": cf.gov})
-    with reverts(REV_MSG_NZ_UINT):
-        cf.vault.swapETH(st_egressParams, st_egressReceiver, {"from": st_sender})
-
-
-@given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("string"),
+    st_swapIntent=strategy("string"),
+    st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-)
-def test_swapETH_rev_nzbytes(cf, st_sender, st_egressParams, st_amount):
-    cf.vault.enableSwaps({"from": cf.gov})
-    with reverts(REV_MSG_NZ_BYTES32):
-        cf.vault.swapETH(st_egressParams, 0, {"from": st_sender, "amount": st_amount})
-
-
-# SwapToken
-
-
-@given(
+    st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32", exclude=(0).to_bytes(32, "big")),
-    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
 )
-def test_swapToken(cf, token, st_sender, st_egressParams, st_egressReceiver, st_amount):
-    cf.vault.enableSwaps({"from": cf.gov})
-    token.transfer(st_sender, st_amount)
-    token.approve(cf.vault, st_amount, {"from": st_sender})
-    tx = cf.vault.swapToken(
-        st_egressParams, st_egressReceiver, token, st_amount, {"from": st_sender}
-    )
-
-    assert tx.events["SwapToken"]["amount"] == st_amount
-    assert tx.events["SwapToken"]["egressParams"] == st_egressParams
-    assert tx.events["SwapToken"]["egressReceiver"] == "0x" + cleanHexStr(
-        st_egressReceiver
-    )
-    assert tx.events["SwapToken"]["ingressToken"] == token.address
-
-
-@given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32", exclude=(0).to_bytes(32, "big")),
-    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-)
-def test_swapToken_rev_bal(
-    cf, token, st_sender, st_egressParams, st_egressReceiver, st_amount
+def test_swapTokenAndCall_rev_bal(
+    cf,
+    st_dstChain,
+    st_dstAddress,
+    st_swapIntent,
+    st_message,
+    token,
+    st_amount,
+    st_refundAddress,
+    st_sender,
 ):
     cf.vault.enableSwaps({"from": cf.gov})
     if st_sender != cf.DEPLOYER:
         with reverts(REV_MSG_ERC20_EXCEED_BAL):
-            cf.vault.swapToken(
-                st_egressParams,
-                st_egressReceiver,
+            cf.vault.xSwapTokenAndCall(
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                st_message,
                 token,
                 st_amount,
+                st_refundAddress,
                 {"from": st_sender},
             )
 
 
 @given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("string"),
+    st_swapIntent=strategy("string"),
+    st_message=strategy("bytes"),
+    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
+    st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-    st_amount=strategy("uint"),
 )
-def test_swapToken_rev_suspended(
-    cf, token, st_sender, st_egressParams, st_egressReceiver, st_amount
+def test_swapTokenAndCall_rev_suspended(
+    cf,
+    st_dstChain,
+    st_dstAddress,
+    st_swapIntent,
+    st_message,
+    token,
+    st_amount,
+    st_refundAddress,
+    st_sender,
 ):
     cf.vault.suspend({"from": cf.gov})
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.swapToken(
-            st_egressParams, st_egressReceiver, token, st_amount, {"from": st_sender}
+        cf.vault.xSwapTokenAndCall(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_message,
+            token,
+            st_amount,
+            st_refundAddress,
+            {"from": st_sender},
         )
 
 
 @given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("string"),
+    st_swapIntent=strategy("string"),
+    st_message=strategy("bytes"),
+    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
+    st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-    st_amount=strategy("uint"),
 )
-def test_swapToken_rev_disabled(
-    cf, token, st_sender, st_egressParams, st_egressReceiver, st_amount
+def test_swapTokenAndCall_rev_disabled(
+    cf,
+    st_dstChain,
+    st_dstAddress,
+    st_swapIntent,
+    st_message,
+    token,
+    st_amount,
+    st_refundAddress,
+    st_sender,
 ):
     with reverts(REV_MSG_VAULT_SWAPS_DIS):
-        cf.vault.swapToken(
-            st_egressParams, st_egressReceiver, token, st_amount, {"from": st_sender}
-        )
-
-
-@given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-)
-def test_swapToken_rev_nzuint(cf, token, st_sender, st_egressParams, st_egressReceiver):
-    cf.vault.enableSwaps({"from": cf.gov})
-    with reverts(REV_MSG_NZ_UINT):
-        cf.vault.swapToken(
-            st_egressParams, st_egressReceiver, token, 0, {"from": st_sender}
-        )
-
-
-@given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-)
-def test_swapToken_rev_nzbytes(
-    cf, token, st_sender, st_egressParams, st_egressReceiver, st_amount
-):
-    cf.vault.enableSwaps({"from": cf.gov})
-    token.transfer(st_sender, st_amount)
-    with reverts(REV_MSG_NZ_BYTES32):
-        cf.vault.swapToken(st_egressParams, 0, token, st_amount, {"from": st_sender})
-
-
-@given(
-    st_sender=strategy("address"),
-    st_egressParams=strategy("string"),
-    st_egressReceiver=strategy("bytes32"),
-    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-)
-def test_swapToken_rev_nzaddrs(
-    cf, st_sender, st_egressParams, st_amount, st_egressReceiver
-):
-    cf.vault.enableSwaps({"from": cf.gov})
-    with reverts(REV_MSG_NZ_ADDR):
-        cf.vault.swapToken(
-            st_egressParams,
-            st_egressReceiver,
-            ZERO_ADDR,
+        cf.vault.xSwapTokenAndCall(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_message,
+            token,
             st_amount,
+            st_refundAddress,
             {"from": st_sender},
+        )
+
+
+# xSwapNativeAndCall
+
+
+@given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("string"),
+    st_swapIntent=strategy("string"),
+    st_message=strategy("bytes"),
+    st_amount=strategy("uint", max_value=TEST_AMNT),
+    st_refundAddress=strategy("address"),
+    st_sender=strategy("address"),
+)
+def test_swapETHAndCall(
+    cf,
+    st_sender,
+    st_dstChain,
+    st_dstAddress,
+    st_swapIntent,
+    st_message,
+    st_amount,
+    st_refundAddress,
+):
+    cf.vault.enableSwaps({"from": cf.gov})
+    if st_amount == 0:
+        with reverts(REV_MSG_NZ_UINT):
+            cf.vault.xSwapNativeAndCall(
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                st_message,
+                st_refundAddress,
+                {"from": st_sender, "amount": st_amount},
+            )
+    else:
+        iniBal = web3.eth.get_balance(cf.vault.address)
+        tx = cf.vault.xSwapNativeAndCall(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_message,
+            st_refundAddress,
+            {"from": st_sender, "amount": st_amount},
+        )
+        assert web3.eth.get_balance(cf.vault.address) == iniBal + st_amount
+        assert tx.events["SwapNativeAndCall"][0].values() == [
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_amount,
+            st_sender,
+            hexStr(st_message),
+            st_refundAddress,
+        ]
+
+
+@given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("string"),
+    st_swapIntent=strategy("string"),
+    st_message=strategy("bytes"),
+    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
+    st_refundAddress=strategy("address"),
+    st_sender=strategy("address"),
+)
+def test_swapETHAndCall_rev_suspended(
+    cf,
+    st_sender,
+    st_dstChain,
+    st_dstAddress,
+    st_swapIntent,
+    st_message,
+    st_amount,
+    st_refundAddress,
+):
+    cf.vault.suspend({"from": cf.gov})
+    with reverts(REV_MSG_GOV_SUSPENDED):
+        cf.vault.xSwapNativeAndCall(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_message,
+            st_refundAddress,
+            {"from": st_sender, "amount": st_amount},
+        )
+
+
+@given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("string"),
+    st_swapIntent=strategy("string"),
+    st_message=strategy("bytes"),
+    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
+    st_refundAddress=strategy("address"),
+    st_sender=strategy("address"),
+)
+def test_swapETHAndCall_rev_disabled(
+    cf,
+    st_sender,
+    st_dstChain,
+    st_dstAddress,
+    st_swapIntent,
+    st_message,
+    st_amount,
+    st_refundAddress,
+):
+    with reverts(REV_MSG_VAULT_SWAPS_DIS):
+        cf.vault.xSwapNativeAndCall(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_message,
+            st_refundAddress,
+            {"from": st_sender, "amount": st_amount},
         )

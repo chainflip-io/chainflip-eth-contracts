@@ -2,11 +2,21 @@ from brownie import web3, chain, history
 
 
 def cleanHexStr(thing):
+    thing = hex(thing)
+    return thing[2:] if thing[:2] == "0x" else thing
+
+
+def hexStr(thing):
+    thing = hex(thing)
+    return "0x" + thing
+
+
+def hex(thing):
     if isinstance(thing, int):
         thing = hex(thing)
     elif not isinstance(thing, str):
         thing = thing.hex()
-    return thing[2:] if thing[:2] == "0x" else thing
+    return thing
 
 
 def cleanHexStrPad(thing):
@@ -26,10 +36,6 @@ def getCreate2Addr(sender, saltHex, contractContainer, argsHex):
             )
         )[-20:].hex()
     )
-
-
-def getInflation(prevBlockNum, curBlockNum, emissionRate):
-    return (curBlockNum - prevBlockNum) * emissionRate
 
 
 def getKeyFromValue(dic, value):
