@@ -1,0 +1,48 @@
+pragma solidity ^0.8.0;
+
+import "../abstract/CFReceiver.sol";
+import "../abstract/Shared.sol";
+import "../mocks/CFReceiverFailMock.sol";
+
+/**
+ * @title    CFReceiverTryMock
+ * @dev      Mock implementation of CFReceiver for testing purposes.
+ */
+
+contract CFReceiverTryMock is CFReceiver, Shared {
+    event FailedExternalCall(string revertString);
+
+    address _receiverFail;
+
+    constructor(address cfSender, address receiverFail) CFReceiver(cfSender) nzAddr(cfSender) {
+        _receiverFail = receiverFail;
+    }
+
+    function _cfRecieve(
+        uint32 srcChain,
+        string calldata srcAddress,
+        bytes calldata message,
+        address token,
+        uint256 amount
+    ) internal override {
+        _handleFailedCall();
+    }
+
+    function _cfRecievexCall(
+        uint32 srcChain,
+        string calldata srcAddress,
+        bytes calldata message
+    ) internal override {
+        _handleFailedCall();
+    }
+
+    function _handleFailedCall() internal {
+        // Mimicking a contract catching an external call that fails
+        try CFReceiverFailMock(_receiverFail).revertExternalCall() {} catch Error(string memory revertString) {
+            // Specific error case since we expect a revert string.
+            emit FailedExternalCall(revertString);
+        } catch (bytes memory lowLevelData) {
+            // Handle other revert cases.
+        }
+    }
+}

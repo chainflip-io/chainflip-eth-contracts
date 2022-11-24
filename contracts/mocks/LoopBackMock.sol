@@ -1,12 +1,12 @@
 pragma solidity ^0.8.0;
 
-import "../CFReceiver.sol";
+import "../abstract/CFReceiver.sol";
 import "../abstract/Shared.sol";
 import "../interfaces/IVault.sol";
 
 /**
  * @title    LoopBackMock
- * @dev      Mock of a loopback
+ * @dev      Mock of a loopback.
  */
 contract LoopBackMock is CFReceiver, Shared {
     constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}

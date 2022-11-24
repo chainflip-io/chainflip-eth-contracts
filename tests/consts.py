@@ -9,8 +9,9 @@ NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
 E_18 = 10**18
 TEST_AMNT = 10**17
 ONE_ETH = E_18
-JUNK_INT = 42069  # quantafire
+JUNK_INT = 42069
 JUNK_HEX = web3.toHex(JUNK_INT)
+JUNK_STR = "junkString"
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
 AGG = "Agg"
@@ -153,3 +154,7 @@ REV_MSG_CLIFF_AFTER_END = "Vesting: cliff_ after end_"
 REV_MSG_INVALID_FINAL_TIME = "Vesting: final time is before current time"
 REV_MSG_INVALID_STAKEMANAGER = "Vesting: stakeManager_ is the zero address"
 REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
+
+
+# -----CFReceiver-----
+REV_MSG_REVERTED = "CFReceiverFail: call reverted"

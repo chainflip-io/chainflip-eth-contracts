@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "./interfaces/ICFReceiver.sol";
+import "../interfaces/ICFReceiver.sol";
 
 /**
  * @title    CFReceiver
@@ -17,7 +17,7 @@ import "./interfaces/ICFReceiver.sol";
  *           is equal to the amount passed as parameter.
  */
 
-contract CFReceiver is ICFReceiver {
+abstract contract CFReceiver is ICFReceiver {
     /// @dev    Chainflip's Vault address where xCalls will be sent.
     address public _cfSender;
 
@@ -49,13 +49,13 @@ contract CFReceiver is ICFReceiver {
         bytes calldata message,
         address token,
         uint256 amount
-    ) internal virtual {}
+    ) internal virtual;
 
     function _cfRecievexCall(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message
-    ) internal virtual {}
+    ) internal virtual;
 
     modifier onlyCFSender() {
         require(msg.sender == _cfSender, "CFReceiver: caller is not the CF Sender");

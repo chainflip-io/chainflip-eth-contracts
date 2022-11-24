@@ -202,3 +202,19 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
     return tv, cliff, end, total
+
+
+# Deploy mock xCall receiver
+@pytest.fixture(scope="module")
+def cfReceiverMock(cf, CFReceiverMock):
+    return cf.DEPLOYER.deploy(CFReceiverMock, cf.vault)
+
+
+@pytest.fixture(scope="module")
+def cfReceiverFailMock(cf, CFReceiverFailMock):
+    return cf.DEPLOYER.deploy(CFReceiverFailMock, cf.vault)
+
+
+@pytest.fixture(scope="module")
+def cfReceiverTryMock(cf, cfReceiverFailMock, CFReceiverTryMock):
+    return cf.DEPLOYER.deploy(CFReceiverTryMock, cf.vault, cfReceiverFailMock)
