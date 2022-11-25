@@ -424,6 +424,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
     //       it makes it cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the dstChain it is
     //       a pain to check srcChain as a string.
+    // TODO: Decide if we want to have executexCall implemented (only CCM call)
 
     // NOTE: Used for swap+CCM and also for pure CCM (by having an empty egressToken)
     // NOTE: SwapIntent is for now equal to dstToken, but the name is more generic for the future. Does that make sense?
