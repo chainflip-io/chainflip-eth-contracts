@@ -397,9 +397,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity!
     ///      They do it because in the context of providing liquidity, the dstAddress doesn't make sense.
     ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
-    ///      In our case reusing this function is not great anyway (due to message and refundAddress paramts)
-    ///      but we could consider having a separate function for adding liquidity.
-    ///TODO: Should we have a separate function for adding liquidity? Or we will do it through the srcAddress method?
+    ///      In our case reusing this function is not great anyway (due to message and refundAddress paramts). Also, for any other chain
+    ///      the ingressAddress method will be used, so having a function to provide liquidity doesn't seem particularly useful.
 
     // TODO: if we refund we need to add a refund address. For example, if LiFi is in the middle, we want to refund the user, not LiFi.
     //       This is the case if we do a retrospective refund. I would not try to glump xswapTokenWithCall and xswapToken even if only
