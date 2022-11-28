@@ -218,3 +218,10 @@ def cfReceiverFailMock(cf, CFReceiverFailMock):
 @pytest.fixture(scope="module")
 def cfReceiverTryMock(cf, cfReceiverFailMock, CFReceiverTryMock):
     return cf.DEPLOYER.deploy(CFReceiverTryMock, cf.vault, cfReceiverFailMock)
+
+
+@pytest.fixture(scope="module")
+def cfDexAggMock(cf, DexAggMock, DEXMock):
+    dexMock = cf.DEPLOYER.deploy(DEXMock)
+    dexAggMock = cf.DEPLOYER.deploy(DexAggMock, cf.vault)
+    return (dexMock, dexAggMock)

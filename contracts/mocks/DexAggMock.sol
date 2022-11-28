@@ -39,7 +39,7 @@ contract DexAggMock is CFReceiver, Shared {
         address dstToken,
         address userToken,
         address userAddress
-    ) external {
+    ) external payable {
         // NOTE: LiFi contracts as of now do the message encoding on-chain, which seems
         // like a waste of gas to me. Interestinngly, they also do encodePacked which might
         // be a good idea if there is only one dynamic type. However, it seems like it's the only
@@ -49,9 +49,9 @@ contract DexAggMock is CFReceiver, Shared {
         // Encoding of data should probably be done off-chain to save gas. This is just for
         // making the testing easier and to show what we are actually doing.
         // Encoding several parameters to proof that parameters beyond the function call
-        // can be encoded.
+        // can be encoded. Not encodingWithSignature as that makes it tricky to decode with
+        // additional parameters.
         bytes4 FUNC_SELECTOR = bytes4(keccak256("swapMock(address, uint256,uint256)"));
-        //bytes memory calldataDstxCall=abi.encode(FUNC_SELECTOR,dstToken,userToken,userAddress);
 
         // We could use encodePacked, but it's not a good idea if there are multiple dynamic types,
         // like if the dstChain was non-EVM and then the userAddress would need to be a string.
@@ -62,7 +62,13 @@ contract DexAggMock is CFReceiver, Shared {
         // Hardcoding the swapAmount just to ease the testing.
         //bytes memory calldataDstxCall = abi.encodeWithSignature("swap(address,address,uint256)", dstToken, userToken, 100);
 
-        IVault(_cfSender).xSwapNativeAndCall(dstChain, dstAddress, swapIntent, message, refundAddress);
+        IVault(_cfSender).xSwapNativeAndCall{value: msg.value}(
+            dstChain,
+            dstAddress,
+            swapIntent,
+            message,
+            refundAddress
+        );
     }
 
     function _cfRecieve(
@@ -97,7 +103,7 @@ contract DexAggMock is CFReceiver, Shared {
     }
 }
 
-contract DEX {
+contract DEXMock {
     using SafeERC20 for IERC20;
 
     function swapMock(
