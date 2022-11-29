@@ -1,10 +1,10 @@
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../abstract/CFReceiver.sol";
 import "../abstract/Shared.sol";
 import "../interfaces/IVault.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title    DexAggMock
@@ -19,6 +19,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract DexAggMock is CFReceiver, Shared {
     using SafeERC20 for IERC20;
 
+    bytes4 constant FUNC_SELECTOR = bytes4(keccak256("swapMock(address,address,uint256)"));
+
     event ReceivedxSwapAndCall(
         uint32 srcChain,
         string srcAddress,
@@ -31,11 +33,13 @@ contract DexAggMock is CFReceiver, Shared {
 
     constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}
 
+    // Ingress Chain
     function xSwapNativeAndCall(
         uint32 dstChain,
         string calldata dstAddress,
         string calldata swapIntent,
         address refundAddress,
+        address dexAddress,
         address dstToken,
         address userToken,
         address userAddress
@@ -50,14 +54,14 @@ contract DexAggMock is CFReceiver, Shared {
         // making the testing easier and to show what we are actually doing.
         // Encoding several parameters to proof that parameters beyond the function call
         // can be encoded. Not encodingWithSignature as that makes it tricky to decode with
-        // additional parameters.
-        bytes4 FUNC_SELECTOR = bytes4(keccak256("swapMock(address, uint256,uint256)"));
+        // additional parameters. This is more expensive gas-wise, as the FUNC_SEL will be encoded
+        // in 256 bits as part of the message, but we don't care here.
 
         // We could use encodePacked, but it's not a good idea if there are multiple dynamic types,
         // like if the dstChain was non-EVM and then the userAddress would need to be a string.
         // For dstAddress, we pass it directly as a string, but it could also be done on-chain
         // with OZ's `strings.toHexString(params.destinationAddress)`;
-        bytes memory message = abi.encode(FUNC_SELECTOR, dstToken, userToken, userAddress);
+        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
 
         // Hardcoding the swapAmount just to ease the testing.
         //bytes memory calldataDstxCall = abi.encodeWithSignature("swap(address,address,uint256)", dstToken, userToken, 100);
@@ -71,6 +75,7 @@ contract DexAggMock is CFReceiver, Shared {
         );
     }
 
+    // Egress Chain
     function _cfRecieve(
         uint32 srcChain,
         string calldata srcAddress,
@@ -80,18 +85,22 @@ contract DexAggMock is CFReceiver, Shared {
     ) internal override {
         require(token != _ETH_ADDR, "DexAggMock: Only tokens are supported in testing");
 
-        (bytes4 selector, address dstToken, address userToken, address userAddress) = abi.decode(
+        (bytes4 selector, address dexAddress, address dstToken, address userToken, address userAddress) = abi.decode(
             message,
-            (bytes4, address, address, address)
+            (bytes4, address, address, address, address)
         );
 
+        IERC20(dstToken).approve(dexAddress, amount);
+
         // Instead of the calldata being a call to a DEX we just do an mock call
-        (bool success, bytes memory lowLevelData) = userAddress.call(abi.encodePacked(selector, dstToken, amount));
-        //(bool success, bytes memory lowLevelData) = userAddress.call(data);
+        require(selector == FUNC_SELECTOR, "DexAggMock: Invalid selector");
+        (bool success, bytes memory lowLevelData) = dexAddress.call(
+            abi.encodeWithSelector(selector, dstToken, userToken, amount)
+        );
         if (!success) revert("DexAggMock: Call failed");
 
         // Transfer tokens to user
-        IERC20(userToken).safeTransfer(userAddress, IERC20(dstToken).balanceOf(address(this)));
+        IERC20(userToken).safeTransfer(userAddress, IERC20(userToken).balanceOf(address(this)));
     }
 
     function _cfRecievexCall(
