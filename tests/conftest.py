@@ -221,7 +221,11 @@ def cfReceiverTryMock(cf, cfReceiverFailMock, CFReceiverTryMock):
 
 
 @pytest.fixture(scope="module")
-def cfDexAggMock(cf, DexAggMock, DEXMock):
+def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
+    srcChain = 1
     dexMock = cf.DEPLOYER.deploy(DEXMock)
-    dexAggMock = cf.DEPLOYER.deploy(DexAggMock, cf.vault)
-    return (dexMock, dexAggMock)
+    dexAggSrcChainMock = cf.DEPLOYER.deploy(DexAggSrcChainMock, cf.vault)
+    dexAggDstChainMock = cf.DEPLOYER.deploy(
+        DexAggDstChainMock, cf.vault, srcChain, hex(dexAggSrcChainMock.address)[2:]
+    )
+    return (dexMock, dexAggSrcChainMock, dexAggDstChainMock, srcChain)

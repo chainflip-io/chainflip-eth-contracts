@@ -6,32 +6,27 @@ import "../abstract/CFReceiver.sol";
 import "../abstract/Shared.sol";
 import "../interfaces/IVault.sol";
 
+bytes4 constant FUNC_SELECTOR = bytes4(keccak256("swapMock(address,address,uint256)"));
+
 /**
- * @title    DexAggMock
- * @dev      Mock implementation of a DEX Aggregator for testing purposes. This
- *           contract will have both the ingress and egress calls from Chainflip's
- *           point of view. A swap before CF swap is not mimicked here as that is
- *           part of the DEX Aggregator's responsibility. Only the xSwapAndCall is
- *           to be tested - xSwap plus xCall with decoding of the data.
- *           This is a Mock, not a real contract. DO NOT USE in production.
+ * @dev      Mock implementation of a DEX Aggregator for testing purposes. There are three
+ *           mocks in this file: the DEX Aggregator contract on the source chain, the one on
+ *           the destination chain, and the mock DEX contract called on the destination chain.
+ *           The flow is as follows:
+ *           Native:Chain1 (User to Vault) -> Token:Chain2 (CF swap) -> Token2:Chain2 (DexMock swap)
+ *           The DexMockSwap parameters are encoded on the srcChain as part of the message and decoded
+ *           on the dstChain.
+ *           This contract is a Mock and this is not the actual implementation of a DEX Aggregator.
+ *           The contract is only for testing purposes to do a proof of concept of a full cross-chain
+ *           swap with a DEX Aggregator, do not inherit nor use in production.
  */
 
-contract DexAggMock is CFReceiver, Shared {
-    using SafeERC20 for IERC20;
+contract DexAggSrcChainMock is Shared {
+    address private _cfVault;
 
-    bytes4 constant FUNC_SELECTOR = bytes4(keccak256("swapMock(address,address,uint256)"));
-
-    event ReceivedxSwapAndCall(
-        uint32 srcChain,
-        string srcAddress,
-        bytes message,
-        address token,
-        uint256 amount,
-        uint256 ethReceived
-    );
-    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message, uint256 ethReceived);
-
-    constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}
+    constructor(address cfVault) nzAddr(cfVault) {
+        _cfVault = cfVault;
+    }
 
     // Ingress Chain
     function xSwapNativeAndCall(
@@ -44,35 +39,39 @@ contract DexAggMock is CFReceiver, Shared {
         address userToken,
         address userAddress
     ) external payable {
-        // NOTE: LiFi contracts as of now do the message encoding on-chain, which seems
-        // like a waste of gas to me. Interestinngly, they also do encodePacked which might
-        // be a good idea if there is only one dynamic type. However, it seems like it's the only
-        // bridge where they do that, so it is probably not their final solution.
-        // NOTE: We skip all the checks. This is not a real contract, just a mock.
-
-        // Encoding of data should probably be done off-chain to save gas. This is just for
-        // making the testing easier and to show what we are actually doing.
-        // Encoding several parameters to proof that parameters beyond the function call
-        // can be encoded. Not encodingWithSignature as that makes it tricky to decode with
-        // additional parameters. This is more expensive gas-wise, as the FUNC_SEL will be encoded
-        // in 256 bits as part of the message, but we don't care here.
-
-        // We could use encodePacked, but it's not a good idea if there are multiple dynamic types,
-        // like if the dstChain was non-EVM and then the userAddress would need to be a string.
-        // For dstAddress, we pass it directly as a string, but it could also be done on-chain
-        // with OZ's `strings.toHexString(params.destinationAddress)`;
+        // Encoding of data should probably be done off-chain to save gas. This is just for making the
+        // testing easier. Any parameter can be encoded in the message. Here we encode the function 
+        // selector along with other parameters that will be used in the destination chain's contract 
+        // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
+        IVault(_cfVault).xSwapNativeAndCall{value: msg.value}(dstChain, dstAddress, swapIntent, message, refundAddress);
+    }
+}
 
-        // Hardcoding the swapAmount just to ease the testing.
-        //bytes memory calldataDstxCall = abi.encodeWithSignature("swap(address,address,uint256)", dstToken, userToken, 100);
+contract DexAggDstChainMock is CFReceiver, Shared {
+    using SafeERC20 for IERC20;
 
-        IVault(_cfSender).xSwapNativeAndCall{value: msg.value}(
-            dstChain,
-            dstAddress,
-            swapIntent,
-            message,
-            refundAddress
-        );
+    // @dev Mapping of chain to DexAggSrcChainMock's source Chain's address. Storing it
+    // without the initial "0x" just because brownie has issues passing a string with
+    // the same length as an address (it mistakenly thinks it's an address).
+    mapping(uint256 => string) private _chainToAddress;
+
+    event ReceivedxSwapAndCall(
+        uint32 srcChain,
+        string srcAddress,
+        bytes message,
+        address token,
+        uint256 amount,
+        uint256 ethReceived
+    );
+    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message, uint256 ethReceived);
+
+    constructor(
+        address cfSender,
+        uint256 srcChain,
+        string memory srcChainAddress
+    ) CFReceiver(cfSender) nzAddr(cfSender) {
+        _chainToAddress[srcChain] = srcChainAddress;
     }
 
     // Egress Chain
@@ -83,7 +82,11 @@ contract DexAggMock is CFReceiver, Shared {
         address token,
         uint256 amount
     ) internal override {
-        require(token != _ETH_ADDR, "DexAggMock: Only tokens are supported in testing");
+        require(token != _ETH_ADDR, "DexAggMock: Only testing tokens on dstChain");
+        require(
+            keccak256(abi.encodePacked(_chainToAddress[srcChain])) == keccak256(abi.encodePacked(srcAddress)),
+            "DexAggMock: Invalid source chain address"
+        );
 
         (bytes4 selector, address dexAddress, address dstToken, address userToken, address userAddress) = abi.decode(
             message,
@@ -94,9 +97,7 @@ contract DexAggMock is CFReceiver, Shared {
 
         // Instead of the calldata being a call to a DEX we just do an mock call
         require(selector == FUNC_SELECTOR, "DexAggMock: Invalid selector");
-        (bool success, bytes memory lowLevelData) = dexAddress.call(
-            abi.encodeWithSelector(selector, dstToken, userToken, amount)
-        );
+        (bool success, ) = dexAddress.call(abi.encodeWithSelector(selector, dstToken, userToken, amount));
         if (!success) revert("DexAggMock: Call failed");
 
         // Transfer tokens to user
