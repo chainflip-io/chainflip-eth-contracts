@@ -6,7 +6,8 @@ import "../interfaces/IVault.sol";
 
 /**
  * @title    LoopBackMock
- * @dev      Mock of a loopback.
+ * @dev      Mock of a loopback. To make it simpler we don't bother decoding the
+ *           message and the callback to the Vault contract is hardcoded.
  */
 contract LoopBackMock is CFReceiver, Shared {
     constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}
@@ -44,29 +45,29 @@ contract LoopBackMock is CFReceiver, Shared {
         IVault(_cfSender).xSwapNativeAndCall{value: 200000 * 12}(srcChain, srcAddress, "", message, address(this));
     }
 
-    // NOTE: Comparing strings (keccak256(bytes(s1)) == keccak256(bytes(s2))) is around 1.5k gas more expensive
-    // than comparing uints (this is regarding the srcChain parameter).
+    // // // NOTE: Comparing strings (keccak256(bytes(s1)) == keccak256(bytes(s2))) is around 1.5k gas more expensive
+    // // // than comparing uints (this is regarding the srcChain parameter).
 
-    // Just leaving this here as a proof of concept of slicing strings. We could make all chainNames to be
-    // 3 char long so the user can know where to split the string if they need to.
-    function getSlice(
-        uint256 begin,
-        uint256 end,
-        string memory text
-    ) public pure returns (string memory) {
-        bytes memory a = new bytes(end - begin + 1);
-        for (uint256 i = 0; i <= end - begin; i++) {
-            a[i] = bytes(text)[i + begin - 1];
-        }
-        return string(a);
-    }
+    // // // Just leaving this here as a proof of concept of slicing strings. We could make all chainNames to be
+    // // // 3 char long so the user can know where to split the string if they need to.
+    // // function getSlice(
+    // //     uint256 begin,
+    // //     uint256 end,
+    // //     string memory text
+    // // ) public pure returns (string memory) {
+    // //     bytes memory a = new bytes(end - begin + 1);
+    // //     for (uint256 i = 0; i <= end - begin; i++) {
+    // //         a[i] = bytes(text)[i + begin - 1];
+    // //     }
+    // //     return string(a);
+    // // }
 
-    function checkChain(string memory str, string memory chainToCheck) public pure returns (bool) {
-        // Additional step adding a getSlice() call if egressParams contains two parameters
-        bytes memory b1 = bytes(str);
-        bytes memory b2 = bytes(chainToCheck);
+    // // function checkChain(string memory str, string memory chainToCheck) public pure returns (bool) {
+    // //     // Additional step adding a getSlice() call if egressParams contains two parameters
+    // //     bytes memory b1 = bytes(str);
+    // //     bytes memory b2 = bytes(chainToCheck);
 
-        require(b1.length >= b2.length, "wrong length");
-        return keccak256(b1) == keccak256(b2);
-    }
+    // //     require(b1.length >= b2.length, "wrong length");
+    // //     return keccak256(b1) == keccak256(b2);
+    // // }
 }

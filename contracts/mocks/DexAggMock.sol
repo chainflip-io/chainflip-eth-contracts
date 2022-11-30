@@ -22,6 +22,8 @@ bytes4 constant FUNC_SELECTOR = bytes4(keccak256("swapMock(address,address,uint2
  */
 
 contract DexAggSrcChainMock is Shared {
+    using SafeERC20 for IERC20;
+
     address private _cfVault;
 
     constructor(address cfVault) nzAddr(cfVault) {
@@ -29,11 +31,10 @@ contract DexAggSrcChainMock is Shared {
     }
 
     // Ingress Chain
-    function xSwapNativeAndCall(
+    function swapNativeAndCallViaChainflip(
         uint32 dstChain,
         string calldata dstAddress,
         string calldata swapIntent,
-        address refundAddress,
         address dexAddress,
         address dstToken,
         address userToken,
@@ -44,7 +45,28 @@ contract DexAggSrcChainMock is Shared {
         // selector along with other parameters that will be used in the destination chain's contract 
         // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
-        IVault(_cfVault).xSwapNativeAndCall{value: msg.value}(dstChain, dstAddress, swapIntent, message, refundAddress);
+        IVault(_cfVault).xSwapNativeAndCall{value: msg.value}(dstChain, dstAddress, swapIntent, message, msg.sender);
+    }
+
+    function swapTokenToNativeAndCallViaChainflip(
+        uint32 dstChain,
+        string calldata dstAddress,
+        string calldata swapIntent,
+        address dexAddress,
+        address userToken,
+        address userAddress,
+        address srcToken,
+        uint256 srcAmount
+    ) external payable {
+        IERC20(srcToken).safeTransferFrom(msg.sender, address(this), srcAmount);
+
+        // Encoding of data should probably be done off-chain to save gas. This is just for making the
+        // testing easier. Any parameter can be encoded in the message. Here we encode the function 
+        // selector along with other parameters that will be used in the destination chain's contract 
+        // in order to make the call to the DEXMock.
+        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, _ETH_ADDR, userToken, userAddress);
+        IERC20(srcToken).approve(_cfVault, srcAmount);
+        IVault(_cfVault).xSwapTokenAndCall(dstChain, dstAddress, swapIntent, message, IERC20(srcToken), srcAmount, msg.sender);
     }
 }
 
@@ -113,17 +135,26 @@ contract DexAggDstChainMock is CFReceiver, Shared {
     }
 }
 
-contract DEXMock {
+contract DEXMock is Shared{
     using SafeERC20 for IERC20;
 
     function swapMock(
         address tokenIn,
         address tokenOut,
         uint256 amount
-    ) external {
-        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amount);
+    ) external payable {
+        if (tokenIn == _ETH_ADDR) {
+            require (msg.value == amount, "DEXMock: Invalid amount");
+        } else {
+            IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amount);
+        }
 
         // Mocking the swap with a 1:2 ratio.
-        IERC20(tokenOut).safeTransfer(msg.sender, amount * 2);
+        if (tokenOut == _ETH_ADDR) {
+            payable(msg.sender).transfer(amount*2);
+        } else {
+            IERC20(tokenOut).safeTransfer(msg.sender, amount * 2);
+        }
+
     }
 }
