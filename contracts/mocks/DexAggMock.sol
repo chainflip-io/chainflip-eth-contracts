@@ -41,32 +41,41 @@ contract DexAggSrcChainMock is Shared {
         address userAddress
     ) external payable {
         // Encoding of data should probably be done off-chain to save gas. This is just for making the
-        // testing easier. Any parameter can be encoded in the message. Here we encode the function 
-        // selector along with other parameters that will be used in the destination chain's contract 
+        // testing easier. Any parameter can be encoded in the message. Here we encode the function
+        // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
         IVault(_cfVault).xSwapNativeAndCall{value: msg.value}(dstChain, dstAddress, swapIntent, message, msg.sender);
     }
 
-    function swapTokenToNativeAndCallViaChainflip(
+    function swapTokenAndCallViaChainflip(
         uint32 dstChain,
         string calldata dstAddress,
         string calldata swapIntent,
         address dexAddress,
+        address dstToken,
         address userToken,
         address userAddress,
         address srcToken,
         uint256 srcAmount
-    ) external payable {
+    ) external {
         IERC20(srcToken).safeTransferFrom(msg.sender, address(this), srcAmount);
 
         // Encoding of data should probably be done off-chain to save gas. This is just for making the
-        // testing easier. Any parameter can be encoded in the message. Here we encode the function 
-        // selector along with other parameters that will be used in the destination chain's contract 
+        // testing easier. Any parameter can be encoded in the message. Here we encode the function
+        // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
-        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, _ETH_ADDR, userToken, userAddress);
+        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
         IERC20(srcToken).approve(_cfVault, srcAmount);
-        IVault(_cfVault).xSwapTokenAndCall(dstChain, dstAddress, swapIntent, message, IERC20(srcToken), srcAmount, msg.sender);
+        IVault(_cfVault).xSwapTokenAndCall(
+            dstChain,
+            dstAddress,
+            swapIntent,
+            message,
+            IERC20(srcToken),
+            srcAmount,
+            msg.sender
+        );
     }
 }
 
@@ -104,7 +113,6 @@ contract DexAggDstChainMock is CFReceiver, Shared {
         address token,
         uint256 amount
     ) internal override {
-        require(token != _ETH_ADDR, "DexAggMock: Only testing tokens on dstChain");
         require(
             keccak256(abi.encodePacked(_chainToAddress[srcChain])) == keccak256(abi.encodePacked(srcAddress)),
             "DexAggMock: Invalid source chain address"
@@ -115,11 +123,19 @@ contract DexAggDstChainMock is CFReceiver, Shared {
             (bytes4, address, address, address, address)
         );
 
-        IERC20(dstToken).approve(dexAddress, amount);
+        require(dstToken == token, "DexAggMock: Assertion failed");
 
-        // Instead of the calldata being a call to a DEX we just do an mock call
+        if (token != _ETH_ADDR) {
+            IERC20(dstToken).approve(dexAddress, amount);
+        }
+
+        // Check that the srcChain's encoded selector matches what we are decoding on the dstChain.
         require(selector == FUNC_SELECTOR, "DexAggMock: Invalid selector");
-        (bool success, ) = dexAddress.call(abi.encodeWithSelector(selector, dstToken, userToken, amount));
+
+        uint256 msgValue = token == _ETH_ADDR ? amount : 0;
+        (bool success, ) = dexAddress.call{value: msgValue}(
+            abi.encodeWithSelector(selector, dstToken, userToken, amount)
+        );
         if (!success) revert("DexAggMock: Call failed");
 
         // Transfer tokens to user
@@ -133,9 +149,11 @@ contract DexAggDstChainMock is CFReceiver, Shared {
     ) internal override {
         emit ReceivedxCall(srcChain, srcAddress, message, msg.value);
     }
+
+    receive() external payable {}
 }
 
-contract DEXMock is Shared{
+contract DEXMock is Shared {
     using SafeERC20 for IERC20;
 
     function swapMock(
@@ -144,17 +162,16 @@ contract DEXMock is Shared{
         uint256 amount
     ) external payable {
         if (tokenIn == _ETH_ADDR) {
-            require (msg.value == amount, "DEXMock: Invalid amount");
+            require(msg.value == amount, "DEXMock: Invalid amount");
         } else {
             IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amount);
         }
 
         // Mocking the swap with a 1:2 ratio.
         if (tokenOut == _ETH_ADDR) {
-            payable(msg.sender).transfer(amount*2);
+            payable(msg.sender).transfer(amount * 2);
         } else {
             IERC20(tokenOut).safeTransfer(msg.sender, amount * 2);
         }
-
     }
 }

@@ -3,6 +3,7 @@ from shared_tests import *
 from brownie import reverts
 from brownie.test import given, strategy
 
+
 @given(
     st_dstChain=strategy("uint32"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
@@ -12,13 +13,10 @@ def test_loopback_executexSwapAndCall_native(
     cf, cfDexAggMock, st_sender, st_amount, st_recipient
 ):
 
-
     cf.vault.enableSwaps({"from": cf.gov})
-
 
     # Fund Vault
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
-
 
     # Balance => ETH, token1, token2
     balanceVault = web3.eth.get_balance(cf.vault.address)
