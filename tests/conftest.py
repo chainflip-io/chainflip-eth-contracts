@@ -204,7 +204,9 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
     return tv, cliff, end, total
 
 
-# Deploy mock xCall receiver
+# Deploy CFReceiver Mock contracts for testing purposes
+
+
 @pytest.fixture(scope="module")
 def cfReceiverMock(cf, CFReceiverMock):
     return cf.DEPLOYER.deploy(CFReceiverMock, cf.vault)
@@ -229,3 +231,8 @@ def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
         DexAggDstChainMock, cf.vault, srcChain, hex(dexAggSrcChainMock.address)[2:]
     )
     return (dexMock, dexAggSrcChainMock, dexAggDstChainMock, srcChain)
+
+
+@pytest.fixture(scope="module")
+def cfLoopbackMock(cf, LoopBackMock):
+    return cf.DEPLOYER.deploy(LoopBackMock, cf.vault)

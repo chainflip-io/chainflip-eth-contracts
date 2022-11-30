@@ -425,6 +425,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //       it makes it cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the dstChain it is
     //       a pain to check srcChain as a string.
     // TODO: Decide if we want to have executexCall implemented (only CCM call)
+    // TODO: If we want to support pure CCM call via xSwapTokenAndCall (with empty swapIntent), add verification for that.
 
     // NOTE: Used for swap+CCM and also for pure CCM (by having an empty egressToken)
     // NOTE: SwapIntent is for now equal to dstToken, but the name is more generic for the future. Does that make sense?
@@ -490,8 +491,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     // NOTE: Checking msg.value!=0 won't prevent spamming. However, it might be useful to ensure that users
-    // understand that they should be paying gas. We check that in the token case because I have heard
-    // people saying they have seen isssues when fuzzing transfering zero tokens.
+    // understand that they should be paying gas. We check that in the token case because I have read about
+    // some isssues when fuzzing and transfering zero tokens.
     function xSwapNativeAndCall(
         uint32 dstChain,
         string memory dstAddress,
@@ -521,9 +522,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         emit SwapToken(dstChain, dstAddress, swapIntent, address(ingressToken), amount, msg.sender);
     }
 
-    // TODO: Checking msg.value!=0 won't prevent spamming, so we might consider removing it. It would only be
-    // for users to understand that they should be paying an ingress native Token. We check that in the token
-    // case because I have heard people saying they have seen isssues when fuzzing transfering zero tokens.
+    // NOTE: Checking nzUint(msg.value) won't prevent spamming, but it's for users to understand
+    // that they should be paying an ingress native Token.
     function xSwapNative(
         uint32 dstChain,
         string memory dstAddress,
@@ -623,6 +623,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
+    // TODO: To verify this if we end up having it.
+
     /**
      * @notice  Calls the receive function on the recipient's contract passing the message specified
      *          and the source of the call (ingress)
@@ -672,13 +674,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    // NOTE: To decide if we want this for the future or not. Native gas would be great to offer
+    // TODO: To decide if we want this for the future or not. Native gas would be great to offer
     // gas topups on the egress chain. But non-native would be good because USDC is easier to
     // handle/swap internally.
     // Potentially we could use this two functions to allow the user to cancel an egress
     // transaction. This could be done by sending zero amount and signaling the swapID.
     // NOTE: This could be features for later on, and together with the refundAddress it might
     // be worth removing and maybe adding in the future.
+    // TODO: To verify this if we decide to have it.
 
     function addNativeGas(bytes32 swapID) external payable {
         emit AddNativeGas(swapID, msg.value);

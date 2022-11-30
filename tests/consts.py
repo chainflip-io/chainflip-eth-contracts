@@ -158,3 +158,4 @@ REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
 
 # -----CFReceiver-----
 REV_MSG_REVERTED = "CFReceiverFail: call reverted"
+REV_MSG_SENDER = "CFReceiver: caller not Chainflips sender"

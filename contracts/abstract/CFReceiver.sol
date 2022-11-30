@@ -18,7 +18,7 @@ import "../interfaces/ICFReceiver.sol";
  */
 
 abstract contract CFReceiver is ICFReceiver {
-    /// @dev    Chainflip's Vault address where xCalls will be sent.
+    /// @dev    Chainflip's Vault address where xSwaps and xCalls will be originated from.
     address public _cfSender;
 
     constructor(address cfSender) {
@@ -58,7 +58,7 @@ abstract contract CFReceiver is ICFReceiver {
     ) internal virtual;
 
     modifier onlyCFSender() {
-        require(msg.sender == _cfSender, "CFReceiver: caller is not the CF Sender");
+        require(msg.sender == _cfSender, "CFReceiver: caller not Chainflips sender");
         _;
     }
 }
