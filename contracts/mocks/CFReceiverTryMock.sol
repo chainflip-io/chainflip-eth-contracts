@@ -12,12 +12,13 @@ import "../mocks/CFReceiverFailMock.sol";
 contract CFReceiverTryMock is CFReceiver, Shared {
     event FailedExternalCall(string revertString);
 
-    address _receiverFail;
+    address private _receiverFail;
 
     constructor(address cfSender, address receiverFail) CFReceiver(cfSender) nzAddr(cfSender) {
         _receiverFail = receiverFail;
     }
 
+    /* solhint-disable no-unused-vars */
     function _cfRecieve(
         uint32 srcChain,
         string calldata srcAddress,
@@ -36,12 +37,14 @@ contract CFReceiverTryMock is CFReceiver, Shared {
         _handleFailedCall();
     }
 
+    /* solhint-enable no-unused-vars */
+
     function _handleFailedCall() internal {
         // Mimicking a contract catching an external call that fails
         try CFReceiverFailMock(_receiverFail).revertExternalCall() {} catch Error(string memory revertString) {
             // Specific error case since we expect a revert string.
             emit FailedExternalCall(revertString);
-        } catch (bytes memory lowLevelData) {
+        } catch {
             // Handle other revert cases.
         }
     }

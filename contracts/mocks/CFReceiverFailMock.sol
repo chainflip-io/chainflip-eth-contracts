@@ -11,6 +11,7 @@ import "../abstract/Shared.sol";
 contract CFReceiverFailMock is CFReceiver, Shared {
     constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}
 
+    /* solhint-disable no-unused-vars */
     function _cfRecieve(
         uint32 srcChain,
         string calldata srcAddress,
@@ -29,11 +30,13 @@ contract CFReceiverFailMock is CFReceiver, Shared {
         _revert();
     }
 
-    function revertExternalCall() external {
+    /* solhint-enable no-unused-vars */
+
+    function revertExternalCall() external pure {
         _revert();
     }
 
-    function _revert() internal {
+    function _revert() internal pure {
         revert("CFReceiverFail: call reverted");
     }
 }

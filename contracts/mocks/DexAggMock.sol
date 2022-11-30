@@ -133,6 +133,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
         require(selector == FUNC_SELECTOR, "DexAggMock: Invalid selector");
 
         uint256 msgValue = token == _ETH_ADDR ? amount : 0;
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = dexAddress.call{value: msgValue}(
             abi.encodeWithSelector(selector, dstToken, userToken, amount)
         );
