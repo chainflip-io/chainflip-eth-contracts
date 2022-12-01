@@ -424,11 +424,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
     //       it makes it cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the dstChain it is
     //       a pain to check srcChain as a string.
-    // TODO: Decide if we want to have executexCall implemented (only CCM call)
-    // TODO: If we want to support pure CCM call via xSwapTokenAndCall (with empty swapIntent), add verification for that.
-
-    // NOTE: Used for swap+CCM and also for pure CCM (by having an empty egressToken)
-    // NOTE: SwapIntent is for now equal to dstToken, but the name is more generic for the future. Does that make sense?
+    // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xSwapTokenAndCall but passing an emtpy swapIntent.
+    //       If we want to optimize pure CCM then we could create two extra functions (paying with native or with token).
 
     /**
      * @notice  Swaps ERC20 Token for a token in another chain and performs a xcall. Function call needs to specify the src and
@@ -594,7 +591,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // TODO: Originally we copied this parameters to avoid StackTooDeep error. But now that this function is
         // separate we might have a bit more of a buffer. To play a bit more with it since we are probably
         // spending a bit more gas by doing that. If we have to do this we can maybe just pass those as parameters
-        // to the _egress function anyway.
+        // to the _egress function anyway. We should consider removing nzAddr(token) and nzUint(amount) from the
+        // executexSwapAndCall function, seems unnecessary. nzAddr(recipient) seems alright as we don't want to
+        // avoid sending to the zero address.
         uint256 amount = transferParams.amount;
         address token = address(transferParams.token);
         address payable recipient = transferParams.recipient;
@@ -622,8 +621,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                   DstChain receive xcall                 //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    // TODO: To verify this if we end up having it.
 
     /**
      * @notice  Calls the receive function on the recipient's contract passing the message specified

@@ -34,13 +34,13 @@ def test_dex_executexSwapNativeAndCall(
         bals[address].append(token.balanceOf(address))
         bals[address].append(token2.balanceOf(address))
 
-    # Converting dexAggMock.address into a string via hex(...) confuses brownie. It interprets
+    # Converting dexAggMock.address into a string via toHex(...) confuses brownie. It interprets
     # it as an address, which then cases a failure on the function call since it expects a
     # string. To bypass that, the 0x part is removed from the string.
 
     tx = dexAggSrcMock.swapNativeAndCallViaChainflip(
         st_dstChain,
-        hex(dexAggDstMock.address)[2:],
+        toHex(dexAggDstMock.address)[2:],
         token.symbol(),
         dexMock,
         token,
@@ -64,7 +64,7 @@ def test_dex_executexSwapNativeAndCall(
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
     assert tx.events["SwapNativeAndCall"]["dstChain"] == st_dstChain
     assert (
-        tx.events["SwapNativeAndCall"]["dstAddress"] == hex(dexAggDstMock.address)[2:]
+        tx.events["SwapNativeAndCall"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
     )
     assert tx.events["SwapNativeAndCall"]["swapIntent"] == token.symbol()
     assert tx.events["SwapNativeAndCall"]["amount"] == st_amount
@@ -80,7 +80,7 @@ def test_dex_executexSwapNativeAndCall(
     args = [
         [token, dexAggDstMock, egressAmount],
         srcChain,  # arbitrary source chain
-        hex(dexAggSrcMock.address)[2:],  # sourceAddress to string
+        toHex(dexAggSrcMock.address)[2:],  # sourceAddress to string
         message,
     ]
 
@@ -148,13 +148,13 @@ def test_dex_executexSwapTokenAndCall(
 
     token.approve(dexAggSrcMock, st_amount, {"from": st_sender})
 
-    # Converting dexAggMock.address into a string via hex(...) confuses brownie. It interprets
+    # Converting dexAggMock.address into a string via toHex(...) confuses brownie. It interprets
     # it as an address, which then cases a failure on the function call since it expects a
     # string. To bypass that, the 0x part is removed from the string.
     ethSymbol = "ETH"
     tx = dexAggSrcMock.swapTokenAndCallViaChainflip(
         st_dstChain,
-        hex(dexAggDstMock.address)[2:],
+        toHex(dexAggDstMock.address)[2:],
         ethSymbol,
         dexMock,
         ETH_ADDR,
@@ -179,7 +179,9 @@ def test_dex_executexSwapTokenAndCall(
 
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
     assert tx.events["SwapTokenAndCall"]["dstChain"] == st_dstChain
-    assert tx.events["SwapTokenAndCall"]["dstAddress"] == hex(dexAggDstMock.address)[2:]
+    assert (
+        tx.events["SwapTokenAndCall"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
+    )
     assert tx.events["SwapTokenAndCall"]["swapIntent"] == ethSymbol
     assert tx.events["SwapTokenAndCall"]["ingressToken"] == token.address
     assert tx.events["SwapTokenAndCall"]["amount"] == st_amount
@@ -195,7 +197,7 @@ def test_dex_executexSwapTokenAndCall(
     args = [
         [ETH_ADDR, dexAggDstMock, egressAmount],
         srcChain,  # arbitrary source chain
-        hex(dexAggSrcMock.address)[2:],  # sourceAddress to string
+        toHex(dexAggSrcMock.address)[2:],  # sourceAddress to string
         message,
     ]
 

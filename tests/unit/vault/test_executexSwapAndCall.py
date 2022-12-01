@@ -14,9 +14,10 @@ import random
 #    parameter value = 0x00. Returned the same from event => Can be compared
 
 # NOTE: The signing of the message rev (check msgHash) when the st_srcAddr is an
-#       empty string. So min_size is set to 1 to avoid this issue.
-# TODO: I expect this to be a brownie/python test issue. In reality we should be able
-#       to send xCall with empty message. To be tested when CF validators do the signing.
+#       empty string. So min_size is set to 1 to avoid this issue. I expect this to be
+#       a brownie/python test issue. In reality we should be able to send xCall with
+#       empty message.
+# TODO : To be tested when CF validators do the signing.
 
 
 @given(

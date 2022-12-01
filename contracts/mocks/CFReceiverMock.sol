@@ -17,7 +17,7 @@ contract CFReceiverMock is CFReceiver, Shared {
         uint256 amount,
         uint256 ethReceived
     );
-    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message, uint256 ethReceived);
+    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message);
 
     constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}
 
@@ -36,6 +36,6 @@ contract CFReceiverMock is CFReceiver, Shared {
         string calldata srcAddress,
         bytes calldata message
     ) internal override {
-        emit ReceivedxCall(srcChain, srcAddress, message, msg.value);
+        emit ReceivedxCall(srcChain, srcAddress, message);
     }
 }

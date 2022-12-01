@@ -228,7 +228,7 @@ def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
     dexMock = cf.DEPLOYER.deploy(DEXMock)
     dexAggSrcChainMock = cf.DEPLOYER.deploy(DexAggSrcChainMock, cf.vault)
     dexAggDstChainMock = cf.DEPLOYER.deploy(
-        DexAggDstChainMock, cf.vault, srcChain, hex(dexAggSrcChainMock.address)[2:]
+        DexAggDstChainMock, cf.vault, srcChain, toHex(dexAggSrcChainMock.address)[2:]
     )
     return (dexMock, dexAggSrcChainMock, dexAggDstChainMock, srcChain)
 
