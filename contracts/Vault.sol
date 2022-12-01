@@ -541,8 +541,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          chain among other parameters that specify the source and parameters of the transfer.
      *          This is used for swaps with cross-chain messaging. Can also be user for xswapWithCall
      *          even if the message is empty.
-     * @dev     srcChain and srcAddress are separated to make it easier for the recipient to
-     *          do any checks without needing to split a string.
+     * @dev     Could consider the amount and tokenAddress check to save some gas.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -580,7 +579,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     {
         // Making an extra call to gain some stack room (avoid stackTooDeep error)
         _executexSwapAndCall(transferParams, srcChain, srcAddress, message);
-        
     }
 
     function _executexSwapAndCall(
@@ -589,16 +587,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string calldata srcAddress,
         bytes calldata message
     ) private {
-        // TODO: Originally we copied this parameters to avoid StackTooDeep error. But now that this function is
-        // separate we might have a bit more of a buffer. To play a bit more with it since we are probably
-        // spending a bit more gas by doing that. If we have to do this we can maybe just pass those as parameters
-        // to the _egress function anyway. We should consider removing nzAddr(token) and nzUint(amount) from the
-        // executexSwapAndCall function, seems unnecessary. nzAddr(recipient) seems alright as we don't want to
-        // avoid sending to the zero address.
-        uint256 amount = transferParams.amount;
-        address token = transferParams.token;
-        address payable recipient = transferParams.recipient;
-
         // NOTE: It's on the receiver to make sure this call doesn't revert so they keep the tokens.
         // This is done espeically for integrations with protocols (such as  LiFi) where we don't know the
         // user/final address, so if we just transfer to the recipient in case of a revert, we might end up
@@ -609,11 +597,23 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // NOTE: We don't use the _transfer function because we want to be able to embed the native token
         // into the cfReceive call to avoid a double cross-contract call.
 
-        if (token == _ETH_ADDR) {
-            ICFReceiver(recipient).cfRecieve{value: amount}(srcChain, srcAddress, message, token, amount);
+        if (transferParams.token == _ETH_ADDR) {
+            ICFReceiver(transferParams.recipient).cfRecieve{value: transferParams.amount}(
+                srcChain,
+                srcAddress,
+                message,
+                transferParams.token,
+                transferParams.amount
+            );
         } else {
-            IERC20(token).safeTransfer(recipient, amount);
-            ICFReceiver(recipient).cfRecieve(srcChain, srcAddress, message, token, amount);
+            IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+            ICFReceiver(transferParams.recipient).cfRecieve(
+                srcChain,
+                srcAddress,
+                message,
+                transferParams.token,
+                transferParams.amount
+            );
         }
     }
 

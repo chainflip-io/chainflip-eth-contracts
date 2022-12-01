@@ -43,143 +43,61 @@ def test_executexCall(
     ]
 
 
-# # token contract doesn't have the cfRecievexCall function implemented
-# def test_executexCall_rev_noCfReceive(cf, token):
-#     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
-#     randToken = random.choice([ETH_ADDR, token])
+# token contract doesn't have the cfRecievexCall function implemented
+def test_executexCall_rev_noCfReceive(cf, token):
+    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    randToken = random.choice([ETH_ADDR, token])
 
-#     startBalVault = cf.vault.balance()
-#     startBalRecipient = cf.ALICE.balance()
-
-#     args = [
-#         [randToken, token, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts():
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-#     assert cf.vault.balance() == startBalVault
-#     assert cf.ALICE.balance() == startBalRecipient
+    args = [
+        randToken,
+        JUNK_INT,
+        JUNK_STR,
+        JUNK_HEX,
+    ]
+    with reverts():
+        signed_call_cf(cf, cf.vault.executexCall, *args)
 
 
-# # rev if token address is not an ERC20
-# def test_executexCall_revToken(cf, cfReceiverMock):
-#     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
-
-#     startBalVault = cf.vault.balance()
-#     startBalRecipient = cf.ALICE.balance()
-
-#     args = [
-#         [NON_ZERO_ADDR, cfReceiverMock.address, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts():
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-#     assert cf.vault.balance() == startBalVault
-#     assert cf.ALICE.balance() == startBalRecipient
+def test_executexCall_rev_nzAddrs(cf, token):
+    args = [
+        ZERO_ADDR,
+        JUNK_INT,
+        JUNK_STR,
+        JUNK_HEX,
+    ]
+    with reverts(REV_MSG_NZ_ADDR):
+        signed_call_cf(cf, cf.vault.executexCall, *args)
 
 
-# # Trying to send ETH when there's none in the Vault
-# def test_executexCallEth_rev_not_enough_eth(cf, cfReceiverMock):
-#     args = [
-#         [ETH_ADDR, cfReceiverMock, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts():
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
+def test_executexCallEth_rev_msgHash(cf):
+    args = [
+        NON_ZERO_ADDR,
+        JUNK_INT,
+        JUNK_STR,
+        JUNK_HEX,
+    ]
+    callDataNoSig = cf.vault.executexCall.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
+    sigData[2] += 1
+
+    with reverts(REV_MSG_MSGHASH):
+        cf.vault.executexCall(sigData, *args)
 
 
-# def test_executexCall_rev_nzAddrs(cf, cfReceiverMock, token):
-#     args = [
-#         [ZERO_ADDR, cfReceiverMock, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts(REV_MSG_NZ_ADDR):
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
+# rev if cfReceiver reverts the call
+def test_executexCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
+    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
 
-#     args = [
-#         [ETH_ADDR, ZERO_ADDR, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts(REV_MSG_NZ_ADDR):
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-#     args = [
-#         [token, ZERO_ADDR, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts(REV_MSG_NZ_ADDR):
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-
-# def test_executexCall_rev_nzAmount(cf, cfReceiverMock, token):
-#     args = [
-#         [ETH_ADDR, cfReceiverMock, 0],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts(REV_MSG_NZ_UINT):
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-#     args = [
-#         [token, cfReceiverMock, 0],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts(REV_MSG_NZ_UINT):
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-
-# def test_executexCallEth_rev_msgHash(cf):
-#     args = [
-#         [ETH_ADDR, cf.ALICE, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     callDataNoSig = cf.vault.executexSwapAndCall.encode_input(
-#         agg_null_sig(cf.keyManager.address, chain.id), *args
-#     )
-#     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-#     sigData[2] += 1
-
-#     with reverts(REV_MSG_MSGHASH):
-#         cf.vault.executexSwapAndCall(sigData, *args)
-
-
-# # rev if cfReceiver reverts the call
-# def test_executexCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
-#     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
-
-#     startBalVault = cf.vault.balance()
-#     startBalRecipient = cfReceiverFailMock.balance()
-
-#     args = [
-#         [ETH_ADDR, cfReceiverFailMock.address, TEST_AMNT],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-#     with reverts(REV_MSG_REVERTED):
-#         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-#     assert cf.vault.balance() == startBalVault
-#     assert cfReceiverFailMock.balance() == startBalRecipient
+    args = [
+        cfReceiverFailMock.address,
+        JUNK_INT,
+        JUNK_STR,
+        JUNK_HEX,
+    ]
+    with reverts(REV_MSG_CFREC_REVERTED):
+        signed_call_cf(cf, cf.vault.executexCall, *args)
 
 
 # # If user contract catches the external reversion, the eth is transferred anyway.
@@ -200,7 +118,7 @@ def test_executexCall(
 #     ]
 
 #     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-#     assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_REVERTED
+#     assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_CFREC_REVERTED
 
 #     # Check that ETH amount is transferred to the dstAddress
 #     assert cf.vault.balance() - startBalVault == -st_amount
@@ -225,7 +143,7 @@ def test_executexCall(
 #     ]
 
 #     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-#     assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_REVERTED
+#     assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_CFREC_REVERTED
 
 #     # Check that the token amount is transferred to the dstAddress
 #     assert token.balanceOf(cf.vault) - startBalVault == -st_amount

@@ -27,7 +27,7 @@ def test_rev_cfRecieve_notVault(
     st_sender,
 ):
     ## st_sender will never be the vault
-    with reverts(REV_MSG_SENDER):
+    with reverts(REV_MSG_CFREC_SENDER):
         cfReceiverMock.cfRecieve(
             st_srcChain,
             st_srcAddress,
@@ -48,7 +48,7 @@ def test_rev_cfRecievexCall_notVault(
     cf, cfReceiverMock, st_srcChain, st_srcAddress, st_message, st_sender
 ):
     ## st_sender will never be the vault
-    with reverts(REV_MSG_SENDER):
+    with reverts(REV_MSG_CFREC_SENDER):
         cfReceiverMock.cfRecievexCall(
             st_srcChain, st_srcAddress, st_message, {"from": st_sender}
         )

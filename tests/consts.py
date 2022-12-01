@@ -123,7 +123,7 @@ REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
-REV_MSG_SENDER = "Vault: only Vault can send ETH"
+REV_MSG_VAULT_SENDER = "Vault: only Vault can send ETH"
 REV_MSG_VAULT_DELAY = "Vault: not enough time"
 REV_MSG_VAULT_SWAPS_DIS = "Vault: swaps not enabled"
 REV_MSG_VAULT_SWAPS_EN = "Vault: swaps enabled"
@@ -157,5 +157,5 @@ REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
 
 
 # -----CFReceiver-----
-REV_MSG_REVERTED = "CFReceiverFail: call reverted"
-REV_MSG_SENDER = "CFReceiver: caller not Chainflips sender"
+REV_MSG_CFREC_REVERTED = "CFReceiverFail: call reverted"
+REV_MSG_CFREC_SENDER = "CFReceiver: caller not Chainflips sender"

@@ -58,7 +58,7 @@ abstract contract CFReceiver is ICFReceiver {
     ) internal virtual;
 
     modifier onlyCFSender() {
-        require(msg.sender == _cfSender, "CFReceiver: caller not Chainflips sender");
+        require(msg.sender == _cfSender, "CFReceiver: caller not Chainflip sender");
         _;
     }
 }

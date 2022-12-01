@@ -27,5 +27,5 @@ def test_sendEth_rev_sender(cf):
     cf.DEPLOYER.transfer(cf.vault, 2 * TEST_AMNT)
     for addr in a:
         if addr != cf.vault.address:
-            with reverts(REV_MSG_SENDER):
+            with reverts(REV_MSG_VAULT_SENDER):
                 cf.vault.sendEth(cf.DENICE, {"from": addr, "value": TEST_AMNT})

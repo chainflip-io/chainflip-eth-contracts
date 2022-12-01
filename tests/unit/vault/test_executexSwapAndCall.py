@@ -196,7 +196,7 @@ def test_executexSwapAndCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
         JUNK_STR,
         JUNK_HEX,
     ]
-    with reverts(REV_MSG_REVERTED):
+    with reverts(REV_MSG_CFREC_REVERTED):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
     assert cf.vault.balance() == startBalVault
@@ -221,7 +221,7 @@ def test_executexSwapAndCallEth_tryCatch(cf, cfReceiverTryMock, st_amount):
     ]
 
     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-    assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_REVERTED
+    assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_CFREC_REVERTED
 
     # Check that ETH amount is transferred to the dstAddress
     assert cf.vault.balance() - startBalVault == -st_amount
@@ -246,7 +246,7 @@ def test_executexSwapAndCallToken_tryCatch(cf, cfReceiverTryMock, st_amount, tok
     ]
 
     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-    assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_REVERTED
+    assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_CFREC_REVERTED
 
     # Check that the token amount is transferred to the dstAddress
     assert token.balanceOf(cf.vault) - startBalVault == -st_amount
