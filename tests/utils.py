@@ -2,16 +2,19 @@ from brownie import web3, chain, history
 
 
 def cleanHexStr(thing):
-    thing = hex(thing)
+    if isinstance(thing, int):
+        thing = hex(thing)
+    elif not isinstance(thing, str):
+        thing = thing.hex()
     return thing[2:] if thing[:2] == "0x" else thing
 
 
 def hexStr(thing):
-    thing = hex(thing)
+    thing = toHex(thing)
     return "0x" + thing
 
 
-def hex(thing):
+def toHex(thing):
     if isinstance(thing, int):
         thing = hex(thing)
     elif not isinstance(thing, str):
