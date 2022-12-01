@@ -98,4 +98,45 @@ def test_loopback_executexSwapAndCall_token(
     assert balanceVault == token.balanceOf(cf.vault.address)
     assert balanceLoopback == token.balanceOf(cfLoopbackMock.address)
 
-    ## TODO: To verify lopopback._cfRecievexCall if we end up having it.
+
+@given(
+    st_srcChain=strategy("uint32"),
+    st_sender=strategy("address"),
+    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
+    st_srcAddress=strategy("string", min_size=1),
+    st_message=strategy("bytes"),
+)
+def test_loopback_executexCall_native(
+    cf, cfLoopbackMock, st_sender, st_amount, st_message, st_srcChain, st_srcAddress
+):
+
+    cf.vault.enableSwaps({"from": cf.gov})
+
+    # Fund Loopback
+    cf.DEPLOYER.transfer(cfLoopbackMock, st_amount)
+
+    # Native Balance
+    balanceVault = web3.eth.get_balance(cf.vault.address)
+    assert web3.eth.get_balance(cfLoopbackMock.address) == st_amount
+
+    # Executing a xCall
+    args = [
+        cfLoopbackMock,
+        st_srcChain,
+        st_srcAddress,
+        st_message,
+    ]
+
+    # Ensuring the st_sender is sending the transaction so it doesn't interfere with the receipient's eth balance
+    tx = signed_call_cf(cf, cf.vault.executexCall, *args, sender=st_sender)
+
+    # Check that the Vault receives the callback
+    assert tx.events["SwapNativeAndCall"]["dstChain"] == st_srcChain
+    assert tx.events["SwapNativeAndCall"]["dstAddress"] == st_srcAddress
+    assert tx.events["SwapNativeAndCall"]["swapIntent"] == ""
+    assert tx.events["SwapNativeAndCall"]["amount"] == st_amount
+    assert tx.events["SwapNativeAndCall"]["sender"] == cfLoopbackMock.address
+    assert tx.events["SwapNativeAndCall"]["refundAddress"] == cfLoopbackMock.address
+
+    assert balanceVault == web3.eth.get_balance(cf.vault.address) - st_amount
+    assert web3.eth.get_balance(cfLoopbackMock.address) == 0

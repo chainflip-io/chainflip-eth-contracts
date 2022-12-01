@@ -37,7 +37,6 @@ contract LoopBackMock is CFReceiver, Shared {
         }
     }
 
-    // TODO: To verify this if we end up having it.
     function _cfRecievexCall(
         uint32 srcChain,
         string calldata srcAddress,
