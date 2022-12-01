@@ -93,10 +93,10 @@ def test_allBatch(
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            signed_call_cf(cf, cf.vault.allBatch, *args, st_sender=st_sender)
+            signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
     else:
-        signed_call_cf(cf, cf.vault.allBatch, *args, st_sender=st_sender)
+        signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
         assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
