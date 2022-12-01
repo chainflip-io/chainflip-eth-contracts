@@ -580,6 +580,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     {
         // Making an extra call to gain some stack room (avoid stackTooDeep error)
         _executexSwapAndCall(transferParams, srcChain, srcAddress, message);
+        
     }
 
     function _executexSwapAndCall(
@@ -595,7 +596,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // executexSwapAndCall function, seems unnecessary. nzAddr(recipient) seems alright as we don't want to
         // avoid sending to the zero address.
         uint256 amount = transferParams.amount;
-        address token = address(transferParams.token);
+        address token = transferParams.token;
         address payable recipient = transferParams.recipient;
 
         // NOTE: It's on the receiver to make sure this call doesn't revert so they keep the tokens.
