@@ -173,10 +173,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
-     * @dev     Using "send" function to only send a set amount of gas,
-     *          preventing the recipient from using all the transfer batch
-     *          gas. Also, not reverting on failure so it can't block the
-     *          batch transfer.
+     * @dev     Using "send" function to only send a set amount of gas, preventing the recipient
+     *          from using all the transfer batch gas. Also, not reverting on failure so it can't
+     *          block the batch transfer.
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
