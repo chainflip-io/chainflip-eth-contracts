@@ -514,7 +514,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string memory swapIntent,
         IERC20 ingressToken,
         uint256 amount
-    ) external override onlyNotSuspended swapsEnabled nzUint(amount) {
+    ) external override onlyNotSuspended nzUint(amount) {
         ingressToken.safeTransferFrom(msg.sender, address(this), amount);
         emit SwapToken(dstChain, dstAddress, swapIntent, address(ingressToken), amount, msg.sender);
     }
@@ -525,7 +525,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint32 dstChain,
         string memory dstAddress,
         string memory swapIntent
-    ) external payable override onlyNotSuspended swapsEnabled nzUint(msg.value) {
+    ) external payable override onlyNotSuspended nzUint(msg.value) {
         emit SwapNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender);
     }
 
