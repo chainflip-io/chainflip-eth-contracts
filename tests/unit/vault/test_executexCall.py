@@ -100,100 +100,23 @@ def test_executexCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
         signed_call_cf(cf, cf.vault.executexCall, *args)
 
 
-# # If user contract catches the external reversion, the eth is transferred anyway.
-# @given(
-#     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-# )
-# def test_executexCallEth_tryCatch(cf, cfReceiverTryMock, st_amount):
-#     cf.DEPLOYER.transfer(cf.vault, st_amount)
+# If user contract catches the external reversion, balances are not affected
+def test_executexCallEth_tryCatch(cf, cfReceiverTryMock):
+    cf.DEPLOYER.transfer(cf.vault)
 
-#     startBalVault = cf.vault.balance()
-#     startBalRecipient = cfReceiverTryMock.balance()
+    startBalVault = cf.vault.balance()
+    startBalRecipient = cfReceiverTryMock.balance()
 
-#     args = [
-#         [ETH_ADDR, cfReceiverTryMock.address, st_amount],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
+    args = [
+        cfReceiverTryMock.address,
+        JUNK_INT,
+        JUNK_STR,
+        JUNK_HEX,
+    ]
 
-#     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-#     assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_CFREC_REVERTED
+    tx = signed_call_cf(cf, cf.vault.executexCall, *args)
+    assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_CFREC_REVERTED
 
-#     # Check that ETH amount is transferred to the dstAddress
-#     assert cf.vault.balance() - startBalVault == -st_amount
-#     assert cfReceiverTryMock.balance() - startBalRecipient == st_amount
-
-
-# # If user contract catches the external reversion, the tokens are transferred anyway.
-# @given(
-#     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-# )
-# def test_executexCallToken_tryCatch(cf, cfReceiverTryMock, st_amount, token):
-#     token.transfer(cf.vault, TEST_AMNT, {"from": cf.DEPLOYER})
-
-#     startBalVault = token.balanceOf(cf.vault)
-#     startBalRecipient = token.balanceOf(cfReceiverTryMock)
-
-#     args = [
-#         [token, cfReceiverTryMock.address, st_amount],
-#         JUNK_INT,
-#         JUNK_STR,
-#         JUNK_HEX,
-#     ]
-
-#     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-#     assert tx.events["FailedExternalCall"]["revertString"] == REV_MSG_CFREC_REVERTED
-
-#     # Check that the token amount is transferred to the dstAddress
-#     assert token.balanceOf(cf.vault) - startBalVault == -st_amount
-#     assert token.balanceOf(cfReceiverTryMock) - startBalRecipient == st_amount
-
-
-# # Analogous tests for executexSwapAndCall but with tokens instead of ETH
-
-
-# @given(
-#     st_srcChain=strategy("uint32"),
-#     st_srcAddress=strategy("string", min_size=1),
-#     st_message=strategy("bytes"),
-#     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-#     st_sender=strategy("address"),
-# )
-# def test_executexCallEth(
-#     cf,
-#     cfReceiverMock,
-#     st_sender,
-#     st_srcChain,
-#     st_srcAddress,
-#     st_message,
-#     st_amount,
-#     token,
-# ):
-#     token.transfer(cf.vault, st_amount, {"from": cf.DEPLOYER})
-
-#     startBalVault = token.balanceOf(cf.vault)
-#     assert startBalVault >= st_amount
-#     startBalRecipient = token.balanceOf(cfReceiverMock)
-
-#     message = hexStr(st_message)
-#     args = [
-#         [token, cfReceiverMock.address, st_amount],
-#         st_srcChain,
-#         st_srcAddress,
-#         message,
-#     ]
-#     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args, sender=st_sender)
-
-#     # Check that the token amount is transferred to the dstAddress
-#     assert token.balanceOf(cf.vault) - startBalVault == -st_amount
-#     assert token.balanceOf(cfReceiverMock) - startBalRecipient == st_amount
-
-#     assert tx.events["ReceivedxSwapAndCall"][0].values() == [
-#         st_srcChain,
-#         st_srcAddress,
-#         message,
-#         token,
-#         st_amount,
-#         0,
-#     ]
+    # Check that ETH amount is transferred to the dstAddress
+    assert cf.vault.balance() == startBalVault
+    assert cfReceiverTryMock.balance() == startBalRecipient
