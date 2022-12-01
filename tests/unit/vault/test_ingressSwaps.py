@@ -27,7 +27,19 @@ def test_swapToken(
     st_refundAddress,
     st_sender,
 ):
+
     if st_amount == 0:
+        with reverts(REV_MSG_NZ_UINT):
+            cf.vault.xSwapToken(
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                token,
+                st_amount,
+                {"from": st_sender},
+            )
+
+        cf.vault.enablexCalls({"from": cf.gov})
         with reverts(REV_MSG_NZ_UINT):
             cf.vault.xSwapTokenAndCall(
                 st_dstChain,
@@ -39,20 +51,35 @@ def test_swapToken(
                 st_refundAddress,
                 {"from": st_sender},
             )
-        with reverts(REV_MSG_NZ_UINT):
-            cf.vault.xSwapToken(
-                st_dstChain,
-                st_dstAddress,
-                st_swapIntent,
-                token,
-                st_amount,
-                {"from": st_sender},
-            )
+
     else:
         # Fund st_sender account
         token.transfer(st_sender, st_amount * 2)
 
+        # xSwapToken
+        iniBalance = token.balanceOf(st_sender)
+
+        token.approve(cf.vault, st_amount, {"from": st_sender})
+        tx = cf.vault.xSwapToken(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            token,
+            st_amount,
+            {"from": st_sender},
+        )
+        assert token.balanceOf(st_sender) == iniBalance - st_amount
+        assert tx.events["SwapToken"][0].values() == [
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            token,
+            st_amount,
+            st_sender,
+        ]
+
         # xSwapTokenAndCall
+        cf.vault.enablexCalls({"from": cf.gov})
         iniBalance = token.balanceOf(st_sender)
 
         token.approve(cf.vault, st_amount, {"from": st_sender})
@@ -78,28 +105,6 @@ def test_swapToken(
             st_refundAddress,
         ]
 
-        # xSwapToken
-        iniBalance = token.balanceOf(st_sender)
-
-        token.approve(cf.vault, st_amount, {"from": st_sender})
-        tx = cf.vault.xSwapToken(
-            st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
-            token,
-            st_amount,
-            {"from": st_sender},
-        )
-        assert token.balanceOf(st_sender) == iniBalance - st_amount
-        assert tx.events["SwapToken"][0].values() == [
-            st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
-            token,
-            st_amount,
-            st_sender,
-        ]
-
 
 @given(
     st_dstChain=strategy("uint32"),
@@ -121,7 +126,20 @@ def test_swapToken_rev_bal(
     st_refundAddress,
     st_sender,
 ):
+
     if st_sender != cf.DEPLOYER:
+        # xSwapToken
+        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+            cf.vault.xSwapToken(
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                token,
+                st_amount,
+                {"from": st_sender},
+            )
+
+        cf.vault.enablexCalls({"from": cf.gov})
 
         # xSwapTokenAndCall
         with reverts(REV_MSG_ERC20_EXCEED_BAL):
@@ -133,17 +151,6 @@ def test_swapToken_rev_bal(
                 token,
                 st_amount,
                 st_refundAddress,
-                {"from": st_sender},
-            )
-
-        # xSwapToken
-        with reverts(REV_MSG_ERC20_EXCEED_BAL):
-            cf.vault.xSwapToken(
-                st_dstChain,
-                st_dstAddress,
-                st_swapIntent,
-                token,
-                st_amount,
                 {"from": st_sender},
             )
 
@@ -204,7 +211,7 @@ def test_swapToken_rev_suspended(
     st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
 )
-def test_swapToken_rev_disabled(
+def test_swapTokenAndCall_rev_disabled(
     cf,
     st_dstChain,
     st_dstAddress,
@@ -216,8 +223,8 @@ def test_swapToken_rev_disabled(
     st_sender,
 ):
 
-    # xSwapTokenAndCall
-    with reverts(REV_MSG_VAULT_SWAPS_DIS):
+    # xSwapNativeAndCall
+    with reverts(REV_MSG_VAULT_XCALLS_DIS):
         cf.vault.xSwapTokenAndCall(
             st_dstChain,
             st_dstAddress,
@@ -229,16 +236,17 @@ def test_swapToken_rev_disabled(
             {"from": st_sender},
         )
 
-    # xSwapToken
-    with reverts(REV_MSG_VAULT_SWAPS_DIS):
-        cf.vault.xSwapToken(
-            st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
-            token,
-            st_amount,
-            {"from": st_sender},
-        )
+    # Not disabled for a simple swap
+    token.transfer(st_sender, st_amount, {"from": cf.DEPLOYER})
+    token.approve(cf.vault, st_amount, {"from": st_sender})
+    cf.vault.xSwapToken(
+        st_dstChain,
+        st_dstAddress,
+        st_swapIntent,
+        token,
+        st_amount,
+        {"from": st_sender},
+    )
 
 
 # xSwapNativeAndCall and xSwapNative
@@ -263,7 +271,17 @@ def test_swapETHAndCall(
     st_amount,
     st_refundAddress,
 ):
+
     if st_amount == 0:
+        with reverts(REV_MSG_NZ_UINT):
+            cf.vault.xSwapNative(
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                {"from": st_sender, "amount": st_amount},
+            )
+
+        cf.vault.enablexCalls({"from": cf.gov})
         with reverts(REV_MSG_NZ_UINT):
             cf.vault.xSwapNativeAndCall(
                 st_dstChain,
@@ -273,17 +291,30 @@ def test_swapETHAndCall(
                 st_refundAddress,
                 {"from": st_sender, "amount": st_amount},
             )
-        with reverts(REV_MSG_NZ_UINT):
-            cf.vault.xSwapNative(
-                st_dstChain,
-                st_dstAddress,
-                st_swapIntent,
-                {"from": st_sender, "amount": st_amount},
-            )
+
     else:
+        # xSwapNative
         iniBal = web3.eth.get_balance(cf.vault.address)
+        tx = cf.vault.xSwapNative(
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            {"from": st_sender, "amount": st_amount},
+        )
+        assert web3.eth.get_balance(cf.vault.address) == iniBal + st_amount
+        assert tx.events["SwapNative"][0].values() == [
+            st_dstChain,
+            st_dstAddress,
+            st_swapIntent,
+            st_amount,
+            st_sender,
+        ]
 
         # xSwapNativeAndCall
+        iniBal = web3.eth.get_balance(cf.vault.address)
+
+        cf.vault.enablexCalls({"from": cf.gov})
+
         tx = cf.vault.xSwapNativeAndCall(
             st_dstChain,
             st_dstAddress,
@@ -301,23 +332,6 @@ def test_swapETHAndCall(
             st_sender,
             hexStr(st_message),
             st_refundAddress,
-        ]
-
-        # xSwapNative
-        iniBal = web3.eth.get_balance(cf.vault.address)
-        tx = cf.vault.xSwapNative(
-            st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
-            {"from": st_sender, "amount": st_amount},
-        )
-        assert web3.eth.get_balance(cf.vault.address) == iniBal + st_amount
-        assert tx.events["SwapNative"][0].values() == [
-            st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
-            st_amount,
-            st_sender,
         ]
 
 
@@ -384,7 +398,7 @@ def test_swapETHAndCall_rev_disabled(
 ):
 
     # xSwapNativeAndCall
-    with reverts(REV_MSG_VAULT_SWAPS_DIS):
+    with reverts(REV_MSG_VAULT_XCALLS_DIS):
         cf.vault.xSwapNativeAndCall(
             st_dstChain,
             st_dstAddress,
@@ -395,10 +409,10 @@ def test_swapETHAndCall_rev_disabled(
         )
 
     # xSwapNative
-    with reverts(REV_MSG_VAULT_SWAPS_DIS):
-        cf.vault.xSwapNative(
-            st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
-            {"from": st_sender, "amount": st_amount},
-        )
+    cf.DEPLOYER.transfer(cf.vault.address, st_amount)
+    cf.vault.xSwapNative(
+        st_dstChain,
+        st_dstAddress,
+        st_swapIntent,
+        {"from": st_sender, "amount": st_amount},
+    )

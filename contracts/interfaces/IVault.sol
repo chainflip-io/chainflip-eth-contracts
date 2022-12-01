@@ -117,9 +117,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function govWithdraw(address[] calldata tokens) external;
 
-    function enableSwaps() external;
+    function enablexCalls() external;
 
-    function disableSwaps() external;
+    function disablexCalls() external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -127,5 +127,5 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function getSwapsEnabled() external view returns (bool);
+    function getxCallsEnabled() external view returns (bool);
 }

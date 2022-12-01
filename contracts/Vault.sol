@@ -57,9 +57,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event AddNativeGas(bytes32 swapID, uint256 amount);
     event AddGas(bytes32 swapID, address token, uint256 amount);
 
-    event SwapsEnabled(bool enabled);
+    event XCallsEnabled(bool enabled);
 
-    bool private _swapsEnabled;
+    bool private _xCallsEnabled;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -90,9 +90,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          of the inputs, the same as transferBatch (where all inputs are again required
      *          to be of equal length - however the lengths of the fetch inputs do not have to
      *          be equal to lengths of the transfer inputs). Fetches/transfers of ETH are indicated
-     *          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address. It is assumed
-     *          that the elements of each array match in terms of ordering, i.e. a given
-     *          fetch should should have the same index swapIDs[i] and tokens[i]
+     *          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -161,10 +159,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
-     *          that the elements of each array match in terms of ordering, i.e. a given
-     *          transfer should should have the same index tokens[i], recipients[i],
-     *          and amounts[i].
+     * @notice  Transfers ETH or tokens from this vault to recipients.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -189,10 +184,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
-     *          that the elements of each array match in terms of ordering, i.e. a given
-     *          transfer should should have the same index tokens[i], recipients[i],
-     *          and amounts[i].
+     * @notice  Transfers ETH or tokens from this vault to recipients.
      * @param transferParamsArray The array of transfer parameters.
      */
     function _transferBatch(TransferParams[] calldata transferParamsArray) private {
@@ -412,7 +404,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //       there wouldn't be a need to add a transferID at the smart contract level. Since the monitoring needs to be done off-chain
     //       anyway, I would suggest to use the swapID that CF will create to track swaps.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
-    // TODO: To think what gating (swapsEnabled) we want to have if any, since that costs gas (sload).
+    // TODO: To think what gating (xCallsEnabled) we want to have if any, since that costs gas (sload).
 
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is very expensive
     //       gas-wise, for example using OZ's Strings library.
@@ -467,7 +459,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         IERC20 srcToken,
         uint256 amount,
         address refundAddress
-    ) external override onlyNotSuspended swapsEnabled nzUint(amount) {
+    ) external override onlyNotSuspended xCallsEnabled nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
         emit SwapTokenAndCall(
             dstChain,
@@ -496,7 +488,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string memory swapIntent,
         bytes calldata message,
         address refundAddress
-    ) external payable override onlyNotSuspended swapsEnabled nzUint(msg.value) {
+    ) external payable override onlyNotSuspended xCallsEnabled nzUint(msg.value) {
         emit SwapNativeAndCall(dstChain, dstAddress, swapIntent, msg.value, msg.sender, message, refundAddress);
     }
 
@@ -681,7 +673,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // be worth removing and maybe adding in the future.
     // TODO: To verify this if we decide to have it.
 
-    function addNativeGas(bytes32 swapID) external payable {
+    function addNativeGas(bytes32 swapID) external payable xCallsEnabled {
         emit AddNativeGas(swapID, msg.value);
     }
 
@@ -689,7 +681,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes32 swapID,
         IERC20 token,
         uint256 amount
-    ) external nzUint(amount) {
+    ) external nzUint(amount) xCallsEnabled {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         emit AddGas(swapID, address(token), amount);
     }
@@ -731,17 +723,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /**
      * @notice  Enable swapETH and swapToken functionality by governance. Features disabled by default
      */
-    function enableSwaps() external override onlyGovernor swapsDisabled {
-        _swapsEnabled = true;
-        emit SwapsEnabled(true);
+    function enablexCalls() external override onlyGovernor xCallsDisabled {
+        _xCallsEnabled = true;
+        emit XCallsEnabled(true);
     }
 
     /**
      * @notice  Disable swapETH and swapToken functionality by governance. Features disabled by default.
      */
-    function disableSwaps() external override onlyGovernor swapsEnabled {
-        _swapsEnabled = false;
-        emit SwapsEnabled(false);
+    function disablexCalls() external override onlyGovernor xCallsEnabled {
+        _xCallsEnabled = false;
+        emit XCallsEnabled(false);
     }
 
     //////////////////////////////////////////////////////////////
@@ -751,11 +743,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Get swapsEnabled
-     * @return  The swapsEnableds state
+     * @notice  Get xCallsEnabled
+     * @return  The xCallsEnableds state
      */
-    function getSwapsEnabled() external view override returns (bool) {
-        return _swapsEnabled;
+    function getxCallsEnabled() external view override returns (bool) {
+        return _xCallsEnabled;
     }
 
     //////////////////////////////////////////////////////////////
@@ -774,14 +766,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /// @dev    Check that swaps are enabled
-    modifier swapsEnabled() {
-        require(_swapsEnabled, "Vault: swaps not enabled");
+    modifier xCallsEnabled() {
+        require(_xCallsEnabled, "Vault: xCalls not enabled");
         _;
     }
 
     /// @dev    Check that swaps are disabled
-    modifier swapsDisabled() {
-        require(!_swapsEnabled, "Vault: swaps enabled");
+    modifier xCallsDisabled() {
+        require(!_xCallsEnabled, "Vault: xCalls enabled");
         _;
     }
 

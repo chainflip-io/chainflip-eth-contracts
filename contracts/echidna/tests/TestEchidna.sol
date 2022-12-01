@@ -63,7 +63,7 @@ contract TestEchidna is Deployer {
     }
 
     function echidna_swapsEnabled() external view returns (bool) {
-        return !v.getSwapsEnabled();
+        return !v.getxCallsEnabled();
     }
 
     // No signature has been validated

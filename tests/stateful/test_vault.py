@@ -709,39 +709,39 @@ def test_vault(
                     self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Enable swaps if they are disabled
-        def rule_enableSwaps(self, st_sender):
+        def rule_enablexCalls(self, st_sender):
             if not self.swapsEnabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
-                        print("        REV_MSG_GOV_GOVERNOR _enableSwaps", st_sender)
-                        self.v.enableSwaps({"from": st_sender})
+                        print("        REV_MSG_GOV_GOVERNOR _enablexCalls", st_sender)
+                        self.v.enablexCalls({"from": st_sender})
                 # Always enable
-                print("                    rule_enableSwaps", st_sender)
-                self.v.enableSwaps({"from": self.governor})
+                print("                    rule_enablexCalls", st_sender)
+                self.v.enablexCalls({"from": self.governor})
                 self.swapsEnabled = True
             else:
-                print("        REV_MSG_VAULT_SWAPS_EN _enableSwaps", st_sender)
+                print("        REV_MSG_VAULT_SWAPS_EN _enablexCalls", st_sender)
                 with reverts(REV_MSG_VAULT_SWAPS_EN):
-                    self.v.enableSwaps({"from": self.governor})
+                    self.v.enablexCalls({"from": self.governor})
 
         # Disable swaps if they are enabled (only 1/5 times)
-        def rule_disableSwaps(self, st_sender):
+        def rule_disablexCalls(self, st_sender):
             if self.swapsEnabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
-                        print("        REV_MSG_GOV_GOVERNOR _disableSwaps", st_sender)
-                        self.v.disableSwaps({"from": st_sender})
+                        print("        REV_MSG_GOV_GOVERNOR _disablexCalls", st_sender)
+                        self.v.disablexCalls({"from": st_sender})
                 else:
-                    print("                    rule_disableSwaps", st_sender)
-                    self.v.disableSwaps({"from": st_sender})
+                    print("                    rule_disablexCalls", st_sender)
+                    self.v.disablexCalls({"from": st_sender})
                     self.swapsEnabled = False
             else:
                 print(
-                    "        REV_MSG_GOV_DISABLED_GUARD _disableSwaps",
+                    "        REV_MSG_GOV_DISABLED_GUARD _disablexCalls",
                     st_sender,
                 )
-                with reverts(REV_MSG_VAULT_SWAPS_DIS):
-                    self.v.disableSwaps({"from": self.governor})
+                with reverts(REV_MSG_VAULT_XCALLS_DIS):
+                    self.v.disablexCalls({"from": self.governor})
 
         # Swap ETH
         def rule_swapETH(
@@ -879,7 +879,7 @@ def test_vault(
         def invariant_state_vars(self):
             assert self.communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.suspended == self.v.getSuspendedState()
-            assert self.swapsEnabled == self.v.getSwapsEnabled()
+            assert self.swapsEnabled == self.v.getxCallsEnabled()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):

@@ -60,12 +60,12 @@ contract VaultEchidna is IShared {
         v.govWithdraw(tokens);
     }
 
-    function enableSwaps() external virtual {
-        v.enableSwaps();
+    function enablexCalls() external virtual {
+        v.enablexCalls();
     }
 
-    function disableSwaps() external virtual {
-        v.disableSwaps();
+    function disablexCalls() external virtual {
+        v.disablexCalls();
     }
 
     // Expose AggKeyNonceConsumer functions to Echidna
