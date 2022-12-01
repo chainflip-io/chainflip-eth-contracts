@@ -18,7 +18,7 @@ def test_transfer_eth_fails_recipient(cf, token):
     args = [[ETH_ADDR, token, TEST_AMNT]]
     tx = signed_call_cf(cf, cf.vault.transfer, *args)
 
-    assert tx.events["TransferFailed"][0].values() == [token, TEST_AMNT, web3.toHex(0)]
+    assert tx.events["TransferFailed"][0].values() == [token, TEST_AMNT]
     assert cf.vault.balance() == startBalVault
     assert cf.ALICE.balance() == startBalRecipient
 
@@ -30,11 +30,7 @@ def test_transfer_eth_fails_not_enough_eth(cf):
     args = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
     tx = signed_call_cf(cf, cf.vault.transfer, *args)
 
-    assert tx.events["TransferFailed"][0].values() == [
-        cf.ALICE,
-        TEST_AMNT,
-        web3.toHex(0),
-    ]
+    assert tx.events["TransferFailed"][0].values() == [cf.ALICE, TEST_AMNT]
     assert cf.vault.balance() == 0
     assert cf.ALICE.balance() == startBalRecipient
 

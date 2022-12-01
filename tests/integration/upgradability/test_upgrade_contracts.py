@@ -134,7 +134,6 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     assert tx.events["TransferFailed"][0].values() == [
         cf.ALICE,
         TEST_AMNT,
-        web3.toHex(0),
     ]
 
     # with a balance in can transfer. However, at this point the new vault should not be used yet
