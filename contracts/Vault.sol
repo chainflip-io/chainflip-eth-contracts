@@ -464,7 +464,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Performs a cross-chain call to the destination chain and destination address. Native tokens must be paid 
+     * @notice  Performs a cross-chain call to the destination chain and destination address. Native tokens must be paid
      *          to this contract. The swap intent determines whether the provided tokens should be swapped to a different token
      *          by the Chainflip Protocol. If so, the swapped tokens will be transferred to the destination chain as part
      *          of the cross-chain call. Otherwise, the tokens are used as a payment for gas on the destination chain.
@@ -678,13 +678,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     // TODO: To decide if we want this for the future or not. Native gas would be great to offer
     // gas topups on the egress chain. But non-native would be good because USDC is easier to
-    // handle/swap internally.
+    // handle/swap internally. To add verification if we want this.
     // Potentially we could use this two functions to allow the user to cancel an egress
     // transaction. This could be done by sending zero amount and signaling the swapID.
     // NOTE: This could be features for later on, and together with the refundAddress it might
     // be worth removing and maybe adding in the future.
-    // TODO: To verify this if we decide to have it.
-
     function addNativeGas(bytes32 swapID) external payable xCallsEnabled {
         emit AddNativeGas(swapID, msg.value);
     }
