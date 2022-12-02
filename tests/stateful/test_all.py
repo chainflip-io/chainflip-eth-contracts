@@ -1082,8 +1082,7 @@ def test_all(
                                 "egressReceiver"
                             ] == "0x" + cleanHexStr(st_egressReceiver)
                             assert (
-                                tx.events["SwapToken"]["ingressToken"]
-                                == st_token.address
+                                tx.events["SwapToken"]["srcToken"] == st_token.address
                             )
 
         # KeyManager

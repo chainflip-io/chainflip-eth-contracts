@@ -22,18 +22,10 @@ contract LoopBackMock is CFReceiver, Shared {
         if (token == _ETH_ADDR) {
             // Just health check for this mock. It will never revert.
             require(msg.value == amount, "LoopbackMock: msg.value != amount");
-            IVault(_cfSender).xSwapNativeAndCall{value: amount}(srcChain, srcAddress, "USDC", message, address(this));
+            IVault(_cfSender).xCallNative{value: amount}(srcChain, srcAddress, "USDC", message, address(this));
         } else {
             IERC20(token).approve(msg.sender, amount);
-            IVault(_cfSender).xSwapTokenAndCall(
-                srcChain,
-                srcAddress,
-                "USDC",
-                message,
-                IERC20(token),
-                amount,
-                address(this)
-            );
+            IVault(_cfSender).xCallToken(srcChain, srcAddress, "USDC", message, IERC20(token), amount, address(this));
         }
     }
 
@@ -43,7 +35,7 @@ contract LoopBackMock is CFReceiver, Shared {
         bytes calldata message
     ) internal override {
         uint256 ethBalance = address(this).balance;
-        IVault(_cfSender).xSwapNativeAndCall{value: ethBalance}(srcChain, srcAddress, "", message, address(this));
+        IVault(_cfSender).xCallNative{value: ethBalance}(srcChain, srcAddress, "", message, address(this));
     }
 
     receive() external payable {}

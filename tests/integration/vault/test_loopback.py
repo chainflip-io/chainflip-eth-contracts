@@ -36,12 +36,12 @@ def test_loopback_executexSwapAndCall_native(
     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args, sender=st_sender)
 
     # Check that the Vault receives the callback
-    assert tx.events["SwapNativeAndCall"]["dstChain"] == st_srcChain
-    assert tx.events["SwapNativeAndCall"]["dstAddress"] == st_srcAddress
-    assert tx.events["SwapNativeAndCall"]["swapIntent"] == "USDC"
-    assert tx.events["SwapNativeAndCall"]["amount"] == st_amount
-    assert tx.events["SwapNativeAndCall"]["sender"] == cfLoopbackMock.address
-    assert tx.events["SwapNativeAndCall"]["refundAddress"] == cfLoopbackMock.address
+    assert tx.events["XCallNative"]["dstChain"] == st_srcChain
+    assert tx.events["XCallNative"]["dstAddress"] == st_srcAddress
+    assert tx.events["XCallNative"]["swapIntent"] == "USDC"
+    assert tx.events["XCallNative"]["amount"] == st_amount
+    assert tx.events["XCallNative"]["sender"] == cfLoopbackMock.address
+    assert tx.events["XCallNative"]["refundAddress"] == cfLoopbackMock.address
 
     assert balanceVault == web3.eth.get_balance(cf.vault.address)
 
@@ -87,13 +87,13 @@ def test_loopback_executexSwapAndCall_token(
     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args, sender=st_sender)
 
     # Check that the Vault receives the callback
-    assert tx.events["SwapTokenAndCall"]["dstChain"] == st_srcChain
-    assert tx.events["SwapTokenAndCall"]["dstAddress"] == st_srcAddress
-    assert tx.events["SwapTokenAndCall"]["swapIntent"] == "USDC"
-    assert tx.events["SwapTokenAndCall"]["ingressToken"] == token.address
-    assert tx.events["SwapTokenAndCall"]["amount"] == st_amount
-    assert tx.events["SwapTokenAndCall"]["sender"] == cfLoopbackMock.address
-    assert tx.events["SwapTokenAndCall"]["refundAddress"] == cfLoopbackMock.address
+    assert tx.events["XCallToken"]["dstChain"] == st_srcChain
+    assert tx.events["XCallToken"]["dstAddress"] == st_srcAddress
+    assert tx.events["XCallToken"]["swapIntent"] == "USDC"
+    assert tx.events["XCallToken"]["srcToken"] == token.address
+    assert tx.events["XCallToken"]["amount"] == st_amount
+    assert tx.events["XCallToken"]["sender"] == cfLoopbackMock.address
+    assert tx.events["XCallToken"]["refundAddress"] == cfLoopbackMock.address
 
     assert balanceVault == token.balanceOf(cf.vault.address)
     assert balanceLoopback == token.balanceOf(cfLoopbackMock.address)
@@ -131,12 +131,12 @@ def test_loopback_executexCall_native(
     tx = signed_call_cf(cf, cf.vault.executexCall, *args, sender=st_sender)
 
     # Check that the Vault receives the callback
-    assert tx.events["SwapNativeAndCall"]["dstChain"] == st_srcChain
-    assert tx.events["SwapNativeAndCall"]["dstAddress"] == st_srcAddress
-    assert tx.events["SwapNativeAndCall"]["swapIntent"] == ""
-    assert tx.events["SwapNativeAndCall"]["amount"] == st_amount
-    assert tx.events["SwapNativeAndCall"]["sender"] == cfLoopbackMock.address
-    assert tx.events["SwapNativeAndCall"]["refundAddress"] == cfLoopbackMock.address
+    assert tx.events["XCallNative"]["dstChain"] == st_srcChain
+    assert tx.events["XCallNative"]["dstAddress"] == st_srcAddress
+    assert tx.events["XCallNative"]["swapIntent"] == ""
+    assert tx.events["XCallNative"]["amount"] == st_amount
+    assert tx.events["XCallNative"]["sender"] == cfLoopbackMock.address
+    assert tx.events["XCallNative"]["refundAddress"] == cfLoopbackMock.address
 
     assert balanceVault == web3.eth.get_balance(cf.vault.address) - st_amount
     assert web3.eth.get_balance(cfLoopbackMock.address) == 0

@@ -10,7 +10,7 @@ from brownie.test import given, strategy
     st_sender=strategy("address"),
     st_recipient=strategy("address"),
 )
-def test_dex_executexSwapNativeAndCall(
+def test_dex_executexCallNative(
     cf, cfDexAggMock, token, token2, st_sender, st_dstChain, st_amount, st_recipient
 ):
     cf.vault.enablexCalls({"from": cf.gov})
@@ -62,20 +62,18 @@ def test_dex_executexSwapNativeAndCall(
     ]
 
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
-    assert tx.events["SwapNativeAndCall"]["dstChain"] == st_dstChain
-    assert (
-        tx.events["SwapNativeAndCall"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
-    )
-    assert tx.events["SwapNativeAndCall"]["swapIntent"] == token.symbol()
-    assert tx.events["SwapNativeAndCall"]["amount"] == st_amount
-    assert tx.events["SwapNativeAndCall"]["sender"] == dexAggSrcMock.address
-    assert tx.events["SwapNativeAndCall"]["refundAddress"] == st_sender
+    assert tx.events["XCallNative"]["dstChain"] == st_dstChain
+    assert tx.events["XCallNative"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
+    assert tx.events["XCallNative"]["swapIntent"] == token.symbol()
+    assert tx.events["XCallNative"]["amount"] == st_amount
+    assert tx.events["XCallNative"]["sender"] == dexAggSrcMock.address
+    assert tx.events["XCallNative"]["refundAddress"] == st_sender
 
     # Mimick witnessing and executing the xSwap
 
     # We just do a 1:2 ratio CF swap
     egressAmount = st_amount * 2
-    message = tx.events["SwapNativeAndCall"]["message"]
+    message = tx.events["XCallNative"]["message"]
 
     args = [
         [token, dexAggDstMock, egressAmount],
@@ -121,7 +119,7 @@ def test_dex_executexSwapNativeAndCall(
     st_sender=strategy("address"),
     st_recipient=strategy("address"),
 )
-def test_dex_executexSwapTokenAndCall(
+def test_dex_executexCallToken(
     cf, cfDexAggMock, token, token2, st_sender, st_dstChain, st_amount, st_recipient
 ):
     cf.vault.enablexCalls({"from": cf.gov})
@@ -178,21 +176,19 @@ def test_dex_executexSwapTokenAndCall(
     ]
 
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
-    assert tx.events["SwapTokenAndCall"]["dstChain"] == st_dstChain
-    assert (
-        tx.events["SwapTokenAndCall"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
-    )
-    assert tx.events["SwapTokenAndCall"]["swapIntent"] == ethSymbol
-    assert tx.events["SwapTokenAndCall"]["ingressToken"] == token.address
-    assert tx.events["SwapTokenAndCall"]["amount"] == st_amount
-    assert tx.events["SwapTokenAndCall"]["sender"] == dexAggSrcMock.address
-    assert tx.events["SwapTokenAndCall"]["refundAddress"] == st_sender
+    assert tx.events["XCallToken"]["dstChain"] == st_dstChain
+    assert tx.events["XCallToken"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
+    assert tx.events["XCallToken"]["swapIntent"] == ethSymbol
+    assert tx.events["XCallToken"]["srcToken"] == token.address
+    assert tx.events["XCallToken"]["amount"] == st_amount
+    assert tx.events["XCallToken"]["sender"] == dexAggSrcMock.address
+    assert tx.events["XCallToken"]["refundAddress"] == st_sender
 
     # Mimick witnessing and executing the xSwap
 
     # We just do a 1:2 ratio CF swap
     egressAmount = st_amount * 2
-    message = tx.events["SwapTokenAndCall"]["message"]
+    message = tx.events["XCallToken"]["message"]
 
     args = [
         [ETH_ADDR, dexAggDstMock, egressAmount],

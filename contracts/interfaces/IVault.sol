@@ -44,7 +44,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function xSwapTokenAndCall(
+    function xCallToken(
         uint32 dstChain,
         string memory dstAddress,
         string memory swapIntent,
@@ -54,7 +54,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         address refundAddress
     ) external;
 
-    function xSwapNativeAndCall(
+    function xCallNative(
         uint32 dstChain,
         string memory dstAddress,
         string memory swapIntent,
@@ -72,7 +72,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         uint32 dstChain,
         string memory dstAddress,
         string memory swapIntent,
-        IERC20 ingressToken,
+        IERC20 srcToken,
         uint256 amount
     ) external;
 

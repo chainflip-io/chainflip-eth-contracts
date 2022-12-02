@@ -26,7 +26,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // We don't index the dstAddress because it's a string (dynamicType). If we index it to be able to filter,
     // then unless we specically search for it we won't be able to decode it.
     // See: https://ethereum.stackexchange.com/questions/6840/indexed-event-with-string-not-getting-logged
-    event SwapNativeAndCall(
+    event XCallNative(
         uint32 dstChain,
         string dstAddress,
         string swapIntent,
@@ -35,11 +35,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes message,
         address refundAddress
     );
-    event SwapTokenAndCall(
+    event XCallToken(
         uint32 dstChain,
         string dstAddress,
         string swapIntent,
-        address ingressToken,
+        address srcToken,
         uint256 amount,
         address indexed sender,
         bytes message,
@@ -50,7 +50,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint32 dstChain,
         string dstAddress,
         string swapIntent,
-        address ingressToken,
+        address srcToken,
         uint256 amount,
         address indexed sender
     );
@@ -380,12 +380,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  SrcChain xSwap and call                  //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
     ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity!
     ///      They do it because in the context of providing liquidity, the dstAddress doesn't make sense.
     ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
@@ -393,19 +387,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///      the ingressAddress method will be used, so having a function to provide liquidity doesn't seem particularly useful.
 
     // TODO: if we refund we need to add a refund address. For example, if LiFi is in the middle, we want to refund the user, not LiFi.
-    //       This is the case if we do a retrospective refund. I would not try to glump xswapTokenWithCall and xswapToken even if only
-    //       the message parameter differs to have different functions - makes it easier to signal if it's swap+CCM, only CCM or only swap.
-    //       We could glump them all into one (empty message = no CCM, no egressToken == noSwap) but it seems clearer to keep it separate.
-    //       Also because with DEX Aggregation we might want only a pre-swap, no postSwap and then setting empty messages is a waste of
-    //       gas. Better have two separate functions if we can afford it (bytecodesize-wise). We effectively make an only-swap cheaper,
-    //       which might be a very common use, especially when egressing to non-smart contract chains or for native egress tokens.
-    //       These are the two main cases where we offer a lot of value to the users, so it makes sense to optimize.
+    //       This is the case if we do a retrospective refund.
     // TODO: If we want to allow gas topups then a txHash parameter should be use as an input to match with the transaction. This way
     //       there wouldn't be a need to add a transferID at the smart contract level. Since the monitoring needs to be done off-chain
     //       anyway, I would suggest to use the swapID that CF will create to track swaps.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
-    // TODO: To think what gating (xCallsEnabled) we want to have if any, since that costs gas (sload).
+    //       That logic can also apply to the gas top-up, it could be done also on the egressChain-
 
+    // TODO: To think what gating (xCallsEnabled) we want to have if any, since that costs gas (sload).
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is very expensive
     //       gas-wise, for example using OZ's Strings library.
     // TODO: Lifi for some reason constructs the strings and message on-chain e.g. converting EVM address to string on-chain by using
@@ -416,42 +405,113 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
     //       it makes it cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the dstChain it is
     //       a pain to check srcChain as a string.
-    // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xSwapTokenAndCall but passing an emtpy swapIntent.
+    // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xCallToken but passing an emtpy swapIntent.
     //       If we want to optimize pure CCM then we could create two extra functions (paying with native or with token).
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                    SrcChain xSwap                        //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /**
-     * @notice  Swaps ERC20 Token for a token in another chain and performs a xcall. Function call needs to specify the src and
-     *          destinatiopn parameters. It also has a cross-chain message capability. If no xcall is needed then xSwapToken should
-     *          be used. If xcall is needed but no message is needed then the message field can be left empty.
-     *          An empty dstToken (in swapIntent) signifies that only CCM is to be performed and the source Token shall be used for gas.
-     * @dev     At the moment we are not prioritizing pure ccm. If we want to do so, we could create a separate function without swapIntent.
-     * @dev     The check for existing parameters shall be done in the CFE. Checking non-empty string (swapIntent/dstAddress) is
-     *          a bit of a waste of gas also because a non-empty string doesn't mean it's a valid dstAddress anyway.
-     * @dev     dstChain and swapIntent (and even dstAddress) could be bundled together in a single string to save gas.
-     *          However, dstChain is nicer as a uint for the egress calls so it can be checked easily, since checking string is terrible.
-     *          Then, we could be including dstAddress inside swapIntent. I have kept it separate since swapIntent will most likely come
-     *          from calldata while dstAddress might be a string stored in another protocols' smart contract. It is easy to concatenate
-     *          via abi.encodePacked or via string.concat (0.8.12) so they could be bundled. But kept separately for now.
-     * @dev     Swapintent only being dstToken for now, but it allows for more parameters in the future.
-     *
-     * @param dstChain      The destination chain according to the Chainflip protocol's nomenclature.
-     * @param dstAddress    String containing the egress address. An address type is not used since non-EVM chains don't follow this
-     *                      format. A string is used (instead of bytes32) given that not all chains have a user-friendly way to
-     *                      represent an address with bytes32.
-     * @param swapIntent    String containing the desired destination Token and potentially in the future other parameters, e.g.
-     *                      egressToken:MAXslippage:... If that is the case, when that is not coming from external call, it can
-     *                      easily be concatenated after solidity 8.12 with string.concat(). Otherwise, with
-     *                      string(abi.encodePacked(a,":",b)) as long as both a and b are stirings.
-     *                      An empty egressToken signifies that only a CCM is performed and all ingress tokens are used for gas.
-     *                      We can make a specific CCM without the swapIntent.
-     * @param message       String containing the message to be sent to the egress chain. Can be empty if the user wants a xcall but
-     *                      no message to be sent.
+     * @notice  Performs a cross-chain swap. Native tokens provided are swapped by the Chainflip Protocol for the 
+     *          token specified in the swap intent. The desired token will be transferred to the specified destination
+     *          address on the destination chain.
+     * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
+     *          to explicity indicate that an amount is required.  It isn't preventing spamming.
+
+     * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
+     * @param dstAddress    String containing the destination address on the destination chain.
+     * @param swapIntent    String containing the specifics of the swap to be performed according to Chainflip's nomenclature.
+     */
+    function xSwapNative(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent
+    ) external payable override onlyNotSuspended nzUint(msg.value) {
+        emit SwapNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender);
+    }
+
+    /**
+     * @notice  Performs a cross-chain swap. The ERC20 token provided is swapped by the Chainflip Protocol for the 
+     *          token specified in the swap intent. The desired token will be transferred to the specified destination
+     *          address on the destination chain. The ERC20 token must be supported by the Chainflip Protocol. 
+     * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
+     *          to explicity indicate that an amount is required.
+
+     * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
+     * @param dstAddress    String containing the destination address on the destination chain.
+     * @param swapIntent    String containing the specifics of the swap to be performed according to Chainflip's nomenclature.
      * @param srcToken      Address of the token to swap.
      * @param amount        Amount of tokens to swap.
-     * @param refundAddress Address to refund any excess gas. If we decide to refund on the egress, it would need to be a string.
-     *                      We would still need an egress address, since for DEX aggregation dstAddress != userAddress.
      */
-    function xSwapTokenAndCall(
+    function xSwapToken(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
+        IERC20 srcToken,
+        uint256 amount
+    ) external override onlyNotSuspended nzUint(amount) {
+        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        emit SwapToken(dstChain, dstAddress, swapIntent, address(srcToken), amount, msg.sender);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                     SrcChain xCall                       //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Performs a cross-chain call to the destination chain and destination address. Native tokens must be paid 
+     *          to this contract. The swap intent determines whether the provided tokens should be swapped to a different token
+     *          by the Chainflip Protocol. If so, the swapped tokens will be transferred to the destination chain as part
+     *          of the cross-chain call. Otherwise, the tokens are used as a payment for gas on the destination chain.
+     *          The message parameter is transmitted to the destination chain as part of the cross-chain call.
+     * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
+     *          to explicity inidcate that an amount is required. It isn't preventing spamming.
+     *
+     * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
+     * @param dstAddress    String containing the destination address on the destination chain.
+     * @param swapIntent    String containing the specifics of the swap to be performed, if any, as part of the xCall. The string
+     *                      must follow Chainflip's nomenclature. An empty swapIntent implies that no swap needs to take place
+     *                      and the source token will be used for gas in a swapless xCall.
+     * @param message       The message to be sent to the egress chain. This is a general purpose message.
+     * @param refundAddress Address to refund any excess gas left from the execution of the xCall on the dstChain. This address
+     *                      is in the context of the srcChain.
+     */
+    function xCallNative(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
+        bytes calldata message,
+        address refundAddress
+    ) external payable override onlyNotSuspended xCallsEnabled nzUint(msg.value) {
+        emit XCallNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender, message, refundAddress);
+    }
+
+    /**
+     * @notice  Performs a cross-chain call to the destination chain and destination address. An ERC20 token amount
+     *          needs to be approved to this contract. The ERC20 token must be supported by the Chainflip Protocol.
+     *          The swap intent determines whether the provided tokens should be swapped to a different token
+     *          by the Chainflip Protocol. If so, the swapped tokens will be transferred to the destination chain as part
+     *          of the cross-chain call. Otherwise, the tokens are used as a payment for gas on the destination chain.
+     *          The message parameter is transmitted to the destination chain as part of the cross-chain call.
+     * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
+     *          to explicity indicate that an amount is required.
+     *
+     * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
+     * @param dstAddress    String containing the destination address on the destination chain.
+     * @param swapIntent    String containing the specifics of the swap to be performed as part of the xCall. An empty swapIntent
+     *                       implies that no swap needs to take place and the source token will be used for gas in a swapless xCall.
+     * @param message       The message to be sent to the egress chain. This is a general purpose message.
+     * @param srcToken      Address of the token to swap.
+     * @param amount        Amount of tokens to swap.
+     * @param refundAddress Address to refund any excess gas left from the execution of the xCall on the dstChain. This address
+     *                      is in the context of the srcChain.
+     */
+    function xCallToken(
         uint32 dstChain,
         string memory dstAddress,
         string memory swapIntent,
@@ -461,7 +521,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address refundAddress
     ) external override onlyNotSuspended xCallsEnabled nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit SwapTokenAndCall(
+        emit XCallToken(
             dstChain,
             dstAddress,
             swapIntent,
@@ -471,54 +531,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             message,
             refundAddress
         );
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                    SrcChain xSwap                        //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    // NOTE: Checking msg.value!=0 won't prevent spamming. However, it might be useful to ensure that users
-    // understand that they should be paying gas. We check that in the token case because I have read about
-    // some isssues when fuzzing and transfering zero tokens.
-    function xSwapNativeAndCall(
-        uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
-        bytes calldata message,
-        address refundAddress
-    ) external payable override onlyNotSuspended xCallsEnabled nzUint(msg.value) {
-        emit SwapNativeAndCall(dstChain, dstAddress, swapIntent, msg.value, msg.sender, message, refundAddress);
-    }
-
-    // NOTE: Used for swapOnly (also used in cross-chain aggregation when egressing to native asset or to non-smart
-    // contract chain.
-    /**
-     * @dev     If we end up having a refundAddress on the send functions, then we have two parameters that are
-     *          useless for an onlySwap function (which can even come from LiFi). In that case, I would have these
-     *          two separate functions for swap-only.
-     *          No need to do that for a CCM only, since a payment needs ot be done anyway (so only egressToken shall be empty).
-     */
-    function xSwapToken(
-        uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
-        IERC20 ingressToken,
-        uint256 amount
-    ) external override onlyNotSuspended nzUint(amount) {
-        ingressToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit SwapToken(dstChain, dstAddress, swapIntent, address(ingressToken), amount, msg.sender);
-    }
-
-    // NOTE: Checking nzUint(msg.value) won't prevent spamming, but it's for users to understand
-    // that they should be paying an ingress native Token.
-    function xSwapNative(
-        uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent
-    ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit SwapNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender);
     }
 
     //////////////////////////////////////////////////////////////
@@ -622,7 +634,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @dev     We might not support this straight-away since we are focused on cross-chain swaps.
      * @dev     ingressParams and srcAddress are separated to make it easier for the recipient to
      *          do any checks without needing to split a string. IngressParams as of now it would only
-     *          be srcChain (no need for ingressToken) but leaving it general in case we need it.
+     *          be srcChain (no need for srcToken) but leaving it general in case we need it.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -765,13 +777,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         _;
     }
 
-    /// @dev    Check that swaps are enabled
+    /// @dev    Check that xCalls are enabled
     modifier xCallsEnabled() {
         require(_xCallsEnabled, "Vault: xCalls not enabled");
         _;
     }
 
-    /// @dev    Check that swaps are disabled
+    /// @dev    Check that xCalls are disabled
     modifier xCallsDisabled() {
         require(!_xCallsEnabled, "Vault: xCalls enabled");
         _;

@@ -46,9 +46,9 @@ def test_vault_suspend(cf, st_reciever, st_amount, token):
     with reverts(REV_MSG_GOV_SUSPENDED):
         signed_call_cf(cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, ETH_ADDR]])
 
-    # xSwapTokenAndCall
+    # xCallToken
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.xSwapTokenAndCall(
+        cf.vault.xCallToken(
             0,
             "dstAddress",
             "swapIntent",
@@ -68,9 +68,9 @@ def test_vault_suspend(cf, st_reciever, st_amount, token):
             st_amount,
         )
 
-    # xSwapNativeAndCall
+    # xCallNative
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.xSwapNativeAndCall(
+        cf.vault.xCallNative(
             0,
             "dstAddress",
             "swapIntent",

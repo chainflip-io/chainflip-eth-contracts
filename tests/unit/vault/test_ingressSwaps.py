@@ -4,7 +4,7 @@ from consts import *
 from shared_tests import *
 
 
-# xSwapTokenAndCall and xSwapToken
+# xCallToken and xSwapToken
 
 
 @given(
@@ -41,7 +41,7 @@ def test_swapToken(
 
         cf.vault.enablexCalls({"from": cf.gov})
         with reverts(REV_MSG_NZ_UINT):
-            cf.vault.xSwapTokenAndCall(
+            cf.vault.xCallToken(
                 st_dstChain,
                 st_dstAddress,
                 st_swapIntent,
@@ -78,12 +78,12 @@ def test_swapToken(
             st_sender,
         ]
 
-        # xSwapTokenAndCall
+        # xCallToken
         cf.vault.enablexCalls({"from": cf.gov})
         iniBalance = token.balanceOf(st_sender)
 
         token.approve(cf.vault, st_amount, {"from": st_sender})
-        tx = cf.vault.xSwapTokenAndCall(
+        tx = cf.vault.xCallToken(
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
@@ -94,7 +94,7 @@ def test_swapToken(
             {"from": st_sender},
         )
         assert token.balanceOf(st_sender) == iniBalance - st_amount
-        assert tx.events["SwapTokenAndCall"][0].values() == [
+        assert tx.events["XCallToken"][0].values() == [
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
@@ -141,9 +141,9 @@ def test_swapToken_rev_bal(
 
         cf.vault.enablexCalls({"from": cf.gov})
 
-        # xSwapTokenAndCall
+        # xCallToken
         with reverts(REV_MSG_ERC20_EXCEED_BAL):
-            cf.vault.xSwapTokenAndCall(
+            cf.vault.xCallToken(
                 st_dstChain,
                 st_dstAddress,
                 st_swapIntent,
@@ -177,9 +177,9 @@ def test_swapToken_rev_suspended(
 ):
     cf.vault.suspend({"from": cf.gov})
 
-    # xSwapTokenAndCall
+    # xCallToken
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.xSwapTokenAndCall(
+        cf.vault.xCallToken(
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
@@ -223,9 +223,9 @@ def test_swapTokenAndCall_rev_disabled(
     st_sender,
 ):
 
-    # xSwapNativeAndCall
+    # xCallNative
     with reverts(REV_MSG_VAULT_XCALLS_DIS):
-        cf.vault.xSwapTokenAndCall(
+        cf.vault.xCallToken(
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
@@ -249,7 +249,7 @@ def test_swapTokenAndCall_rev_disabled(
     )
 
 
-# xSwapNativeAndCall and xSwapNative
+# xCallNative and xSwapNative
 
 
 @given(
@@ -283,7 +283,7 @@ def test_swapETHAndCall(
 
         cf.vault.enablexCalls({"from": cf.gov})
         with reverts(REV_MSG_NZ_UINT):
-            cf.vault.xSwapNativeAndCall(
+            cf.vault.xCallNative(
                 st_dstChain,
                 st_dstAddress,
                 st_swapIntent,
@@ -310,12 +310,12 @@ def test_swapETHAndCall(
             st_sender,
         ]
 
-        # xSwapNativeAndCall
+        # xCallNative
         iniBal = web3.eth.get_balance(cf.vault.address)
 
         cf.vault.enablexCalls({"from": cf.gov})
 
-        tx = cf.vault.xSwapNativeAndCall(
+        tx = cf.vault.xCallNative(
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
@@ -324,7 +324,7 @@ def test_swapETHAndCall(
             {"from": st_sender, "amount": st_amount},
         )
         assert web3.eth.get_balance(cf.vault.address) == iniBal + st_amount
-        assert tx.events["SwapNativeAndCall"][0].values() == [
+        assert tx.events["XCallNative"][0].values() == [
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
@@ -356,9 +356,9 @@ def test_swapETHAndCall_rev_suspended(
 ):
     cf.vault.suspend({"from": cf.gov})
 
-    # xSwapNativeAndCall
+    # xCallNative
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.xSwapNativeAndCall(
+        cf.vault.xCallNative(
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
@@ -397,9 +397,9 @@ def test_swapETHAndCall_rev_disabled(
     st_refundAddress,
 ):
 
-    # xSwapNativeAndCall
+    # xCallNative
     with reverts(REV_MSG_VAULT_XCALLS_DIS):
-        cf.vault.xSwapNativeAndCall(
+        cf.vault.xCallNative(
             st_dstChain,
             st_dstAddress,
             st_swapIntent,
