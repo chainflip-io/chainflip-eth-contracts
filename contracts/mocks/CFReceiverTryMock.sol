@@ -14,12 +14,12 @@ contract CFReceiverTryMock is CFReceiver, Shared {
 
     address private _receiverFail;
 
-    constructor(address cfSender, address receiverFail) CFReceiver(cfSender) nzAddr(cfSender) {
+    constructor(address cfVault, address receiverFail) CFReceiver(cfVault) nzAddr(cfVault) {
         _receiverFail = receiverFail;
     }
 
     /* solhint-disable no-unused-vars */
-    function _cfRecieve(
+    function _cfReceive(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message,
@@ -29,7 +29,7 @@ contract CFReceiverTryMock is CFReceiver, Shared {
         _handleFailedCall();
     }
 
-    function _cfRecievexCall(
+    function _cfReceivexCall(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message

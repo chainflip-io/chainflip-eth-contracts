@@ -19,9 +19,9 @@ contract CFReceiverMock is CFReceiver, Shared {
     );
     event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message);
 
-    constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}
+    constructor(address cfVault) CFReceiver(cfVault) nzAddr(cfVault) {}
 
-    function _cfRecieve(
+    function _cfReceive(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message,
@@ -31,7 +31,7 @@ contract CFReceiverMock is CFReceiver, Shared {
         emit ReceivedxSwapAndCall(srcChain, srcAddress, message, token, amount, msg.value);
     }
 
-    function _cfRecievexCall(
+    function _cfReceivexCall(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message

@@ -13,8 +13,9 @@ import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    Vault contract
- * @notice   The vault for holding ETH/tokens and deploying contracts
- *           for fetching individual deposits
+ * @notice   The vault for holding and transferring ETH/tokens and deploying contracts for fetching
+ *           individual deposits.
+ *           It also allows users to do cross-chain swaps and calls by calling directly this contract.
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
@@ -23,9 +24,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
 
-    // We don't index the dstAddress because it's a string (dynamicType). If we index it to be able to filter,
-    // then unless we specically search for it we won't be able to decode it.
-    // See: https://ethereum.stackexchange.com/questions/6840/indexed-event-with-string-not-getting-logged
+    /// @dev dstAddress is not indexed because indexing a dynamic type (string) to be able to filter,
+    ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
+    ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
+    ///      version in the event.
     event XCallNative(
         uint32 dstChain,
         string dstAddress,
@@ -132,16 +134,16 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's a hash over
+     *                  the calldata to the function with an empty sigData) and sig over
+     *                  that hash (uint) from the aggregate key
      * @param transferParams       The transfer parameters
      */
     function transfer(SigData calldata sigData, TransferParams calldata transferParams)
         external
         override
         onlyNotSuspended
-        nzAddr(address(transferParams.token))
+        nzAddr(transferParams.token)
         nzAddr(transferParams.recipient)
         nzUint(transferParams.amount)
         consumesKeyNonce(
@@ -160,9 +162,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers ETH or tokens from this vault to recipients.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's a hash over
+     *                  the calldata to the function with an empty sigData) and sig over
+     *                  that hash (uint) from the aggregate key
      * @param transferParamsArray The array of transfer parameters.
      */
     function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray)
@@ -380,19 +382,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity!
     ///      They do it because in the context of providing liquidity, the dstAddress doesn't make sense.
     ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
     ///      In our case reusing this function is not great anyway (due to message and refundAddress paramts). Also, for any other chain
     ///      the ingressAddress method will be used, so having a function to provide liquidity doesn't seem particularly useful.
 
-    // TODO: if we refund we need to add a refund address. For example, if LiFi is in the middle, we want to refund the user, not LiFi.
-    //       This is the case if we do a retrospective refund.
-    // TODO: If we want to allow gas topups then a txHash parameter should be use as an input to match with the transaction. This way
-    //       there wouldn't be a need to add a transferID at the smart contract level. Since the monitoring needs to be done off-chain
-    //       anyway, I would suggest to use the swapID that CF will create to track swaps.
+    // TODO: Decide if we want a refund address for retrospective refund. We cannot simply refund the srcAddress because in case of
+    //       a DEX aggregator we want to refund the user, not the DEX Agg Contract.
+    // TODO: Decide if we want to have gas topups in the future. Those could be done in the ingress or egress chain. Ingress is the
+    //       normal way, but egress' native token makes refunds simpler.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
-    //       That logic can also apply to the gas top-up, it could be done also on the egressChain-
 
     // TODO: To think what gating (xCallsEnabled) we want to have if any, since that costs gas (sload).
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is very expensive
@@ -405,8 +407,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
     //       it makes it cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the dstChain it is
     //       a pain to check srcChain as a string.
-    // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xCallToken but passing an emtpy swapIntent.
-    //       If we want to optimize pure CCM then we could create two extra functions (paying with native or with token).
+    // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xCallToken but passing an empty swapIntent.
+    //       If we want to optimize pure CCM then we could create two extra functions (paying with native or with token) that don't
+    //       require an empty swapIntent, which wastes gas. But I would say that this is fine for now.
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -535,20 +538,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //             DstChain receive xSwap and call              //
+    //             DstChain execute xSwap and call              //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers ETH or a token from this vault to a recipient and calls the receive
-     *          function on the recipient's contract passing the message specified in the ingress
-     *          chain among other parameters that specify the source and parameters of the transfer.
-     *          This is used for swaps with cross-chain messaging. Can also be user for xswapWithCall
-     *          even if the message is empty.
-     * @dev     Could consider the amount and tokenAddress check to save some gas.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @notice  Transfers ETH or a token from this vault to a recipient and makes a function call
+     *          completing a cross-chain swap and call. The ICFReceiver interface is expected on
+     *          the receiver's address. A message is passed to the receiver along with other
+     *          parameters specifying the origin of the swap.
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
+     *                  the calldata to the function with an empty sigData) and sig over that
+     *                  that hash (uint) from the aggregate key.
      * @param transferParams  The transfer parameters
      * @param srcChain        The source chain where the call originated from.
      * @param srcAddress      The address where the transfer originated within the ingress chain.
@@ -581,28 +582,24 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        // Making an extra call to gain some stack room (avoid stackTooDeep error)
+        // Logic in another internal function to avoid the stackTooDeep error
         _executexSwapAndCall(transferParams, srcChain, srcAddress, message);
     }
 
+    /**
+     * @notice Logic for transferring the tokens and calling the recipient. It's on the receiver to
+     *         make sure the call doesn't revert, otherwise the tokens won't be transferred.
+     *         The _transfer function is not used because we want to be able to embed the native token
+     *         into the cfReceive call to avoid doing two external calls.
+     */
     function _executexSwapAndCall(
         TransferParams calldata transferParams,
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message
     ) private {
-        // NOTE: It's on the receiver to make sure this call doesn't revert so they keep the tokens.
-        // This is done espeically for integrations with protocols (such as  LiFi) where we don't know the
-        // user/final address, so if we just transfer to the recipient in case of a revert, we might end up
-        // with tokens locked up in a DEX aggregator. Better to let it handle by the DEX or by the user's
-        // smart contract for more flexibility. Also because we allow them to replay it if they want to.
-        // NOTE: Seems like both LiFi and RangoExchange have the try-catch on their side to handle exactly
-        // this, so it seems like the best approach.
-        // NOTE: We don't use the _transfer function because we want to be able to embed the native token
-        // into the cfReceive call to avoid a double cross-contract call.
-
         if (transferParams.token == _ETH_ADDR) {
-            ICFReceiver(transferParams.recipient).cfRecieve{value: transferParams.amount}(
+            ICFReceiver(transferParams.recipient).cfReceive{value: transferParams.amount}(
                 srcChain,
                 srcAddress,
                 message,
@@ -611,7 +608,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             );
         } else {
             IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
-            ICFReceiver(transferParams.recipient).cfRecieve(
+            ICFReceiver(transferParams.recipient).cfReceive(
                 srcChain,
                 srcAddress,
                 message,
@@ -623,18 +620,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                   DstChain receive xcall                 //
+    //                   DstChain execute xcall                 //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Calls the receive function on the recipient's contract passing the message specified
-     *          and the source of the call (ingress)
-     *          This is used for pure cross-chain messaging.
-     * @dev     We might not support this straight-away since we are focused on cross-chain swaps.
-     * @dev     ingressParams and srcAddress are separated to make it easier for the recipient to
-     *          do any checks without needing to split a string. IngressParams as of now it would only
-     *          be srcChain (no need for srcToken) but leaving it general in case we need it.
+     * @notice  Executes a cross-chain function call The ICFReceiver interface is expected on
+     *          the receiver's address. A message is passed to the receiver along with other
+     *          parameters specifying the origin of the swap. This is used for cross-chain messaging
+     *          without any swap taking place on the Chainflip Protocol.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -667,7 +661,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        ICFReceiver(recipient).cfRecievexCall(srcChain, srcAddress, message);
+        ICFReceiver(recipient).cfReceivexCall(srcChain, srcAddress, message);
     }
 
     //////////////////////////////////////////////////////////////
@@ -766,7 +760,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Check that no nonce of the current AggKey has been consumed in the last 14 days - emergency
+    /// @dev    Check that no nonce has been consumed in the last 14 days - emergency
     modifier timeoutEmergency() {
         require(
             block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,

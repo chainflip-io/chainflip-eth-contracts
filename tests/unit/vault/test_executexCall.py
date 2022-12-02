@@ -43,7 +43,7 @@ def test_executexCall(
     ]
 
 
-# token contract doesn't have the cfRecievexCall function implemented
+# token contract doesn't have the cfReceivexCall function implemented
 def test_executexCall_rev_noCfReceive(cf, token):
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
     randToken = random.choice([ETH_ADDR, token])

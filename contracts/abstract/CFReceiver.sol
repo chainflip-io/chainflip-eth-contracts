@@ -4,46 +4,49 @@ import "../interfaces/ICFReceiver.sol";
 
 /**
  * @title    CFReceiver
- * @dev      Receives cross-chain messages and tokens coming from the Chainflip Protocol.
- *           The ICFReceiver interface is the interface required to recieve tokens and
- *           messages from the Chainflip Protocol. This contract checks that the sender is
- *           the Chainflip Vault.
- *           CF ensures that the reciever will be receving the amount of tokens passed as
- *           parameters. However, anyone can bridge tokens to the reciever contract. Also,
- *           if msg.sender is not checked it could be any external call that is not really
- *           transferring the tokens before making the call. So an extra check of the
- *           srcAddress is adviced to be done in the _cfRceive* function.
- *           In the case of receiving ETH, the user could instead check that msg.value
- *           is equal to the amount passed as parameter.
+ * @dev      This abstract contract is the base implementation for a smart contract
+ *           capable of receiving cross-chain swaps and calls from the Chainflip Protocol.
+ *           It has a check to ensure that the functions can only be called by one
+ *           address, which should be the Chainflip Protocol. This way it is ensured that
+ *           the receiver will be sent the amount of tokens passed as parameters and
+ *           that the cross-chain call originates from the srcChain and address specified.
+ *           This contract should be inherited and then user's logic should be implemented
+ *           as the internal functions (_cfReceive and _cfReceivexCall).
+ *           Remember that anyone on the source chain can use the Chainflip Protocol
+ *           to make a cross-chain call to this contract. If that is not desired, an extra
+ *           check on the source address and source chain should be performed.
  */
 
 abstract contract CFReceiver is ICFReceiver {
     /// @dev    Chainflip's Vault address where xSwaps and xCalls will be originated from.
-    address public _cfSender;
+    address public _cfVault;
 
-    constructor(address cfSender) {
-        _cfSender = cfSender;
+    constructor(address cfVault) {
+        _cfVault = cfVault;
     }
 
-    function cfRecieve(
+    /// @dev Receiver of a cross-chain swap and call.
+    function cfReceive(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message,
         address token,
         uint256 amount
-    ) external payable override onlyCFSender {
-        _cfRecieve(srcChain, srcAddress, message, token, amount);
+    ) external payable override onlyCfVault {
+        _cfReceive(srcChain, srcAddress, message, token, amount);
     }
 
-    function cfRecievexCall(
+    /// @dev Receiver of a cross-chain call.
+    function cfReceivexCall(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message
-    ) external override onlyCFSender {
-        _cfRecievexCall(srcChain, srcAddress, message);
+    ) external override onlyCfVault {
+        _cfReceivexCall(srcChain, srcAddress, message);
     }
 
-    function _cfRecieve(
+    /// @dev Internal function to be overriden by the user's logic.
+    function _cfReceive(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message,
@@ -51,14 +54,16 @@ abstract contract CFReceiver is ICFReceiver {
         uint256 amount
     ) internal virtual;
 
-    function _cfRecievexCall(
+    /// @dev Internal function to be overriden by the user's logic.
+    function _cfReceivexCall(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message
     ) internal virtual;
 
-    modifier onlyCFSender() {
-        require(msg.sender == _cfSender, "CFReceiver: caller not Chainflip sender");
+    /// @dev Check that the sender is the Chainflip's Vault.
+    modifier onlyCfVault() {
+        require(msg.sender == _cfVault, "CFReceiver: caller not Chainflip sender");
         _;
     }
 }

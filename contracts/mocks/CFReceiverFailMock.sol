@@ -9,10 +9,10 @@ import "../abstract/Shared.sol";
  */
 
 contract CFReceiverFailMock is CFReceiver, Shared {
-    constructor(address cfSender) CFReceiver(cfSender) nzAddr(cfSender) {}
+    constructor(address cfVault) CFReceiver(cfVault) nzAddr(cfVault) {}
 
     /* solhint-disable no-unused-vars */
-    function _cfRecieve(
+    function _cfReceive(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message,
@@ -22,7 +22,7 @@ contract CFReceiverFailMock is CFReceiver, Shared {
         _revert();
     }
 
-    function _cfRecievexCall(
+    function _cfReceivexCall(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message

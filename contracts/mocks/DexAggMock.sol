@@ -90,15 +90,15 @@ contract DexAggDstChainMock is CFReceiver, Shared {
     event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message, uint256 ethReceived);
 
     constructor(
-        address cfSender,
+        address cfVault,
         uint256 srcChain,
         string memory srcChainAddress
-    ) CFReceiver(cfSender) nzAddr(cfSender) {
+    ) CFReceiver(cfVault) nzAddr(cfVault) {
         _chainToAddress[srcChain] = srcChainAddress;
     }
 
     // Egress Chain
-    function _cfRecieve(
+    function _cfReceive(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message,
@@ -135,7 +135,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
         IERC20(userToken).safeTransfer(userAddress, IERC20(userToken).balanceOf(address(this)));
     }
 
-    function _cfRecievexCall(
+    function _cfReceivexCall(
         uint32 srcChain,
         string calldata srcAddress,
         bytes calldata message
