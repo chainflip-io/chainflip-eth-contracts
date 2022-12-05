@@ -147,8 +147,9 @@ def test_vault(
         st_sender_any = strategy("address")
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_egressParams = strategy("string")
-        st_egressReceiver = strategy("bytes32", exclude=(0).to_bytes(32, "big"))
+        st_swapIntent = strategy("string")
+        st_dstAddress = strategy("string")
+        st_dstChain = strategy("uint32")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
             fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
@@ -744,118 +745,120 @@ def test_vault(
                     self.v.disablexCalls({"from": self.governor})
 
         # Swap ETH
-        def rule_swapETH(
-            self, st_sender, st_egressParams, st_egressReceiver, st_eth_amount
+        def rule_xSwapNative(
+            self, st_sender, st_swapIntent, st_dstAddress, st_eth_amount, st_dstChain
         ):
-            args = (st_egressParams, st_egressReceiver)
+            args = (st_dstChain, st_dstAddress, st_swapIntent)
             toLog = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
-                        "        REV_MSG_GOV_SUSPENDED _swapETH",
+                        "        REV_MSG_GOV_SUSPENDED _xSwapNative",
                     )
-                    self.v.swapETH(*args, {"from": st_sender})
+                    self.v.xSwapNative(*args, {"from": st_sender})
             else:
-                if self.swapsEnabled:
-                    if st_eth_amount == 0:
-                        print("        REV_MSG_NZ_UINT _swapETH", *toLog)
-                        with reverts(REV_MSG_NZ_UINT):
-                            self.v.swapETH(
-                                *args,
-                                {"from": st_sender, "amount": st_eth_amount},
-                            )
-                    else:
-                        if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
-                            print("                    rule_swapETH", *toLog)
-                            tx = self.v.swapETH(
-                                *args,
-                                {"from": st_sender, "amount": st_eth_amount},
-                            )
-                            assert (
-                                web3.eth.get_balance(self.v.address)
-                                == self.ethBals[self.v.address] + st_eth_amount
-                            )
-                            self.ethBals[self.v.address] += st_eth_amount
-                            self.ethBals[st_sender] -= st_eth_amount
-                            assert tx.events["SwapETH"]["amount"] == st_eth_amount
-                            assert (
-                                tx.events["SwapETH"]["egressParams"] == st_egressParams
-                            )
-                            assert tx.events["SwapETH"][
-                                "egressReceiver"
-                            ] == "0x" + cleanHexStr(st_egressReceiver)
+                if st_eth_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xSwapNative", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xSwapNative(
+                            *args,
+                            {"from": st_sender, "amount": st_eth_amount},
+                        )
+                else:
+                    if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
+                        print("                    rule_xSwapNative", *toLog)
+                        tx = self.v.xSwapNative(
+                            *args,
+                            {"from": st_sender, "amount": st_eth_amount},
+                        )
+                        assert (
+                            web3.eth.get_balance(self.v.address)
+                            == self.ethBals[self.v.address] + st_eth_amount
+                        )
+                        self.ethBals[self.v.address] += st_eth_amount
+                        self.ethBals[st_sender] -= st_eth_amount
+                        assert tx.events["SwapNative"][0].values() == [
+                            st_dstChain,
+                            st_dstAddress,
+                            st_swapIntent,
+                            st_eth_amount,
+                            st_sender,
+                        ]
 
         # Swap Token
         def rule_swapToken(
             self,
             st_sender,
-            st_egressParams,
-            st_egressReceiver,
+            st_swapIntent,
+            st_dstAddress,
             st_token_amount,
             st_token,
+            st_dstChain,
         ):
-            args = (st_egressParams, st_egressReceiver, st_token, st_token_amount)
+            args = (
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                st_token,
+                st_token_amount,
+            )
             toLog = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    print("        REV_MSG_GOV_SUSPENDED _swapToken")
-                    self.v.swapToken(
+                    print("        REV_MSG_GOV_SUSPENDED _xSwapToken")
+                    self.v.xSwapToken(
                         *args,
                         {"from": st_sender},
                     )
             else:
-                if self.swapsEnabled:
-                    if st_token_amount == 0:
-                        print("        REV_MSG_NZ_UINT _swapToken", *toLog)
-                        with reverts(REV_MSG_NZ_UINT):
-                            self.v.swapToken(
+                if st_token_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xSwapToken", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xSwapToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                    if st_token.balanceOf(st_sender) < st_token_amount:
+                        print("        REV_MSG_ERC20_EXCEED_BAL _xSwapToken", *toLog)
+                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                            self.v.xSwapToken(
                                 *args,
                                 {"from": st_sender},
                             )
                     else:
-                        st_token.approve(self.v, st_token_amount, {"from": st_sender})
-                        if st_token.balanceOf(st_sender) < st_token_amount:
-                            print("        REV_MSG_ERC20_EXCEED_BAL _swapToken", *toLog)
-                            with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                                self.v.swapToken(
-                                    *args,
-                                    {"from": st_sender},
-                                )
+                        print("                    rule_xSwapToken", *toLog)
+                        tx = self.v.xSwapToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+
+                        if st_token == self.tokenA:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenABals[self.v.address] + st_token_amount
+                            )
+                            self.tokenABals[self.v.address] += st_token_amount
+                            self.tokenABals[st_sender] -= st_token_amount
+                        elif st_token == self.tokenB:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenBBals[self.v.address] + st_token_amount
+                            )
+                            self.tokenBBals[self.v.address] += st_token_amount
+                            self.tokenBBals[st_sender] -= st_token_amount
                         else:
-                            print("                    rule_swapToken", *toLog)
-                            tx = self.v.swapToken(
-                                *args,
-                                {"from": st_sender},
-                            )
+                            assert False, "Panicc"
 
-                            if st_token == self.tokenA:
-                                assert (
-                                    st_token.balanceOf(self.v.address)
-                                    == self.tokenABals[self.v.address] + st_token_amount
-                                )
-                                self.tokenABals[self.v.address] += st_token_amount
-                                self.tokenABals[st_sender] -= st_token_amount
-                            elif st_token == self.tokenB:
-                                assert (
-                                    st_token.balanceOf(self.v.address)
-                                    == self.tokenBBals[self.v.address] + st_token_amount
-                                )
-                                self.tokenBBals[self.v.address] += st_token_amount
-                                self.tokenBBals[st_sender] -= st_token_amount
-                            else:
-                                assert False, "Panicc"
-
-                            assert tx.events["SwapToken"]["amount"] == st_token_amount
-                            assert (
-                                tx.events["SwapToken"]["egressParams"]
-                                == st_egressParams
-                            )
-                            assert tx.events["SwapToken"][
-                                "egressReceiver"
-                            ] == "0x" + cleanHexStr(st_egressReceiver)
-                            assert (
-                                tx.events["SwapToken"]["srcToken"] == st_token.address
-                            )
+                        assert tx.events["SwapToken"][0].values() == [
+                            st_dstChain,
+                            st_dstAddress,
+                            st_swapIntent,
+                            st_token,
+                            st_token_amount,
+                            st_sender,
+                        ]
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
