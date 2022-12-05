@@ -1052,7 +1052,7 @@ def test_vault(
                         )
                         assert (
                             web3.eth.get_balance(self.v.address)
-                            == self.ethBals[self.v.address] + st_eth_amount
+                            == self.ethBals[self.v.address] - st_eth_amount
                         )
                         self.ethBals[self.v.address] -= st_eth_amount
                         self.ethBals[st_sender] += st_eth_amount
