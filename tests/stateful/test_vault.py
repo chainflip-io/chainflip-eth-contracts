@@ -1032,21 +1032,21 @@ def test_vault(
                     print(
                         "        REV_MSG_GOV_SUSPENDED _executexSwapAndCall",
                     )
-                    self.v.executexSwapAndCall(*args, {"from": st_sender})
+                    signed_call_km(
+                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                    )
             else:
                 if st_eth_amount == 0:
                     print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
                     with reverts(REV_MSG_NZ_UINT):
-                        self.v.executexSwapAndCall(
-                            *args,
-                            {"from": st_sender, "amount": st_eth_amount},
+                        signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
                         )
                 else:
                     if web3.eth.get_balance(self.v.address) >= st_eth_amount:
                         print("                    rule_executexSwapAndCall", *toLog)
-                        tx = self.v.executexSwapAndCall(
-                            *args,
-                            {"from": st_sender, "amount": st_eth_amount},
+                        tx = signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
                         )
                         assert (
                             web3.eth.get_balance(self.v.address)
@@ -1085,17 +1085,15 @@ def test_vault(
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print("        REV_MSG_GOV_SUSPENDED _executexSwapAndCall")
-                    self.v.executexSwapAndCall(
-                        *args,
-                        {"from": st_sender},
+                    signed_call_km(
+                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
                     )
             else:
                 if st_token_amount == 0:
                     print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
                     with reverts(REV_MSG_NZ_UINT):
-                        self.v.executexSwapAndCall(
-                            *args,
-                            {"from": st_sender},
+                        signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
                         )
                 else:
                     if st_token.balanceOf(self.v.address) < st_token_amount:
@@ -1104,15 +1102,16 @@ def test_vault(
                             *toLog,
                         )
                         with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                            self.v.executexSwapAndCall(
+                            signed_call_km(
+                                self.km,
+                                self.v.executexSwapAndCall,
                                 *args,
-                                {"from": st_sender},
+                                sender=st_sender,
                             )
                     else:
                         print("                    rule_executexSwapAndCall", *toLog)
-                        tx = self.v.executexSwapAndCall(
-                            *args,
-                            {"from": st_sender},
+                        tx = signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
                         )
 
                         if st_token == self.tokenA:
@@ -1161,12 +1160,13 @@ def test_vault(
                     print(
                         "        REV_MSG_GOV_SUSPENDED _executexCall",
                     )
-                    self.v.executexCall(*args, {"from": st_sender})
+                    signed_call_km(
+                        self.km, self.v.executexCall, *args, sender=st_sender
+                    )
             else:
                 print("                    rule_executexCall", *toLog)
-                tx = self.v.executexCall(
-                    *args,
-                    {"from": st_sender},
+                tx = signed_call_km(
+                    self.km, self.v.executexCall, *args, sender=st_sender
                 )
                 assert tx.events["ReceivedxCall"][0].values() == [
                     st_srcChain,
