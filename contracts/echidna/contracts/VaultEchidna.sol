@@ -43,18 +43,65 @@ contract VaultEchidna is IShared {
         v.fetchDepositTokenBatch(sigData, fetchParamsArray);
     }
 
-    // function swapETH(string calldata egressParams, bytes32 egressReceiver) external virtual {
-    //     v.swapETH(egressParams, egressReceiver);
-    // }
+    function xSwapNative(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent
+    ) external payable virtual {
+        v.xSwapNative{value: msg.value}(dstChain, dstAddress, swapIntent);
+    }
 
-    // function swapToken(
-    //     string calldata egressParams,
-    //     bytes32 egressReceiver,
-    //     IERC20 srcToken,
-    //     uint256 amount
-    // ) external virtual {
-    //     v.swapToken(egressParams, egressReceiver, srcToken, amount);
-    // }
+    function xSwapToken(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
+        IERC20 srcToken,
+        uint256 amount
+    ) external virtual {
+        v.xSwapToken(dstChain, dstAddress, swapIntent, srcToken, amount);
+    }
+
+    function xCallNative(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
+        bytes calldata message,
+        address refundAddress
+    ) external payable virtual {
+        v.xCallNative{value: msg.value}(dstChain, dstAddress, swapIntent, message, refundAddress);
+    }
+
+    function xCallToken(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
+        bytes calldata message,
+        IERC20 srcToken,
+        uint256 amount,
+        address refundAddress
+    ) external virtual {
+        v.xCallToken(dstChain, dstAddress, swapIntent, message, srcToken, amount, refundAddress);
+    }
+
+    function executexSwapAndCall(
+        SigData calldata sigData,
+        TransferParams calldata transferParams,
+        uint32 srcChain,
+        string calldata srcAddress,
+        bytes calldata message
+    ) external virtual {
+        v.executexSwapAndCall(sigData, transferParams, srcChain, srcAddress, message);
+    }
+
+    function executexCall(
+        SigData calldata sigData,
+        address recipient,
+        uint32 srcChain,
+        string calldata srcAddress,
+        bytes calldata message
+    ) external virtual {
+        v.executexCall(sigData, recipient, srcChain, srcAddress, message);
+    }
 
     function govWithdraw(address[] calldata tokens) external virtual {
         v.govWithdraw(tokens);

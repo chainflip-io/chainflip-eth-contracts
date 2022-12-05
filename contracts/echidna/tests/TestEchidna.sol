@@ -105,13 +105,27 @@ contract TestEchidna is Deployer {
         }
     }
 
-    // Proxy for a signed function - Assert if the call is not reverted
+    // Proxies for a signed function - Assert if the call is not reverted
     function allBatch_revert(
         SigData calldata sigData,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external {
         try v.allBatch(sigData, fetchParamsArray, transferParamsArray) {
+            assert(false);
+        } catch {
+            assert(true);
+        }
+    }
+
+    function executexSwapAndCall_revert(
+        SigData calldata sigData,
+        TransferParams calldata transferParams,
+        uint32 srcChain,
+        string calldata srcAddress,
+        bytes calldata message
+    ) external {
+        try v.executexSwapAndCall(sigData, transferParams, srcChain, srcAddress, message) {
             assert(false);
         } catch {
             assert(true);

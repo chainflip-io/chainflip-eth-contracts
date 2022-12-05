@@ -384,32 +384,32 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity!
+    ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity (and others).
     ///      They do it because in the context of providing liquidity, the dstAddress doesn't make sense.
     ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
     ///      In our case reusing this function is not great anyway (due to message and refundAddress paramts). Also, for any other chain
     ///      the ingressAddress method will be used, so having a function to provide liquidity doesn't seem particularly useful.
+    //       Depending on LiFi (and also on us) we can explore having just one long string (like ThorChain memo). Better gas and
+    //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
+    //       it makes less redable and cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the
+    //       dstChain it is a pain to check srcChain as a string. As of now I would stick to separate parameters.
+    // NOTE: Lifi for some reason constructs the strings and message on-chain e.g. converting EVM address to string on-chain by using
+    //       OZ's string library. That is a huge waste of gas, instead of passing the address as a string directly. Why do they do
+    //       that? Seems like they are still not live with Axelar, so it might still be under development, since that doesn't make sense.
+    //       Maybe they have it to allow a direct swap to Axelar but it's still not integrated properly into the LiFi backend.
 
     // TODO: Decide if we want a refund address for retrospective refund. We cannot simply refund the srcAddress because in case of
     //       a DEX aggregator we want to refund the user, not the DEX Agg Contract.
     // TODO: Decide if we want to have gas topups in the future. Those could be done in the ingress or egress chain. Ingress is the
     //       normal way, but egress' native token makes refunds simpler.
     // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
-
     // TODO: To think what gating (xCallsEnabled) we want to have if any, since that costs gas (sload).
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is very expensive
     //       gas-wise, for example using OZ's Strings library.
-    // TODO: Lifi for some reason constructs the strings and message on-chain e.g. converting EVM address to string on-chain by using
-    //       OZ's string library. That is a huge waste of gas, instead of passing the address as a string directly. Why do they do
-    //       that? Seems like they are still not live with Axelar, so it might still be under development, since that doesn't make sense.
-    //       Maybe they have it to allow a direct swap to Axelar but it's still not integrated properly into the LiFi backend.
-    // TODO: Depending on LiFi (and also on us) we can explore having just one long string (like ThorChain memo). Better gas and
-    //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
-    //       it makes it cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the dstChain it is
-    //       a pain to check srcChain as a string.
     // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xCallToken but passing an empty swapIntent.
     //       If we want to optimize pure CCM then we could create two extra functions (paying with native or with token) that don't
     //       require an empty swapIntent, which wastes gas. But I would say that this is fine for now.
+    // TODO: Consider the try/catch explained at _executexSwapAndCall
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -598,6 +598,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string calldata srcAddress,
         bytes calldata message
     ) private {
+        // TODO: We could consider a try/catch (or low level call here) so in case the call reverts we
+        // can still transfer the tokens to the recipient. This way we ensure that tokens will never
+        // get stuck. ThorChain does this. And if instead of a user the recipient is a DEX aggregator,
+        // they handle external calls (to a DEX) in a try/catch themselves, so this wouldn't trigger.
         if (transferParams.token == _ETH_ADDR) {
             ICFReceiver(transferParams.recipient).cfReceive{value: transferParams.amount}(
                 srcChain,
@@ -674,7 +678,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // gas topups on the egress chain. But non-native would be good because USDC is easier to
     // handle/swap internally. To add verification if we want this.
     // Potentially we could use this two functions to allow the user to cancel an egress
-    // transaction. This could be done by sending zero amount and signaling the swapID.
+    // transaction. This could be done by sending zero amount and signaling the swapID. This could
+    // only be done if we verify it's the same sender that initiated the swap.
     // NOTE: This could be features for later on, and together with the refundAddress it might
     // be worth removing and maybe adding in the future.
     function addNativeGas(bytes32 swapID) external payable xCallsEnabled {
