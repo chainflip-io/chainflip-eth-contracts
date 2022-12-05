@@ -220,27 +220,41 @@ def all_flip_events():
 
 
 def all_vault_events():
-    print(f"\n🔐 Enable Vault swaps\n")
-    cf.vault.enableSwaps({"from": GOVERNOR})
+    print(f"\n🔐 Enable Vault xCalls\n")
+    cf.vault.enablexCalls({"from": GOVERNOR})
 
     print(
-        f"\n💰 Alice swaps {TEST_AMNT} ETH with EgressParams ETH:BTC and egressReceiver {JUNK_HEX}\n"
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_STR}, dstChain {JUNK_INT}, swaps {TEST_AMNT} ETH, swapIntent USDC and refund Address {ALICE}\n"
     )
-    cf.vault.swapETH("ETH:BTC", JUNK_HEX, {"amount": TEST_AMNT})
+    cf.vault.xCallNative(
+        JUNK_INT, JUNK_STR, "USDC", JUNK_HEX, ALICE, {"amount": TEST_AMNT}
+    )
 
     print(
-        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} with EgressParams FLIP:BTC and egressReceiver {JUNK_HEX}\n"
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_STR}, dstChain {JUNK_INT}, swaps {TEST_AMNT} IngressToken {cf.flip}, swapIntent USDC and refund Address {ALICE}\n"
     )
     cf.flip.approve(cf.vault, TEST_AMNT)
-    cf.vault.swapToken(
-        "FLIP:BTC",
-        JUNK_HEX,
+    cf.vault.xCallToken(JUNK_INT, JUNK_STR, "USDC", JUNK_HEX, cf.flip, TEST_AMNT, ALICE)
+
+    print(f"\n🔐 Disable Vault xCalls\n")
+    cf.vault.disablexCalls({"from": GOVERNOR})
+
+    print(
+        f"\n💰 Alice swaps {TEST_AMNT} ETH with swapIntent BTC, destination address {JUNK_STR} and dstChain {JUNK_INT}\n"
+    )
+    cf.vault.xSwapNative(JUNK_INT, JUNK_STR, "BTC", {"amount": TEST_AMNT})
+
+    print(
+        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} swapIntent BTC, destination address {JUNK_STR} and dstChain {JUNK_INT}\n"
+    )
+    cf.flip.approve(cf.vault, TEST_AMNT)
+    cf.vault.xSwapToken(
+        JUNK_INT,
+        JUNK_STR,
+        "BTC",
         cf.flip,
         TEST_AMNT,
     )
-
-    print(f"\n🔐 Disable Vault swaps\n")
-    cf.vault.disableSwaps({"from": GOVERNOR})
 
     print(f"\n🔐 Governance suspends execution of claims\n")
     cf.vault.suspend({"from": GOVERNOR})
