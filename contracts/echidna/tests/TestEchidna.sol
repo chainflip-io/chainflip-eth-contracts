@@ -62,7 +62,7 @@ contract TestEchidna is Deployer {
         return sm.getMinimumStake() == minStake;
     }
 
-    function echidna_swapsEnabled() external view returns (bool) {
+    function echidna_xCallsEnabled() external view returns (bool) {
         return !v.getxCallsEnabled();
     }
 

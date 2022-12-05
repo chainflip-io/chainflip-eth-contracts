@@ -682,11 +682,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // only be done if we verify it's the same sender that initiated the swap.
     // NOTE: This could be features for later on, and together with the refundAddress it might
     // be worth removing and maybe adding in the future.
-    function addNativeGas(bytes32 swapID) external payable xCallsEnabled {
+    function addGasNative(bytes32 swapID) external payable xCallsEnabled {
         emit AddNativeGas(swapID, msg.value);
     }
 
-    function addGas(
+    function addGasToken(
         bytes32 swapID,
         IERC20 token,
         uint256 amount

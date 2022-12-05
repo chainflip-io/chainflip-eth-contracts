@@ -24,7 +24,7 @@ contract LoopBackMock is CFReceiver, Shared {
             require(msg.value == amount, "LoopbackMock: msg.value != amount");
             IVault(_cfVault).xCallNative{value: amount}(srcChain, srcAddress, "USDC", message, address(this));
         } else {
-            IERC20(token).approve(msg.sender, amount);
+            require(IERC20(token).approve(msg.sender, amount));
             IVault(_cfVault).xCallToken(srcChain, srcAddress, "USDC", message, IERC20(token), amount, address(this));
         }
     }

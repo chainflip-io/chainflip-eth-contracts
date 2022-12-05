@@ -66,7 +66,7 @@ contract DexAggSrcChainMock is Shared {
         // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
-        IERC20(srcToken).approve(_cfVault, srcAmount);
+        require(IERC20(srcToken).approve(_cfVault, srcAmount));
         IVault(_cfVault).xCallToken(dstChain, dstAddress, swapIntent, message, IERC20(srcToken), srcAmount, msg.sender);
     }
 }
@@ -118,7 +118,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
         require(dstToken == token, "DexAggMock: Assertion failed");
 
         if (token != _ETH_ADDR) {
-            IERC20(dstToken).approve(dexAddress, amount);
+            require(IERC20(dstToken).approve(dexAddress, amount));
         }
 
         // Check that the srcChain's encoded selector matches what we are decoding on the dstChain.
