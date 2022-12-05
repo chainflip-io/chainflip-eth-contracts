@@ -223,7 +223,7 @@ def test_swapTokenAndCall_rev_disabled(
     st_sender,
 ):
 
-    # xCallNative
+    # xCallToken
     with reverts(REV_MSG_VAULT_XCALLS_DIS):
         cf.vault.xCallToken(
             st_dstChain,

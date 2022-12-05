@@ -150,6 +150,8 @@ def test_vault(
         st_swapIntent = strategy("string")
         st_dstAddress = strategy("string")
         st_dstChain = strategy("uint32")
+        st_message = strategy("bytes")
+        st_refundAddress = strategy("address")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
             fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
@@ -852,6 +854,139 @@ def test_vault(
                             assert False, "Panicc"
 
                         assert tx.events["SwapToken"][0].values() == [
+                            st_dstChain,
+                            st_dstAddress,
+                            st_swapIntent,
+                            st_token,
+                            st_token_amount,
+                            st_sender,
+                        ]
+
+        def rule_xCallNative(
+            self,
+            st_sender,
+            st_swapIntent,
+            st_dstAddress,
+            st_eth_amount,
+            st_dstChain,
+            st_message,
+            st_refundAddress,
+        ):
+            args = (
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                st_message,
+                st_refundAddress,
+            )
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _xCallNative",
+                    )
+                    self.v.xCallNative(*args, {"from": st_sender})
+            else:
+                if st_eth_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xCallNative", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xCallNative(
+                            *args,
+                            {"from": st_sender, "amount": st_eth_amount},
+                        )
+                else:
+                    if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
+                        print("                    rule_xCallNative", *toLog)
+                        tx = self.v.xCallNative(
+                            *args,
+                            {"from": st_sender, "amount": st_eth_amount},
+                        )
+                        assert (
+                            web3.eth.get_balance(self.v.address)
+                            == self.ethBals[self.v.address] + st_eth_amount
+                        )
+                        self.ethBals[self.v.address] += st_eth_amount
+                        self.ethBals[st_sender] -= st_eth_amount
+                        assert tx.events["XCallNative"][0].values() == [
+                            st_dstChain,
+                            st_dstAddress,
+                            st_swapIntent,
+                            st_eth_amount,
+                            st_sender,
+                            hexStr(st_message),
+                            st_refundAddress,
+                        ]
+
+        def rule_xCallToken(
+            self,
+            st_sender,
+            st_swapIntent,
+            st_dstAddress,
+            st_token_amount,
+            st_token,
+            st_dstChain,
+            st_message,
+            st_refundAddress,
+        ):
+            args = (
+                st_dstChain,
+                st_dstAddress,
+                st_swapIntent,
+                st_message,
+                st_token,
+                st_token_amount,
+                st_refundAddress,
+            )
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print("        REV_MSG_GOV_SUSPENDED _xCallToken")
+                    self.v.xCallToken(
+                        *args,
+                        {"from": st_sender},
+                    )
+            else:
+                if st_token_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xCallToken", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xCallToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                    if st_token.balanceOf(st_sender) < st_token_amount:
+                        print("        REV_MSG_ERC20_EXCEED_BAL _xCallToken", *toLog)
+                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                            self.v.xCallToken(
+                                *args,
+                                {"from": st_sender},
+                            )
+                    else:
+                        print("                    rule_xCallToken", *toLog)
+                        tx = self.v.xCallToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+
+                        if st_token == self.tokenA:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenABals[self.v.address] + st_token_amount
+                            )
+                            self.tokenABals[self.v.address] += st_token_amount
+                            self.tokenABals[st_sender] -= st_token_amount
+                        elif st_token == self.tokenB:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenBBals[self.v.address] + st_token_amount
+                            )
+                            self.tokenBBals[self.v.address] += st_token_amount
+                            self.tokenBBals[st_sender] -= st_token_amount
+                        else:
+                            assert False, "Panicc"
+
+                        assert tx.events["XCallToken"][0].values() == [
                             st_dstChain,
                             st_dstAddress,
                             st_swapIntent,
