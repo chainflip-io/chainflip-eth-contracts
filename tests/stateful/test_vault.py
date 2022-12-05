@@ -1005,8 +1005,7 @@ def test_vault(
                             st_refundAddress,
                         ]
 
-        # TODO: Add tests for executexSwapAndCall and executexCall
-        def rule_executexSwapAndCall(
+        def rule_executexSwapAndCall_native(
             self,
             st_sender,
             st_dstAddress,
@@ -1039,7 +1038,7 @@ def test_vault(
                             {"from": st_sender, "amount": st_eth_amount},
                         )
                 else:
-                    if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
+                    if web3.eth.get_balance(self.v.address) >= st_eth_amount:
                         print("                    rule_executexSwapAndCall", *toLog)
                         tx = self.v.executexSwapAndCall(
                             *args,
@@ -1049,8 +1048,8 @@ def test_vault(
                             web3.eth.get_balance(self.v.address)
                             == self.ethBals[self.v.address] + st_eth_amount
                         )
-                        self.ethBals[self.v.address] += st_eth_amount
-                        self.ethBals[st_sender] -= st_eth_amount
+                        self.ethBals[self.v.address] -= st_eth_amount
+                        self.ethBals[st_sender] += st_eth_amount
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
                             st_srcAddress,
@@ -1059,6 +1058,117 @@ def test_vault(
                             st_eth_amount,
                             st_eth_amount,
                         ]
+
+        def rule_executexSwapAndCall_token(
+            self,
+            st_sender,
+            st_dstAddress,
+            st_token_amount,
+            st_token,
+            st_dstChain,
+            st_message,
+        ):
+            # just to not create even more strategies
+            st_srcAddress = st_dstAddress
+            st_srcChain = st_dstChain
+            args = [
+                [st_token, self.cfReceiverMock, st_token_amount],
+                st_srcChain,
+                st_srcAddress,
+                st_message,
+            ]
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print("        REV_MSG_GOV_SUSPENDED _executexSwapAndCall")
+                    self.v.executexSwapAndCall(
+                        *args,
+                        {"from": st_sender},
+                    )
+            else:
+                if st_token_amount == 0:
+                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.executexSwapAndCall(
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    if st_token.balanceOf(self.v.address) < st_token_amount:
+                        print(
+                            "        REV_MSG_ERC20_EXCEED_BAL _executexSwapAndCall",
+                            *toLog,
+                        )
+                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                            self.v.executexSwapAndCall(
+                                *args,
+                                {"from": st_sender},
+                            )
+                    else:
+                        print("                    rule_executexSwapAndCall", *toLog)
+                        tx = self.v.executexSwapAndCall(
+                            *args,
+                            {"from": st_sender},
+                        )
+
+                        if st_token == self.tokenA:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenABals[self.v.address] - st_token_amount
+                            )
+                            self.tokenABals[self.v.address] -= st_token_amount
+                        elif st_token == self.tokenB:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenBBals[self.v.address] - st_token_amount
+                            )
+                            self.tokenBBals[self.v.address] -= st_token_amount
+                        else:
+                            assert False, "Panicc"
+
+                        assert tx.events["ReceivedxSwapAndCall"][0].values() == [
+                            st_srcChain,
+                            st_srcAddress,
+                            st_message,
+                            st_token,
+                            st_token_amount,
+                            0,
+                        ]
+
+        def rule_executexCall(
+            self,
+            st_sender,
+            st_dstAddress,
+            st_dstChain,
+            st_message,
+        ):
+            # just to not create even more strategies
+            st_srcAddress = st_dstAddress
+            st_srcChain = st_dstChain
+            args = [
+                self.cfReceiverMock,
+                st_srcChain,
+                st_srcAddress,
+                st_message,
+            ]
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _executexCall",
+                    )
+                    self.v.executexCall(*args, {"from": st_sender})
+            else:
+                print("                    rule_executexCall", *toLog)
+                tx = self.v.executexCall(
+                    *args,
+                    {"from": st_sender},
+                )
+                assert tx.events["ReceivedxCall"][0].values() == [
+                    st_srcChain,
+                    st_srcAddress,
+                    st_message,
+                ]
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
