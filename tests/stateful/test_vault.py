@@ -1020,11 +1020,13 @@ def test_vault(
             # just to not create even more strategies
             st_srcAddress = st_dstAddress
             st_srcChain = st_dstChain
+
+            message = hexStr(st_message)
             args = [
                 [ETH_ADDR, self.cfReceiverMock, st_eth_amount],
                 st_srcChain,
                 st_srcAddress,
-                st_message,
+                message,
             ]
             toLog = (*args, st_sender)
             if self.suspended:
@@ -1057,7 +1059,7 @@ def test_vault(
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
                             st_srcAddress,
-                            st_message,
+                            message,
                             ETH_ADDR,
                             st_eth_amount,
                             st_eth_amount,
@@ -1075,11 +1077,13 @@ def test_vault(
             # just to not create even more strategies
             st_srcAddress = st_dstAddress
             st_srcChain = st_dstChain
+
+            message = hexStr(st_message)
             args = [
                 [st_token, self.cfReceiverMock, st_token_amount],
                 st_srcChain,
                 st_srcAddress,
-                st_message,
+                message,
             ]
             toLog = (*args, st_sender)
             if self.suspended:
@@ -1132,7 +1136,7 @@ def test_vault(
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
                             st_srcAddress,
-                            st_message,
+                            message,
                             st_token,
                             st_token_amount,
                             0,
@@ -1148,11 +1152,13 @@ def test_vault(
             # just to not create even more strategies
             st_srcAddress = st_dstAddress
             st_srcChain = st_dstChain
+
+            message = hexStr(st_message)
             args = [
                 self.cfReceiverMock,
                 st_srcChain,
                 st_srcAddress,
-                st_message,
+                message,
             ]
             toLog = (*args, st_sender)
             if self.suspended:
@@ -1171,7 +1177,7 @@ def test_vault(
                 assert tx.events["ReceivedxCall"][0].values() == [
                     st_srcChain,
                     st_srcAddress,
-                    st_message,
+                    message,
                 ]
 
         # Check all the balances of every address are as they should be after every tx
