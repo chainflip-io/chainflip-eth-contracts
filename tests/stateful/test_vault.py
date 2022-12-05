@@ -1055,7 +1055,6 @@ def test_vault(
                             == self.ethBals[self.v.address] - st_eth_amount
                         )
                         self.ethBals[self.v.address] -= st_eth_amount
-                        self.ethBals[st_sender] += st_eth_amount
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
                             st_srcAddress,
