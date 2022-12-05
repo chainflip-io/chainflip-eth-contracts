@@ -821,54 +821,57 @@ def test_vault(
                         {"from": st_sender},
                     )
             else:
-                if st_token_amount == 0:
-                    print("        REV_MSG_NZ_UINT _xSwapToken", *toLog)
-                    with reverts(REV_MSG_NZ_UINT):
-                        self.v.xSwapToken(
-                            *args,
-                            {"from": st_sender},
-                        )
-                else:
-                    st_token.approve(self.v, st_token_amount, {"from": st_sender})
-                    if st_token.balanceOf(st_sender) < st_token_amount:
-                        print("        REV_MSG_ERC20_EXCEED_BAL _xSwapToken", *toLog)
-                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                if self.swapsEnabled:
+                    if st_token_amount == 0:
+                        print("        REV_MSG_NZ_UINT _xSwapToken", *toLog)
+                        with reverts(REV_MSG_NZ_UINT):
                             self.v.xSwapToken(
                                 *args,
                                 {"from": st_sender},
                             )
                     else:
-                        print("                    rule_xSwapToken", *toLog)
-                        tx = self.v.xSwapToken(
-                            *args,
-                            {"from": st_sender},
-                        )
-
-                        if st_token == self.tokenA:
-                            assert (
-                                st_token.balanceOf(self.v.address)
-                                == self.tokenABals[self.v.address] + st_token_amount
+                        st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                        if st_token.balanceOf(st_sender) < st_token_amount:
+                            print(
+                                "        REV_MSG_ERC20_EXCEED_BAL _xSwapToken", *toLog
                             )
-                            self.tokenABals[self.v.address] += st_token_amount
-                            self.tokenABals[st_sender] -= st_token_amount
-                        elif st_token == self.tokenB:
-                            assert (
-                                st_token.balanceOf(self.v.address)
-                                == self.tokenBBals[self.v.address] + st_token_amount
-                            )
-                            self.tokenBBals[self.v.address] += st_token_amount
-                            self.tokenBBals[st_sender] -= st_token_amount
+                            with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                                self.v.xSwapToken(
+                                    *args,
+                                    {"from": st_sender},
+                                )
                         else:
-                            assert False, "Panicc"
+                            print("                    rule_xSwapToken", *toLog)
+                            tx = self.v.xSwapToken(
+                                *args,
+                                {"from": st_sender},
+                            )
 
-                        assert tx.events["SwapToken"][0].values() == [
-                            st_dstChain,
-                            st_dstAddress,
-                            st_swapIntent,
-                            st_token,
-                            st_token_amount,
-                            st_sender,
-                        ]
+                            if st_token == self.tokenA:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenABals[self.v.address] + st_token_amount
+                                )
+                                self.tokenABals[self.v.address] += st_token_amount
+                                self.tokenABals[st_sender] -= st_token_amount
+                            elif st_token == self.tokenB:
+                                assert (
+                                    st_token.balanceOf(self.v.address)
+                                    == self.tokenBBals[self.v.address] + st_token_amount
+                                )
+                                self.tokenBBals[self.v.address] += st_token_amount
+                                self.tokenBBals[st_sender] -= st_token_amount
+                            else:
+                                assert False, "Panicc"
+
+                            assert tx.events["SwapToken"][0].values() == [
+                                st_dstChain,
+                                st_dstAddress,
+                                st_swapIntent,
+                                st_token,
+                                st_token_amount,
+                                st_sender,
+                            ]
 
         def rule_xCallNative(
             self,
@@ -895,35 +898,36 @@ def test_vault(
                     )
                     self.v.xCallNative(*args, {"from": st_sender})
             else:
-                if st_eth_amount == 0:
-                    print("        REV_MSG_NZ_UINT _xCallNative", *toLog)
-                    with reverts(REV_MSG_NZ_UINT):
-                        self.v.xCallNative(
-                            *args,
-                            {"from": st_sender, "amount": st_eth_amount},
-                        )
-                else:
-                    if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
-                        print("                    rule_xCallNative", *toLog)
-                        tx = self.v.xCallNative(
-                            *args,
-                            {"from": st_sender, "amount": st_eth_amount},
-                        )
-                        assert (
-                            web3.eth.get_balance(self.v.address)
-                            == self.ethBals[self.v.address] + st_eth_amount
-                        )
-                        self.ethBals[self.v.address] += st_eth_amount
-                        self.ethBals[st_sender] -= st_eth_amount
-                        assert tx.events["XCallNative"][0].values() == [
-                            st_dstChain,
-                            st_dstAddress,
-                            st_swapIntent,
-                            st_eth_amount,
-                            st_sender,
-                            hexStr(st_message),
-                            st_refundAddress,
-                        ]
+                if self.swapsEnabled:
+                    if st_eth_amount == 0:
+                        print("        REV_MSG_NZ_UINT _xCallNative", *toLog)
+                        with reverts(REV_MSG_NZ_UINT):
+                            self.v.xCallNative(
+                                *args,
+                                {"from": st_sender, "amount": st_eth_amount},
+                            )
+                    else:
+                        if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
+                            print("                    rule_xCallNative", *toLog)
+                            tx = self.v.xCallNative(
+                                *args,
+                                {"from": st_sender, "amount": st_eth_amount},
+                            )
+                            assert (
+                                web3.eth.get_balance(self.v.address)
+                                == self.ethBals[self.v.address] + st_eth_amount
+                            )
+                            self.ethBals[self.v.address] += st_eth_amount
+                            self.ethBals[st_sender] -= st_eth_amount
+                            assert tx.events["XCallNative"][0].values() == [
+                                st_dstChain,
+                                st_dstAddress,
+                                st_swapIntent,
+                                st_eth_amount,
+                                st_sender,
+                                hexStr(st_message),
+                                st_refundAddress,
+                            ]
 
         def rule_xCallToken(
             self,
