@@ -11,7 +11,14 @@ settings = {"stateful_step_count": 100, "max_examples": 50}
 
 # Stateful test for all functions in the Vault
 def test_vault(
-    BaseStateMachine, state_machine, a, cfDeploy, DepositEth, DepositToken, Token
+    BaseStateMachine,
+    state_machine,
+    a,
+    cfDeploy,
+    DepositEth,
+    DepositToken,
+    Token,
+    cfReceiverMock,
 ):
 
     # The max swapID to use. SwapID is needed as a salt to create a unique create2
@@ -47,9 +54,9 @@ def test_vault(
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cfDeploy, DepositEth, DepositToken, Token):
+        def __init__(cls, a, cfDeploy, DepositEth, DepositToken, Token, cfReceiverMock):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
-            super().__init__(cls, a, cfDeploy)
+            super().__init__(cls, a, cfDeploy, cfReceiverMock)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
@@ -102,6 +109,7 @@ def test_vault(
 
             # Workaround for initial Vault Balance
             cls.initialVaultBalance = web3.eth.get_balance(cls.v.address)
+            cls.cfReceiverMock = cfReceiverMock
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -148,7 +156,7 @@ def test_vault(
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
         st_swapIntent = strategy("string")
-        st_dstAddress = strategy("string")
+        st_dstAddress = strategy("string", min_size=1)
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
         st_refundAddress = strategy("address")
@@ -993,6 +1001,63 @@ def test_vault(
                             st_token,
                             st_token_amount,
                             st_sender,
+                            hexStr(st_message),
+                            st_refundAddress,
+                        ]
+
+        # TODO: Add tests for executexSwapAndCall and executexCall
+        def rule_executexSwapAndCall(
+            self,
+            st_sender,
+            st_dstAddress,
+            st_eth_amount,
+            st_dstChain,
+            st_message,
+        ):
+            # just to not create even more strategies
+            st_srcAddress = st_dstAddress
+            st_srcChain = st_dstChain
+            args = [
+                [ETH_ADDR, self.cfReceiverMock, st_eth_amount],
+                st_srcChain,
+                st_srcAddress,
+                st_message,
+            ]
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _executexSwapAndCall",
+                    )
+                    self.v.executexSwapAndCall(*args, {"from": st_sender})
+            else:
+                if st_eth_amount == 0:
+                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.executexSwapAndCall(
+                            *args,
+                            {"from": st_sender, "amount": st_eth_amount},
+                        )
+                else:
+                    if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
+                        print("                    rule_executexSwapAndCall", *toLog)
+                        tx = self.v.executexSwapAndCall(
+                            *args,
+                            {"from": st_sender, "amount": st_eth_amount},
+                        )
+                        assert (
+                            web3.eth.get_balance(self.v.address)
+                            == self.ethBals[self.v.address] + st_eth_amount
+                        )
+                        self.ethBals[self.v.address] += st_eth_amount
+                        self.ethBals[st_sender] -= st_eth_amount
+                        assert tx.events["ReceivedxSwapAndCall"][0].values() == [
+                            st_srcChain,
+                            st_srcAddress,
+                            st_message,
+                            ETH_ADDR,
+                            st_eth_amount,
+                            st_eth_amount,
                         ]
 
         # Check all the balances of every address are as they should be after every tx
@@ -1023,5 +1088,12 @@ def test_vault(
             print(f"Total rules executed = {self.numTxsTested-1}")
 
     state_machine(
-        StateMachine, a, cfDeploy, DepositEth, DepositToken, Token, settings=settings
+        StateMachine,
+        a,
+        cfDeploy,
+        DepositEth,
+        DepositToken,
+        Token,
+        cfReceiverMock,
+        settings=settings,
     )
