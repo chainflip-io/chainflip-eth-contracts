@@ -1109,7 +1109,7 @@ def test_all(
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
-            if self.suspended:
+            if self.v.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
                         "        REV_MSG_GOV_SUSPENDED _xCallNative",
@@ -1168,7 +1168,7 @@ def test_all(
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
-            if self.suspended:
+            if self.v.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print("        REV_MSG_GOV_SUSPENDED _xCallToken")
                     self.v.xCallToken(
