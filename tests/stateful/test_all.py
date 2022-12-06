@@ -24,7 +24,6 @@ def test_all(
     StakeManager,
     KeyManager,
     Vault,
-    cfReceiverMock,
     CFReceiverMock,
 ):
 
@@ -103,10 +102,9 @@ def test_all(
             DepositEth,
             DepositToken,
             Token,
-            cfReceiverMock,
             CFReceiverMock,
         ):
-            super().__init__(cls, a, cfDeployAllWhitelist, cfReceiverMock)
+            super().__init__(cls, a, cfDeployAllWhitelist)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
@@ -180,7 +178,12 @@ def test_all(
             cls.orig_sm = cls.sm
             cls.orig_v = cls.v
             cls.orig_km = cls.km
+
+            # Deploy a CFReceiverMock
+            cls.cfReceiverMock = a[0].deploy(CFReceiverMock, cls.v.address)
             cls.orig_cfRec = cls.cfReceiverMock
+
+            assert cls.cfReceiverMock._cfVault() == cls.v.address
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -292,7 +295,6 @@ def test_all(
         st_addrs = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
-        st_message = strategy("bytes32")
 
         # StakeManager
 
@@ -1240,6 +1242,7 @@ def test_all(
             st_dstChain,
             st_message,
         ):
+            assert self.cfReceiverMock._cfVault() == self.v.address
             signer = self._get_key_prob(AGG)
 
             # just to not create even more strategies
@@ -1322,6 +1325,7 @@ def test_all(
                             st_eth_amount,
                             st_eth_amount,
                         ]
+                        self.lastValidateTime = tx.timestamp
 
         def rule_executexSwapAndCall_token(
             self,
@@ -1438,6 +1442,7 @@ def test_all(
                             st_token_amount,
                             0,
                         ]
+                        self.lastValidateTime = tx.timestamp
 
         def rule_executexCall(
             self,
@@ -1499,6 +1504,7 @@ def test_all(
                     st_srcAddress,
                     message,
                 ]
+                self.lastValidateTime = tx.timestamp
 
         # KeyManager
 
@@ -2763,7 +2769,6 @@ def test_all(
         DepositEth,
         DepositToken,
         Token,
-        cfReceiverMock,
         CFReceiverMock,
         settings=settings,
     )
