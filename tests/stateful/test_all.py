@@ -1238,6 +1238,8 @@ def test_all(
             st_dstChain,
             st_message,
         ):
+            signer = self._get_key_prob(AGG)
+
             # just to not create even more strategies
             st_srcAddress = st_dstAddress
             st_srcChain = st_dstChain
@@ -1256,20 +1258,54 @@ def test_all(
                         "        REV_MSG_GOV_SUSPENDED _executexSwapAndCall",
                     )
                     signed_call_km(
-                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                        self.km,
+                        self.v.executexSwapAndCall,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
                     )
             else:
                 if st_eth_amount == 0:
                     print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
                     with reverts(REV_MSG_NZ_UINT):
                         signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
                         )
+                elif not self.v in self.currentWhitelist:
+                    print("        REV_MSG_WHITELIST rule_executexSwapAndCall", *toLog)
+                    with reverts(REV_MSG_WHITELIST):
+                        signed_call_km(
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
+                        )
+
+                elif signer != self.keyIDToCurKeys[AGG]:
+                    print("        REV_MSG_SIG rule_executexSwapAndCall", signer)
+                    with reverts(REV_MSG_SIG):
+                        signed_call_km(
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
+                        )
+
                 else:
                     if web3.eth.get_balance(self.v.address) >= st_eth_amount:
                         print("                    rule_executexSwapAndCall", *toLog)
                         tx = signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
                         )
                         assert (
                             web3.eth.get_balance(self.v.address)
@@ -1294,6 +1330,8 @@ def test_all(
             st_dstChain,
             st_message,
         ):
+            signer = self._get_key_prob(AGG)
+
             # just to not create even more strategies
             st_srcAddress = st_dstAddress
             st_srcChain = st_dstChain
@@ -1310,15 +1348,46 @@ def test_all(
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print("        REV_MSG_GOV_SUSPENDED _executexSwapAndCall")
                     signed_call_km(
-                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                        self.km,
+                        self.v.executexSwapAndCall,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
                     )
             else:
                 if st_token_amount == 0:
                     print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
                     with reverts(REV_MSG_NZ_UINT):
                         signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
                         )
+
+                elif not self.v in self.currentWhitelist:
+                    print("        REV_MSG_WHITELIST rule_executexSwapAndCall", *toLog)
+                    with reverts(REV_MSG_WHITELIST):
+                        signed_call_km(
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
+                        )
+
+                elif signer != self.keyIDToCurKeys[AGG]:
+                    print("        REV_MSG_SIG rule_executexSwapAndCall", signer)
+                    with reverts(REV_MSG_SIG):
+                        signed_call_km(
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
+                        )
+
                 else:
                     if st_token.balanceOf(self.v.address) < st_token_amount:
                         print(
@@ -1330,12 +1399,18 @@ def test_all(
                                 self.km,
                                 self.v.executexSwapAndCall,
                                 *args,
+                                signer=signer,
                                 sender=st_sender,
                             )
+
                     else:
                         print("                    rule_executexSwapAndCall", *toLog)
                         tx = signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            signer=signer,
+                            sender=st_sender,
                         )
 
                         if st_token == self.tokenA:
@@ -1369,6 +1444,8 @@ def test_all(
             st_dstChain,
             st_message,
         ):
+            signer = self._get_key_prob(AGG)
+
             # just to not create even more strategies
             st_srcAddress = st_dstAddress
             st_srcChain = st_dstChain
@@ -1380,7 +1457,7 @@ def test_all(
                 st_srcAddress,
                 message,
             ]
-            toLog = (*args, st_sender)
+            toLog = (*args, st_sender, signer)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
@@ -1389,10 +1466,31 @@ def test_all(
                     signed_call_km(
                         self.km, self.v.executexCall, *args, sender=st_sender
                     )
+            elif not self.v in self.currentWhitelist:
+                print("        REV_MSG_WHITELIST rule_executexCall", *toLog)
+                with reverts(REV_MSG_WHITELIST):
+                    signed_call_km(
+                        self.km,
+                        self.v.executexCall,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
+                    )
+
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print("        REV_MSG_SIG rule_executexCall", signer)
+                with reverts(REV_MSG_SIG):
+                    signed_call_km(
+                        self.km,
+                        self.v.executexCall,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
+                    )
             else:
                 print("                    rule_executexCall", *toLog)
                 tx = signed_call_km(
-                    self.km, self.v.executexCall, *args, sender=st_sender
+                    self.km, self.v.executexCall, *args, signer=signer, sender=st_sender
                 )
                 assert tx.events["ReceivedxCall"][0].values() == [
                     st_srcChain,
