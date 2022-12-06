@@ -1109,7 +1109,7 @@ def test_all(
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
-            if self.v.suspended:
+            if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
                         "        REV_MSG_GOV_SUSPENDED _xCallNative",
@@ -1168,7 +1168,7 @@ def test_all(
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
-            if self.v.suspended:
+            if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print("        REV_MSG_GOV_SUSPENDED _xCallToken")
                     self.v.xCallToken(
@@ -1250,7 +1250,7 @@ def test_all(
                 message,
             ]
             toLog = (*args, st_sender)
-            if self.v.suspended:
+            if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
                         "        REV_MSG_GOV_SUSPENDED _executexSwapAndCall",
@@ -1306,7 +1306,7 @@ def test_all(
                 message,
             ]
             toLog = (*args, st_sender)
-            if self.v.suspended:
+            if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print("        REV_MSG_GOV_SUSPENDED _executexSwapAndCall")
                     signed_call_km(
@@ -1381,7 +1381,7 @@ def test_all(
                 message,
             ]
             toLog = (*args, st_sender)
-            if self.v.suspended:
+            if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
                         "        REV_MSG_GOV_SUSPENDED _executexCall",
