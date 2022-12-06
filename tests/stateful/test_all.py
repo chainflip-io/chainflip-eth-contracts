@@ -189,7 +189,7 @@ def test_all(
             self.sm = self.orig_sm
             self.v = self.orig_v
             self.km = self.orig_km
-            self.cfRec = self.orig_cfRec
+            self.cfReceiverMock = self.orig_cfRec
 
             self.governor = cfDeployAllWhitelist.gov
             self.communityKey = cfDeployAllWhitelist.communityKey
@@ -1248,7 +1248,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [ETH_ADDR, self.cfRec.address, st_eth_amount],
+                [ETH_ADDR, self.cfReceiverMock.address, st_eth_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1340,7 +1340,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [st_token, self.cfRec.address, st_token_amount],
+                [st_token, self.cfReceiverMock.address, st_token_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1454,7 +1454,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                self.cfRec.address,
+                self.cfReceiverMock.address,
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -2224,6 +2224,9 @@ def test_all(
                     self.v_suspended = False
                     self.xCallsEnabled = False
 
+                    # Deploy a new CFReceiverMock that receives from the new Vault
+                    self.cfReceiverMock = st_sender.deploy(CFReceiverMock, self.v)
+
                     # Create new addresses for the new Vault and initialize Balances
                     newCreate2EthAddrs = [
                         getCreate2Addr(
@@ -2255,9 +2258,6 @@ def test_all(
                         self._addNewAddress(newCreate2EthAddrs[swapID])
                         self._addNewAddress(newCreate2TokenAAddrs[swapID])
                         self._addNewAddress(newCreate2TokenBAddrs[swapID])
-
-                    # Deploy a new CFReceiverMock
-                    self.cfRec = st_sender.deploy(CFReceiverMock, self.v)
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
