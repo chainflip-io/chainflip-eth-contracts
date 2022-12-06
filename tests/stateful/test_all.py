@@ -24,6 +24,7 @@ def test_all(
     StakeManager,
     KeyManager,
     Vault,
+    cfReceiverMock,
     CFReceiverMock,
 ):
 
@@ -102,9 +103,10 @@ def test_all(
             DepositEth,
             DepositToken,
             Token,
+            cfReceiverMock,
             CFReceiverMock,
         ):
-            super().__init__(cls, a, cfDeployAllWhitelist, CFReceiverMock)
+            super().__init__(cls, a, cfDeployAllWhitelist, cfReceiverMock)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
@@ -2761,6 +2763,7 @@ def test_all(
         DepositEth,
         DepositToken,
         Token,
+        cfReceiverMock,
         CFReceiverMock,
         settings=settings,
     )

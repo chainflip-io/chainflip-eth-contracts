@@ -1,5 +1,8 @@
 name: Fuzzer Testing
-on: push
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   lint:
