@@ -137,7 +137,7 @@ def test_vault(
 
             self.communityGuardDisabled = self.v.getCommunityGuardDisabled()
             self.suspended = self.v.getSuspendedState()
-            self.swapsEnabled = False
+            self.xCallsEnabled = False
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -721,7 +721,7 @@ def test_vault(
 
         # Enable swaps if they are disabled
         def rule_enablexCalls(self, st_sender):
-            if not self.swapsEnabled:
+            if not self.xCallsEnabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
                         print("        REV_MSG_GOV_GOVERNOR _enablexCalls", st_sender)
@@ -729,7 +729,7 @@ def test_vault(
                 # Always enable
                 print("                    rule_enablexCalls", st_sender)
                 self.v.enablexCalls({"from": self.governor})
-                self.swapsEnabled = True
+                self.xCallsEnabled = True
             else:
                 print("        REV_MSG_VAULT_SWAPS_EN _enablexCalls", st_sender)
                 with reverts(REV_MSG_VAULT_SWAPS_EN):
@@ -737,7 +737,7 @@ def test_vault(
 
         # Disable swaps if they are enabled (only 1/5 times)
         def rule_disablexCalls(self, st_sender):
-            if self.swapsEnabled:
+            if self.xCallsEnabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
                         print("        REV_MSG_GOV_GOVERNOR _disablexCalls", st_sender)
@@ -745,7 +745,7 @@ def test_vault(
                 else:
                     print("                    rule_disablexCalls", st_sender)
                     self.v.disablexCalls({"from": st_sender})
-                    self.swapsEnabled = False
+                    self.xCallsEnabled = False
             else:
                 print(
                     "        REV_MSG_GOV_DISABLED_GUARD _disablexCalls",
@@ -796,7 +796,7 @@ def test_vault(
                         ]
 
         # Swap Token
-        def rule_swapToken(
+        def rule_xSwapToken(
             self,
             st_sender,
             st_swapIntent,
@@ -895,7 +895,7 @@ def test_vault(
                     )
                     self.v.xCallNative(*args, {"from": st_sender})
             else:
-                if self.swapsEnabled:
+                if self.xCallsEnabled:
                     if st_eth_amount == 0:
                         print("        REV_MSG_NZ_UINT _xCallNative", *toLog)
                         with reverts(REV_MSG_NZ_UINT):
@@ -955,7 +955,7 @@ def test_vault(
                         {"from": st_sender},
                     )
             else:
-                if self.swapsEnabled:
+                if self.xCallsEnabled:
                     if st_token_amount == 0:
                         print("        REV_MSG_NZ_UINT _xCallToken", *toLog)
                         with reverts(REV_MSG_NZ_UINT):
@@ -1200,7 +1200,7 @@ def test_vault(
         def invariant_state_vars(self):
             assert self.communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.suspended == self.v.getSuspendedState()
-            assert self.swapsEnabled == self.v.getxCallsEnabled()
+            assert self.xCallsEnabled == self.v.getxCallsEnabled()
 
         # Print how many rules were executed at the end of each run
         def teardown(self):

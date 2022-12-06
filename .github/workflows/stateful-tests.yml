@@ -35,4 +35,4 @@ jobs:
       # data generation that behaved differently between runs
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful true
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
