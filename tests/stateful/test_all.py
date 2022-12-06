@@ -1452,7 +1452,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                self.cfRec,
+                self.cfRec.address,
                 st_srcChain,
                 st_srcAddress,
                 message,
