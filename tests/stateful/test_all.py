@@ -1246,7 +1246,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [ETH_ADDR, self.cfRec, st_eth_amount],
+                [ETH_ADDR, self.cfRec.address, st_eth_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1338,7 +1338,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [st_token, self.cfRec, st_token_amount],
+                [st_token, self.cfRec.address, st_token_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
