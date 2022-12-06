@@ -24,7 +24,7 @@ def test_all(
     StakeManager,
     KeyManager,
     Vault,
-    cfReceiverMock,
+    CFReceiverMock,
 ):
 
     # Vault
@@ -102,9 +102,9 @@ def test_all(
             DepositEth,
             DepositToken,
             Token,
-            cfReceiverMock,
+            CFReceiverMock,
         ):
-            super().__init__(cls, a, cfDeployAllWhitelist, cfReceiverMock)
+            super().__init__(cls, a, cfDeployAllWhitelist, CFReceiverMock)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
@@ -178,7 +178,7 @@ def test_all(
             cls.orig_sm = cls.sm
             cls.orig_v = cls.v
             cls.orig_km = cls.km
-            cls.orig_cfRec = cfReceiverMock
+            cls.orig_cfRec = cls.cfReceiverMock
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -2255,7 +2255,7 @@ def test_all(
                         self._addNewAddress(newCreate2TokenBAddrs[swapID])
 
                     # Deploy a new CFReceiverMock
-                    self.cfRec = st_sender.deploy(cfReceiverMock, self.v)
+                    self.cfRec = st_sender.deploy(CFReceiverMock, self.v)
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
@@ -2761,6 +2761,6 @@ def test_all(
         DepositEth,
         DepositToken,
         Token,
-        cfReceiverMock,
+        CFReceiverMock,
         settings=settings,
     )
