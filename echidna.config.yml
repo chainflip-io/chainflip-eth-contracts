@@ -9,9 +9,9 @@ testMode: "property"
 # #prefix is the prefix for Boolean functions that are properties to be checked
 # prefix: "echidna_"
 # #propMaxGas defines gas cost at which a property fails
-# propMaxGas: 8000030
+# propMaxGas: 108000030
 # #testMaxGas is a gas limit; does not cause failure, but terminates sequence
-# testMaxGas: 8000030
+# testMaxGas: 108000030
 # #maxGasprice is the maximum gas price
 # maxGasprice: 0
 # #testLimit is the number of test sequences to run
@@ -38,8 +38,9 @@ coverage: false
 # balanceAddr: 0xffffffff
 # #balanceContract overrides balanceAddr for the contract address
 # balanceContract: 0
-# #codeSize max code size for deployed contratcs (default 24576, per EIP-170)
-# codeSize: 0x6000
+#codeSize max code size for deployed contratcs (default 24576, per EIP-170)
+#codeSize Increased codeSize because Echidna fails when deploying all the contracts via Deployer.sol
+codeSize: 0x60000
 # #solcArgs allows special args to solc
 # solcArgs: ""
 # #solcLibs is solc libraries
