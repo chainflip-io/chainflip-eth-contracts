@@ -174,12 +174,11 @@ def test_all(
                 initialStakeManagerBalance,
             ]
 
-            cls.cfReceiverMock = cfReceiverMock
-
             # Store original contracts to be able to test upgradability
             cls.orig_sm = cls.sm
             cls.orig_v = cls.v
             cls.orig_km = cls.km
+            cls.orig_cfRec = cfReceiverMock
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -188,6 +187,7 @@ def test_all(
             self.sm = self.orig_sm
             self.v = self.orig_v
             self.km = self.orig_km
+            self.cfRec = self.orig_cfRec
 
             self.governor = cfDeployAllWhitelist.gov
             self.communityKey = cfDeployAllWhitelist.communityKey
@@ -1244,7 +1244,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [ETH_ADDR, self.cfReceiverMock, st_eth_amount],
+                [ETH_ADDR, self.cfRec, st_eth_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1300,7 +1300,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [st_token, self.cfReceiverMock, st_token_amount],
+                [st_token, self.cfRec, st_token_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1375,7 +1375,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                self.cfReceiverMock,
+                self.cfRec,
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -2157,7 +2157,7 @@ def test_all(
                         self._addNewAddress(newCreate2TokenBAddrs[swapID])
 
                     # Deploy a new CFReceiverMock
-                    self.cfReceiverMock = st_sender.deploy(cfReceiverMock, self.vault)
+                    self.cfRec = st_sender.deploy(cfReceiverMock, self.vault)
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
