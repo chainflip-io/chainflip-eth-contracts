@@ -2156,6 +2156,9 @@ def test_all(
                         self._addNewAddress(newCreate2TokenAAddrs[swapID])
                         self._addNewAddress(newCreate2TokenBAddrs[swapID])
 
+                    # Deploy a new CFReceiverMock
+                    self.cfReceiverMock = st_sender.deploy(cfReceiverMock, self.vault)
+
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
             newStakeManager = st_sender.deploy(StakeManager, self.km, INIT_MIN_STAKE)
