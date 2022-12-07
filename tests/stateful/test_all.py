@@ -295,6 +295,7 @@ def test_all(
         st_addrs = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
         st_msg_data = strategy("bytes")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
+        st_message_govAction = strategy("bytes32")
 
         # StakeManager
 
@@ -2655,14 +2656,14 @@ def test_all(
             self.ethBals[self.governor] += self.ethBals[contract]
             self.ethBals[contract] = 0
 
-        def rule_govAction(self, st_sender, st_message):
+        def rule_govAction(self, st_sender, st_message_govAction):
             if st_sender != self.governor:
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
                     self.km.govAction(JUNK_HEX, {"from": st_sender})
             print("                    rule_govAction")
-            tx = self.km.govAction(st_message, {"from": self.governor})
+            tx = self.km.govAction(st_message_govAction, {"from": self.governor})
             assert tx.events["GovernanceAction"]["message"] == "0x" + cleanHexStr(
-                st_message
+                st_message_govAction
             )
 
         # Check all the balances of every address are as they should be after every tx
