@@ -56,7 +56,7 @@ def test_vault(
         # Set up the initial test conditions once
         def __init__(cls, a, cfDeploy, DepositEth, DepositToken, Token, cfReceiverMock):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
-            super().__init__(cls, a, cfDeploy, cfReceiverMock)
+            super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
