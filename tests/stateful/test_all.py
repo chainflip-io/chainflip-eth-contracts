@@ -1211,7 +1211,7 @@ def test_all(
                                     st_token.balanceOf(self.v.address)
                                     == self.tokenABals[self.v] + st_token_amount
                                 )
-                                self.tokenABals[self.v.address] += st_token_amount
+                                self.tokenABals[self.v] += st_token_amount
                                 self.tokenABals[st_sender] -= st_token_amount
                             elif st_token == self.tokenB:
                                 assert (
@@ -1424,7 +1424,7 @@ def test_all(
                                 st_token.balanceOf(self.v.address)
                                 == self.tokenABals[self.v] - st_token_amount
                             )
-                            self.tokenABals[self.v.address] -= st_token_amount
+                            self.tokenABals[self.v] -= st_token_amount
                         elif st_token == self.tokenB:
                             assert (
                                 st_token.balanceOf(self.v.address)
