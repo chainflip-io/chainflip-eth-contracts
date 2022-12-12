@@ -24,7 +24,7 @@ bytes4 constant FUNC_SELECTOR = bytes4(keccak256("swapMock(address,address,uint2
 contract DexAggSrcChainMock is Shared {
     using SafeERC20 for IERC20;
 
-    uint256 private constant defaultGas = 200000;
+    uint256 private constant DEFAULT_GAS = 200000;
 
     address private _cfVault;
 
@@ -52,7 +52,7 @@ contract DexAggSrcChainMock is Shared {
             dstAddress,
             swapIntent,
             message,
-            defaultGas,
+            DEFAULT_GAS,
             msg.sender
         );
     }
@@ -81,7 +81,7 @@ contract DexAggSrcChainMock is Shared {
             dstAddress,
             swapIntent,
             message,
-            defaultGas,
+            DEFAULT_GAS,
             IERC20(srcToken),
             srcAmount,
             msg.sender

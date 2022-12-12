@@ -10,7 +10,7 @@ import "../interfaces/IVault.sol";
  *           message and the callback to the Vault contract is hardcoded.
  */
 contract LoopBackMock is CFReceiver, Shared {
-    uint256 private constant defaultGas = 200000;
+    uint256 private constant DEFAULT_GAS = 200000;
 
     constructor(address cfVault) CFReceiver(cfVault) nzAddr(cfVault) {}
 
@@ -29,7 +29,7 @@ contract LoopBackMock is CFReceiver, Shared {
                 srcAddress,
                 "USDC",
                 message,
-                defaultGas,
+                DEFAULT_GAS,
                 address(this)
             );
         } else {
@@ -39,7 +39,7 @@ contract LoopBackMock is CFReceiver, Shared {
                 srcAddress,
                 "USDC",
                 message,
-                defaultGas,
+                DEFAULT_GAS,
                 IERC20(token),
                 amount,
                 address(this)
@@ -53,7 +53,7 @@ contract LoopBackMock is CFReceiver, Shared {
         bytes calldata message
     ) internal override {
         uint256 ethBalance = address(this).balance;
-        IVault(_cfVault).xCallNative{value: ethBalance}(srcChain, srcAddress, "", message, defaultGas, address(this));
+        IVault(_cfVault).xCallNative{value: ethBalance}(srcChain, srcAddress, "", message, DEFAULT_GAS, address(this));
     }
 
     receive() external payable {}
