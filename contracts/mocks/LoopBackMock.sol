@@ -10,6 +10,8 @@ import "../interfaces/IVault.sol";
  *           message and the callback to the Vault contract is hardcoded.
  */
 contract LoopBackMock is CFReceiver, Shared {
+    uint256 private constant defaultGas = 200000;
+
     constructor(address cfVault) CFReceiver(cfVault) nzAddr(cfVault) {}
 
     function _cfReceive(
@@ -22,10 +24,26 @@ contract LoopBackMock is CFReceiver, Shared {
         if (token == _ETH_ADDR) {
             // Just health check for this mock. It will never revert.
             require(msg.value == amount, "LoopbackMock: msg.value != amount");
-            IVault(_cfVault).xCallNative{value: amount}(srcChain, srcAddress, "USDC", message, address(this));
+            IVault(_cfVault).xCallNative{value: amount}(
+                srcChain,
+                srcAddress,
+                "USDC",
+                message,
+                defaultGas,
+                address(this)
+            );
         } else {
             require(IERC20(token).approve(msg.sender, amount));
-            IVault(_cfVault).xCallToken(srcChain, srcAddress, "USDC", message, IERC20(token), amount, address(this));
+            IVault(_cfVault).xCallToken(
+                srcChain,
+                srcAddress,
+                "USDC",
+                message,
+                defaultGas,
+                IERC20(token),
+                amount,
+                address(this)
+            );
         }
     }
 
@@ -35,7 +53,7 @@ contract LoopBackMock is CFReceiver, Shared {
         bytes calldata message
     ) internal override {
         uint256 ethBalance = address(this).balance;
-        IVault(_cfVault).xCallNative{value: ethBalance}(srcChain, srcAddress, "", message, address(this));
+        IVault(_cfVault).xCallNative{value: ethBalance}(srcChain, srcAddress, "", message, defaultGas, address(this));
     }
 
     receive() external payable {}

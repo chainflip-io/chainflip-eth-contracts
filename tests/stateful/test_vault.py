@@ -159,6 +159,7 @@ def test_vault(
         st_dstAddress = strategy("string", min_size=1)
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
+        st_dstNativeGas = strategy("uint")
         st_refundAddress = strategy("address")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
@@ -878,6 +879,7 @@ def test_vault(
             st_eth_amount,
             st_dstChain,
             st_message,
+            st_dstNativeGas,
             st_refundAddress,
         ):
             args = (
@@ -885,6 +887,7 @@ def test_vault(
                 st_dstAddress,
                 st_swapIntent,
                 st_message,
+                st_dstNativeGas,
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
@@ -923,6 +926,7 @@ def test_vault(
                                 st_eth_amount,
                                 st_sender,
                                 hexStr(st_message),
+                                st_dstNativeGas,
                                 st_refundAddress,
                             ]
 
@@ -935,6 +939,7 @@ def test_vault(
             st_token,
             st_dstChain,
             st_message,
+            st_dstNativeGas,
             st_refundAddress,
         ):
             args = (
@@ -942,6 +947,7 @@ def test_vault(
                 st_dstAddress,
                 st_swapIntent,
                 st_message,
+                st_dstNativeGas,
                 st_token,
                 st_token_amount,
                 st_refundAddress,
@@ -1006,6 +1012,7 @@ def test_vault(
                                 st_token_amount,
                                 st_sender,
                                 hexStr(st_message),
+                                st_dstNativeGas,
                                 st_refundAddress,
                             ]
 

@@ -14,8 +14,8 @@ import "./GovernanceCommunityGuarded.sol";
 /**
  * @title    Vault contract
  * @notice   The vault for holding and transferring ETH/tokens and deploying contracts for fetching
- *           individual deposits.
- *           It also allows users to do cross-chain swaps and calls by calling directly this contract.
+ *           individual deposits. It also allows users to do cross-chain swaps and(or) calls by
+ *           making a function call directly to this contract.
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
@@ -35,6 +35,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         address indexed sender,
         bytes message,
+        uint256 dstNativeGas,
         address refundAddress
     );
     event XCallToken(
@@ -45,6 +46,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         address indexed sender,
         bytes message,
+        uint256 dstNativeGas,
         address refundAddress
     );
     event SwapNative(uint32 dstChain, string dstAddress, string swapIntent, uint256 amount, address indexed sender);
@@ -418,9 +420,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Performs a cross-chain swap. Native tokens provided are swapped by the Chainflip Protocol for the 
-     *          token specified in the swap intent. The desired token will be transferred to the specified destination
-     *          address on the destination chain.
+     * @notice  Swaps native token for a token in another chain. The egress token will be transferred to the specified 
+     *          destination address on the destination chain.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.  It isn't preventing spamming.
 
@@ -437,16 +438,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Performs a cross-chain swap. The ERC20 token provided is swapped by the Chainflip Protocol for the 
-     *          token specified in the swap intent. The desired token will be transferred to the specified destination
-     *          address on the destination chain. The ERC20 token must be supported by the Chainflip Protocol. 
+     * @notice  Swaps ERC20 token for a token in another chain. The desired token will be transferred to the specified 
+     *          destination address on the destination chain. The provided ERC20 token must be supported by the Chainflip Protocol. 
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.
 
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    String containing the destination address on the destination chain.
      * @param swapIntent    String containing the specifics of the swap to be performed according to Chainflip's nomenclature.
-     * @param srcToken      Address of the token to swap.
+     * @param srcToken      Address of the source token to swap.
      * @param amount        Amount of tokens to swap.
      */
     function xSwapToken(
@@ -466,11 +466,26 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
+    // TODO: Think about adding a gasAmount or multiplier, potentially instead of the refund address.
+    // Or maybe it can be embedded into the swapIntent and then instead of swapIntent it should be called
+    // egressParams for the xCalls (and maybe also for the xSwaps). Or simply have a uint256, it's just
+    // that maybe the default will be used a lot and there is no need to have an extra parameter.
+    // It could also be encoded (like _adatpterParams in LayerZero) and then we probably can decode it in
+    // the CFE. At some point we could go ThorChain style (all in a string) but that seems a bit too much
+    // and very unclear.
+    // For example, it could be encoded bytes (instead of a string) with egressParams that specifies either
+    // a egressToken+egressGasAmount or only egressGasAmount. Depends on how flexible we want to do it for
+    // the future.
+    // Also, consider this given that leaving the swapIntent empty was what was signaling pure CCM.
+    // In the future we can allow the dstGas to be 0 signaling that it will be paid in the egressChain or that
+    // the user wants the transaction to send it himself.
+    // The advantatge of having it as part of the string swapIntent is that it makes it optional - if there is
+    // no specified cost then we go for our default.
+
     /**
-     * @notice  Performs a cross-chain call to the destination chain and destination address. Native tokens must be paid
-     *          to this contract. The swap intent determines whether the provided tokens should be swapped to a different token
-     *          by the Chainflip Protocol. If so, the swapped tokens will be transferred to the destination chain as part
-     *          of the cross-chain call. Otherwise, the tokens are used as a payment for gas on the destination chain.
+     * @notice  Performs a cross-chain call to the destination address on the destination chain. Native tokens must be paid
+     *          to this contract. The swap intent determines if the provided tokens should be swapped to a different token
+     *          and transferred as part of the cross-chain call. Otherwise, all tokens are used as a payment for gas on the destination chain.
      *          The message parameter is transmitted to the destination chain as part of the cross-chain call.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity inidcate that an amount is required. It isn't preventing spamming.
@@ -481,6 +496,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. An empty swapIntent implies that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
+     * @param dstNativeGas  The amount of native gas to be used on the destination chain's call.
      * @param refundAddress Address to refund any excess gas left from the execution of the xCall on the dstChain. This address
      *                      is in the context of the srcChain.
      */
@@ -489,9 +505,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string memory dstAddress,
         string memory swapIntent,
         bytes calldata message,
+        uint256 dstNativeGas,
         address refundAddress
     ) external payable override onlyNotSuspended xCallsEnabled nzUint(msg.value) {
-        emit XCallNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender, message, refundAddress);
+        emit XCallNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender, message, dstNativeGas, refundAddress);
     }
 
     /**
@@ -509,7 +526,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param swapIntent    String containing the specifics of the swap to be performed as part of the xCall. An empty swapIntent
      *                       implies that no swap needs to take place and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param srcToken      Address of the token to swap.
+     * @param dstNativeGas  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
+     *                      source token.
+     * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
      * @param refundAddress Address to refund any excess gas left from the execution of the xCall on the dstChain. This address
      *                      is in the context of the srcChain.
@@ -519,6 +538,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string memory dstAddress,
         string memory swapIntent,
         bytes calldata message,
+        uint256 dstNativeGas,
         IERC20 srcToken,
         uint256 amount,
         address refundAddress
@@ -532,6 +552,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             amount,
             msg.sender,
             message,
+            dstNativeGas,
             refundAddress
         );
     }

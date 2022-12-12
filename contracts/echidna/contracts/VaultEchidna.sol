@@ -66,9 +66,10 @@ contract VaultEchidna is IShared {
         string memory dstAddress,
         string memory swapIntent,
         bytes calldata message,
+        uint256 dstNativeGas,
         address refundAddress
     ) external payable virtual {
-        v.xCallNative{value: msg.value}(dstChain, dstAddress, swapIntent, message, refundAddress);
+        v.xCallNative{value: msg.value}(dstChain, dstAddress, swapIntent, message, dstNativeGas, refundAddress);
     }
 
     function xCallToken(
@@ -76,11 +77,12 @@ contract VaultEchidna is IShared {
         string memory dstAddress,
         string memory swapIntent,
         bytes calldata message,
+        uint256 dstNativeGas,
         IERC20 srcToken,
         uint256 amount,
         address refundAddress
     ) external virtual {
-        v.xCallToken(dstChain, dstAddress, swapIntent, message, srcToken, amount, refundAddress);
+        v.xCallToken(dstChain, dstAddress, swapIntent, message, dstNativeGas, srcToken, amount, refundAddress);
     }
 
     function executexSwapAndCall(

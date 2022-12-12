@@ -53,6 +53,7 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             "dstAddress",
             "swapIntent",
             JUNK_HEX,
+            JUNK_INT,
             token,
             st_amount,
             st_receiver,
@@ -75,6 +76,7 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             "dstAddress",
             "swapIntent",
             JUNK_HEX,
+            JUNK_INT,
             st_receiver,
             {"from": st_receiver, "amount": st_amount},
         )

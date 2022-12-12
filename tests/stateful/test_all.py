@@ -287,6 +287,7 @@ def test_all(
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
         st_refundAddress = strategy("address")
+        st_dstNativeGas = strategy("uint")
 
         # KeyManager
 
@@ -1104,6 +1105,7 @@ def test_all(
             st_eth_amount,
             st_dstChain,
             st_message,
+            st_dstNativeGas,
             st_refundAddress,
         ):
             args = (
@@ -1111,6 +1113,7 @@ def test_all(
                 st_dstAddress,
                 st_swapIntent,
                 st_message,
+                st_dstNativeGas,
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
@@ -1149,6 +1152,7 @@ def test_all(
                                 st_eth_amount,
                                 st_sender,
                                 hexStr(st_message),
+                                st_dstNativeGas,
                                 st_refundAddress,
                             ]
 
@@ -1161,6 +1165,7 @@ def test_all(
             st_token,
             st_dstChain,
             st_message,
+            st_dstNativeGas,
             st_refundAddress,
         ):
             args = (
@@ -1168,6 +1173,7 @@ def test_all(
                 st_dstAddress,
                 st_swapIntent,
                 st_message,
+                st_dstNativeGas,
                 st_token,
                 st_token_amount,
                 st_refundAddress,
@@ -1232,6 +1238,7 @@ def test_all(
                                 st_token_amount,
                                 st_sender,
                                 hexStr(st_message),
+                                st_dstNativeGas,
                                 st_refundAddress,
                             ]
 

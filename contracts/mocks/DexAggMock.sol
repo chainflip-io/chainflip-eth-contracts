@@ -24,6 +24,8 @@ bytes4 constant FUNC_SELECTOR = bytes4(keccak256("swapMock(address,address,uint2
 contract DexAggSrcChainMock is Shared {
     using SafeERC20 for IERC20;
 
+    uint256 private constant defaultGas = 200000;
+
     address private _cfVault;
 
     constructor(address cfVault) nzAddr(cfVault) {
@@ -45,7 +47,14 @@ contract DexAggSrcChainMock is Shared {
         // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
-        IVault(_cfVault).xCallNative{value: msg.value}(dstChain, dstAddress, swapIntent, message, msg.sender);
+        IVault(_cfVault).xCallNative{value: msg.value}(
+            dstChain,
+            dstAddress,
+            swapIntent,
+            message,
+            defaultGas,
+            msg.sender
+        );
     }
 
     function swapTokenAndCallViaChainflip(
@@ -67,7 +76,16 @@ contract DexAggSrcChainMock is Shared {
         // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
         require(IERC20(srcToken).approve(_cfVault, srcAmount));
-        IVault(_cfVault).xCallToken(dstChain, dstAddress, swapIntent, message, IERC20(srcToken), srcAmount, msg.sender);
+        IVault(_cfVault).xCallToken(
+            dstChain,
+            dstAddress,
+            swapIntent,
+            message,
+            defaultGas,
+            IERC20(srcToken),
+            srcAmount,
+            msg.sender
+        );
     }
 }
 

@@ -68,6 +68,7 @@ def test_dex_executexCallNative(
     assert tx.events["XCallNative"]["amount"] == st_amount
     assert tx.events["XCallNative"]["sender"] == dexAggSrcMock.address
     assert tx.events["XCallNative"]["refundAddress"] == st_sender
+    assert tx.events["XCallNative"]["dstNativeGas"] == 200000
 
     # Mimick witnessing and executing the xSwap
 
@@ -183,6 +184,7 @@ def test_dex_executexCallToken(
     assert tx.events["XCallToken"]["amount"] == st_amount
     assert tx.events["XCallToken"]["sender"] == dexAggSrcMock.address
     assert tx.events["XCallToken"]["refundAddress"] == st_sender
+    assert tx.events["XCallToken"]["dstNativeGas"] == 200000
 
     # Mimick witnessing and executing the xSwap
 
