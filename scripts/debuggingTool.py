@@ -4,16 +4,19 @@ from os import environ, path
 sys.path.append(path.abspath("tests"))
 from consts import *
 
-from brownie import accounts, StakeManager, FLIP, chain, web3
+from brownie import accounts, StakeManager, FLIP, Vault, KeyManager, MockUSDC, web3
 from brownie.convert import to_address
 from brownie.network.event import _decode_logs
 
 import inspect
 
-# TODO: To add other contracts? At least USDC.
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
 STAKE_MANAGER_ADDRESS = environ["STAKE_MANAGER_ADDRESS"]
-VAULT_ADDRESS = environ["STAKE_MANAGER_ADDRESS"]
+VAULT_ADDRESS = environ["VAULT_ADDRESS"]
+
+# USDC and KeyManager are optional
+USDC_ADDRESS = environ.get("USDC_ADDRESS") or ZERO_ADDR
+KEY_MANAGER_ADDRESS = environ.get("KEY_MANAGER_ADDRESS") or ZERO_ADDR
 
 
 AUTONOMY_SEED = environ["SEED"]
@@ -24,30 +27,52 @@ userAddress = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
 
 # Define a dictionary of available commands and their corresponding functions
+
+# TODO: Allow floats for transfers and stakes
 commands = {
     "help": (lambda: help(), "Prints help", []),
-    "balance": (
-        lambda address: balance(address),
-        "Get the balance of an account.",
-        ["address"],
-    ),
-    "balanceFlip": (
-        lambda address: balanceFlip(address),
-        "Get the balance of an account",
-        ["address"],
-    ),
     "contracts": (lambda: print(contractAddresses), "Prints addresses", []),
     "user": (lambda: print(userAddress), "Prints current user address", []),
     "walletAddrs": (lambda: print(walletAddrs), "Show wallet addresses", []),
     "changeAddr": (
         lambda walletNr: changeAddr(walletNr),
-        "Change selected address",
-        ["int"],
+        "Change current address to set walletAddrs number",
+        ["uint256"],
+    ),
+    "balanceEth": (
+        lambda address: balanceEth(address),
+        "Get the Eth balance of an account.",
+        ["address"],
+    ),
+    "balanceFlip": (
+        lambda address: balanceFlip(address),
+        "Get the Flip balance of an account",
+        ["address"],
+    ),
+    "balanceUsdc": (
+        lambda address: balanceUsdc(address),
+        "Get the USDC balance of an account",
+        ["address"],
+    ),
+    "transferEth": (
+        lambda amount, address: transferEth(amount, address),
+        "Transfer Eth to an account. Input should be a float amount in eth`",
+        ["float", "address"],
+    ),
+    "transferFlip": (
+        lambda amount, address: transferFlip(amount, address),
+        "Transfer Flip to an account. Input should be a float amount in Flip (18 decimals)",
+        ["float", "address"],
+    ),
+    "transferUsdc": (
+        lambda amount, address: transferUsdc(amount, address),
+        "Transfer USDC to an account. Input should be a float amount in USDC (6 decimals)",
+        ["float", "address"],
     ),
     "stake": (
         lambda flipAmount, nodeId: stake(flipAmount, nodeId),
         "Stake flip from the user address",
-        ["int", "int"],
+        ["float", "bytes32"],
     ),
     "displaytx": (
         lambda txHash: display_tx(txHash),
@@ -64,13 +89,20 @@ contractAddresses = {
 }
 
 walletAddrs = {}
-seedNumber = 1
+seedNumber = 0
 for cf_acc in cf_accs:
     walletAddrs[str(seedNumber)] = cf_acc
     seedNumber += 1
 
 flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
 stakeManager = StakeManager.at(f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}")
+vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
+if KEY_MANAGER_ADDRESS != ZERO_ADDR:
+    keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
+    contractAddresses["keyManager"] = KEY_MANAGER_ADDRESS
+if USDC_ADDRESS != ZERO_ADDR:
+    usdc = MockUSDC.at(f"0x{cleanHexStr(USDC_ADDRESS)}")
+    contractAddresses["usdc"] = USDC_ADDRESS
 
 
 def main():
@@ -92,7 +124,7 @@ def main():
             if len(args) == argcount == len(commands[cmd][2]):
                 i = 0
                 while i < argcount:
-                    args[i] = convertToType(args[i], commands[cmd][2][i])
+                    args[i] = checkAndConvertToType(args[i], commands[cmd][2][i])
                     i += 1
 
                 if None in args:
@@ -119,7 +151,7 @@ def help():
     # Print the available commands and their descriptions
     print("\nUsage:  command <arg0> <arg1> ... <argN>\n")
     print("Available commands:")
-    for name, (func, description, argsType) in commands.items():
+    for name, (func, description, _) in commands.items():
         # print("{0:17} {1}".format("  " + name, description))
 
         params = inspect.getfullargspec(func).args
@@ -128,7 +160,7 @@ def help():
         print("{0:14} {1:23}{2}".format("  " + name, argsString, description))
 
 
-def balance(address):
+def balanceEth(address):
     print(
         "ETH Balance of", str(address), ":", web3.eth.get_balance(str(address)) / E_18
     )
@@ -138,6 +170,15 @@ def balanceFlip(a):
     balanceToken("FLIP", flip, a)
 
 
+def balanceUsdc(a):
+    if "usdc" not in contractAddresses:
+        print(
+            "No USDC contract address provided. Please set the USDC_ADDRESS env variable"
+        )
+        return
+    balanceToken("USDC", usdc, a)
+
+
 def balanceToken(tokenName, tokenAddress, address):
     print(
         f"{tokenName} balance of",
@@ -145,6 +186,29 @@ def balanceToken(tokenName, tokenAddress, address):
         ":",
         tokenAddress.balanceOf(address) / 10 ** (tokenAddress.decimals()),
     )
+
+
+def transferEth(amount, address):
+    tx = userAddress.transfer(address, str(amount) + " ether")
+    tx.info()
+
+
+def transferFlip(amount, address):
+    transferToken("FLIP", flip, amount, address)
+
+
+def transferUsdc(amount, address):
+    transferToken("USDC", usdc, amount, address)
+
+
+def transferToken(tokenName, tokenAddress, amount, address):
+    print(f"Sending {amount} {tokenName} to {address}")
+    tx = tokenAddress.transfer(
+        address,
+        amount * 10 ** (tokenAddress.decimals()),
+        {"from": userAddress, "required_confs": 1},
+    )
+    tx.info()
 
 
 def changeAddr(accountIndex):
@@ -215,15 +279,19 @@ def getAddress(a):
             return None
 
 
-def convertToType(input, type):
-    if type == "int":
+def checkAndConvertToType(input, type):
+    if type == "uint256":
         if input.isdigit():
-            return int(input)
+            number = int(input)
+            if number >= 0 and number <= 2**256 - 1:
+                return number
         else:
             print("Invalid type - introduce an integer")
     elif type == "float":
         try:
-            return float(input)
+            number = float(input)
+            if number >= 0 and number <= 2**256 - 1:
+                return float(input)
         except ValueError:
             print("Invalid type - introduce an float")
     elif type == "address":
