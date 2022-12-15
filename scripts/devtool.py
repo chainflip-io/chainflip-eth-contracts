@@ -161,10 +161,10 @@ else:
 keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
 
 contractAddresses = {
-    "flip": FLIP_ADDRESS,
-    "stakeManager": STAKE_MANAGER_ADDRESS,
-    "vault": VAULT_ADDRESS,
-    "keyManager": KEY_MANAGER_ADDRESS,
+    "flip": f"0x{cleanHexStr(FLIP_ADDRESS)}",
+    "stakeManager": f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}",
+    "vault": f"0x{cleanHexStr(VAULT_ADDRESS)}",
+    "keyManager": f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}",
 }
 
 
@@ -215,7 +215,11 @@ def main():
 
 def help():
     # Print the available commands and their descriptions
-    print("\nUsage:  command <arg0> <arg1> ... <argN>\n")
+    print("\nUsage:  command <arg0> <arg1> ... <argN>")
+    print(
+        "Note: Contract names can be used as addresses including `user` `vault`, `stakeManager` ...\n"
+    )
+
     print("Available commands:\n")
     for name, (func, description, _) in commands.items():
         # print("{0:17} {1}".format("  " + name, description))
@@ -224,6 +228,7 @@ def help():
         argsString = "<" + "> <".join(params) + ">" if len(params) != 0 else ""
 
         print("{0:18} {1:21}{2}".format("   " + name, argsString, description))
+    print()
 
 
 def balanceEth(address):
