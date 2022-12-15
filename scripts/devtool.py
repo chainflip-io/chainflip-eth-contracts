@@ -119,7 +119,7 @@ commands = {
     ),
     "isNonceUsed": (
         lambda nonce: isNonceUsed(nonce),
-        "Check if the nonce has been used",
+        "Check if a nonce has been used in the KeyManager",
         ["uint256"],
     ),
     "viewLastTime": (
@@ -140,12 +140,6 @@ commands = {
     "exit": (lambda: exit(), "Exits the program", []),
 }
 
-contractAddresses = {
-    "flip": FLIP_ADDRESS,
-    "stakeManager": STAKE_MANAGER_ADDRESS,
-    "vault": VAULT_ADDRESS,
-}
-
 walletAddrs = {}
 seedNumber = 0
 for cf_acc in cf_accs:
@@ -155,15 +149,33 @@ for cf_acc in cf_accs:
 flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
 stakeManager = StakeManager.at(f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}")
 vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
+
+
 if KEY_MANAGER_ADDRESS != ZERO_ADDR:
-    keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
-    contractAddresses["keyManager"] = KEY_MANAGER_ADDRESS
+    assert (
+        KEY_MANAGER_ADDRESS == vault.getKeyManager()
+    ), "KEY_MANAGER_ADDRESS provided doesn't match the contract address that the other contracts point to. Please provide the correct KEY_MANAGER_ADDRESS or remove it from the .env fil"
+else:
+    KEY_MANAGER_ADDRESS = vault.getKeyManager()
+
+keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
+
+contractAddresses = {
+    "flip": FLIP_ADDRESS,
+    "stakeManager": STAKE_MANAGER_ADDRESS,
+    "vault": VAULT_ADDRESS,
+    "keyManager": KEY_MANAGER_ADDRESS,
+}
+
+
 if USDC_ADDRESS != ZERO_ADDR:
     usdc = MockUSDC.at(f"0x{cleanHexStr(USDC_ADDRESS)}")
     contractAddresses["usdc"] = USDC_ADDRESS
 
 
 def main():
+
+    print("\n*** Devtool started. Type 'help' for a list of commands ***\n")
 
     while True:
         user_input = input("> ")
@@ -204,7 +216,7 @@ def main():
 def help():
     # Print the available commands and their descriptions
     print("\nUsage:  command <arg0> <arg1> ... <argN>\n")
-    print("Available commands:")
+    print("Available commands:\n")
     for name, (func, description, _) in commands.items():
         # print("{0:17} {1}".format("  " + name, description))
 
@@ -256,13 +268,6 @@ def checkUsdcContract():
     if "usdc" not in contractAddresses:
         raise Exception(
             "No USDC contract address provided. Please set the USDC_ADDRESS env variable"
-        )
-
-
-def checkKeyManagerContract():
-    if "keyManager" not in contractAddresses:
-        raise Exception(
-            "No KeyManager contract address provided. Please set the KEY_MANAGER_ADDRESS env variable"
         )
 
 
@@ -333,7 +338,6 @@ def viewMinStake():
 
 
 def viewAggKey():
-    checkKeyManagerContract()
     aggKey = keyManager.getAggregateKey()
     print(f"Aggregate key: {aggKey}")
 
@@ -349,7 +353,6 @@ def viewCommKey():
 
 
 def isNonceUsed(nonce):
-    checkKeyManagerContract()
     used = keyManager.isNonceUsedByAggKey(nonce)
     if used:
         print(f"Nonce {nonce} has been used")
@@ -358,7 +361,6 @@ def isNonceUsed(nonce):
 
 
 def viewLastTime():
-    checkKeyManagerContract()
     lastTime = keyManager.getLastValidateTime()
     print(f"Last time: {lastTime}")
 
@@ -369,16 +371,17 @@ def viewCurrentTime():
 
 # TODO: Add swapNative and swapToken through the Vault.
 # TODO: enableSwaps will need to be renamed to enablexCalls
+# TODO: Add functions to fetch previous fetch events?
 def enableVaultSwaps():
     tx = vault.enableSwaps({"from": userAddress, "required_confs": 1})
     tx.info()
-    print(">> Vault swaps enabled succesfully <<")
+    print("** Vault swaps enabled succesfully **")
 
 
 def disableVaultSwaps():
     tx = vault.disableSwaps({"from": userAddress, "required_confs": 1})
     tx.info()
-    print(">> Vault swaps disabled succesfully <<")
+    print("** Vault swaps disabled succesfully **")
 
 
 # We can't display it the same way as for a brownie-broadcasted transaction (tx.info()).
