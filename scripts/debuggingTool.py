@@ -4,7 +4,16 @@ from os import environ, path
 sys.path.append(path.abspath("tests"))
 from consts import *
 
-from brownie import accounts, StakeManager, FLIP, Vault, KeyManager, MockUSDC, web3
+from brownie import (
+    accounts,
+    StakeManager,
+    FLIP,
+    Vault,
+    KeyManager,
+    MockUSDC,
+    web3,
+    chain,
+)
 from brownie.convert import to_address
 from brownie.network.event import _decode_logs
 
@@ -28,7 +37,6 @@ userAddress = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
 # Define a dictionary of available commands and their corresponding functions
 
-# TODO: Allow floats for transfers and stakes
 commands = {
     "help": (lambda: help(), "Prints help", []),
     "contracts": (lambda: print(contractAddresses), "Prints addresses", []),
@@ -36,7 +44,7 @@ commands = {
     "walletAddrs": (lambda: print(walletAddrs), "Show wallet addresses", []),
     "changeAddr": (
         lambda walletNr: changeAddr(walletNr),
-        "Change current address to set walletAddrs number",
+        "Sete the user address to that walletAddrs number",
         ["uint256"],
     ),
     "balanceEth": (
@@ -61,18 +69,68 @@ commands = {
     ),
     "transferFlip": (
         lambda amount, address: transferFlip(amount, address),
-        "Transfer Flip to an account. Input should be a float amount in Flip (18 decimals)",
+        "Transfer Flip to an account.Input float amount up to 18 decimals",
         ["float", "address"],
     ),
     "transferUsdc": (
         lambda amount, address: transferUsdc(amount, address),
-        "Transfer USDC to an account. Input should be a float amount in USDC (6 decimals)",
+        "Transfer USDC to an account. Input float amount up to 6 decimals",
         ["float", "address"],
     ),
     "stake": (
-        lambda flipAmount, nodeId: stake(flipAmount, nodeId),
+        lambda amount, nodeId: stake(amount, nodeId),
         "Stake flip from the user address",
         ["float", "bytes32"],
+    ),
+    "executeClaim": (
+        lambda nodeId: executeClaim(nodeId),
+        "Execute an registered claim",
+        ["bytes32"],
+    ),
+    "enableSwaps": (
+        lambda: enableVaultSwaps(),
+        "Enable Vault swaps. User needs to be the governance address",
+        [],
+    ),
+    "disableSwaps": (
+        lambda: disableVaultSwaps(),
+        "Disable Vault swaps. User needs to be the governance address",
+        [],
+    ),
+    "viewMinStake": (
+        lambda: viewMinStake(),
+        "Display the minimum stake",
+        [],
+    ),
+    "viewAggKey": (
+        lambda: viewAggKey(),
+        "Display the Aggregate key",
+        [],
+    ),
+    "viewGovKey": (
+        lambda: viewGovKey(),
+        "Display the governance address",
+        [],
+    ),
+    "viewCommKey": (
+        lambda: viewCommKey(),
+        "Display the community address",
+        [],
+    ),
+    "isNonceUsed": (
+        lambda nonce: isNonceUsed(nonce),
+        "Check if the nonce has been used",
+        ["uint256"],
+    ),
+    "viewLastTime": (
+        lambda: viewLastTime(),
+        "Display the last time a signature was validated",
+        [],
+    ),
+    "viewCurrentTime": (
+        lambda: viewCurrentTime(),
+        "Display the current time (block timestamp)",
+        [],
     ),
     "displaytx": (
         lambda txHash: display_tx(txHash),
@@ -131,16 +189,12 @@ def main():
                     print("Argument in position {} is invalid".format(args.index(None)))
                     continue
 
-                # TODO: We can have a try-catch hjere to ensure we never crash the tool.
-                # We don't have it for development to be able to see the errors.
-                func(*args)
-
-                # Try except to catch any unexpected errors
-                # try:
-                #     # Call the function with the arguments
-                #     func(*args)
-                # except:
-                #     print("Error executing command")
+                # Catch any errors thrown by this logic or by the transaction execution
+                try:
+                    # Call the function with the arguments
+                    func(*args)
+                except Exception as e:
+                    print(f"Command failed: {e}")
             else:
                 print(f"Invalid number of arguments for command {cmd}")
         else:
@@ -157,7 +211,7 @@ def help():
         params = inspect.getfullargspec(func).args
         argsString = "<" + "> <".join(params) + ">" if len(params) != 0 else ""
 
-        print("{0:14} {1:23}{2}".format("  " + name, argsString, description))
+        print("{0:18} {1:21}{2}".format("   " + name, argsString, description))
 
 
 def balanceEth(address):
@@ -171,11 +225,7 @@ def balanceFlip(a):
 
 
 def balanceUsdc(a):
-    if "usdc" not in contractAddresses:
-        print(
-            "No USDC contract address provided. Please set the USDC_ADDRESS env variable"
-        )
-        return
+    checkUsdcContract()
     balanceToken("USDC", usdc, a)
 
 
@@ -198,7 +248,22 @@ def transferFlip(amount, address):
 
 
 def transferUsdc(amount, address):
+    checkUsdcContract()
     transferToken("USDC", usdc, amount, address)
+
+
+def checkUsdcContract():
+    if "usdc" not in contractAddresses:
+        raise Exception(
+            "No USDC contract address provided. Please set the USDC_ADDRESS env variable"
+        )
+
+
+def checkKeyManagerContract():
+    if "keyManager" not in contractAddresses:
+        raise Exception(
+            "No KeyManager contract address provided. Please set the KEY_MANAGER_ADDRESS env variable"
+        )
 
 
 def transferToken(tokenName, tokenAddress, amount, address):
@@ -246,6 +311,76 @@ def stake(amount, node_id):
     tx.info()
 
 
+def executeClaim(nodeId):
+    tx = stakeManager.executeClaim(nodeId, {"from": userAddress, "required_confs": 1})
+    print(f"Executing claim for node {nodeId} in tx {tx.txid}")
+    tx.info()
+
+
+def viewPendClaim(nodeId):
+    claim = stakeManager.getPendingClaim(nodeId)
+    if claim == [0, ZERO_ADDR, 0, 0]:
+        print(f"No pending claim for node {nodeId}")
+    else:
+        print(
+            f"Claim with for node {nodeId} with amount {claim[0]}, staker {claim[1]}, startTime {claim[2]}, expiryTime {claim[3]}"
+        )
+
+
+def viewMinStake():
+    minStake = stakeManager.getMinimumStake()
+    print(f"Min stake: {minStake / 10 ** (flip.decimals())} FLIP ")
+
+
+def viewAggKey():
+    checkKeyManagerContract()
+    aggKey = keyManager.getAggregateKey()
+    print(f"Aggregate key: {aggKey}")
+
+
+def viewGovKey():
+    governor = vault.getGovernor()
+    print(f"Governor address: {governor}")
+
+
+def viewCommKey():
+    communityKey = vault.getCommunityKey()
+    print(f"Community Address: {communityKey}")
+
+
+def isNonceUsed(nonce):
+    checkKeyManagerContract()
+    used = keyManager.isNonceUsedByAggKey(nonce)
+    if used:
+        print(f"Nonce {nonce} has been used")
+    else:
+        print(f"Nonce {nonce} has not been used")
+
+
+def viewLastTime():
+    checkKeyManagerContract()
+    lastTime = keyManager.getLastValidateTime()
+    print(f"Last time: {lastTime}")
+
+
+def viewCurrentTime():
+    print(f"Current time: {chain.time()}")
+
+
+# TODO: Add swapNative and swapToken through the Vault.
+# TODO: enableSwaps will need to be renamed to enablexCalls
+def enableVaultSwaps():
+    tx = vault.enableSwaps({"from": userAddress, "required_confs": 1})
+    tx.info()
+    print(">> Vault swaps enabled succesfully <<")
+
+
+def disableVaultSwaps():
+    tx = vault.disableSwaps({"from": userAddress, "required_confs": 1})
+    tx.info()
+    print(">> Vault swaps disabled succesfully <<")
+
+
 # We can't display it the same way as for a brownie-broadcasted transaction (tx.info()).
 def display_tx(txHash):
 
@@ -258,7 +393,10 @@ def display_tx(txHash):
     print("--------- Raw transaction receipt -----------")
     print(receipt)
     print("--------- Events log -----------")
-    print(_decode_logs(receipt.logs))
+    decodedLogs = _decode_logs(receipt.logs)
+    for eventName, values in decodedLogs.items():
+        # Print each key-value pair in the format "key: item"
+        print("{}: {}".format(eventName, values))
 
 
 def getAddress(a):
