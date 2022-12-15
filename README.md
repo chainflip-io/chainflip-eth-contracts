@@ -168,7 +168,7 @@ The tool runs within the brownie framework and acts as a console-like client.
 # to import the private network configuration
 brownie networks import ./network-config.yaml
 # set the RPC_URL that should be used to access the chain
-export RPC_URL=<rpc_url>
+export RPC_URL=<your_rpc_url>
 
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED="<your seed phrase>"
