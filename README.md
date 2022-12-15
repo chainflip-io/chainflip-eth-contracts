@@ -185,9 +185,19 @@ export KEY_MANAGER_ADDRESS=<Address of the deployed KeyManager contract>
 # Run the tool
 brownie run devtool --network private-testnet
 
-# Inside the tool, run `help` to display all supported commands
-help
+# When running the tool:
+# Run `help` to display all supported commands
+>> help
+
+# Display user address
+>> user
+
+# Example of checking the ETH balance of the stakeManager
+>> balanceEth stakeManager
+
+# Example of staking 2k FLIP for nodeId 0xDEADBEEF to the Stake Manager
+>> stake 2000 0xDEADBEEF
 
 # To eventually exit the tool
-exit
+>> exit
 ```
