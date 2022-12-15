@@ -161,7 +161,7 @@ brownie run deploy_contracts --network rinkeby-alchemy
 
 A dev tool is available ease the development and debugging on locally deployed network. To use it, first ensure that you have been through the setup process and you are inside the poetry shell.
 
-The tool runs within the brownie framwork and acts as a console-like client.
+The tool runs within the brownie framework and acts as a console-like client.
 
 
 ```bash
