@@ -18,6 +18,7 @@ from brownie.convert import to_address
 from brownie.network.event import _decode_logs
 
 import inspect
+from datetime import datetime
 
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
 STAKE_MANAGER_ADDRESS = environ["STAKE_MANAGER_ADDRESS"]
@@ -368,10 +369,17 @@ def isNonceUsed(nonce):
 def viewLastTime():
     lastTime = keyManager.getLastValidateTime()
     print(f"Last time: {lastTime}")
+    printUserReadableTime(lastTime)
 
 
 def viewCurrentTime():
-    print(f"Current time: {chain.time()}")
+    timestamp = chain.time()
+    print(f"Current time: {timestamp}")
+    printUserReadableTime(timestamp)
+
+
+def printUserReadableTime(timestamp):
+    print(f"User readable time: {datetime.fromtimestamp(timestamp)}")
 
 
 # TODO: Add swapNative and swapToken through the Vault.
