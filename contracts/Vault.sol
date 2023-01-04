@@ -681,18 +681,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // only be done if we verify it's the same sender that initiated the swap (emit the msg.sender).
     // NOTE: This could be features for later on, and together with the refundAddress it might
     // be worth removing and maybe adding in the future.
-    function addGasNative(bytes32 swapID) external payable xCallsEnabled {
-        emit AddNativeGas(swapID, msg.value);
-    }
 
-    function addGasToken(
-        bytes32 swapID,
-        IERC20 token,
-        uint256 amount
-    ) external nzUint(amount) xCallsEnabled {
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        emit AddGas(swapID, address(token), amount);
-    }
+    // function addGasNative(bytes32 swapID) external payable xCallsEnabled {
+    //     emit AddNativeGas(swapID, msg.value);
+    // }
+
+    // function addGasToken(
+    //     bytes32 swapID,
+    //     IERC20 token,
+    //     uint256 amount
+    // ) external nzUint(amount) xCallsEnabled {
+    //     IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+    //     emit AddGas(swapID, address(token), amount);
+    // }
 
     //////////////////////////////////////////////////////////////
     //                                                          //
