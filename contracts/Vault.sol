@@ -389,29 +389,25 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity (and others).
     ///      They do it because in the context of providing liquidity, the dstAddress doesn't make sense.
     ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
-    ///      In our case reusing this function is not great anyway (due to message and refundAddress paramts). Also, for any other chain
-    ///      the ingressAddress method will be used, so having a function to provide liquidity doesn't seem particularly useful.
     //       Depending on LiFi (and also on us) we can explore having just one long string (like ThorChain memo). Better gas and
     //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
     //       it makes less redable and cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the
-    //       dstChain it is a pain to check srcChain as a string. As of now I would stick to separate parameters.
-    // NOTE: Lifi for some reason constructs the strings and message on-chain e.g. converting EVM address to string on-chain by using
-    //       OZ's string library. That is a huge waste of gas, instead of passing the address as a string directly. Why do they do
-    //       that? Seems like they are still not live with Axelar, so it might still be under development, since that doesn't make sense.
-    //       Maybe they have it to allow a direct swap to Axelar but it's still not integrated properly into the LiFi backend.
+    //       dstChain it is a pain to check srcChain as a string. As of now I would stick to separate parameters. Finally, seems like
+    //       this memo string is not used by anyone else - the standard seems to be different parameters.
 
     // TODO: Decide if we want a refund address for retrospective refund. We cannot simply refund the srcAddress because in case of
-    //       a DEX aggregator we want to refund the user, not the DEX Agg Contract.
+    //       a DEX aggregator we want to refund the user, not the DEX Agg Contract. TBD in the next meeting.
     // TODO: Decide if we want to have gas topups in the future. Those could be done in the ingress or egress chain. Ingress is the
     //       normal way, but egress' native token makes refunds simpler.
-    // TODO: We could also consider issuing the refunds on the egress chains to a passed string (instead of an address like now).
     // TODO: To think what gating (xCallsEnabled) we want to have if any, since that costs gas (sload).
     // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is very expensive
-    //       gas-wise, for example using OZ's Strings library.
+    //       gas-wise, for example using OZ's Strings library. Not sure it's worth it.
     // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xCallToken but passing an empty swapIntent.
     //       If we want to optimize pure CCM then we could create two extra functions (paying with native or with token) that don't
     //       require an empty swapIntent, which wastes gas. But I would say that this is fine for now.
-    // TODO: Consider the try/catch explained at _executexSwapAndCall
+    // TODO: Setting the dstNativeGas to zero could potentially be used to allow the user to pay for the gas in the
+    //       dstchain (toping up gas) or for the protocol to display the payload so the user can send the transaction
+    //       himself, paying for the gas.
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -465,22 +461,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                     SrcChain xCall                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    // TODO: Think about adding a gasAmount or multiplier, potentially instead of the refund address.
-    // Or maybe it can be embedded into the swapIntent and then instead of swapIntent it should be called
-    // egressParams for the xCalls (and maybe also for the xSwaps). Or simply have a uint256, it's just
-    // that maybe the default will be used a lot and there is no need to have an extra parameter.
-    // It could also be encoded (like _adatpterParams in LayerZero) and then we probably can decode it in
-    // the CFE. At some point we could go ThorChain style (all in a string) but that seems a bit too much
-    // and very unclear.
-    // For example, it could be encoded bytes (instead of a string) with egressParams that specifies either
-    // a egressToken+egressGasAmount or only egressGasAmount. Depends on how flexible we want to do it for
-    // the future.
-    // Also, consider this given that leaving the swapIntent empty was what was signaling pure CCM.
-    // In the future we can allow the dstGas to be 0 signaling that it will be paid in the egressChain or that
-    // the user wants the transaction to send it himself.
-    // The advantatge of having it as part of the string swapIntent is that it makes it optional - if there is
-    // no specified cost then we go for our default.
 
     /**
      * @notice  Performs a cross-chain call to the destination address on the destination chain. Native tokens must be paid
@@ -612,6 +592,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *         make sure the call doesn't revert, otherwise the tokens won't be transferred.
      *         The _transfer function is not used because we want to be able to embed the native token
      *         into the cfReceive call to avoid doing two external calls.
+     *         In case of revertion the tokens will remain in the Vault. Therefore, the destination
+     *         contract must ensure it doesn't revert e.g. using try-catch mechanisms.
      */
     function _executexSwapAndCall(
         TransferParams calldata transferParams,
@@ -619,10 +601,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string calldata srcAddress,
         bytes calldata message
     ) private {
-        // TODO: We could consider a try/catch (or low level call here) so in case the call reverts we
-        // can still transfer the tokens to the recipient. This way we ensure that tokens will never
-        // get stuck. ThorChain does this. And if instead of a user the recipient is a DEX aggregator,
-        // they handle external calls (to a DEX) in a try/catch themselves, so this wouldn't trigger.
         if (transferParams.token == _ETH_ADDR) {
             ICFReceiver(transferParams.recipient).cfReceive{value: transferParams.amount}(
                 srcChain,
@@ -700,7 +678,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     // handle/swap internally. To add verification if we want this.
     // Potentially we could use this two functions to allow the user to cancel an egress
     // transaction. This could be done by sending zero amount and signaling the swapID. This could
-    // only be done if we verify it's the same sender that initiated the swap.
+    // only be done if we verify it's the same sender that initiated the swap (emit the msg.sender).
     // NOTE: This could be features for later on, and together with the refundAddress it might
     // be worth removing and maybe adding in the future.
     function addGasNative(bytes32 swapID) external payable xCallsEnabled {
