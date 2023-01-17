@@ -58,8 +58,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.sm.setMinStake(INIT_MIN_STAKE)
 
             # Eth bals shouldn't change in this test, but just to be sure...
-            self.ethBals = {
-                # Accounts within "a" will have INIT_ETH_BAL - gas spent in setup/deployment
+            self.nativeBals = {
+                # Accounts within "a" will have INIT_NATIVE_BAL - gas spent in setup/deployment
                 addr: addr.balance() if addr in a else 0
                 for addr in self.allAddrs
             }
@@ -240,7 +240,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             chain.sleep(st_sleep_time)
 
         # Useful results are being impeded by most attempts at executeClaim not having enough
-        # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
+        # delay - having 2 sleep mnativeods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
             print("                    rule_sleep_2_days")
@@ -385,27 +385,27 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.sm.govWithdraw({"from": self.governor})
 
-        # Transfer ETH to the stakeManager to check govWithdrawalEth. Using st_staker to make sure
-        # it is a key in the ethBals dict
-        def rule_transfer_eth(self, st_staker, st_amount):
-            if self.ethBals[st_staker] >= st_amount:
-                print("                    rule_transfer_eth", st_staker, st_amount)
+        # Transfer native to the stakeManager to check govWithdrawalEth. Using st_staker to make sure
+        # it is a key in the nativeBals dict
+        def rule_transfer_native(self, st_staker, st_amount):
+            if self.nativeBals[st_staker] >= st_amount:
+                print("                    rule_transfer_native", st_staker, st_amount)
                 st_staker.transfer(self.sm, st_amount)
-                self.ethBals[st_staker] -= st_amount
-                self.ethBals[self.sm] += st_amount
+                self.nativeBals[st_staker] -= st_amount
+                self.nativeBals[self.sm] += st_amount
 
-        # Governance attemps to withdraw any ETH - final balances will be check by the invariants
+        # Governance attemps to withdraw any native - final balances will be check by the invariants
         def rule_govWithdrawalEth(self):
             print("                    rule_govWithdrawalEth")
-            self.sm.govWithdrawEth({"from": self.governor})
-            self.ethBals[self.governor] += self.ethBals[self.sm]
-            self.ethBals[self.sm] = 0
+            self.sm.govWithdrawNative({"from": self.governor})
+            self.nativeBals[self.governor] += self.nativeBals[self.sm]
+            self.nativeBals[self.sm] = 0
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
             self.numTxsTested += 1
             for addr in self.allAddrs:
-                assert addr.balance() == self.ethBals[
+                assert addr.balance() == self.nativeBals[
                     addr
                 ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
                 assert self.f.balanceOf(addr) == self.flipBals[addr]

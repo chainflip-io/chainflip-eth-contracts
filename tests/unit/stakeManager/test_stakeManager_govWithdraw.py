@@ -5,7 +5,7 @@ from test_stake import test_stake_min
 
 def test_govWithdraw(cf, stakedMin):
     # Test that governance can withdraw all the FLIP
-    # First we should stake to make sure that there is something in there
+    # First we should stake to make sure that there is somnativeing in there
     test_stake_min(cf, stakedMin)
     stakeManagerFlipBalance = cf.flip.balanceOf(cf.stakeManager)
     governorFlipBalance = cf.flip.balanceOf(cf.GOVERNOR)

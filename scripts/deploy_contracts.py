@@ -33,7 +33,7 @@ def main():
         "FLIP_ADDRESS": cf.flip.address,
     }
 
-    # Deploy USDC mimic token only on private ETH network
+    # Deploy USDC mimic token only on private NATIVE network
     if chain.id == 10997:
         cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
         print(f"USDC: {cf.mockUSDC.address}")

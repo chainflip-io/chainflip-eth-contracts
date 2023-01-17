@@ -41,7 +41,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             self.governor = cfDeployAllWhitelist.gov
             self.communityKey = cfDeployAllWhitelist.communityKey
             self.currentWhitelist = cfDeployAllWhitelist.whitelisted
-            self.ethBalskm = 0
+            self.nativeBalskm = 0
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -209,7 +209,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             chain.sleep(st_sleep_time)
 
         # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
-        # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
+        # delay - having 2 sleep mnativeods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
             print("                    rule_sleep_2_days")
@@ -307,23 +307,23 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
                         signer=self.allKeys[st_sig_key_idx],
                     )
 
-        # Transfer ETH to the keyManager to check govWithdrawalEth
-        def rule_transfer_eth(self, st_sender, st_amount):
+        # Transfer native to the keyManager to check govWithdrawalEth
+        def rule_transfer_native(self, st_sender, st_amount):
             if st_sender.balance() >= st_amount:
-                print("                    rule_transfer_eth", st_sender, st_amount)
+                print("                    rule_transfer_native", st_sender, st_amount)
                 st_sender.transfer(self.km, st_amount)
-                self.ethBalskm += st_amount
+                self.nativeBalskm += st_amount
 
-        # Governance attemps to withdraw any ETH - final balances will be check by the invariants
+        # Governance attemps to withdraw any native - final balances will be check by the invariants
         def rule_govWithdrawalEth(self):
             iniEthBalsGov = self.governor.balance()
             print("                    rule_govWithdrawalEth")
-            tx = self.km.govWithdrawEth({"from": self.governor})
+            tx = self.km.govWithdrawNative({"from": self.governor})
             assert (
-                iniEthBalsGov + self.ethBalskm
+                iniEthBalsGov + self.nativeBalskm
                 == self.governor.balance() + calculateGasTransaction(tx)
             )
-            self.ethBalskm = 0
+            self.nativeBalskm = 0
 
         def rule_govAction(self, st_sender, st_message):
             if st_sender != self.governor:
@@ -341,7 +341,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
             assert self.km.getLastValidateTime() == self.lastValidateTime
 
         def invariant_bals(self):
-            assert self.ethBalskm == self.km.balance()
+            assert self.nativeBalskm == self.km.balance()
 
         def invariant_whitelist(self):
             assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)

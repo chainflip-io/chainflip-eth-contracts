@@ -9,8 +9,8 @@ import "../interfaces/IShared.sol";
  */
 
 abstract contract Shared is IShared {
-    /// @dev The address used to indicate whether transfer should send ETH or a token
-    address internal constant _ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    /// @dev The address used to indicate whether transfer should send native or a token
+    address internal constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address internal constant _ZERO_ADDR = address(0);
     bytes32 internal constant _NULL = "";
     uint256 internal constant _E_18 = 1e18;

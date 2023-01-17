@@ -57,7 +57,7 @@ def test_consumeKeyNonce_checkAll(a, cf):
     for addr in whitelisted + list(a):
         if addr in whitelisted:
             sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-            cf.ALICE.transfer(to=addr, amount=ONE_ETH)
+            cf.ALICE.transfer(to=addr, amount=ONE_NATIVE)
             cf.keyManager.consumeKeyNonce(
                 sigData, cleanHexStr(sigData[2]), {"from": addr}
             )
@@ -73,7 +73,7 @@ def test_consumeKeyNonce_checkAll(a, cf):
 def test_consumeKeyNonce_check_whitelisted(a, cfAW):
     for addr in cfAW.whitelisted:
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-        # cfAW.ALICE.transfer(to=addr, amount=ONE_ETH)
+        # cfAW.ALICE.transfer(to=addr, amount=ONE_NATIVE)
         # Sending transaction from whitelisted non-EOA address as a workaround
         cfAW.keyManager.consumeKeyNonce(
             # sigData, cleanHexStr(sigData[2]), {"from": addr}

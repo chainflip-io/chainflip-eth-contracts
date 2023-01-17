@@ -84,12 +84,12 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
         cf.stakeManager.executeClaim(JUNK_HEX)
 
 
-@given(st_eth_amount=strategy("uint"))
-def test_suspend_registerClaim(cf, st_eth_amount):
+@given(st_native_amount=strategy("uint"))
+def test_suspend_registerClaim(cf, st_native_amount):
 
     # Suspend the StakeManager contract
     cf.stakeManager.suspend({"from": cf.GOVERNOR})
 
     with reverts(REV_MSG_GOV_SUSPENDED):
-        args = (JUNK_HEX, st_eth_amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
+        args = (JUNK_HEX, st_native_amount, cf.DENICE, getChainTime() + CLAIM_DELAY)
         signed_call_cf(cf, cf.stakeManager.registerClaim, *args)

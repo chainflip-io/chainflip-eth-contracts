@@ -26,7 +26,7 @@ def test_fetchDepositToken(cf, token, DepositToken, **kwargs):
     return depositAddr
 
 
-def test_fetchDepositToken_and_eth(cf, token, DepositToken):
+def test_fetchDepositToken_and_native(cf, token, DepositToken):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
         cf.vault.address, JUNK_HEX_PAD, DepositToken, cleanHexStrPad(token.address)
@@ -47,7 +47,7 @@ def test_fetchDepositToken_and_eth(cf, token, DepositToken):
 
 def test_fetchDepositToken_rev_swapID(cf):
     with reverts(REV_MSG_NZ_BYTES32):
-        signed_call_cf(cf, cf.vault.fetchDepositToken, ["", ETH_ADDR])
+        signed_call_cf(cf, cf.vault.fetchDepositToken, ["", NATIVE_ADDR])
 
 
 def test_fetchDepositToken_rev_tokenAddr(cf):
@@ -57,26 +57,26 @@ def test_fetchDepositToken_rev_tokenAddr(cf):
 
 def test_fetchDepositToken_rev_msgHash(cf):
     callDataNoSig = cf.vault.fetchDepositToken.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD, ETH_ADDR]
+        agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD, NATIVE_ADDR]
     )
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[2] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.fetchDepositToken(sigData, [JUNK_HEX_PAD, ETH_ADDR])
+        cf.vault.fetchDepositToken(sigData, [JUNK_HEX_PAD, NATIVE_ADDR])
 
 
 def test_fetchDepositToken_rev_sig(cf):
     callDataNoSig = cf.vault.fetchDepositToken.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD, ETH_ADDR]
+        agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD, NATIVE_ADDR]
     )
 
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[3] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
-        cf.vault.fetchDepositToken(sigData, [JUNK_HEX_PAD, ETH_ADDR])
+        cf.vault.fetchDepositToken(sigData, [JUNK_HEX_PAD, NATIVE_ADDR])
 
 
 # Redeploy a DepositToken contract in the same address as the previous one. This is in case
