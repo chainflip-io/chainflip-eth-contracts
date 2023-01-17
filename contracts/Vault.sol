@@ -180,7 +180,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param recipient The address to receive the native token
      */
     function sendEth(address payable recipient) external payable {
-        require(msg.sender == address(this), "Vault: only Vault can send native");
+        require(msg.sender == address(this), "Vault: only Vault can sendEth");
         recipient.transfer(msg.value);
     }
 
