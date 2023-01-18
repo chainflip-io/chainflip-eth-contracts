@@ -207,11 +207,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     }
 
     /**
-     * @notice Withdraw any ETH on this contract. The intended execution of this contract doesn't
-     * require any ETH. This function is just to recover any ETH that might have been sent to
-     * this contract by accident (or any other reason), since incoming ETH cannot be stopped.
+     * @notice Withdraw any native tokens on this contract. The intended execution of this contract doesn't
+     * require any native tokens. This function is just to recover any native tokens that might have been sent to
+     * this contract by accident (or any other reason).
      */
-    function govWithdrawEth() external override onlyGovernor {
+    function govWithdrawNative() external override onlyGovernor {
         uint256 amount = address(this).balance;
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
@@ -220,7 +220,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     }
 
     /**
-     *  @notice Allows this contract to receive ETH
+     *  @notice Allows this contract to receive native tokens
      */
     receive() external payable {}
 

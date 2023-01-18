@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 /**
  * @title    ERC20 Interface
  * @notice   The interface for functions ERC20Lite implements. This is intended to
- *           be used with DepositEth so that there is as little code that goes into
+ *           be used with DepositNative so that there is as little code that goes into
  *           it as possible to reduce gas costs since it'll be deployed frequently
  */
 interface IERC20Lite {

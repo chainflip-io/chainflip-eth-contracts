@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title    Token
- * @dev      Creates a mock USDC contract just for the internal ETH network testing
+ * @dev      Creates a mock USDC contract just for the internal network testing
  */
 contract MockUSDC is ERC20 {
     constructor(

@@ -20,7 +20,7 @@ def test_allBatch(
     token,
     token2,
     DepositToken,
-    DepositEth,
+    DepositNative,
     st_fetchAmounts,
     st_fetchSwapIDs,
     st_tranRecipients,
@@ -29,7 +29,7 @@ def test_allBatch(
 ):
     # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([st_fetchAmounts, st_fetchSwapIDs])
-    tokensList = [ETH_ADDR, token, token2]
+    tokensList = [NATIVE_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=fetchMinLen)
     fetchTotals = {
         tok: sum([st_fetchAmounts[i] for i, x in enumerate(fetchTokens) if x == tok])
@@ -39,8 +39,8 @@ def test_allBatch(
     # Transfer tokens to the deposit addresses
     for am, id, tok in zip(st_fetchAmounts, st_fetchSwapIDs, fetchTokens):
         # Get the address to deposit to and deposit
-        if tok == ETH_ADDR:
-            depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositEth, "")
+        if tok == NATIVE_ADDR:
+            depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositNative, "")
             cf.DEPLOYER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
@@ -60,23 +60,23 @@ def test_allBatch(
         tok: sum([st_tranAmounts[i] for i, x in enumerate(tranTokens) if x == tok])
         for tok in tokensList
     }
-    # Need to know which index that ETH transfers start to fail since they won't revert the tx, but won't send the expected amount
+    # Need to know which index that native transfers start to fail since they won't revert the tx, but won't send the expected amount
     cumulEthTran = 0
     validEthIdxs = []
     for i in range(len(tranTokens)):
-        if tranTokens[i] == ETH_ADDR:
-            if cumulEthTran + st_tranAmounts[i] <= fetchTotals[ETH_ADDR]:
+        if tranTokens[i] == NATIVE_ADDR:
+            if cumulEthTran + st_tranAmounts[i] <= fetchTotals[NATIVE_ADDR]:
                 validEthIdxs.append(i)
                 cumulEthTran += st_tranAmounts[i]
-    tranTotals[ETH_ADDR] = sum(
+    tranTotals[NATIVE_ADDR] = sum(
         [
             st_tranAmounts[i]
             for i, x in enumerate(tranTokens)
-            if x == ETH_ADDR and i in validEthIdxs
+            if x == NATIVE_ADDR and i in validEthIdxs
         ]
     )
 
-    ethBals = [web3.eth.get_balance(str(recip)) for recip in st_tranRecipients]
+    nativeBals = [web3.eth.get_balance(str(recip)) for recip in st_tranRecipients]
     tokenBals = [token.balanceOf(recip) for recip in st_tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in st_tranRecipients]
 
@@ -98,14 +98,14 @@ def test_allBatch(
     else:
         signed_call_cf(cf, cf.vault.allBatch, *args, st_sender=st_sender)
 
-        assert cf.vault.balance() == fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
+        assert cf.vault.balance() == fetchTotals[NATIVE_ADDR] - tranTotals[NATIVE_ADDR]
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
 
         for i in range(len(st_tranRecipients)):
-            if tranTokens[i] == ETH_ADDR:
+            if tranTokens[i] == NATIVE_ADDR:
                 if i in validEthIdxs:
-                    finalEthBals = ethBals[i] + st_tranAmounts[i]
+                    finalEthBals = nativeBals[i] + st_tranAmounts[i]
                     # Account for gas expenditure if st_sender is in transRecipients
                     if st_tranRecipients[i] == st_sender:
                         finalEthBals -= calculateGasSpentByAddress(
@@ -129,8 +129,8 @@ def test_allBatch(
 
 
 def test_allBatch_rev_msgHash(cf):
-    fetchParams = [[JUNK_HEX_PAD, ETH_ADDR]]
-    transferParams = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
+    fetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
     args = (fetchParams, transferParams)
 
     callDataNoSig = cf.vault.allBatch.encode_input(
@@ -144,8 +144,8 @@ def test_allBatch_rev_msgHash(cf):
 
 
 def test_allBatch_rev_sig(cf):
-    fetchParams = [[JUNK_HEX_PAD, ETH_ADDR]]
-    transferParams = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
+    fetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
     args = (fetchParams, transferParams)
 
     callDataNoSig = cf.vault.allBatch.encode_input(

@@ -49,7 +49,7 @@ def test_enableSwaps_rev_disabled(cf):
         cf.vault.disableSwaps({"from": cf.gov})
 
 
-# SwapETH
+# SwapNative
 
 
 @given(
@@ -58,15 +58,15 @@ def test_enableSwaps_rev_disabled(cf):
     st_egressReceiver=strategy("bytes32", exclude=(0).to_bytes(32, "big")),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
 )
-def test_swapETH(cf, st_sender, st_egressParams, st_egressReceiver, st_amount):
+def test_swapNative(cf, st_sender, st_egressParams, st_egressReceiver, st_amount):
     cf.vault.enableSwaps({"from": cf.gov})
-    tx = cf.vault.swapETH(
+    tx = cf.vault.swapNative(
         st_egressParams, st_egressReceiver, {"from": st_sender, "amount": st_amount}
     )
 
-    assert tx.events["SwapETH"]["amount"] == st_amount
-    assert tx.events["SwapETH"]["egressParams"] == st_egressParams
-    assert tx.events["SwapETH"]["egressReceiver"] == "0x" + cleanHexStr(
+    assert tx.events["SwapNative"]["amount"] == st_amount
+    assert tx.events["SwapNative"]["egressParams"] == st_egressParams
+    assert tx.events["SwapNative"]["egressReceiver"] == "0x" + cleanHexStr(
         st_egressReceiver
     )
 
@@ -76,10 +76,10 @@ def test_swapETH(cf, st_sender, st_egressParams, st_egressReceiver, st_amount):
     st_egressParams=strategy("string"),
     st_egressReceiver=strategy("bytes32"),
 )
-def test_swapETH_rev_suspended(cf, st_sender, st_egressParams, st_egressReceiver):
+def test_swapNative_rev_suspended(cf, st_sender, st_egressParams, st_egressReceiver):
     cf.vault.suspend({"from": cf.gov})
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.swapETH(st_egressParams, st_egressReceiver, {"from": st_sender})
+        cf.vault.swapNative(st_egressParams, st_egressReceiver, {"from": st_sender})
 
 
 @given(
@@ -87,9 +87,9 @@ def test_swapETH_rev_suspended(cf, st_sender, st_egressParams, st_egressReceiver
     st_egressParams=strategy("string"),
     st_egressReceiver=strategy("bytes32"),
 )
-def test_swapETH_rev_disabled(cf, st_sender, st_egressParams, st_egressReceiver):
+def test_swapNative_rev_disabled(cf, st_sender, st_egressParams, st_egressReceiver):
     with reverts(REV_MSG_VAULT_SWAPS_DIS):
-        cf.vault.swapETH(st_egressParams, st_egressReceiver, {"from": st_sender})
+        cf.vault.swapNative(st_egressParams, st_egressReceiver, {"from": st_sender})
 
 
 @given(
@@ -97,10 +97,10 @@ def test_swapETH_rev_disabled(cf, st_sender, st_egressParams, st_egressReceiver)
     st_egressParams=strategy("string"),
     st_egressReceiver=strategy("bytes32"),
 )
-def test_swapETH_rev_nzuint(cf, st_sender, st_egressParams, st_egressReceiver):
+def test_swapNative_rev_nzuint(cf, st_sender, st_egressParams, st_egressReceiver):
     cf.vault.enableSwaps({"from": cf.gov})
     with reverts(REV_MSG_NZ_UINT):
-        cf.vault.swapETH(st_egressParams, st_egressReceiver, {"from": st_sender})
+        cf.vault.swapNative(st_egressParams, st_egressReceiver, {"from": st_sender})
 
 
 @given(
@@ -108,10 +108,12 @@ def test_swapETH_rev_nzuint(cf, st_sender, st_egressParams, st_egressReceiver):
     st_egressParams=strategy("string"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
 )
-def test_swapETH_rev_nzbytes(cf, st_sender, st_egressParams, st_amount):
+def test_swapNative_rev_nzbytes(cf, st_sender, st_egressParams, st_amount):
     cf.vault.enableSwaps({"from": cf.gov})
     with reverts(REV_MSG_NZ_BYTES32):
-        cf.vault.swapETH(st_egressParams, 0, {"from": st_sender, "amount": st_amount})
+        cf.vault.swapNative(
+            st_egressParams, 0, {"from": st_sender, "amount": st_amount}
+        )
 
 
 # SwapToken
