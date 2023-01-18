@@ -240,7 +240,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             chain.sleep(st_sleep_time)
 
         # Useful results are being impeded by most attempts at executeClaim not having enough
-        # delay - having 2 sleep mnativeods makes it more common aswell as this which is enough of a delay
+        # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
             print("                    rule_sleep_2_days")

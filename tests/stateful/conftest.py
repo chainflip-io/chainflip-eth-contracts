@@ -4,7 +4,7 @@ import pytest
 class _BaseStateMachine:
 
     """
-    https://native-brownie.readthedocs.io/en/stable/tests-hypothesis-stateful.html
+    https://eth-brownie.readthedocs.io/en/stable/tests-hypothesis-stateful.html
     This base state machine class contains initialization of the system that all
     other tests need to start at (simple deployment).
     """

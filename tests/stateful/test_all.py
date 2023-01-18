@@ -72,7 +72,7 @@ def test_all(
         It uses a set number of DepositNative and DepositToken contracts/create2 addresses
         for native & each token (MAX_SWAPID amount of each, 3 * MAX_SWAPID total) and also
         randomly sends native and the 2 ERC20 tokens to the create2 addresses that
-        correspond to the create2 addresses so that somnativeing can actually be fetched
+        correspond to the create2 addresses so that something can actually be fetched
         and transferred.
 
         Keys are attempted to be set as random keys with a random signing key - all
@@ -1259,7 +1259,7 @@ def test_all(
                     self.km.setGovKeyWithGovKey(st_addr, {"from": st_sender})
 
         # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
-        # delay - having 2 sleep mnativeods makes it more common aswell as this which is enough of a delay
+        # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
         # in itself, since Hypothesis usually picks small values as part of shrinking
         def rule_sleep_2_days(self):
             print("                    rule_sleep_2_days")

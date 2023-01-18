@@ -39,7 +39,7 @@ def test_vault(
         This test calls functions from Vault in random orders. It uses a set number of DepositNative
         and DepositToken contracts/create2 addresses for native & each token (MAX_SWAPID amount of each,
         3 * MAX_SWAPID total) and also randomly sends native and the 2 ERC20 tokens to the create2
-        addresses that correspond to the create2 addresses so that somnativeing can actually be fetched
+        addresses that correspond to the create2 addresses so that something can actually be fetched
         and transferred.
         The parameters used are so that they're small enough to increase the likelihood of the same
         address being used in multiple interactions (e.g. 2  x transfers then a fetch etc) and large
