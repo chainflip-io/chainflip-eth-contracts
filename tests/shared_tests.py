@@ -5,11 +5,11 @@ from utils import *
 # ----------Vault----------
 
 
-def fetchDepositEth(cf, vault, DepositEth, **kwargs):
+def fetchDepositNative(cf, vault, DepositNative, **kwargs):
     amount = kwargs.get("amount", TEST_AMNT)
 
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(vault.address, JUNK_HEX_PAD, DepositEth, "")
+    depositAddr = getCreate2Addr(vault.address, JUNK_HEX_PAD, DepositNative, "")
 
     assert cf.DEPLOYER.balance() >= amount
     cf.DEPLOYER.transfer(depositAddr, amount)
@@ -17,7 +17,7 @@ def fetchDepositEth(cf, vault, DepositEth, **kwargs):
     balanceVaultBefore = vault.balance()
 
     # Fetch the deposit
-    signed_call_cf(cf, vault.fetchDepositEth, JUNK_HEX_PAD, sender=cf.ALICE)
+    signed_call_cf(cf, vault.fetchDepositNative, JUNK_HEX_PAD, sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert vault.balance() == balanceVaultBefore + amount
@@ -26,12 +26,12 @@ def fetchDepositEth(cf, vault, DepositEth, **kwargs):
 
 
 # Test transfer function from a vault with funds
-def transfer_eth(cf, vault, receiver, amount):
+def transfer_native(cf, vault, receiver, amount):
     startBalVault = vault.balance()
     assert startBalVault >= amount
     startBalRecipient = receiver.balance()
 
-    tx = signed_call_cf(cf, vault.transfer, [ETH_ADDR, receiver, amount])
+    tx = signed_call_cf(cf, vault.transfer, [NATIVE_ADDR, receiver, amount])
 
     assert vault.balance() - startBalVault == -amount
 

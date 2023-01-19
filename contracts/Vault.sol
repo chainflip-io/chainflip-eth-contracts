@@ -11,7 +11,7 @@ import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    Vault contract
- * @notice   The vault for holding ETH/tokens and deploying contracts
+ * @notice   The vault for holding native/tokens and deploying contracts
  *           for fetching individual deposits
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
@@ -20,7 +20,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
-    event SwapETH(uint256 amount, string egressParams, bytes32 egressReceiver);
+    event SwapNative(uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapsEnabled(bool enabled);
 
@@ -53,7 +53,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          deposits , then it performs all transfers specified with the rest
      *          of the inputs, the same as transferBatch (where all inputs are again required
      *          to be of equal length - however the lengths of the fetch inputs do not have to
-     *          be equal to lengths of the transfer inputs). Fetches/transfers of ETH are indicated
+     *          be equal to lengths of the transfer inputs). Fetches/transfers of native are indicated
      *          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          fetch should should have the same index swapIDs[i] and tokens[i]
@@ -100,7 +100,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers ETH or a token from this vault to a recipient
+     * @notice  Transfers native or a token from this vault to a recipient
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -128,7 +128,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
+     * @notice  Transfers native or tokens from this vault to recipients. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          transfer should should have the same index tokens[i], recipients[i],
      *          and amounts[i].
@@ -156,7 +156,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers ETH or tokens from this vault to recipients. It is assumed
+     * @notice  Transfers native or tokens from this vault to recipients. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          transfer should should have the same index tokens[i], recipients[i],
      *          and amounts[i].
@@ -178,15 +178,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          and so doing try/catch on it won't work. Need to make it an external
      *          call, and doing `this.something` counts as an external call, but that
      *          means we need a fcn that just sends eth
-     * @param recipient The address to receive the ETH
+     * @param recipient The address to receive the native token
      */
     function sendEth(address payable recipient) external payable {
-        require(msg.sender == address(this), "Vault: only Vault can send ETH");
+        require(msg.sender == address(this), "Vault: only Vault can sendEth");
         recipient.transfer(msg.value);
     }
 
     /**
-     * @notice  Transfers ETH or a token from this vault to a recipient
+     * @notice  Transfers native or a token from this vault to a recipient
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
@@ -196,7 +196,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address payable recipient,
         uint256 amount
     ) private {
-        if (address(token) == _ETH_ADDR) {
+        if (address(token) == _NATIVE_ADDR) {
             try this.sendEth{value: amount}(recipient) {} catch (bytes memory lowLevelData) {
                 emit TransferFailed(recipient, amount, lowLevelData);
             }
@@ -337,11 +337,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Swaps ETH for a token in another chain. Function call needs to specify egress parameters
+     * @notice  Swaps native for a token in another chain. Function call needs to specify egress parameters
      * @param egressParams  String containing egress parameters
      * @param egressReceiver  Egress reciever's address
      */
-    function swapETH(string calldata egressParams, bytes32 egressReceiver)
+    function swapNative(string calldata egressParams, bytes32 egressReceiver)
         external
         payable
         override
@@ -351,7 +351,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         nzBytes32(egressReceiver)
     {
         // The check for existing chainID, egressToken string and egressReceiver shall be done in the CFE
-        emit SwapETH(msg.value, egressParams, egressReceiver);
+        emit SwapNative(msg.value, egressParams, egressReceiver);
     }
 
     /**
@@ -404,10 +404,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
         address payable recipient = payable(getKeyManager().getGovernanceKey());
 
-        // Transfer all ETH and ERC20 Tokens
+        // Transfer all native and ERC20 Tokens
         for (uint256 i = 0; i < tokens.length; i++) {
-            if (address(tokens[i]) == _ETH_ADDR) {
-                _transfer(IERC20(_ETH_ADDR), recipient, address(this).balance);
+            if (address(tokens[i]) == _NATIVE_ADDR) {
+                _transfer(IERC20(_NATIVE_ADDR), recipient, address(this).balance);
             } else {
                 _transfer(tokens[i], recipient, tokens[i].balanceOf(address(this)));
             }
@@ -415,7 +415,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Enable swapETH and swapToken functionality by governance. Features disabled by default
+     * @notice  Enable swapNative and swapToken functionality by governance. Features disabled by default
      */
     function enableSwaps() external override onlyGovernor swapsDisabled {
         _swapsEnabled = true;
@@ -423,7 +423,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Disable swapETH and swapToken functionality by governance. Features disabled by default.
+     * @notice  Disable swapNative and swapToken functionality by governance. Features disabled by default.
      */
     function disableSwaps() external override onlyGovernor swapsEnabled {
         _swapsEnabled = false;
@@ -477,6 +477,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving ETH when fetchDepositEth is called
+    /// @dev For receiving native when fetchDepositNative is called
     receive() external payable {}
 }

@@ -5,23 +5,23 @@ from brownie.test import given, strategy
 
 
 @given(
-    st_ethAmount=strategy("uint", max_value=INIT_ETH_BAL, min_value=TEST_AMNT),
+    st_nativeAmount=strategy("uint", max_value=INIT_NATIVE_BAL, min_value=TEST_AMNT),
     st_tokenAmount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
     st_token2Amount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
     st_sleepTime=strategy("uint256", max_value=MONTH * 2),
 )
 def test_govWithdraw(
-    cf, token, token2, st_ethAmount, st_tokenAmount, st_token2Amount, st_sleepTime
+    cf, token, token2, st_nativeAmount, st_tokenAmount, st_token2Amount, st_sleepTime
 ):
 
-    # Fund Vault contract. Using non-deployer to transfer ETH because the deployer
-    # doesn't have INIT_ETH_BAL - gas spent deploying contracts
-    cf.DENICE.transfer(cf.vault, st_ethAmount)
+    # Fund Vault contract. Using non-deployer to transfer native because the deployer
+    # doesn't have INIT_NATIVE_BAL - gas spent deploying contracts
+    cf.DENICE.transfer(cf.vault, st_nativeAmount)
     token.transfer(cf.vault, st_tokenAmount, {"from": cf.DEPLOYER})
     token2.transfer(cf.vault, st_token2Amount, {"from": cf.DEPLOYER})
 
     # Check Vault intial Balances
-    assert cf.vault.balance() == st_ethAmount
+    assert cf.vault.balance() == st_nativeAmount
     assert token.balanceOf(cf.vault) == st_tokenAmount
     assert token2.balanceOf(cf.vault) == st_token2Amount
 
@@ -42,7 +42,7 @@ def test_govWithdraw(
         len(history.filter(sender=cf.COMMUNITY_KEY)),
     ]
 
-    tokenList = [ETH_ADDR, token, token2]
+    tokenList = [NATIVE_ADDR, token, token2]
 
     with reverts(REV_MSG_GOV_GOVERNOR):
         cf.vault.govWithdraw(tokenList, {"from": cf.ALICE})
@@ -77,7 +77,7 @@ def test_govWithdraw(
 
         assert cf.GOVERNOR.balance() == governorBalances[
             0
-        ] + st_ethAmount - calculateGasSpentByAddress(
+        ] + st_nativeAmount - calculateGasSpentByAddress(
             cf.GOVERNOR, iniTransactionNumber[0]
         )
         assert token.balanceOf(cf.GOVERNOR) == governorBalances[1] + st_tokenAmount

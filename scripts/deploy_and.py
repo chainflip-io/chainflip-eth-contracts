@@ -224,9 +224,9 @@ def all_vault_events():
     cf.vault.enableSwaps({"from": GOVERNOR})
 
     print(
-        f"\n💰 Alice swaps {TEST_AMNT} ETH with EgressParams ETH:BTC and egressReceiver {JUNK_HEX}\n"
+        f"\n💰 Alice swaps {TEST_AMNT} NATIVE with EgressParams NATIVE:BTC and egressReceiver {JUNK_HEX}\n"
     )
-    cf.vault.swapETH("ETH:BTC", JUNK_HEX, {"amount": TEST_AMNT})
+    cf.vault.swapNative("NATIVE:BTC", JUNK_HEX, {"amount": TEST_AMNT})
 
     print(
         f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} with EgressParams FLIP:BTC and egressReceiver {JUNK_HEX}\n"
@@ -250,8 +250,8 @@ def all_vault_events():
 
     chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
 
-    print(f"\n💸 Governance withdraws all ETH and FLIP\n")
-    cf.vault.govWithdraw([ETH_ADDR, cf.flip], {"from": GOVERNOR})
+    print(f"\n💸 Governance withdraws all NATIVE and FLIP\n")
+    cf.vault.govWithdraw([NATIVE_ADDR, cf.flip], {"from": GOVERNOR})
 
     print(f"\n🔐 Community enables guard\n")
     cf.vault.enableCommunityGuard({"from": cf.communityKey})

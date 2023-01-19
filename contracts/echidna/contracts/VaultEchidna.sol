@@ -24,12 +24,12 @@ contract VaultEchidna is IShared {
         v.transferBatch(sigData, transferParamsArray);
     }
 
-    function fetchDepositEth(SigData calldata sigData, bytes32 swapID) external virtual {
-        v.fetchDepositEth(sigData, swapID);
+    function fetchDepositNative(SigData calldata sigData, bytes32 swapID) external virtual {
+        v.fetchDepositNative(sigData, swapID);
     }
 
-    function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external virtual {
-        v.fetchDepositEthBatch(sigData, swapIDs);
+    function fetchDepositNativeBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external virtual {
+        v.fetchDepositNativeBatch(sigData, swapIDs);
     }
 
     function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams) external virtual {
@@ -43,8 +43,8 @@ contract VaultEchidna is IShared {
         v.fetchDepositTokenBatch(sigData, fetchParamsArray);
     }
 
-    function swapETH(string calldata egressParams, bytes32 egressReceiver) external virtual {
-        v.swapETH(egressParams, egressReceiver);
+    function swapNative(string calldata egressParams, bytes32 egressReceiver) external virtual {
+        v.swapNative(egressParams, egressReceiver);
     }
 
     function swapToken(

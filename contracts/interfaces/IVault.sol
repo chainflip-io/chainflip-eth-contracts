@@ -48,7 +48,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function swapETH(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
+    function swapNative(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
 
     function swapToken(
         string calldata egressChainAndToken,

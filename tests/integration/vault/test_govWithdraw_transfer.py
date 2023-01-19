@@ -6,17 +6,17 @@ from brownie.test import given, strategy
 
 
 @given(st_sender=strategy("address"))
-def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
+def test_govWithdraw_transfer(cf, token, token2, DepositNative, st_sender):
     # Funding Vault with some arbitrary funds
     amountTest = TEST_AMNT * 10
     st_sender.transfer(cf.vault, amountTest)
     token.transfer(cf.vault, amountTest, {"from": cf.DEPLOYER})
     token2.transfer(cf.vault, amountTest, {"from": cf.DEPLOYER})
-    tokenList = [ETH_ADDR, token, token2]
+    tokenList = [NATIVE_ADDR, token, token2]
 
     # Test vault functioning
-    fetchDepositEth(cf, cf.vault, DepositEth)
-    transfer_eth(cf, cf.vault, st_sender, TEST_AMNT)
+    fetchDepositNative(cf, cf.vault, DepositNative)
+    transfer_native(cf, cf.vault, st_sender, TEST_AMNT)
 
     # Withdraw all Vault balance
     chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
@@ -31,7 +31,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     iniEthBal = st_sender.balance()
     iniTransactionNumber = len(history.filter(sender=st_sender))
 
-    args = [[ETH_ADDR, st_sender, minAmount]]
+    args = [[NATIVE_ADDR, st_sender, minAmount]]
     signed_call_cf(cf, cf.vault.transfer, *args, sender=st_sender)
 
     assert st_sender.balance() == iniEthBal - calculateGasSpentByAddress(
@@ -39,13 +39,13 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
     )
 
     # Vault can still fetch amounts even after govWithdrawal - pending/old swaps
-    fetchDepositEth(cf, cf.vault, DepositEth)
+    fetchDepositNative(cf, cf.vault, DepositNative)
     # GovWithdraw amounts recently fetched
     chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
     iniEthBalGov = cf.GOVERNOR.balance()
     iniTransactionNumber = len(history.filter(sender=cf.GOVERNOR))
     cf.vault.suspend({"from": cf.GOVERNOR})
-    cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+    cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
     cf.vault.resume({"from": cf.GOVERNOR})
     assert (
         cf.GOVERNOR.balance()
@@ -56,10 +56,10 @@ def test_govWithdraw_transfer(cf, token, token2, DepositEth, st_sender):
 
     cf.vault.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
 
-    fetchDepositEth(cf, cf.vault, DepositEth)
+    fetchDepositNative(cf, cf.vault, DepositNative)
     # Governance cannot withdraw again since community Guard is enabled again
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
 
     # Vault has funds so it can transfer again
-    transfer_eth(cf, cf.vault, st_sender, TEST_AMNT)
+    transfer_native(cf, cf.vault, st_sender, TEST_AMNT)
