@@ -261,7 +261,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 length = deployFetchParamsArray.length;
         uint256 i;
         for (i = 0; i < length; ) {
-            new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(address(deployFetchParamsArray[i].token)));
+            new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(deployFetchParamsArray[i].token));
             unchecked {
                 ++i;
             }
@@ -302,7 +302,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        new Deposit{salt: deployFetchParams.swapID}(IERC20Lite(address(deployFetchParams.token)));
+        new Deposit{salt: deployFetchParams.swapID}(IERC20Lite(deployFetchParams.token));
     }
 
     /**

@@ -46,7 +46,7 @@ interface IShared {
      */
     struct DeployFetchParams {
         bytes32 swapID;
-        IERC20 token;
+        address token;
     }
 
     /**
