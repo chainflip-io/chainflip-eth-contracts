@@ -247,10 +247,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Retrieves tokens from multiple addresses. Either from a deterministically generated
-     *          address using create2, by creating a contract for that address and sending it to this vault,
+     *          address using create2, by creating a contract for that address and sending them to this vault,
      *          or by calling the fetch function of an already deployed Deposit contract.
      * @dev     FetchAndDeploy is executed first to handle the edge case , which probably shouldn't
-     *          happen anyway, where a deploy and a fetch for the same address in the same batch.
+     *          happen anyway, where a deploy and a fetch for the same address are in the same batch.
      * @param deployFetchParamsArray    The array of deploy and fetch parameters
      * @param fetchParamsArray    The array of fetch parameters
      */
