@@ -19,6 +19,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
+    uint256 private constant _GAS_TO_FORWARD = 3500;
 
     event TransferFailed(address payable indexed recipient, uint256 amount);
     event SwapETH(uint256 amount, string egressParams, bytes32 egressReceiver);
@@ -186,9 +187,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount
     ) private {
         if (address(token) == _ETH_ADDR) {
-            // Disable because we don't want to revert on failure
-            // solhint-disable-next-line check-send-result
-            bool success = recipient.send(amount);
+            // Disable because we don't want to revert on failure. Forward only a set amount of gas
+            // so the receivers can't consume all the gas.
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = recipient.call{gas: _GAS_TO_FORWARD, value: amount}("");
             if (!success) {
                 emit TransferFailed(recipient, amount);
             }
