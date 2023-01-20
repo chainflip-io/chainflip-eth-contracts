@@ -54,7 +54,7 @@ def null_sig(nonce):
 
 
 def getValidTranIdxs(tokens, amounts, prevBal, tok):
-    # Need to know which index that ETH transfers start to fail since they won't revert the tx, but won't send the expected amount
+    # Need to know which index that native transfers start to fail since they won't revert the tx, but won't send the expected amount
     cumulEthTran = 0
     validEthIdxs = []
     for i in range(len(tokens)):
@@ -82,10 +82,10 @@ def getChainTime():
 def calculateGasSpentByAddress(address, initialTransactionNumber):
     # history.filter returns a list of all the broadcasted transactions (not necessarily mined)
     transactionList = history.filter(sender=address)[initialTransactionNumber:]
-    ethUsed = 0
+    nativeUsed = 0
     for txReceipt in transactionList:
-        ethUsed += calculateGasTransaction(txReceipt)
-    return ethUsed
+        nativeUsed += calculateGasTransaction(txReceipt)
+    return nativeUsed
 
 
 # Calculate the gas spent in a single transaction

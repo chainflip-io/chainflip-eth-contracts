@@ -20,7 +20,7 @@ def test_setAggKeyWithAggKey_allBatch(
     token,
     token2,
     DepositToken,
-    DepositEth,
+    DepositNative,
     st_fetchAmounts,
     st_fetchSwapIDs,
     st_tranRecipients,
@@ -37,7 +37,7 @@ def test_setAggKeyWithAggKey_allBatch(
 
     # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([st_fetchAmounts, st_fetchSwapIDs])
-    tokensList = [ETH_ADDR, token, token2]
+    tokensList = [NATIVE_ADDR, token, token2]
     fetchTokens = choices(tokensList, k=fetchMinLen)
 
     fetchTotals = {
@@ -48,8 +48,10 @@ def test_setAggKeyWithAggKey_allBatch(
     # Transfer tokens to the deposit addresses
     for am, id, tok in zip(st_fetchAmounts, st_fetchSwapIDs, fetchTokens):
         # Get the address to deposit to and deposit
-        if tok == ETH_ADDR:
-            depositAddr = getCreate2Addr(cfAW.vault.address, id.hex(), DepositEth, "")
+        if tok == NATIVE_ADDR:
+            depositAddr = getCreate2Addr(
+                cfAW.vault.address, id.hex(), DepositNative, ""
+            )
             cfAW.DEPLOYER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
@@ -70,18 +72,18 @@ def test_setAggKeyWithAggKey_allBatch(
         for tok in tokensList
     }
     validEthIdxs = getValidTranIdxs(
-        tranTokens, st_tranAmounts, fetchTotals[ETH_ADDR], ETH_ADDR
+        tranTokens, st_tranAmounts, fetchTotals[NATIVE_ADDR], NATIVE_ADDR
     )
-    tranTotals[ETH_ADDR] = sum(
+    tranTotals[NATIVE_ADDR] = sum(
         [
             st_tranAmounts[i]
             for i, x in enumerate(tranTokens)
-            if x == ETH_ADDR and i in validEthIdxs
+            if x == NATIVE_ADDR and i in validEthIdxs
         ]
     )
 
-    ethStartBalVault = cfAW.vault.balance()
-    ethBals = [web3.eth.get_balance(str(recip)) for recip in st_tranRecipients]
+    nativeStartBalVault = cfAW.vault.balance()
+    nativeBals = [web3.eth.get_balance(str(recip)) for recip in st_tranRecipients]
     tokenBals = [token.balanceOf(recip) for recip in st_tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in st_tranRecipients]
 
@@ -106,18 +108,18 @@ def test_setAggKeyWithAggKey_allBatch(
             cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
         )
 
-        assert cfAW.vault.balance() == ethStartBalVault + (
-            fetchTotals[ETH_ADDR] - tranTotals[ETH_ADDR]
+        assert cfAW.vault.balance() == nativeStartBalVault + (
+            fetchTotals[NATIVE_ADDR] - tranTotals[NATIVE_ADDR]
         )
         assert token.balanceOf(cfAW.vault) == fetchTotals[token] - tranTotals[token]
         assert token2.balanceOf(cfAW.vault) == fetchTotals[token2] - tranTotals[token2]
 
         for i in range(len(st_tranRecipients)):
-            if tranTokens[i] == ETH_ADDR:
+            if tranTokens[i] == NATIVE_ADDR:
                 if i in validEthIdxs:
                     assert (
                         web3.eth.get_balance(str(st_tranRecipients[i]))
-                        == ethBals[i] + st_tranAmounts[i]
+                        == nativeBals[i] + st_tranAmounts[i]
                     )
             elif tranTokens[i] == token:
                 assert (
@@ -137,30 +139,30 @@ def test_setAggKeyWithAggKey_allBatch(
 def test_setGovKeyWithAggKey_govWithdrawal(cf):
     # Check that it passes the isGovernor check initially
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
 
     setGovKeyWithAggKey_test(cf)
 
     with reverts(REV_MSG_GOV_GOVERNOR):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
 
 
 def test_setGovKeyWithGovKey_govWithdrawal(cf):
     # Check that it passes the isGovernor check initially
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
 
     setGovKeyWithGovKey_test(cf)
 
     with reverts(REV_MSG_GOV_GOVERNOR):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
 
 
 # Check that updating the Community Key in the KeyManager takes effect
 def test_setCommKeyWithAggKey_govWithdrawal(cf):
     # Check that the community Guard is enabled
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
 
     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
         cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY_2})
@@ -171,14 +173,14 @@ def test_setCommKeyWithAggKey_govWithdrawal(cf):
 
     # Check that it now passes the community Guard
     with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
 
 
 # Check that updating the Community Key in the KeyManager takes effect
 def test_setCommKeyWithCommKey_govWithdrawal(cf):
     # Check that the community Guard is enabled
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})
 
     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
         cf.vault.disableCommunityGuard({"from": cf.COMMUNITY_KEY_2})
@@ -189,4 +191,4 @@ def test_setCommKeyWithCommKey_govWithdrawal(cf):
 
     # Check that it now passes the community Guard
     with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-        cf.vault.govWithdraw([ETH_ADDR], {"from": cf.GOVERNOR})
+        cf.vault.govWithdraw([NATIVE_ADDR], {"from": cf.GOVERNOR})

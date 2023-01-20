@@ -8,7 +8,7 @@ def test_setAggKeyWithAggKey_setAggKeyWithAggKey(cf):
     # Change agg keys
     setAggKeyWithAggKey_test(cf)
 
-    # Try to set agg key with old agg key (we're not "changing" the agg key here but it should fail nonetheless since the contract does not
+    # Try to set agg key with old agg key (we're not "changing" the agg key here but it should fail nonnativeeless since the contract does not
     # ever check that they are different)
     with reverts(REV_MSG_SIG):
         signed_call_cf(cf, cf.keyManager.setAggKeyWithAggKey, AGG_SIGNER_1.getPubData())

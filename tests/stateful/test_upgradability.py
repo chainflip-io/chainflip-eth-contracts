@@ -126,7 +126,7 @@ def test_upgradability(
             # Vault can now validate and fetch but it has zero balance so it can't transfer
             args = [
                 [
-                    ETH_ADDR,
+                    NATIVE_ADDR,
                     st_sender,
                     st_vault_transfer_amount,
                 ]
@@ -140,7 +140,7 @@ def test_upgradability(
 
             args = [
                 [
-                    ETH_ADDR,
+                    NATIVE_ADDR,
                     newVault,
                     st_vault_transfer_amount,
                 ]
@@ -176,7 +176,7 @@ def test_upgradability(
             amountToTransfer = self.v.balance()
             args = [
                 [
-                    ETH_ADDR,
+                    NATIVE_ADDR,
                     newVault,
                     amountToTransfer,
                 ]
@@ -293,7 +293,7 @@ def test_upgradability(
             self.sm_guard = False
             self.sm_suspended = False
 
-        # Check that all the funds (ETH and FLIP) total amounts have not changed and have been transferred
+        # Check that all the funds (NATIVE and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):
             self.numTxsTested += 1
             assert self.v.balance() == self.TOTAL_FUNDS

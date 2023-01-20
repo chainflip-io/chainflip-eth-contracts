@@ -18,7 +18,7 @@ def test_all(
     state_machine,
     a,
     cfDeployAllWhitelist,
-    DepositEth,
+    DepositNative,
     DepositToken,
     Token,
     StakeManager,
@@ -32,13 +32,13 @@ def test_all(
     # (since 0 will cause a revert when fetching).
     MAX_SWAPID = 5
     # The max number of addresses to send txs from. This is used both for simulating
-    # users where ETH/tokens come out of their account (send ETH/tokens), and also for
+    # users where NATIVE/tokens come out of their account (send NATIVE/tokens), and also for
     # being the sender of fcns where the sender shouldn't matter, but just needs a
-    # sender (fcns that require an aggKey sig like `transfer` and `fetchDepositEth`).
+    # sender (fcns that require an aggKey sig like `transfer` and `fetchDepositNative`).
     MAX_NUM_SENDERS = 5
-    # The max amount of ETH for a 'user' to send to a deposit address, so that
+    # The max amount of native for a 'user' to send to a deposit address, so that
     # the same user can send many more times without running out
-    MAX_ETH_SEND = E_18
+    MAX_NATIVE_SEND = E_18
     # The max amount of tokens for a 'user' to send to a deposit address, so that
     # the same user can send many more times without running out
     MAX_TOKEN_SEND = 10**5 * E_18
@@ -69,9 +69,9 @@ def test_all(
         """
         This test calls functions Vault, from KeyManager and StakeManager in random orders.
 
-        It uses a set number of DepositEth and DepositToken contracts/create2 addresses
-        for ETH & each token (MAX_SWAPID amount of each, 3 * MAX_SWAPID total) and also
-        randomly sends ETH and the 2 ERC20 tokens to the create2 addresses that
+        It uses a set number of DepositNative and DepositToken contracts/create2 addresses
+        for native & each token (MAX_SWAPID amount of each, 3 * MAX_SWAPID total) and also
+        randomly sends native and the 2 ERC20 tokens to the create2 addresses that
         correspond to the create2 addresses so that something can actually be fetched
         and transferred.
 
@@ -98,7 +98,7 @@ def test_all(
             cls,
             a,
             cfDeployAllWhitelist,
-            DepositEth,
+            DepositNative,
             DepositToken,
             Token,
             StakeManager,
@@ -113,7 +113,7 @@ def test_all(
             cls.tokenB = a[0].deploy(
                 Token, "NotAPonziB", "NAPB", INIT_TOKEN_SUPPLY * 10
             )
-            cls.tokensList = (ETH_ADDR, cls.tokenA, cls.tokenB)
+            cls.tokensList = (NATIVE_ADDR, cls.tokenA, cls.tokenB)
 
             for token in [cls.tokenA, cls.tokenB]:
                 for recip in a[1:]:
@@ -127,7 +127,7 @@ def test_all(
                 )
 
             cls.create2EthAddrs = [
-                getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositEth, "")
+                getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositNative, "")
                 for swapID in range(MAX_SWAPID + 1)
             ]
             cls.create2TokenAAddrs = [
@@ -201,8 +201,8 @@ def test_all(
 
             self.sm.setMinStake(INIT_MIN_STAKE, {"from": self.governor})
 
-            self.ethBals = {
-                # Accounts within "a" will have INIT_ETH_BAL - gas spent in setup/deployment
+            self.nativeBals = {
+                # Accounts within "a" will have INIT_NATIVE_BAL - gas spent in setup/deployment
                 addr: web3.eth.get_balance(str(addr)) if addr in a else 0
                 for addr in self.allAddrs
             }
@@ -211,7 +211,7 @@ def test_all(
             contracts = [self.v, self.km, self.sm]
             self.allAddrs += contracts
             for index in range(len(contracts)):
-                self.ethBals[contracts[index]] = self.initialBalancesContracts[index]
+                self.nativeBals[contracts[index]] = self.initialBalancesContracts[index]
 
             # Store initial transaction number for each of the accounts to later calculate gas spendings
             self.iniTransactionNumber = {}
@@ -262,8 +262,8 @@ def test_all(
 
         # Vault
 
-        st_eth_amount = strategy("uint", max_value=MAX_ETH_SEND)
-        st_eth_amounts = strategy("uint[]", max_value=MAX_ETH_SEND)
+        st_native_amount = strategy("uint", max_value=MAX_NATIVE_SEND)
+        st_native_amounts = strategy("uint[]", max_value=MAX_NATIVE_SEND)
         st_token = contract_strategy("Token")
         st_tokens = hypStrat.lists(st_token)
         st_token_amount = strategy("uint", max_value=MAX_TOKEN_SEND)
@@ -311,16 +311,16 @@ def test_all(
 
         # Vault
 
-        def rule_allBatch(self, st_swapIDs, st_recips, st_eth_amounts, st_sender):
+        def rule_allBatch(self, st_swapIDs, st_recips, st_native_amounts, st_sender):
             fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
             fetchEthTotal = sum(
-                self.ethBals[
+                self.nativeBals[
                     getCreate2Addr(
-                        self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositEth, ""
+                        self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositNative, ""
                     )
                 ]
                 for i, x in enumerate(fetchTokens)
-                if x == ETH_ADDR
+                if x == NATIVE_ADDR
             )
             fetchTokenATotal = sum(
                 self.tokenABals[
@@ -347,32 +347,32 @@ def test_all(
                 if x == self.tokenB
             )
 
-            tranMinLen = trimToShortest([st_recips, st_eth_amounts])
+            tranMinLen = trimToShortest([st_recips, st_native_amounts])
             tranTokens = choices(self.tokensList, k=tranMinLen)
             tranTotals = {
                 tok: sum(
-                    [st_eth_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
+                    [st_native_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
                 )
                 for tok in self.tokensList
             }
             validEthIdxs = getValidTranIdxs(
                 tranTokens,
-                st_eth_amounts,
-                self.ethBals[self.v] + fetchEthTotal,
-                ETH_ADDR,
+                st_native_amounts,
+                self.nativeBals[self.v] + fetchEthTotal,
+                NATIVE_ADDR,
             )
-            tranTotals[ETH_ADDR] = sum(
+            tranTotals[NATIVE_ADDR] = sum(
                 [
-                    st_eth_amounts[i]
+                    st_native_amounts[i]
                     for i, x in enumerate(tranTokens)
-                    if x == ETH_ADDR and i in validEthIdxs
+                    if x == NATIVE_ADDR and i in validEthIdxs
                 ]
             )
 
             signer = self._get_key_prob(AGG)
             fetchParams = craftFetchParamsArray(st_swapIDs, fetchTokens)
             transferParams = craftTransferParamsArray(
-                tranTokens, st_recips, st_eth_amounts
+                tranTokens, st_recips, st_native_amounts
             )
             args = (fetchParams, transferParams)
 
@@ -419,12 +419,12 @@ def test_all(
 
                 # Alter bals from the fetch
                 for swapID, tok in zip(st_swapIDs, fetchTokens):
-                    if tok == ETH_ADDR:
+                    if tok == NATIVE_ADDR:
                         addr = getCreate2Addr(
-                            self.v.address, cleanHexStrPad(swapID), DepositEth, ""
+                            self.v.address, cleanHexStrPad(swapID), DepositNative, ""
                         )
-                        self.ethBals[self.v] += self.ethBals[addr]
-                        self.ethBals[addr] = 0
+                        self.nativeBals[self.v] += self.nativeBals[addr]
+                        self.nativeBals[addr] = 0
                     else:
                         addr = getCreate2Addr(
                             self.v.address,
@@ -443,12 +443,12 @@ def test_all(
 
                 # Alter bals from the transfers
                 for i, (tok, rec, am) in enumerate(
-                    zip(tranTokens, st_recips, st_eth_amounts)
+                    zip(tranTokens, st_recips, st_native_amounts)
                 ):
-                    if tok == ETH_ADDR:
+                    if tok == NATIVE_ADDR:
                         if i in validEthIdxs:
-                            self.ethBals[rec] += am
-                            self.ethBals[self.v] -= am
+                            self.nativeBals[rec] += am
+                            self.nativeBals[self.v] -= am
                     elif tok == self.tokenA:
                         self.tokenABals[rec] += am
                         self.tokenABals[self.v] -= am
@@ -458,11 +458,13 @@ def test_all(
                     else:
                         assert False, "Panic"
 
-        # Transfers ETH or tokens out the vault. Want this to be called by rule_vault_transfer_eth
+        # Transfers native or tokens out the vault. Want this to be called by rule_vault_transfer_native
         # etc individually and not directly since they're all the same just with a different tokenAddr
         # input
-        def _vault_transfer(self, bals, tokenAddr, st_sender, st_recip, st_eth_amount):
-            args = [[tokenAddr, st_recip, st_eth_amount]]
+        def _vault_transfer(
+            self, bals, tokenAddr, st_sender, st_recip, st_native_amount
+        ):
+            args = [[tokenAddr, st_recip, st_native_amount]]
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender)
 
@@ -473,7 +475,7 @@ def test_all(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                     )
 
-            elif st_eth_amount == 0:
+            elif st_native_amount == 0:
                 print("        REV_MSG_NZ_UINT _vault_transfer", *toLog)
                 with reverts(REV_MSG_NZ_UINT):
                     signed_call_km(
@@ -492,7 +494,7 @@ def test_all(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                     )
 
-            elif bals[self.v] < st_eth_amount and tokenAddr != ETH_ADDR:
+            elif bals[self.v] < st_native_amount and tokenAddr != NATIVE_ADDR:
                 print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     signed_call_km(
@@ -504,14 +506,14 @@ def test_all(
                     self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                 )
 
-                if bals[self.v] >= st_eth_amount or tokenAddr != ETH_ADDR:
-                    bals[self.v] -= st_eth_amount
-                    bals[st_recip] += st_eth_amount
+                if bals[self.v] >= st_native_amount or tokenAddr != NATIVE_ADDR:
+                    bals[self.v] -= st_native_amount
+                    bals[st_recip] += st_native_amount
                 self.lastValidateTime = tx.timestamp
 
-        def rule_vault_transfer_eth(self, st_sender, st_recip, st_eth_amount):
+        def rule_vault_transfer_native(self, st_sender, st_recip, st_native_amount):
             self._vault_transfer(
-                self.ethBals, ETH_ADDR, st_sender, st_recip, st_eth_amount
+                self.nativeBals, NATIVE_ADDR, st_sender, st_recip, st_native_amount
             )
 
         def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
@@ -524,24 +526,24 @@ def test_all(
                 self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount
             )
 
-        # Send any combination of eth/tokenA/tokenB out of the vault. Using st_eth_amounts
-        # for both eth amounts and token amounts here because its max is within the bounds of
-        # both eth and tokens.
-        def rule_vault_transferBatch(self, st_sender, st_recips, st_eth_amounts):
+        # Send any combination of native/tokenA/tokenB out of the vault. Using st_native_amounts
+        # for both native amounts and token amounts here because its max is within the bounds of
+        # both native and tokens.
+        def rule_vault_transferBatch(self, st_sender, st_recips, st_native_amounts):
             signer = self._get_key_prob(AGG)
-            minLen = trimToShortest([st_recips, st_eth_amounts])
-            tokens = choices([ETH_ADDR, self.tokenA, self.tokenB], k=minLen)
-            args = [craftTransferParamsArray(tokens, st_recips, st_eth_amounts)]
+            minLen = trimToShortest([st_recips, st_native_amounts])
+            tokens = choices([NATIVE_ADDR, self.tokenA, self.tokenB], k=minLen)
+            args = [craftTransferParamsArray(tokens, st_recips, st_native_amounts)]
             toLog = (*args, st_sender, signer)
 
             totalEth = 0
             totalTokenA = 0
             totalTokenB = 0
             validEthIdxs = getValidTranIdxs(
-                tokens, st_eth_amounts, self.ethBals[self.v], ETH_ADDR
+                tokens, st_native_amounts, self.nativeBals[self.v], NATIVE_ADDR
             )
-            for i, (tok, am) in enumerate(zip(tokens, st_eth_amounts)):
-                if tok == ETH_ADDR:
+            for i, (tok, am) in enumerate(zip(tokens, st_native_amounts)):
+                if tok == NATIVE_ADDR:
                     if i in validEthIdxs:
                         totalEth += am
                 elif tok == self.tokenA:
@@ -610,36 +612,38 @@ def test_all(
 
                 self.lastValidateTime = tx.timestamp
                 for i in range(len(st_recips)):
-                    if tokens[i] == ETH_ADDR:
+                    if tokens[i] == NATIVE_ADDR:
                         if i in validEthIdxs:
-                            self.ethBals[st_recips[i]] += st_eth_amounts[i]
-                            self.ethBals[self.v] -= st_eth_amounts[i]
+                            self.nativeBals[st_recips[i]] += st_native_amounts[i]
+                            self.nativeBals[self.v] -= st_native_amounts[i]
                     elif tokens[i] == self.tokenA:
-                        self.tokenABals[st_recips[i]] += st_eth_amounts[i]
-                        self.tokenABals[self.v] -= st_eth_amounts[i]
+                        self.tokenABals[st_recips[i]] += st_native_amounts[i]
+                        self.tokenABals[self.v] -= st_native_amounts[i]
                     elif tokens[i] == self.tokenB:
-                        self.tokenBBals[st_recips[i]] += st_eth_amounts[i]
-                        self.tokenBBals[self.v] -= st_eth_amounts[i]
+                        self.tokenBBals[st_recips[i]] += st_native_amounts[i]
+                        self.tokenBBals[self.v] -= st_native_amounts[i]
                     else:
                         assert False, "Panic"
 
-        # Transfers ETH from a user/sender to one of the depositEth create2 addresses
-        def rule_transfer_eth_to_depositEth(self, st_sender, st_swapID, st_eth_amount):
+        # Transfers native from a user/sender to one of the depositEth create2 addresses
+        def rule_transfer_native_to_depositEth(
+            self, st_sender, st_swapID, st_native_amount
+        ):
             # No point testing reverts of these conditions since it's not what we're trying to test
-            if st_swapID != 0 and self.ethBals[st_sender] >= st_eth_amount:
+            if st_swapID != 0 and self.nativeBals[st_sender] >= st_native_amount:
                 print(
-                    "                    rule_transfer_eth_to_depositEth",
+                    "                    rule_transfer_native_to_depositEth",
                     st_sender,
                     st_swapID,
-                    st_eth_amount,
+                    st_native_amount,
                 )
                 depositAddr = getCreate2Addr(
-                    self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
+                    self.v.address, cleanHexStrPad(st_swapID), DepositNative, ""
                 )
-                st_sender.transfer(depositAddr, st_eth_amount)
+                st_sender.transfer(depositAddr, st_native_amount)
 
-                self.ethBals[st_sender] -= st_eth_amount
-                self.ethBals[depositAddr] += st_eth_amount
+                self.nativeBals[st_sender] -= st_native_amount
+                self.nativeBals[depositAddr] += st_native_amount
 
         # Transfers a token from a user/sender to one of the depositEth create2 addresses.
         # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
@@ -683,72 +687,74 @@ def test_all(
                 self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount
             )
 
-        # Fetch the ETH deposit of a random create2
-        def rule_fetchDepositEth(self, st_sender, st_swapID):
+        # Fetch the native deposit of a random create2
+        def rule_fetchDepositNative(self, st_sender, st_swapID):
             signer = self._get_key_prob(AGG)
             toLog = (st_swapID, signer, st_sender)
 
             if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEth")
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositNative")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositEth,
+                        self.v.fetchDepositNative,
                         st_swapID,
                         signer=signer,
                         sender=st_sender,
                     )
             elif st_swapID == 0:
-                print("        REV_MSG_NZ_BYTES32 rule_fetchDepositEth", *toLog)
+                print("        REV_MSG_NZ_BYTES32 rule_fetchDepositNative", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositEth,
+                        self.v.fetchDepositNative,
                         st_swapID,
                         signer=signer,
                         sender=st_sender,
                     )
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositEth", *toLog)
+                print("        REV_MSG_WHITELIST rule_fetchDepositNative", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositEth,
+                        self.v.fetchDepositNative,
                         st_swapID,
                         signer=signer,
                         sender=st_sender,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_fetchDepositEth", signer)
+                print("        REV_MSG_SIG rule_fetchDepositNative", signer)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositEth,
+                        self.v.fetchDepositNative,
                         st_swapID,
                         signer=signer,
                         sender=st_sender,
                     )
             else:
-                print("                    rule_fetchDepositEth", *toLog)
+                print("                    rule_fetchDepositNative", *toLog)
                 depositAddr = getCreate2Addr(
-                    self.v.address, cleanHexStrPad(st_swapID), DepositEth, ""
+                    self.v.address, cleanHexStrPad(st_swapID), DepositNative, ""
                 )
-                depositBal = self.ethBals[depositAddr]
+                depositBal = self.nativeBals[depositAddr]
                 tx = signed_call_km(
                     self.km,
-                    self.v.fetchDepositEth,
+                    self.v.fetchDepositNative,
                     st_swapID,
                     signer=signer,
                     sender=st_sender,
                 )
 
-                self.ethBals[depositAddr] -= depositBal
-                self.ethBals[self.v] += depositBal
+                self.nativeBals[depositAddr] -= depositBal
+                self.nativeBals[self.v] += depositBal
                 self.lastValidateTime = tx.timestamp
 
-        def rule_fetchDepositEthBatch(self, st_sender, st_swapIDs):
+        def rule_fetchDepositNativeBatch(self, st_sender, st_swapIDs):
             addrs = [
-                getCreate2Addr(self.v.address, cleanHexStrPad(swapID), DepositEth, "")
+                getCreate2Addr(
+                    self.v.address, cleanHexStrPad(swapID), DepositNative, ""
+                )
                 for swapID in st_swapIDs
             ]
             total = sum([web3.eth.get_balance(addr) for addr in addrs])
@@ -756,48 +762,48 @@ def test_all(
             toLog = (st_swapIDs, signer, st_sender)
 
             if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _fetchDepositEthBatch")
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositNativeBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositEthBatch,
+                        self.v.fetchDepositNativeBatch,
                         st_swapIDs,
                         signer=signer,
                         sender=st_sender,
                     )
             elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositEthBatch", *toLog)
+                print("        REV_MSG_WHITELIST rule_fetchDepositNativeBatch", *toLog)
                 with reverts(REV_MSG_WHITELIST):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositEthBatch,
+                        self.v.fetchDepositNativeBatch,
                         st_swapIDs,
                         signer=signer,
                         sender=st_sender,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_fetchDepositEthBatch", *toLog)
+                print("        REV_MSG_SIG rule_fetchDepositNativeBatch", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositEthBatch,
+                        self.v.fetchDepositNativeBatch,
                         st_swapIDs,
                         signer=signer,
                         sender=st_sender,
                     )
             else:
-                print("                    rule_fetchDepositEthBatch", *toLog)
+                print("                    rule_fetchDepositNativeBatch", *toLog)
                 tx = signed_call_km(
                     self.km,
-                    self.v.fetchDepositEthBatch,
+                    self.v.fetchDepositNativeBatch,
                     st_swapIDs,
                     signer=signer,
                     sender=st_sender,
                 )
 
                 for addr in addrs:
-                    self.ethBals[addr] = 0
-                self.ethBals[self.v] += total
+                    self.nativeBals[addr] = 0
+                self.nativeBals[self.v] += total
                 self.lastValidateTime = tx.timestamp
 
         # Fetch the token deposit of a random create2
@@ -973,43 +979,44 @@ def test_all(
                 with reverts(REV_MSG_VAULT_SWAPS_DIS):
                     self.v.disableSwaps({"from": self.governor})
 
-        # Swap ETH
-        def rule_swapETH(
-            self, st_sender, st_egressParams, st_egressReceiver, st_eth_amount
+        # Swap NATIVE
+        def rule_swapNative(
+            self, st_sender, st_egressParams, st_egressReceiver, st_native_amount
         ):
             args = (st_egressParams, st_egressReceiver)
             toLog = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    print("        REV_MSG_GOV_SUSPENDED _swapETH")
-                    self.v.swapETH(*args, {"from": st_sender})
+                    print("        REV_MSG_GOV_SUSPENDED _swapNative")
+                    self.v.swapNative(*args, {"from": st_sender})
             else:
                 if self.swapsEnabled:
-                    if st_eth_amount == 0:
-                        print("        REV_MSG_NZ_UINT _swapETH", *toLog)
+                    if st_native_amount == 0:
+                        print("        REV_MSG_NZ_UINT _swapNative", *toLog)
                         with reverts(REV_MSG_NZ_UINT):
-                            self.v.swapETH(
+                            self.v.swapNative(
                                 *args,
-                                {"from": st_sender, "amount": st_eth_amount},
+                                {"from": st_sender, "amount": st_native_amount},
                             )
                     else:
-                        if web3.eth.get_balance(str(st_sender)) >= st_eth_amount:
-                            print("                    rule_swapETH", *toLog)
-                            tx = self.v.swapETH(
+                        if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
+                            print("                    rule_swapNative", *toLog)
+                            tx = self.v.swapNative(
                                 *args,
-                                {"from": st_sender, "amount": st_eth_amount},
+                                {"from": st_sender, "amount": st_native_amount},
                             )
                             assert (
                                 web3.eth.get_balance(self.v.address)
-                                == self.ethBals[self.v] + st_eth_amount
+                                == self.nativeBals[self.v] + st_native_amount
                             )
-                            self.ethBals[self.v] += st_eth_amount
-                            self.ethBals[st_sender] -= st_eth_amount
-                            assert tx.events["SwapETH"]["amount"] == st_eth_amount
+                            self.nativeBals[self.v] += st_native_amount
+                            self.nativeBals[st_sender] -= st_native_amount
+                            assert tx.events["SwapNative"]["amount"] == st_native_amount
                             assert (
-                                tx.events["SwapETH"]["egressParams"] == st_egressParams
+                                tx.events["SwapNative"]["egressParams"]
+                                == st_egressParams
                             )
-                            assert tx.events["SwapETH"][
+                            assert tx.events["SwapNative"][
                                 "egressReceiver"
                             ] == "0x" + cleanHexStr(st_egressReceiver)
 
@@ -1693,16 +1700,16 @@ def test_all(
                 self.currentWhitelist = toWhitelist
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
-        def rule_upgrade_Vault(self, st_sender, st_eth_amount, st_sleep_time):
+        def rule_upgrade_Vault(self, st_sender, st_native_amount, st_sleep_time):
             newVault = st_sender.deploy(Vault, self.km)
 
             # Keep old Vault whitelisted
             toWhitelist = self.currentWhitelist.copy() + [newVault]
             args = [
                 [
-                    ETH_ADDR,
+                    NATIVE_ADDR,
                     st_sender,
-                    st_eth_amount,
+                    st_native_amount,
                 ]
             ]
             signer = self._get_key_prob(AGG)
@@ -1746,7 +1753,7 @@ def test_all(
 
                     chain.sleep(st_sleep_time)
 
-                    # Transfer all the remaining ETH and other funds (TokenA & TokenB) to new Vault and dewhitelist
+                    # Transfer all the remaining native and other funds (TokenA & TokenB) to new Vault and dewhitelist
                     iniEthBalance = self.v.balance()
                     initTokenABalance = self.tokenA.balanceOf(self.v)
                     iniTokenBBalance = self.tokenB.balanceOf(self.v)
@@ -1759,7 +1766,7 @@ def test_all(
 
                     print("                    rule_upgrade_vault", *amountsToTransfer)
 
-                    tokens = [ETH_ADDR, self.tokenA, self.tokenB]
+                    tokens = [NATIVE_ADDR, self.tokenA, self.tokenB]
                     recipients = [newVault, newVault, newVault]
 
                     args = [
@@ -1813,7 +1820,7 @@ def test_all(
                     # Create new addresses for the new Vault and initialize Balances
                     newCreate2EthAddrs = [
                         getCreate2Addr(
-                            self.v.address, cleanHexStrPad(swapID), DepositEth, ""
+                            self.v.address, cleanHexStrPad(swapID), DepositNative, ""
                         )
                         for swapID in range(MAX_SWAPID + 1)
                     ]
@@ -2153,7 +2160,7 @@ def test_all(
 
         # Governance attemps to withdraw all tokens from the Vault in case of emergency
         def rule_v_govWithdrawal(self, st_sender):
-            # Withdraw token A and token B - not ETH to make the checking easier due to gas expenditure
+            # Withdraw token A and token B - not native to make the checking easier due to gas expenditure
             tokenstoWithdraw = self.tokensList[1:]
             if self.v_communityGuardDisabled:
                 if st_sender != self.governor:
@@ -2201,36 +2208,38 @@ def test_all(
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
                     self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
-        # Transfer ETH to the stakeManager to check govWithdrawalEth. Using st_staker to make sure it is a key in the ethBals dict
-        def _transfer_eth_sm(self, st_staker, st_eth_amount):
-            self._transfer_eth(st_staker, self.sm, st_eth_amount)
+        # Transfer native to the stakeManager to check govWithdrawalEth. Using st_staker to make sure it is a key in the nativeBals dict
+        def _transfer_native_sm(self, st_staker, st_native_amount):
+            self._transfer_native(st_staker, self.sm, st_native_amount)
 
-        # Transfer ETH to the stakeManager to check govWithdrawalEth. Using st_staker to make sure it is a key in the ethBals dict
-        def _transfer_eth_km(self, st_staker, st_eth_amount):
-            self._transfer_eth(st_staker, self.km, st_eth_amount)
+        # Transfer native to the stakeManager to check govWithdrawalEth. Using st_staker to make sure it is a key in the nativeBals dict
+        def _transfer_native_km(self, st_staker, st_native_amount):
+            self._transfer_native(st_staker, self.km, st_native_amount)
 
-        # Transfer eth from sender to receiver. Both need be keys in the ethBals dict
-        def _transfer_eth(self, sender, receiver, amount):
-            if self.ethBals[sender] >= amount:
-                print("                    rule_transfer_eth", sender, receiver, amount)
+        # Transfer native from sender to receiver. Both need be keys in the nativeBals dict
+        def _transfer_native(self, sender, receiver, amount):
+            if self.nativeBals[sender] >= amount:
+                print(
+                    "                    rule_transfer_native", sender, receiver, amount
+                )
                 sender.transfer(receiver, amount)
-                self.ethBals[sender] -= amount
-                self.ethBals[receiver] += amount
+                self.nativeBals[sender] -= amount
+                self.nativeBals[receiver] += amount
 
-        # Governance attemps to withdraw StakeManager's ETH
+        # Governance attemps to withdraw StakeManager's NATIVE
         def rule_govWithdrawalEth_sm(self):
             self._govWithdrawalEth(self.sm)
 
-        # Governance attemps to withdraw KeyManager's ETH
+        # Governance attemps to withdraw KeyManager's NATIVE
         def rule_govWithdrawalEth_km(self):
             self._govWithdrawalEth(self.km)
 
-        # Governance attemps to withdraw contract's eth- final balances will be check by the invariants
+        # Governance attemps to withdraw contract's native- final balances will be check by the invariants
         def _govWithdrawalEth(self, contract):
             print("                    rule_govWithdrawalEth")
-            contract.govWithdrawEth({"from": self.governor})
-            self.ethBals[self.governor] += self.ethBals[contract]
-            self.ethBals[contract] = 0
+            contract.govWithdrawNative({"from": self.governor})
+            self.nativeBals[self.governor] += self.nativeBals[contract]
+            self.nativeBals[contract] = 0
 
         def rule_govAction(self, st_sender, st_message):
             if st_sender != self.governor:
@@ -2244,7 +2253,7 @@ def test_all(
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
-        # NOTE: Error in self.ethBals assertion - calculateGasSpentByAddress seems to be smaller than expected and intermittently the eth balance
+        # NOTE: Error in self.nativeBals assertion - calculateGasSpentByAddress seems to be smaller than expected and intermittently the native balance
         # assertion fails. Could be that the tx gas values are off or that brownie and/or history.filter has a bug and doesn't report all the
         # sent transactions. It's an error that only occurs at the end of a test, so it is unlikely that the calculations are wrong or that
         # we need to add the wait_for_transaction_receipt before doing the calculation. Adding a time.sleep(3) seems to make all runs pass.
@@ -2254,7 +2263,7 @@ def test_all(
             self.numTxsTested += 1
             time.sleep(3)
             for addr in self.allAddrs:
-                assert web3.eth.get_balance(str(addr)) == self.ethBals[
+                assert web3.eth.get_balance(str(addr)) == self.nativeBals[
                     addr
                 ] - calculateGasSpentByAddress(addr, self.iniTransactionNumber[addr])
                 assert self.tokenA.balanceOf(addr) == self.tokenABals[addr]
@@ -2316,8 +2325,8 @@ def test_all(
         def _updateBalancesOnUpgrade(self, oldContract, newContract):
             self._addNewAddress(newContract)
 
-            self.ethBals[newContract] = self.ethBals[oldContract]
-            self.ethBals[oldContract] = 0
+            self.nativeBals[newContract] = self.nativeBals[oldContract]
+            self.nativeBals[oldContract] = 0
 
             self.tokenABals[newContract] = self.tokenABals[oldContract]
             self.tokenABals[oldContract] = 0
@@ -2334,7 +2343,7 @@ def test_all(
             # Initialize Key - no need to take account gas expenditure in newly deployed addresses since we only perform transactions from accounts within "a"
             self.iniTransactionNumber[newAddress] = 0
             # Initialize balances
-            self.ethBals[newAddress] = 0
+            self.nativeBals[newAddress] = 0
             self.tokenABals[newAddress] = 0
             self.tokenBBals[newAddress] = 0
             self.flipBals[newAddress] = 0
@@ -2343,7 +2352,7 @@ def test_all(
         StateMachine,
         a,
         cfDeployAllWhitelist,
-        DepositEth,
+        DepositNative,
         DepositToken,
         Token,
         StakeManager,

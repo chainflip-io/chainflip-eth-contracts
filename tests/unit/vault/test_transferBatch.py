@@ -18,13 +18,13 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
     ]
     # Make sure that they're all the same length
     minLen = trimToShortest([st_recipients, st_amounts])
-    tokens = choices([ETH_ADDR, token, token2], k=minLen)
+    tokens = choices([NATIVE_ADDR, token, token2], k=minLen)
 
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT * minLen)
     token.transfer(cf.vault, TEST_AMNT * minLen, {"from": cf.DEPLOYER})
     token2.transfer(cf.vault, TEST_AMNT * minLen, {"from": cf.DEPLOYER})
 
-    ethBals = [recip.balance() for recip in st_recipients]
+    nativeBals = [recip.balance() for recip in st_recipients]
     tokenBals = [token.balanceOf(recip) for recip in st_recipients]
     token2Bals = [token2.balanceOf(recip) for recip in st_recipients]
 
@@ -33,8 +33,8 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
     signed_call_cf(cf, cf.vault.transferBatch, *transferParamsArray, sender=st_sender)
 
     for i in range(len(st_recipients)):
-        if tokens[i] == ETH_ADDR:
-            assert st_recipients[i].balance() == ethBals[i] + st_amounts[i]
+        if tokens[i] == NATIVE_ADDR:
+            assert st_recipients[i].balance() == nativeBals[i] + st_amounts[i]
         elif tokens[i] == token:
             assert token.balanceOf(st_recipients[i]) == tokenBals[i] + st_amounts[i]
         elif tokens[i] == token2:
@@ -46,22 +46,22 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
 def test_transferBatch_rev_msgHash(cf):
     callDataNoSig = cf.vault.transferBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
-        [[ETH_ADDR, cf.ALICE, TEST_AMNT]],
+        [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]],
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.transferBatch(sigData, [[ETH_ADDR, cf.ALICE, TEST_AMNT]])
+        cf.vault.transferBatch(sigData, [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]])
 
 
 def test_transferBatch_rev_sig(cf):
     callDataNoSig = cf.vault.transferBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id),
-        [[ETH_ADDR, cf.ALICE, TEST_AMNT]],
+        [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]],
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.vault.transferBatch(sigData, [[ETH_ADDR, cf.ALICE, TEST_AMNT]])
+        cf.vault.transferBatch(sigData, [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]])
