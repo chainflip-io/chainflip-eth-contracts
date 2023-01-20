@@ -20,6 +20,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
 
     event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
+    event FetchFailed(address payable indexed fetchContract, address indexed token);
     event SwapNative(uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapsEnabled(bool enabled);
@@ -270,7 +271,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Fetch from already deployed contracts
         length = fetchParamsArray.length;
         for (i = 0; i < length; ) {
-            Deposit(fetchParamsArray[i].fetchContract).fetch(IERC20Lite(fetchParamsArray[i].token));
+            _fetch(fetchParamsArray[i]);
             unchecked {
                 ++i;
             }
@@ -327,7 +328,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        Deposit(fetchParams.fetchContract).fetch(IERC20Lite(fetchParams.token));
+        _fetch(fetchParams);
+    }
+
+    /**
+     * @notice  Retrieves any token from an address where a Deposit contract is already deployed.
+     * @param fetchParams    The fetch parameters
+     */
+    function _fetch(FetchParams calldata fetchParams) private {
+        try Deposit(fetchParams.fetchContract).fetch(IERC20Lite(fetchParams.token)) {} catch {
+            emit FetchFailed(fetchParams.fetchContract, fetchParams.token);
+        }
     }
 
     //////////////////////////////////////////////////////////////
