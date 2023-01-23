@@ -21,7 +21,7 @@ contract LoopBackMock is CFReceiver, Shared {
         address token,
         uint256 amount
     ) internal override {
-        if (token == _ETH_ADDR) {
+        if (token == _NATIVE_ADDR) {
             // Just health check for this mock. It will never revert.
             require(msg.value == amount, "LoopbackMock: msg.value != amount");
             IVault(_cfVault).xCallNative{value: amount}(
@@ -52,8 +52,8 @@ contract LoopBackMock is CFReceiver, Shared {
         string calldata srcAddress,
         bytes calldata message
     ) internal override {
-        uint256 ethBalance = address(this).balance;
-        IVault(_cfVault).xCallNative{value: ethBalance}(srcChain, srcAddress, "", message, DEFAULT_GAS, address(this));
+        uint256 nativeBalance = address(this).balance;
+        IVault(_cfVault).xCallNative{value: nativeBalance}(srcChain, srcAddress, "", message, DEFAULT_GAS, address(this));
     }
 
     receive() external payable {}

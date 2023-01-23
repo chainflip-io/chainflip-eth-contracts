@@ -4,11 +4,11 @@ from utils import *
 # -----General/shared-----
 ZERO_ADDR_PACKED = "0000000000000000000000000000000000000000"
 ZERO_ADDR = "0x" + ZERO_ADDR_PACKED
-ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+NATIVE_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 NON_ZERO_ADDR = "0x0000000000000000000000000000000000000001"
 E_18 = 10**18
 TEST_AMNT = 10**17
-ONE_ETH = E_18
+ONE_NATIVE = E_18
 JUNK_INT = 42069
 JUNK_HEX = web3.toHex(JUNK_INT)
 JUNK_STR = "junkString"
@@ -16,7 +16,7 @@ JUNK_STR = "junkString"
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
 AGG = "Agg"
 INIT_TOKEN_SUPPLY = int(10**8 * E_18)
-INIT_ETH_BAL = int(10000 * E_18)
+INIT_NATIVE_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
 # USDC uses 6 decimals
 INIT_USDC_SUPPLY = int(20 * 10**6 * 10**6)
@@ -123,7 +123,6 @@ REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
-REV_MSG_VAULT_SENDER = "Vault: only Vault can send ETH"
 REV_MSG_VAULT_DELAY = "Vault: not enough time"
 REV_MSG_VAULT_XCALLS_DIS = "Vault: xCalls not enabled"
 REV_MSG_VAULT_SWAPS_EN = "Vault: xCalls enabled"

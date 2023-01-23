@@ -156,7 +156,7 @@ def test_dex_executexCallToken(
         toHex(dexAggDstMock.address)[2:],
         ethSymbol,
         dexMock,
-        ETH_ADDR,
+        NATIVE_ADDR,
         token2,
         st_recipient,
         token,
@@ -193,7 +193,7 @@ def test_dex_executexCallToken(
     message = tx.events["XCallToken"]["message"]
 
     args = [
-        [ETH_ADDR, dexAggDstMock, egressAmount],
+        [NATIVE_ADDR, dexAggDstMock, egressAmount],
         srcChain,  # arbitrary source chain
         toHex(dexAggSrcMock.address)[2:],  # sourceAddress to string
         message,

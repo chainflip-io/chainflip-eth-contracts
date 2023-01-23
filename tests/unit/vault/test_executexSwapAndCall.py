@@ -44,7 +44,7 @@ def test_executexSwapAndCallEth(
 
     message = hexStr(st_message)
     args = [
-        [ETH_ADDR, cfReceiverMock.address, st_amount],
+        [NATIVE_ADDR, cfReceiverMock.address, st_amount],
         st_srcChain,
         st_srcAddress,
         message,
@@ -58,7 +58,7 @@ def test_executexSwapAndCallEth(
         st_srcChain,
         st_srcAddress,
         message,
-        ETH_ADDR,
+        NATIVE_ADDR,
         st_amount,
         st_amount,
     ]
@@ -67,7 +67,7 @@ def test_executexSwapAndCallEth(
 # token contract doesn't have the cfReceive function implemented
 def test_executexSwapAndCall_rev_noCfReceive(cf, token):
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
-    randToken = random.choice([ETH_ADDR, token])
+    randToken = random.choice([NATIVE_ADDR, token])
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
@@ -108,7 +108,7 @@ def test_executexSwapAndCall_revToken(cf, cfReceiverMock):
 # Trying to send ETH when there's none in the Vault
 def test_executexSwapAndCallEth_rev_not_enough_eth(cf, cfReceiverMock):
     args = [
-        [ETH_ADDR, cfReceiverMock, TEST_AMNT],
+        [NATIVE_ADDR, cfReceiverMock, TEST_AMNT],
         JUNK_INT,
         JUNK_STR,
         JUNK_HEX,
@@ -128,7 +128,7 @@ def test_executexSwapAndCall_rev_nzAddrs(cf, cfReceiverMock, token):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
     args = [
-        [ETH_ADDR, ZERO_ADDR, TEST_AMNT],
+        [NATIVE_ADDR, ZERO_ADDR, TEST_AMNT],
         JUNK_INT,
         JUNK_STR,
         JUNK_HEX,
@@ -148,7 +148,7 @@ def test_executexSwapAndCall_rev_nzAddrs(cf, cfReceiverMock, token):
 
 def test_executexSwapAndCall_rev_nzAmount(cf, cfReceiverMock, token):
     args = [
-        [ETH_ADDR, cfReceiverMock, 0],
+        [NATIVE_ADDR, cfReceiverMock, 0],
         JUNK_INT,
         JUNK_STR,
         JUNK_HEX,
@@ -168,7 +168,7 @@ def test_executexSwapAndCall_rev_nzAmount(cf, cfReceiverMock, token):
 
 def test_executexSwapAndCallEth_rev_msgHash(cf):
     args = [
-        [ETH_ADDR, cf.ALICE, TEST_AMNT],
+        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
         JUNK_INT,
         JUNK_STR,
         JUNK_HEX,
@@ -191,7 +191,7 @@ def test_executexSwapAndCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
     startBalRecipient = cfReceiverFailMock.balance()
 
     args = [
-        [ETH_ADDR, cfReceiverFailMock.address, TEST_AMNT],
+        [NATIVE_ADDR, cfReceiverFailMock.address, TEST_AMNT],
         JUNK_INT,
         JUNK_STR,
         JUNK_HEX,
@@ -214,7 +214,7 @@ def test_executexSwapAndCallEth_tryCatch(cf, cfReceiverTryMock, st_amount):
     startBalRecipient = cfReceiverTryMock.balance()
 
     args = [
-        [ETH_ADDR, cfReceiverTryMock.address, st_amount],
+        [NATIVE_ADDR, cfReceiverTryMock.address, st_amount],
         JUNK_INT,
         JUNK_STR,
         JUNK_HEX,

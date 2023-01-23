@@ -19,12 +19,13 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 
     # Try initial transfer to later test a replay attack on the newly deployed keyManager
     callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), [ETH_ADDR, cf.ALICE, TEST_AMNT]
+        agg_null_sig(cf.keyManager.address, chain.id),
+        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
     )
     sigdata = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
     cf.vault.transfer(
         sigdata,
-        [ETH_ADDR, cf.ALICE, TEST_AMNT],
+        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
     )
 
     # Reusing current keyManager aggregateKey for simplicity
@@ -66,19 +67,19 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
     with reverts(REV_MSG_WRONG_KEYMANADDR):
         cf.vault.transfer(
             sigdata,
-            [ETH_ADDR, cf.ALICE, TEST_AMNT],
+            [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
         )
 
     # Check that a new transfer works and uses the new keyManager
     currentNonce = nonces[AGG]
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == False
     callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(newKeyManager, chain.id), [ETH_ADDR, cf.ALICE, TEST_AMNT]
+        agg_null_sig(newKeyManager, chain.id), [NATIVE_ADDR, cf.ALICE, TEST_AMNT]
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, newKeyManager)
     cf.vault.transfer(
         sigData,
-        [ETH_ADDR, cf.ALICE, TEST_AMNT],
+        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
     )
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == True
 
@@ -86,7 +87,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
     with reverts(REV_MSG_KEYMANAGER_NONCE):
         cf.vault.transfer(
             sigData,
-            [ETH_ADDR, cf.ALICE, TEST_AMNT],
+            [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
         )
 
 
@@ -101,10 +102,10 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 @given(
     st_sender=strategy("address"),
 )
-def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
+def test_upgrade_Vault(cf, Vault, DepositNative, st_sender):
 
     totalFunds = cf.DENICE.balance() / 10
-    # Replicate a vault with funds - 1000 ETH
+    # Replicate a vault with funds - 1000 NATIVE
     cf.DENICE.transfer(cf.vault, totalFunds)
 
     newVault = cf.DEPLOYER.deploy(Vault, cf.keyManager)
@@ -113,7 +114,7 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     # Technically we could precomute the deployed address and whitelist it before deployment
     # but that is unnecessary
     with reverts(REV_MSG_WHITELIST):
-        args = [[ETH_ADDR, cf.ALICE, TEST_AMNT]]
+        args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
         signed_call_cf(cf, newVault.transfer, *args, sender=st_sender)
 
     # Keep old Vault whitelisted
@@ -134,32 +135,31 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     assert tx.events["TransferFailed"][0].values() == [
         cf.ALICE,
         TEST_AMNT,
-        web3.toHex(0),
     ]
 
     # with a balance in can transfer. However, at this point the new vault should not be used yet
     # more than potentially to start fetching from new addresses.
-    fetchDepositEth(cf, newVault, DepositEth)
-    transfer_eth(cf, newVault, cf.ALICE, TEST_AMNT)
+    fetchDepositNative(cf, newVault, DepositNative)
+    transfer_native(cf, newVault, cf.ALICE, TEST_AMNT)
 
     # Old vault can still operate
-    fetchDepositEth(cf, cf.vault, DepositEth)
-    transfer_eth(cf, cf.vault, cf.ALICE, TEST_AMNT)
+    fetchDepositNative(cf, cf.vault, DepositNative)
+    transfer_native(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
     # Transfer from oldVault to new Vault - unclear if we want to transfer all the balance
-    transfer_eth(cf, cf.vault, newVault, cf.vault.balance() / 2)
+    transfer_native(cf, cf.vault, newVault, cf.vault.balance() / 2)
     assert cf.vault.balance() == totalFunds / 2
     assert newVault.balance() == totalFunds / 2
 
     # Old vault still functions
-    fetchDepositEth(cf, cf.vault, DepositEth)
-    transfer_eth(cf, cf.vault, cf.ALICE, TEST_AMNT)
+    fetchDepositNative(cf, cf.vault, DepositNative)
+    transfer_native(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
     # Time where fetchs (and maybe transfers) still can be done from the oldVault
     chain.sleep(DAY)
 
     # Transfer all the remaining funds to new Vault and dewhitelist
-    transfer_eth(cf, cf.vault, newVault, cf.vault.balance())
+    transfer_native(cf, cf.vault, newVault, cf.vault.balance())
     assert newVault.balance() == totalFunds
     assert cf.vault.balance() == 0
 
@@ -177,8 +177,8 @@ def test_upgrade_Vault(cf, Vault, DepositEth, st_sender):
     with reverts(REV_MSG_WHITELIST):
         signed_call_cf(cf, cf.vault.transfer, *args, sender=st_sender)
 
-    fetchDepositEth(cf, newVault, DepositEth)
-    transfer_eth(cf, newVault, cf.ALICE, TEST_AMNT)
+    fetchDepositNative(cf, newVault, DepositNative)
+    transfer_native(cf, newVault, cf.ALICE, TEST_AMNT)
     assert newVault.balance() == totalFunds
 
 

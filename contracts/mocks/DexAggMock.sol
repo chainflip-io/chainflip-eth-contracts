@@ -103,9 +103,9 @@ contract DexAggDstChainMock is CFReceiver, Shared {
         bytes message,
         address token,
         uint256 amount,
-        uint256 ethReceived
+        uint256 nativeReceived
     );
-    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message, uint256 ethReceived);
+    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message, uint256 nativeReceived);
 
     constructor(
         address cfVault,
@@ -135,14 +135,14 @@ contract DexAggDstChainMock is CFReceiver, Shared {
 
         require(dstToken == token, "DexAggMock: Assertion failed");
 
-        if (token != _ETH_ADDR) {
+        if (token != _NATIVE_ADDR) {
             require(IERC20(dstToken).approve(dexAddress, amount));
         }
 
         // Check that the srcChain's encoded selector matches what we are decoding on the dstChain.
         require(selector == FUNC_SELECTOR, "DexAggMock: Invalid selector");
 
-        uint256 msgValue = token == _ETH_ADDR ? amount : 0;
+        uint256 msgValue = token == _NATIVE_ADDR ? amount : 0;
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = dexAddress.call{value: msgValue}(
             abi.encodeWithSelector(selector, dstToken, userToken, amount)
@@ -172,14 +172,14 @@ contract DEXMock is Shared {
         address tokenOut,
         uint256 amount
     ) external payable {
-        if (tokenIn == _ETH_ADDR) {
+        if (tokenIn == _NATIVE_ADDR) {
             require(msg.value == amount, "DEXMock: Invalid amount");
         } else {
             IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amount);
         }
 
         // Mocking the swap with a 1:2 ratio.
-        if (tokenOut == _ETH_ADDR) {
+        if (tokenOut == _NATIVE_ADDR) {
             payable(msg.sender).transfer(amount * 2);
         } else {
             IERC20(tokenOut).safeTransfer(msg.sender, amount * 2);

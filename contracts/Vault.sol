@@ -6,14 +6,14 @@ import "./interfaces/IKeyManager.sol";
 import "./interfaces/IERC20Lite.sol";
 import "./interfaces/ICFReceiver.sol";
 import "./abstract/Shared.sol";
-import "./DepositEth.sol";
+import "./DepositNative.sol";
 import "./DepositToken.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    Vault contract
- * @notice   The vault for holding and transferring ETH/tokens and deploying contracts for fetching
+ * @notice   The vault for holding and transferring native/tokens and deploying contracts for fetching
  *           individual deposits. It also allows users to do cross-chain swaps and(or) calls by
  *           making a function call directly to this contract.
  */
@@ -21,8 +21,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
+    uint256 private constant _GAS_TO_FORWARD = 3500;
 
-    event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
+    event TransferFailed(address payable indexed recipient, uint256 amount);
+    event SwapNative(uint256 amount, string egressParams, bytes32 egressReceiver);
+    event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
+    event SwapsEnabled(bool enabled);
 
     /// @dev dstAddress is not indexed because indexing a dynamic type (string) to be able to filter,
     ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
@@ -93,8 +97,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          to be of equal length), then it performs all transfers specified with the rest
      *          of the inputs, the same as transferBatch (where all inputs are again required
      *          to be of equal length - however the lengths of the fetch inputs do not have to
-     *          be equal to lengths of the transfer inputs). Fetches/transfers of ETH are indicated
-     *          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address.
+     *          be equal to lengths of the transfer inputs). Fetches/transfers of native are 
+     *          indicated with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -135,10 +139,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers ETH or a token from this vault to a recipient
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's a hash over
-     *                  the calldata to the function with an empty sigData) and sig over
-     *                  that hash (uint) from the aggregate key
+     * @notice  Transfers native or a token from this vault to a recipient
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's
+     *                  a hash over the calldata to the function with an empty sigData) and
+     *                  sig over that hash (uint) from the aggregate key
      * @param transferParams       The transfer parameters
      */
     function transfer(SigData calldata sigData, TransferParams calldata transferParams)
@@ -163,7 +167,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers ETH or tokens from this vault to recipients.
+     * @notice  Transfers native or tokens from this vault to recipients.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's a hash over
      *                  the calldata to the function with an empty sigData) and sig over
      *                  that hash (uint) from the aggregate key
@@ -188,7 +192,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers ETH or tokens from this vault to recipients.
+     * @notice  Transfers native or tokens from this vault to recipients.
      * @param transferParamsArray The array of transfer parameters.
      */
     function _transferBatch(TransferParams[] calldata transferParamsArray) private {
@@ -202,20 +206,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Annoyingly, doing `try addr.transfer` in `_transfer` fails because
-     *          Solidity doesn't see the `address` type as an external contract
-     *          and so doing try/catch on it won't work. Need to make it an external
-     *          call, and doing `this.something` counts as an external call, but that
-     *          means we need a fcn that just sends eth
-     * @param recipient The address to receive the ETH
-     */
-    function sendEth(address payable recipient) external payable {
-        require(msg.sender == address(this), "Vault: only Vault can send ETH");
-        recipient.transfer(msg.value);
-    }
-
-    /**
      * @notice  Transfers ETH or a token from this vault to a recipient
+     * @dev     Using "send" function to only send a set amount of gas, preventing the recipient
+     *          from using all the transfer batch gas. Also, not reverting on failure so it can't
+     *          block the batch transfer.
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
@@ -225,9 +219,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address payable recipient,
         uint256 amount
     ) private {
-        if (token == _ETH_ADDR) {
-            try this.sendEth{value: amount}(recipient) {} catch (bytes memory lowLevelData) {
-                emit TransferFailed(recipient, amount, lowLevelData);
+        if (address(token) == _NATIVE_ADDR) {
+            // Disable because we don't want to revert on failure. Forward only a set amount of gas
+            // so the receivers can't consume all the gas.
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = recipient.call{gas: _GAS_TO_FORWARD, value: amount}("");
+            if (!success) {
+                emit TransferFailed(recipient, amount);
             }
         } else {
             IERC20(token).safeTransfer(recipient, amount);
@@ -241,7 +239,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Retrieves ETH and tokens from multiple addresses, deterministically generated using
+     * @notice  Retrieves native and tokens from multiple addresses, deterministically generated using
      *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param fetchParamsArray    The array of fetch parameters
@@ -250,8 +248,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Fetch all deposits
         uint256 length = fetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            if (address(fetchParamsArray[i].token) == _ETH_ADDR) {
-                new DepositEth{salt: fetchParamsArray[i].swapID}();
+            if (address(fetchParamsArray[i].token) == _NATIVE_ADDR) {
+                new DepositNative{salt: fetchParamsArray[i].swapID}();
             } else {
                 new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(fetchParamsArray[i].token));
             }
@@ -262,7 +260,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Retrieves ETH from an address, deterministically generated using
+     * @notice  Retrieves native from an address, deterministically generated using
      *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
@@ -270,7 +268,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                  sig over that hash (uint) from the aggregate key
      * @param swapID    The unique identifier for this swap (bytes32)
      */
-    function fetchDepositEth(SigData calldata sigData, bytes32 swapID)
+    function fetchDepositNative(SigData calldata sigData, bytes32 swapID)
         external
         override
         onlyNotSuspended
@@ -279,18 +277,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.fetchDepositEth.selector,
+                    this.fetchDepositNative.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     swapID
                 )
             )
         )
     {
-        new DepositEth{salt: swapID}();
+        new DepositNative{salt: swapID}();
     }
 
     /**
-     * @notice  Retrieves ETH from multiple addresses, deterministically generated using
+     * @notice  Retrieves native from multiple addresses, deterministically generated using
      *          create2, by creating a contract for that address, sending it to this vault, and
      *          then destroying
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
@@ -298,7 +296,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                  sig over that hash (uint) from the aggregate key
      * @param swapIDs    The unique identifiers for this swap (bytes32)
      */
-    function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
+    function fetchDepositNativeBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
         external
         override
         onlyNotSuspended
@@ -306,7 +304,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.fetchDepositEthBatch.selector,
+                    this.fetchDepositNativeBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     swapIDs
                 )
@@ -315,7 +313,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     {
         uint256 length = swapIDs.length;
         for (uint256 i; i < length; ) {
-            new DepositEth{salt: swapIDs[i]}();
+            new DepositNative{salt: swapIDs[i]}();
             unchecked {
                 ++i;
             }
@@ -601,7 +599,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         string calldata srcAddress,
         bytes calldata message
     ) private {
-        if (transferParams.token == _ETH_ADDR) {
+        if (transferParams.token == _NATIVE_ADDR) {
             ICFReceiver(transferParams.recipient).cfReceive{value: transferParams.amount}(
                 srcChain,
                 srcAddress,
@@ -719,10 +717,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
         address payable recipient = payable(getKeyManager().getGovernanceKey());
 
-        // Transfer all ETH and ERC20 Tokens
+        // Transfer all native and ERC20 Tokens
         for (uint256 i = 0; i < tokens.length; i++) {
-            if (address(tokens[i]) == _ETH_ADDR) {
-                _transfer(_ETH_ADDR, recipient, address(this).balance);
+            if (tokens[i] == _NATIVE_ADDR) {
+                _transfer(_NATIVE_ADDR, recipient, address(this).balance);
             } else {
                 _transfer(tokens[i], recipient, IERC20(tokens[i]).balanceOf(address(this)));
             }
@@ -730,7 +728,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Enable swapETH and swapToken functionality by governance. Features disabled by default
+     * @notice  Enable swapNative and swapToken functionality by governance. Features disabled by default
      */
     function enablexCalls() external override onlyGovernor xCallsDisabled {
         _xCallsEnabled = true;
@@ -738,7 +736,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Disable swapETH and swapToken functionality by governance. Features disabled by default.
+     * @notice  Disable swapNative and swapToken functionality by governance. Features disabled by default.
      */
     function disablexCalls() external override onlyGovernor xCallsEnabled {
         _xCallsEnabled = false;
@@ -792,6 +790,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving ETH when fetchDepositEth is called
+    /// @dev For receiving native when fetchDepositNative is called
     receive() external payable {}
 }

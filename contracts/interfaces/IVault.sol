@@ -30,9 +30,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function fetchDepositEth(SigData calldata sigData, bytes32 swapID) external;
+    function fetchDepositNative(SigData calldata sigData, bytes32 swapID) external;
 
-    function fetchDepositEthBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external;
+    function fetchDepositNativeBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external;
 
     function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams) external;
 

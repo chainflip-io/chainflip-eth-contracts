@@ -264,8 +264,8 @@ def all_vault_events():
 
     chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
 
-    print(f"\n💸 Governance withdraws all ETH and FLIP\n")
-    cf.vault.govWithdraw([ETH_ADDR, cf.flip], {"from": GOVERNOR})
+    print(f"\n💸 Governance withdraws all NATIVE and FLIP\n")
+    cf.vault.govWithdraw([NATIVE_ADDR, cf.flip], {"from": GOVERNOR})
 
     print(f"\n🔐 Community enables guard\n")
     cf.vault.enableCommunityGuard({"from": cf.communityKey})

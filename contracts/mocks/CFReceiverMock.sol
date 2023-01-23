@@ -15,7 +15,7 @@ contract CFReceiverMock is CFReceiver, Shared {
         bytes message,
         address token,
         uint256 amount,
-        uint256 ethReceived
+        uint256 nativeReceived
     );
     event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message);
 

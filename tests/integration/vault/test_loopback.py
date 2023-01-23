@@ -26,7 +26,7 @@ def test_loopback_executexSwapAndCall_native(
 
     # Executing a xSwap
     args = [
-        [ETH_ADDR, cfLoopbackMock, st_amount],
+        [NATIVE_ADDR, cfLoopbackMock, st_amount],
         st_srcChain,
         st_srcAddress,
         st_message,

@@ -9,25 +9,25 @@ from shared_tests import *
     st_amounts=strategy("uint[]", max_value=TEST_AMNT),
     st_swapIDs=strategy("bytes32[]", unique=True),
 )
-def test_fetchDepositEthBatch(cf, DepositEth, st_amounts, st_swapIDs):
+def test_fetchDepositNativeBatch(cf, DepositNative, st_amounts, st_swapIDs):
     trimToShortest([st_amounts, st_swapIDs])
 
     for am, id in zip(st_amounts, st_swapIDs):
         # Get the address to deposit to and deposit
-        depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositEth, "")
+        depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositNative, "")
         cf.DEPLOYER.transfer(depositAddr, am)
 
     assert cf.vault.balance() == 0
 
     # Fetch the deposit
-    signed_call_cf(cf, cf.vault.fetchDepositEthBatch, st_swapIDs, sender=cf.ALICE)
+    signed_call_cf(cf, cf.vault.fetchDepositNativeBatch, st_swapIDs, sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == sum(st_amounts)
 
 
-def test_fetchDepositEthBatch_rev_msgHash(cf):
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(
+def test_fetchDepositNativeBatch_rev_msgHash(cf):
+    callDataNoSig = cf.vault.fetchDepositNativeBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD]
     )
 
@@ -35,11 +35,11 @@ def test_fetchDepositEthBatch_rev_msgHash(cf):
     sigData[2] += 1
     # Fetch the deposit
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.fetchDepositEthBatch(sigData, [JUNK_HEX_PAD])
+        cf.vault.fetchDepositNativeBatch(sigData, [JUNK_HEX_PAD])
 
 
-def test_fetchDepositEthBatch_rev_sig(cf):
-    callDataNoSig = cf.vault.fetchDepositEthBatch.encode_input(
+def test_fetchDepositNativeBatch_rev_sig(cf):
+    callDataNoSig = cf.vault.fetchDepositNativeBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), [JUNK_HEX_PAD]
     )
 
@@ -47,4 +47,4 @@ def test_fetchDepositEthBatch_rev_sig(cf):
     sigData[3] += 1
     # Fetch the deposit
     with reverts(REV_MSG_SIG):
-        cf.vault.fetchDepositEthBatch(sigData, [JUNK_HEX_PAD])
+        cf.vault.fetchDepositNativeBatch(sigData, [JUNK_HEX_PAD])
