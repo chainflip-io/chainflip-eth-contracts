@@ -9,7 +9,7 @@ import "./interfaces/IERC20Lite.sol";
  * @dev      The logic is not refactored into a single function because it's cheaper.
  */
 contract Deposit {
-    address payable private vault;
+    address payable private immutable vault;
 
     constructor(IERC20Lite token) {
         vault = payable(msg.sender);
