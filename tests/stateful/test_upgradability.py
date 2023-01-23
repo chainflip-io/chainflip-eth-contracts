@@ -166,7 +166,6 @@ def test_upgradability(
                 assert tx.events["TransferFailed"][0].values() == [
                     newVault.address,
                     st_vault_transfer_amount,
-                    web3.toHex(0),
                 ]
             print(
                 "                    rule_upgrade_vault",
