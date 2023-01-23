@@ -14,7 +14,9 @@ contract Deposit {
     constructor(IERC20Lite token) {
         vault = payable(msg.sender);
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            payable(msg.sender).transfer(address(this).balance);
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = msg.sender.call{value: address(this).balance}("");
+            require(success);
         } else {
             require(token.transfer(msg.sender, token.balanceOf(address(this))));
         }
@@ -22,10 +24,12 @@ contract Deposit {
 
     function fetch(IERC20Lite token) external {
         require(msg.sender == vault);
-        // Slightly cheaper to use msg.sender instead of Vault. To use Vault if we
-        // end up removing the check above.
+        
+        // Slightly cheaper to use msg.sender instead of Vault.
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            payable(msg.sender).transfer(address(this).balance);
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = msg.sender.call{value: address(this).balance}("");
+            require(success);
         } else {
             require(token.transfer(msg.sender, token.balanceOf(address(this))));
         }

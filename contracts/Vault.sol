@@ -488,6 +488,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving native when fetchDepositNative is called
+    /// @dev For receiving native when Deposit.fetch() is called.
     receive() external payable {}
 }
