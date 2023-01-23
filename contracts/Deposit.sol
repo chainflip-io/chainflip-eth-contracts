@@ -25,7 +25,7 @@ contract Deposit {
 
     function fetch(IERC20Lite token) external {
         require(msg.sender == vault);
-        
+
         // Slightly cheaper to use msg.sender instead of Vault.
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             // solhint-disable-next-line avoid-low-level-calls
