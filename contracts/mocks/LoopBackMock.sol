@@ -53,7 +53,14 @@ contract LoopBackMock is CFReceiver, Shared {
         bytes calldata message
     ) internal override {
         uint256 nativeBalance = address(this).balance;
-        IVault(_cfVault).xCallNative{value: nativeBalance}(srcChain, srcAddress, "", message, DEFAULT_GAS, address(this));
+        IVault(_cfVault).xCallNative{value: nativeBalance}(
+            srcChain,
+            srcAddress,
+            "",
+            message,
+            DEFAULT_GAS,
+            address(this)
+        );
     }
 
     receive() external payable {}

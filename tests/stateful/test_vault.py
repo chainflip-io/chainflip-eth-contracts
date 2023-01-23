@@ -54,7 +54,9 @@ def test_vault(
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cfDeploy, DepositNative, DepositToken, Token, cfReceiverMock):
+        def __init__(
+            cls, a, cfDeploy, DepositNative, DepositToken, Token, cfReceiverMock
+        ):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
