@@ -18,7 +18,8 @@ contract Deposit {
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);
         } else {
-            require(token.transfer(msg.sender, token.balanceOf(address(this))));
+            // Not checking the return value to avoid reverts for tokens with no return value.
+            token.transfer(msg.sender, token.balanceOf(address(this)));
         }
     }
 
@@ -31,7 +32,8 @@ contract Deposit {
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);
         } else {
-            require(token.transfer(msg.sender, token.balanceOf(address(this))));
+            // Not checking the return value to avoid reverts for tokens with no return value.
+            token.transfer(msg.sender, token.balanceOf(address(this)));
         }
     }
 
