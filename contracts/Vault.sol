@@ -19,8 +19,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
+    uint256 private constant _GAS_TO_FORWARD = 3500;
 
-    event TransferFailed(address payable indexed recipient, uint256 amount, bytes lowLevelData);
+    event TransferFailed(address payable indexed recipient, uint256 amount);
     event SwapNative(uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapsEnabled(bool enabled);
@@ -172,20 +173,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Annoyingly, doing `try addr.transfer` in `_transfer` fails because
-     *          Solidity doesn't see the `address` type as an external contract
-     *          and so doing try/catch on it won't work. Need to make it an external
-     *          call, and doing `this.something` counts as an external call, but that
-     *          means we need a fcn that just sends eth
-     * @param recipient The address to receive the native token
-     */
-    function sendEth(address payable recipient) external payable {
-        require(msg.sender == address(this), "Vault: only Vault can sendEth");
-        recipient.transfer(msg.value);
-    }
-
-    /**
-     * @notice  Transfers native or a token from this vault to a recipient
+     * @notice  Transfers ETH or a token from this vault to a recipient
+     * @dev     Using "send" function to only send a set amount of gas, preventing the recipient
+     *          from using all the transfer batch gas. Also, not reverting on failure so it can't
+     *          block the batch transfer.
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
@@ -196,8 +187,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount
     ) private {
         if (address(token) == _NATIVE_ADDR) {
-            try this.sendEth{value: amount}(recipient) {} catch (bytes memory lowLevelData) {
-                emit TransferFailed(recipient, amount, lowLevelData);
+            // Disable because we don't want to revert on failure. Forward only a set amount of gas
+            // so the receivers can't consume all the gas.
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = recipient.call{gas: _GAS_TO_FORWARD, value: amount}("");
+            if (!success) {
+                emit TransferFailed(recipient, amount);
             }
         } else {
             token.safeTransfer(recipient, amount);
