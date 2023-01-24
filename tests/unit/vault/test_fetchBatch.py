@@ -78,9 +78,7 @@ def test_fetchBatch_rev_sig(cf, token):
             cf.vault.fetchBatch(sigData, [[NON_ZERO_ADDR, tok]])
 
 
-## TODO: Unclear if the final implementation will handle these two cases.
-
-
+# Calling the fetch function on a non-deployed contract (empty address) will revert
 def test_fetchBatch_rev_notdeployed(cf, token):
     for tok in [token, NATIVE_ADDR]:
 
@@ -89,8 +87,8 @@ def test_fetchBatch_rev_notdeployed(cf, token):
         else:
             cf.DEPLOYER.transfer(NON_ZERO_ADDR, TEST_AMNT)
 
-        tx = signed_call_cf(cf, cf.vault.fetchBatch, [[NON_ZERO_ADDR, tok]])
-        assert tx.events["FetchFailed"][0].values() == [NON_ZERO_ADDR, tok]
+        with reverts():
+            signed_call_cf(cf, cf.vault.fetchBatch, [[NON_ZERO_ADDR, tok]])
 
         if tok == token:
             assert tok.balanceOf(NON_ZERO_ADDR) == TEST_AMNT
@@ -98,6 +96,7 @@ def test_fetchBatch_rev_notdeployed(cf, token):
             assert web3.eth.get_balance(NON_ZERO_ADDR) == TEST_AMNT
 
 
+# Calling the fetch function on a contract without the fetch function will revert
 def test_fetchBatch_rev_noFunction(cf, token):
     # Using the keyManager as a proxy for a deployed contract without a fetch function
     for tok in [token, NATIVE_ADDR]:
@@ -107,8 +106,8 @@ def test_fetchBatch_rev_noFunction(cf, token):
         else:
             cf.DEPLOYER.transfer(cf.keyManager.address, TEST_AMNT)
 
-        tx = signed_call_cf(cf, cf.vault.fetchBatch, [[cf.keyManager.address, tok]])
-        assert tx.events["FetchFailed"][0].values() == [cf.keyManager.address, tok]
+        with reverts():
+            signed_call_cf(cf, cf.vault.fetchBatch, [[cf.keyManager.address, tok]])
 
         if tok == token:
             assert tok.balanceOf(cf.keyManager.address) == TEST_AMNT
