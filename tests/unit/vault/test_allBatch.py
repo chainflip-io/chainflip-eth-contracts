@@ -84,11 +84,11 @@ def test_allBatch(
     if st_sender in st_tranRecipients:
         iniTransactionNumberst_sender = len(history.filter(sender=st_sender))
 
-    fetchParams = craftFetchParamsArray(st_fetchSwapIDs, fetchTokens)
+    deployFetchParams = craftDeployFetchParamsArray(st_fetchSwapIDs, fetchTokens)
     transferParams = craftTransferParamsArray(
         tranTokens, st_tranRecipients, st_tranAmounts
     )
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, transferParams)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
@@ -129,9 +129,9 @@ def test_allBatch(
 
 
 def test_allBatch_rev_msgHash(cf):
-    fetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
     transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, transferParams)
 
     callDataNoSig = cf.vault.allBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
@@ -144,9 +144,9 @@ def test_allBatch_rev_msgHash(cf):
 
 
 def test_allBatch_rev_sig(cf):
-    fetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
     transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, transferParams)
 
     callDataNoSig = cf.vault.allBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args

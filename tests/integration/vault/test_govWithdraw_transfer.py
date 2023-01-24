@@ -6,7 +6,7 @@ from brownie.test import given, strategy
 
 
 @given(st_sender=strategy("address"))
-def test_govWithdraw_transfer(cf, token, token2, DepositNative, st_sender):
+def test_govWithdraw_transfer(cf, token, token2, Deposit, st_sender):
     # Funding Vault with some arbitrary funds
     amountTest = TEST_AMNT * 10
     st_sender.transfer(cf.vault, amountTest)
@@ -15,7 +15,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositNative, st_sender):
     tokenList = [NATIVE_ADDR, token, token2]
 
     # Test vault functioning
-    fetchDepositNative(cf, cf.vault, DepositNative)
+    depositAddr = deployAndFetchNative(cf, cf.vault, Deposit)
     transfer_native(cf, cf.vault, st_sender, TEST_AMNT)
 
     # Withdraw all Vault balance
@@ -39,7 +39,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositNative, st_sender):
     )
 
     # Vault can still fetch amounts even after govWithdrawal - pending/old swaps
-    fetchDepositNative(cf, cf.vault, DepositNative)
+    fetchNative(cf, cf.vault, depositAddr)
     # GovWithdraw amounts recently fetched
     chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
     iniEthBalGov = cf.GOVERNOR.balance()
@@ -56,7 +56,7 @@ def test_govWithdraw_transfer(cf, token, token2, DepositNative, st_sender):
 
     cf.vault.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
 
-    fetchDepositNative(cf, cf.vault, DepositNative)
+    fetchNative(cf, cf.vault, depositAddr)
     # Governance cannot withdraw again since community Guard is enabled again
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})

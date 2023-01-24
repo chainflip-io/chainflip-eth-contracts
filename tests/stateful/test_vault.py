@@ -208,11 +208,11 @@ def test_vault(
                 ]
             )
 
-            fetchParams = craftFetchParamsArray(st_swapIDs, fetchTokens)
+            deployFetchParams = craftDeployFetchParamsArray(st_swapIDs, fetchTokens)
             transferParams = craftTransferParamsArray(
                 tranTokens, st_recips, st_native_amounts
             )
-            args = (fetchParams, transferParams)
+            args = (deployFetchParams, transferParams)
             toLog = (*args, st_sender)
 
             if self.suspended:
@@ -448,7 +448,7 @@ def test_vault(
             )
 
         # Fetch the native deposit of a random create2
-        def rule_fetchDepositNative(self, st_sender, st_swapID):
+        def rule_deployAndFetchNative(self, st_sender, st_swapID):
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositNative")
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -565,7 +565,7 @@ def test_vault(
 
             trimToShortest([st_swapIDs, st_tokens])
 
-            args = [craftFetchParamsArray(st_swapIDs, st_tokens)]
+            args = [craftDeployFetchParamsArray(st_swapIDs, st_tokens)]
             toLog = (*args, st_sender)
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")

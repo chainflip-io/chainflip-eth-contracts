@@ -370,11 +370,11 @@ def test_all(
             )
 
             signer = self._get_key_prob(AGG)
-            fetchParams = craftFetchParamsArray(st_swapIDs, fetchTokens)
+            deployFetchParams = craftDeployFetchParamsArray(st_swapIDs, fetchTokens)
             transferParams = craftTransferParamsArray(
                 tranTokens, st_recips, st_native_amounts
             )
-            args = (fetchParams, transferParams)
+            args = (deployFetchParams, transferParams)
 
             toLog = (*args, signer, st_sender)
 
@@ -688,7 +688,7 @@ def test_all(
             )
 
         # Fetch the native deposit of a random create2
-        def rule_fetchDepositNative(self, st_sender, st_swapID):
+        def rule_deployAndFetchNative(self, st_sender, st_swapID):
             signer = self._get_key_prob(AGG)
             toLog = (st_swapID, signer, st_sender)
 
@@ -883,7 +883,7 @@ def test_all(
         def rule_fetchDepositTokenBatch(self, st_sender, st_swapIDs, st_tokens):
             trimToShortest([st_swapIDs, st_tokens])
             signer = self._get_key_prob(AGG)
-            args = [craftFetchParamsArray(st_swapIDs, st_tokens)]
+            args = [craftDeployFetchParamsArray(st_swapIDs, st_tokens)]
             toLog = (*args, signer, st_sender)
 
             if self.v_suspended:

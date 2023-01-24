@@ -283,9 +283,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
         uint256 length = fetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            try Deposit(fetchParamsArray[i].fetchContract).fetch(IERC20Lite(fetchParamsArray[i].token)) {} catch {
+            // Deposit(fetchParamsArray[i].fetchContract).fetch(IERC20Lite(fetchParamsArray[i].token));
+
+            // TODO: Is this worth it??
+            // Checking the address code length will catch the cases where it's an EOA or when it's
+            // a contract address without a deployed contract. This costs ~400 gas
+            if (fetchParamsArray[i].fetchContract.code.length == 0) {
                 emit FetchFailed(fetchParamsArray[i].fetchContract, fetchParamsArray[i].token);
+            } else {
+                // This will only cath failed calls to contracts that don't implement the fetch function.
+                // It will not catch failed calls to EOAs or contract addresses without a deployed contract.
+                try Deposit(fetchParamsArray[i].fetchContract).fetch(IERC20Lite(fetchParamsArray[i].token)) {} catch {
+                    emit FetchFailed(fetchParamsArray[i].fetchContract, fetchParamsArray[i].token);
+                }
             }
+
             unchecked {
                 ++i;
             }

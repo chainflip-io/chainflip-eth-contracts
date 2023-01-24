@@ -19,8 +19,7 @@ def test_setAggKeyWithAggKey_allBatch(
     cfAW,
     token,
     token2,
-    DepositToken,
-    DepositNative,
+    Deposit,
     st_fetchAmounts,
     st_fetchSwapIDs,
     st_tranRecipients,
@@ -50,12 +49,12 @@ def test_setAggKeyWithAggKey_allBatch(
         # Get the address to deposit to and deposit
         if tok == NATIVE_ADDR:
             depositAddr = getCreate2Addr(
-                cfAW.vault.address, id.hex(), DepositNative, ""
+                cfAW.vault.address, id.hex(), Deposit, cleanHexStrPad(NATIVE_ADDR)
             )
             cfAW.DEPLOYER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
-                cfAW.vault.address, id.hex(), DepositToken, cleanHexStrPad(tok.address)
+                cfAW.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
             )
             tok.transfer(depositAddr, am, {"from": cfAW.DEPLOYER})
 
@@ -87,11 +86,11 @@ def test_setAggKeyWithAggKey_allBatch(
     tokenBals = [token.balanceOf(recip) for recip in st_tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in st_tranRecipients]
 
-    fetchParams = craftFetchParamsArray(st_fetchSwapIDs, fetchTokens)
+    deployFetchParams = craftDeployFetchParamsArray(st_fetchSwapIDs, fetchTokens)
     transferParams = craftTransferParamsArray(
         tranTokens, st_tranRecipients, st_tranAmounts
     )
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, [], transferParams)
 
     # Check allBatch fails with the old agg key
     with reverts(REV_MSG_SIG):
