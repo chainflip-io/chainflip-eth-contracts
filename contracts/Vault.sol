@@ -59,6 +59,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address. It is assumed
      *          that the elements of each array match in terms of ordering, i.e. a given
      *          fetch should should have the same index swapIDs[i] and tokens[i]
+     * @dev     FetchAndDeploy is executed first to handle the edge case , which probably shouldn't
+     *          happen anyway, where a deploy and a fetch for the same address are in the same batch.
+     *          Transfers are executed last to ensure that all fetching has been completed first.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
@@ -88,8 +91,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        // Fetch all deposits
-        _fetchBatch(deployFetchParamsArray, fetchParamsArray);
+        // Fetch by deploying new deposits
+        _deployAndFetchBatch(deployFetchParamsArray);
+
+        // Fetch from already deployed deposits
+        _fetchBatch(fetchParamsArray);
 
         // Send all transfers
         _transferBatch(transferParamsArray);
@@ -100,34 +106,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                          Transfers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Transfers native or a token from this vault to a recipient
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
-     * @param transferParams       The transfer parameters
-     */
-    function transfer(SigData calldata sigData, TransferParams calldata transferParams)
-        external
-        override
-        onlyNotSuspended
-        nzAddr(address(transferParams.token))
-        nzAddr(transferParams.recipient)
-        nzUint(transferParams.amount)
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.transfer.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    transferParams
-                )
-            )
-        )
-    {
-        _transfer(transferParams.token, transferParams.recipient, transferParams.amount);
-    }
 
     /**
      * @notice  Transfers native or tokens from this vault to recipients. It is assumed
@@ -208,21 +186,51 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Retrieves tokens from multiple addresses. Either from a deterministically generated 
-     *          address using create2, by creating a contract for that address and sending it to this vault,
-     *          or by calling the fetch function of an already deployed Deposit contract.
-
+     * @notice  Retrieves any token from multiple address, deterministically generated using
+     *          create2, by creating a contract for that address, sending it to this vault.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param deployFetchParamsArray    The array of deploy and fetch parameters
-     * @param fetchParamsArray          The array of fetch parameters
      */
-    function fetchBatch(
-        SigData calldata sigData,
-        DeployFetchParams[] calldata deployFetchParamsArray,
-        FetchParams[] calldata fetchParamsArray
-    )
+    function deployAndFetchBatch(SigData calldata sigData, DeployFetchParams[] calldata deployFetchParamsArray)
+        external
+        override
+        onlyNotSuspended
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.deployAndFetchBatch.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    deployFetchParamsArray
+                )
+            )
+        )
+    {
+        _deployAndFetchBatch(deployFetchParamsArray);
+    }
+
+    function _deployAndFetchBatch(DeployFetchParams[] calldata deployFetchParamsArray) private
+{
+        // Deploy deposit contracts
+        uint256 length = deployFetchParamsArray.length;
+        for (uint256 i = 0; i < length; ) {
+            new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(deployFetchParamsArray[i].token));
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @notice  Retrieves any token addresses where a Deposit contract is already deployed.
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
+     *                  a hash over the calldata to the function with an empty sigData) and
+     *                  sig over that hash (uint) from the aggregate key
+     * @param fetchParamsArray    The array of fetch parameters
+     */
+    function fetchBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
         external
         override
         onlyNotSuspended
@@ -232,107 +240,28 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(
                     this.fetchBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    deployFetchParamsArray,
                     fetchParamsArray
                 )
             )
         )
     {
-        _fetchBatch(deployFetchParamsArray, fetchParamsArray);
+        _fetchBatch(fetchParamsArray);
     }
 
     /**
-     * @notice  Retrieves tokens from multiple addresses. Either from a deterministically generated
-     *          address using create2, by creating a contract for that address and sending them to this vault,
-     *          or by calling the fetch function of an already deployed Deposit contract.
-     * @dev     FetchAndDeploy is executed first to handle the edge case , which probably shouldn't
-     *          happen anyway, where a deploy and a fetch for the same address are in the same batch.
-     * @param deployFetchParamsArray    The array of deploy and fetch parameters
+     * @notice  Retrieves any token from multiple addresses where a Deposit contract is already deployed. 
+     *          It emits an event if the fetch fails.
      * @param fetchParamsArray    The array of fetch parameters
      */
-    function _fetchBatch(DeployFetchParams[] calldata deployFetchParamsArray, FetchParams[] calldata fetchParamsArray)
-        private
-    {
-        // Deploy deposit contracts
-        uint256 length = deployFetchParamsArray.length;
-        uint256 i;
-        for (i = 0; i < length; ) {
-            new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(deployFetchParamsArray[i].token));
+    function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
+        uint256 length = fetchParamsArray.length;
+        for (uint256 i = 0; i < length; ) {
+            try Deposit(fetchParamsArray[i].fetchContract).fetch(IERC20Lite(fetchParamsArray[i].token)) {} catch {
+                emit FetchFailed(fetchParamsArray[i].fetchContract, fetchParamsArray[i].token);
+            }
             unchecked {
                 ++i;
             }
-        }
-
-        // Fetch from already deployed contracts
-        length = fetchParamsArray.length;
-        for (i = 0; i < length; ) {
-            _fetch(fetchParamsArray[i]);
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @notice  Retrieves any token from an address, deterministically generated using
-     *          create2, by creating a contract for that address, sending it to this vault.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
-     * @param deployFetchParams    The deploy and fetch parameters
-     */
-    function deployAndFetch(SigData calldata sigData, DeployFetchParams calldata deployFetchParams)
-        external
-        override
-        onlyNotSuspended
-        nzBytes32(deployFetchParams.swapID)
-        nzAddr(address(deployFetchParams.token))
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.deployAndFetch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    deployFetchParams
-                )
-            )
-        )
-    {
-        new Deposit{salt: deployFetchParams.swapID}(IERC20Lite(deployFetchParams.token));
-    }
-
-    /**
-     * @notice  Retrieves any token from an address where a Deposit contract is already deployed.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
-     * @param fetchParams    The fetch parameters
-     */
-    function fetch(SigData calldata sigData, FetchParams calldata fetchParams)
-        external
-        override
-        onlyNotSuspended
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.fetch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    fetchParams
-                )
-            )
-        )
-    {
-        _fetch(fetchParams);
-    }
-
-    /**
-     * @notice  Retrieves any token from an address where a Deposit contract is already deployed.
-     * @param fetchParams    The fetch parameters
-     */
-    function _fetch(FetchParams calldata fetchParams) private {
-        try Deposit(fetchParams.fetchContract).fetch(IERC20Lite(fetchParams.token)) {} catch {
-            emit FetchFailed(fetchParams.fetchContract, fetchParams.token);
         }
     }
 
