@@ -106,7 +106,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                          Transfers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
-    
+
     /**
      * @notice  Transfers native or a token from this vault to a recipient
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
@@ -134,7 +134,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     {
         _transfer(transferParams.token, transferParams.recipient, transferParams.amount);
     }
-
 
     /**
      * @notice  Transfers native or tokens from this vault to recipients. It is assumed
@@ -240,8 +239,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         _deployAndFetchBatch(deployFetchParamsArray);
     }
 
-    function _deployAndFetchBatch(DeployFetchParams[] calldata deployFetchParamsArray) private
-{
+    function _deployAndFetchBatch(DeployFetchParams[] calldata deployFetchParamsArray) private {
         // Deploy deposit contracts
         uint256 length = deployFetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
@@ -278,7 +276,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Retrieves any token from multiple addresses where a Deposit contract is already deployed. 
+     * @notice  Retrieves any token from multiple addresses where a Deposit contract is already deployed.
      *          It emits an event if the fetch fails.
      * @param fetchParamsArray    The array of fetch parameters
      */

@@ -21,7 +21,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                          Transfers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
-    
+
     function transfer(SigData calldata sigData, TransferParams calldata transferParams) external;
 
     function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray) external;
