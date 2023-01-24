@@ -44,8 +44,17 @@ interface IShared {
      * @param swapID    The unique identifier for this swap (bytes32), used for create2
      * @param token     The token to be transferred
      */
-    struct FetchParams {
+    struct DeployFetchParams {
         bytes32 swapID;
-        IERC20 token;
+        address token;
+    }
+
+    /**
+     * @param fetchContract   The address of the deployed Deposit contract
+     * @param token     The token to be transferred
+     */
+    struct FetchParams {
+        address payable fetchContract;
+        address token;
     }
 }

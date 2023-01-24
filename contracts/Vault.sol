@@ -5,8 +5,7 @@ import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IERC20Lite.sol";
 import "./abstract/Shared.sol";
-import "./DepositNative.sol";
-import "./DepositToken.sol";
+import "./Deposit.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
@@ -22,6 +21,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _GAS_TO_FORWARD = 3500;
 
     event TransferFailed(address payable indexed recipient, uint256 amount);
+    event FetchFailed(address payable indexed fetchContract, address indexed token);
     event SwapNative(uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapsEnabled(bool enabled);
@@ -52,8 +52,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Can do a combination of all fcns in this contract. It first fetches all
-     *          deposits specified with fetchSwapIDs and fetchTokens (which are requried
-     *          to be of equal length), then it performs all transfers specified with the rest
+     *          deposits , then it performs all transfers specified with the rest
      *          of the inputs, the same as transferBatch (where all inputs are again required
      *          to be of equal length - however the lengths of the fetch inputs do not have to
      *          be equal to lengths of the transfer inputs). Fetches/transfers of native are indicated
@@ -63,11 +62,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
+     * @param deployFetchParamsArray    The array of deploy and fetch parameters
      * @param fetchParamsArray    The array of fetch parameters
      * @param transferParamsArray The array of transfer parameters
      */
     function allBatch(
         SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     )
@@ -80,6 +81,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(
                     this.allBatch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    deployFetchParamsArray,
                     fetchParamsArray,
                     transferParamsArray
                 )
@@ -87,7 +89,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // Fetch all deposits
-        _fetchBatch(fetchParamsArray);
+        _fetchBatch(deployFetchParamsArray, fetchParamsArray);
 
         // Send all transfers
         _transferBatch(transferParamsArray);
@@ -206,20 +208,65 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Retrieves native and tokens from multiple addresses, deterministically generated using
-     *          create2, by creating a contract for that address, sending it to this vault, and
-     *          then destroying
+     * @notice  Retrieves tokens from multiple addresses. Either from a deterministically generated 
+     *          address using create2, by creating a contract for that address and sending it to this vault,
+     *          or by calling the fetch function of an already deployed Deposit contract.
+
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
+     *                  a hash over the calldata to the function with an empty sigData) and
+     *                  sig over that hash (uint) from the aggregate key
+     * @param deployFetchParamsArray    The array of deploy and fetch parameters
+     * @param fetchParamsArray          The array of fetch parameters
+     */
+    function fetchBatch(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
+        FetchParams[] calldata fetchParamsArray
+    )
+        external
+        override
+        onlyNotSuspended
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.fetchBatch.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    deployFetchParamsArray,
+                    fetchParamsArray
+                )
+            )
+        )
+    {
+        _fetchBatch(deployFetchParamsArray, fetchParamsArray);
+    }
+
+    /**
+     * @notice  Retrieves tokens from multiple addresses. Either from a deterministically generated
+     *          address using create2, by creating a contract for that address and sending them to this vault,
+     *          or by calling the fetch function of an already deployed Deposit contract.
+     * @dev     FetchAndDeploy is executed first to handle the edge case , which probably shouldn't
+     *          happen anyway, where a deploy and a fetch for the same address are in the same batch.
+     * @param deployFetchParamsArray    The array of deploy and fetch parameters
      * @param fetchParamsArray    The array of fetch parameters
      */
-    function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
-        // Fetch all deposits
-        uint256 length = fetchParamsArray.length;
-        for (uint256 i = 0; i < length; ) {
-            if (address(fetchParamsArray[i].token) == _NATIVE_ADDR) {
-                new DepositNative{salt: fetchParamsArray[i].swapID}();
-            } else {
-                new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
+    function _fetchBatch(DeployFetchParams[] calldata deployFetchParamsArray, FetchParams[] calldata fetchParamsArray)
+        private
+    {
+        // Deploy deposit contracts
+        uint256 length = deployFetchParamsArray.length;
+        uint256 i;
+        for (i = 0; i < length; ) {
+            new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(deployFetchParamsArray[i].token));
+            unchecked {
+                ++i;
             }
+        }
+
+        // Fetch from already deployed contracts
+        length = fetchParamsArray.length;
+        for (i = 0; i < length; ) {
+            _fetch(fetchParamsArray[i]);
             unchecked {
                 ++i;
             }
@@ -227,125 +274,65 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Retrieves native from an address, deterministically generated using
-     *          create2, by creating a contract for that address, sending it to this vault, and
-     *          then destroying
+     * @notice  Retrieves any token from an address, deterministically generated using
+     *          create2, by creating a contract for that address, sending it to this vault.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
-     * @param swapID    The unique identifier for this swap (bytes32)
+     * @param deployFetchParams    The deploy and fetch parameters
      */
-    function fetchDepositNative(SigData calldata sigData, bytes32 swapID)
+    function deployAndFetch(SigData calldata sigData, DeployFetchParams calldata deployFetchParams)
         external
         override
         onlyNotSuspended
-        nzBytes32(swapID)
+        nzBytes32(deployFetchParams.swapID)
+        nzAddr(address(deployFetchParams.token))
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.fetchDepositNative.selector,
+                    this.deployAndFetch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    swapID
+                    deployFetchParams
                 )
             )
         )
     {
-        new DepositNative{salt: swapID}();
+        new Deposit{salt: deployFetchParams.swapID}(IERC20Lite(deployFetchParams.token));
     }
 
     /**
-     * @notice  Retrieves native from multiple addresses, deterministically generated using
-     *          create2, by creating a contract for that address, sending it to this vault, and
-     *          then destroying
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
-     * @param swapIDs    The unique identifiers for this swap (bytes32)
-     */
-    function fetchDepositNativeBatch(SigData calldata sigData, bytes32[] calldata swapIDs)
-        external
-        override
-        onlyNotSuspended
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.fetchDepositNativeBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    swapIDs
-                )
-            )
-        )
-    {
-        uint256 length = swapIDs.length;
-        for (uint256 i; i < length; ) {
-            new DepositNative{salt: swapIDs[i]}();
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @notice  Retrieves a token from an address deterministically generated using
-     *          create2 by creating a contract for that address, sending it to this vault, and
-     *          then destroying
+     * @notice  Retrieves any token from an address where a Deposit contract is already deployed.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData) and
      *                  sig over that hash (uint) from the aggregate key
      * @param fetchParams    The fetch parameters
      */
-    function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams)
+    function fetch(SigData calldata sigData, FetchParams calldata fetchParams)
         external
         override
         onlyNotSuspended
-        nzBytes32(fetchParams.swapID)
-        nzAddr(address(fetchParams.token))
         consumesKeyNonce(
             sigData,
             keccak256(
                 abi.encodeWithSelector(
-                    this.fetchDepositToken.selector,
+                    this.fetch.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
                     fetchParams
                 )
             )
         )
     {
-        new DepositToken{salt: fetchParams.swapID}(IERC20Lite(address(fetchParams.token)));
+        _fetch(fetchParams);
     }
 
     /**
-     * @notice  Retrieves tokens from multiple addresses, deterministically generated using
-     *          create2, by creating a contract for that address, sending it to this vault, and
-     *          then destroying
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
-     * @param fetchParamsArray    The array of fetch parameters
+     * @notice  Retrieves any token from an address where a Deposit contract is already deployed.
+     * @param fetchParams    The fetch parameters
      */
-    function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
-        external
-        override
-        onlyNotSuspended
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.fetchDepositTokenBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    fetchParamsArray
-                )
-            )
-        )
-    {
-        uint256 length = fetchParamsArray.length;
-        for (uint256 i; i < length; ) {
-            new DepositToken{salt: fetchParamsArray[i].swapID}(IERC20Lite(address(fetchParamsArray[i].token)));
-            unchecked {
-                ++i;
-            }
+    function _fetch(FetchParams calldata fetchParams) private {
+        try Deposit(fetchParams.fetchContract).fetch(IERC20Lite(fetchParams.token)) {} catch {
+            emit FetchFailed(fetchParams.fetchContract, fetchParams.token);
         }
     }
 
@@ -496,6 +483,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving native when fetchDepositNative is called
+    /// @dev For receiving native when Deposit.fetch() is called.
     receive() external payable {}
 }

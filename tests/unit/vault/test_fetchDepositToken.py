@@ -79,24 +79,6 @@ def test_fetchDepositToken_rev_sig(cf):
         cf.vault.fetchDepositToken(sigData, [JUNK_HEX_PAD, NATIVE_ADDR])
 
 
-# Redeploy a DepositToken contract in the same address as the previous one. This is in case
-# an attacker tries to grief the protocol by sending a small amount to an address where
-# the CFE is expecting the user's input swap amount to be deposited. We need to then
-# be able to redeploy the contract in the same address to be able to fetch the funds.
-def test_fetchDepositToken_grief(cf, token, DepositToken):
-    assert token.balanceOf(cf.vault) == 0
-
-    addr0 = test_fetchDepositToken(cf, token, DepositToken)
-    assert token.balanceOf(cf.vault) == TEST_AMNT
-
-    addr1 = test_fetchDepositToken(cf, token, DepositToken, amount=TEST_AMNT * 200)
-    assert token.balanceOf(cf.vault) == TEST_AMNT * (200 + 1)
-
-    # Check addresses are the same
-    assert addr0 == addr1
-    return addr0
-
-
 # Check if fetching another token changes the deployment address
 def test_fetchDepositToken_addressesDiffTokens(cf, token, token2, DepositToken):
     addr = test_fetchDepositToken_grief(cf, token, DepositToken)
