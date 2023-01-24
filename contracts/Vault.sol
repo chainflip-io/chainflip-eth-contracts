@@ -106,6 +106,35 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                          Transfers                       //
     //                                                          //
     //////////////////////////////////////////////////////////////
+    
+    /**
+     * @notice  Transfers native or a token from this vault to a recipient
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's
+     *                  a hash over the calldata to the function with an empty sigData) and
+     *                  sig over that hash (uint) from the aggregate key
+     * @param transferParams       The transfer parameters
+     */
+    function transfer(SigData calldata sigData, TransferParams calldata transferParams)
+        external
+        override
+        onlyNotSuspended
+        nzAddr(address(transferParams.token))
+        nzAddr(transferParams.recipient)
+        nzUint(transferParams.amount)
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.transfer.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    transferParams
+                )
+            )
+        )
+    {
+        _transfer(transferParams.token, transferParams.recipient, transferParams.amount);
+    }
+
 
     /**
      * @notice  Transfers native or tokens from this vault to recipients. It is assumed
