@@ -242,6 +242,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Deploy deposit contracts
         uint256 length = deployFetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
+            // TODO: Is this check necessary?
+            require(deployFetchParamsArray[i].swapID != _NULL, "Shared: bytes32 input is empty");
             new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(deployFetchParamsArray[i].token));
             unchecked {
                 ++i;
