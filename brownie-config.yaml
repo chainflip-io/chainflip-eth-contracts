@@ -11,7 +11,7 @@ compiler:
   solc:
     optimizer:
       enabled: true
-      runs: 900
+      runs: 1600
     version: 0.8.7
     # Path remapping to support OpenZepplin imports with NPM-style path
     remappings:
