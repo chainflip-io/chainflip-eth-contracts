@@ -369,31 +369,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ///NOTE: Thorchain has only ONE string, idea being that it can be used for swapping and for adding liquidity (and others).
-    ///      They do it because in the context of providing liquidity, the dstAddress doesn't make sense.
-    ///      FUNCTION:PARAM1:PARAM2:PARAM3:PARAM4
-    //       Depending on LiFi (and also on us) we can explore having just one long string (like ThorChain memo). Better gas and
-    //       flexibility. Also, concatenation on the ingress is easy and not too expensive. Problem is that it is not very intuitive,
-    //       it makes less redable and cumbersome to build it on-chain (if the whole string is not passed as calldata). Also, on the
-    //       dstChain it is a pain to check srcChain as a string. As of now I would stick to separate parameters. Finally, seems like
-    //       this memo string is not used by anyone else - the standard seems to be different parameters.
-
-    // TODO: Decide if we want a refund address for retrospective refund. We cannot simply refund the srcAddress because in case of
-    //       a DEX aggregator we want to refund the user, not the DEX Agg Contract. TBD in the next meeting.
-    // TODO: Decide if we want to have gas topups in the future. Those could be done in the ingress or egress chain. Ingress is the
-    //       normal way, but egress' native token makes refunds simpler.
-    // TODO: To think what gating (xCallsEnabled) we want to have if any, since that costs gas (sload).
-    // TODO: Think if we want to have the EVM-versions of the ingress functions since converting address to string is very expensive
-    //       gas-wise, for example using OZ's Strings library. Not sure it's worth it.
-    // TODO: Seems like we want to support Pure CCM. For now we do that by calling the xCallToken but passing an empty swapIntent.
-    //       If we want to optimize pure CCM then we could create two extra functions (paying with native or with token) that don't
-    //       require an empty swapIntent, which wastes gas. But I would say that this is fine for now.
-    // TODO: Setting the dstNativeGas to zero could potentially be used to allow the user to pay for the gas in the
-    //       dstchain (toping up gas) or for the protocol to display the payload so the user can send the transaction
-    //       himself, paying for the gas.
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                    SrcChain xSwap                        //
