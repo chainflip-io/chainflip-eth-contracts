@@ -43,7 +43,27 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                 SrcChain xSwap and call                  //
+    //         Initiate cross-chain swaps (source chain)        //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function xSwapToken(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent,
+        IERC20 srcToken,
+        uint256 amount
+    ) external;
+
+    function xSwapNative(
+        uint32 dstChain,
+        string memory dstAddress,
+        string memory swapIntent
+    ) external payable;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //     Initiate cross-chain call and swap (source chain)    //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -69,27 +89,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                    SrcChain xSwap                        //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    function xSwapToken(
-        uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
-        IERC20 srcToken,
-        uint256 amount
-    ) external;
-
-    function xSwapNative(
-        uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent
-    ) external payable;
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //             DstChain receive xSwap and call              //
+    //      Execute cross-chain call and swap (dest. chain)     //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -103,7 +103,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                   DstChain receive xcall                 //
+    //          Execute cross-chain call (dest. chain)          //
     //                                                          //
     //////////////////////////////////////////////////////////////
     function executexCall(

@@ -62,8 +62,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         address indexed sender
     );
-    event AddNativeGas(bytes32 swapID, uint256 amount);
-    event AddGas(bytes32 swapID, address token, uint256 amount);
 
     event XCallsEnabled(bool enabled);
 
@@ -371,7 +369,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                    SrcChain xSwap                        //
+    //         Initiate cross-chain swaps (source chain)        //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -418,7 +416,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                     SrcChain xCall                       //
+    //     Initiate cross-chain call and swap (source chain)    //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -499,7 +497,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //             DstChain execute xSwap and call              //
+    //      Execute cross-chain call and swap (dest. chain)     //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
@@ -583,12 +581,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                   DstChain execute xcall                 //
+    //          Execute cross-chain call (dest. chain)          //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Executes a cross-chain function call The ICFReceiver interface is expected on
+     * @notice  Executes a cross-chain function call. The ICFReceiver interface is expected on
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap. This is used for cross-chain messaging
      *          without any swap taking place on the Chainflip Protocol.
@@ -626,34 +624,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     {
         ICFReceiver(recipient).cfReceivexCall(srcChain, srcAddress, message);
     }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                     Gas topup                            //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    // TODO: To decide if we want this for the future or not. Native gas would be great to offer
-    // gas topups on the egress chain. But non-native would be good because USDC is easier to
-    // handle/swap internally. To add verification if we want this.
-    // Potentially we could use this two functions to allow the user to cancel an egress
-    // transaction. This could be done by sending zero amount and signaling the swapID. This could
-    // only be done if we verify it's the same sender that initiated the swap (emit the msg.sender).
-    // NOTE: This could be features for later on, and together with the refundAddress it might
-    // be worth removing and maybe adding in the future.
-
-    // function addGasNative(bytes32 swapID) external payable xCallsEnabled {
-    //     emit AddNativeGas(swapID, msg.value);
-    // }
-
-    // function addGasToken(
-    //     bytes32 swapID,
-    //     IERC20 token,
-    //     uint256 amount
-    // ) external nzUint(amount) xCallsEnabled {
-    //     IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-    //     emit AddGas(swapID, address(token), amount);
-    // }
 
     //////////////////////////////////////////////////////////////
     //                                                          //
