@@ -28,8 +28,7 @@ def test_all(
 
     # Vault
     # The max swapID to use. SwapID is needed as a salt to create a unique create2
-    # address, and for ease they're used between 1 and MAX_SWAPID inclusive in this test
-    # (since 0 will cause a revert when fetching).
+    # address, and for ease they're used between 1 and MAX_SWAPID inclusive in this test.
     MAX_SWAPID = 5
     # The max number of addresses to send txs from. This is used both for simulating
     # users where NATIVE/tokens come out of their account (send NATIVE/tokens), and also for
@@ -702,16 +701,6 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-            elif st_swapID == 0:
-                print("        REV_MSG_NZ_BYTES32 rule_fetchDepositNative", *toLog)
-                with reverts(REV_MSG_NZ_BYTES32):
-                    signed_call_km(
-                        self.km,
-                        self.v.fetchDepositNative,
-                        st_swapID,
-                        signer=signer,
-                        sender=st_sender,
-                    )
             elif not self.v in self.currentWhitelist:
                 print("        REV_MSG_WHITELIST rule_fetchDepositNative", *toLog)
                 with reverts(REV_MSG_WHITELIST):
@@ -814,16 +803,6 @@ def test_all(
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_call_km(
-                        self.km,
-                        self.v.fetchDepositToken,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-            elif st_swapID == 0:
-                print("        REV_MSG_NZ_BYTES32 _fetchDepositToken", *toLog)
-                with reverts(REV_MSG_NZ_BYTES32):
                     signed_call_km(
                         self.km,
                         self.v.fetchDepositToken,

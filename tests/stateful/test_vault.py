@@ -75,7 +75,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                     Deposit,
                     cleanHexStrPad(NATIVE_ADDR),
                 )
-                for swapID in range(1, MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.create2TokenAAddrs = [
                 getCreate2Addr(
@@ -84,7 +84,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                     Deposit,
                     cleanHexStrPad(cls.tokenA.address),
                 )
-                for swapID in range(1, MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.create2TokenBAddrs = [
                 getCreate2Addr(
@@ -93,7 +93,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                     Deposit,
                     cleanHexStrPad(cls.tokenB.address),
                 )
-                for swapID in range(1, MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.allAddrs = [
                 *[addr.address for addr in a[:MAX_NUM_SENDERS]],
