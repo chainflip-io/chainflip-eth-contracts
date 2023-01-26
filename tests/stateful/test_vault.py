@@ -279,179 +279,182 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
         #             else:
         #                 assert False, "Panic"
 
-        # # Transfers native or tokens out the vault. Want this to be called by rule_vault_transfer_native
-        # # etc individually and not directly since they're all the same just with a different tokenAddr
-        # # input
-        # def _vault_transfer(
-        #     self, bals, tokenAddr, st_sender, st_recip, st_native_amount
-        # ):
-        #     args = [[tokenAddr, st_recip, st_native_amount]]
-        #     toLog = (*args, st_sender)
+        # Transfers native or tokens out the vault. Want this to be called by rule_vault_transfer_native
+        # etc individually and not directly since they're all the same just with a different tokenAddr
+        # input
+        def _vault_transfer(
+            self, bals, tokenAddr, st_sender, st_recip, st_native_amount
+        ):
+            args = [[tokenAddr, st_recip, st_native_amount]]
+            toLog = (*args, st_sender)
 
-        #     if self.suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transfer")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
-        #     elif st_native_amount == 0:
-        #         print("        REV_MSG_NZ_UINT _vault_transfer", *toLog)
-        #         with reverts(REV_MSG_NZ_UINT):
-        #             signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
+            elif st_native_amount == 0:
+                print("        REV_MSG_NZ_UINT _vault_transfer", *toLog)
+                with reverts(REV_MSG_NZ_UINT):
+                    signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
-        #     elif bals[self.v.address] < st_native_amount and tokenAddr != NATIVE_ADDR:
-        #         print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
-        #         with reverts(REV_MSG_ERC20_EXCEED_BAL):
-        #             signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
+            elif bals[self.v.address] < st_native_amount and tokenAddr != NATIVE_ADDR:
+                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
+                with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                    signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
-        #     else:
-        #         print("                    _vault_transfer", *toLog)
-        #         signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
+            else:
+                print("                    _vault_transfer", *toLog)
+                signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
-        #         if bals[self.v.address] >= st_native_amount or tokenAddr != NATIVE_ADDR:
-        #             bals[self.v.address] -= st_native_amount
-        #             bals[st_recip] += st_native_amount
+                if bals[self.v.address] >= st_native_amount or tokenAddr != NATIVE_ADDR:
+                    bals[self.v.address] -= st_native_amount
+                    bals[st_recip] += st_native_amount
 
-        # def rule_vault_transfer_native(self, st_sender, st_recip, st_native_amount):
-        #     self._vault_transfer(
-        #         self.nativeBals, NATIVE_ADDR, st_sender, st_recip, st_native_amount
-        #     )
+        def rule_vault_transfer_native(self, st_sender, st_recip, st_native_amount):
+            self._vault_transfer(
+                self.nativeBals, NATIVE_ADDR, st_sender, st_recip, st_native_amount
+            )
 
-        # def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
-        #     self._vault_transfer(
-        #         self.tokenABals, self.tokenA, st_sender, st_recip, st_token_amount
-        #     )
+        def rule_vault_transfer_tokenA(self, st_sender, st_recip, st_token_amount):
+            self._vault_transfer(
+                self.tokenABals, self.tokenA, st_sender, st_recip, st_token_amount
+            )
 
-        # def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
-        #     self._vault_transfer(
-        #         self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount
-        #     )
+        def rule_vault_transfer_tokenB(self, st_sender, st_recip, st_token_amount):
+            self._vault_transfer(
+                self.tokenBBals, self.tokenB, st_sender, st_recip, st_token_amount
+            )
 
-        # # Send any combination of native/tokenA/tokenB out of the vault. Using st_native_amounts
-        # # for both native amounts and token amounts here because its max is within the bounds of
-        # # both native and tokens.
-        # def rule_vault_transferBatch(self, st_sender, st_recips, st_native_amounts):
-        #     minLen = trimToShortest([st_recips, st_native_amounts])
-        #     tokens = choices(self.tokensList, k=minLen)
-        #     tranTotals = {
-        #         tok: sum(
-        #             [st_native_amounts[i] for i, x in enumerate(tokens) if x == tok]
-        #         )
-        #         for tok in self.tokensList
-        #     }
-        #     validEthIdxs = getValidTranIdxs(
-        #         tokens, st_native_amounts, self.nativeBals[self.v.address], NATIVE_ADDR
-        #     )
-        #     tranTotals[NATIVE_ADDR] = sum(
-        #         [
-        #             st_native_amounts[i]
-        #             for i, x in enumerate(tokens)
-        #             if x == NATIVE_ADDR and i in validEthIdxs
-        #         ]
-        #     )
+        # Send any combination of native/tokenA/tokenB out of the vault. Using st_native_amounts
+        # for both native amounts and token amounts here because its max is within the bounds of
+        # both native and tokens.
+        def rule_vault_transferBatch(self, st_sender, st_recips, st_native_amounts):
+            minLen = trimToShortest([st_recips, st_native_amounts])
+            tokens = choices(self.tokensList, k=minLen)
+            tranTotals = {
+                tok: sum(
+                    [st_native_amounts[i] for i, x in enumerate(tokens) if x == tok]
+                )
+                for tok in self.tokensList
+            }
+            validEthIdxs = getValidTranIdxs(
+                tokens, st_native_amounts, self.nativeBals[self.v.address], NATIVE_ADDR
+            )
+            tranTotals[NATIVE_ADDR] = sum(
+                [
+                    st_native_amounts[i]
+                    for i, x in enumerate(tokens)
+                    if x == NATIVE_ADDR and i in validEthIdxs
+                ]
+            )
 
-        #     args = [craftTransferParamsArray(tokens, st_recips, st_native_amounts)]
+            args = [craftTransferParamsArray(tokens, st_recips, st_native_amounts)]
 
-        #     toLog = (*args, st_sender)
+            toLog = (*args, st_sender)
 
-        #     if self.suspended:
-        #         print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
-        #         with reverts(REV_MSG_GOV_SUSPENDED):
-        #             signed_call_km(
-        #                 self.km, self.v.transferBatch, *args, sender=st_sender
-        #             )
-        #     elif (
-        #         tranTotals[self.tokenA] > self.tokenABals[self.v.address]
-        #         or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]
-        #     ):
-        #         print(
-        #             "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
-        #             *toLog,
-        #         )
-        #         with reverts():
-        #             signed_call_km(
-        #                 self.km, self.v.transferBatch, *args, sender=st_sender
-        #             )
-        #     else:
-        #         print("                    rule_vault_transferBatch", *toLog)
-        #         signed_call_km(self.km, self.v.transferBatch, *args, sender=st_sender)
+            if self.suspended:
+                print("        REV_MSG_GOV_SUSPENDED _vault_transferBatch")
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    signed_call_km(
+                        self.km, self.v.transferBatch, *args, sender=st_sender
+                    )
+            elif (
+                tranTotals[self.tokenA] > self.tokenABals[self.v.address]
+                or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]
+            ):
+                print(
+                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
+                    *toLog,
+                )
+                with reverts():
+                    signed_call_km(
+                        self.km, self.v.transferBatch, *args, sender=st_sender
+                    )
+            else:
+                print("                    rule_vault_transferBatch", *toLog)
+                signed_call_km(self.km, self.v.transferBatch, *args, sender=st_sender)
 
-        #         for i in range(len(st_recips)):
-        #             if tokens[i] == NATIVE_ADDR:
-        #                 if i in validEthIdxs:
-        #                     self.nativeBals[st_recips[i]] += st_native_amounts[i]
-        #                     self.nativeBals[self.v.address] -= st_native_amounts[i]
-        #             elif tokens[i] == self.tokenA:
-        #                 self.tokenABals[st_recips[i]] += st_native_amounts[i]
-        #                 self.tokenABals[self.v.address] -= st_native_amounts[i]
-        #             elif tokens[i] == self.tokenB:
-        #                 self.tokenBBals[st_recips[i]] += st_native_amounts[i]
-        #                 self.tokenBBals[self.v.address] -= st_native_amounts[i]
-        #             else:
-        #                 assert False, "Panic"
+                for i in range(len(st_recips)):
+                    if tokens[i] == NATIVE_ADDR:
+                        if i in validEthIdxs:
+                            self.nativeBals[st_recips[i]] += st_native_amounts[i]
+                            self.nativeBals[self.v.address] -= st_native_amounts[i]
+                    elif tokens[i] == self.tokenA:
+                        self.tokenABals[st_recips[i]] += st_native_amounts[i]
+                        self.tokenABals[self.v.address] -= st_native_amounts[i]
+                    elif tokens[i] == self.tokenB:
+                        self.tokenBBals[st_recips[i]] += st_native_amounts[i]
+                        self.tokenBBals[self.v.address] -= st_native_amounts[i]
+                    else:
+                        assert False, "Panic"
 
-        # # Transfers native from a user/sender to one of the depositEth create2 addresses
-        # def rule_transfer_native_to_depositEth(
-        #     self, st_sender, st_swapID, st_native_amount
-        # ):
-        #     # Since st_swapID = 0 won't be able to be fetched (reverts on empty input),
-        #     # no point sending native to that corresponding addr
-        #     if st_swapID != 0 and self.nativeBals[st_sender] >= st_native_amount:
-        #         print(
-        #             "                    rule_transfer_native_to_depositEth",
-        #             st_sender,
-        #             st_swapID,
-        #             st_native_amount,
-        #         )
-        #         depositAddr = getCreate2Addr(
-        #             self.v.address, cleanHexStrPad(st_swapID), Deposit, cleanHexStrPad(NATIVE_ADDR)
-        #         )
-        #         st_sender.transfer(depositAddr, st_native_amount)
+        # Transfers native from a user/sender to one of the depositEth create2 addresses
+        def rule_transfer_native_to_depositEth(
+            self, st_sender, st_swapID, st_native_amount
+        ):
+            # Since st_swapID = 0 won't be able to be fetched (reverts on empty input),
+            # no point sending native to that corresponding addr
+            if st_swapID != 0 and self.nativeBals[st_sender] >= st_native_amount:
+                print(
+                    "                    rule_transfer_native_to_depositEth",
+                    st_sender,
+                    st_swapID,
+                    st_native_amount,
+                )
+                depositAddr = getCreate2Addr(
+                    self.v.address,
+                    cleanHexStrPad(st_swapID),
+                    Deposit,
+                    cleanHexStrPad(NATIVE_ADDR),
+                )
+                st_sender.transfer(depositAddr, st_native_amount)
 
-        #         self.nativeBals[st_sender] -= st_native_amount
-        #         self.nativeBals[depositAddr] += st_native_amount
+                self.nativeBals[st_sender] -= st_native_amount
+                self.nativeBals[depositAddr] += st_native_amount
 
-        # # Transfers a token from a user/sender to one of the depositEth create2 addresses.
-        # # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
-        # # in the same way but with a different tokenAddr
-        # def _transfer_tokens_to_depositToken(
-        #     self, bals, token, st_sender, st_swapID, st_token_amount
-        # ):
-        #     # Since st_swapID = 0 won't be able to be fetched (reverts on empty input),
-        #     # no point sending native to that corresponding addr
-        #     if st_swapID != 0 and bals[st_sender] >= st_token_amount:
-        #         print(
-        #             "                    _transfer_tokens_to_depositToken",
-        #             token,
-        #             st_sender,
-        #             st_swapID,
-        #             st_token_amount,
-        #         )
-        #         depositAddr = getCreate2Addr(
-        #             self.v.address,
-        #             cleanHexStrPad(st_swapID),
-        #             Deposit,
-        #             cleanHexStrPad(token.address),
-        #         )
-        #         token.transfer(depositAddr, st_token_amount, {"from": st_sender})
+        # Transfers a token from a user/sender to one of the depositEth create2 addresses.
+        # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
+        # in the same way but with a different tokenAddr
+        def _transfer_tokens_to_depositToken(
+            self, bals, token, st_sender, st_swapID, st_token_amount
+        ):
+            # Since st_swapID = 0 won't be able to be fetched (reverts on empty input),
+            # no point sending native to that corresponding addr
+            if st_swapID != 0 and bals[st_sender] >= st_token_amount:
+                print(
+                    "                    _transfer_tokens_to_depositToken",
+                    token,
+                    st_sender,
+                    st_swapID,
+                    st_token_amount,
+                )
+                depositAddr = getCreate2Addr(
+                    self.v.address,
+                    cleanHexStrPad(st_swapID),
+                    Deposit,
+                    cleanHexStrPad(token.address),
+                )
+                token.transfer(depositAddr, st_token_amount, {"from": st_sender})
 
-        #         bals[st_sender] -= st_token_amount
-        #         bals[depositAddr] += st_token_amount
+                bals[st_sender] -= st_token_amount
+                bals[depositAddr] += st_token_amount
 
-        # # Deposits tokenA from a user to a tokenA create2
-        # def rule_transfer_tokens_to_depositTokenA(
-        #     self, st_sender, st_swapID, st_token_amount
-        # ):
-        #     self._transfer_tokens_to_depositToken(
-        #         self.tokenABals, self.tokenA, st_sender, st_swapID, st_token_amount
-        #     )
+        # Deposits tokenA from a user to a tokenA create2
+        def rule_transfer_tokens_to_depositTokenA(
+            self, st_sender, st_swapID, st_token_amount
+        ):
+            self._transfer_tokens_to_depositToken(
+                self.tokenABals, self.tokenA, st_sender, st_swapID, st_token_amount
+            )
 
-        # # Deposits tokenB from a user to a tokenB create2
-        # def rule_transfer_tokens_to_depositTokenB(
-        #     self, st_sender, st_swapID, st_token_amount
-        # ):
-        #     self._transfer_tokens_to_depositToken(
-        #         self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount
-        #     )
+        # Deposits tokenB from a user to a tokenB create2
+        def rule_transfer_tokens_to_depositTokenB(
+            self, st_sender, st_swapID, st_token_amount
+        ):
+            self._transfer_tokens_to_depositToken(
+                self.tokenBBals, self.tokenB, st_sender, st_swapID, st_token_amount
+            )
 
         # Fetch the native deposit of a random create2
         def rule_fetchNative(self, st_sender, st_swapID):
