@@ -1039,11 +1039,16 @@ def test_all(
                     self.km,
                     self.v.deployAndFetchBatch,
                     deployFetchParamsArray,
+                    signer=signer,
                     sender=st_sender,
                 )
 
                 tx = signed_call_km(
-                    self.km, self.v.fetchBatch, fetchParamsArray, sender=st_sender
+                    self.km,
+                    self.v.fetchBatch,
+                    fetchParamsArray,
+                    signer=signer,
+                    sender=st_sender,
                 )
                 self.lastValidateTime = tx.timestamp
 
