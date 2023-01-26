@@ -50,6 +50,8 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
 
     for addr in depositAddrs:
         assert web3.eth.get_balance(web3.toChecksumAddress(addr)) == 0
+        ## Check that there are contracts in the deposit Addresses
+        assert web3.eth.get_code(web3.toChecksumAddress(addr)).hex() != "0x"
 
 
 def test_fetchBatch_token_rev_msgHash(cf, token):
