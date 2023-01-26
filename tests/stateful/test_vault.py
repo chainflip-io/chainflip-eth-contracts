@@ -467,20 +467,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                         [[st_swapID, NATIVE_ADDR]],
                         sender=st_sender,
                     )
-
-            elif st_swapID == 0:
-                print(
-                    "        REV_MSG_NZ_BYTES32 rule_fetchDepositNative",
-                    st_sender,
-                    st_swapID,
-                )
-                with reverts(REV_MSG_NZ_BYTES32):
-                    signed_call_km(
-                        self.km,
-                        self.v.deployAndFetchBatch,
-                        [[st_swapID, NATIVE_ADDR]],
-                        sender=st_sender,
-                    )
             else:
                 print(
                     "                    rule_fetchDepositNative", st_sender, st_swapID
@@ -588,13 +574,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_call_km(
-                        self.km, self.v.deployAndFetchBatch, args, sender=st_sender
-                    )
-
-            elif st_swapID == 0:
-                print("        REV_MSG_NZ_BYTES32 _fetchDepositToken", *toLog)
-                with reverts(REV_MSG_NZ_BYTES32):
                     signed_call_km(
                         self.km, self.v.deployAndFetchBatch, args, sender=st_sender
                     )
