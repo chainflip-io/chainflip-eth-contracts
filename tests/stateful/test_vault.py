@@ -162,9 +162,14 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
             fetchEthTotal = sum(
                 self.nativeBals[
                     getCreate2Addr(
-                        self.v.address, cleanHexStrPad(st_swapIDs[i]), Deposit, cleanHexStrPad(NATIVE_ADDR)
+                        self.v.address,
+                        cleanHexStrPad(st_swapIDs[i]),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
                     )
-                ] if st_swapIDs[i] not in self.deployedDeposits else self.nativeBals[self.deployedDeposits[st_swapIDs[i]]]
+                ]
+                if st_swapIDs[i] not in self.deployedDeposits
+                else self.nativeBals[self.deployedDeposits[st_swapIDs[i]]]
                 for i, x in enumerate(fetchTokens)
                 if x == NATIVE_ADDR
             )
@@ -176,7 +181,9 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                         Deposit,
                         cleanHexStrPad(self.tokenA.address),
                     )
-                ] if st_swapIDs[i] not in self.deployedDeposits else self.tokenABals[self.deployedDeposits[st_swapIDs[i]]]
+                ]
+                if st_swapIDs[i] not in self.deployedDeposits
+                else self.tokenABals[self.deployedDeposits[st_swapIDs[i]]]
                 for i, x in enumerate(fetchTokens)
                 if x == self.tokenA
             )
@@ -188,7 +195,9 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                         Deposit,
                         cleanHexStrPad(self.tokenB.address),
                     )
-                ] if st_swapIDs[i] not in self.deployedDeposits else self.tokenBBals[self.deployedDeposits[st_swapIDs[i]]]
+                ]
+                if st_swapIDs[i] not in self.deployedDeposits
+                else self.tokenBBals[self.deployedDeposits[st_swapIDs[i]]]
                 for i, x in enumerate(fetchTokens)
                 if x == self.tokenB
             )
@@ -217,18 +226,17 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
 
             fetchParamsArray = []
             deployFetchParamsArray = []
-            
+
             for swapID, token in zip(st_swapIDs, fetchTokens):
                 if swapID in self.deployedDeposits:
                     fetchParamsArray.append([self.deployedDeposits[swapID], token])
                 else:
                     deployFetchParamsArray.append([swapID, token])
 
-
             transferParams = craftTransferParamsArray(
                 tranTokens, st_recips, st_native_amounts
             )
-            
+
             args = (deployFetchParamsArray, fetchParamsArray, transferParams)
             toLog = (*args, fetchTokens, st_sender)
 
@@ -256,7 +264,10 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                     else:
                         if tok == NATIVE_ADDR:
                             addr = getCreate2Addr(
-                                self.v.address, cleanHexStrPad(swapID), Deposit, cleanHexStrPad(NATIVE_ADDR)
+                                self.v.address,
+                                cleanHexStrPad(swapID),
+                                Deposit,
+                                cleanHexStrPad(NATIVE_ADDR),
                             )
                         else:
                             addr = getCreate2Addr(
@@ -279,7 +290,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                             self.tokenBBals[addr] = 0
                         else:
                             assert False, "Panicc"
-
 
                 # Alter bals from the transfers
                 for i, (tok, rec, am) in enumerate(
