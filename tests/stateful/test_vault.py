@@ -993,7 +993,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
             assert self.swapsEnabled == self.v.getSwapsEnabled()
 
             ## Check that there are contracts in the deposit Addresses
-            for addr in self.deployedDeposits:
+            for addr in self.deployedDeposits.values():
                 assert web3.eth.get_code(web3.toChecksumAddress(addr)).hex() != "0x"
 
         # Print how many rules were executed at the end of each run
