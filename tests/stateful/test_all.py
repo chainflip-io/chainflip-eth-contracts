@@ -1923,7 +1923,10 @@ def test_all(
                     # Create new addresses for the new Vault and initialize Balances
                     newCreate2EthAddrs = [
                         getCreate2Addr(
-                            self.v.address, cleanHexStrPad(swapID), Deposit, NATIVE_ADDR
+                            self.v.address,
+                            cleanHexStrPad(swapID),
+                            Deposit,
+                            cleanHexStrPad(NATIVE_ADDR),
                         )
                         for swapID in range(MAX_SWAPID + 1)
                     ]
