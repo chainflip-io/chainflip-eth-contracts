@@ -789,8 +789,8 @@ def test_all(
                 depositBal = self.nativeBals[depositAddr]
                 tx = signed_call_km(
                     self.km,
-                    self.v.fetchDepositNative,
-                    st_swapID,
+                    self.v.fetchBatch,
+                    [[depositAddr, NATIVE_ADDR]],
                     signer=signer,
                     sender=st_sender,
                 )
@@ -1923,7 +1923,7 @@ def test_all(
                     # Create new addresses for the new Vault and initialize Balances
                     newCreate2EthAddrs = [
                         getCreate2Addr(
-                            self.v.address, cleanHexStrPad(swapID), DepositNative, ""
+                            self.v.address, cleanHexStrPad(swapID), Deposit, NATIVE_ADDR
                         )
                         for swapID in range(MAX_SWAPID + 1)
                     ]
@@ -1931,7 +1931,7 @@ def test_all(
                         getCreate2Addr(
                             self.v.address,
                             cleanHexStrPad(swapID),
-                            DepositToken,
+                            Deposit,
                             cleanHexStrPad(self.tokenA.address),
                         )
                         for swapID in range(MAX_SWAPID + 1)
@@ -1940,7 +1940,7 @@ def test_all(
                         getCreate2Addr(
                             self.v.address,
                             cleanHexStrPad(swapID),
-                            DepositToken,
+                            Deposit,
                             cleanHexStrPad(self.tokenB.address),
                         )
                         for swapID in range(MAX_SWAPID + 1)
@@ -1951,6 +1951,8 @@ def test_all(
                         self._addNewAddress(newCreate2EthAddrs[swapID])
                         self._addNewAddress(newCreate2TokenAAddrs[swapID])
                         self._addNewAddress(newCreate2TokenBAddrs[swapID])
+
+                    self.deployedDeposits = dict()
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
