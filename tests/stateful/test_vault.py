@@ -500,17 +500,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                 self.nativeBals[self.v.address] += depositBal
 
         def rule_fetchDepositNativeBatch(self, st_sender, st_swapIDs):
-            addrs = [
-                getCreate2Addr(
-                    self.v.address,
-                    cleanHexStrPad(swapID),
-                    Deposit,
-                    cleanHexStrPad(NATIVE_ADDR),
-                )
-                for swapID in st_swapIDs
-            ]
-            total = sum([web3.eth.get_balance(addr) for addr in addrs])
-
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositNativeBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -532,7 +521,8 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
             non_used_swapIDs = []
             for st_swapID in st_swapIDs:
                 if st_swapID in self.deployedDeposits:
-                    used_addresses.append(self.deployedDeposits[st_swapID])
+                    depositAddr = self.deployedDeposits[st_swapID]
+                    used_addresses.append(depositAddr)
 
                 else:
                     non_used_swapIDs.append(st_swapID)
@@ -543,6 +533,10 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                         cleanHexStrPad(NATIVE_ADDR),
                     )
                     self.deployedDeposits[st_swapID] = depositAddr
+
+                # Accounting here to reuse the loop logic
+                self.nativeBals[self.v.address] += self.nativeBals[depositAddr]
+                self.nativeBals[depositAddr] = 0
 
             deployFetchParamsArray = craftDeployFetchParamsArray(
                 non_used_swapIDs, [NATIVE_ADDR] * len(non_used_swapIDs)
@@ -561,10 +555,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
             signed_call_km(
                 self.km, self.v.fetchBatch, fetchParamsArray, sender=st_sender
             )
-
-            for addr in addrs:
-                self.nativeBals[addr] = 0
-            self.nativeBals[self.v.address] += total
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
@@ -641,6 +631,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                         fetchParamsArray.append(
                             [self.deployedDeposits[st_swapID], token.address]
                         )
+                        depositAddr = self.deployedDeposits[st_swapID]
 
                     else:
                         deployFetchParamsArray.append([st_swapID, token.address])
@@ -652,6 +643,16 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                         )
                         self.deployedDeposits[st_swapID] = depositAddr
 
+                    # Accounting here to reuse the loop logic
+                    if token == self.tokenA:
+                        self.tokenABals[self.v.address] += self.tokenABals[depositAddr]
+                        self.tokenABals[depositAddr] = 0
+                    elif token == self.tokenB:
+                        self.tokenBBals[self.v.address] += self.tokenBBals[depositAddr]
+                        self.tokenBBals[depositAddr] = 0
+                    else:
+                        assert False, "Panicc"
+
                 signed_call_km(
                     self.km,
                     self.v.deployAndFetchBatch,
@@ -662,22 +663,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                 signed_call_km(
                     self.km, self.v.fetchBatch, fetchParamsArray, sender=st_sender
                 )
-
-                for swapID, token in zip(st_swapIDs, st_tokens):
-                    addr = getCreate2Addr(
-                        self.v.address,
-                        cleanHexStrPad(swapID),
-                        Deposit,
-                        cleanHexStrPad(token.address),
-                    )
-                    if token == self.tokenA:
-                        self.tokenABals[self.v.address] += self.tokenABals[addr]
-                        self.tokenABals[addr] = 0
-                    elif token == self.tokenB:
-                        self.tokenBBals[self.v.address] += self.tokenBBals[addr]
-                        self.tokenBBals[addr] = 0
-                    else:
-                        assert False, "Panicc"
 
         # Sleep AGG_KEY_EMERGENCY_TIMEOUT
         def rule_sleep_14_days(self):

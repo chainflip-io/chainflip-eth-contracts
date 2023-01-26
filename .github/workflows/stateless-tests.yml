@@ -1,6 +1,9 @@
 name: Stateless Tests
-on: push
-
+on:
+  push:
+    branches:
+      - master
+      
 jobs:
   lint:
     uses: ./.github/workflows/.lint.yml
