@@ -10,6 +10,7 @@ import "./IGovernanceCommunityGuarded.sol";
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function allBatch(
         SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external;
@@ -30,13 +31,15 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function fetchDepositNative(SigData calldata sigData, bytes32 swapID) external;
+    function deployAndFetch(SigData calldata sigData, DeployFetchParams calldata deployFetchParams) external;
 
-    function fetchDepositNativeBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external;
+    function fetch(SigData calldata sigData, FetchParams calldata fetchParams) external;
 
-    function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams) external;
-
-    function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray) external;
+    function fetchBatch(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParams,
+        FetchParams[] calldata fetchParams
+    ) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

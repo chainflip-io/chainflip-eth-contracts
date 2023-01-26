@@ -10,10 +10,11 @@ contract VaultEchidna is IShared {
 
     function allBatch(
         SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external virtual {
-        v.allBatch(sigData, fetchParamsArray, transferParamsArray);
+        v.allBatch(sigData, deployFetchParamsArray, fetchParamsArray, transferParamsArray);
     }
 
     function transfer(SigData calldata sigData, TransferParams calldata transferParams) external virtual {
@@ -24,23 +25,20 @@ contract VaultEchidna is IShared {
         v.transferBatch(sigData, transferParamsArray);
     }
 
-    function fetchDepositNative(SigData calldata sigData, bytes32 swapID) external virtual {
-        v.fetchDepositNative(sigData, swapID);
+    function deployAndFetch(SigData calldata sigData, DeployFetchParams calldata deployFetchParams) external virtual {
+        v.deployAndFetch(sigData, deployFetchParams);
     }
 
-    function fetchDepositNativeBatch(SigData calldata sigData, bytes32[] calldata swapIDs) external virtual {
-        v.fetchDepositNativeBatch(sigData, swapIDs);
+    function fetchBatch(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
+        FetchParams[] calldata fetchParamsArray
+    ) external virtual {
+        v.fetchBatch(sigData, deployFetchParamsArray, fetchParamsArray);
     }
 
-    function fetchDepositToken(SigData calldata sigData, FetchParams calldata fetchParams) external virtual {
-        v.fetchDepositToken(sigData, fetchParams);
-    }
-
-    function fetchDepositTokenBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
-        external
-        virtual
-    {
-        v.fetchDepositTokenBatch(sigData, fetchParamsArray);
+    function fetch(SigData calldata sigData, FetchParams calldata fetchParams) external virtual {
+        v.fetch(sigData, fetchParams);
     }
 
     function xSwapNative(

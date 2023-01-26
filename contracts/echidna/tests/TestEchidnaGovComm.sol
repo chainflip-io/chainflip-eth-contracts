@@ -142,10 +142,11 @@ contract TestEchidnaGovComm is Deployer {
     // Proxy for a signed function - Assert if the call is not reverted
     function allBatch_revert(
         SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external {
-        try v.allBatch(sigData, fetchParamsArray, transferParamsArray) {
+        try v.allBatch(sigData, deployFetchParamsArray, fetchParamsArray, transferParamsArray) {
             assert(false);
         } catch {
             assert(true);
