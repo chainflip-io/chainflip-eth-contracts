@@ -130,7 +130,7 @@ def test_all(
                     Deposit,
                     cleanHexStrPad(NATIVE_ADDR),
                 )
-                for swapID in range(MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.create2TokenAAddrs = [
                 getCreate2Addr(
@@ -139,7 +139,7 @@ def test_all(
                     Deposit,
                     cleanHexStrPad(cls.tokenA.address),
                 )
-                for swapID in range(MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.create2TokenBAddrs = [
                 getCreate2Addr(
@@ -148,7 +148,7 @@ def test_all(
                     Deposit,
                     cleanHexStrPad(cls.tokenB.address),
                 )
-                for swapID in range(MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
 
             cls.stakers = a[:MAX_NUM_SENDERS]
@@ -272,8 +272,8 @@ def test_all(
         st_token = contract_strategy("Token")
         st_tokens = hypStrat.lists(st_token)
         st_token_amount = strategy("uint", max_value=MAX_TOKEN_SEND)
-        st_swapID = strategy("uint", min_value=0, max_value=MAX_SWAPID)
-        st_swapIDs = strategy("uint[]", min_value=0, max_value=MAX_SWAPID, unique=True)
+        st_swapID = strategy("uint", max_value=MAX_SWAPID)
+        st_swapIDs = strategy("uint[]", max_value=MAX_SWAPID, unique=True)
         # Only want the 1st 5 addresses so that the chances of multiple
         # txs occurring from the same address is greatly increased while still
         # ensuring diversity in senders
@@ -862,7 +862,7 @@ def test_all(
                         self.deployedDeposits[st_swapID] = depositAddr
 
                     # Accounting here to reuse the loop logic
-                    self.nativeBals[self.v.address] += self.nativeBals[depositAddr]
+                    self.nativeBals[self.v] += self.nativeBals[depositAddr]
                     self.nativeBals[depositAddr] = 0
 
                 deployFetchParamsArray = craftDeployFetchParamsArray(
@@ -1026,10 +1026,10 @@ def test_all(
 
                     # Accounting here to reuse the loop logic
                     if token == self.tokenA:
-                        self.tokenABals[self.v.address] += self.tokenABals[depositAddr]
+                        self.tokenABals[self.v] += self.tokenABals[depositAddr]
                         self.tokenABals[depositAddr] = 0
                     elif token == self.tokenB:
-                        self.tokenBBals[self.v.address] += self.tokenBBals[depositAddr]
+                        self.tokenBBals[self.v] += self.tokenBBals[depositAddr]
                         self.tokenBBals[depositAddr] = 0
                     else:
                         assert False, "Panicc"
