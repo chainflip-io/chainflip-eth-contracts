@@ -19,8 +19,7 @@ def test_allBatch(
     cf,
     token,
     token2,
-    DepositToken,
-    DepositNative,
+    Deposit,
     st_fetchAmounts,
     st_fetchSwapIDs,
     st_tranRecipients,
@@ -35,19 +34,21 @@ def test_allBatch(
         tok: sum([st_fetchAmounts[i] for i, x in enumerate(fetchTokens) if x == tok])
         for tok in tokensList
     }
-
+    depositAddrs = []
     # Transfer tokens to the deposit addresses
     for am, id, tok in zip(st_fetchAmounts, st_fetchSwapIDs, fetchTokens):
         # Get the address to deposit to and deposit
         if tok == NATIVE_ADDR:
-            depositAddr = getCreate2Addr(cf.vault.address, id.hex(), DepositNative, "")
+            depositAddr = getCreate2Addr(
+                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(NATIVE_ADDR)
+            )
             cf.DEPLOYER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
-                cf.vault.address, id.hex(), DepositToken, cleanHexStrPad(tok.address)
+                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
             )
             tok.transfer(depositAddr, am, {"from": cf.DEPLOYER})
-
+        depositAddrs.append(depositAddr)
     assert cf.vault.balance() == 0  # starting balance
     assert token.balanceOf(cf.vault) == 0
     assert token2.balanceOf(cf.vault) == 0
@@ -84,19 +85,21 @@ def test_allBatch(
     if st_sender in st_tranRecipients:
         iniTransactionNumberst_sender = len(history.filter(sender=st_sender))
 
-    fetchParams = craftFetchParamsArray(st_fetchSwapIDs, fetchTokens)
+    deployFetchParams = craftDeployFetchParamsArray(st_fetchSwapIDs, fetchTokens)
+    # Call fetch functions from recently deployed Deposit contracts (will fetch zero)
+    fetchParamsArray = craftFetchParamsArray(depositAddrs, fetchTokens)
     transferParams = craftTransferParamsArray(
         tranTokens, st_tranRecipients, st_tranAmounts
     )
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, fetchParamsArray, transferParams)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         with reverts():
-            signed_call_cf(cf, cf.vault.allBatch, *args, st_sender=st_sender)
+            signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
     else:
-        signed_call_cf(cf, cf.vault.allBatch, *args, st_sender=st_sender)
+        signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
         assert cf.vault.balance() == fetchTotals[NATIVE_ADDR] - tranTotals[NATIVE_ADDR]
         assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
@@ -129,9 +132,10 @@ def test_allBatch(
 
 
 def test_allBatch_rev_msgHash(cf):
-    fetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    fetchParamsArray = [[NON_ZERO_ADDR, NATIVE_ADDR]]
     transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, fetchParamsArray, transferParams)
 
     callDataNoSig = cf.vault.allBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
@@ -144,9 +148,10 @@ def test_allBatch_rev_msgHash(cf):
 
 
 def test_allBatch_rev_sig(cf):
-    fetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    fetchParamsArray = [[NON_ZERO_ADDR, NATIVE_ADDR]]
     transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, fetchParamsArray, transferParams)
 
     callDataNoSig = cf.vault.allBatch.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), *args
@@ -156,3 +161,30 @@ def test_allBatch_rev_sig(cf):
 
     with reverts(REV_MSG_SIG):
         cf.vault.allBatch(sigData, *args)
+
+
+def test_allBatch_rev_deploy(cf):
+    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR], [JUNK_HEX_PAD, NATIVE_ADDR]]
+    fetchParamsArray = [[NON_ZERO_ADDR, NATIVE_ADDR]]
+    transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
+    args = (deployFetchParams, fetchParamsArray, transferParams)
+
+    with reverts():
+        signed_call_cf(cf, cf.vault.allBatch, *args)
+
+
+def test_allBatch_rev_fetch(cf, Deposit):
+    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    # Use a non-used salt to get a different address
+    depositAddr = getCreate2Addr(
+        cf.vault.address,
+        cleanHexStrPad(web3.toHex(1)),
+        Deposit,
+        cleanHexStrPad(NATIVE_ADDR),
+    )
+    fetchParamsArray = [[depositAddr, NON_ZERO_ADDR]]
+    transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
+    args = (deployFetchParams, fetchParamsArray, transferParams)
+
+    with reverts():
+        signed_call_cf(cf, cf.vault.allBatch, *args)

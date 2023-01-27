@@ -102,7 +102,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 @given(
     st_sender=strategy("address"),
 )
-def test_upgrade_Vault(cf, Vault, DepositNative, st_sender):
+def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
 
     totalFunds = cf.DENICE.balance() / 10
     # Replicate a vault with funds - 1000 NATIVE
@@ -139,11 +139,11 @@ def test_upgrade_Vault(cf, Vault, DepositNative, st_sender):
 
     # with a balance in can transfer. However, at this point the new vault should not be used yet
     # more than potentially to start fetching from new addresses.
-    fetchDepositNative(cf, newVault, DepositNative)
+    depositAddrNew = deployAndFetchNative(cf, newVault, Deposit)
     transfer_native(cf, newVault, cf.ALICE, TEST_AMNT)
 
     # Old vault can still operate
-    fetchDepositNative(cf, cf.vault, DepositNative)
+    depositAddr = deployAndFetchNative(cf, cf.vault, Deposit)
     transfer_native(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
     # Transfer from oldVault to new Vault - unclear if we want to transfer all the balance
@@ -152,7 +152,7 @@ def test_upgrade_Vault(cf, Vault, DepositNative, st_sender):
     assert newVault.balance() == totalFunds / 2
 
     # Old vault still functions
-    fetchDepositNative(cf, cf.vault, DepositNative)
+    fetchNative(cf, cf.vault, depositAddr)
     transfer_native(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
     # Time where fetchs (and maybe transfers) still can be done from the oldVault
@@ -177,7 +177,7 @@ def test_upgrade_Vault(cf, Vault, DepositNative, st_sender):
     with reverts(REV_MSG_WHITELIST):
         signed_call_cf(cf, cf.vault.transfer, *args, sender=st_sender)
 
-    fetchDepositNative(cf, newVault, DepositNative)
+    fetchNative(cf, newVault, depositAddrNew)
     transfer_native(cf, newVault, cf.ALICE, TEST_AMNT)
     assert newVault.balance() == totalFunds
 
