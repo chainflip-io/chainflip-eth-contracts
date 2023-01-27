@@ -1,5 +1,8 @@
 name: Stateful Tests
-on: push
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   lint:
@@ -9,6 +12,16 @@ jobs:
     needs: lint
     runs-on: [self-hosted, linux, x64, ephemeral]
     timeout-minutes: 3600
+    strategy:
+      matrix:
+        test:
+          [
+            test_all.py,
+            test_keyManager.py,
+            test_vault.py,
+            test_stakeManager.py,
+            test_upgradability.py,
+          ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -35,4 +48,4 @@ jobs:
       # data generation that behaved differently between runs
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
+      - run: poetry run brownie test tests/stateful/${{ matrix.test }} --network hardhat --stateful true

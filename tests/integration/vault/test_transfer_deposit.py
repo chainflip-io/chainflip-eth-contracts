@@ -289,9 +289,9 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
 
     assert cf.vault.balance() == 0
 
-    # Eth bals
-    amountEthAlice = TEST_AMNT * 1.5
-    amountEthBob = int(TEST_AMNT * 0.5)
+    # Native bals
+    amountNativeAlice = TEST_AMNT * 1.5
+    amountNativeBob = int(TEST_AMNT * 0.5)
     nativeStartBalVault = cf.vault.balance()
     nativeStartBalAlice = cf.ALICE.balance()
     nativeStartBalBob = cf.BOB.balance()
@@ -305,19 +305,19 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
     transferParams = craftTransferParamsArray(
         [NATIVE_ADDR, NATIVE_ADDR, token],
         [cf.ALICE, cf.BOB, cf.BOB],
-        [amountEthAlice, amountEthBob, amountTokenBob],
+        [amountNativeAlice, amountNativeBob, amountTokenBob],
     )
     args = (deployFetchParams, [], transferParams)
 
     signed_call_cf(cf, cf.vault.allBatch, *args, sender=cf.CHARLIE)
 
-    # Eth bals
+    # Native bals
     assert (
         cf.vault.balance()
-        == nativeStartBalVault + (3 * TEST_AMNT) - amountEthAlice - amountEthBob
+        == nativeStartBalVault + (3 * TEST_AMNT) - amountNativeAlice - amountNativeBob
     )
-    assert cf.ALICE.balance() == nativeStartBalAlice + amountEthAlice
-    assert cf.BOB.balance() == nativeStartBalBob + amountEthBob
+    assert cf.ALICE.balance() == nativeStartBalAlice + amountNativeAlice
+    assert cf.BOB.balance() == nativeStartBalBob + amountNativeBob
 
     # Token bals
     assert token.balanceOf(cf.vault) == tokenStartBalVault - amountTokenBob
