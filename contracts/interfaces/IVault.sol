@@ -31,15 +31,10 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function deployAndFetch(SigData calldata sigData, DeployFetchParams calldata deployFetchParams) external;
+    function deployAndFetchBatch(SigData calldata sigData, DeployFetchParams[] calldata deployFetchParamsArray)
+        external;
 
-    function fetch(SigData calldata sigData, FetchParams calldata fetchParams) external;
-
-    function fetchBatch(
-        SigData calldata sigData,
-        DeployFetchParams[] calldata deployFetchParams,
-        FetchParams[] calldata fetchParams
-    ) external;
+    function fetchBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

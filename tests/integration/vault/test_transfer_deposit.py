@@ -4,16 +4,18 @@ from utils import *
 from shared_tests import *
 
 
-def test_fetchDepositNative_transfer_fetchDepositToken_transfer(
-    cf, token, DepositNative, DepositToken
-):
+def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Deposit):
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(cf.vault.address, JUNK_HEX_PAD, DepositNative, "")
+    depositAddr = getCreate2Addr(
+        cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
 
     assert cf.vault.balance() == 0
 
-    signed_call_cf(cf, cf.vault.fetchDepositNative, JUNK_HEX_PAD, sender=cf.ALICE)
+    signed_call_cf(
+        cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, NATIVE_ADDR]], sender=cf.ALICE
+    )
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
@@ -36,14 +38,13 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, JUNK_HEX_PAD, DepositToken, cleanHexStrPad(token.address)
+        cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(token.address)
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
 
     assert token.balanceOf(cf.vault) == 0
 
-    args = [[JUNK_HEX_PAD, token]]
-    signed_call_cf(cf, cf.vault.fetchDepositToken, *args)
+    signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, token]])
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
@@ -61,18 +62,26 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(
 
 
 def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
-    cf, token, DepositNative, DepositToken
+    cf, token, Deposit
 ):
     swapIDs = [cleanHexStrPad(0), cleanHexStrPad(1)]
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(cf.vault.address, swapIDs[0], DepositNative, "")
+    depositAddr = getCreate2Addr(
+        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
-    depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositNative, "")
+    depositAddr2 = getCreate2Addr(
+        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
     assert cf.vault.balance() == 0
-
-    signed_call_cf(cf, cf.vault.fetchDepositNativeBatch, swapIDs, sender=cf.ALICE)
+    deployFetchParamsArray = craftDeployFetchParamsArray(
+        swapIDs, [NATIVE_ADDR, NATIVE_ADDR]
+    )
+    signed_call_cf(
+        cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.ALICE
+    )
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -99,19 +108,19 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], DepositToken, cleanHexStrPad(token.address)
+        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], DepositToken, cleanHexStrPad(token.address)
+        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
     )
     token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.DEPLOYER})
 
     assert token.balanceOf(cf.vault) == 0
 
-    fetchParamsArray = craftFetchParamsArray(swapIDs, [token, token])
+    deployFetchParamsArray = craftDeployFetchParamsArray(swapIDs, [token, token])
     signed_call_cf(
-        cf, cf.vault.fetchDepositTokenBatch, fetchParamsArray, sender=cf.ALICE
+        cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.ALICE
     )
 
     assert token.balanceOf(depositAddr) == 0
@@ -130,25 +139,25 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
 
 
 def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBatch(
-    cf, token, DepositNative, DepositToken
+    cf, token, Deposit
 ):
     swapIDs = [cleanHexStrPad(0), cleanHexStrPad(1)]
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], DepositToken, cleanHexStrPad(token.address)
+        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], DepositToken, cleanHexStrPad(token.address)
+        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
     )
     token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.DEPLOYER})
 
     assert token.balanceOf(cf.vault) == 0
 
-    fetchParamsArray = craftFetchParamsArray(swapIDs, [token, token])
+    deployFetchParamsArray = craftDeployFetchParamsArray(swapIDs, [token, token])
     signed_call_cf(
-        cf, cf.vault.fetchDepositTokenBatch, fetchParamsArray, sender=cf.CHARLIE
+        cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.CHARLIE
     )
 
     assert token.balanceOf(depositAddr) == 0
@@ -177,14 +186,23 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
         )
 
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(cf.vault.address, swapIDs[0], DepositNative, "")
+    depositAddr = getCreate2Addr(
+        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
-    depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositNative, "")
+    depositAddr2 = getCreate2Addr(
+        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
     assert cf.vault.balance() == 0
 
-    signed_call_cf(cf, cf.vault.fetchDepositNativeBatch, swapIDs, sender=cf.CHARLIE)
+    deployFetchParamsArray = craftDeployFetchParamsArray(
+        swapIDs, [NATIVE_ADDR, NATIVE_ADDR]
+    )
+    signed_call_cf(
+        cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.CHARLIE
+    )
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -209,26 +227,24 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     assert cf.BOB.balance() == nativeStartBalBob + amountBob
 
 
-def test_fetchDepositTokenBatch_transferBatch_allBatch(
-    cf, token, DepositNative, DepositToken
-):
+def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
     swapIDs = [cleanHexStrPad(0), cleanHexStrPad(1)]
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], DepositToken, cleanHexStrPad(token.address)
+        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], DepositToken, cleanHexStrPad(token.address)
+        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
     )
     token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.DEPLOYER})
 
     assert token.balanceOf(cf.vault) == 0
 
-    fetchParamsArray = craftFetchParamsArray(swapIDs, [token, token])
+    deployFetchParamsArray = craftDeployFetchParamsArray(swapIDs, [token, token])
     signed_call_cf(
-        cf, cf.vault.fetchDepositTokenBatch, fetchParamsArray, sender=cf.CHARLIE
+        cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.CHARLIE
     )
 
     assert token.balanceOf(depositAddr) == 0
@@ -262,16 +278,20 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(
         signed_call_cf(cf, cf.vault.transferBatch, transferParamsArray)
 
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(cf.vault.address, swapIDs[0], DepositNative, "")
+    depositAddr = getCreate2Addr(
+        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
     cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
-    depositAddr2 = getCreate2Addr(cf.vault.address, swapIDs[1], DepositNative, "")
+    depositAddr2 = getCreate2Addr(
+        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
     cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
 
     assert cf.vault.balance() == 0
 
-    # Eth bals
-    amountEthAlice = TEST_AMNT * 1.5
-    amountEthBob = int(TEST_AMNT * 0.5)
+    # Native bals
+    amountNativeAlice = TEST_AMNT * 1.5
+    amountNativeBob = int(TEST_AMNT * 0.5)
     nativeStartBalVault = cf.vault.balance()
     nativeStartBalAlice = cf.ALICE.balance()
     nativeStartBalBob = cf.BOB.balance()
@@ -281,23 +301,23 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(
     tokenStartBalVault = token.balanceOf(cf.vault)
     tokenStartBalBob = token.balanceOf(cf.BOB)
 
-    fetchParams = craftFetchParamsArray(swapIDs, [NATIVE_ADDR, NATIVE_ADDR])
+    deployFetchParams = craftDeployFetchParamsArray(swapIDs, [NATIVE_ADDR, NATIVE_ADDR])
     transferParams = craftTransferParamsArray(
         [NATIVE_ADDR, NATIVE_ADDR, token],
         [cf.ALICE, cf.BOB, cf.BOB],
-        [amountEthAlice, amountEthBob, amountTokenBob],
+        [amountNativeAlice, amountNativeBob, amountTokenBob],
     )
-    args = (fetchParams, transferParams)
+    args = (deployFetchParams, [], transferParams)
 
     signed_call_cf(cf, cf.vault.allBatch, *args, sender=cf.CHARLIE)
 
-    # Eth bals
+    # Native bals
     assert (
         cf.vault.balance()
-        == nativeStartBalVault + (3 * TEST_AMNT) - amountEthAlice - amountEthBob
+        == nativeStartBalVault + (3 * TEST_AMNT) - amountNativeAlice - amountNativeBob
     )
-    assert cf.ALICE.balance() == nativeStartBalAlice + amountEthAlice
-    assert cf.BOB.balance() == nativeStartBalBob + amountEthBob
+    assert cf.ALICE.balance() == nativeStartBalAlice + amountNativeAlice
+    assert cf.BOB.balance() == nativeStartBalBob + amountNativeBob
 
     # Token bals
     assert token.balanceOf(cf.vault) == tokenStartBalVault - amountTokenBob

@@ -5,11 +5,13 @@ from utils import *
 # ----------Vault----------
 
 
-def fetchDepositNative(cf, vault, DepositNative, **kwargs):
+def deployAndFetchNative(cf, vault, Deposit, **kwargs):
     amount = kwargs.get("amount", TEST_AMNT)
 
     # Get the address to deposit to and deposit
-    depositAddr = getCreate2Addr(vault.address, JUNK_HEX_PAD, DepositNative, "")
+    depositAddr = getCreate2Addr(
+        vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
 
     assert cf.DEPLOYER.balance() >= amount
     cf.DEPLOYER.transfer(depositAddr, amount)
@@ -17,7 +19,26 @@ def fetchDepositNative(cf, vault, DepositNative, **kwargs):
     balanceVaultBefore = vault.balance()
 
     # Fetch the deposit
-    signed_call_cf(cf, vault.fetchDepositNative, JUNK_HEX_PAD, sender=cf.ALICE)
+    signed_call_cf(
+        cf, vault.deployAndFetchBatch, [[JUNK_HEX_PAD, NATIVE_ADDR]], sender=cf.ALICE
+    )
+
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert vault.balance() == balanceVaultBefore + amount
+
+    return depositAddr
+
+
+def fetchNative(cf, vault, depositAddr, **kwargs):
+    amount = kwargs.get("amount", TEST_AMNT)
+
+    assert cf.DEPLOYER.balance() >= amount
+    cf.DEPLOYER.transfer(depositAddr, amount)
+
+    balanceVaultBefore = vault.balance()
+
+    # Fetch the deposit
+    signed_call_cf(cf, vault.fetchBatch, [[depositAddr, NATIVE_ADDR]], sender=cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert vault.balance() == balanceVaultBefore + amount
@@ -262,9 +283,18 @@ def craftTransferParamsArray(tokens, recipients, amounts):
 
 
 # Assumption that all the parameters are the same length. Craft the FetchParams array.
-def craftFetchParamsArray(swapIDs, tokens):
+def craftDeployFetchParamsArray(swapIDs, tokens):
     length = len(tokens)
     args = []
     for index in range(length):
         args.append([swapIDs[index], tokens[index]])
+    return args
+
+
+# Assumption that all the parameters are the same length. Craft the FetchParams array.
+def craftFetchParamsArray(depositAddresses, tokens):
+    length = len(tokens)
+    args = []
+    for index in range(length):
+        args.append([depositAddresses[index], tokens[index]])
     return args

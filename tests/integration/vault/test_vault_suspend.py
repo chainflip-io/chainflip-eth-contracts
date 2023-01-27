@@ -11,14 +11,15 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
     # Suspend the Vault contract
     cf.vault.suspend({"from": cf.GOVERNOR})
 
+    deployFetchParamsArray = craftDeployFetchParamsArray([JUNK_HEX], [NATIVE_ADDR])
+    fetchParamsArray = craftFetchParamsArray([NON_ZERO_ADDR], [NATIVE_ADDR])
+    transferParamsArray = craftTransferParamsArray(
+        [NATIVE_ADDR], [NON_ZERO_ADDR], [TEST_AMNT]
+    )
+
     # allBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        fetchParams = craftFetchParamsArray([JUNK_HEX], [NATIVE_ADDR])
-        transferParams = craftTransferParamsArray(
-            [NATIVE_ADDR], [NON_ZERO_ADDR], [TEST_AMNT]
-        )
-
-        args = (fetchParams, transferParams)
+        args = (deployFetchParamsArray, fetchParamsArray, transferParamsArray)
         signed_call_cf(cf, cf.vault.allBatch, *args)
 
     # transfer
@@ -32,17 +33,13 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
 
     # fetchDepositNative
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_cf(cf, cf.vault.fetchDepositNative, JUNK_HEX_PAD)
+        signed_call_cf(cf, cf.vault.fetchBatch, fetchParamsArray)
 
-    # fetchDepositNativeBatch
+    # deployAndFetchBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_cf(cf, cf.vault.fetchDepositNativeBatch, [JUNK_HEX_PAD])
+        signed_call_cf(cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray)
 
-    # fetchDepositToken
-    with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_cf(cf, cf.vault.fetchDepositToken, [JUNK_HEX_PAD, NATIVE_ADDR])
-
-    # fetchDepositTokenBatch
+    # fetchBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
         signed_call_cf(
             cf, cf.vault.fetchDepositTokenBatch, [[JUNK_HEX_PAD, NATIVE_ADDR]]

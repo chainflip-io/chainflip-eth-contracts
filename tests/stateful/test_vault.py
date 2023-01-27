@@ -11,14 +11,7 @@ settings = {"stateful_step_count": 100, "max_examples": 50}
 
 # Stateful test for all functions in the Vault
 def test_vault(
-    BaseStateMachine,
-    state_machine,
-    a,
-    cfDeploy,
-    DepositNative,
-    DepositToken,
-    Token,
-    cfReceiverMock,
+    BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token, cfReceiverMock
 ):
 
     # The max swapID to use. SwapID is needed as a salt to create a unique create2
@@ -43,8 +36,8 @@ def test_vault(
     class StateMachine(BaseStateMachine):
 
         """
-        This test calls functions from Vault in random orders. It uses a set number of DepositNative
-        and DepositToken contracts/create2 addresses for native & each token (MAX_SWAPID amount of each,
+        This test calls functions from Vault in random orders. It uses a set number of Deposit
+        contracts/create2 addresses for native & each token (MAX_SWAPID amount of each,
         3 * MAX_SWAPID total) and also randomly sends native and the 2 ERC20 tokens to the create2
         addresses that correspond to the create2 addresses so that something can actually be fetched
         and transferred.
@@ -54,9 +47,7 @@ def test_vault(
         """
 
         # Set up the initial test conditions once
-        def __init__(
-            cls, a, cfDeploy, DepositNative, DepositToken, Token, cfReceiverMock
-        ):
+        def __init__(cls, a, cfDeploy, Deposit, Token, cfReceiverMock):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
@@ -80,26 +71,31 @@ def test_vault(
                 )
 
             cls.create2EthAddrs = [
-                getCreate2Addr(cls.v.address, cleanHexStrPad(swapID), DepositNative, "")
-                for swapID in range(1, MAX_SWAPID + 1)
+                getCreate2Addr(
+                    cls.v.address,
+                    cleanHexStrPad(swapID),
+                    Deposit,
+                    cleanHexStrPad(NATIVE_ADDR),
+                )
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.create2TokenAAddrs = [
                 getCreate2Addr(
                     cls.v.address,
                     cleanHexStrPad(swapID),
-                    DepositToken,
+                    Deposit,
                     cleanHexStrPad(cls.tokenA.address),
                 )
-                for swapID in range(1, MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.create2TokenBAddrs = [
                 getCreate2Addr(
                     cls.v.address,
                     cleanHexStrPad(swapID),
-                    DepositToken,
+                    Deposit,
                     cleanHexStrPad(cls.tokenB.address),
                 )
-                for swapID in range(1, MAX_SWAPID + 1)
+                for swapID in range(0, MAX_SWAPID + 1)
             ]
             cls.allAddrs = [
                 *[addr.address for addr in a[:MAX_NUM_SENDERS]],
@@ -141,6 +137,9 @@ def test_vault(
             self.suspended = self.v.getSuspendedState()
             self.xCallsEnabled = False
 
+            # Dictionary swapID:deployedAddress
+            self.deployedDeposits = dict()
+
         # Variables that will be a random value with each fcn/rule called
 
         st_native_amount = strategy("uint", max_value=MAX_NATIVE_SEND)
@@ -149,7 +148,7 @@ def test_vault(
         st_tokens = hypStrat.lists(st_token)
         st_token_amount = strategy("uint", max_value=MAX_TOKEN_SEND)
         st_swapID = strategy("uint", max_value=MAX_SWAPID)
-        st_swapIDs = strategy("uint[]", min_value=1, max_value=MAX_SWAPID, unique=True)
+        st_swapIDs = strategy("uint[]", min_value=0, max_value=MAX_SWAPID, unique=True)
         # Only want the 1st 5 addresses so that the chances of multiple
         # txs occurring from the same address is greatly increased while still
         # ensuring diversity in senders
@@ -165,13 +164,19 @@ def test_vault(
         st_refundAddress = strategy("address")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_native_amounts, st_sender):
+
             fetchTokens = choices(self.tokensList, k=len(st_swapIDs))
             fetchEthTotal = sum(
                 self.nativeBals[
                     getCreate2Addr(
-                        self.v.address, cleanHexStrPad(st_swapIDs[i]), DepositNative, ""
+                        self.v.address,
+                        cleanHexStrPad(st_swapIDs[i]),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
                     )
                 ]
+                if st_swapIDs[i] not in self.deployedDeposits
+                else self.nativeBals[self.deployedDeposits[st_swapIDs[i]]]
                 for i, x in enumerate(fetchTokens)
                 if x == NATIVE_ADDR
             )
@@ -180,10 +185,12 @@ def test_vault(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapIDs[i]),
-                        DepositToken,
+                        Deposit,
                         cleanHexStrPad(self.tokenA.address),
                     )
                 ]
+                if st_swapIDs[i] not in self.deployedDeposits
+                else self.tokenABals[self.deployedDeposits[st_swapIDs[i]]]
                 for i, x in enumerate(fetchTokens)
                 if x == self.tokenA
             )
@@ -192,10 +199,12 @@ def test_vault(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapIDs[i]),
-                        DepositToken,
+                        Deposit,
                         cleanHexStrPad(self.tokenB.address),
                     )
                 ]
+                if st_swapIDs[i] not in self.deployedDeposits
+                else self.tokenBBals[self.deployedDeposits[st_swapIDs[i]]]
                 for i, x in enumerate(fetchTokens)
                 if x == self.tokenB
             )
@@ -222,12 +231,21 @@ def test_vault(
                 ]
             )
 
-            fetchParams = craftFetchParamsArray(st_swapIDs, fetchTokens)
+            fetchParamsArray = []
+            deployFetchParamsArray = []
+
+            for swapID, token in zip(st_swapIDs, fetchTokens):
+                if swapID in self.deployedDeposits:
+                    fetchParamsArray.append([self.deployedDeposits[swapID], token])
+                else:
+                    deployFetchParamsArray.append([swapID, token])
+
             transferParams = craftTransferParamsArray(
                 tranTokens, st_recips, st_native_amounts
             )
-            args = (fetchParams, transferParams)
-            toLog = (*args, st_sender)
+
+            args = (deployFetchParamsArray, fetchParamsArray, transferParams)
+            toLog = (*args, fetchTokens, st_sender)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _allBatch")
@@ -248,19 +266,29 @@ def test_vault(
 
                 # Alter bals from the fetches
                 for swapID, tok in zip(st_swapIDs, fetchTokens):
+                    if swapID in self.deployedDeposits.keys():
+                        addr = self.deployedDeposits[swapID]
+                    else:
+                        if tok == NATIVE_ADDR:
+                            addr = getCreate2Addr(
+                                self.v.address,
+                                cleanHexStrPad(swapID),
+                                Deposit,
+                                cleanHexStrPad(NATIVE_ADDR),
+                            )
+                        else:
+                            addr = getCreate2Addr(
+                                self.v.address,
+                                cleanHexStrPad(swapID),
+                                Deposit,
+                                cleanHexStrPad(tok.address),
+                            )
+                        self.deployedDeposits[swapID] = addr
+
                     if tok == NATIVE_ADDR:
-                        addr = getCreate2Addr(
-                            self.v.address, cleanHexStrPad(swapID), DepositNative, ""
-                        )
                         self.nativeBals[self.v.address] += self.nativeBals[addr]
                         self.nativeBals[addr] = 0
                     else:
-                        addr = getCreate2Addr(
-                            self.v.address,
-                            cleanHexStrPad(swapID),
-                            DepositToken,
-                            cleanHexStrPad(tok.address),
-                        )
                         if tok == self.tokenA:
                             self.tokenABals[self.v.address] += self.tokenABals[addr]
                             self.tokenABals[addr] = 0
@@ -411,7 +439,10 @@ def test_vault(
                     st_native_amount,
                 )
                 depositAddr = getCreate2Addr(
-                    self.v.address, cleanHexStrPad(st_swapID), DepositNative, ""
+                    self.v.address,
+                    cleanHexStrPad(st_swapID),
+                    Deposit,
+                    cleanHexStrPad(NATIVE_ADDR),
                 )
                 st_sender.transfer(depositAddr, st_native_amount)
 
@@ -437,7 +468,7 @@ def test_vault(
                 depositAddr = getCreate2Addr(
                     self.v.address,
                     cleanHexStrPad(st_swapID),
-                    DepositToken,
+                    Deposit,
                     cleanHexStrPad(token.address),
                 )
                 token.transfer(depositAddr, st_token_amount, {"from": st_sender})
@@ -462,55 +493,58 @@ def test_vault(
             )
 
         # Fetch the native deposit of a random create2
-        def rule_fetchDepositNative(self, st_sender, st_swapID):
+        def rule_fetchNative(self, st_sender, st_swapID):
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositNative")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
-                        self.km, self.v.fetchDepositNative, st_swapID, sender=st_sender
-                    )
-
-            elif st_swapID == 0:
-                print(
-                    "        REV_MSG_NZ_BYTES32 rule_fetchDepositNative",
-                    st_sender,
-                    st_swapID,
-                )
-                with reverts(REV_MSG_NZ_BYTES32):
-                    signed_call_km(
-                        self.km, self.v.fetchDepositNative, st_swapID, sender=st_sender
+                        self.km,
+                        self.v.deployAndFetchBatch,
+                        [[st_swapID, NATIVE_ADDR]],
+                        sender=st_sender,
                     )
             else:
                 print(
                     "                    rule_fetchDepositNative", st_sender, st_swapID
                 )
-                signed_call_km(
-                    self.km, self.v.fetchDepositNative, st_swapID, sender=st_sender
-                )
+                if st_swapID not in self.deployedDeposits:
+                    signed_call_km(
+                        self.km,
+                        self.v.deployAndFetchBatch,
+                        [[st_swapID, NATIVE_ADDR]],
+                        sender=st_sender,
+                    )
 
-                depositAddr = getCreate2Addr(
-                    self.v.address, cleanHexStrPad(st_swapID), DepositNative, ""
-                )
+                    depositAddr = getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapID),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
+                    )
+                    self.deployedDeposits[st_swapID] = depositAddr
+                else:
+                    depositAddr = self.deployedDeposits[st_swapID]
+                    signed_call_km(
+                        self.km,
+                        self.v.fetchBatch,
+                        [[depositAddr, NATIVE_ADDR]],
+                        sender=st_sender,
+                    )
+
                 depositBal = self.nativeBals[depositAddr]
                 self.nativeBals[depositAddr] -= depositBal
                 self.nativeBals[self.v.address] += depositBal
 
         def rule_fetchDepositNativeBatch(self, st_sender, st_swapIDs):
-            addrs = [
-                getCreate2Addr(
-                    self.v.address, cleanHexStrPad(swapID), DepositNative, ""
-                )
-                for swapID in st_swapIDs
-            ]
-            total = sum([web3.eth.get_balance(addr) for addr in addrs])
-
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositNativeBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
                         self.km,
-                        self.v.fetchDepositNativeBatch,
-                        st_swapIDs,
+                        self.v.deployAndFetchBatch,
+                        craftDeployFetchParamsArray(
+                            st_swapIDs, [NATIVE_ADDR] * len(st_swapIDs)
+                        ),
                         sender=st_sender,
                     )
                 return
@@ -519,44 +553,79 @@ def test_vault(
                 st_sender,
                 st_swapIDs,
             )
-            signed_call_km(
-                self.km, self.v.fetchDepositNativeBatch, st_swapIDs, sender=st_sender
+            used_addresses = []
+            non_used_swapIDs = []
+            for st_swapID in st_swapIDs:
+                if st_swapID in self.deployedDeposits:
+                    depositAddr = self.deployedDeposits[st_swapID]
+                    used_addresses.append(depositAddr)
+
+                else:
+                    non_used_swapIDs.append(st_swapID)
+                    depositAddr = getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapID),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
+                    )
+                    self.deployedDeposits[st_swapID] = depositAddr
+
+                # Accounting here to reuse the loop logic
+                self.nativeBals[self.v.address] += self.nativeBals[depositAddr]
+                self.nativeBals[depositAddr] = 0
+
+            deployFetchParamsArray = craftDeployFetchParamsArray(
+                non_used_swapIDs, [NATIVE_ADDR] * len(non_used_swapIDs)
             )
 
-            for addr in addrs:
-                self.nativeBals[addr] = 0
-            self.nativeBals[self.v.address] += total
+            signed_call_km(
+                self.km,
+                self.v.deployAndFetchBatch,
+                deployFetchParamsArray,
+                sender=st_sender,
+            )
+
+            fetchParamsArray = craftFetchParamsArray(
+                used_addresses, [NATIVE_ADDR] * len(used_addresses)
+            )
+            signed_call_km(
+                self.km, self.v.fetchBatch, fetchParamsArray, sender=st_sender
+            )
 
         # Fetch the token deposit of a random create2
         def _fetchDepositToken(self, bals, token, st_sender, st_swapID):
-            args = [[st_swapID, token]]
+            args = [[st_swapID, token.address]]
             toLog = (*args, st_sender)
 
             if self.suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
-                        self.km, self.v.fetchDepositToken, *args, sender=st_sender
-                    )
-
-            elif st_swapID == 0:
-                print("        REV_MSG_NZ_BYTES32 _fetchDepositToken", *toLog)
-                with reverts(REV_MSG_NZ_BYTES32):
-                    signed_call_km(
-                        self.km, self.v.fetchDepositToken, *args, sender=st_sender
+                        self.km, self.v.deployAndFetchBatch, args, sender=st_sender
                     )
             else:
                 print("                    _fetchDepositToken", *toLog)
-                signed_call_km(
-                    self.km, self.v.fetchDepositToken, *args, sender=st_sender
-                )
 
-                depositAddr = getCreate2Addr(
-                    self.v.address,
-                    cleanHexStrPad(st_swapID),
-                    DepositToken,
-                    cleanHexStrPad(token.address),
-                )
+                if st_swapID not in self.deployedDeposits:
+                    signed_call_km(
+                        self.km, self.v.deployAndFetchBatch, args, sender=st_sender
+                    )
+                    depositAddr = getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapID),
+                        Deposit,
+                        cleanHexStrPad(token.address),
+                    )
+                    self.deployedDeposits[st_swapID] = depositAddr
+                else:
+                    depositAddr = self.deployedDeposits[st_swapID]
+                    signed_call_km(
+                        self.km,
+                        self.v.fetchBatch,
+                        [[depositAddr, token.address]],
+                        sender=st_sender,
+                    )
+
                 depositBal = bals[depositAddr]
                 bals[depositAddr] -= depositBal
                 bals[self.v.address] += depositBal
@@ -579,35 +648,57 @@ def test_vault(
 
             trimToShortest([st_swapIDs, st_tokens])
 
-            args = [craftFetchParamsArray(st_swapIDs, st_tokens)]
+            args = [craftDeployFetchParamsArray(st_swapIDs, st_tokens)]
             toLog = (*args, st_sender)
             if self.suspended:
-                print("        REV_MSG_GOV_SUSPENDED _fetchDepositToken")
+                print("        REV_MSG_GOV_SUSPENDED _fetchDepositTokenBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
-                        self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
+                        self.km, self.v.deployAndFetchBatch, *args, sender=st_sender
                     )
             else:
                 print("                    rule_fetchDepositTokenBatch", *toLog)
-                signed_call_km(
-                    self.km, self.v.fetchDepositTokenBatch, *args, sender=st_sender
-                )
 
-                for swapID, token in zip(st_swapIDs, st_tokens):
-                    addr = getCreate2Addr(
-                        self.v.address,
-                        cleanHexStrPad(swapID),
-                        DepositToken,
-                        cleanHexStrPad(token.address),
-                    )
+                fetchParamsArray = []
+                deployFetchParamsArray = []
+
+                for st_swapID, token in zip(st_swapIDs, st_tokens):
+                    if st_swapID in self.deployedDeposits:
+                        fetchParamsArray.append(
+                            [self.deployedDeposits[st_swapID], token.address]
+                        )
+                        depositAddr = self.deployedDeposits[st_swapID]
+
+                    else:
+                        deployFetchParamsArray.append([st_swapID, token.address])
+                        depositAddr = getCreate2Addr(
+                            self.v.address,
+                            cleanHexStrPad(st_swapID),
+                            Deposit,
+                            cleanHexStrPad(token.address),
+                        )
+                        self.deployedDeposits[st_swapID] = depositAddr
+
+                    # Accounting here to reuse the loop logic
                     if token == self.tokenA:
-                        self.tokenABals[self.v.address] += self.tokenABals[addr]
-                        self.tokenABals[addr] = 0
+                        self.tokenABals[self.v.address] += self.tokenABals[depositAddr]
+                        self.tokenABals[depositAddr] = 0
                     elif token == self.tokenB:
-                        self.tokenBBals[self.v.address] += self.tokenBBals[addr]
-                        self.tokenBBals[addr] = 0
+                        self.tokenBBals[self.v.address] += self.tokenBBals[depositAddr]
+                        self.tokenBBals[depositAddr] = 0
                     else:
                         assert False, "Panicc"
+
+                signed_call_km(
+                    self.km,
+                    self.v.deployAndFetchBatch,
+                    deployFetchParamsArray,
+                    sender=st_sender,
+                )
+
+                signed_call_km(
+                    self.km, self.v.fetchBatch, fetchParamsArray, sender=st_sender
+                )
 
         # Sleep AGG_KEY_EMERGENCY_TIMEOUT
         def rule_sleep_14_days(self):
@@ -1223,17 +1314,14 @@ def test_vault(
             assert self.suspended == self.v.getSuspendedState()
             assert self.xCallsEnabled == self.v.getxCallsEnabled()
 
+            ## Check that there are contracts in the deposit Addresses
+            for addr in self.deployedDeposits.values():
+                assert web3.eth.get_code(web3.toChecksumAddress(addr)).hex() != "0x"
+
         # Print how many rules were executed at the end of each run
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
 
     state_machine(
-        StateMachine,
-        a,
-        cfDeploy,
-        DepositNative,
-        DepositToken,
-        Token,
-        cfReceiverMock,
-        settings=settings,
+        StateMachine, a, cfDeploy, Deposit, Token, cfReceiverMock, settings=settings
     )
