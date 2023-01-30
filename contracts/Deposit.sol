@@ -15,8 +15,7 @@ contract Deposit {
         vault = payable(msg.sender);
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = msg.sender.call{value: address(this).balance}("");
-            require(success);
+            msg.sender.call{value: address(this).balance}("");
         } else {
             // Not checking the return value to avoid reverts for tokens with no return value.
             token.transfer(msg.sender, token.balanceOf(address(this)));
@@ -29,8 +28,7 @@ contract Deposit {
         // Slightly cheaper to use msg.sender instead of Vault.
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = msg.sender.call{value: address(this).balance}("");
-            require(success);
+            msg.sender.call{value: address(this).balance}("");
         } else {
             // Not checking the return value to avoid reverts for tokens with no return value.
             token.transfer(msg.sender, token.balanceOf(address(this)));
