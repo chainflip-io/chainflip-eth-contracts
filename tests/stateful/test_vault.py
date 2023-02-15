@@ -1169,7 +1169,7 @@ def test_vault(
                         self.nativeBals[self.v.address] -= st_native_amount
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
-                            st_srcAddress,
+                            hexStr(st_srcAddress),
                             message,
                             NATIVE_ADDR,
                             st_native_amount,
@@ -1246,7 +1246,7 @@ def test_vault(
 
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
-                            st_srcAddress,
+                            hexStr(st_srcAddress),
                             message,
                             st_token,
                             st_token_amount,
@@ -1287,7 +1287,7 @@ def test_vault(
                 )
                 assert tx.events["ReceivedxCall"][0].values() == [
                     st_srcChain,
-                    st_srcAddress,
+                    hexStr(st_srcAddress),
                     message,
                 ]
 

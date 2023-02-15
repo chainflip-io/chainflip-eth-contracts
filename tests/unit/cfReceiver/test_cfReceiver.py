@@ -10,7 +10,7 @@ def test_constructor(cf, cfReceiverMock):
 
 @given(
     st_srcChain=strategy("uint32"),
-    st_srcAddress=strategy("string", min_size=1),
+    st_srcAddress=strategy("bytes"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_sender=strategy("address"),
@@ -40,7 +40,7 @@ def test_rev_cfReceive_notVault(
 
 @given(
     st_srcChain=strategy("uint32"),
-    st_srcAddress=strategy("string", min_size=1),
+    st_srcAddress=strategy("bytes"),
     st_message=strategy("bytes"),
     st_sender=strategy("address"),
 )
