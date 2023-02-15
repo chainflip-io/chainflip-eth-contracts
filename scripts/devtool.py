@@ -13,12 +13,16 @@ from brownie import (
     MockUSDC,
     web3,
     chain,
+    Token,
 )
 from brownie.convert import to_address
 from brownie.network.event import _decode_logs
 
 import inspect
 from datetime import datetime
+
+## TODO: Refactor this to improve this as it creates the airdrop.log file
+# from .only_airdrop import fetch_events
 
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
 STAKE_MANAGER_ADDRESS = environ["STAKE_MANAGER_ADDRESS"]
@@ -28,7 +32,8 @@ VAULT_ADDRESS = environ["VAULT_ADDRESS"]
 USDC_ADDRESS = environ.get("USDC_ADDRESS") or ZERO_ADDR
 KEY_MANAGER_ADDRESS = environ.get("KEY_MANAGER_ADDRESS") or ZERO_ADDR
 
-
+# TODO: Allow the user to not input any SEED to use the tool only to view the chain
+# TODO: Potentially ask the user for confirmation when a transaction is about to be sent.
 AUTONOMY_SEED = environ["SEED"]
 DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
@@ -45,7 +50,7 @@ commands = {
     "walletAddrs": (lambda: print(walletAddrs), "Show wallet addresses", []),
     "changeAddr": (
         lambda walletNr: changeAddr(walletNr),
-        "Sete the user address to that walletAddrs number",
+        "Set the user address to that walletAddrs number",
         ["uint256"],
     ),
     "balanceEth": (
@@ -133,6 +138,11 @@ commands = {
         "Display the current time (block timestamp)",
         [],
     ),
+    # "viewTokenTransfersTo": (
+    #     lambda address, recipient: viewTokenTransfersTo(address, recipient),
+    #     "Display the USDC transfers for an address",
+    #     ["address", "address"],
+    # ),
     "displaytx": (
         lambda txHash: display_tx(txHash),
         "Display transaction",
@@ -368,7 +378,7 @@ def isNonceUsed(nonce):
 
 def viewLastTime():
     lastTime = keyManager.getLastValidateTime()
-    print(f"Last time: {lastTime}")
+    print(f"Last time a signature was validated: {lastTime}")
     printUserReadableTime(lastTime)
 
 
@@ -395,6 +405,48 @@ def disableVaultSwaps():
     tx = vault.disableSwaps({"from": userAddress, "required_confs": 1})
     tx.info()
     print("** Vault swaps disabled succesfully **")
+
+
+# def viewAllTokenTransfers(address, initial_block=0):
+#     contractObject = getERC20ContractFromAddress(address)
+
+#     events = list(
+#         fetch_events(
+#             contractObject.events.Transfer,
+#             from_block=initial_block,
+#             to_block=web3.eth.block_number,
+#         )
+#     )
+#     return events
+
+
+# def viewTokenTransfersTo(tokenAddress, recipient):
+#     transferEvents = viewAllTokenTransfers(tokenAddress)
+
+#     # listEvents = []
+#     for event in transferEvents:
+#         if event.args.to == recipient:
+#             print(event)
+#             # listEvents.append(event)
+
+
+# def getERC20ContractFromAddress(address):
+#     abi = ""
+#     if address == FLIP_ADDRESS:
+#         abi = "build/contracts/FLIP.json"
+#     elif address == USDC_ADDRESS:
+#         abi = "build/contracts/MockUSDC.json"
+#     else:
+#         abi = "build/contracts/Token.json"
+
+#     with open(abi) as f:
+#         info_json = json.load(f)
+#     abi = info_json["abi"]
+
+#     # Object to get the event interface from
+#     tokenContractObject = web3.eth.contract(address=address, abi=abi)
+
+#     return tokenContractObject
 
 
 # We can't display it the same way as for a brownie-broadcasted transaction (tx.info()).
