@@ -40,8 +40,8 @@ def test_dex_executexCallNative(
 
     tx = dexAggSrcMock.swapNativeAndCallViaChainflip(
         st_dstChain,
-        toHex(dexAggDstMock.address)[2:],
-        token.symbol(),
+        toHex(dexAggDstMock.address),
+        ETH_UINT,
         dexMock,
         token,
         token2,
@@ -63,12 +63,12 @@ def test_dex_executexCallNative(
 
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
     assert tx.events["XCallNative"]["dstChain"] == st_dstChain
-    assert tx.events["XCallNative"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
-    assert tx.events["XCallNative"]["swapIntent"] == token.symbol()
+    assert tx.events["XCallNative"]["dstAddress"] == toHex(dexAggDstMock.address)
+    assert tx.events["XCallNative"]["dstToken"] == ETH_UINT
     assert tx.events["XCallNative"]["amount"] == st_amount
     assert tx.events["XCallNative"]["sender"] == dexAggSrcMock.address
     assert tx.events["XCallNative"]["refundAddress"] == st_sender
-    assert tx.events["XCallNative"]["dstNativeGas"] == 200000
+    assert tx.events["XCallNative"]["dstNativeBudget"] == 200000
 
     # Mimick witnessing and executing the xSwap
 
@@ -79,7 +79,7 @@ def test_dex_executexCallNative(
     args = [
         [token, dexAggDstMock, egressAmount],
         srcChain,  # arbitrary source chain
-        toHex(dexAggSrcMock.address)[2:],  # sourceAddress to string
+        toHex(dexAggSrcMock.address),  # sourceAddress to string
         message,
     ]
 
@@ -150,11 +150,10 @@ def test_dex_executexCallToken(
     # Converting dexAggMock.address into a string via toHex(...) confuses brownie. It interprets
     # it as an address, which then cases a failure on the function call since it expects a
     # string. To bypass that, the 0x part is removed from the string.
-    ethSymbol = "ETH"
     tx = dexAggSrcMock.swapTokenAndCallViaChainflip(
         st_dstChain,
-        toHex(dexAggDstMock.address)[2:],
-        ethSymbol,
+        toHex(dexAggDstMock.address),
+        ETH_UINT,
         dexMock,
         NATIVE_ADDR,
         token2,
@@ -178,13 +177,13 @@ def test_dex_executexCallToken(
 
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
     assert tx.events["XCallToken"]["dstChain"] == st_dstChain
-    assert tx.events["XCallToken"]["dstAddress"] == toHex(dexAggDstMock.address)[2:]
-    assert tx.events["XCallToken"]["swapIntent"] == ethSymbol
+    assert tx.events["XCallToken"]["dstAddress"] == toHex(dexAggDstMock.address)
+    assert tx.events["XCallToken"]["dstToken"] == ETH_UINT
     assert tx.events["XCallToken"]["srcToken"] == token.address
     assert tx.events["XCallToken"]["amount"] == st_amount
     assert tx.events["XCallToken"]["sender"] == dexAggSrcMock.address
     assert tx.events["XCallToken"]["refundAddress"] == st_sender
-    assert tx.events["XCallToken"]["dstNativeGas"] == 200000
+    assert tx.events["XCallToken"]["dstNativeBudget"] == 200000
 
     # Mimick witnessing and executing the xSwap
 
@@ -195,7 +194,7 @@ def test_dex_executexCallToken(
     args = [
         [NATIVE_ADDR, dexAggDstMock, egressAmount],
         srcChain,  # arbitrary source chain
-        toHex(dexAggSrcMock.address)[2:],  # sourceAddress to string
+        toHex(dexAggSrcMock.address),  # sourceAddress to string
         message,
     ]
 

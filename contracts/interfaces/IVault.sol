@@ -44,16 +44,16 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function xSwapToken(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         IERC20 srcToken,
         uint256 amount
     ) external;
 
     function xSwapNative(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent
+        bytes calldata dstAddress,
+        uint16 dstToken
     ) external payable;
 
     //////////////////////////////////////////////////////////////
@@ -64,19 +64,19 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function xCallNative(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeGas,
+        uint256 dstNativeBudget,
         address refundAddress
     ) external payable;
 
     function xCallToken(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeGas,
+        uint256 dstNativeBudget,
         IERC20 srcToken,
         uint256 amount,
         address refundAddress
@@ -92,7 +92,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         SigData calldata sigData,
         TransferParams calldata transferParams,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) external;
 
@@ -105,7 +105,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         SigData calldata sigData,
         address recipient,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) external;
 

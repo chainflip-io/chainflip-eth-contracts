@@ -21,7 +21,7 @@ contract CFReceiverTryMock is CFReceiver, Shared {
     /* solhint-disable no-unused-vars */
     function _cfReceive(
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message,
         address token,
         uint256 amount
@@ -31,14 +31,13 @@ contract CFReceiverTryMock is CFReceiver, Shared {
 
     function _cfReceivexCall(
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) internal override {
         _handleFailedCall();
     }
 
     /* solhint-enable no-unused-vars */
-
     function _handleFailedCall() internal {
         // Mimicking a contract catching an external call that fails
         try CFReceiverFailMock(_receiverFail).revertExternalCall() {} catch Error(string memory revertString) {

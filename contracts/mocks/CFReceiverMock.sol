@@ -11,19 +11,19 @@ import "../abstract/Shared.sol";
 contract CFReceiverMock is CFReceiver, Shared {
     event ReceivedxSwapAndCall(
         uint32 srcChain,
-        string srcAddress,
+        bytes srcAddress,
         bytes message,
         address token,
         uint256 amount,
         uint256 nativeReceived
     );
-    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message);
+    event ReceivedxCall(uint32 srcChain, bytes srcAddress, bytes message);
 
     constructor(address cfVault) CFReceiver(cfVault) nzAddr(cfVault) {}
 
     function _cfReceive(
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message,
         address token,
         uint256 amount
@@ -33,7 +33,7 @@ contract CFReceiverMock is CFReceiver, Shared {
 
     function _cfReceivexCall(
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) internal override {
         emit ReceivedxCall(srcChain, srcAddress, message);

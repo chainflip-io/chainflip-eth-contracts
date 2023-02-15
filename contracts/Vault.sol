@@ -23,9 +23,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _GAS_TO_FORWARD = 3500;
 
     event TransferFailed(address payable indexed recipient, uint256 amount);
-    event SwapNative(uint256 amount, string egressParams, bytes32 egressReceiver);
-    event SwapToken(address ingressToken, uint256 amount, string egressParams, bytes32 egressReceiver);
     event SwapsEnabled(bool enabled);
+
+    event SwapNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, uint256 amount, address indexed sender);
+    event SwapToken(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint16 dstToken,
+        address srcToken,
+        uint256 amount,
+        address indexed sender
+    );
 
     /// @dev dstAddress is not indexed because indexing a dynamic type (string) to be able to filter,
     ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
@@ -33,33 +41,24 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///      version in the event.
     event XCallNative(
         uint32 dstChain,
-        string dstAddress,
-        string swapIntent,
+        bytes dstAddress,
+        uint16 dstToken,
         uint256 amount,
         address indexed sender,
         bytes message,
-        uint256 dstNativeGas,
+        uint256 dstNativeBudget,
         address refundAddress
     );
     event XCallToken(
         uint32 dstChain,
-        string dstAddress,
-        string swapIntent,
+        bytes dstAddress,
+        uint16 dstToken,
         address srcToken,
         uint256 amount,
         address indexed sender,
         bytes message,
-        uint256 dstNativeGas,
+        uint256 dstNativeBudget,
         address refundAddress
-    );
-    event SwapNative(uint32 dstChain, string dstAddress, string swapIntent, uint256 amount, address indexed sender);
-    event SwapToken(
-        uint32 dstChain,
-        string dstAddress,
-        string swapIntent,
-        address srcToken,
-        uint256 amount,
-        address indexed sender
     );
 
     event XCallsEnabled(bool enabled);
@@ -333,15 +332,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          to explicity indicate that an amount is required.  It isn't preventing spamming.
 
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
-     * @param dstAddress    String containing the destination address on the destination chain.
-     * @param swapIntent    String containing the specifics of the swap to be performed according to Chainflip's nomenclature.
+     * @param dstAddress    Bytes containing the destination address on the destination chain.
+     * @param dstToken      Destination token to be swapped to.
      */
     function xSwapNative(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent
+        bytes memory dstAddress,
+        uint16 dstToken
     ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit SwapNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender);
+        emit SwapNative(dstChain, dstAddress, dstToken, msg.value, msg.sender);
     }
 
     /**
@@ -351,20 +350,20 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          to explicity indicate that an amount is required.
 
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
-     * @param dstAddress    String containing the destination address on the destination chain.
-     * @param swapIntent    String containing the specifics of the swap to be performed according to Chainflip's nomenclature.
+     * @param dstAddress    Bytes containing the destination address on the destination chain.
+     * @param dstToken      Uint containing the specifics of the swap to be performed according to Chainflip's nomenclature.
      * @param srcToken      Address of the source token to swap.
      * @param amount        Amount of tokens to swap.
      */
     function xSwapToken(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes memory dstAddress,
+        uint16 dstToken,
         IERC20 srcToken,
         uint256 amount
     ) external override onlyNotSuspended nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit SwapToken(dstChain, dstAddress, swapIntent, address(srcToken), amount, msg.sender);
+        emit SwapToken(dstChain, dstAddress, dstToken, address(srcToken), amount, msg.sender);
     }
 
     //////////////////////////////////////////////////////////////
@@ -382,24 +381,33 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          to explicity inidcate that an amount is required. It isn't preventing spamming.
      *
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
-     * @param dstAddress    String containing the destination address on the destination chain.
-     * @param swapIntent    String containing the specifics of the swap to be performed, if any, as part of the xCall. The string
-     *                      must follow Chainflip's nomenclature. An empty swapIntent implies that no swap needs to take place
+     * @param dstAddress    Bytes containing the destination address on the destination chain.
+     * @param dstToken      Uint containing the specifics of the swap to be performed, if any, as part of the xCall. The string
+     *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeGas  The amount of native gas to be used on the destination chain's call.
+     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call.
      * @param refundAddress Address to refund any excess gas left from the execution of the xCall on the dstChain. This address
      *                      is in the context of the srcChain.
      */
     function xCallNative(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeGas,
+        uint256 dstNativeBudget,
         address refundAddress
     ) external payable override onlyNotSuspended xCallsEnabled nzUint(msg.value) {
-        emit XCallNative(dstChain, dstAddress, swapIntent, msg.value, msg.sender, message, dstNativeGas, refundAddress);
+        emit XCallNative(
+            dstChain,
+            dstAddress,
+            dstToken,
+            msg.value,
+            msg.sender,
+            message,
+            dstNativeBudget,
+            refundAddress
+        );
     }
 
     /**
@@ -413,11 +421,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          to explicity indicate that an amount is required.
      *
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
-     * @param dstAddress    String containing the destination address on the destination chain.
-     * @param swapIntent    String containing the specifics of the swap to be performed as part of the xCall. An empty swapIntent
-     *                       implies that no swap needs to take place and the source token will be used for gas in a swapless xCall.
+     * @param dstAddress    Bytes containing the destination address on the destination chain.
+     * @param dstToken      Uint containing the specifics of the swap to be performed, if any, as part of the xCall. The string
+     *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
+     *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeGas  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
+     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
      *                      source token.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
@@ -426,10 +435,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      */
     function xCallToken(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes memory dstAddress,
+        uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeGas,
+        uint256 dstNativeBudget,
         IERC20 srcToken,
         uint256 amount,
         address refundAddress
@@ -438,12 +447,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         emit XCallToken(
             dstChain,
             dstAddress,
-            swapIntent,
+            dstToken,
             address(srcToken),
             amount,
             msg.sender,
             message,
-            dstNativeGas,
+            dstNativeBudget,
             refundAddress
         );
     }
@@ -471,7 +480,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         SigData calldata sigData,
         TransferParams calldata transferParams,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     )
         external
@@ -509,7 +518,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function _executexSwapAndCall(
         TransferParams calldata transferParams,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) private {
         if (transferParams.token == _NATIVE_ADDR) {
@@ -554,7 +563,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         SigData calldata sigData,
         address recipient,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     )
         external

@@ -38,51 +38,51 @@ contract VaultEchidna is IShared {
 
     function xSwapNative(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent
+        bytes calldata dstAddress,
+        uint16 dstToken
     ) external payable virtual {
-        v.xSwapNative{value: msg.value}(dstChain, dstAddress, swapIntent);
+        v.xSwapNative{value: msg.value}(dstChain, dstAddress, dstToken);
     }
 
     function xSwapToken(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         IERC20 srcToken,
         uint256 amount
     ) external virtual {
-        v.xSwapToken(dstChain, dstAddress, swapIntent, srcToken, amount);
+        v.xSwapToken(dstChain, dstAddress, dstToken, srcToken, amount);
     }
 
     function xCallNative(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         bytes calldata message,
         uint256 dstNativeGas,
         address refundAddress
     ) external payable virtual {
-        v.xCallNative{value: msg.value}(dstChain, dstAddress, swapIntent, message, dstNativeGas, refundAddress);
+        v.xCallNative{value: msg.value}(dstChain, dstAddress, dstToken, message, dstNativeGas, refundAddress);
     }
 
     function xCallToken(
         uint32 dstChain,
-        string memory dstAddress,
-        string memory swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         bytes calldata message,
         uint256 dstNativeGas,
         IERC20 srcToken,
         uint256 amount,
         address refundAddress
     ) external virtual {
-        v.xCallToken(dstChain, dstAddress, swapIntent, message, dstNativeGas, srcToken, amount, refundAddress);
+        v.xCallToken(dstChain, dstAddress, dstToken, message, dstNativeGas, srcToken, amount, refundAddress);
     }
 
     function executexSwapAndCall(
         SigData calldata sigData,
         TransferParams calldata transferParams,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) external virtual {
         v.executexSwapAndCall(sigData, transferParams, srcChain, srcAddress, message);
@@ -92,7 +92,7 @@ contract VaultEchidna is IShared {
         SigData calldata sigData,
         address recipient,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) external virtual {
         v.executexCall(sigData, recipient, srcChain, srcAddress, message);

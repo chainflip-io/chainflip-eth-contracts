@@ -287,12 +287,12 @@ def test_all(
         st_addr = strategy("address", length=MAX_NUM_SENDERS)
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_swapIntent = strategy("string")
-        st_dstAddress = strategy("string", min_size=1)
+        st_dstToken = strategy("uint16")
+        st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
         st_refundAddress = strategy("address")
-        st_dstNativeGas = strategy("uint")
+        st_dstNativeBudget = strategy("uint")
 
         # KeyManager
 
@@ -1099,9 +1099,9 @@ def test_all(
 
         # Swap Native
         def rule_xSwapNative(
-            self, st_sender, st_swapIntent, st_dstAddress, st_native_amount, st_dstChain
+            self, st_sender, st_dstToken, st_dstAddress, st_native_amount, st_dstChain
         ):
-            args = (st_dstChain, st_dstAddress, st_swapIntent)
+            args = (st_dstChain, st_dstAddress, st_dstToken)
             toLog = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -1130,8 +1130,8 @@ def test_all(
                         self.nativeBals[st_sender] -= st_native_amount
                         assert tx.events["SwapNative"][0].values() == [
                             st_dstChain,
-                            st_dstAddress,
-                            st_swapIntent,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
                             st_native_amount,
                             st_sender,
                         ]
@@ -1140,7 +1140,7 @@ def test_all(
         def rule_xSwapToken(
             self,
             st_sender,
-            st_swapIntent,
+            st_dstToken,
             st_dstAddress,
             st_token_amount,
             st_token,
@@ -1149,7 +1149,7 @@ def test_all(
             args = (
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_token,
                 st_token_amount,
             )
@@ -1204,8 +1204,8 @@ def test_all(
 
                         assert tx.events["SwapToken"][0].values() == [
                             st_dstChain,
-                            st_dstAddress,
-                            st_swapIntent,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
                             st_token,
                             st_token_amount,
                             st_sender,
@@ -1214,20 +1214,20 @@ def test_all(
         def rule_xCallNative(
             self,
             st_sender,
-            st_swapIntent,
+            st_dstToken,
             st_dstAddress,
             st_native_amount,
             st_dstChain,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
         ):
             args = (
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_message,
-                st_dstNativeGas,
+                st_dstNativeBudget,
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
@@ -1261,33 +1261,33 @@ def test_all(
                             self.nativeBals[st_sender] -= st_native_amount
                             assert tx.events["XCallNative"][0].values() == [
                                 st_dstChain,
-                                st_dstAddress,
-                                st_swapIntent,
+                                hexStr(st_dstAddress),
+                                st_dstToken,
                                 st_native_amount,
                                 st_sender,
                                 hexStr(st_message),
-                                st_dstNativeGas,
+                                st_dstNativeBudget,
                                 st_refundAddress,
                             ]
 
         def rule_xCallToken(
             self,
             st_sender,
-            st_swapIntent,
+            st_dstToken,
             st_dstAddress,
             st_token_amount,
             st_token,
             st_dstChain,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
         ):
             args = (
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_message,
-                st_dstNativeGas,
+                st_dstNativeBudget,
                 st_token,
                 st_token_amount,
                 st_refundAddress,
@@ -1346,13 +1346,13 @@ def test_all(
 
                             assert tx.events["XCallToken"][0].values() == [
                                 st_dstChain,
-                                st_dstAddress,
-                                st_swapIntent,
+                                hexStr(st_dstAddress),
+                                st_dstToken,
                                 st_token,
                                 st_token_amount,
                                 st_sender,
                                 hexStr(st_message),
-                                st_dstNativeGas,
+                                st_dstNativeBudget,
                                 st_refundAddress,
                             ]
 
@@ -1441,7 +1441,7 @@ def test_all(
                         self.nativeBals[self.v] -= st_native_amount
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
-                            st_srcAddress,
+                            hexStr(st_srcAddress),
                             message,
                             NATIVE_ADDR,
                             st_native_amount,
@@ -1558,7 +1558,7 @@ def test_all(
 
                         assert tx.events["ReceivedxSwapAndCall"][0].values() == [
                             st_srcChain,
-                            st_srcAddress,
+                            hexStr(st_srcAddress),
                             message,
                             st_token,
                             st_token_amount,
@@ -1623,7 +1623,7 @@ def test_all(
                 )
                 assert tx.events["ReceivedxCall"][0].values() == [
                     st_srcChain,
-                    st_srcAddress,
+                    hexStr(st_srcAddress),
                     message,
                 ]
                 self.lastValidateTime = tx.timestamp

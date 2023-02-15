@@ -11,7 +11,6 @@ TEST_AMNT = 10**17
 ONE_NATIVE = E_18
 JUNK_INT = 42069
 JUNK_HEX = web3.toHex(JUNK_INT)
-JUNK_STR = "junkString"
 # Notable the only part of the hash involved in CREATE2 that has padding
 JUNK_HEX_PAD = cleanHexStrPad(JUNK_HEX)
 AGG = "Agg"
@@ -158,3 +157,8 @@ REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
 # -----CFReceiver-----
 REV_MSG_CFREC_REVERTED = "CFReceiverFail: call reverted"
 REV_MSG_CFREC_SENDER = "CFReceiver: caller not Chainflip sender"
+
+# -----Token mapping-----
+BTC_UINT = 0
+ETH_UINT = 1
+USDC_UINT = 2

@@ -43,8 +43,8 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.vault.xCallToken(
             0,
-            "dstAddress",
-            "swapIntent",
+            JUNK_HEX,
+            BTC_UINT,
             JUNK_HEX,
             JUNK_INT,
             token,
@@ -56,8 +56,8 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.vault.xSwapToken(
             0,
-            "dstAddress",
-            "swapIntent",
+            JUNK_HEX,
+            BTC_UINT,
             token,
             st_amount,
         )
@@ -66,8 +66,8 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.vault.xCallNative(
             0,
-            "dstAddress",
-            "swapIntent",
+            JUNK_HEX,
+            BTC_UINT,
             JUNK_HEX,
             JUNK_INT,
             st_receiver,
@@ -77,7 +77,7 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
     # xSwapNative
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.vault.xSwapNative(
-            0, "dstAddress", "swapIntent", {"from": st_receiver, "amount": st_amount}
+            0, JUNK_HEX, BTC_UINT, {"from": st_receiver, "amount": st_amount}
         )
 
     # executexSwapAndCall
@@ -86,16 +86,9 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             [NATIVE_ADDR], [st_receiver], [st_amount]
         )
         signed_call_cf(
-            cf,
-            cf.vault.executexSwapAndCall,
-            *transferParams,
-            0,
-            "anySrcAddress",
-            JUNK_HEX
+            cf, cf.vault.executexSwapAndCall, *transferParams, 0, JUNK_HEX, JUNK_HEX
         )
 
     # executexCall
     with reverts(REV_MSG_GOV_SUSPENDED):
-        signed_call_cf(
-            cf, cf.vault.executexCall, st_receiver, 0, "anySrcAddress", JUNK_HEX
-        )
+        signed_call_cf(cf, cf.vault.executexCall, st_receiver, 0, JUNK_HEX, JUNK_HEX)

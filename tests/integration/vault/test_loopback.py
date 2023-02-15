@@ -8,7 +8,7 @@ from brownie.test import given, strategy
     st_srcChain=strategy("uint32"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_sender=strategy("address"),
-    st_srcAddress=strategy("string", min_size=1),
+    st_srcAddress=strategy("bytes"),
     st_message=strategy("bytes"),
 )
 def test_loopback_executexSwapAndCall_native(
@@ -37,8 +37,8 @@ def test_loopback_executexSwapAndCall_native(
 
     # Check that the Vault receives the callback
     assert tx.events["XCallNative"]["dstChain"] == st_srcChain
-    assert tx.events["XCallNative"]["dstAddress"] == st_srcAddress
-    assert tx.events["XCallNative"]["swapIntent"] == "USDC"
+    assert tx.events["XCallNative"]["dstAddress"] == hexStr(st_srcAddress)
+    assert tx.events["XCallNative"]["dstToken"] == 0
     assert tx.events["XCallNative"]["amount"] == st_amount
     assert tx.events["XCallNative"]["sender"] == cfLoopbackMock.address
     assert tx.events["XCallNative"]["refundAddress"] == cfLoopbackMock.address
@@ -52,7 +52,7 @@ def test_loopback_executexSwapAndCall_native(
     st_srcChain=strategy("uint32"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_sender=strategy("address"),
-    st_srcAddress=strategy("string", min_size=1),
+    st_srcAddress=strategy("bytes"),
     st_message=strategy("bytes"),
 )
 def test_loopback_executexSwapAndCall_token(
@@ -88,8 +88,8 @@ def test_loopback_executexSwapAndCall_token(
 
     # Check that the Vault receives the callback
     assert tx.events["XCallToken"]["dstChain"] == st_srcChain
-    assert tx.events["XCallToken"]["dstAddress"] == st_srcAddress
-    assert tx.events["XCallToken"]["swapIntent"] == "USDC"
+    assert tx.events["XCallToken"]["dstAddress"] == hexStr(st_srcAddress)
+    assert tx.events["XCallToken"]["dstToken"] == 1
     assert tx.events["XCallToken"]["srcToken"] == token.address
     assert tx.events["XCallToken"]["amount"] == st_amount
     assert tx.events["XCallToken"]["sender"] == cfLoopbackMock.address
@@ -103,7 +103,7 @@ def test_loopback_executexSwapAndCall_token(
     st_srcChain=strategy("uint32"),
     st_sender=strategy("address"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_srcAddress=strategy("string", min_size=1),
+    st_srcAddress=strategy("bytes"),
     st_message=strategy("bytes"),
 )
 def test_loopback_executexCall_native(
@@ -132,8 +132,8 @@ def test_loopback_executexCall_native(
 
     # Check that the Vault receives the callback
     assert tx.events["XCallNative"]["dstChain"] == st_srcChain
-    assert tx.events["XCallNative"]["dstAddress"] == st_srcAddress
-    assert tx.events["XCallNative"]["swapIntent"] == ""
+    assert tx.events["XCallNative"]["dstAddress"] == hexStr(st_srcAddress)
+    assert tx.events["XCallNative"]["dstToken"] == 0
     assert tx.events["XCallNative"]["amount"] == st_amount
     assert tx.events["XCallNative"]["sender"] == cfLoopbackMock.address
     assert tx.events["XCallNative"]["refundAddress"] == cfLoopbackMock.address

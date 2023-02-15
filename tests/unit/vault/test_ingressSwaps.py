@@ -9,24 +9,24 @@ from shared_tests import *
 
 @given(
     st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("string"),
-    st_swapIntent=strategy("string"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
     st_refundAddress=strategy("address"),
-    st_dstNativeGas=strategy("uint"),
+    st_dstNativeBudget=strategy("uint"),
     st_sender=strategy("address"),
 )
 def test_swapToken(
     cf,
     st_dstChain,
     st_dstAddress,
-    st_swapIntent,
+    st_dstToken,
     st_message,
     token,
     st_amount,
     st_refundAddress,
-    st_dstNativeGas,
+    st_dstNativeBudget,
     st_sender,
 ):
 
@@ -35,7 +35,7 @@ def test_swapToken(
             cf.vault.xSwapToken(
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 token,
                 st_amount,
                 {"from": st_sender},
@@ -46,9 +46,9 @@ def test_swapToken(
             cf.vault.xCallToken(
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_message,
-                st_dstNativeGas,
+                st_dstNativeBudget,
                 token,
                 st_amount,
                 st_refundAddress,
@@ -66,7 +66,7 @@ def test_swapToken(
         tx = cf.vault.xSwapToken(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             token,
             st_amount,
             {"from": st_sender},
@@ -74,8 +74,8 @@ def test_swapToken(
         assert token.balanceOf(st_sender) == iniBalance - st_amount
         assert tx.events["SwapToken"][0].values() == [
             st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
+            hexStr(st_dstAddress),
+            st_dstToken,
             token,
             st_amount,
             st_sender,
@@ -89,9 +89,9 @@ def test_swapToken(
         tx = cf.vault.xCallToken(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             token,
             st_amount,
             st_refundAddress,
@@ -100,24 +100,24 @@ def test_swapToken(
         assert token.balanceOf(st_sender) == iniBalance - st_amount
         assert tx.events["XCallToken"][0].values() == [
             st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
+            hexStr(st_dstAddress),
+            st_dstToken,
             token,
             st_amount,
             st_sender,
             hexStr(st_message),
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
         ]
 
 
 @given(
     st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("string"),
-    st_swapIntent=strategy("string"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeGas=strategy("uint"),
+    st_dstNativeBudget=strategy("uint"),
     st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
 )
@@ -125,11 +125,11 @@ def test_swapToken_rev_bal(
     cf,
     st_dstChain,
     st_dstAddress,
-    st_swapIntent,
+    st_dstToken,
     st_message,
     token,
     st_amount,
-    st_dstNativeGas,
+    st_dstNativeBudget,
     st_refundAddress,
     st_sender,
 ):
@@ -140,7 +140,7 @@ def test_swapToken_rev_bal(
             cf.vault.xSwapToken(
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 token,
                 st_amount,
                 {"from": st_sender},
@@ -153,9 +153,9 @@ def test_swapToken_rev_bal(
             cf.vault.xCallToken(
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_message,
-                st_dstNativeGas,
+                st_dstNativeBudget,
                 token,
                 st_amount,
                 st_refundAddress,
@@ -165,11 +165,11 @@ def test_swapToken_rev_bal(
 
 @given(
     st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("string"),
-    st_swapIntent=strategy("string"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeGas=strategy("uint"),
+    st_dstNativeBudget=strategy("uint"),
     st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
 )
@@ -177,11 +177,11 @@ def test_swapToken_rev_suspended(
     cf,
     st_dstChain,
     st_dstAddress,
-    st_swapIntent,
+    st_dstToken,
     st_message,
     token,
     st_amount,
-    st_dstNativeGas,
+    st_dstNativeBudget,
     st_refundAddress,
     st_sender,
 ):
@@ -192,9 +192,9 @@ def test_swapToken_rev_suspended(
         cf.vault.xCallToken(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             token,
             st_amount,
             st_refundAddress,
@@ -206,7 +206,7 @@ def test_swapToken_rev_suspended(
         cf.vault.xSwapToken(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             token,
             st_amount,
             {"from": st_sender},
@@ -215,11 +215,11 @@ def test_swapToken_rev_suspended(
 
 @given(
     st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("string"),
-    st_swapIntent=strategy("string"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeGas=strategy("uint"),
+    st_dstNativeBudget=strategy("uint"),
     st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
 )
@@ -227,11 +227,11 @@ def test_swapTokenAndCall_rev_disabled(
     cf,
     st_dstChain,
     st_dstAddress,
-    st_swapIntent,
+    st_dstToken,
     st_message,
     token,
     st_amount,
-    st_dstNativeGas,
+    st_dstNativeBudget,
     st_refundAddress,
     st_sender,
 ):
@@ -241,9 +241,9 @@ def test_swapTokenAndCall_rev_disabled(
         cf.vault.xCallToken(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             token,
             st_amount,
             st_refundAddress,
@@ -256,7 +256,7 @@ def test_swapTokenAndCall_rev_disabled(
     cf.vault.xSwapToken(
         st_dstChain,
         st_dstAddress,
-        st_swapIntent,
+        st_dstToken,
         token,
         st_amount,
         {"from": st_sender},
@@ -268,11 +268,11 @@ def test_swapTokenAndCall_rev_disabled(
 
 @given(
     st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("string"),
-    st_swapIntent=strategy("string"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
-    st_dstNativeGas=strategy("uint"),
+    st_dstNativeBudget=strategy("uint"),
     st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
 )
@@ -281,10 +281,10 @@ def test_swapETHAndCall(
     st_sender,
     st_dstChain,
     st_dstAddress,
-    st_swapIntent,
+    st_dstToken,
     st_message,
     st_amount,
-    st_dstNativeGas,
+    st_dstNativeBudget,
     st_refundAddress,
 ):
 
@@ -293,7 +293,7 @@ def test_swapETHAndCall(
             cf.vault.xSwapNative(
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 {"from": st_sender, "amount": st_amount},
             )
 
@@ -302,9 +302,9 @@ def test_swapETHAndCall(
             cf.vault.xCallNative(
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_message,
-                st_dstNativeGas,
+                st_dstNativeBudget,
                 st_refundAddress,
                 {"from": st_sender, "amount": st_amount},
             )
@@ -315,14 +315,14 @@ def test_swapETHAndCall(
         tx = cf.vault.xSwapNative(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             {"from": st_sender, "amount": st_amount},
         )
         assert web3.eth.get_balance(cf.vault.address) == iniBal + st_amount
         assert tx.events["SwapNative"][0].values() == [
             st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
+            hexStr(st_dstAddress),
+            st_dstToken,
             st_amount,
             st_sender,
         ]
@@ -335,32 +335,32 @@ def test_swapETHAndCall(
         tx = cf.vault.xCallNative(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
             {"from": st_sender, "amount": st_amount},
         )
         assert web3.eth.get_balance(cf.vault.address) == iniBal + st_amount
         assert tx.events["XCallNative"][0].values() == [
             st_dstChain,
-            st_dstAddress,
-            st_swapIntent,
+            hexStr(st_dstAddress),
+            st_dstToken,
             st_amount,
             st_sender,
             hexStr(st_message),
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
         ]
 
 
 @given(
     st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("string"),
-    st_swapIntent=strategy("string"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeGas=strategy("uint"),
+    st_dstNativeBudget=strategy("uint"),
     st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
 )
@@ -369,10 +369,10 @@ def test_swapETHAndCall_rev_suspended(
     st_sender,
     st_dstChain,
     st_dstAddress,
-    st_swapIntent,
+    st_dstToken,
     st_message,
     st_amount,
-    st_dstNativeGas,
+    st_dstNativeBudget,
     st_refundAddress,
 ):
     cf.vault.suspend({"from": cf.gov})
@@ -382,9 +382,9 @@ def test_swapETHAndCall_rev_suspended(
         cf.vault.xCallNative(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
             {"from": st_sender, "amount": st_amount},
         )
@@ -394,18 +394,18 @@ def test_swapETHAndCall_rev_suspended(
         cf.vault.xSwapNative(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             {"from": st_sender, "amount": st_amount},
         )
 
 
 @given(
     st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("string"),
-    st_swapIntent=strategy("string"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeGas=strategy("uint"),
+    st_dstNativeBudget=strategy("uint"),
     st_refundAddress=strategy("address"),
     st_sender=strategy("address"),
 )
@@ -414,10 +414,10 @@ def test_swapETHAndCall_rev_disabled(
     st_sender,
     st_dstChain,
     st_dstAddress,
-    st_swapIntent,
+    st_dstToken,
     st_message,
     st_amount,
-    st_dstNativeGas,
+    st_dstNativeBudget,
     st_refundAddress,
 ):
 
@@ -426,9 +426,9 @@ def test_swapETHAndCall_rev_disabled(
         cf.vault.xCallNative(
             st_dstChain,
             st_dstAddress,
-            st_swapIntent,
+            st_dstToken,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
             {"from": st_sender, "amount": st_amount},
         )
@@ -438,6 +438,6 @@ def test_swapETHAndCall_rev_disabled(
     cf.vault.xSwapNative(
         st_dstChain,
         st_dstAddress,
-        st_swapIntent,
+        st_dstToken,
         {"from": st_sender, "amount": st_amount},
     )

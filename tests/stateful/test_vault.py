@@ -156,11 +156,11 @@ def test_vault(
         st_sender_any = strategy("address")
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_swapIntent = strategy("string")
-        st_dstAddress = strategy("string", min_size=1)
+        st_dstToken = strategy("uint16")
+        st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
-        st_dstNativeGas = strategy("uint")
+        st_dstNativeBudget = strategy("uint")
         st_refundAddress = strategy("address")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_native_amounts, st_sender):
@@ -862,9 +862,9 @@ def test_vault(
 
         # Swap ETH
         def rule_xSwapNative(
-            self, st_sender, st_swapIntent, st_dstAddress, st_native_amount, st_dstChain
+            self, st_sender, st_dstToken, st_dstAddress, st_native_amount, st_dstChain
         ):
-            args = (st_dstChain, st_dstAddress, st_swapIntent)
+            args = (st_dstChain, st_dstAddress, st_dstToken)
             toLog = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -895,8 +895,8 @@ def test_vault(
                         self.nativeBals[st_sender] -= st_native_amount
                         assert tx.events["SwapNative"][0].values() == [
                             st_dstChain,
-                            st_dstAddress,
-                            st_swapIntent,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
                             st_native_amount,
                             st_sender,
                         ]
@@ -905,7 +905,7 @@ def test_vault(
         def rule_xSwapToken(
             self,
             st_sender,
-            st_swapIntent,
+            st_dstToken,
             st_dstAddress,
             st_token_amount,
             st_token,
@@ -914,7 +914,7 @@ def test_vault(
             args = (
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_token,
                 st_token_amount,
             )
@@ -969,8 +969,8 @@ def test_vault(
 
                         assert tx.events["SwapToken"][0].values() == [
                             st_dstChain,
-                            st_dstAddress,
-                            st_swapIntent,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
                             st_token,
                             st_token_amount,
                             st_sender,
@@ -979,20 +979,20 @@ def test_vault(
         def rule_xCallNative(
             self,
             st_sender,
-            st_swapIntent,
+            st_dstToken,
             st_dstAddress,
             st_native_amount,
             st_dstChain,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
         ):
             args = (
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_message,
-                st_dstNativeGas,
+                st_dstNativeBudget,
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
@@ -1026,33 +1026,33 @@ def test_vault(
                             self.nativeBals[st_sender] -= st_native_amount
                             assert tx.events["XCallNative"][0].values() == [
                                 st_dstChain,
-                                st_dstAddress,
-                                st_swapIntent,
+                                hexStr(st_dstAddress),
+                                st_dstToken,
                                 st_native_amount,
                                 st_sender,
                                 hexStr(st_message),
-                                st_dstNativeGas,
+                                st_dstNativeBudget,
                                 st_refundAddress,
                             ]
 
         def rule_xCallToken(
             self,
             st_sender,
-            st_swapIntent,
+            st_dstToken,
             st_dstAddress,
             st_token_amount,
             st_token,
             st_dstChain,
             st_message,
-            st_dstNativeGas,
+            st_dstNativeBudget,
             st_refundAddress,
         ):
             args = (
                 st_dstChain,
                 st_dstAddress,
-                st_swapIntent,
+                st_dstToken,
                 st_message,
-                st_dstNativeGas,
+                st_dstNativeBudget,
                 st_token,
                 st_token_amount,
                 st_refundAddress,
@@ -1111,13 +1111,13 @@ def test_vault(
 
                             assert tx.events["XCallToken"][0].values() == [
                                 st_dstChain,
-                                st_dstAddress,
-                                st_swapIntent,
+                                hexStr(st_dstAddress),
+                                st_dstToken,
                                 st_token,
                                 st_token_amount,
                                 st_sender,
                                 hexStr(st_message),
-                                st_dstNativeGas,
+                                st_dstNativeBudget,
                                 st_refundAddress,
                             ]
 

@@ -7,7 +7,7 @@ import random
 
 @given(
     st_srcChain=strategy("uint32"),
-    st_srcAddress=strategy("string", min_size=1),
+    st_srcAddress=strategy("bytes"),
     st_message=strategy("bytes"),
     st_sender=strategy("address"),
 )
@@ -38,7 +38,7 @@ def test_executexCall(
 
     assert tx.events["ReceivedxCall"][0].values() == [
         st_srcChain,
-        st_srcAddress,
+        hexStr(st_srcAddress),
         message,
     ]
 
@@ -51,7 +51,7 @@ def test_executexCall_rev_noCfReceive(cf, token):
     args = [
         randToken,
         JUNK_INT,
-        JUNK_STR,
+        JUNK_HEX,
         JUNK_HEX,
     ]
     with reverts():
@@ -62,7 +62,7 @@ def test_executexCall_rev_nzAddrs(cf, token):
     args = [
         ZERO_ADDR,
         JUNK_INT,
-        JUNK_STR,
+        JUNK_HEX,
         JUNK_HEX,
     ]
     with reverts(REV_MSG_NZ_ADDR):
@@ -73,7 +73,7 @@ def test_executexCallEth_rev_msgHash(cf):
     args = [
         NON_ZERO_ADDR,
         JUNK_INT,
-        JUNK_STR,
+        JUNK_HEX,
         JUNK_HEX,
     ]
     callDataNoSig = cf.vault.executexCall.encode_input(
@@ -93,7 +93,7 @@ def test_executexCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
     args = [
         cfReceiverFailMock.address,
         JUNK_INT,
-        JUNK_STR,
+        JUNK_HEX,
         JUNK_HEX,
     ]
     with reverts(REV_MSG_CFREC_REVERTED):
@@ -110,7 +110,7 @@ def test_executexCallEth_tryCatch(cf, cfReceiverTryMock):
     args = [
         cfReceiverTryMock.address,
         JUNK_INT,
-        JUNK_STR,
+        JUNK_HEX,
         JUNK_HEX,
     ]
 

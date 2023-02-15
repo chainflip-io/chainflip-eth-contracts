@@ -35,10 +35,10 @@ contract DexAggSrcChainMock is Shared {
     // Ingress Chain
     function swapNativeAndCallViaChainflip(
         uint32 dstChain,
-        string calldata dstAddress,
-        string calldata swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         address dexAddress,
-        address dstToken,
+        address dstTokenAddr,
         address userToken,
         address userAddress
     ) external payable {
@@ -46,11 +46,11 @@ contract DexAggSrcChainMock is Shared {
         // testing easier. Any parameter can be encoded in the message. Here we encode the function
         // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
-        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
+        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstTokenAddr, userToken, userAddress);
         IVault(_cfVault).xCallNative{value: msg.value}(
             dstChain,
             dstAddress,
-            swapIntent,
+            dstToken,
             message,
             DEFAULT_GAS,
             msg.sender
@@ -59,10 +59,10 @@ contract DexAggSrcChainMock is Shared {
 
     function swapTokenAndCallViaChainflip(
         uint32 dstChain,
-        string calldata dstAddress,
-        string calldata swapIntent,
+        bytes calldata dstAddress,
+        uint16 dstToken,
         address dexAddress,
-        address dstToken,
+        address dstTokenAddr,
         address userToken,
         address userAddress,
         address srcToken,
@@ -74,12 +74,12 @@ contract DexAggSrcChainMock is Shared {
         // testing easier. Any parameter can be encoded in the message. Here we encode the function
         // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
-        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstToken, userToken, userAddress);
+        bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstTokenAddr, userToken, userAddress);
         require(IERC20(srcToken).approve(_cfVault, srcAmount));
         IVault(_cfVault).xCallToken(
             dstChain,
             dstAddress,
-            swapIntent,
+            dstToken,
             message,
             DEFAULT_GAS,
             IERC20(srcToken),
@@ -95,7 +95,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
     // @dev Mapping of chain to DexAggSrcChainMock's source Chain's address. Storing it
     // without the initial "0x" just because brownie has issues passing a string with
     // the same length as an address (it mistakenly thinks it's an address).
-    mapping(uint256 => string) private _chainToAddress;
+    mapping(uint256 => bytes) private _chainToAddress;
 
     event ReceivedxSwapAndCall(
         uint32 srcChain,
@@ -105,12 +105,12 @@ contract DexAggDstChainMock is CFReceiver, Shared {
         uint256 amount,
         uint256 nativeReceived
     );
-    event ReceivedxCall(uint32 srcChain, string srcAddress, bytes message, uint256 nativeReceived);
+    event ReceivedxCall(uint32 srcChain, bytes srcAddress, bytes message, uint256 nativeReceived);
 
     constructor(
         address cfVault,
         uint256 srcChain,
-        string memory srcChainAddress
+        bytes memory srcChainAddress
     ) CFReceiver(cfVault) nzAddr(cfVault) {
         _chainToAddress[srcChain] = srcChainAddress;
     }
@@ -118,7 +118,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
     // Egress Chain
     function _cfReceive(
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message,
         address token,
         uint256 amount
@@ -155,7 +155,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
 
     function _cfReceivexCall(
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) internal override {
         emit ReceivedxCall(srcChain, srcAddress, message, msg.value);

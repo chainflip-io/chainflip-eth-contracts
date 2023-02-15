@@ -123,7 +123,7 @@ contract TestEchidna is Deployer {
         SigData calldata sigData,
         TransferParams calldata transferParams,
         uint32 srcChain,
-        string calldata srcAddress,
+        bytes calldata srcAddress,
         bytes calldata message
     ) external {
         try v.executexSwapAndCall(sigData, transferParams, srcChain, srcAddress, message) {
