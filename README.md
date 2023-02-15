@@ -165,9 +165,14 @@ The tool runs within the brownie framework and acts as a console-like client.
 
 
 ```bash
-# to import the private network configuration
+# To connect to a public network just set your provider as normal
+export WEB3_INFURA_PROJECT_ID=<Infura project id>
+# or
+export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
+
+# On the other hand, to connect to a private network, import the network 
+# config file and set the RPC_URL that should be used to access the chain
 brownie networks import ./network-config.yaml
-# set the RPC_URL that should be used to access the chain
 export RPC_URL=<your_rpc_url>
 
 # ensure that the ETH account associated with this seed has ETH on that network
