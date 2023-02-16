@@ -46,7 +46,6 @@ if "SEED" in environ:
         seedNumber += 1
 else:
     userAddress = None
-    print("No SEED provided. You can only view the chain")
 
 
 # Define a dictionary of available commands and their corresponding functions
@@ -189,6 +188,9 @@ def main():
 
     print("\n*** Devtool started. Type 'help' for a list of commands ***\n")
 
+    if userAddress == None:
+        print("No SEED provided. You can only view the chain\n")
+
     while True:
         user_input = input("> ")
 
@@ -222,7 +224,7 @@ def main():
 
                     if userAddress == None:
                         print(
-                            "No SEED provided. Please exit and provide a SEED as en env variable"
+                            "No SEED provided. Please exit and provide a SEED as an env variable."
                         )
                         continue
 
