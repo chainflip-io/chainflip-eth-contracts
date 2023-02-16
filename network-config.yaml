@@ -16,3 +16,11 @@ live:
     id: rinkeby-alchemy
     multicall2: '0x5ba1e12693dc8f9c48aad8770482f4739beed696'
     name: Rinkeby (alchemy)
+
+- name: Ethereum
+  networks:
+  # For now hardcoding the chainId
+  - chainid: 10997
+    host: $RPC_URL
+    id: private-testnet
+    name: Ethereum (Private)
