@@ -41,7 +41,7 @@ def test_loopback_executexSwapAndCall_native(
     assert tx.events["XCallNative"]["dstToken"] == 0
     assert tx.events["XCallNative"]["amount"] == st_amount
     assert tx.events["XCallNative"]["sender"] == cfLoopbackMock.address
-    assert tx.events["XCallNative"]["refundAddress"] == cfLoopbackMock.address
+    assert tx.events["XCallNative"]["refundAddress"] == toHex(cfLoopbackMock.address)
 
     assert balanceVault == web3.eth.get_balance(cf.vault.address)
 
@@ -93,7 +93,7 @@ def test_loopback_executexSwapAndCall_token(
     assert tx.events["XCallToken"]["srcToken"] == token.address
     assert tx.events["XCallToken"]["amount"] == st_amount
     assert tx.events["XCallToken"]["sender"] == cfLoopbackMock.address
-    assert tx.events["XCallToken"]["refundAddress"] == cfLoopbackMock.address
+    assert tx.events["XCallToken"]["refundAddress"] == toHex(cfLoopbackMock.address)
 
     assert balanceVault == token.balanceOf(cf.vault.address)
     assert balanceLoopback == token.balanceOf(cfLoopbackMock.address)

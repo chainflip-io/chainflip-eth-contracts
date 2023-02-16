@@ -291,7 +291,7 @@ def test_all(
         st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
-        st_refundAddress = strategy("address")
+        st_refundAddress = strategy("bytes")
         st_dstNativeBudget = strategy("uint")
 
         # KeyManager
@@ -1267,7 +1267,7 @@ def test_all(
                                 st_sender,
                                 hexStr(st_message),
                                 st_dstNativeBudget,
-                                st_refundAddress,
+                                hexStr(st_refundAddress),
                             ]
 
         def rule_xCallToken(
@@ -1353,7 +1353,7 @@ def test_all(
                                 st_sender,
                                 hexStr(st_message),
                                 st_dstNativeBudget,
-                                st_refundAddress,
+                                hexStr(st_refundAddress),
                             ]
 
         def rule_executexSwapAndCall_native(

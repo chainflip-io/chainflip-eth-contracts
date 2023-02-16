@@ -13,7 +13,7 @@ from shared_tests import *
     st_dstToken=strategy("uint16"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
-    st_refundAddress=strategy("address"),
+    st_refundAddress=strategy("bytes"),
     st_dstNativeBudget=strategy("uint"),
     st_sender=strategy("address"),
 )
@@ -107,7 +107,7 @@ def test_swapToken(
             st_sender,
             hexStr(st_message),
             st_dstNativeBudget,
-            st_refundAddress,
+            hexStr(st_refundAddress),
         ]
 
 
@@ -350,7 +350,7 @@ def test_swapETHAndCall(
             st_sender,
             hexStr(st_message),
             st_dstNativeBudget,
-            st_refundAddress,
+            hexStr(st_refundAddress),
         ]
 
 

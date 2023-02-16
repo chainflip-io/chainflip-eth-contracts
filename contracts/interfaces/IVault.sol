@@ -68,7 +68,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         uint16 dstToken,
         bytes calldata message,
         uint256 dstNativeBudget,
-        address refundAddress
+        bytes calldata refundAddress
     ) external payable;
 
     function xCallToken(
@@ -79,7 +79,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         uint256 dstNativeBudget,
         IERC20 srcToken,
         uint256 amount,
-        address refundAddress
+        bytes calldata refundAddress
     ) external;
 
     //////////////////////////////////////////////////////////////

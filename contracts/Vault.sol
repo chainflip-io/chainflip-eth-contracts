@@ -47,7 +47,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address indexed sender,
         bytes message,
         uint256 dstNativeBudget,
-        address refundAddress
+        bytes refundAddress
     );
     event XCallToken(
         uint32 dstChain,
@@ -58,7 +58,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address indexed sender,
         bytes message,
         uint256 dstNativeBudget,
-        address refundAddress
+        bytes refundAddress
     );
 
     event XCallsEnabled(bool enabled);
@@ -396,7 +396,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint16 dstToken,
         bytes calldata message,
         uint256 dstNativeBudget,
-        address refundAddress
+        bytes calldata refundAddress
     ) external payable override onlyNotSuspended xCallsEnabled nzUint(msg.value) {
         emit XCallNative(
             dstChain,
@@ -441,7 +441,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 dstNativeBudget,
         IERC20 srcToken,
         uint256 amount,
-        address refundAddress
+        bytes calldata refundAddress
     ) external override onlyNotSuspended xCallsEnabled nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
         emit XCallToken(

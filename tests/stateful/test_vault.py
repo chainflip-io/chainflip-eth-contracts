@@ -161,7 +161,7 @@ def test_vault(
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
         st_dstNativeBudget = strategy("uint")
-        st_refundAddress = strategy("address")
+        st_refundAddress = strategy("bytes")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_native_amounts, st_sender):
 
@@ -1032,7 +1032,7 @@ def test_vault(
                                 st_sender,
                                 hexStr(st_message),
                                 st_dstNativeBudget,
-                                st_refundAddress,
+                                hexStr(st_refundAddress),
                             ]
 
         def rule_xCallToken(
@@ -1118,7 +1118,7 @@ def test_vault(
                                 st_sender,
                                 hexStr(st_message),
                                 st_dstNativeBudget,
-                                st_refundAddress,
+                                hexStr(st_refundAddress),
                             ]
 
         def rule_executexSwapAndCall_native(

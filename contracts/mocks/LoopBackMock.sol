@@ -24,7 +24,14 @@ contract LoopBackMock is CFReceiver, Shared {
         if (token == _NATIVE_ADDR) {
             // Just health check for this mock. It will never revert.
             require(msg.value == amount, "LoopbackMock: msg.value != amount");
-            IVault(_cfVault).xCallNative{value: amount}(srcChain, srcAddress, 0, message, DEFAULT_GAS, address(this));
+            IVault(_cfVault).xCallNative{value: amount}(
+                srcChain,
+                srcAddress,
+                0,
+                message,
+                DEFAULT_GAS,
+                abi.encodePacked(address(this))
+            );
         } else {
             require(IERC20(token).approve(msg.sender, amount));
             IVault(_cfVault).xCallToken(
@@ -35,7 +42,7 @@ contract LoopBackMock is CFReceiver, Shared {
                 DEFAULT_GAS,
                 IERC20(token),
                 amount,
-                address(this)
+                abi.encodePacked(address(this))
             );
         }
     }
@@ -52,7 +59,7 @@ contract LoopBackMock is CFReceiver, Shared {
             0,
             message,
             DEFAULT_GAS,
-            address(this)
+            abi.encodePacked(address(this))
         );
     }
 

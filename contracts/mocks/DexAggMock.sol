@@ -53,7 +53,7 @@ contract DexAggSrcChainMock is Shared {
             dstToken,
             message,
             DEFAULT_GAS,
-            msg.sender
+            abi.encodePacked(msg.sender)
         );
     }
 
@@ -84,7 +84,7 @@ contract DexAggSrcChainMock is Shared {
             DEFAULT_GAS,
             IERC20(srcToken),
             srcAmount,
-            msg.sender
+            abi.encodePacked(msg.sender)
         );
     }
 }
