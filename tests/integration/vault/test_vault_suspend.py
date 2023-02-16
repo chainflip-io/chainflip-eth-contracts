@@ -49,7 +49,7 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             JUNK_INT,
             token,
             st_amount,
-            st_receiver,
+            toHex(st_receiver.address),
         )
 
     # xSwapToken
@@ -70,7 +70,7 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             BTC_UINT,
             JUNK_HEX,
             JUNK_INT,
-            st_receiver,
+            toHex(st_receiver.address),
             {"from": st_receiver, "amount": st_amount},
         )
 

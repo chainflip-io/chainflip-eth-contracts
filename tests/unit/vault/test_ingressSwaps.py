@@ -118,7 +118,7 @@ def test_swapToken(
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("address"),
+    st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
 def test_swapToken_rev_bal(
@@ -170,7 +170,7 @@ def test_swapToken_rev_bal(
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("address"),
+    st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
 def test_swapToken_rev_suspended(
@@ -220,7 +220,7 @@ def test_swapToken_rev_suspended(
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("address"),
+    st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
 def test_swapTokenAndCall_rev_disabled(
@@ -273,7 +273,7 @@ def test_swapTokenAndCall_rev_disabled(
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
     st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("address"),
+    st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
 def test_swapETHAndCall(
@@ -361,7 +361,7 @@ def test_swapETHAndCall(
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("address"),
+    st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
 def test_swapETHAndCall_rev_suspended(
@@ -406,7 +406,7 @@ def test_swapETHAndCall_rev_suspended(
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("address"),
+    st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
 def test_swapETHAndCall_rev_disabled(
