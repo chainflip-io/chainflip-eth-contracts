@@ -33,7 +33,6 @@ USDC_ADDRESS = environ.get("USDC_ADDRESS") or ZERO_ADDR
 KEY_MANAGER_ADDRESS = environ.get("KEY_MANAGER_ADDRESS") or ZERO_ADDR
 
 # TODO: Allow the user to not input any SEED to use the tool only to view the chain
-# TODO: Potentially ask the user for confirmation when a transaction is about to be sent.
 AUTONOMY_SEED = environ["SEED"]
 DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
@@ -42,101 +41,99 @@ userAddress = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
 
 # Define a dictionary of available commands and their corresponding functions
-
+# Tuple order: (function to call, printed help, list of arguments, sendTx bool)
 commands = {
-    "help": (lambda: help(), "Prints help", []),
-    "contracts": (lambda: print(contractAddresses), "Prints addresses", []),
-    "user": (lambda: print(userAddress), "Prints current user address", []),
-    "walletAddrs": (lambda: print(walletAddrs), "Show wallet addresses", []),
+    "help": (lambda: help(), "Prints help", [], False),
+    "contracts": (lambda: print(contractAddresses), "Prints addresses", [], False),
+    "user": (lambda: print(userAddress), "Prints current user address", [], False),
+    "walletAddrs": (lambda: print(walletAddrs), "Show wallet addresses", [], False),
     "changeAddr": (
         lambda walletNr: changeAddr(walletNr),
         "Set the user address to that walletAddrs number",
         ["uint256"],
+        False,
     ),
     "balanceEth": (
         lambda address: balanceEth(address),
         "Get the Eth balance of an account.",
         ["address"],
+        False,
     ),
     "balanceFlip": (
         lambda address: balanceFlip(address),
         "Get the Flip balance of an account",
         ["address"],
+        False,
     ),
     "balanceUsdc": (
         lambda address: balanceUsdc(address),
         "Get the USDC balance of an account",
         ["address"],
+        False,
     ),
     "transferEth": (
         lambda amount, address: transferEth(amount, address),
         "Transfer Eth to an account. Input should be a float amount in eth`",
         ["float", "address"],
+        True,
     ),
     "transferFlip": (
         lambda amount, address: transferFlip(amount, address),
         "Transfer Flip to an account.Input float amount up to 18 decimals",
         ["float", "address"],
+        True,
     ),
     "transferUsdc": (
         lambda amount, address: transferUsdc(amount, address),
         "Transfer USDC to an account. Input float amount up to 6 decimals",
         ["float", "address"],
+        True,
     ),
     "stake": (
         lambda amount, nodeId: stake(amount, nodeId),
         "Stake flip from the user address",
         ["float", "bytes32"],
+        True,
     ),
     "executeClaim": (
         lambda nodeId: executeClaim(nodeId),
         "Execute an registered claim",
         ["bytes32"],
+        True,
     ),
     "enableSwaps": (
         lambda: enableVaultSwaps(),
         "Enable Vault swaps. User needs to be the governance address",
         [],
+        True,
     ),
     "disableSwaps": (
         lambda: disableVaultSwaps(),
         "Disable Vault swaps. User needs to be the governance address",
         [],
+        True,
     ),
-    "viewMinStake": (
-        lambda: viewMinStake(),
-        "Display the minimum stake",
-        [],
-    ),
-    "viewAggKey": (
-        lambda: viewAggKey(),
-        "Display the Aggregate key",
-        [],
-    ),
-    "viewGovKey": (
-        lambda: viewGovKey(),
-        "Display the governance address",
-        [],
-    ),
-    "viewCommKey": (
-        lambda: viewCommKey(),
-        "Display the community address",
-        [],
-    ),
+    "viewMinStake": (lambda: viewMinStake(), "Display the minimum stake", [], False),
+    "viewAggKey": (lambda: viewAggKey(), "Display the Aggregate key", [], False),
+    "viewGovKey": (lambda: viewGovKey(), "Display the governance address", [], False),
+    "viewCommKey": (lambda: viewCommKey(), "Display the community address", [], False),
     "isNonceUsed": (
         lambda nonce: isNonceUsed(nonce),
         "Check if a nonce has been used in the KeyManager",
         ["uint256"],
+        False,
     ),
-    "viewLastTime": (
-        lambda: viewLastTime(),
+    "viewLastSigTime": (
+        lambda: viewLastSigTime(),
         "Display the last time a signature was validated",
         [],
+        False,
     ),
     "viewCurrentTime": (
         lambda: viewCurrentTime(),
         "Display the current time (block timestamp)",
         [],
+        False,
     ),
     # "viewTokenTransfersTo": (
     #     lambda address, recipient: viewTokenTransfersTo(address, recipient),
@@ -147,8 +144,9 @@ commands = {
         lambda txHash: display_tx(txHash),
         "Display transaction",
         ["bytes32"],
+        False,
     ),
-    "exit": (lambda: exit(), "Exits the program", []),
+    "exit": (lambda: exit(), "Exits the program", [], False),
 }
 
 walletAddrs = {}
@@ -212,6 +210,13 @@ def main():
                     print("Argument in position {} is invalid".format(args.index(None)))
                     continue
 
+                if commands[cmd][3]:
+                    sendTX = input(
+                        "A transaction will be signed and sent. Do you want to proceed? [Y/n]\n"
+                    )
+                    if sendTX not in ["", "y", "Y", "yes", "Yes", "YES"]:
+                        continue
+
                 # Catch any errors thrown by this logic or by the transaction execution
                 try:
                     # Call the function with the arguments
@@ -232,7 +237,7 @@ def help():
     )
 
     print("Available commands:\n")
-    for name, (func, description, _) in commands.items():
+    for name, (func, description, _, _) in commands.items():
         # print("{0:17} {1}".format("  " + name, description))
 
         params = inspect.getfullargspec(func).args
@@ -376,7 +381,7 @@ def isNonceUsed(nonce):
         print(f"Nonce {nonce} has not been used")
 
 
-def viewLastTime():
+def viewLastSigTime():
     lastTime = keyManager.getLastValidateTime()
     print(f"Last time a signature was validated: {lastTime}")
     printUserReadableTime(lastTime)
