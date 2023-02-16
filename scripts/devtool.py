@@ -32,12 +32,21 @@ VAULT_ADDRESS = environ["VAULT_ADDRESS"]
 USDC_ADDRESS = environ.get("USDC_ADDRESS") or ZERO_ADDR
 KEY_MANAGER_ADDRESS = environ.get("KEY_MANAGER_ADDRESS") or ZERO_ADDR
 
-# TODO: Allow the user to not input any SEED to use the tool only to view the chain
-AUTONOMY_SEED = environ["SEED"]
-DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
+if "SEED" in environ:
+    AUTONOMY_SEED = environ["SEED"]
+    DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
-cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
-userAddress = cf_accs[DEPLOYER_ACCOUNT_INDEX]
+    cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
+    userAddress = cf_accs[DEPLOYER_ACCOUNT_INDEX]
+
+    walletAddrs = {}
+    seedNumber = 0
+    for cf_acc in cf_accs:
+        walletAddrs[str(seedNumber)] = cf_acc
+        seedNumber += 1
+else:
+    userAddress = None
+    print("No SEED provided. You can only view the chain")
 
 
 # Define a dictionary of available commands and their corresponding functions
@@ -149,12 +158,6 @@ commands = {
     "exit": (lambda: exit(), "Exits the program", [], False),
 }
 
-walletAddrs = {}
-seedNumber = 0
-for cf_acc in cf_accs:
-    walletAddrs[str(seedNumber)] = cf_acc
-    seedNumber += 1
-
 flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
 stakeManager = StakeManager.at(f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}")
 vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
@@ -215,6 +218,12 @@ def main():
                         "A transaction will be signed and sent. Do you want to proceed? [Y/n]\n"
                     )
                     if sendTX not in ["", "y", "Y", "yes", "Yes", "YES"]:
+                        continue
+
+                    if userAddress == None:
+                        print(
+                            "No SEED provided. Please exit and provide a SEED as en env variable"
+                        )
                         continue
 
                 # Catch any errors thrown by this logic or by the transaction execution
