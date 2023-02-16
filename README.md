@@ -128,13 +128,11 @@ brownie run deploy_and
 ### Live Test network
 
 ```bash
-# to import all network configurations
-brownie networks import ./network-config.yaml
 # get this id from Infura and/or Alchemy
 export WEB3_INFURA_PROJECT_ID=<Infura project id>
 export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
 # ensure that the ETH account associated with this seed has ETH on that network
-export SEED=<your seed phrase>
+export SEED="<your seed phrase>"
 # Set an aggregate or governance key that you would like to use (optional)
 export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
 export GOV_KEY<gov key with leading parity byte, hex format, no leading 0x>
@@ -157,3 +155,54 @@ brownie run deploy_contracts --network rinkeby-alchemy
 `brownie test --stateful true` runs ONLY the stateful tests
 
 `brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events
+
+
+## Dev Tool
+
+A dev tool is available ease the development and debugging on locally deployed network. To use it, first ensure that you have been through the setup process and you are inside the poetry shell.
+
+The tool runs within the brownie framework and acts as a console-like client.
+
+
+```bash
+# To connect to a public network just set your provider as normal
+export WEB3_INFURA_PROJECT_ID=<Infura project id>
+# or
+export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
+
+# On the other hand, to connect to a private network, import the network 
+# config file and set the RPC_URL that should be used to access the chain
+brownie networks import ./network-config.yaml
+export RPC_URL=<your_rpc_url>
+
+# ensure that the ETH account associated with this seed has ETH on that network
+export SEED="<your seed phrase>"
+# set the required deployed contract addresses. All in hex format, with leading 0x
+export FLIP_ADDRESS=<Address of the deployed FLIP contract>
+export STAKE_MANAGER_ADDRESS=<Address of the deployed Stake Manager contract>
+export VAULT_ADDRESS=<Address of the deployed Vault contract>
+# Optional: only required when running USDC-related commands 
+export USDC_ADDRESS=<Address of the deployed Mock USDC contract>
+# Optional - if not provided the tool will automatically obtain it
+export KEY_MANAGER_ADDRESS=<Address of the deployed KeyManager contract>
+
+
+# Run the tool
+brownie run devtool --network private-testnet
+
+# When running the tool:
+# Run `help` to display all supported commands
+>> help
+
+# Display user address
+>> user
+
+# Example of checking the ETH balance of the stakeManager
+>> balanceEth stakeManager
+
+# Example of staking 2k FLIP for nodeId 0xDEADBEEF to the Stake Manager
+>> stake 2000 0xDEADBEEF
+
+# To eventually exit the tool
+>> exit
+```
