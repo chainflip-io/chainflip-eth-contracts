@@ -387,8 +387,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
      * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call.
-     * @param refundAddress Address to refund any excess gas left from the execution of the xCall on the dstChain. This address
-     *                      is in the context of the srcChain.
+     * @param refundAddress Address for any future refunds to the user.
      */
     function xCallNative(
         uint32 dstChain,
@@ -430,8 +429,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      source token.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
-     * @param refundAddress Address to refund any excess gas left from the execution of the xCall on the dstChain. This address
-     *                      is in the context of the srcChain.
+     * @param refundAddress Address for any future refunds to the user.
      */
     function xCallToken(
         uint32 dstChain,
