@@ -14,6 +14,7 @@ from brownie import (
     web3,
     chain,
     Token,
+    network,
 )
 from brownie.convert import to_address
 from brownie.network.event import _decode_logs
@@ -32,9 +33,20 @@ VAULT_ADDRESS = environ["VAULT_ADDRESS"]
 USDC_ADDRESS = environ.get("USDC_ADDRESS") or ZERO_ADDR
 KEY_MANAGER_ADDRESS = environ.get("KEY_MANAGER_ADDRESS") or ZERO_ADDR
 
-if "SEED" in environ:
-    AUTONOMY_SEED = environ["SEED"]
-    DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
+
+if "SEED" not in environ and network.show_active() != "hardhat":
+    userAddress = None
+else:
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
+    if network.show_active() == "hardhat":
+        AUTONOMY_SEED = "test test test test test test test test test test test junk"
+        DEPLOYER_ACCOUNT_INDEX = 0
+    else:
+        # Live network
+        AUTONOMY_SEED = environ["SEED"]
+        DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
     cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
     userAddress = cf_accs[DEPLOYER_ACCOUNT_INDEX]
@@ -44,8 +56,8 @@ if "SEED" in environ:
     for cf_acc in cf_accs:
         walletAddrs[str(seedNumber)] = cf_acc
         seedNumber += 1
-else:
-    userAddress = None
+
+    userAddress = accounts[0]
 
 
 # Define a dictionary of available commands and their corresponding functions
@@ -217,7 +229,7 @@ def main():
 
                 if commands[cmd][3]:
                     sendTX = input(
-                        "A transaction will be signed and sent. Do you want to proceed? [Y/n]\n"
+                        "A transaction will be signed and sent. Do you want to proceed? [Y/n]: "
                     )
                     if sendTX not in ["", "y", "Y", "yes", "Yes", "YES"]:
                         continue
@@ -343,6 +355,7 @@ def stake(amount, node_id):
         amountInWei,
         userAddress,
         {"from": userAddress, "required_confs": 1, "gas_limit": 1000000},
+        # {"from": userAddress, "required_confs": 1},
     )
     print(f"Staking {amount} FLIP to node {node_id} in tx {tx.txid}")
     tx.info()
@@ -409,8 +422,6 @@ def printUserReadableTime(timestamp):
 
 
 # TODO: Add swapNative and swapToken through the Vault.
-# TODO: enableSwaps will need to be renamed to enablexCalls
-# TODO: Add functions to fetch previous fetch events?
 def enableVaultSwaps():
     tx = vault.enableSwaps({"from": userAddress, "required_confs": 1})
     tx.info()
@@ -423,6 +434,8 @@ def disableVaultSwaps():
     print("** Vault swaps disabled succesfully **")
 
 
+# TODO: Rewrite this so it is useful - we cannot fetch all events in history,
+# caps at 1000 events, and also it's not parsable by the user.
 # def viewAllTokenTransfers(address, initial_block=0):
 #     contractObject = getERC20ContractFromAddress(address)
 
