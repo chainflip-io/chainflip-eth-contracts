@@ -217,6 +217,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
         address recipient = getKeyManager().getGovernanceKey();
         payable(recipient).transfer(amount);
+        emit GovernanceWithdrawal(recipient, amount);
     }
 
     /**
