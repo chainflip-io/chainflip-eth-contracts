@@ -169,12 +169,13 @@ brownie run deploy_contracts --network rinkeby-alchemy
 
 ## Dev Tool
 
-A dev tool is available ease the development and debugging on locally deployed network. To use it, first ensure that you have been through the setup process and you are inside the poetry shell.
+A dev tool is available ease development and debugging. It can be used on live networks (goerli, mainnet..), private networks and locally deployed networks (hardhat). To use it, first ensure that you have been through the setup process and you are inside the poetry shell.
 
 The tool runs within the brownie framework and acts as a console-like client.
 
 
 ```bash
+# To connect to a locally deployed network (hardhat), no endpoint is required.
 # To connect to a public network just set your provider as normal
 export WEB3_INFURA_PROJECT_ID=<Infura project id>
 # or
@@ -197,7 +198,7 @@ export USDC_ADDRESS=<Address of the deployed Mock USDC contract>
 export KEY_MANAGER_ADDRESS=<Address of the deployed KeyManager contract>
 
 
-# Run the tool
+# Run the tool specifying which network to use (private/goerli/hardhat)
 brownie run devtool --network private-testnet
 
 # When running the tool:
