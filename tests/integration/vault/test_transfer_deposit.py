@@ -139,7 +139,7 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
 
 
 def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBatch(
-    cf, token, Deposit
+    cf, token, Deposit, utils
 ):
     swapIDs = [cleanHexStrPad(0), cleanHexStrPad(1)]
     # Fetch token deposit
@@ -179,11 +179,31 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     assert token.balanceOf(cf.ALICE) - tokenStartBalAlice == amountAlice
     assert token.balanceOf(cf.BOB) - tokenStartBalBob == amountBob
 
-    # Transferring out again should fail
-    with reverts(REV_MSG_ERC20_EXCEED_BAL):
-        signed_call_cf(
-            cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE
-        )
+    # Transferring out again should fail gracefully
+    transferParamsArray = craftTransferParamsArray(
+        [token, token], [cf.ALICE, cf.BOB], [amountAlice * 10, amountBob * 10]
+    )
+    tx = signed_call_cf(
+        cf, cf.vault.transferBatch, transferParamsArray, sender=cf.CHARLIE
+    )
+
+    assert len(tx.events["TransferTokenFailed"]) == 2
+
+    assert tx.events["TransferTokenFailed"][0]["recipient"] == cf.ALICE
+    assert tx.events["TransferTokenFailed"][0]["amount"] == amountAlice * 10
+    assert tx.events["TransferTokenFailed"][0]["token"] == token.address
+    assert (
+        utils.decodeRevertData(tx.events["TransferTokenFailed"][0]["reason"])
+        == REV_MSG_ERC20_EXCEED_BAL
+    )
+
+    assert tx.events["TransferTokenFailed"][1]["recipient"] == cf.BOB
+    assert tx.events["TransferTokenFailed"][1]["amount"] == amountBob * 10
+    assert tx.events["TransferTokenFailed"][1]["token"] == token.address
+    assert (
+        utils.decodeRevertData(tx.events["TransferTokenFailed"][0]["reason"])
+        == REV_MSG_ERC20_EXCEED_BAL
+    )
 
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
@@ -227,7 +247,7 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     assert cf.BOB.balance() == nativeStartBalBob + amountBob
 
 
-def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
+def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit, utils):
     swapIDs = [cleanHexStrPad(0), cleanHexStrPad(1)]
     # Fetch token deposit
     # Get the address to deposit to and deposit
@@ -268,14 +288,24 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
     assert token.balanceOf(cf.ALICE) - tokenStartBalAlice == amountAlice
     assert token.balanceOf(cf.BOB) - tokenStartBalBob == amountBob
 
-    # Transferring out again should fail
-    with reverts(REV_MSG_ERC20_EXCEED_BAL):
-        transferParamsArray = craftTransferParamsArray(
-            [token, token],
-            [cf.ALICE, cf.BOB],
-            [amountAlice, amountBob],
-        )
-        signed_call_cf(cf, cf.vault.transferBatch, transferParamsArray)
+    # Transferring out again should fail gracefully
+
+    transferParamsArray = craftTransferParamsArray(
+        [token, token],
+        [cf.ALICE, cf.BOB],
+        [amountAlice * 10, amountBob * 10],
+    )
+    tx = signed_call_cf(cf, cf.vault.transferBatch, transferParamsArray)
+
+    assert len(tx.events["TransferNativeFailed"]) == 2
+
+    assert tx.events["TransferNativeFailed"][0]["recipient"] == cf.ALICE
+    assert tx.events["TransferNativeFailed"][0]["amount"] == amountAlice * 10
+    assert tx.events["TransferNativeFailed"][0]["token"] == NATIVE_ADDR
+
+    assert tx.events["TransferNativeFailed"][1]["recipient"] == cf.BOB
+    assert tx.events["TransferNativeFailed"][1]["amount"] == amountBob * 10
+    assert tx.events["TransferNativeFailed"][1]["token"] == token.address
 
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
