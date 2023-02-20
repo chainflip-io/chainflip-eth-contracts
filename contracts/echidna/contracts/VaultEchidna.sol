@@ -102,14 +102,6 @@ contract VaultEchidna is IShared {
         v.govWithdraw(tokens);
     }
 
-    function enablexCalls() external virtual {
-        v.enablexCalls();
-    }
-
-    function disablexCalls() external virtual {
-        v.disablexCalls();
-    }
-
     // Expose AggKeyNonceConsumer functions to Echidna
 
     function updateKeyManagerVault(SigData calldata sigData, IKeyManager keyManager) external virtual {
