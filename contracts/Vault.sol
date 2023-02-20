@@ -22,7 +22,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
     uint256 private constant _GAS_TO_FORWARD = 3500;
 
-    event TransferFailed(address payable indexed recipient, uint256 amount);
+    event TransferNativeFailed(address payable indexed recipient, uint256 amount);
+    event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
     event SwapsEnabled(bool enabled);
 
     event SwapNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, uint256 amount, address indexed sender);
@@ -207,9 +208,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
-     * @dev     Using "send" function to only send a set amount of gas, preventing the recipient
-     *          from using all the transfer batch gas. Also, not reverting on failure so it can't
-     *          block the batch transfer.
+     * @dev     Using call function limiting the amount of gas so the
+     *          receivers can't consume all the gas. Setting that amount
+     *          of gas to more than 2300 to future-proof the contract
+     *          in case of opcode gas costs changing.
+     * @dev     When transferring ERC20 tokens, ensure the transfer
+     *          fails gracefully to not revert an entire batch.
+     *          e.g. usdc blacklisted recipient.
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
@@ -220,15 +225,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount
     ) private {
         if (address(token) == _NATIVE_ADDR) {
-            // Disable because we don't want to revert on failure. Forward only a set amount of gas
-            // so the receivers can't consume all the gas.
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = recipient.call{gas: _GAS_TO_FORWARD, value: amount}("");
             if (!success) {
-                emit TransferFailed(recipient, amount);
+                emit TransferNativeFailed(recipient, amount);
             }
         } else {
-            IERC20(token).safeTransfer(recipient, amount);
+            try IERC20(token).transfer(recipient, amount) {} catch (bytes memory reason) {
+                emit TransferTokenFailed(recipient, amount, token, reason);
+            }
         }
     }
 
@@ -508,6 +513,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *         into the cfReceive call to avoid doing two external calls.
      *         In case of revertion the tokens will remain in the Vault. Therefore, the destination
      *         contract must ensure it doesn't revert e.g. using try-catch mechanisms.
+     * @dev    In the case of the ERC20 transfer reverting, not handling the error to allow for tx replay.
+     *         Also, to ensure the cfReceive call is made only if the transfer is successful.
      */
     function _executexSwapAndCall(
         TransferParams calldata transferParams,
