@@ -212,13 +212,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
-     * @dev     Using call function limiting the amount of gas so the
-     *          receivers can't consume all the gas. Setting that amount
-     *          of gas to more than 2300 to future-proof the contract
+     * @dev     Using call function limiting the amount of gas so the receivers can't consume all
+     *          the gas. Setting that amount of gas to more than 2300 to future-proof the contract
      *          in case of opcode gas costs changing.
-     * @dev     When transferring ERC20 tokens, ensure the transfer
-     *          fails gracefully to not revert an entire batch.
-     *          e.g. usdc blacklisted recipient.
+     * @dev     If transferring ERC20 tokens fails, ensure the transfer fails gracefully to not revert
+     *          an entire batch. e.g. usdc blacklisted recipient. Following safeTransfer approach
+     *          to support tokens that don't return a bool.
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
@@ -239,14 +238,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             (bool success, bytes memory returndata) = token.call(
                 abi.encodeWithSelector(IERC20(token).transfer.selector, recipient, amount)
             );
-            if (!success) {
-                emit TransferTokenFailed(recipient, amount, token, returndata);
-            } else {
+
+            if (success) {
                 if (returndata.length > 0) {
                     if (abi.decode(returndata, (bool)) == false) {
                         emit TransferTokenFailed(recipient, amount, token, returndata);
                     }
                 }
+            } else {
+                emit TransferTokenFailed(recipient, amount, token, returndata);
             }
         }
     }
