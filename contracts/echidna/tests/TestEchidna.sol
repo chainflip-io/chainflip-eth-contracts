@@ -62,10 +62,6 @@ contract TestEchidna is Deployer {
         return sm.getMinimumStake() == minStake;
     }
 
-    function echidna_xCallsEnabled() external view returns (bool) {
-        return !v.getxCallsEnabled();
-    }
-
     // No signature has been validated
     function echidna_lastValidateTime() external view returns (bool) {
         return _lastValidateTime == km.getLastValidateTime();

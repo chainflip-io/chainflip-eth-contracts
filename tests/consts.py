@@ -124,8 +124,6 @@ REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
 REV_MSG_VAULT_DELAY = "Vault: not enough time"
-REV_MSG_VAULT_XCALLS_DIS = "Vault: xCalls not enabled"
-REV_MSG_VAULT_SWAPS_EN = "Vault: xCalls enabled"
 
 # -----GovernanceCommunityGuarded-----
 REV_MSG_GOV_ENABLED_GUARD = "Governance: community guard enabled"

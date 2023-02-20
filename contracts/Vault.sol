@@ -62,10 +62,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes refundAddress
     );
 
-    event XCallsEnabled(bool enabled);
-
-    bool private _xCallsEnabled;
-
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -411,7 +407,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata message,
         uint256 dstNativeBudget,
         bytes calldata refundAddress
-    ) external payable override onlyNotSuspended xCallsEnabled nzUint(msg.value) {
+    ) external payable override onlyNotSuspended nzUint(msg.value) {
         emit XCallNative(
             dstChain,
             dstAddress,
@@ -455,7 +451,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         IERC20 srcToken,
         uint256 amount,
         bytes calldata refundAddress
-    ) external override onlyNotSuspended xCallsEnabled nzUint(amount) {
+    ) external override onlyNotSuspended nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
         emit XCallToken(
             dstChain,
@@ -636,36 +632,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
-    /**
-     * @notice  Enable swapNative and swapToken functionality by governance. Features disabled by default
-     */
-    function enablexCalls() external override onlyGovernor xCallsDisabled {
-        _xCallsEnabled = true;
-        emit XCallsEnabled(true);
-    }
-
-    /**
-     * @notice  Disable swapNative and swapToken functionality by governance. Features disabled by default.
-     */
-    function disablexCalls() external override onlyGovernor xCallsEnabled {
-        _xCallsEnabled = false;
-        emit XCallsEnabled(false);
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Getters                         //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get xCallsEnabled
-     * @return  The xCallsEnableds state
-     */
-    function getxCallsEnabled() external view override returns (bool) {
-        return _xCallsEnabled;
-    }
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Modifiers                       //
@@ -678,18 +644,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
             "Vault: not enough time"
         );
-        _;
-    }
-
-    /// @dev    Check that xCalls are enabled
-    modifier xCallsEnabled() {
-        require(_xCallsEnabled, "Vault: xCalls not enabled");
-        _;
-    }
-
-    /// @dev    Check that xCalls are disabled
-    modifier xCallsDisabled() {
-        require(!_xCallsEnabled, "Vault: xCalls enabled");
         _;
     }
 

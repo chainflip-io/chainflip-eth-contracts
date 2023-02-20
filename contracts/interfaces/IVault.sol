@@ -116,16 +116,4 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
 
     function govWithdraw(address[] calldata tokens) external;
-
-    function enablexCalls() external;
-
-    function disablexCalls() external;
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Getters                         //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    function getxCallsEnabled() external view returns (bool);
 }

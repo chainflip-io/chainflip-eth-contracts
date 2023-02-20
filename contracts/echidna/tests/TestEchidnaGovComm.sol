@@ -117,18 +117,7 @@ contract TestEchidnaGovComm is Deployer {
         assert(sm.getMinimumStake() == minStake);
     }
 
-    // xCalls enabled
-    function enablexCalls() external override {
-        v.enablexCalls();
-        assert(v.getxCallsEnabled() == true);
-    }
-
-    function disablexCalls() external override {
-        v.disablexCalls();
-        assert(v.getxCallsEnabled() == false);
-    }
-
-    function checkwhitelistAddrs() external {
+    function checkwhitelistAddrs() external view {
         assert(km.getNumberWhitelistedAddresses() == 4);
         for (uint256 i = 0; i < whitelist.length; i++) {
             assert(km.canConsumeKeyNonce(whitelist[i]) == true);
