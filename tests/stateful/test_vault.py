@@ -10,7 +10,9 @@ settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
 # Stateful test for all functions in the Vault
-def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
+def test_vault(
+    BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token, cfReceiverMock
+):
 
     # The max swapID to use. SwapID is needed as a salt to create a unique create2
     # address, and for ease they're used between 1 and MAX_SWAPID inclusive in this test
@@ -45,7 +47,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cfDeploy, Deposit, Token):
+        def __init__(cls, a, cfDeploy, Deposit, Token, cfReceiverMock):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
@@ -105,6 +107,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
 
             # Workaround for initial Vault Balance
             cls.initialVaultBalance = web3.eth.get_balance(cls.v.address)
+            cls.cfReceiverMock = cfReceiverMock
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -132,7 +135,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
 
             self.communityGuardDisabled = self.v.getCommunityGuardDisabled()
             self.suspended = self.v.getSuspendedState()
-            self.swapsEnabled = False
+            self.xCallsEnabled = False
 
             # Dictionary swapID:deployedAddress
             self.deployedDeposits = dict()
@@ -153,8 +156,12 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
         st_sender_any = strategy("address")
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_egressParams = strategy("string")
-        st_egressReceiver = strategy("bytes32", exclude=(0).to_bytes(32, "big"))
+        st_dstToken = strategy("uint16")
+        st_dstAddress = strategy("bytes")
+        st_dstChain = strategy("uint32")
+        st_message = strategy("bytes")
+        st_dstNativeBudget = strategy("uint")
+        st_refundAddress = strategy("bytes")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_native_amounts, st_sender):
 
@@ -819,65 +826,195 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                     self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Enable swaps if they are disabled
-        def rule_enableSwaps(self, st_sender):
-            if not self.swapsEnabled:
+        def rule_enablexCalls(self, st_sender):
+            if not self.xCallsEnabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
-                        print("        REV_MSG_GOV_GOVERNOR _enableSwaps", st_sender)
-                        self.v.enableSwaps({"from": st_sender})
+                        print("        REV_MSG_GOV_GOVERNOR _enablexCalls", st_sender)
+                        self.v.enablexCalls({"from": st_sender})
                 # Always enable
-                print("                    rule_enableSwaps", st_sender)
-                self.v.enableSwaps({"from": self.governor})
-                self.swapsEnabled = True
+                print("                    rule_enablexCalls", st_sender)
+                self.v.enablexCalls({"from": self.governor})
+                self.xCallsEnabled = True
             else:
-                print("        REV_MSG_VAULT_SWAPS_EN _enableSwaps", st_sender)
+                print("        REV_MSG_VAULT_SWAPS_EN _enablexCalls", st_sender)
                 with reverts(REV_MSG_VAULT_SWAPS_EN):
-                    self.v.enableSwaps({"from": self.governor})
+                    self.v.enablexCalls({"from": self.governor})
 
         # Disable swaps if they are enabled (only 1/5 times)
-        def rule_disableSwaps(self, st_sender):
-            if self.swapsEnabled:
+        def rule_disablexCalls(self, st_sender):
+            if self.xCallsEnabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
-                        print("        REV_MSG_GOV_GOVERNOR _disableSwaps", st_sender)
-                        self.v.disableSwaps({"from": st_sender})
+                        print("        REV_MSG_GOV_GOVERNOR _disablexCalls", st_sender)
+                        self.v.disablexCalls({"from": st_sender})
                 else:
-                    print("                    rule_disableSwaps", st_sender)
-                    self.v.disableSwaps({"from": st_sender})
-                    self.swapsEnabled = False
+                    print("                    rule_disablexCalls", st_sender)
+                    self.v.disablexCalls({"from": st_sender})
+                    self.xCallsEnabled = False
             else:
                 print(
-                    "        REV_MSG_GOV_DISABLED_GUARD _disableSwaps",
+                    "        REV_MSG_GOV_DISABLED_GUARD _disablexCalls",
                     st_sender,
                 )
-                with reverts(REV_MSG_VAULT_SWAPS_DIS):
-                    self.v.disableSwaps({"from": self.governor})
+                with reverts(REV_MSG_VAULT_XCALLS_DIS):
+                    self.v.disablexCalls({"from": self.governor})
 
-        # Swap NATIVE
-        def rule_swapNative(
-            self, st_sender, st_egressParams, st_egressReceiver, st_native_amount
+        # Swap ETH
+        def rule_xSwapNative(
+            self, st_sender, st_dstToken, st_dstAddress, st_native_amount, st_dstChain
         ):
-            args = (st_egressParams, st_egressReceiver)
+            args = (st_dstChain, st_dstAddress, st_dstToken)
             toLog = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     print(
-                        "        REV_MSG_GOV_SUSPENDED _swapNative",
+                        "        REV_MSG_GOV_SUSPENDED _xSwapNative",
                     )
-                    self.v.swapNative(*args, {"from": st_sender})
+                    self.v.xSwapNative(*args, {"from": st_sender})
             else:
-                if self.swapsEnabled:
+                if st_native_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xSwapNative", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xSwapNative(
+                            *args,
+                            {"from": st_sender, "amount": st_native_amount},
+                        )
+                else:
+                    if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
+                        print("                    rule_xSwapNative", *toLog)
+                        tx = self.v.xSwapNative(
+                            *args,
+                            {"from": st_sender, "amount": st_native_amount},
+                        )
+                        assert (
+                            web3.eth.get_balance(self.v.address)
+                            == self.nativeBals[self.v.address] + st_native_amount
+                        )
+                        self.nativeBals[self.v.address] += st_native_amount
+                        self.nativeBals[st_sender] -= st_native_amount
+                        assert tx.events["SwapNative"][0].values() == [
+                            st_dstChain,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
+                            st_native_amount,
+                            st_sender,
+                        ]
+
+        # Swap Token
+        def rule_xSwapToken(
+            self,
+            st_sender,
+            st_dstToken,
+            st_dstAddress,
+            st_token_amount,
+            st_token,
+            st_dstChain,
+        ):
+            args = (
+                st_dstChain,
+                st_dstAddress,
+                st_dstToken,
+                st_token,
+                st_token_amount,
+            )
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print("        REV_MSG_GOV_SUSPENDED _xSwapToken")
+                    self.v.xSwapToken(
+                        *args,
+                        {"from": st_sender},
+                    )
+            else:
+                if st_token_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xSwapToken", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xSwapToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                    if st_token.balanceOf(st_sender) < st_token_amount:
+                        print("        REV_MSG_ERC20_EXCEED_BAL _xSwapToken", *toLog)
+                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                            self.v.xSwapToken(
+                                *args,
+                                {"from": st_sender},
+                            )
+                    else:
+                        print("                    rule_xSwapToken", *toLog)
+                        tx = self.v.xSwapToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+
+                        if st_token == self.tokenA:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenABals[self.v.address] + st_token_amount
+                            )
+                            self.tokenABals[self.v.address] += st_token_amount
+                            self.tokenABals[st_sender] -= st_token_amount
+                        elif st_token == self.tokenB:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenBBals[self.v.address] + st_token_amount
+                            )
+                            self.tokenBBals[self.v.address] += st_token_amount
+                            self.tokenBBals[st_sender] -= st_token_amount
+                        else:
+                            assert False, "Panicc"
+
+                        assert tx.events["SwapToken"][0].values() == [
+                            st_dstChain,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
+                            st_token,
+                            st_token_amount,
+                            st_sender,
+                        ]
+
+        def rule_xCallNative(
+            self,
+            st_sender,
+            st_dstToken,
+            st_dstAddress,
+            st_native_amount,
+            st_dstChain,
+            st_message,
+            st_dstNativeBudget,
+            st_refundAddress,
+        ):
+            args = (
+                st_dstChain,
+                st_dstAddress,
+                st_dstToken,
+                st_message,
+                st_dstNativeBudget,
+                st_refundAddress,
+            )
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _xCallNative",
+                    )
+                    self.v.xCallNative(*args, {"from": st_sender})
+            else:
+                if self.xCallsEnabled:
                     if st_native_amount == 0:
-                        print("        REV_MSG_NZ_UINT _swapNative", *toLog)
+                        print("        REV_MSG_NZ_UINT _xCallNative", *toLog)
                         with reverts(REV_MSG_NZ_UINT):
-                            self.v.swapNative(
+                            self.v.xCallNative(
                                 *args,
                                 {"from": st_sender, "amount": st_native_amount},
                             )
                     else:
                         if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
-                            print("                    rule_swapNative", *toLog)
-                            tx = self.v.swapNative(
+                            print("                    rule_xCallNative", *toLog)
+                            tx = self.v.xCallNative(
                                 *args,
                                 {"from": st_sender, "amount": st_native_amount},
                             )
@@ -887,54 +1024,70 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                             )
                             self.nativeBals[self.v.address] += st_native_amount
                             self.nativeBals[st_sender] -= st_native_amount
-                            assert tx.events["SwapNative"]["amount"] == st_native_amount
-                            assert (
-                                tx.events["SwapNative"]["egressParams"]
-                                == st_egressParams
-                            )
-                            assert tx.events["SwapNative"][
-                                "egressReceiver"
-                            ] == "0x" + cleanHexStr(st_egressReceiver)
+                            assert tx.events["XCallNative"][0].values() == [
+                                st_dstChain,
+                                hexStr(st_dstAddress),
+                                st_dstToken,
+                                st_native_amount,
+                                st_sender,
+                                hexStr(st_message),
+                                st_dstNativeBudget,
+                                hexStr(st_refundAddress),
+                            ]
 
-        # Swap Token
-        def rule_swapToken(
+        def rule_xCallToken(
             self,
             st_sender,
-            st_egressParams,
-            st_egressReceiver,
+            st_dstToken,
+            st_dstAddress,
             st_token_amount,
             st_token,
+            st_dstChain,
+            st_message,
+            st_dstNativeBudget,
+            st_refundAddress,
         ):
-            args = (st_egressParams, st_egressReceiver, st_token, st_token_amount)
+            args = (
+                st_dstChain,
+                st_dstAddress,
+                st_dstToken,
+                st_message,
+                st_dstNativeBudget,
+                st_token,
+                st_token_amount,
+                st_refundAddress,
+            )
             toLog = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    print("        REV_MSG_GOV_SUSPENDED _swapToken")
-                    self.v.swapToken(
+                    print("        REV_MSG_GOV_SUSPENDED _xCallToken")
+                    self.v.xCallToken(
                         *args,
                         {"from": st_sender},
                     )
             else:
-                if self.swapsEnabled:
+                if self.xCallsEnabled:
                     if st_token_amount == 0:
-                        print("        REV_MSG_NZ_UINT _swapToken", *toLog)
+                        print("        REV_MSG_NZ_UINT _xCallToken", *toLog)
                         with reverts(REV_MSG_NZ_UINT):
-                            self.v.swapToken(
+                            self.v.xCallToken(
                                 *args,
                                 {"from": st_sender},
                             )
                     else:
                         st_token.approve(self.v, st_token_amount, {"from": st_sender})
                         if st_token.balanceOf(st_sender) < st_token_amount:
-                            print("        REV_MSG_ERC20_EXCEED_BAL _swapToken", *toLog)
+                            print(
+                                "        REV_MSG_ERC20_EXCEED_BAL _xCallToken", *toLog
+                            )
                             with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                                self.v.swapToken(
+                                self.v.xCallToken(
                                     *args,
                                     {"from": st_sender},
                                 )
                         else:
-                            print("                    rule_swapToken", *toLog)
-                            tx = self.v.swapToken(
+                            print("                    rule_xCallToken", *toLog)
+                            tx = self.v.xCallToken(
                                 *args,
                                 {"from": st_sender},
                             )
@@ -956,18 +1109,187 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
                             else:
                                 assert False, "Panicc"
 
-                            assert tx.events["SwapToken"]["amount"] == st_token_amount
-                            assert (
-                                tx.events["SwapToken"]["egressParams"]
-                                == st_egressParams
+                            assert tx.events["XCallToken"][0].values() == [
+                                st_dstChain,
+                                hexStr(st_dstAddress),
+                                st_dstToken,
+                                st_token,
+                                st_token_amount,
+                                st_sender,
+                                hexStr(st_message),
+                                st_dstNativeBudget,
+                                hexStr(st_refundAddress),
+                            ]
+
+        def rule_executexSwapAndCall_native(
+            self,
+            st_sender,
+            st_dstAddress,
+            st_native_amount,
+            st_dstChain,
+            st_message,
+        ):
+            # just to not create even more strategies
+            st_srcAddress = st_dstAddress
+            st_srcChain = st_dstChain
+
+            message = hexStr(st_message)
+            args = [
+                [NATIVE_ADDR, self.cfReceiverMock, st_native_amount],
+                st_srcChain,
+                st_srcAddress,
+                message,
+            ]
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _executexSwapAndCall",
+                    )
+                    signed_call_km(
+                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                    )
+            else:
+                if st_native_amount == 0:
+                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                        )
+                else:
+                    if web3.eth.get_balance(self.v.address) >= st_native_amount:
+                        print("                    rule_executexSwapAndCall", *toLog)
+                        tx = signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                        )
+                        assert (
+                            web3.eth.get_balance(self.v.address)
+                            == self.nativeBals[self.v.address] - st_native_amount
+                        )
+                        self.nativeBals[self.v.address] -= st_native_amount
+                        assert tx.events["ReceivedxSwapAndCall"][0].values() == [
+                            st_srcChain,
+                            hexStr(st_srcAddress),
+                            message,
+                            NATIVE_ADDR,
+                            st_native_amount,
+                            st_native_amount,
+                        ]
+
+        def rule_executexSwapAndCall_token(
+            self,
+            st_sender,
+            st_dstAddress,
+            st_token_amount,
+            st_token,
+            st_dstChain,
+            st_message,
+        ):
+            # just to not create even more strategies
+            st_srcAddress = st_dstAddress
+            st_srcChain = st_dstChain
+
+            message = hexStr(st_message)
+            args = [
+                [st_token, self.cfReceiverMock, st_token_amount],
+                st_srcChain,
+                st_srcAddress,
+                message,
+            ]
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print("        REV_MSG_GOV_SUSPENDED _executexSwapAndCall")
+                    signed_call_km(
+                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                    )
+            else:
+                if st_token_amount == 0:
+                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                        )
+                else:
+                    if st_token.balanceOf(self.v.address) < st_token_amount:
+                        print(
+                            "        REV_MSG_ERC20_EXCEED_BAL _executexSwapAndCall",
+                            *toLog,
+                        )
+                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                            signed_call_km(
+                                self.km,
+                                self.v.executexSwapAndCall,
+                                *args,
+                                sender=st_sender,
                             )
-                            assert tx.events["SwapToken"][
-                                "egressReceiver"
-                            ] == "0x" + cleanHexStr(st_egressReceiver)
+                    else:
+                        print("                    rule_executexSwapAndCall", *toLog)
+                        tx = signed_call_km(
+                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                        )
+
+                        if st_token == self.tokenA:
                             assert (
-                                tx.events["SwapToken"]["ingressToken"]
-                                == st_token.address
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenABals[self.v.address] - st_token_amount
                             )
+                            self.tokenABals[self.v.address] -= st_token_amount
+                        elif st_token == self.tokenB:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenBBals[self.v.address] - st_token_amount
+                            )
+                            self.tokenBBals[self.v.address] -= st_token_amount
+                        else:
+                            assert False, "Panicc"
+
+                        assert tx.events["ReceivedxSwapAndCall"][0].values() == [
+                            st_srcChain,
+                            hexStr(st_srcAddress),
+                            message,
+                            st_token,
+                            st_token_amount,
+                            0,
+                        ]
+
+        def rule_executexCall(
+            self,
+            st_sender,
+            st_dstAddress,
+            st_dstChain,
+            st_message,
+        ):
+            # just to not create even more strategies
+            st_srcAddress = st_dstAddress
+            st_srcChain = st_dstChain
+
+            message = hexStr(st_message)
+            args = [
+                self.cfReceiverMock,
+                st_srcChain,
+                st_srcAddress,
+                message,
+            ]
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _executexCall",
+                    )
+                    signed_call_km(
+                        self.km, self.v.executexCall, *args, sender=st_sender
+                    )
+            else:
+                print("                    rule_executexCall", *toLog)
+                tx = signed_call_km(
+                    self.km, self.v.executexCall, *args, sender=st_sender
+                )
+                assert tx.events["ReceivedxCall"][0].values() == [
+                    st_srcChain,
+                    hexStr(st_srcAddress),
+                    message,
+                ]
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):
@@ -990,7 +1312,7 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
         def invariant_state_vars(self):
             assert self.communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.suspended == self.v.getSuspendedState()
-            assert self.swapsEnabled == self.v.getSwapsEnabled()
+            assert self.xCallsEnabled == self.v.getxCallsEnabled()
 
             ## Check that there are contracts in the deposit Addresses
             for addr in self.deployedDeposits.values():
@@ -1000,4 +1322,6 @@ def test_vault(BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token):
         def teardown(self):
             print(f"Total rules executed = {self.numTxsTested-1}")
 
-    state_machine(StateMachine, a, cfDeploy, Deposit, Token, settings=settings)
+    state_machine(
+        StateMachine, a, cfDeploy, Deposit, Token, cfReceiverMock, settings=settings
+    )

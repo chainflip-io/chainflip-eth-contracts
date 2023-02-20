@@ -48,6 +48,16 @@ Flags:
 - `--coverage` - generates and updates the test coverage report under reports/coverage.json
 - `--hypothesis-seed <SEED>` - Inputs a seed (int) to the hypothesis strategies. Useful to deterministically reproduce tests failures and for accurate gas comparisons when doing gas optimizations.
 
+### Static Analysis
+
+Slither is used for static analysis. Inside the poetry shell:
+
+```bash
+slither .
+```
+
+In the event of the command failing, try removing the `build/` directory and run it again.
+
 ### Linter
 
 We use solhint and prettier for the solidity code and black for the python code. A general check is performed also in CI.

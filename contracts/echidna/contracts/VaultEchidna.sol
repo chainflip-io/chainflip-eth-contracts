@@ -36,29 +36,78 @@ contract VaultEchidna is IShared {
         v.fetchBatch(sigData, fetchParamsArray);
     }
 
-    function swapNative(string calldata egressParams, bytes32 egressReceiver) external virtual {
-        v.swapNative(egressParams, egressReceiver);
+    function xSwapNative(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken
+    ) external payable virtual {
+        v.xSwapNative{value: msg.value}(dstChain, dstAddress, dstToken);
     }
 
-    function swapToken(
-        string calldata egressParams,
-        bytes32 egressReceiver,
-        IERC20 ingressToken,
+    function xSwapToken(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken,
+        IERC20 srcToken,
         uint256 amount
     ) external virtual {
-        v.swapToken(egressParams, egressReceiver, ingressToken, amount);
+        v.xSwapToken(dstChain, dstAddress, dstToken, srcToken, amount);
     }
 
-    function govWithdraw(IERC20[] calldata tokens) external virtual {
+    function xCallNative(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken,
+        bytes calldata message,
+        uint256 dstNativeGas,
+        bytes calldata refundAddress
+    ) external payable virtual {
+        v.xCallNative{value: msg.value}(dstChain, dstAddress, dstToken, message, dstNativeGas, refundAddress);
+    }
+
+    function xCallToken(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken,
+        bytes calldata message,
+        uint256 dstNativeGas,
+        IERC20 srcToken,
+        uint256 amount,
+        bytes calldata refundAddress
+    ) external virtual {
+        v.xCallToken(dstChain, dstAddress, dstToken, message, dstNativeGas, srcToken, amount, refundAddress);
+    }
+
+    function executexSwapAndCall(
+        SigData calldata sigData,
+        TransferParams calldata transferParams,
+        uint32 srcChain,
+        bytes calldata srcAddress,
+        bytes calldata message
+    ) external virtual {
+        v.executexSwapAndCall(sigData, transferParams, srcChain, srcAddress, message);
+    }
+
+    function executexCall(
+        SigData calldata sigData,
+        address recipient,
+        uint32 srcChain,
+        bytes calldata srcAddress,
+        bytes calldata message
+    ) external virtual {
+        v.executexCall(sigData, recipient, srcChain, srcAddress, message);
+    }
+
+    function govWithdraw(address[] calldata tokens) external virtual {
         v.govWithdraw(tokens);
     }
 
-    function enableSwaps() external virtual {
-        v.enableSwaps();
+    function enablexCalls() external virtual {
+        v.enablexCalls();
     }
 
-    function disableSwaps() external virtual {
-        v.disableSwaps();
+    function disablexCalls() external virtual {
+        v.disablexCalls();
     }
 
     // Expose AggKeyNonceConsumer functions to Echidna

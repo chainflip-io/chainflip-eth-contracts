@@ -131,7 +131,7 @@ def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths
 
     test_release_all(addrs, cf, tokenVestingStaking, maths)
 
-    # Mimic rewards recieved from staking
+    # Mimic rewards received from staking
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
     tx = tv.release(cf.flip, {"from": addrs.INVESTOR})

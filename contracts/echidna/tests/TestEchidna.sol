@@ -62,8 +62,8 @@ contract TestEchidna is Deployer {
         return sm.getMinimumStake() == minStake;
     }
 
-    function echidna_swapsEnabled() external view returns (bool) {
-        return !v.getSwapsEnabled();
+    function echidna_xCallsEnabled() external view returns (bool) {
+        return !v.getxCallsEnabled();
     }
 
     // No signature has been validated
@@ -105,7 +105,7 @@ contract TestEchidna is Deployer {
         }
     }
 
-    // Proxy for a signed function - Assert if the call is not reverted
+    // Proxies for a signed function - Assert if the call is not reverted
     function allBatch_revert(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,
@@ -113,6 +113,20 @@ contract TestEchidna is Deployer {
         TransferParams[] calldata transferParamsArray
     ) external {
         try v.allBatch(sigData, deployFetchParamsArray, fetchParamsArray, transferParamsArray) {
+            assert(false);
+        } catch {
+            assert(true);
+        }
+    }
+
+    function executexSwapAndCall_revert(
+        SigData calldata sigData,
+        TransferParams calldata transferParams,
+        uint32 srcChain,
+        bytes calldata srcAddress,
+        bytes calldata message
+    ) external {
+        try v.executexSwapAndCall(sigData, transferParams, srcChain, srcAddress, message) {
             assert(false);
         } catch {
             assert(true);

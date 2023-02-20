@@ -202,3 +202,37 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
     return tv, cliff, end, total
+
+
+# Deploy CFReceiver Mock contracts for testing purposes
+
+
+@pytest.fixture(scope="module")
+def cfReceiverMock(cf, CFReceiverMock):
+    return cf.DEPLOYER.deploy(CFReceiverMock, cf.vault)
+
+
+@pytest.fixture(scope="module")
+def cfReceiverFailMock(cf, CFReceiverFailMock):
+    return cf.DEPLOYER.deploy(CFReceiverFailMock, cf.vault)
+
+
+@pytest.fixture(scope="module")
+def cfReceiverTryMock(cf, cfReceiverFailMock, CFReceiverTryMock):
+    return cf.DEPLOYER.deploy(CFReceiverTryMock, cf.vault, cfReceiverFailMock)
+
+
+@pytest.fixture(scope="module")
+def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
+    srcChain = 1
+    dexMock = cf.DEPLOYER.deploy(DEXMock)
+    dexAggSrcChainMock = cf.DEPLOYER.deploy(DexAggSrcChainMock, cf.vault)
+    dexAggDstChainMock = cf.DEPLOYER.deploy(
+        DexAggDstChainMock, cf.vault, srcChain, toHex(dexAggSrcChainMock.address)
+    )
+    return (dexMock, dexAggSrcChainMock, dexAggDstChainMock, srcChain)
+
+
+@pytest.fixture(scope="module")
+def cfLoopbackMock(cf, LoopBackMock):
+    return cf.DEPLOYER.deploy(LoopBackMock, cf.vault)

@@ -9,6 +9,19 @@ def cleanHexStr(thing):
     return thing[2:] if thing[:2] == "0x" else thing
 
 
+def hexStr(thing):
+    thing = toHex(thing)
+    return "0x" + thing
+
+
+def toHex(thing):
+    if isinstance(thing, int):
+        thing = hex(thing)
+    elif not isinstance(thing, str):
+        thing = thing.hex()
+    return thing
+
+
 def cleanHexStrPad(thing):
     thing = cleanHexStr(thing)
     return ("0" * (64 - len(thing))) + thing

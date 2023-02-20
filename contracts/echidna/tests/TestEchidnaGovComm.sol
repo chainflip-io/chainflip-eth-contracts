@@ -117,15 +117,15 @@ contract TestEchidnaGovComm is Deployer {
         assert(sm.getMinimumStake() == minStake);
     }
 
-    // Swaps enabled
-    function enableSwaps() external override {
-        v.enableSwaps();
-        assert(v.getSwapsEnabled() == true);
+    // xCalls enabled
+    function enablexCalls() external override {
+        v.enablexCalls();
+        assert(v.getxCallsEnabled() == true);
     }
 
-    function disableSwaps() external override {
-        v.disableSwaps();
-        assert(v.getSwapsEnabled() == false);
+    function disablexCalls() external override {
+        v.disablexCalls();
+        assert(v.getxCallsEnabled() == false);
     }
 
     function checkwhitelistAddrs() external {

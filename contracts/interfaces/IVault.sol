@@ -1,6 +1,5 @@
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
 
@@ -39,17 +38,75 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                        Swaps                             //
+    //         Initiate cross-chain swaps (source chain)        //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function swapNative(string calldata egressChainAndToken, bytes32 egressAddress) external payable;
-
-    function swapToken(
-        string calldata egressChainAndToken,
-        bytes32 egressAddress,
-        IERC20 ingressToken,
+    function xSwapToken(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken,
+        IERC20 srcToken,
         uint256 amount
+    ) external;
+
+    function xSwapNative(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken
+    ) external payable;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //     Initiate cross-chain call and swap (source chain)    //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function xCallNative(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken,
+        bytes calldata message,
+        uint256 dstNativeBudget,
+        bytes calldata refundAddress
+    ) external payable;
+
+    function xCallToken(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint16 dstToken,
+        bytes calldata message,
+        uint256 dstNativeBudget,
+        IERC20 srcToken,
+        uint256 amount,
+        bytes calldata refundAddress
+    ) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //      Execute cross-chain call and swap (dest. chain)     //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function executexSwapAndCall(
+        SigData calldata sigData,
+        TransferParams calldata transferParams,
+        uint32 srcChain,
+        bytes calldata srcAddress,
+        bytes calldata message
+    ) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //          Execute cross-chain call (dest. chain)          //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+    function executexCall(
+        SigData calldata sigData,
+        address recipient,
+        uint32 srcChain,
+        bytes calldata srcAddress,
+        bytes calldata message
     ) external;
 
     //////////////////////////////////////////////////////////////
@@ -58,11 +115,11 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function govWithdraw(IERC20[] calldata tokens) external;
+    function govWithdraw(address[] calldata tokens) external;
 
-    function enableSwaps() external;
+    function enablexCalls() external;
 
-    function disableSwaps() external;
+    function disablexCalls() external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -70,5 +127,5 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function getSwapsEnabled() external view returns (bool);
+    function getxCallsEnabled() external view returns (bool);
 }
