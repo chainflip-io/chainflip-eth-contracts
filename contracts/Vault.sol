@@ -236,16 +236,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             }
         } else {
             // solhint-disable-next-line avoid-low-level-calls
-            (bool success, bytes memory reason) = token.call(
+            (bool success, bytes memory returndata) = token.call(
                 abi.encodeWithSelector(IERC20(token).transfer.selector, recipient, amount)
             );
             if (!success) {
-                emit TransferTokenFailed(recipient, amount, token, reason);
+                emit TransferTokenFailed(recipient, amount, token, returndata);
+            } else {
+                if (returndata.length > 0) {
+                    if (abi.decode(returndata, (bool)) == false) {
+                        emit TransferTokenFailed(recipient, amount, token, returndata);
+                    }
+                }
             }
-
-            // try IERC20(token).transfer(recipient, amount) {} catch (bytes memory reason) {
-            //     emit TransferTokenFailed(recipient, amount, token, reason);
-            // }
         }
     }
 
