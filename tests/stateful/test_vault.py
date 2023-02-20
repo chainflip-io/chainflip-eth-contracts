@@ -210,12 +210,8 @@ def test_vault(
 
             tranMinLen = trimToShortest([st_recips, st_native_amounts])
             tranTokens = choices(self.tokensList, k=tranMinLen)
-            tranTotals = {
-                tok: sum(
-                    [st_native_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
-                )
-                for tok in self.tokensList
-            }
+
+            tranTotals = {}
             validEthIdxs = getValidTranIdxs(
                 tranTokens,
                 st_native_amounts,
@@ -227,6 +223,34 @@ def test_vault(
                     st_native_amounts[i]
                     for i, x in enumerate(tranTokens)
                     if x == NATIVE_ADDR and i in validEthIdxs
+                ]
+            )
+
+            validTokAIdxs = getValidTranIdxs(
+                tranTokens,
+                st_native_amounts,
+                self.tokenABals[self.v.address] + fetchTokenATotal,
+                self.tokenA,
+            )
+            tranTotals[self.tokenA] = sum(
+                [
+                    st_native_amounts[i]
+                    for i, x in enumerate(tranTokens)
+                    if x == self.tokenA and i in validTokAIdxs
+                ]
+            )
+
+            validTokBIdxs = getValidTranIdxs(
+                tranTokens,
+                st_native_amounts,
+                self.tokenBBals[self.v.address] + fetchTokenBTotal,
+                self.tokenB,
+            )
+            tranTotals[self.tokenB] = sum(
+                [
+                    st_native_amounts[i]
+                    for i, x in enumerate(tranTokens)
+                    if x == self.tokenB and i in validTokBIdxs
                 ]
             )
 
@@ -257,8 +281,9 @@ def test_vault(
                 > self.tokenBBals[self.v.address]
             ):
                 print("        NOT ENOUGH TOKENS IN VAULT rule_allBatch", *toLog)
-                with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
+                tx = signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
+                # There might be multiple failures, so just check that there is at least one
+                assert len(tx.events["TransferTokenFailed"]) >= 1
             else:
                 print("                    rule_allBatch", *toLog)
                 signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
@@ -306,11 +331,13 @@ def test_vault(
                             self.nativeBals[rec] += am
                             self.nativeBals[self.v.address] -= am
                     elif tok == self.tokenA:
-                        self.tokenABals[rec] += am
-                        self.tokenABals[self.v.address] -= am
+                        if i in validTokAIdxs:
+                            self.tokenABals[rec] += am
+                            self.tokenABals[self.v.address] -= am
                     elif tok == self.tokenB:
-                        self.tokenBBals[rec] += am
-                        self.tokenBBals[self.v.address] -= am
+                        if i in validTokBIdxs:
+                            self.tokenBBals[rec] += am
+                            self.tokenBBals[self.v.address] -= am
                     else:
                         assert False, "Panic"
 
@@ -335,8 +362,8 @@ def test_vault(
 
             elif bals[self.v.address] < st_native_amount and tokenAddr != NATIVE_ADDR:
                 print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
-                with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
+                tx = signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
+                assert len(tx.events["TransferTokenFailed"]) == 1
 
             else:
                 print("                    _vault_transfer", *toLog)
