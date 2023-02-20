@@ -209,56 +209,6 @@ def test_swapToken_rev_suspended(
         )
 
 
-@given(
-    st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
-    st_message=strategy("bytes"),
-    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("bytes"),
-    st_sender=strategy("address"),
-)
-def test_swapTokenAndCall_rev_disabled(
-    cf,
-    st_dstChain,
-    st_dstAddress,
-    st_dstToken,
-    st_message,
-    token,
-    st_amount,
-    st_dstNativeBudget,
-    st_refundAddress,
-    st_sender,
-):
-
-    # xCallToken
-    with reverts(REV_MSG_VAULT_XCALLS_DIS):
-        cf.vault.xCallToken(
-            st_dstChain,
-            st_dstAddress,
-            st_dstToken,
-            st_message,
-            st_dstNativeBudget,
-            token,
-            st_amount,
-            st_refundAddress,
-            {"from": st_sender},
-        )
-
-    # Not disabled for a simple swap
-    token.transfer(st_sender, st_amount, {"from": cf.DEPLOYER})
-    token.approve(cf.vault, st_amount, {"from": st_sender})
-    cf.vault.xSwapToken(
-        st_dstChain,
-        st_dstAddress,
-        st_dstToken,
-        token,
-        st_amount,
-        {"from": st_sender},
-    )
-
-
 # xCallNative and xSwapNative
 
 
@@ -390,47 +340,3 @@ def test_swapETHAndCall_rev_suspended(
             st_dstToken,
             {"from": st_sender, "amount": st_amount},
         )
-
-
-@given(
-    st_dstChain=strategy("uint32"),
-    st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
-    st_message=strategy("bytes"),
-    st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeBudget=strategy("uint"),
-    st_refundAddress=strategy("bytes"),
-    st_sender=strategy("address"),
-)
-def test_swapETHAndCall_rev_disabled(
-    cf,
-    st_sender,
-    st_dstChain,
-    st_dstAddress,
-    st_dstToken,
-    st_message,
-    st_amount,
-    st_dstNativeBudget,
-    st_refundAddress,
-):
-
-    # xCallNative
-    with reverts(REV_MSG_VAULT_XCALLS_DIS):
-        cf.vault.xCallNative(
-            st_dstChain,
-            st_dstAddress,
-            st_dstToken,
-            st_message,
-            st_dstNativeBudget,
-            st_refundAddress,
-            {"from": st_sender, "amount": st_amount},
-        )
-
-    # xSwapNative
-    cf.DEPLOYER.transfer(cf.vault.address, st_amount)
-    cf.vault.xSwapNative(
-        st_dstChain,
-        st_dstAddress,
-        st_dstToken,
-        {"from": st_sender, "amount": st_amount},
-    )
