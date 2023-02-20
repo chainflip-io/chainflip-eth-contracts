@@ -363,14 +363,15 @@ def test_vault(
                 with reverts(REV_MSG_NZ_UINT):
                     signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
-            elif bals[self.v.address] < st_native_amount and tokenAddr != NATIVE_ADDR:
-                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
+            else:
                 tx = signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
+
+            if bals[self.v.address] < st_native_amount and tokenAddr != NATIVE_ADDR:
+                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
                 assert len(tx.events["TransferTokenFailed"]) == 1
 
             else:
                 print("                    _vault_transfer", *toLog)
-                signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
                 if bals[self.v.address] >= st_native_amount or tokenAddr != NATIVE_ADDR:
                     bals[self.v.address] -= st_native_amount

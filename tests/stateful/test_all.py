@@ -389,7 +389,7 @@ def test_all(
             validTokAIdxs = getValidTranIdxs(
                 tranTokens,
                 st_native_amounts,
-                self.tokenABals[self.v.address] + fetchTokenATotal,
+                self.tokenABals[self.v] + fetchTokenATotal,
                 self.tokenA,
             )
             tranTotals[self.tokenA] = sum(
@@ -403,7 +403,7 @@ def test_all(
             validTokBIdxs = getValidTranIdxs(
                 tranTokens,
                 st_native_amounts,
-                self.tokenBBals[self.v.address] + fetchTokenBTotal,
+                self.tokenBBals[self.v] + fetchTokenBTotal,
                 self.tokenB,
             )
             tranTotals[self.tokenB] = sum(
@@ -571,9 +571,9 @@ def test_all(
                 else:
                     print("                    _vault_transfer", *toLog)
 
-                if bals[self.v] >= st_native_amount or tokenAddr != NATIVE_ADDR:
-                    bals[self.v] -= st_native_amount
-                    bals[st_recip] += st_native_amount
+                    if bals[self.v] >= st_native_amount or tokenAddr != NATIVE_ADDR:
+                        bals[self.v] -= st_native_amount
+                        bals[st_recip] += st_native_amount
                 self.lastValidateTime = tx.timestamp
 
         def rule_vault_transfer_native(self, st_sender, st_recip, st_native_amount):
