@@ -236,13 +236,3 @@ def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
 @pytest.fixture(scope="module")
 def cfLoopbackMock(cf, LoopBackMock):
     return cf.DEPLOYER.deploy(LoopBackMock, cf.vault)
-
-
-@pytest.fixture(scope="module")
-def mockUsdc(cf, MockUSDC):
-    return cf.DEPLOYER.deploy(MockUSDC, "USD Coin", "USDC", INIT_USDC_SUPPLY)
-
-
-@pytest.fixture(scope="module")
-def utils(cf, Utils):
-    return cf.DEPLOYER.deploy(Utils)
