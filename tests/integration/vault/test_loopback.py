@@ -15,8 +15,6 @@ def test_loopback_executexSwapAndCall_native(
     cf, cfLoopbackMock, st_sender, st_amount, st_message, st_srcChain, st_srcAddress
 ):
 
-    cf.vault.enablexCalls({"from": cf.gov})
-
     # Fund Vault
     cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
 
@@ -66,8 +64,6 @@ def test_loopback_executexSwapAndCall_token(
     token,
 ):
 
-    cf.vault.enablexCalls({"from": cf.gov})
-
     # Fund Vault
     token.transfer(cf.vault, st_amount, {"from": cf.DEPLOYER})
 
@@ -109,9 +105,6 @@ def test_loopback_executexSwapAndCall_token(
 def test_loopback_executexCall_native(
     cf, cfLoopbackMock, st_sender, st_amount, st_message, st_srcChain, st_srcAddress
 ):
-
-    cf.vault.enablexCalls({"from": cf.gov})
-
     # Fund Loopback
     cf.DEPLOYER.transfer(cfLoopbackMock, st_amount)
 

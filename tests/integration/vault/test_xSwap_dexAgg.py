@@ -13,7 +13,6 @@ from brownie.test import given, strategy
 def test_dex_executexCallNative(
     cf, cfDexAggMock, token, token2, st_sender, st_dstChain, st_amount, st_recipient
 ):
-    cf.vault.enablexCalls({"from": cf.gov})
 
     # Avoid having to calculate the cases in where recipient==sender. This test is mimicking
     # cross-chain swaps so the recipient being the same as the sender is impossible.
@@ -123,8 +122,6 @@ def test_dex_executexCallNative(
 def test_dex_executexCallToken(
     cf, cfDexAggMock, token, token2, st_sender, st_dstChain, st_amount, st_recipient
 ):
-    cf.vault.enablexCalls({"from": cf.gov})
-
     # Avoid having to calculate the cases in where recipient==sender. This test is mimicking
     # cross-chain swaps so the recipient being the same as the sender is impossible.
     if st_sender == st_recipient:

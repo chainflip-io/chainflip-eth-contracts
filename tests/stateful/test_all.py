@@ -244,7 +244,6 @@ def test_all(
                 * (TOTAL_KEYS - len(self.keyIDToCurKeys.values()))
             )
             self.currentWhitelist = cfDeployAllWhitelist.whitelisted
-            self.xCallsEnabled = False
 
             # StakeManager
             self.totalStake = 0
@@ -1062,41 +1061,6 @@ def test_all(
                 )
                 self.lastValidateTime = tx.timestamp
 
-        # Enable swaps if they are disabled
-        def rule_enablexCalls(self, st_sender):
-            if not self.xCallsEnabled:
-                if st_sender != self.governor:
-                    with reverts(REV_MSG_GOV_GOVERNOR):
-                        print("        REV_MSG_GOV_GOVERNOR _enablexCalls", st_sender)
-                        self.v.enablexCalls({"from": st_sender})
-                # Always enable
-                print("                    rule_enablexCalls", st_sender)
-                self.v.enablexCalls({"from": self.governor})
-                self.xCallsEnabled = True
-            else:
-                print("        REV_MSG_VAULT_SWAPS_EN _enablexCalls", st_sender)
-                with reverts(REV_MSG_VAULT_SWAPS_EN):
-                    self.v.enablexCalls({"from": self.governor})
-
-        # Disable swaps if they are enabled (only 1/5 times)
-        def rule_disablexCalls(self, st_sender):
-            if self.xCallsEnabled:
-                if st_sender != self.governor:
-                    with reverts(REV_MSG_GOV_GOVERNOR):
-                        print("        REV_MSG_GOV_GOVERNOR _disablexCalls", st_sender)
-                        self.v.disablexCalls({"from": st_sender})
-                else:
-                    print("                    rule_disablexCalls", st_sender)
-                    self.v.disablexCalls({"from": st_sender})
-                    self.xCallsEnabled = False
-            else:
-                print(
-                    "        REV_MSG_GOV_DISABLED_GUARD _disablexCalls",
-                    st_sender,
-                )
-                with reverts(REV_MSG_VAULT_XCALLS_DIS):
-                    self.v.disablexCalls({"from": self.governor})
-
         # Swap Native
         def rule_xSwapNative(
             self, st_sender, st_dstToken, st_dstAddress, st_native_amount, st_dstChain
@@ -1238,37 +1202,36 @@ def test_all(
                     )
                     self.v.xCallNative(*args, {"from": st_sender})
             else:
-                if self.xCallsEnabled:
-                    if st_native_amount == 0:
-                        print("        REV_MSG_NZ_UINT _xCallNative", *toLog)
-                        with reverts(REV_MSG_NZ_UINT):
-                            self.v.xCallNative(
-                                *args,
-                                {"from": st_sender, "amount": st_native_amount},
-                            )
-                    else:
-                        if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
-                            print("                    rule_xCallNative", *toLog)
-                            tx = self.v.xCallNative(
-                                *args,
-                                {"from": st_sender, "amount": st_native_amount},
-                            )
-                            assert (
-                                web3.eth.get_balance(self.v.address)
-                                == self.nativeBals[self.v] + st_native_amount
-                            )
-                            self.nativeBals[self.v] += st_native_amount
-                            self.nativeBals[st_sender] -= st_native_amount
-                            assert tx.events["XCallNative"][0].values() == [
-                                st_dstChain,
-                                hexStr(st_dstAddress),
-                                st_dstToken,
-                                st_native_amount,
-                                st_sender,
-                                hexStr(st_message),
-                                st_dstNativeBudget,
-                                hexStr(st_refundAddress),
-                            ]
+                if st_native_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xCallNative", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xCallNative(
+                            *args,
+                            {"from": st_sender, "amount": st_native_amount},
+                        )
+                else:
+                    if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
+                        print("                    rule_xCallNative", *toLog)
+                        tx = self.v.xCallNative(
+                            *args,
+                            {"from": st_sender, "amount": st_native_amount},
+                        )
+                        assert (
+                            web3.eth.get_balance(self.v.address)
+                            == self.nativeBals[self.v] + st_native_amount
+                        )
+                        self.nativeBals[self.v] += st_native_amount
+                        self.nativeBals[st_sender] -= st_native_amount
+                        assert tx.events["XCallNative"][0].values() == [
+                            st_dstChain,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
+                            st_native_amount,
+                            st_sender,
+                            hexStr(st_message),
+                            st_dstNativeBudget,
+                            hexStr(st_refundAddress),
+                        ]
 
         def rule_xCallToken(
             self,
@@ -1301,60 +1264,57 @@ def test_all(
                         {"from": st_sender},
                     )
             else:
-                if self.xCallsEnabled:
-                    if st_token_amount == 0:
-                        print("        REV_MSG_NZ_UINT _xCallToken", *toLog)
-                        with reverts(REV_MSG_NZ_UINT):
+                if st_token_amount == 0:
+                    print("        REV_MSG_NZ_UINT _xCallToken", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.xCallToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                    if st_token.balanceOf(st_sender) < st_token_amount:
+                        print("        REV_MSG_ERC20_EXCEED_BAL _xCallToken", *toLog)
+                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
                             self.v.xCallToken(
                                 *args,
                                 {"from": st_sender},
                             )
                     else:
-                        st_token.approve(self.v, st_token_amount, {"from": st_sender})
-                        if st_token.balanceOf(st_sender) < st_token_amount:
-                            print(
-                                "        REV_MSG_ERC20_EXCEED_BAL _xCallToken", *toLog
+                        print("                    rule_xCallToken", *toLog)
+                        tx = self.v.xCallToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+
+                        if st_token == self.tokenA:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenABals[self.v] + st_token_amount
                             )
-                            with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                                self.v.xCallToken(
-                                    *args,
-                                    {"from": st_sender},
-                                )
+                            self.tokenABals[self.v] += st_token_amount
+                            self.tokenABals[st_sender] -= st_token_amount
+                        elif st_token == self.tokenB:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenBBals[self.v] + st_token_amount
+                            )
+                            self.tokenBBals[self.v] += st_token_amount
+                            self.tokenBBals[st_sender] -= st_token_amount
                         else:
-                            print("                    rule_xCallToken", *toLog)
-                            tx = self.v.xCallToken(
-                                *args,
-                                {"from": st_sender},
-                            )
+                            assert False, "Panicc"
 
-                            if st_token == self.tokenA:
-                                assert (
-                                    st_token.balanceOf(self.v.address)
-                                    == self.tokenABals[self.v] + st_token_amount
-                                )
-                                self.tokenABals[self.v] += st_token_amount
-                                self.tokenABals[st_sender] -= st_token_amount
-                            elif st_token == self.tokenB:
-                                assert (
-                                    st_token.balanceOf(self.v.address)
-                                    == self.tokenBBals[self.v] + st_token_amount
-                                )
-                                self.tokenBBals[self.v] += st_token_amount
-                                self.tokenBBals[st_sender] -= st_token_amount
-                            else:
-                                assert False, "Panicc"
-
-                            assert tx.events["XCallToken"][0].values() == [
-                                st_dstChain,
-                                hexStr(st_dstAddress),
-                                st_dstToken,
-                                st_token,
-                                st_token_amount,
-                                st_sender,
-                                hexStr(st_message),
-                                st_dstNativeBudget,
-                                hexStr(st_refundAddress),
-                            ]
+                        assert tx.events["XCallToken"][0].values() == [
+                            st_dstChain,
+                            hexStr(st_dstAddress),
+                            st_dstToken,
+                            st_token,
+                            st_token_amount,
+                            st_sender,
+                            hexStr(st_message),
+                            st_dstNativeBudget,
+                            hexStr(st_refundAddress),
+                        ]
 
         def rule_executexSwapAndCall_native(
             self,
@@ -2350,7 +2310,6 @@ def test_all(
                     self.v_communityGuardDisabled = False
                     self.communityKey = self.communityKey
                     self.v_suspended = False
-                    self.xCallsEnabled = False
 
                     # Deploy a new CFReceiverMock that receives from the new Vault
                     self.cfReceiverMock = st_sender.deploy(CFReceiverMock, self.v)
@@ -2855,7 +2814,6 @@ def test_all(
             assert self.sm_suspended == self.sm.getSuspendedState()
             assert self.v_communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.v_suspended == self.v.getSuspendedState()
-            assert self.xCallsEnabled == self.v.getxCallsEnabled()
             assert self.km.getLastValidateTime() == self.lastValidateTime
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim

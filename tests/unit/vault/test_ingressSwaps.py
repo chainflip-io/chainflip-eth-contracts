@@ -41,7 +41,6 @@ def test_swapToken(
                 {"from": st_sender},
             )
 
-        cf.vault.enablexCalls({"from": cf.gov})
         with reverts(REV_MSG_NZ_UINT):
             cf.vault.xCallToken(
                 st_dstChain,
@@ -82,7 +81,6 @@ def test_swapToken(
         ]
 
         # xCallToken
-        cf.vault.enablexCalls({"from": cf.gov})
         iniBalance = token.balanceOf(st_sender)
 
         token.approve(cf.vault, st_amount, {"from": st_sender})
@@ -145,8 +143,6 @@ def test_swapToken_rev_bal(
                 st_amount,
                 {"from": st_sender},
             )
-
-        cf.vault.enablexCalls({"from": cf.gov})
 
         # xCallToken
         with reverts(REV_MSG_ERC20_EXCEED_BAL):
@@ -297,7 +293,6 @@ def test_swapETHAndCall(
                 {"from": st_sender, "amount": st_amount},
             )
 
-        cf.vault.enablexCalls({"from": cf.gov})
         with reverts(REV_MSG_NZ_UINT):
             cf.vault.xCallNative(
                 st_dstChain,
@@ -329,8 +324,6 @@ def test_swapETHAndCall(
 
         # xCallNative
         iniBal = web3.eth.get_balance(cf.vault.address)
-
-        cf.vault.enablexCalls({"from": cf.gov})
 
         tx = cf.vault.xCallNative(
             st_dstChain,
