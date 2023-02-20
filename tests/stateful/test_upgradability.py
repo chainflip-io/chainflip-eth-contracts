@@ -163,7 +163,7 @@ def test_upgradability(
                     st_vault_transfer_amount,
                 )
                 tx = signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
-                assert tx.events["TransferFailed"][0].values() == [
+                assert tx.events["TransferNativeFailed"][0].values() == [
                     newVault.address,
                     st_vault_transfer_amount,
                 ]
