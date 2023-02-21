@@ -563,18 +563,24 @@ def test_all(
                 tx = signed_call_km(
                     self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                 )
+                self.lastValidateTime = tx.timestamp
 
-                if bals[self.v] < st_native_amount and tokenAddr != NATIVE_ADDR:
-                    print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
-                    assert len(tx.events["TransferTokenFailed"]) == 1
-
+                if bals[self.v] < st_native_amount:
+                    if tokenAddr != NATIVE_ADDR:
+                        print(
+                            "        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog
+                        )
+                        assert len(tx.events["TransferTokenFailed"]) == 1
+                    else:
+                        print(
+                            "        NOT ENOUGH NATIVE IN VAULT _vault_transfer", *toLog
+                        )
+                        assert len(tx.events["TransferNativeFailed"]) == 1
                 else:
                     print("                    _vault_transfer", *toLog)
 
-                    if bals[self.v] >= st_native_amount or tokenAddr != NATIVE_ADDR:
-                        bals[self.v] -= st_native_amount
-                        bals[st_recip] += st_native_amount
-                self.lastValidateTime = tx.timestamp
+                    bals[self.v] -= st_native_amount
+                    bals[st_recip] += st_native_amount
 
         def rule_vault_transfer_native(self, st_sender, st_recip, st_native_amount):
             self._vault_transfer(
