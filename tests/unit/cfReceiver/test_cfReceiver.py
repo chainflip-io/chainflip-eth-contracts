@@ -5,7 +5,7 @@ from brownie.test import given, strategy
 
 
 def test_constructor(cf, cfReceiverMock):
-    assert cfReceiverMock._cfVault() == cf.vault.address
+    assert cfReceiverMock.cfVault() == cf.vault.address
 
 
 @given(
@@ -52,3 +52,21 @@ def test_rev_cfReceivexCall_notVault(
         cfReceiverMock.cfReceivexCall(
             st_srcChain, st_srcAddress, st_message, {"from": st_sender}
         )
+
+
+@given(
+    st_sender=strategy("address"),
+    st_address=strategy("address"),
+)
+def test_rev_updateCfVault(
+    cf, cfReceiverMock, st_sender, st_address
+):
+    if st_sender != cf.DEPLOYER:
+        ## only owner can update the cfVault address
+        with reverts("CFReceiver: caller not owner"):
+            cfReceiverMock.updateCfVault(
+                st_address, {"from": st_sender}
+            )
+    else:
+        cfReceiverMock.updateCfVault(st_address, {"from": st_sender})
+        assert cfReceiverMock.cfVault() == st_address

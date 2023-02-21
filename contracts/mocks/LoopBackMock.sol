@@ -12,7 +12,7 @@ import "../interfaces/IVault.sol";
 contract LoopBackMock is CFReceiver, Shared {
     uint256 private constant DEFAULT_GAS = 200000;
 
-    constructor(address cfVault) CFReceiver(cfVault) nzAddr(cfVault) {}
+    constructor(address _cfVault) CFReceiver(_cfVault) nzAddr(_cfVault) {}
 
     function _cfReceive(
         uint32 srcChain,
@@ -24,7 +24,7 @@ contract LoopBackMock is CFReceiver, Shared {
         if (token == _NATIVE_ADDR) {
             // Just health check for this mock. It will never revert.
             require(msg.value == amount, "LoopbackMock: msg.value != amount");
-            IVault(_cfVault).xCallNative{value: amount}(
+            IVault(cfVault).xCallNative{value: amount}(
                 srcChain,
                 srcAddress,
                 0,
@@ -34,7 +34,7 @@ contract LoopBackMock is CFReceiver, Shared {
             );
         } else {
             require(IERC20(token).approve(msg.sender, amount));
-            IVault(_cfVault).xCallToken(
+            IVault(cfVault).xCallToken(
                 srcChain,
                 srcAddress,
                 1,
@@ -49,7 +49,7 @@ contract LoopBackMock is CFReceiver, Shared {
 
     function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal override {
         uint256 nativeBalance = address(this).balance;
-        IVault(_cfVault).xCallNative{value: nativeBalance}(
+        IVault(cfVault).xCallNative{value: nativeBalance}(
             srcChain,
             srcAddress,
             0,

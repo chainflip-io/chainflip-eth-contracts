@@ -185,7 +185,7 @@ def test_all(
             cls.cfReceiverMock = a[0].deploy(CFReceiverMock, cls.v.address)
             cls.orig_cfRec = cls.cfReceiverMock
 
-            assert cls.cfReceiverMock._cfVault() == cls.v.address
+            assert cls.cfReceiverMock.cfVault() == cls.v.address
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -1355,7 +1355,7 @@ def test_all(
             st_dstChain,
             st_message,
         ):
-            assert self.cfReceiverMock._cfVault() == self.v.address
+            assert self.cfReceiverMock.cfVault() == self.v.address
             signer = self._get_key_prob(AGG)
 
             # just to not create even more strategies
