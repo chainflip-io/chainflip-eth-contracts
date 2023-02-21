@@ -10,11 +10,7 @@ contract MockUSDC is ERC20 {
     address public blacklister;
     mapping(address => bool) internal blacklisted;
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint256 mintAmount
-    ) ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol, uint256 mintAmount) ERC20(name, symbol) {
         _mint(msg.sender, mintAmount);
         blacklister = msg.sender;
     }
@@ -24,14 +20,10 @@ contract MockUSDC is ERC20 {
     }
 
     // Override OZ's transfer function to add blacklist functionality
-    function transfer(address to, uint256 amount)
-        public
-        virtual
-        override
-        notBlacklisted(msg.sender)
-        notBlacklisted(to)
-        returns (bool)
-    {
+    function transfer(
+        address to,
+        uint256 amount
+    ) public virtual override notBlacklisted(msg.sender) notBlacklisted(to) returns (bool) {
         _transfer(msg.sender, to, amount);
         return true;
     }

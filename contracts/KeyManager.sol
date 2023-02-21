@@ -162,7 +162,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
      *                  the parity of the y component (uint8)
      */
-    function setAggKeyWithAggKey(SigData calldata sigData, Key calldata newAggKey)
+    function setAggKeyWithAggKey(
+        SigData calldata sigData,
+        Key calldata newAggKey
+    )
         external
         override
         nzKey(newAggKey)
@@ -187,14 +190,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
      *                  the parity of the y component (uint8)
      */
-    function setAggKeyWithGovKey(Key calldata newAggKey)
-        external
-        override
-        nzKey(newAggKey)
-        validAggKey(newAggKey)
-        timeoutEmergency
-        onlyGovernor
-    {
+    function setAggKeyWithGovKey(
+        Key calldata newAggKey
+    ) external override nzKey(newAggKey) validAggKey(newAggKey) timeoutEmergency onlyGovernor {
         emit AggKeySetByGovKey(_aggKey, newAggKey);
         _aggKey = newAggKey;
     }
@@ -207,7 +205,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param newGovKey The new governance key to be set.
 
      */
-    function setGovKeyWithAggKey(SigData calldata sigData, address newGovKey)
+    function setGovKeyWithAggKey(
+        SigData calldata sigData,
+        address newGovKey
+    )
         external
         override
         nzAddr(newGovKey)
@@ -243,7 +244,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @param newCommKey The new community key to be set.
 
      */
-    function setCommKeyWithAggKey(SigData calldata sigData, address newCommKey)
+    function setCommKeyWithAggKey(
+        SigData calldata sigData,
+        address newCommKey
+    )
         external
         override
         nzAddr(newCommKey)

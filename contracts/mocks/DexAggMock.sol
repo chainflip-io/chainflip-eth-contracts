@@ -107,11 +107,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
     );
     event ReceivedxCall(uint32 srcChain, bytes srcAddress, bytes message, uint256 nativeReceived);
 
-    constructor(
-        address cfVault,
-        uint256 srcChain,
-        bytes memory srcChainAddress
-    ) CFReceiver(cfVault) nzAddr(cfVault) {
+    constructor(address cfVault, uint256 srcChain, bytes memory srcChainAddress) CFReceiver(cfVault) nzAddr(cfVault) {
         _chainToAddress[srcChain] = srcChainAddress;
     }
 
@@ -153,11 +149,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
         IERC20(userToken).safeTransfer(userAddress, IERC20(userToken).balanceOf(address(this)));
     }
 
-    function _cfReceivexCall(
-        uint32 srcChain,
-        bytes calldata srcAddress,
-        bytes calldata message
-    ) internal override {
+    function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal override {
         emit ReceivedxCall(srcChain, srcAddress, message, msg.value);
     }
 
@@ -167,11 +159,7 @@ contract DexAggDstChainMock is CFReceiver, Shared {
 contract DEXMock is Shared {
     using SafeERC20 for IERC20;
 
-    function swapMock(
-        address tokenIn,
-        address tokenOut,
-        uint256 amount
-    ) external payable {
+    function swapMock(address tokenIn, address tokenOut, uint256 amount) external payable {
         if (tokenIn == _NATIVE_ADDR) {
             require(msg.value == amount, "DEXMock: Invalid amount");
         } else {

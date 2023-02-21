@@ -47,11 +47,7 @@ contract LoopBackMock is CFReceiver, Shared {
         }
     }
 
-    function _cfReceivexCall(
-        uint32 srcChain,
-        bytes calldata srcAddress,
-        bytes calldata message
-    ) internal override {
+    function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal override {
         uint256 nativeBalance = address(this).balance;
         IVault(_cfVault).xCallNative{value: nativeBalance}(
             srcChain,

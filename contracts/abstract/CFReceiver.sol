@@ -69,11 +69,7 @@ abstract contract CFReceiver is ICFReceiver {
     ) internal virtual;
 
     /// @dev Internal function to be overriden by the user's logic.
-    function _cfReceivexCall(
-        uint32 srcChain,
-        bytes calldata srcAddress,
-        bytes calldata message
-    ) internal virtual;
+    function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal virtual;
 
     /// @dev Check that the sender is the Chainflip's Vault.
     modifier onlyCfVault() {

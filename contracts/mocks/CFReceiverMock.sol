@@ -31,11 +31,7 @@ contract CFReceiverMock is CFReceiver, Shared {
         emit ReceivedxSwapAndCall(srcChain, srcAddress, message, token, amount, msg.value);
     }
 
-    function _cfReceivexCall(
-        uint32 srcChain,
-        bytes calldata srcAddress,
-        bytes calldata message
-    ) internal override {
+    function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal override {
         emit ReceivedxCall(srcChain, srcAddress, message);
     }
 }

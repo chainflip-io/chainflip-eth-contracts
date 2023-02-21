@@ -12,11 +12,7 @@ contract StakeManagerEchidna is IShared {
         sm.setFlip(flip);
     }
 
-    function stake(
-        bytes32 nodeID,
-        uint256 amount,
-        address returnAddr
-    ) external virtual {
+    function stake(bytes32 nodeID, uint256 amount, address returnAddr) external virtual {
         sm.getFLIP().approve(address(sm), amount);
         sm.stake(nodeID, amount, returnAddr);
     }

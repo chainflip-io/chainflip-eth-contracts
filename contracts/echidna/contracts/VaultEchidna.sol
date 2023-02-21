@@ -25,10 +25,10 @@ contract VaultEchidna is IShared {
         v.transferBatch(sigData, transferParamsArray);
     }
 
-    function deployAndFetchBatch(SigData calldata sigData, DeployFetchParams[] calldata deployFetchParamsArray)
-        external
-        virtual
-    {
+    function deployAndFetchBatch(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray
+    ) external virtual {
         v.deployAndFetchBatch(sigData, deployFetchParamsArray);
     }
 
@@ -36,11 +36,7 @@ contract VaultEchidna is IShared {
         v.fetchBatch(sigData, fetchParamsArray);
     }
 
-    function xSwapNative(
-        uint32 dstChain,
-        bytes calldata dstAddress,
-        uint16 dstToken
-    ) external payable virtual {
+    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint16 dstToken) external payable virtual {
         v.xSwapNative{value: msg.value}(dstChain, dstAddress, dstToken);
     }
 

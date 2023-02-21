@@ -48,11 +48,7 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      * @param returnAddr    The address which the staker requires to be used
      *                      when claiming back FLIP for `nodeID`
      */
-    function stake(
-        bytes32 nodeID,
-        uint256 amount,
-        address returnAddr
-    ) external;
+    function stake(bytes32 nodeID, uint256 amount, address returnAddr) external;
 
     /**
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
