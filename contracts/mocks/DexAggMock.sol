@@ -26,10 +26,10 @@ contract DexAggSrcChainMock is Shared {
 
     uint256 private constant DEFAULT_GAS = 200000;
 
-    address private _cfVault;
+    address public cfVault;
 
-    constructor(address cfVault) nzAddr(cfVault) {
-        _cfVault = cfVault;
+    constructor(address _cfVault) nzAddr(_cfVault) {
+        cfVault = _cfVault;
     }
 
     // Ingress Chain
@@ -47,7 +47,7 @@ contract DexAggSrcChainMock is Shared {
         // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstTokenAddr, userToken, userAddress);
-        IVault(_cfVault).xCallNative{value: msg.value}(
+        IVault(cfVault).xCallNative{value: msg.value}(
             dstChain,
             dstAddress,
             dstToken,
@@ -75,8 +75,8 @@ contract DexAggSrcChainMock is Shared {
         // selector along with other parameters that will be used in the destination chain's contract
         // in order to make the call to the DEXMock.
         bytes memory message = abi.encode(FUNC_SELECTOR, dexAddress, dstTokenAddr, userToken, userAddress);
-        require(IERC20(srcToken).approve(_cfVault, srcAmount));
-        IVault(_cfVault).xCallToken(
+        require(IERC20(srcToken).approve(cfVault, srcAmount));
+        IVault(cfVault).xCallToken(
             dstChain,
             dstAddress,
             dstToken,

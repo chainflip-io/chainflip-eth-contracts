@@ -19,11 +19,19 @@ import "../interfaces/ICFReceiver.sol";
 
 abstract contract CFReceiver is ICFReceiver {
     /// @dev    Chainflip's Vault address where xSwaps and xCalls will be originated from.
-    address public _cfVault;
+    address public cfVault;
+    address public owner;
 
-    constructor(address cfVault) {
-        _cfVault = cfVault;
+    constructor(address _cfVault) {
+        cfVault = _cfVault;
+        owner = msg.sender;
     }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                   CF Vault calls                         //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
 
     /**
      * @notice  Receiver of a cross-chain swap and call made by the Chainflip Protocol.
@@ -59,6 +67,12 @@ abstract contract CFReceiver is ICFReceiver {
         _cfReceivexCall(srcChain, srcAddress, message);
     }
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //             User's logic to be implemented               //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /// @dev Internal function to be overriden by the user's logic.
     function _cfReceive(
         uint32 srcChain,
@@ -71,9 +85,32 @@ abstract contract CFReceiver is ICFReceiver {
     /// @dev Internal function to be overriden by the user's logic.
     function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal virtual;
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                 Update Vault address                     //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev Update Chainflip's Vault address
+    function updateCfVault(address _cfVault) external override onlyOwner {
+        cfVault = _cfVault;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Modifiers                       //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /// @dev Check that the sender is the Chainflip's Vault.
     modifier onlyCfVault() {
-        require(msg.sender == _cfVault, "CFReceiver: caller not Chainflip sender");
+        require(msg.sender == cfVault, "CFReceiver: caller not Chainflip sender");
+        _;
+    }
+
+    /// @dev Check that the sender is the owner.
+    modifier onlyOwner() {
+        require(msg.sender == owner, "CFReceiver: caller not owner");
         _;
     }
 }
