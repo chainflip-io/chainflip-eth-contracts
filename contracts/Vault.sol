@@ -146,7 +146,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                  sig over that hash (uint) from the aggregate key
      * @param transferParams       The transfer parameters
      */
-    function transfer(SigData calldata sigData, TransferParams calldata transferParams)
+    function transfer(
+        SigData calldata sigData,
+        TransferParams calldata transferParams
+    )
         external
         override
         onlyNotSuspended
@@ -174,7 +177,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                  that hash (uint) from the aggregate key
      * @param transferParamsArray The array of transfer parameters.
      */
-    function transferBatch(SigData calldata sigData, TransferParams[] calldata transferParamsArray)
+    function transferBatch(
+        SigData calldata sigData,
+        TransferParams[] calldata transferParamsArray
+    )
         external
         override
         onlyNotSuspended
@@ -218,11 +224,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
      */
-    function _transfer(
-        address token,
-        address payable recipient,
-        uint256 amount
-    ) private {
+    function _transfer(address token, address payable recipient, uint256 amount) private {
         if (address(token) == _NATIVE_ADDR) {
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = recipient.call{gas: _GAS_TO_FORWARD, value: amount}("");
@@ -261,7 +263,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                  sig over that hash (uint) from the aggregate key
      * @param deployFetchParamsArray    The array of deploy and fetch parameters
      */
-    function deployAndFetchBatch(SigData calldata sigData, DeployFetchParams[] calldata deployFetchParamsArray)
+    function deployAndFetchBatch(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray
+    )
         external
         override
         onlyNotSuspended
@@ -297,7 +302,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                  sig over that hash (uint) from the aggregate key
      * @param fetchParamsArray    The array of fetch parameters
      */
-    function fetchBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray)
+    function fetchBatch(
+        SigData calldata sigData,
+        FetchParams[] calldata fetchParamsArray
+    )
         external
         override
         onlyNotSuspended
@@ -611,14 +619,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *         can be used to rectify an emergency.
      * @param tokens    The addresses of the tokens to be transferred
      */
-    function govWithdraw(address[] calldata tokens)
-        external
-        override
-        onlyGovernor
-        onlyCommunityGuardDisabled
-        onlySuspended
-        timeoutEmergency
-    {
+    function govWithdraw(
+        address[] calldata tokens
+    ) external override onlyGovernor onlyCommunityGuardDisabled onlySuspended timeoutEmergency {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
         address payable recipient = payable(getKeyManager().getGovernanceKey());
 

@@ -31,8 +31,10 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function deployAndFetchBatch(SigData calldata sigData, DeployFetchParams[] calldata deployFetchParamsArray)
-        external;
+    function deployAndFetchBatch(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray
+    ) external;
 
     function fetchBatch(SigData calldata sigData, FetchParams[] calldata fetchParamsArray) external;
 
@@ -50,11 +52,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         uint256 amount
     ) external;
 
-    function xSwapNative(
-        uint32 dstChain,
-        bytes calldata dstAddress,
-        uint16 dstToken
-    ) external payable;
+    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint16 dstToken) external payable;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

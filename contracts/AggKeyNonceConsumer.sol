@@ -32,7 +32,10 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      *                  sig over that hash (uint) from the aggregate key
      * @param keyManager New KeyManager's address
      */
-    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager)
+    function updateKeyManager(
+        SigData calldata sigData,
+        IKeyManager keyManager
+    )
         external
         override
         nzAddr(address(keyManager))

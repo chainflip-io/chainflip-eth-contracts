@@ -11,12 +11,12 @@
   },
   "devDependencies": {
     "hardhat": "2.11.2",
-    "markdownlint-cli": "^0.28.1",
+    "markdownlint-cli": "0.28.1",
     "prettier": "2.5.1",
-    "prettier-plugin-solidity": "1.0.0-beta.19",
+    "prettier-plugin-solidity": "1.1.2",
     "solc-0.8": "npm:solc@^0.8.7-fixed",
     "solhint": "3.3.7",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-docgen": "^0.5.11"
+    "solidity-docgen": "0.5.11"
   }
 }

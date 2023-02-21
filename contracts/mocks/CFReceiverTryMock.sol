@@ -29,11 +29,7 @@ contract CFReceiverTryMock is CFReceiver, Shared {
         _handleFailedCall();
     }
 
-    function _cfReceivexCall(
-        uint32 srcChain,
-        bytes calldata srcAddress,
-        bytes calldata message
-    ) internal override {
+    function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal override {
         _handleFailedCall();
     }
 

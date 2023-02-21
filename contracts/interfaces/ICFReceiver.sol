@@ -30,9 +30,5 @@ interface ICFReceiver {
      * @param srcAddress    Bytes containing the source address on the source chain.
      * @param message       The message sent on the source chain. This is a general purpose message.
      */
-    function cfReceivexCall(
-        uint32 srcChain,
-        bytes calldata srcAddress,
-        bytes calldata message
-    ) external;
+    function cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) external;
 }
