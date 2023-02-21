@@ -91,8 +91,7 @@ abstract contract CFReceiver is ICFReceiver {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev The CfVault's address can change if the Chainflip Protocol is upgraded.
-    // Therefore, a way to update the cfVault address is needed.
+    /// @dev Update Chainflip's Vault address
     function updateCfVault(address _cfVault) external override onlyOwner {
         cfVault = _cfVault;
     }
