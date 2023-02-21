@@ -132,7 +132,7 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     # Vault can now validate and fetch but it has zero balance so it can't transfer
     tx = signed_call_cf(cf, newVault.transfer, *args, sender=st_sender)
 
-    assert tx.events["TransferFailed"][0].values() == [
+    assert tx.events["TransferNativeFailed"][0].values() == [
         cf.ALICE,
         TEST_AMNT,
     ]

@@ -372,12 +372,7 @@ def test_all(
 
             tranMinLen = trimToShortest([st_recips, st_native_amounts])
             tranTokens = choices(self.tokensList, k=tranMinLen)
-            tranTotals = {
-                tok: sum(
-                    [st_native_amounts[i] for i, x in enumerate(tranTokens) if x == tok]
-                )
-                for tok in self.tokensList
-            }
+            tranTotals = {}
             validEthIdxs = getValidTranIdxs(
                 tranTokens,
                 st_native_amounts,
@@ -391,6 +386,34 @@ def test_all(
                     if x == NATIVE_ADDR and i in validEthIdxs
                 ]
             )
+            validTokAIdxs = getValidTranIdxs(
+                tranTokens,
+                st_native_amounts,
+                self.tokenABals[self.v] + fetchTokenATotal,
+                self.tokenA,
+            )
+            tranTotals[self.tokenA] = sum(
+                [
+                    st_native_amounts[i]
+                    for i, x in enumerate(tranTokens)
+                    if x == self.tokenA and i in validTokAIdxs
+                ]
+            )
+
+            validTokBIdxs = getValidTranIdxs(
+                tranTokens,
+                st_native_amounts,
+                self.tokenBBals[self.v] + fetchTokenBTotal,
+                self.tokenB,
+            )
+            tranTotals[self.tokenB] = sum(
+                [
+                    st_native_amounts[i]
+                    for i, x in enumerate(tranTokens)
+                    if x == self.tokenB and i in validTokBIdxs
+                ]
+            )
+
             fetchParamsArray = []
             deployFetchParamsArray = []
 
@@ -430,21 +453,21 @@ def test_all(
                         self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
                     )
 
-            elif (
-                tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v]
-                or tranTotals[self.tokenB] - fetchTokenBTotal > self.tokenBBals[self.v]
-            ):
-                print("        NOT ENOUGH TOKENS IN VAULT rule_allBatch", *toLog)
-                with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    signed_call_km(
-                        self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
-                    )
-
             else:
-                print("                    rule_allBatch", *toLog)
                 tx = signed_call_km(
                     self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
                 )
+
+                if (
+                    tranTotals[self.tokenA] - fetchTokenATotal > self.tokenABals[self.v]
+                    or tranTotals[self.tokenB] - fetchTokenBTotal
+                    > self.tokenBBals[self.v]
+                ):
+                    print("        NOT ENOUGH TOKENS IN VAULT rule_allBatch", *toLog)
+                    assert len(tx.events["TransferTokenFailed"]) >= 1
+
+                else:
+                    print("                    rule_allBatch", *toLog)
 
                 self.lastValidateTime = tx.timestamp
 
@@ -491,11 +514,13 @@ def test_all(
                             self.nativeBals[rec] += am
                             self.nativeBals[self.v] -= am
                     elif tok == self.tokenA:
-                        self.tokenABals[rec] += am
-                        self.tokenABals[self.v] -= am
+                        if i in validTokAIdxs:
+                            self.tokenABals[rec] += am
+                            self.tokenABals[self.v] -= am
                     elif tok == self.tokenB:
-                        self.tokenBBals[rec] += am
-                        self.tokenBBals[self.v] -= am
+                        if i in validTokBIdxs:
+                            self.tokenBBals[rec] += am
+                            self.tokenBBals[self.v] -= am
                     else:
                         assert False, "Panic"
 
@@ -534,22 +559,21 @@ def test_all(
                     signed_call_km(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                     )
-
-            elif bals[self.v] < st_native_amount and tokenAddr != NATIVE_ADDR:
-                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
-                with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    signed_call_km(
-                        self.km, self.v.transfer, *args, signer=signer, sender=st_sender
-                    )
             else:
-                print("                    _vault_transfer", *toLog)
                 tx = signed_call_km(
                     self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                 )
 
-                if bals[self.v] >= st_native_amount or tokenAddr != NATIVE_ADDR:
-                    bals[self.v] -= st_native_amount
-                    bals[st_recip] += st_native_amount
+                if bals[self.v] < st_native_amount and tokenAddr != NATIVE_ADDR:
+                    print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
+                    assert len(tx.events["TransferTokenFailed"]) == 1
+
+                else:
+                    print("                    _vault_transfer", *toLog)
+
+                    if bals[self.v] >= st_native_amount or tokenAddr != NATIVE_ADDR:
+                        bals[self.v] -= st_native_amount
+                        bals[st_recip] += st_native_amount
                 self.lastValidateTime = tx.timestamp
 
         def rule_vault_transfer_native(self, st_sender, st_recip, st_native_amount):
@@ -583,14 +607,22 @@ def test_all(
             validEthIdxs = getValidTranIdxs(
                 tokens, st_native_amounts, self.nativeBals[self.v], NATIVE_ADDR
             )
+            validTokAIdxs = getValidTranIdxs(
+                tokens, st_native_amounts, self.tokenABals[self.v], self.tokenA
+            )
+            validTokBIdxs = getValidTranIdxs(
+                tokens, st_native_amounts, self.tokenBBals[self.v], self.tokenB
+            )
             for i, (tok, am) in enumerate(zip(tokens, st_native_amounts)):
                 if tok == NATIVE_ADDR:
                     if i in validEthIdxs:
                         totalEth += am
                 elif tok == self.tokenA:
-                    totalTokenA += am
+                    if i in validTokAIdxs:
+                        totalTokenA += am
                 elif tok == self.tokenB:
-                    totalTokenB += am
+                    if i in validTokBIdxs:
+                        totalTokenB += am
                 else:
                     assert False, "Unknown asset"
 
@@ -625,24 +657,8 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-            elif (
-                totalTokenA > self.tokenABals[self.v]
-                or totalTokenB > self.tokenBBals[self.v]
-            ):
-                print(
-                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
-                    *toLog,
-                )
-                with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    signed_call_km(
-                        self.km,
-                        self.v.transferBatch,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
+
             else:
-                print("                    rule_vault_transferBatch", *toLog)
                 tx = signed_call_km(
                     self.km,
                     self.v.transferBatch,
@@ -651,20 +667,35 @@ def test_all(
                     sender=st_sender,
                 )
 
-                self.lastValidateTime = tx.timestamp
-                for i in range(len(st_recips)):
-                    if tokens[i] == NATIVE_ADDR:
-                        if i in validEthIdxs:
-                            self.nativeBals[st_recips[i]] += st_native_amounts[i]
-                            self.nativeBals[self.v] -= st_native_amounts[i]
-                    elif tokens[i] == self.tokenA:
-                        self.tokenABals[st_recips[i]] += st_native_amounts[i]
-                        self.tokenABals[self.v] -= st_native_amounts[i]
-                    elif tokens[i] == self.tokenB:
-                        self.tokenBBals[st_recips[i]] += st_native_amounts[i]
-                        self.tokenBBals[self.v] -= st_native_amounts[i]
-                    else:
-                        assert False, "Panic"
+                if (
+                    totalTokenA > self.tokenABals[self.v]
+                    or totalTokenB > self.tokenBBals[self.v]
+                ):
+                    print(
+                        "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
+                        *toLog,
+                    )
+                    assert len(tx.events["TransferTokenFailed"]) >= 1
+
+                else:
+                    print("                    rule_vault_transferBatch", *toLog)
+
+                    self.lastValidateTime = tx.timestamp
+                    for i in range(len(st_recips)):
+                        if tokens[i] == NATIVE_ADDR:
+                            if i in validEthIdxs:
+                                self.nativeBals[st_recips[i]] += st_native_amounts[i]
+                                self.nativeBals[self.v] -= st_native_amounts[i]
+                        elif tokens[i] == self.tokenA:
+                            if i in validTokAIdxs:
+                                self.tokenABals[st_recips[i]] += st_native_amounts[i]
+                                self.tokenABals[self.v] -= st_native_amounts[i]
+                        elif tokens[i] == self.tokenB:
+                            if i in validTokBIdxs:
+                                self.tokenBBals[st_recips[i]] += st_native_amounts[i]
+                                self.tokenBBals[self.v] -= st_native_amounts[i]
+                        else:
+                            assert False, "Panic"
 
         # Transfers native from a user/sender to one of the depositEth create2 addresses
         def rule_transfer_native_to_depositEth(

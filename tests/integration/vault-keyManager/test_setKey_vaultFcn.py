@@ -96,12 +96,13 @@ def test_setAggKeyWithAggKey_allBatch(
     with reverts(REV_MSG_SIG):
         signed_call_cf(cfAW, cfAW.vault.allBatch, *args, sender=st_sender)
 
-    # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll revert
+    # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll fail gracefully
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
-        with reverts():
-            signed_call_cf(
-                cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
-            )
+        tx = signed_call_cf(
+            cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
+        )
+        # There might be multiple failures, so just check that there is at least one
+        assert len(tx.events["TransferTokenFailed"]) >= 1
     else:
         signed_call_cf(
             cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
