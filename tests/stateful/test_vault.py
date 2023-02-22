@@ -366,14 +366,20 @@ def test_vault(
             else:
                 tx = signed_call_km(self.km, self.v.transfer, *args, sender=st_sender)
 
-            if bals[self.v.address] < st_native_amount and tokenAddr != NATIVE_ADDR:
-                print("        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog)
-                assert len(tx.events["TransferTokenFailed"]) == 1
+                if bals[self.v.address] < st_native_amount:
+                    if tokenAddr != NATIVE_ADDR:
+                        print(
+                            "        NOT ENOUGH TOKENS IN VAULT _vault_transfer", *toLog
+                        )
+                        assert len(tx.events["TransferTokenFailed"]) == 1
+                    else:
+                        print(
+                            "        NOT ENOUGH NATIVE IN VAULT _vault_transfer", *toLog
+                        )
+                        assert len(tx.events["TransferNativeFailed"]) == 1
+                else:
+                    print("                    _vault_transfer", *toLog)
 
-            else:
-                print("                    _vault_transfer", *toLog)
-
-                if bals[self.v.address] >= st_native_amount or tokenAddr != NATIVE_ADDR:
                     bals[self.v.address] -= st_native_amount
                     bals[st_recip] += st_native_amount
 
@@ -449,34 +455,34 @@ def test_vault(
                     self.km, self.v.transferBatch, *args, sender=st_sender
                 )
 
-            if (
-                tranTotals[self.tokenA] > self.tokenABals[self.v.address]
-                or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]
-            ):
-                print(
-                    "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
-                    *toLog,
-                )
-                assert len(tx.events["TransferTokenFailed"]) >= 1
+                if (
+                    tranTotals[self.tokenA] > self.tokenABals[self.v.address]
+                    or tranTotals[self.tokenB] > self.tokenBBals[self.v.address]
+                ):
+                    print(
+                        "        NOT ENOUGH TOKENS IN VAULT rule_vault_transferBatch",
+                        *toLog,
+                    )
+                    assert len(tx.events["TransferTokenFailed"]) >= 1
 
-            else:
-                print("                    rule_vault_transferBatch", *toLog)
-
-            for i in range(len(st_recips)):
-                if tokens[i] == NATIVE_ADDR:
-                    if i in validEthIdxs:
-                        self.nativeBals[st_recips[i]] += st_native_amounts[i]
-                        self.nativeBals[self.v.address] -= st_native_amounts[i]
-                elif tokens[i] == self.tokenA:
-                    if i in validTokAIdxs:
-                        self.tokenABals[st_recips[i]] += st_native_amounts[i]
-                        self.tokenABals[self.v.address] -= st_native_amounts[i]
-                elif tokens[i] == self.tokenB:
-                    if i in validTokBIdxs:
-                        self.tokenBBals[st_recips[i]] += st_native_amounts[i]
-                        self.tokenBBals[self.v.address] -= st_native_amounts[i]
                 else:
-                    assert False, "Panic"
+                    print("                    rule_vault_transferBatch", *toLog)
+
+                for i in range(len(st_recips)):
+                    if tokens[i] == NATIVE_ADDR:
+                        if i in validEthIdxs:
+                            self.nativeBals[st_recips[i]] += st_native_amounts[i]
+                            self.nativeBals[self.v.address] -= st_native_amounts[i]
+                    elif tokens[i] == self.tokenA:
+                        if i in validTokAIdxs:
+                            self.tokenABals[st_recips[i]] += st_native_amounts[i]
+                            self.tokenABals[self.v.address] -= st_native_amounts[i]
+                    elif tokens[i] == self.tokenB:
+                        if i in validTokBIdxs:
+                            self.tokenBBals[st_recips[i]] += st_native_amounts[i]
+                            self.tokenBBals[self.v.address] -= st_native_amounts[i]
+                    else:
+                        assert False, "Panic"
 
         # Transfers native from a user/sender to one of the depositEth create2 addresses
         def rule_transfer_native_to_depositEth(
