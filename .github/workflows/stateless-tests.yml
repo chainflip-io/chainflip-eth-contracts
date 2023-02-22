@@ -5,10 +5,11 @@ jobs:
   lint:
     uses: ./.github/workflows/.lint.yml
 
-  stateful-tests:
+  stateless-tests:
+    name: Stateless Tests
     needs: lint
     runs-on: [self-hosted, linux, x64, ephemeral]
-    timeout-minutes: 3600
+    timeout-minutes: 360
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -30,9 +31,6 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry install
       - run: sudo snap install solc --edge
-      # Spinning hardhat node externally because there's some intermittent nasty bug when the node is shut down at
-      # the end of some stateful test causing the tests to fail - it is confusingly logged as a Flaky inconsistent
-      # data generation that behaved differently between runs
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful true
+      - run: poetry run brownie test --network hardhat --stateful false
