@@ -97,10 +97,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         uint256 amount,
         address returnAddr
     ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
-        require(address(_FLIP) != address(0), "Staking: Flip not set");
+        IFLIP flip = _FLIP;
+        require(address(flip) != address(0), "Staking: Flip not set");
         require(amount >= _minStake, "Staking: stake too small");
         // Assumption of set token allowance by the user
-        _FLIP.transferFrom(msg.sender, address(this), amount);
+        flip.transferFrom(msg.sender, address(this), amount);
         emit Staked(nodeID, amount, msg.sender, returnAddr);
     }
 
