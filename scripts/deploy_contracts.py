@@ -17,6 +17,23 @@ def main():
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
     print(f"DEPLOYER = {DEPLOYER}")
 
+    # Check that all environment variables are set when deploying to a live network
+    # SEED and the endpoint are checked automatically by Brownie
+    env_var_names = ["AGG_KEY", "GOV_KEY", "COMM_KEY", "NUM_GENESIS_VALIDATORS", "GENESIS_STAKE"]
+    for env_var_name in env_var_names:
+        if env_var_name not in os.environ:
+            raise Exception(f"Environment variable {env_var_name} is not set")
+        else:
+            print(f"{env_var_name} = {os.environ[env_var_name]}")
+
+    print(f"FLIP tokens will be minted to the GOV_KEY account {os.environ['GOV_KEY']}")
+
+    # In case we manually call this script for live deployment, we could add a prompt for the user
+    # to confirm all those values. If we do it via script then we can remove the printing above.
+    # Just the checking should be enough. However, check with Tom that the prompt won't mess with
+    # his deployment scripts.
+    
+
     cf = deploy_set_Chainflip_contracts(
         DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
     )
