@@ -51,12 +51,12 @@ def test_setAggKeyWithAggKey_allBatch(
             depositAddr = getCreate2Addr(
                 cfAW.vault.address, id.hex(), Deposit, cleanHexStrPad(NATIVE_ADDR)
             )
-            cfAW.DEPLOYER.transfer(depositAddr, am)
+            cfAW.SAFEKEEPER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
                 cfAW.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
             )
-            tok.transfer(depositAddr, am, {"from": cfAW.DEPLOYER})
+            tok.transfer(depositAddr, am, {"from": cfAW.SAFEKEEPER})
 
     assert cfAW.vault.balance() == 0
     assert token.balanceOf(cfAW.vault) == 0
