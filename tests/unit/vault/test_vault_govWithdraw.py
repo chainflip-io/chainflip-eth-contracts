@@ -17,8 +17,8 @@ def test_govWithdraw(
     # Fund Vault contract. Using non-deployer to transfer native because the deployer
     # doesn't have INIT_NATIVE_BAL - gas spent deploying contracts
     cf.DENICE.transfer(cf.vault, st_nativeAmount)
-    token.transfer(cf.vault, st_tokenAmount, {"from": cf.DEPLOYER})
-    token2.transfer(cf.vault, st_token2Amount, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, st_tokenAmount, {"from": cf.SAFEKEEPER})
+    token2.transfer(cf.vault, st_token2Amount, {"from": cf.SAFEKEEPER})
 
     # Check Vault intial Balances
     assert cf.vault.balance() == st_nativeAmount

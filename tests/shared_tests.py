@@ -13,8 +13,8 @@ def deployAndFetchNative(cf, vault, Deposit, **kwargs):
         vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
 
-    assert cf.DEPLOYER.balance() >= amount
-    cf.DEPLOYER.transfer(depositAddr, amount)
+    assert cf.SAFEKEEPER.balance() >= amount
+    cf.SAFEKEEPER.transfer(depositAddr, amount)
 
     balanceVaultBefore = vault.balance()
 
@@ -32,8 +32,8 @@ def deployAndFetchNative(cf, vault, Deposit, **kwargs):
 def fetchNative(cf, vault, depositAddr, **kwargs):
     amount = kwargs.get("amount", TEST_AMNT)
 
-    assert cf.DEPLOYER.balance() >= amount
-    cf.DEPLOYER.transfer(depositAddr, amount)
+    assert cf.SAFEKEEPER.balance() >= amount
+    cf.SAFEKEEPER.transfer(depositAddr, amount)
 
     balanceVaultBefore = vault.balance()
 
@@ -56,8 +56,8 @@ def transfer_native(cf, vault, receiver, amount):
 
     assert vault.balance() - startBalVault == -amount
 
-    # Take into account gas transfer if receiver is the address sending the transfer call (a[0]==cf.DEPLOYER)
-    gasSpent = calculateGasTransaction(tx) if receiver == cf.DEPLOYER else 0
+    # Take into account gas transfer if receiver is the address sending the transfer call (a[0]==cf.SAFEKEEPER)
+    gasSpent = calculateGasTransaction(tx) if receiver == cf.SAFEKEEPER else 0
     assert receiver.balance() - startBalRecipient == amount - gasSpent
 
 
@@ -246,7 +246,7 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
 # Function used to do function calls that require a signature
 def signed_call_cf(cf, fcn, *args, **kwargs):
     # Get default values
-    sender = kwargs.get("sender", cf.deployer)
+    sender = kwargs.get("sender", cf.safekeeper)
     keyManager = kwargs.get("keyManager", cf.keyManager)
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
@@ -257,7 +257,7 @@ def signed_call_cf(cf, fcn, *args, **kwargs):
 def signed_call_km(keyManager, fcn, *args, **kwargs):
     # Get default values
     # Workaround because kwargs.get("sender", kwargs.get("cf").deployer) doesn't work if there is no "cf" key
-    sender = kwargs.get("sender") if "sender" in kwargs else kwargs.get("cf").deployer
+    sender = kwargs.get("sender") if "sender" in kwargs else kwargs.get("cf").safekeeper
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
     return signed_call(keyManager, fcn, signer, sender, *args)

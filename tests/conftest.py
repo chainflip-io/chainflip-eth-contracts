@@ -27,7 +27,7 @@ def cf(a, cfDeploy):
 
     # It's a bit easier to not get mixed up with accounts if they're named
     # Can't define this in consts because `a` needs to be imported into the test
-    cf.DEPLOYER = cfDeploy.deployer
+    cf.SAFEKEEPER = cfDeploy.safekeeper
     cf.ALICE = a[1]
     cf.BOB = a[2]
     cf.CHARLIE = a[3]
@@ -42,8 +42,8 @@ def cf(a, cfDeploy):
     cf.COMMUNITY_KEY = cfDeploy.communityKey
     cf.COMMUNITY_KEY_2 = a[7]
 
-    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
-    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
+    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
+    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
 
     return cf
 
@@ -67,7 +67,7 @@ def cfAW(a, cfDeployAllWhitelist):
 
     # It's a bit easier to not get mixed up with accounts if they're named
     # Can't define this in consts because `a` needs to be imported into the test
-    cf.DEPLOYER = cf.deployer
+    cf.SAFEKEEPER = cf.safekeeper
     cf.ALICE = a[1]
     cf.BOB = a[2]
     cf.CHARLIE = a[3]
@@ -82,8 +82,8 @@ def cfAW(a, cfDeployAllWhitelist):
     cf.COMMUNITY_KEY = cfDeployAllWhitelist.communityKey
     cf.COMMUNITY_KEY_2 = a[7]
 
-    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
-    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.DEPLOYER})
+    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
+    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
 
     return cf
 
@@ -91,7 +91,7 @@ def cfAW(a, cfDeployAllWhitelist):
 # Deploys SchnorrSECP256K1Test to enable testing of SchnorrSECP256K1
 @pytest.fixture(scope="module")
 def schnorrTest(cf, SchnorrSECP256K1Test):
-    return cf.DEPLOYER.deploy(SchnorrSECP256K1Test)
+    return cf.SAFEKEEPER.deploy(SchnorrSECP256K1Test)
 
 
 # Stake the minimum amount
@@ -125,13 +125,13 @@ def claimRegistered(cf, stakedMin):
 # Deploy a generic token
 @pytest.fixture(scope="module")
 def token(cf, Token):
-    return cf.DEPLOYER.deploy(Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY)
+    return cf.SAFEKEEPER.deploy(Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY)
 
 
 # Deploy a generic token
 @pytest.fixture(scope="module")
 def token2(cf, Token):
-    return cf.DEPLOYER.deploy(Token, "NotAPonzi2", "NAP2", INIT_TOKEN_SUPPLY)
+    return cf.SAFEKEEPER.deploy(Token, "NotAPonzi2", "NAP2", INIT_TOKEN_SUPPLY)
 
 
 # Vesting
@@ -210,25 +210,25 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
 
 @pytest.fixture(scope="module")
 def cfReceiverMock(cf, CFReceiverMock):
-    return cf.DEPLOYER.deploy(CFReceiverMock, cf.vault)
+    return cf.SAFEKEEPER.deploy(CFReceiverMock, cf.vault)
 
 
 @pytest.fixture(scope="module")
 def cfReceiverFailMock(cf, CFReceiverFailMock):
-    return cf.DEPLOYER.deploy(CFReceiverFailMock, cf.vault)
+    return cf.SAFEKEEPER.deploy(CFReceiverFailMock, cf.vault)
 
 
 @pytest.fixture(scope="module")
 def cfReceiverTryMock(cf, cfReceiverFailMock, CFReceiverTryMock):
-    return cf.DEPLOYER.deploy(CFReceiverTryMock, cf.vault, cfReceiverFailMock)
+    return cf.SAFEKEEPER.deploy(CFReceiverTryMock, cf.vault, cfReceiverFailMock)
 
 
 @pytest.fixture(scope="module")
 def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
     srcChain = 1
-    dexMock = cf.DEPLOYER.deploy(DEXMock)
-    dexAggSrcChainMock = cf.DEPLOYER.deploy(DexAggSrcChainMock, cf.vault)
-    dexAggDstChainMock = cf.DEPLOYER.deploy(
+    dexMock = cf.SAFEKEEPER.deploy(DEXMock)
+    dexAggSrcChainMock = cf.SAFEKEEPER.deploy(DexAggSrcChainMock, cf.vault)
+    dexAggDstChainMock = cf.SAFEKEEPER.deploy(
         DexAggDstChainMock, cf.vault, srcChain, toHex(dexAggSrcChainMock.address)
     )
     return (dexMock, dexAggSrcChainMock, dexAggDstChainMock, srcChain)
@@ -236,14 +236,14 @@ def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
 
 @pytest.fixture(scope="module")
 def cfLoopbackMock(cf, LoopBackMock):
-    return cf.DEPLOYER.deploy(LoopBackMock, cf.vault)
+    return cf.SAFEKEEPER.deploy(LoopBackMock, cf.vault)
 
 
 @pytest.fixture(scope="module")
 def mockUsdc(cf, MockUSDC):
-    return cf.DEPLOYER.deploy(MockUSDC, "USD Coin", "USDC", INIT_USDC_SUPPLY)
+    return cf.SAFEKEEPER.deploy(MockUSDC, "USD Coin", "USDC", INIT_USDC_SUPPLY)
 
 
 @pytest.fixture(scope="module")
 def utils(cf, Utils):
-    return cf.DEPLOYER.deploy(Utils)
+    return cf.SAFEKEEPER.deploy(Utils)

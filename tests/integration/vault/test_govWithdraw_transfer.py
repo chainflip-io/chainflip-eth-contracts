@@ -10,8 +10,8 @@ def test_govWithdraw_transfer(cf, token, token2, Deposit, st_sender):
     # Funding Vault with some arbitrary funds
     amountTest = TEST_AMNT * 10
     st_sender.transfer(cf.vault, amountTest)
-    token.transfer(cf.vault, amountTest, {"from": cf.DEPLOYER})
-    token2.transfer(cf.vault, amountTest, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, amountTest, {"from": cf.SAFEKEEPER})
+    token2.transfer(cf.vault, amountTest, {"from": cf.SAFEKEEPER})
     tokenList = [NATIVE_ADDR, token, token2]
 
     # Test vault functioning

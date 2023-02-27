@@ -28,13 +28,13 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
             depositAddr = getCreate2Addr(
                 cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
             )
-            tok.transfer(depositAddr, am, {"from": cf.DEPLOYER})
+            tok.transfer(depositAddr, am, {"from": cf.SAFEKEEPER})
             tokenTotal += am
         else:
             depositAddr = getCreate2Addr(
                 cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok)
             )
-            cf.DEPLOYER.transfer(depositAddr, am)
+            cf.SAFEKEEPER.transfer(depositAddr, am)
             nativeTotal += am
         depositAddrs.append(depositAddr)
 
@@ -85,9 +85,9 @@ def test_fetchBatch_rev_notdeployed(cf, token):
     for tok in [token, NATIVE_ADDR]:
 
         if tok == token:
-            tok.transfer(NON_ZERO_ADDR, TEST_AMNT, {"from": cf.DEPLOYER})
+            tok.transfer(NON_ZERO_ADDR, TEST_AMNT, {"from": cf.SAFEKEEPER})
         else:
-            cf.DEPLOYER.transfer(NON_ZERO_ADDR, TEST_AMNT)
+            cf.SAFEKEEPER.transfer(NON_ZERO_ADDR, TEST_AMNT)
 
         with reverts():
             signed_call_cf(cf, cf.vault.fetchBatch, [[NON_ZERO_ADDR, tok]])
@@ -104,9 +104,9 @@ def test_fetchBatch_rev_noFunction(cf, token):
     for tok in [token, NATIVE_ADDR]:
 
         if tok == token:
-            tok.transfer(cf.keyManager.address, TEST_AMNT, {"from": cf.DEPLOYER})
+            tok.transfer(cf.keyManager.address, TEST_AMNT, {"from": cf.SAFEKEEPER})
         else:
-            cf.DEPLOYER.transfer(cf.keyManager.address, TEST_AMNT)
+            cf.SAFEKEEPER.transfer(cf.keyManager.address, TEST_AMNT)
 
         with reverts():
             signed_call_cf(cf, cf.vault.fetchBatch, [[cf.keyManager.address, tok]])

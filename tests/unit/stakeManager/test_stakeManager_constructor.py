@@ -18,8 +18,8 @@ def test_constructor(cf, web3):
     st_sender=strategy("address"),
     st_flip_address=strategy("address"),
 )
-def test_setFlip(cf, a, st_sender, st_flip_address):
-    if st_sender != cf.realDeployer:
+def test_setFlip(cf, st_sender, st_flip_address):
+    if st_sender != cf.deployer:
         print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
         with reverts(REV_MSG_STAKEMAN_DEPLOYER):
             cf.stakeManager.setFlip(st_flip_address, {"from": st_sender})

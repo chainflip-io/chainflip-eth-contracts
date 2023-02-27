@@ -86,8 +86,8 @@ def deploy_initial_Chainflip_contracts(
     cf.stakeManager.setFlip(cf.flip.address, {"from": deployer})
 
     # All the deployer rights and tokens have been delegated to the governance key.
-    cf.deployer = cf.gov
-    cf.realDeployer = deployer
+    cf.safekeeper = cf.gov
+    cf.deployer = deployer
 
     return cf
 

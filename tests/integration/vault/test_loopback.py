@@ -16,7 +16,7 @@ def test_loopback_executexSwapAndCall_native(
 ):
 
     # Fund Vault
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     # Native Balance
     balanceVault = web3.eth.get_balance(cf.vault.address)
@@ -65,7 +65,7 @@ def test_loopback_executexSwapAndCall_token(
 ):
 
     # Fund Vault
-    token.transfer(cf.vault, st_amount, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, st_amount, {"from": cf.SAFEKEEPER})
 
     # token Balance
     balanceVault = token.balanceOf(cf.vault.address)
@@ -106,7 +106,7 @@ def test_loopback_executexCall_native(
     cf, cfLoopbackMock, st_sender, st_amount, st_message, st_srcChain, st_srcAddress
 ):
     # Fund Loopback
-    cf.DEPLOYER.transfer(cfLoopbackMock, st_amount)
+    cf.SAFEKEEPER.transfer(cfLoopbackMock, st_amount)
 
     # Native Balance
     balanceVault = web3.eth.get_balance(cf.vault.address)

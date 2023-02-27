@@ -17,7 +17,7 @@ from deploy import deploy_set_Chainflip_contracts
 
 print(network.show_active())
 
-DEPLOYER = accounts[0]
+DEPLOYER = accounts[9]
 ALICE = accounts[1]
 BOB = accounts[2]
 CHARLIE = accounts[3]
@@ -32,9 +32,9 @@ cf = deploy_set_Chainflip_contracts(
     DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {"PREFUND_CONTRACTS": "False"}
 )
 
-cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": DEPLOYER})
+cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": ALICE})
-cf.flip.transfer(BOB, MAX_TEST_STAKE, {"from": DEPLOYER})
+cf.flip.transfer(BOB, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": BOB})
 
 print("========================= 😎  Deployed! 😎 ==========================\n")

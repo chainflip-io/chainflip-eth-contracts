@@ -19,7 +19,7 @@ def test_executexCall(
     st_srcAddress,
     st_message,
 ):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cfReceiverMock.balance()
@@ -45,7 +45,7 @@ def test_executexCall(
 
 # token contract doesn't have the cfReceivexCall function implemented
 def test_executexCall_rev_noCfReceive(cf, token):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
     randToken = random.choice([NATIVE_ADDR, token])
 
     args = [
@@ -88,7 +88,7 @@ def test_executexCallEth_rev_msgHash(cf):
 
 # rev if cfReceiver reverts the call
 def test_executexCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     args = [
         cfReceiverFailMock.address,
@@ -102,7 +102,7 @@ def test_executexCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
 
 # If user contract catches the external reversion, balances are not affected
 def test_executexCallEth_tryCatch(cf, cfReceiverTryMock):
-    cf.DEPLOYER.transfer(cf.vault)
+    cf.SAFEKEEPER.transfer(cf.vault)
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cfReceiverTryMock.balance()

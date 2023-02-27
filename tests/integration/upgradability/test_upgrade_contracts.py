@@ -29,7 +29,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
     )
 
     # Reusing current keyManager aggregateKey for simplicity
-    newKeyManager = cf.DEPLOYER.deploy(
+    newKeyManager = cf.SAFEKEEPER.deploy(
         KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
@@ -108,7 +108,7 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     # Replicate a vault with funds - 1000 NATIVE
     cf.DENICE.transfer(cf.vault, totalFunds)
 
-    newVault = cf.DEPLOYER.deploy(Vault, cf.keyManager)
+    newVault = cf.SAFEKEEPER.deploy(Vault, cf.keyManager)
 
     # Check that newly deployed Vault can't validate signatures (not whitelisted yet)
     # Technically we could precomute the deployed address and whitelist it before deployment
@@ -196,7 +196,7 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     st_sender=strategy("address"),
 )
 def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
-    newStakeManager = cf.DEPLOYER.deploy(StakeManager, cf.keyManager, MIN_STAKE)
+    newStakeManager = cf.SAFEKEEPER.deploy(StakeManager, cf.keyManager, MIN_STAKE)
 
     with reverts(REV_MSG_STAKEMAN_DEPLOYER):
         newStakeManager.setFlip(cf.flip, {"from": cf.ALICE})

@@ -132,7 +132,7 @@ def test_swapToken_rev_bal(
     st_sender,
 ):
 
-    if st_sender != cf.DEPLOYER:
+    if st_sender != cf.SAFEKEEPER:
         # xSwapToken
         with reverts(REV_MSG_ERC20_EXCEED_BAL):
             cf.vault.xSwapToken(

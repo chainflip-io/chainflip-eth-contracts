@@ -13,29 +13,29 @@ def test_flip_constructor(cf):
 def test_flip_constructor_reverts_nz(cf, FLIP):
 
     with reverts(REV_MSG_NZ_UINT):
-        cf.DEPLOYER.deploy(
+        cf.SAFEKEEPER.deploy(
             FLIP,
             0,
             cf.numGenesisValidators,
             cf.genesisStake,
             cf.stakeManager.address,
-            cf.DEPLOYER,
+            cf.SAFEKEEPER,
             cf.keyManager,
         )
 
     with reverts(REV_MSG_NZ_ADDR):
-        cf.DEPLOYER.deploy(
+        cf.SAFEKEEPER.deploy(
             FLIP,
             INIT_SUPPLY,
             cf.numGenesisValidators,
             cf.genesisStake,
             ZERO_ADDR,
-            cf.DEPLOYER,
+            cf.SAFEKEEPER,
             cf.keyManager,
         )
 
     with reverts(REV_MSG_NZ_ADDR):
-        cf.DEPLOYER.deploy(
+        cf.SAFEKEEPER.deploy(
             FLIP,
             INIT_SUPPLY,
             cf.numGenesisValidators,
@@ -46,13 +46,13 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
         )
 
     with reverts(REV_MSG_NZ_ADDR):
-        cf.DEPLOYER.deploy(
+        cf.SAFEKEEPER.deploy(
             FLIP,
             INIT_SUPPLY,
             cf.numGenesisValidators,
             cf.genesisStake,
             cf.stakeManager.address,
-            cf.DEPLOYER,
+            cf.SAFEKEEPER,
             ZERO_ADDR,
         )
 
