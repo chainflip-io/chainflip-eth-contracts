@@ -16,6 +16,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
+    # Deploy with an unused EOA (a[9])
     return deploy_set_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
 
 
@@ -26,14 +27,13 @@ def cf(a, cfDeploy):
 
     # It's a bit easier to not get mixed up with accounts if they're named
     # Can't define this in consts because `a` needs to be imported into the test
-    # cfDeploy.deployer == a[0]
     cf.DEPLOYER = cfDeploy.deployer
     cf.ALICE = a[1]
     cf.BOB = a[2]
     cf.CHARLIE = a[3]
     cf.DENICE = a[4]
 
-    # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh
+    # It's the same as DEPLOYER but shouldn't cause confusion tbh
     cf.GOVERNOR = cfDeploy.gov
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
@@ -52,6 +52,7 @@ def cf(a, cfDeploy):
 # all addresses whitelisted
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
+    # Deploy with an unused EOA (a[9])
     cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)

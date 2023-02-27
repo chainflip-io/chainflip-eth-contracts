@@ -35,6 +35,7 @@ def deploy_initial_Chainflip_contracts(
     else:
         # Different than deployer as per launch scenario.
         cf.gov = accounts[0]
+        assert cf.gov != deployer
 
     communityKey = environment.get("COMM_KEY")
     if communityKey:
@@ -43,8 +44,6 @@ def deploy_initial_Chainflip_contracts(
     else:
         # This should be only for testing purposes on local testnet (hardhat)
         cf.communityKey = accounts[6]
-
-    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
 
     cf.numGenesisValidators = int(
         environment.get("NUM_GENESIS_VALIDATORS") or NUM_GENESIS_VALIDATORS
@@ -59,14 +58,21 @@ def deploy_initial_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
+    # Deploy Key Manager contract
+    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
+
+    # Deploy Vault contract
     cf.vault = deployer.deploy(Vault, cf.keyManager)
+
+    # Deploy Stake Manager contract
     cf.stakeManager = deployer.deploy(
         StakeManager,
         cf.keyManager,
         MIN_STAKE,
     )
-    # Minting genesis validator FLIP to the Stake Manager. The rest of genesis FLIP will
-    # be minted to the governance address for safekeeping.
+
+    # Deploy FLIP contract. Minting genesis validator FLIP to the Stake Manager.
+    # The rest of genesis FLIP will be minted to the governance address for safekeeping.
     cf.flip = deployer.deploy(
         FLIP,
         INIT_SUPPLY,
@@ -81,6 +87,7 @@ def deploy_initial_Chainflip_contracts(
 
     # All the deployer rights and tokens have been delegated to the governance key.
     cf.deployer = cf.gov
+    cf.realDeployer = deployer
 
     return cf
 
