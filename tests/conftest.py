@@ -33,7 +33,7 @@ def cf(a, cfDeploy):
     cf.CHARLIE = a[3]
     cf.DENICE = a[4]
 
-    # It's the same as DEPLOYER but shouldn't cause confusion tbh
+    # It's the same as SAFEKEEPER but shouldn't cause confusion tbh
     cf.GOVERNOR = cfDeploy.gov
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
@@ -73,7 +73,7 @@ def cfAW(a, cfDeployAllWhitelist):
     cf.CHARLIE = a[3]
     cf.DENICE = a[4]
 
-    # It's the same as DEPLOYER (a[0]) but shouldn't cause confusion tbh
+    # It's the same as SAFEKEEPER but shouldn't cause confusion tbh
     cf.GOVERNOR = cfDeployAllWhitelist.gov
     # Set a second governor for tests
     cf.GOVERNOR_2 = a[5]
