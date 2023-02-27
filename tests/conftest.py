@@ -66,7 +66,7 @@ def cfAW(a, cfDeployAllWhitelist):
 
     # It's a bit easier to not get mixed up with accounts if they're named
     # Can't define this in consts because `a` needs to be imported into the test
-    cf.DEPLOYER = a[0]
+    cf.DEPLOYER = cf.deployer
     cf.ALICE = a[1]
     cf.BOB = a[2]
     cf.CHARLIE = a[3]
