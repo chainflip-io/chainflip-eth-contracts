@@ -20,8 +20,6 @@ def deploy_initial_Chainflip_contracts(
     if args:
         environment = args[0]
 
-    cf.deployer = deployer
-
     aggKey = environment.get("AGG_KEY")
     if aggKey:
         parity = aggKey[0:2]
@@ -35,7 +33,8 @@ def deploy_initial_Chainflip_contracts(
     if govKey:
         cf.gov = govKey
     else:
-        cf.gov = deployer
+        # Different than deployer as per launch scenario.
+        cf.gov = accounts[0]
 
     communityKey = environment.get("COMM_KEY")
     if communityKey:
@@ -78,7 +77,10 @@ def deploy_initial_Chainflip_contracts(
         cf.keyManager,
     )
 
-    cf.stakeManager.setFlip(cf.flip.address, {"from": cf.deployer})
+    cf.stakeManager.setFlip(cf.flip.address, {"from": deployer})
+
+    # All the deployer rights and tokens have been delegated to the governance key.
+    cf.deployer = cf.gov
 
     return cf
 
@@ -91,7 +93,7 @@ def deploy_set_Chainflip_contracts(
         deployer, KeyManager, Vault, StakeManager, FLIP, *args
     )
     cf.whitelisted = [cf.vault.address, cf.stakeManager.address, cf.flip.address]
-    cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
+    cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted, {"from": cf.deployer})
 
     return cf
 
