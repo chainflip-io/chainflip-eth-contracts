@@ -283,3 +283,37 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
     )
     chain.sleep(CLAIM_DELAY)
     newStakeManager.executeClaim(nodeID)
+
+
+# Upgrade an empty vault via governance before a CF network is launched and before
+# the vault contains any funds
+def test_upgrade_empty_Vault_governance(cf, Vault):
+    newVault = cf.DEPLOYER.deploy(Vault, cf.keyManager)
+    oldWhitelist = [cf.flip, cf.stakeManager, cf.vault]
+    new_whitelist = [cf.flip, cf.stakeManager, newVault.address]
+
+    with reverts(REV_MSG_DELAY):
+        cf.keyManager.updateCanConsumeKeyNonceWithGovKey(
+            oldWhitelist, new_whitelist, {"from": cf.GOVERNOR}
+        )
+
+    chain.sleep(AGG_KEY_TIMEOUT)
+
+    with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
+        cf.keyManager.updateCanConsumeKeyNonceWithGovKey(
+            oldWhitelist, new_whitelist, {"from": cf.ALICE}
+        )
+
+    oldLenWhitelist = len(cf.whitelisted)
+
+    # Old Vault has no funds so we are not transferring them.
+    cf.keyManager.updateCanConsumeKeyNonceWithGovKey(
+        oldWhitelist, new_whitelist, {"from": cf.GOVERNOR}
+    )
+
+    for addr in new_whitelist:
+        assert cf.keyManager.canConsumeKeyNonce(addr) == True
+
+    assert cf.keyManager.canConsumeKeyNonce(cf.vault) == False
+
+    assert cf.keyManager.getNumberWhitelistedAddresses() == oldLenWhitelist

@@ -91,6 +91,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             )
         )
     {
+        _updateCanConsumeKeyNonce(currentAddrs, newAddrs);
+    }
+
+    function _updateCanConsumeKeyNonce(address[] calldata currentAddrs, address[] calldata newAddrs) internal {
         require(currentAddrs.length == _numberWhitelistedAddresses, "KeyManager: array incorrect length");
 
         // Remove current whitelisted addresses
@@ -109,6 +113,18 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _numberWhitelistedAddresses = newAddrs.length;
 
         emit AggKeyNonceConsumersUpdated(currentAddrs, newAddrs);
+    }
+
+    // Allow governance key to update the whitelist of addresses that can call consumeKeyNonce. This can
+    // allow to upgrade the contracts via governance if there hasn't been activity in the network.
+    // However, to update the SM we effectively need to transfer FLIP tokens, so we basically need to
+    // redeploy. Same for a Vault with funds. So basically this is only for a Vault with
+    // no funds in the deployment phase. Does this even make sense then?
+    function updateCanConsumeKeyNonceWithGovKey(
+        address[] calldata currentAddrs,
+        address[] calldata newAddrs
+    ) external timeoutEmergency onlyGovernor {
+        _updateCanConsumeKeyNonce(currentAddrs, newAddrs);
     }
 
     /**
