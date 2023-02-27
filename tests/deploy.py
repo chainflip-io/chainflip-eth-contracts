@@ -66,7 +66,7 @@ def deploy_initial_Chainflip_contracts(
         cf.keyManager,
         MIN_STAKE,
     )
-    # Minting genesis validator FLIP to the Stake Manager. The rest of genesis FLIP will 
+    # Minting genesis validator FLIP to the Stake Manager. The rest of genesis FLIP will
     # be minted to the governance address for safekeeping.
     cf.flip = deployer.deploy(
         FLIP,
