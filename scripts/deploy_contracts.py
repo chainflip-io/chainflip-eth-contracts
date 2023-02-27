@@ -17,10 +17,15 @@ def main():
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
     print(f"DEPLOYER = {DEPLOYER}")
 
-    # Check that all environment variables are set when deploying to a live network
-    # SEED and the endpoint are checked automatically by Brownie
-    # env_var_names = ["AGG_KEY", "GOV_KEY", "COMM_KEY", "NUM_GENESIS_VALIDATORS", "GENESIS_STAKE"]
-    env_var_names = ["GOV_KEY", "COMM_KEY", "NUM_GENESIS_VALIDATORS", "GENESIS_STAKE"]
+    # Check that all environment variables are set when deploying to a live network.
+    # SEED and the endpoint are checked automatically by Brownie.
+    env_var_names = [
+        "AGG_KEY",
+        "GOV_KEY",
+        "COMM_KEY",
+        "NUM_GENESIS_VALIDATORS",
+        "GENESIS_STAKE",
+    ]
     for env_var_name in env_var_names:
         if env_var_name not in os.environ:
             raise Exception(f"Environment variable {env_var_name} is not set")
