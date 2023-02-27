@@ -31,6 +31,7 @@ def deploy_initial_Chainflip_contracts(
 
     govKey = environment.get("GOV_KEY")
     if govKey:
+        # Allow for the govKey to be the same as deployer is user has specified it.
         cf.gov = govKey
     else:
         # Different than deployer as per launch scenario.
