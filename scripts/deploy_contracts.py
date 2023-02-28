@@ -20,24 +20,29 @@ def main():
     # Check that all environment variables are set when deploying to a live network.
     # SEED and the endpoint are checked automatically by Brownie.
     env_var_names = [
-        # "AGG_KEY",
+        "AGG_KEY",
         "GOV_KEY",
         "COMM_KEY",
-        "NUM_GENESIS_VALIDATORS",
         "GENESIS_STAKE",
+        "NUM_GENESIS_VALIDATORS",
     ]
     for env_var_name in env_var_names:
         if env_var_name not in os.environ:
             raise Exception(f"Environment variable {env_var_name} is not set")
-        else:
-            # Print all the environment variables for mainnet deployment.
-            if chain.id == 1:
-                print(f"{env_var_name} = {os.environ[env_var_name]}")
 
     # For live deployment, add a confirmation step to allow the user to verify the parameters.
     if chain.id == 1:
+        # Print all the environment variables for mainnet deployment.
+        print("\nTo be deployed with parameters\n----------------------------")
+        print(f"  ChainID: {chain.id} - ETHEREUM MAINNET")
+        print(f"  Deployer: {DEPLOYER}")
+        print(f"  Safekeeper & GovKey: {os.environ['GOV_KEY']}")
+        print(f"  Community Key: {os.environ['COMM_KEY']}")
+        # print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
+        print(f"  Genesis Stake: {os.environ['GENESIS_STAKE']}")
+        print(f"  Num Genesis Validators: {os.environ['NUM_GENESIS_VALIDATORS']}")
         print(
-            f"FLIP tokens will be minted to the GOV_KEY account {os.environ['GOV_KEY']}"
+            f"\nFLIP tokens will be minted to the Safekeeper account {os.environ['GOV_KEY']}"
         )
         input(
             "\n[WARNING] You are about to deploy to the mainnet with the parameters above. Continue? [y/N]"
@@ -53,7 +58,9 @@ def main():
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
     print(f"  Deployer: {cf.deployer}")
-    print(f"  Safekeeper & GovKey: {cf.gov}")
+    # TODO: Update this to cf.safekeeper once PR #273 is merged
+    print(f"  Safekeeper: {cf.gov}")
+    print(f"  GovKey: {cf.gov}")
     print(f"  Community Key: {cf.communityKey}")
     print(f"  Aggregate Key: {cf.keyManager.getAggregateKey()}")
     print(f"  Genesis Stake: {cf.genesisStake}")
