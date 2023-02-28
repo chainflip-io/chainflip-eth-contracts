@@ -154,6 +154,9 @@ commands = {
         ["address"],
         True,
     ),
+    # Transactions to Key Manager
+    # TODO: Add xSwapNative, xSwapToken, xCallNative, xCallToken
+
     # View the state of the contracts
     "viewMinStake": (lambda: viewMinStake(), "Display the minimum stake", [], False),
     "viewAggKey": (lambda: viewAggKey(), "Display the Aggregate key", [], False),
