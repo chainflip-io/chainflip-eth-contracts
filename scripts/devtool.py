@@ -63,6 +63,7 @@ else:
 # Define a dictionary of available commands and their corresponding functions
 # Tuple order: (function to call, printed help, list of arguments, sendTx bool)
 commands = {
+    # General commands
     "help": (lambda: help(), "Prints help", [], False),
     "contracts": (lambda: print(contractAddresses), "Prints addresses", [], False),
     "user": (lambda: print(userAddress), "Prints current user address", [], False),
@@ -91,9 +92,21 @@ commands = {
         ["address"],
         False,
     ),
+    # "viewTokenTransfersTo": (
+    #     lambda address, recipient: viewTokenTransfersTo(address, recipient),
+    #     "Display the USDC transfers for an address",
+    #     ["address", "address"],
+    # ),
+    "displaytx": (
+        lambda txHash: display_tx(txHash),
+        "Display transaction",
+        ["bytes32"],
+        False,
+    ),
+    # Transfer tokens
     "transferEth": (
         lambda amount, address: transferEth(amount, address),
-        "Transfer Eth to an account. Input should be a float amount in eth`",
+        "Transfer Eth to an account. Input should be a float amount in eth",
         ["float", "address"],
         True,
     ),
@@ -109,6 +122,7 @@ commands = {
         ["float", "address"],
         True,
     ),
+    # Transactions to Stake Manager
     "stake": (
         lambda amount, nodeId: stake(amount, nodeId),
         "Stake flip from the user address",
@@ -121,18 +135,28 @@ commands = {
         ["bytes32"],
         True,
     ),
-    "enableSwaps": (
-        lambda: enableVaultSwaps(),
-        "Enable Vault swaps. User needs to be the governance address",
-        [],
+    # Transactions to Key Manager
+    "setAggKeyWGovKey": (
+        lambda pubKeyX, pubKeyYParity: setAggKeyWGovKey(pubKeyX, pubKeyYParity),
+        "Set a new AggKey with the GovKey",
+        ["uint256", "uint8"],
         True,
     ),
-    "disableSwaps": (
-        lambda: disableVaultSwaps(),
-        "Disable Vault swaps. User needs to be the governance address",
-        [],
+    "setGovKeyWGovKey": (
+        lambda address: setGovKeyWGovKey(address),
+        "Set a new GovKey with the GovKey",
+        ["address"],
         True,
     ),
+    "setComKeyWComKey": (
+        lambda address: setComKeyWComKey(address),
+        "Set a new CommKey with the CommKey",
+        ["address"],
+        True,
+    ),
+    # Transactions to Key Manager
+    # TODO: Add xSwapNative, xSwapToken, xCallNative, xCallToken
+    # View the state of the contracts
     "viewMinStake": (lambda: viewMinStake(), "Display the minimum stake", [], False),
     "viewAggKey": (lambda: viewAggKey(), "Display the Aggregate key", [], False),
     "viewGovKey": (lambda: viewGovKey(), "Display the governance address", [], False),
@@ -155,15 +179,10 @@ commands = {
         [],
         False,
     ),
-    # "viewTokenTransfersTo": (
-    #     lambda address, recipient: viewTokenTransfersTo(address, recipient),
-    #     "Display the USDC transfers for an address",
-    #     ["address", "address"],
-    # ),
-    "displaytx": (
-        lambda txHash: display_tx(txHash),
-        "Display transaction",
-        ["bytes32"],
+    "viewAll": (
+        lambda: viewAll(),
+        "Display all viewable state variables (to be completed)",
+        [],
         False,
     ),
     "exit": (lambda: exit(), "Exits the program", [], False),
@@ -260,14 +279,35 @@ def help():
     )
 
     print("Available commands:\n")
+    numCommands = 0
     for name, (func, description, _, _) in commands.items():
         # print("{0:17} {1}".format("  " + name, description))
+
+        print_separators(numCommands)
 
         params = inspect.getfullargspec(func).args
         argsString = "<" + "> <".join(params) + ">" if len(params) != 0 else ""
 
-        print("{0:18} {1:21}{2}".format("   " + name, argsString, description))
+        if numCommands == len(commands) - 1:
+            # Separate exit from the rest
+            print("---------------")
+        print("{0:20} {1:28}{2}".format("   " + name, argsString, description))
+        numCommands += 1
     print()
+
+
+# Print separators for the commands - very ugly for now to not waste time on this
+def print_separators(numCommands):
+    if numCommands == 0:
+        print("General Commands\n---------------")
+    elif numCommands == 9:
+        print("Transfer Tokens\n---------------")
+    elif numCommands == 12:
+        print("TX to StakeManager\n---------------")
+    elif numCommands == 14:
+        print("TX to KeyManager\n---------------")
+    elif numCommands == 17:
+        print("View State\n---------------")
 
 
 def balanceEth(address):
@@ -367,6 +407,29 @@ def executeClaim(nodeId):
     tx.info()
 
 
+# Could also input a single aggKey and split them into two in the code (as in deploy.py)
+def setAggKeyWGovKey(pubKeyX, pubKeyYParity):
+    aggKey = [pubKeyX, pubKeyYParity]
+    tx = keyManager.setAggKeyWithGovKey(
+        aggKey, {"from": userAddress, "required_confs": 1}
+    )
+    tx.info()
+
+
+def setGovKeyWGovKey(newGovKey):
+    tx = keyManager.setGovKeyWithGovKey(
+        newGovKey, {"from": userAddress, "required_confs": 1}
+    )
+    tx.info()
+
+
+def setComKeyWComKey(newComKey):
+    tx = keyManager.setCommKeyWithCommKey(
+        newComKey, {"from": userAddress, "required_confs": 1}
+    )
+    tx.info()
+
+
 def viewPendClaim(nodeId):
     claim = stakeManager.getPendingClaim(nodeId)
     if claim == [0, ZERO_ADDR, 0, 0]:
@@ -421,17 +484,16 @@ def printUserReadableTime(timestamp):
     print(f"User readable time: {datetime.fromtimestamp(timestamp)}")
 
 
+def viewAll():
+    viewMinStake()
+    viewAggKey()
+    viewGovKey()
+    viewCommKey()
+    viewLastSigTime()
+    viewCurrentTime()
+
+
 # TODO: Add swapNative and swapToken through the Vault.
-def enableVaultSwaps():
-    tx = vault.enableSwaps({"from": userAddress, "required_confs": 1})
-    tx.info()
-    print("** Vault swaps enabled succesfully **")
-
-
-def disableVaultSwaps():
-    tx = vault.disableSwaps({"from": userAddress, "required_confs": 1})
-    tx.info()
-    print("** Vault swaps disabled succesfully **")
 
 
 # TODO: Rewrite this so it is useful - we cannot fetch all events in history,
@@ -522,6 +584,13 @@ def checkAndConvertToType(input, type):
                 return number
         else:
             print("Invalid type - introduce an integer")
+    if type == "uint8":
+        if input.isdigit():
+            number = int(input)
+            if number >= 0 and number <= 2**8 - 1:
+                return number
+        else:
+            print("Invalid type - introduce a uint8")
     elif type == "float":
         try:
             number = float(input)
