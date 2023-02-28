@@ -93,7 +93,7 @@ commands = {
     ),
     "transferEth": (
         lambda amount, address: transferEth(amount, address),
-        "Transfer Eth to an account. Input should be a float amount in eth`",
+        "Transfer Eth to an account. Input should be a float amount in eth",
         ["float", "address"],
         True,
     ),
@@ -121,16 +121,22 @@ commands = {
         ["bytes32"],
         True,
     ),
-    "enableSwaps": (
-        lambda: enableVaultSwaps(),
-        "Enable Vault swaps. User needs to be the governance address",
-        [],
+    "setAggKeyWGovKey": (
+        lambda pubKeyX, pubKeyYParity: setAggKeyWGovKey(pubKeyX, pubKeyYParity),
+        "Set a new AggKey with the GovKey",
+        ["uint256", "uint8"],
         True,
     ),
-    "disableSwaps": (
-        lambda: disableVaultSwaps(),
-        "Disable Vault swaps. User needs to be the governance address",
-        [],
+    "setGovKeyWGovKey": (
+        lambda address: setGovKeyWGovKey(address),
+        "Set a new GovKey with the GovKey",
+        ["address"],
+        True,
+    ),
+    "setComKeyWComKey": (
+        lambda address: setComKeyWComKey(address),
+        "Set a new Comm with the commKey",
+        ["address"],
         True,
     ),
     "viewMinStake": (lambda: viewMinStake(), "Display the minimum stake", [], False),
@@ -266,7 +272,7 @@ def help():
         params = inspect.getfullargspec(func).args
         argsString = "<" + "> <".join(params) + ">" if len(params) != 0 else ""
 
-        print("{0:18} {1:21}{2}".format("   " + name, argsString, description))
+        print("{0:20} {1:28}{2}".format("   " + name, argsString, description))
     print()
 
 
@@ -367,6 +373,29 @@ def executeClaim(nodeId):
     tx.info()
 
 
+# Could also input a single aggKey and split them into two in the code (as in deploy.py)
+def setAggKeyWGovKey(pubKeyX, pubKeyYParity):
+    aggKey = [pubKeyX, pubKeyYParity]
+    tx = keyManager.setAggKeyWithGovKey(
+        aggKey, {"from": userAddress, "required_confs": 1}
+    )
+    tx.info()
+
+
+def setGovKeyWGovKey(newGovKey):
+    tx = keyManager.setGovKeyWithGovKey(
+        newGovKey, {"from": userAddress, "required_confs": 1}
+    )
+    tx.info()
+
+
+def setComKeyWComKey(newComKey):
+    tx = keyManager.setCommKeyWithCommKey(
+        newComKey, {"from": userAddress, "required_confs": 1}
+    )
+    tx.info()
+
+
 def viewPendClaim(nodeId):
     claim = stakeManager.getPendingClaim(nodeId)
     if claim == [0, ZERO_ADDR, 0, 0]:
@@ -422,16 +451,6 @@ def printUserReadableTime(timestamp):
 
 
 # TODO: Add swapNative and swapToken through the Vault.
-def enableVaultSwaps():
-    tx = vault.enableSwaps({"from": userAddress, "required_confs": 1})
-    tx.info()
-    print("** Vault swaps enabled succesfully **")
-
-
-def disableVaultSwaps():
-    tx = vault.disableSwaps({"from": userAddress, "required_confs": 1})
-    tx.info()
-    print("** Vault swaps disabled succesfully **")
 
 
 # TODO: Rewrite this so it is useful - we cannot fetch all events in history,
@@ -522,6 +541,13 @@ def checkAndConvertToType(input, type):
                 return number
         else:
             print("Invalid type - introduce an integer")
+    if type == "uint8":
+        if input.isdigit():
+            number = int(input)
+            if number >= 0 and number <= 2**8 - 1:
+                return number
+        else:
+            print("Invalid type - introduce a uint8")
     elif type == "float":
         try:
             number = float(input)
