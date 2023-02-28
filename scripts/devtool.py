@@ -299,20 +299,15 @@ def help():
 # Print separators for the commands - very ugly for now to not waste time on this
 def print_separators(numCommands):
     if numCommands == 0:
-        print("General Commands")
-        print("---------------")
+        print("General Commands\n---------------")
     elif numCommands == 9:
-        print("Transfer Tokens")
-        print("---------------")
+        print("Transfer Tokens\n---------------")
     elif numCommands == 12:
-        print("TX to StakeManager")
-        print("---------------")
+        print("TX to StakeManager\n---------------")
     elif numCommands == 14:
-        print("TX to KeyManager")
-        print("---------------")
+        print("TX to KeyManager\n---------------")
     elif numCommands == 17:
-        print("View State")
-        print("---------------")
+        print("View State\n---------------")
 
 
 def balanceEth(address):
