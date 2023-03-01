@@ -74,6 +74,12 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             {"from": st_receiver, "amount": st_amount},
         )
 
+    # xSwapNative
+    with reverts(REV_MSG_GOV_SUSPENDED):
+        cf.vault.xSwapNative(
+            0, JUNK_HEX, BTC_UINT, {"from": st_receiver, "amount": st_amount}
+        )
+
     # addGasNative
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.vault.addGasNative(JUNK_HEX, {"from": st_receiver, "amount": st_amount})
