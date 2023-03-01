@@ -74,11 +74,13 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             {"from": st_receiver, "amount": st_amount},
         )
 
-    # xSwapNative
+    # addGasNative
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.xSwapNative(
-            0, JUNK_HEX, BTC_UINT, {"from": st_receiver, "amount": st_amount}
-        )
+        cf.vault.addGasNative(JUNK_HEX, {"from": st_receiver, "amount": st_amount})
+
+    # addGasToken
+    with reverts(REV_MSG_GOV_SUSPENDED):
+        cf.vault.addGasToken(JUNK_HEX, JUNK_INT, NON_ZERO_ADDR, {"from": st_receiver})
 
     # executexSwapAndCall
     with reverts(REV_MSG_GOV_SUSPENDED):

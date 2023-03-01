@@ -61,6 +61,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes refundAddress
     );
 
+    event AddGasNative(bytes32 swapID, uint256 amount);
+    event AddGasToken(bytes32 swapID, uint256 amount, address token);
+
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -474,6 +477,35 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                     Gas topups                           //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Add gas (topup) to an existing cross-chain call with the unique identifier swapID.
+     *          Native tokens must be paid to this contract as part of the call.
+     * @param swapID    The unique identifier for this swap (bytes32)
+     */
+    function addGasNative(bytes32 swapID) external payable override onlyNotSuspended {
+        emit AddGasNative(swapID, msg.value);
+    }
+
+    /**
+     * @notice  Add gas (topup) to an existing cross-chain call with the unique identifier swapID.
+     *          A Chainflip supported token must be paid to this contract as part of the call.
+     * @param swapID    The unique identifier for this swap (bytes32)
+     */
+    function addGasToken(
+        bytes32 swapID,
+        uint256 amount,
+        IERC20 token
+    ) external override onlyNotSuspended nzUint(amount) {
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        emit AddGasToken(swapID, amount, address(token));
+    }
+
+    ////////////////////////////////////////////////////////////½½//
     //                                                          //
     //      Execute cross-chain call and swap (dest. chain)     //
     //                                                          //
