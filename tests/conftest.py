@@ -16,7 +16,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
-    # Deploy with an unused EOA (a[9])
+    # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
     return deploy_set_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
 
 
@@ -52,7 +52,7 @@ def cf(a, cfDeploy):
 # all addresses whitelisted
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
-    # Deploy with an unused EOA (a[9])
+    # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
     cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)

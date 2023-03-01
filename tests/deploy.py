@@ -20,6 +20,10 @@ def deploy_initial_Chainflip_contracts(
     if args:
         environment = args[0]
 
+    # NOTE: When deploying to a live network (via deploy_contracts.py) the environment
+    # variables are forced to be set by the user to avoid defaulting to the testnet values.
+    # Therefore, the default values for env. variables in this script are only used in testing.
+
     aggKey = environment.get("AGG_KEY")
     if aggKey:
         parity = aggKey[0:2]
@@ -31,19 +35,14 @@ def deploy_initial_Chainflip_contracts(
 
     govKey = environment.get("GOV_KEY")
     if govKey:
-        # Allow for the govKey to be the same as deployer is user has specified it.
         cf.gov = govKey
     else:
-        # Different than deployer as per launch scenario.
         cf.gov = accounts[0]
-        assert cf.gov != deployer
 
     communityKey = environment.get("COMM_KEY")
     if communityKey:
-        # We should set the env variable when deploying to live network
         cf.communityKey = communityKey
     else:
-        # This should be only for testing purposes on local testnet (hardhat)
         cf.communityKey = accounts[6]
 
     cf.numGenesisValidators = int(

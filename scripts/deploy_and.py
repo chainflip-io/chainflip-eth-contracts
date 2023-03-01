@@ -17,7 +17,7 @@ from deploy import deploy_set_Chainflip_contracts
 
 print(network.show_active())
 
-DEPLOYER = accounts[9]
+DEPLOYER = accounts[0]
 ALICE = accounts[1]
 BOB = accounts[2]
 CHARLIE = accounts[3]
@@ -28,9 +28,7 @@ COMMUNITY_KEY = accounts[6]
 COMMUNITY_KEY_2 = accounts[7]
 
 
-cf = deploy_set_Chainflip_contracts(
-    DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {"PREFUND_CONTRACTS": "False"}
-)
+cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": ALICE})
