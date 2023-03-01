@@ -1141,6 +1141,101 @@ def test_vault(
                             hexStr(st_refundAddress),
                         ]
 
+        # addGasNative
+        def rule_addGasNative(self, st_sender, st_swapID, st_native_amount):
+            toLog = (st_swapID, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print(
+                        "        REV_MSG_GOV_SUSPENDED _addGasNative",
+                    )
+                    self.v.addGasNative(st_swapID, {"from": st_sender})
+            else:
+                if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
+                    print("                    rule_addGasNative", *toLog)
+                    tx = self.v.addGasNative(
+                        st_swapID,
+                        {"from": st_sender, "amount": st_native_amount},
+                    )
+                    assert (
+                        web3.eth.get_balance(self.v.address)
+                        == self.nativeBals[self.v.address] + st_native_amount
+                    )
+                    self.nativeBals[self.v.address] += st_native_amount
+                    self.nativeBals[st_sender] -= st_native_amount
+                    assert tx.events["SwapNative"][0].values() == [
+                        hexStr(st_swapID),
+                        st_native_amount,
+                    ]
+
+        # addGasToken
+        def rule_addGasToken(
+            self,
+            st_sender,
+            st_swapID,
+            st_token_amount,
+            st_token,
+        ):
+            args = (
+                st_swapID,
+                st_token_amount,
+                st_token,
+            )
+            toLog = (*args, st_sender)
+            if self.suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    print("        REV_MSG_GOV_SUSPENDED _addGasToken")
+                    self.v.addGasToken(
+                        *args,
+                        {"from": st_sender},
+                    )
+            else:
+                if st_token_amount == 0:
+                    print("        REV_MSG_NZ_UINT _addGasToken", *toLog)
+                    with reverts(REV_MSG_NZ_UINT):
+                        self.v.addGasToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+                else:
+                    st_token.approve(self.v, st_token_amount, {"from": st_sender})
+                    if st_token.balanceOf(st_sender) < st_token_amount:
+                        print("        REV_MSG_ERC20_EXCEED_BAL _addGasToken", *toLog)
+                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+                            self.v.addGasToken(
+                                *args,
+                                {"from": st_sender},
+                            )
+                    else:
+                        print("                    rule_addGasToken", *toLog)
+                        tx = self.v.addGasToken(
+                            *args,
+                            {"from": st_sender},
+                        )
+
+                        if st_token == self.tokenA:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenABals[self.v.address] + st_token_amount
+                            )
+                            self.tokenABals[self.v.address] += st_token_amount
+                            self.tokenABals[st_sender] -= st_token_amount
+                        elif st_token == self.tokenB:
+                            assert (
+                                st_token.balanceOf(self.v.address)
+                                == self.tokenBBals[self.v.address] + st_token_amount
+                            )
+                            self.tokenBBals[self.v.address] += st_token_amount
+                            self.tokenBBals[st_sender] -= st_token_amount
+                        else:
+                            assert False, "Panicc"
+
+                        assert tx.events["SwapToken"][0].values() == [
+                            hexStr(st_swapID),
+                            st_token_amount,
+                            st_token,
+                        ]
+
         def rule_executexSwapAndCall_native(
             self,
             st_sender,

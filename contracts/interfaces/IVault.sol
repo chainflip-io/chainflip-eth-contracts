@@ -82,6 +82,16 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
+    //                     Gas topups                           //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function addGasNative(bytes32 swapID) external payable;
+
+    function addGasToken(bytes32 swapID, uint256 amount, IERC20 token) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
     //      Execute cross-chain call and swap (dest. chain)     //
     //                                                          //
     //////////////////////////////////////////////////////////////
