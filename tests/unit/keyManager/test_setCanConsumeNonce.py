@@ -10,7 +10,7 @@ from brownie.test import given, strategy
 )
 def test_setCanConsumeKeyNonce(a, KeyManager, Vault, StakeManager, FLIP, st_whitelist):
 
-    cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
     tx = cf.keyManager.setCanConsumeKeyNonce(st_whitelist)
     assert tx.events["AggKeyNonceConsumersSet"][0].values()[0] == st_whitelist
 
@@ -21,7 +21,7 @@ def test_setCanConsumeKeyNonce(a, KeyManager, Vault, StakeManager, FLIP, st_whit
 
 
 def test_setCanConsumeKeyNonce_rev_duplicate(a, KeyManager, Vault, StakeManager, FLIP):
-    cf = deploy_initial_Chainflip_contracts(a[0], KeyManager, Vault, StakeManager, FLIP)
+    cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
     with reverts(REV_MSG_DUPLICATE):
         cf.keyManager.setCanConsumeKeyNonce(list(a) + list(a))
 

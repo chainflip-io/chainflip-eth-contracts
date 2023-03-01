@@ -40,7 +40,7 @@ contract Deployer is KeyManagerEchidna, StakeManagerEchidna, FLIPEchidna, VaultE
         km = new KeyManager(Key(pubKeyX, pubKeyYParity), govKey, commKey);
         v = new Vault(km);
         sm = new StakeManager(km, minStake);
-        f = new FLIP(initSupply, numGenesisValidators, genesisStake, address(sm), km);
+        f = new FLIP(initSupply, numGenesisValidators, genesisStake, address(sm), govKey, km);
         sm.setFlip(FLIP(address(f)));
         whitelist = [address(v), address(sm), address(km), address(f)];
         km.setCanConsumeKeyNonce(whitelist);

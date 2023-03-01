@@ -20,7 +20,7 @@ def test_transfer_usdc_exceed(cf, mockUsdc, utils):
 
 
 def test_transfer_usdc(cf, mockUsdc):
-    mockUsdc.transfer(cf.vault, TEST_AMNT_USDC, {"from": cf.DEPLOYER})
+    mockUsdc.transfer(cf.vault, TEST_AMNT_USDC, {"from": cf.SAFEKEEPER})
 
     startBalVault = mockUsdc.balanceOf(cf.vault)
     startBalRecipient = mockUsdc.balanceOf(cf.ALICE)
@@ -34,13 +34,13 @@ def test_transfer_usdc(cf, mockUsdc):
 
 
 def test_transfer_blacklist_usdc(cf, mockUsdc, utils):
-    mockUsdc.transfer(cf.vault, TEST_AMNT_USDC * 10, {"from": cf.DEPLOYER})
+    mockUsdc.transfer(cf.vault, TEST_AMNT_USDC * 10, {"from": cf.SAFEKEEPER})
 
     inibal_native = cf.vault.balance()
     inibal_usdc = mockUsdc.balanceOf(cf.vault)
 
     ## Blacklist user
-    mockUsdc.blacklist(cf.ALICE, {"from": cf.DEPLOYER})
+    mockUsdc.blacklist(cf.ALICE, {"from": cf.SAFEKEEPER})
 
     args = [[mockUsdc.address, cf.ALICE, TEST_AMNT_USDC]]
     tx = signed_call_cf(cf, cf.vault.transfer, *args)
@@ -59,14 +59,14 @@ def test_transfer_blacklist_usdc(cf, mockUsdc, utils):
 
 ## Check that a USDC blacklist would stop a batch
 def test_transfer_blacklist_allbatch_usdc(cf, mockUsdc, token, utils):
-    token.transfer(cf.vault, TEST_AMNT, {"from": cf.DEPLOYER})
-    mockUsdc.transfer(cf.vault, TEST_AMNT_USDC, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
+    mockUsdc.transfer(cf.vault, TEST_AMNT_USDC, {"from": cf.SAFEKEEPER})
 
     inibal_native = cf.vault.balance()
     inibal_usdc = mockUsdc.balanceOf(cf.vault)
 
     ## Blacklist user
-    mockUsdc.blacklist(cf.ALICE, {"from": cf.DEPLOYER})
+    mockUsdc.blacklist(cf.ALICE, {"from": cf.SAFEKEEPER})
 
     deployFetchParams = []
     fetchParamsArray = []

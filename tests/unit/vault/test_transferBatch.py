@@ -20,9 +20,9 @@ def test_transferBatch(cf, token, token2, st_recipients, st_amounts, st_sender):
     minLen = trimToShortest([st_recipients, st_amounts])
     tokens = choices([NATIVE_ADDR, token, token2], k=minLen)
 
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT * minLen)
-    token.transfer(cf.vault, TEST_AMNT * minLen, {"from": cf.DEPLOYER})
-    token2.transfer(cf.vault, TEST_AMNT * minLen, {"from": cf.DEPLOYER})
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT * minLen)
+    token.transfer(cf.vault, TEST_AMNT * minLen, {"from": cf.SAFEKEEPER})
+    token2.transfer(cf.vault, TEST_AMNT * minLen, {"from": cf.SAFEKEEPER})
 
     nativeBals = [recip.balance() for recip in st_recipients]
     tokenBals = [token.balanceOf(recip) for recip in st_recipients]

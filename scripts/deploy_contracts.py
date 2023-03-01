@@ -58,8 +58,7 @@ def main():
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
     print(f"  Deployer: {cf.deployer}")
-    # TODO: Update this to cf.safekeeper once PR #273 is merged
-    print(f"  Safekeeper: {cf.gov}")
+    print(f"  Safekeeper: {cf.safekeeper}")
     print(f"  GovKey: {cf.gov}")
     print(f"  Community Key: {cf.communityKey}")
     print(f"  Aggregate Key: {cf.keyManager.getAggregateKey()}")
@@ -81,7 +80,7 @@ def main():
         "FLIP_ADDRESS": cf.flip.address,
     }
 
-    # Deploy USDC mimic token only on private NATIVE network
+    # Deploy USDC mimic token only on private EVM network
     if chain.id == 10997:
         cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
         print(f"USDC: {cf.mockUSDC.address}")

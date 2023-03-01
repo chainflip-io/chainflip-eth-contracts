@@ -36,7 +36,7 @@ def test_executexSwapAndCallEth(
     st_message,
     st_amount,
 ):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
     assert startBalVault >= st_amount
@@ -66,7 +66,7 @@ def test_executexSwapAndCallEth(
 
 # token contract doesn't have the cfReceive function implemented
 def test_executexSwapAndCall_rev_noCfReceive(cf, token):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
     randToken = random.choice([NATIVE_ADDR, token])
 
     startBalVault = cf.vault.balance()
@@ -87,7 +87,7 @@ def test_executexSwapAndCall_rev_noCfReceive(cf, token):
 
 # rev if token address is not an ERC20
 def test_executexSwapAndCall_revToken(cf, cfReceiverMock):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
@@ -185,7 +185,7 @@ def test_executexSwapAndCallEth_rev_msgHash(cf):
 
 # rev if cfReceiver reverts the call
 def test_executexSwapAndCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cfReceiverFailMock.balance()
@@ -208,7 +208,7 @@ def test_executexSwapAndCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
 )
 def test_executexSwapAndCallEth_tryCatch(cf, cfReceiverTryMock, st_amount):
-    cf.DEPLOYER.transfer(cf.vault, st_amount)
+    cf.SAFEKEEPER.transfer(cf.vault, st_amount)
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cfReceiverTryMock.balance()
@@ -233,7 +233,7 @@ def test_executexSwapAndCallEth_tryCatch(cf, cfReceiverTryMock, st_amount):
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
 )
 def test_executexSwapAndCallToken_tryCatch(cf, cfReceiverTryMock, st_amount, token):
-    token.transfer(cf.vault, TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
 
     startBalVault = token.balanceOf(cf.vault)
     startBalRecipient = token.balanceOf(cfReceiverTryMock)
@@ -273,7 +273,7 @@ def test_executexSwapAndCallEth(
     st_amount,
     token,
 ):
-    token.transfer(cf.vault, st_amount, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, st_amount, {"from": cf.SAFEKEEPER})
 
     startBalVault = token.balanceOf(cf.vault)
     assert startBalVault >= st_amount

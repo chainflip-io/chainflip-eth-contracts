@@ -4,13 +4,13 @@ from brownie import reverts
 
 
 def test_transfer_native(cf):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
     transfer_native(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
 
 # token doesn't have a fallback function for receiving native, so should fail
 def test_transfer_native_fails_recipient(cf, token):
-    cf.DEPLOYER.transfer(cf.vault, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
@@ -36,7 +36,7 @@ def test_transfer_native_fails_not_enough_native(cf):
 
 
 def test_transfer_token(cf, token):
-    token.transfer(cf.vault, TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
 
     startBalVault = token.balanceOf(cf.vault)
     startBalRecipient = token.balanceOf(cf.ALICE)
