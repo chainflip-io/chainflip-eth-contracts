@@ -13,32 +13,46 @@ def test_flip_constructor(cf):
 def test_flip_constructor_reverts_nz(cf, FLIP):
 
     with reverts(REV_MSG_NZ_UINT):
-        cf.DEPLOYER.deploy(
+        cf.SAFEKEEPER.deploy(
             FLIP,
             0,
             cf.numGenesisValidators,
             cf.genesisStake,
             cf.stakeManager.address,
+            cf.SAFEKEEPER,
             cf.keyManager,
         )
 
     with reverts(REV_MSG_NZ_ADDR):
-        cf.DEPLOYER.deploy(
+        cf.SAFEKEEPER.deploy(
             FLIP,
             INIT_SUPPLY,
             cf.numGenesisValidators,
             cf.genesisStake,
             ZERO_ADDR,
+            cf.SAFEKEEPER,
             cf.keyManager,
         )
 
     with reverts(REV_MSG_NZ_ADDR):
-        cf.DEPLOYER.deploy(
+        cf.SAFEKEEPER.deploy(
             FLIP,
             INIT_SUPPLY,
             cf.numGenesisValidators,
             cf.genesisStake,
             cf.stakeManager.address,
+            ZERO_ADDR,
+            cf.keyManager,
+        )
+
+    with reverts(REV_MSG_NZ_ADDR):
+        cf.SAFEKEEPER.deploy(
+            FLIP,
+            INIT_SUPPLY,
+            cf.numGenesisValidators,
+            cf.genesisStake,
+            cf.stakeManager.address,
+            cf.SAFEKEEPER,
             ZERO_ADDR,
         )
 
@@ -69,6 +83,7 @@ def test_flip_constructor_minting(
                 st_numGenesisValidators,
                 st_genesisStake,
                 receiverGenesisValidatorFlip,
+                deployer,
                 keyManProxy,
             )
     else:
@@ -78,6 +93,7 @@ def test_flip_constructor_minting(
             st_numGenesisValidators,
             st_genesisStake,
             receiverGenesisValidatorFlip,
+            deployer,
             keyManProxy,
         )
         genesisValidatorFlip, remainder = maths.calculateFlipGenesis(

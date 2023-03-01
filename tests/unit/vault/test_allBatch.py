@@ -42,12 +42,12 @@ def test_allBatch(
             depositAddr = getCreate2Addr(
                 cf.vault.address, id.hex(), Deposit, cleanHexStrPad(NATIVE_ADDR)
             )
-            cf.DEPLOYER.transfer(depositAddr, am)
+            cf.SAFEKEEPER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
                 cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
             )
-            tok.transfer(depositAddr, am, {"from": cf.DEPLOYER})
+            tok.transfer(depositAddr, am, {"from": cf.SAFEKEEPER})
         depositAddrs.append(depositAddr)
     assert cf.vault.balance() == 0  # starting balance
     assert token.balanceOf(cf.vault) == 0

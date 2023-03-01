@@ -19,16 +19,18 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
         uint256 numGenesisValidators,
         uint256 genesisStake,
         address receiverGenesisValidatorFlip, // Stake Manager
+        address receiverGenesisFlip,
         IKeyManager keyManager
     )
         ERC20("Chainflip", "FLIP")
         nzAddr(receiverGenesisValidatorFlip)
+        nzAddr(receiverGenesisFlip)
         nzUint(flipTotalSupply)
         AggKeyNonceConsumer(keyManager)
     {
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _mint(receiverGenesisValidatorFlip, genesisValidatorFlip);
-        _mint(msg.sender, flipTotalSupply - genesisValidatorFlip);
+        _mint(receiverGenesisFlip, flipTotalSupply - genesisValidatorFlip);
     }
 
     //////////////////////////////////////////////////////////////

@@ -22,8 +22,8 @@ def test_dex_executexCallNative(
     (dexMock, dexAggSrcMock, dexAggDstMock, srcChain) = cfDexAggMock
 
     # Fund Vault and DexMock
-    token.transfer(cf.vault, st_amount * 10, {"from": cf.DEPLOYER})
-    token2.transfer(dexMock, st_amount * 10, {"from": cf.DEPLOYER})
+    token.transfer(cf.vault, st_amount * 10, {"from": cf.SAFEKEEPER})
+    token2.transfer(dexMock, st_amount * 10, {"from": cf.SAFEKEEPER})
 
     # Balance => ETH, token1, token2
     bals = {}
@@ -130,9 +130,9 @@ def test_dex_executexCallToken(
     (dexMock, dexAggSrcMock, dexAggDstMock, srcChain) = cfDexAggMock
 
     # Fund Vault, DexMock
-    cf.DEPLOYER.transfer(cf.vault, st_amount * 10)
-    token.transfer(st_sender, st_amount * 10, {"from": cf.DEPLOYER})
-    token2.transfer(dexMock, st_amount * 10, {"from": cf.DEPLOYER})
+    cf.SAFEKEEPER.transfer(cf.vault, st_amount * 10)
+    token.transfer(st_sender, st_amount * 10, {"from": cf.SAFEKEEPER})
+    token2.transfer(dexMock, st_amount * 10, {"from": cf.SAFEKEEPER})
 
     # Balance => ETH, token1, token2
     bals = {}

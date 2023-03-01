@@ -9,7 +9,7 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Depos
     depositAddr = getCreate2Addr(
         cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
 
     assert cf.vault.balance() == 0
 
@@ -40,7 +40,7 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Depos
     depositAddr = getCreate2Addr(
         cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
 
     assert token.balanceOf(cf.vault) == 0
 
@@ -69,11 +69,11 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     depositAddr = getCreate2Addr(
         cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
     depositAddr2 = getCreate2Addr(
         cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
+    cf.SAFEKEEPER.transfer(depositAddr2, 2 * TEST_AMNT)
 
     assert cf.vault.balance() == 0
     deployFetchParamsArray = craftDeployFetchParamsArray(
@@ -110,11 +110,11 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     depositAddr = getCreate2Addr(
         cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
     depositAddr2 = getCreate2Addr(
         cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.SAFEKEEPER})
 
     assert token.balanceOf(cf.vault) == 0
 
@@ -147,11 +147,11 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     depositAddr = getCreate2Addr(
         cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
     depositAddr2 = getCreate2Addr(
         cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.SAFEKEEPER})
 
     assert token.balanceOf(cf.vault) == 0
 
@@ -209,11 +209,11 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     depositAddr = getCreate2Addr(
         cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
     depositAddr2 = getCreate2Addr(
         cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
+    cf.SAFEKEEPER.transfer(depositAddr2, 2 * TEST_AMNT)
 
     assert cf.vault.balance() == 0
 
@@ -254,11 +254,11 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
     depositAddr = getCreate2Addr(
         cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr, TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
     depositAddr2 = getCreate2Addr(
         cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
     )
-    token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.DEPLOYER})
+    token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.SAFEKEEPER})
 
     assert token.balanceOf(cf.vault) == 0
 
@@ -311,11 +311,11 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
     depositAddr = getCreate2Addr(
         cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    cf.DEPLOYER.transfer(depositAddr, TEST_AMNT)
+    cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
     depositAddr2 = getCreate2Addr(
         cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    cf.DEPLOYER.transfer(depositAddr2, 2 * TEST_AMNT)
+    cf.SAFEKEEPER.transfer(depositAddr2, 2 * TEST_AMNT)
 
     assert cf.vault.balance() == 0
 

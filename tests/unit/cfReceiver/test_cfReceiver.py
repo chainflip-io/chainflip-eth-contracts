@@ -59,7 +59,7 @@ def test_rev_cfReceivexCall_notVault(
     st_address=strategy("address"),
 )
 def test_rev_updateCfVault(cf, cfReceiverMock, st_sender, st_address):
-    if st_sender != cf.DEPLOYER:
+    if st_sender != cf.SAFEKEEPER:
         ## only owner can update the cfVault address
         with reverts("CFReceiver: caller not owner"):
             cfReceiverMock.updateCfVault(st_address, {"from": st_sender})

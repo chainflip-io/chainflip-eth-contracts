@@ -23,13 +23,13 @@ def test_deployAndFetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_toke
             depositAddr = getCreate2Addr(
                 cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
             )
-            tok.transfer(depositAddr, am, {"from": cf.DEPLOYER})
+            tok.transfer(depositAddr, am, {"from": cf.SAFEKEEPER})
             tokenTotal += am
         else:
             depositAddr = getCreate2Addr(
                 cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok)
             )
-            cf.DEPLOYER.transfer(depositAddr, am)
+            cf.SAFEKEEPER.transfer(depositAddr, am)
             nativeTotal += am
 
     assert token.balanceOf(cf.vault) == 0

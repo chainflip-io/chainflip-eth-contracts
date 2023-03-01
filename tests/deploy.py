@@ -20,7 +20,9 @@ def deploy_initial_Chainflip_contracts(
     if args:
         environment = args[0]
 
-    cf.deployer = deployer
+    # NOTE: When deploying to a live network (via deploy_contracts.py) the environment
+    # variables are forced to be set by the user to avoid defaulting to the testnet values.
+    # Therefore, the default values for env. variables in this script are only used in testing.
 
     aggKey = environment.get("AGG_KEY")
     if aggKey:
@@ -35,17 +37,13 @@ def deploy_initial_Chainflip_contracts(
     if govKey:
         cf.gov = govKey
     else:
-        cf.gov = deployer
+        cf.gov = accounts[0]
 
     communityKey = environment.get("COMM_KEY")
     if communityKey:
-        # We should set the env variable when deploying to live network
         cf.communityKey = communityKey
     else:
-        # This should be only for testing purposes on local testnet (hardhat)
         cf.communityKey = accounts[6]
-
-    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
 
     cf.numGenesisValidators = int(
         environment.get("NUM_GENESIS_VALIDATORS") or NUM_GENESIS_VALIDATORS
@@ -60,22 +58,36 @@ def deploy_initial_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
+    # Deploy Key Manager contract
+    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
+
+    # Deploy Vault contract
     cf.vault = deployer.deploy(Vault, cf.keyManager)
+
+    # Deploy Stake Manager contract
     cf.stakeManager = deployer.deploy(
         StakeManager,
         cf.keyManager,
         MIN_STAKE,
     )
+
+    # Deploy FLIP contract. Minting genesis validator FLIP to the Stake Manager.
+    # The rest of genesis FLIP will be minted to the governance address for safekeeping.
     cf.flip = deployer.deploy(
         FLIP,
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
         cf.stakeManager.address,
+        cf.gov,
         cf.keyManager,
     )
 
-    cf.stakeManager.setFlip(cf.flip.address, {"from": cf.deployer})
+    cf.stakeManager.setFlip(cf.flip.address, {"from": deployer})
+
+    # All the deployer rights and tokens have been delegated to the governance key.
+    cf.safekeeper = cf.gov
+    cf.deployer = deployer
 
     return cf
 
@@ -88,7 +100,7 @@ def deploy_set_Chainflip_contracts(
         deployer, KeyManager, Vault, StakeManager, FLIP, *args
     )
     cf.whitelisted = [cf.vault.address, cf.stakeManager.address, cf.flip.address]
-    cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
+    cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted, {"from": cf.deployer})
 
     return cf
 

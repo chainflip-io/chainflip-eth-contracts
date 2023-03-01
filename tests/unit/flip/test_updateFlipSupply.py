@@ -80,7 +80,7 @@ def test_updateFlipSupply(cf):
 def test_updateFlipSupply_unchangedSupply(cf):
 
     stakeManagerBalanceBefore = cf.flip.balanceOf(cf.stakeManager)
-    deployerBalanceBefore = cf.flip.balanceOf(cf.DEPLOYER)
+    deployerBalanceBefore = cf.flip.balanceOf(cf.SAFEKEEPER)
     totalSupplyBefore = cf.flip.totalSupply()
 
     assert stakeManagerBalanceBefore == STAKEMANAGER_INITIAL_BALANCE
@@ -98,7 +98,7 @@ def test_updateFlipSupply_unchangedSupply(cf):
     )
 
     stakeManagerBalanceAfter = cf.flip.balanceOf(cf.stakeManager)
-    deployerBalanceAfter = cf.flip.balanceOf(cf.DEPLOYER)
+    deployerBalanceAfter = cf.flip.balanceOf(cf.SAFEKEEPER)
     totalSupplyAfter = cf.flip.totalSupply()
 
     assert stakeManagerBalanceAfter == stakeManagerBalanceBefore

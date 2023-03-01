@@ -28,13 +28,11 @@ COMMUNITY_KEY = accounts[6]
 COMMUNITY_KEY_2 = accounts[7]
 
 
-cf = deploy_set_Chainflip_contracts(
-    DEPLOYER, KeyManager, Vault, StakeManager, FLIP, {"PREFUND_CONTRACTS": "False"}
-)
+cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
 
-cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": DEPLOYER})
+cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": ALICE})
-cf.flip.transfer(BOB, MAX_TEST_STAKE, {"from": DEPLOYER})
+cf.flip.transfer(BOB, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": BOB})
 
 print("========================= 😎  Deployed! 😎 ==========================\n")
