@@ -17,14 +17,62 @@ def main():
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
     print(f"DEPLOYER = {DEPLOYER}")
 
+    # Check that all environment variables are set when deploying to a live network.
+    # SEED and the endpoint are checked automatically by Brownie.
+    env_var_names = [
+        "AGG_KEY",
+        "GOV_KEY",
+        "COMM_KEY",
+        "GENESIS_STAKE",
+        "NUM_GENESIS_VALIDATORS",
+    ]
+    for env_var_name in env_var_names:
+        if env_var_name not in os.environ:
+            raise Exception(f"Environment variable {env_var_name} is not set")
+
+    # For live deployment, add a confirmation step to allow the user to verify the parameters.
+    if chain.id == 1:
+        # Print all the environment variables for mainnet deployment.
+        print("\nTo be deployed with parameters\n----------------------------")
+        print(f"  ChainID: {chain.id} - ETHEREUM MAINNET")
+        print(f"  Deployer: {DEPLOYER}")
+        print(f"  Safekeeper & GovKey: {os.environ['GOV_KEY']}")
+        print(f"  Community Key: {os.environ['COMM_KEY']}")
+        # print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
+        print(f"  Genesis Stake: {os.environ['GENESIS_STAKE']}")
+        print(f"  Num Genesis Validators: {os.environ['NUM_GENESIS_VALIDATORS']}")
+        print(
+            f"\nFLIP tokens will be minted to the Safekeeper account {os.environ['GOV_KEY']}"
+        )
+        input(
+            "\n[WARNING] You are about to deploy to the mainnet with the parameters above. Continue? [y/N]"
+        )
+        if input != "y":
+            ## Gracefully exit the script with a message.
+            sys.exit("Deployment cancelled by user")
+
     cf = deploy_set_Chainflip_contracts(
         DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
     )
 
-    print(f"KeyManager: {cf.keyManager.address}")
-    print(f"StakeManager: {cf.stakeManager.address}")
-    print(f"FLIP: {cf.flip.address}")
-    print(f"Vault: {cf.vault.address}")
+    print("Deployed with parameters\n----------------------------")
+    print(f"  ChainID: {chain.id}")
+    print(f"  Deployer: {cf.deployer}")
+    # TODO: Update this to cf.safekeeper once PR #273 is merged
+    print(f"  Safekeeper: {cf.gov}")
+    print(f"  GovKey: {cf.gov}")
+    print(f"  Community Key: {cf.communityKey}")
+    print(f"  Aggregate Key: {cf.keyManager.getAggregateKey()}")
+    print(f"  Genesis Stake: {cf.genesisStake}")
+    print(f"  Num Genesis Validators: {cf.numGenesisValidators}" + "\n")
+
+    print("Deployed contract addresses\n----------------------------")
+    print(f"  KeyManager: {cf.keyManager.address}")
+    print(f"  StakeManager: {cf.stakeManager.address}")
+    print(f"  FLIP: {cf.flip.address}")
+    print(f"  Vault: {cf.vault.address}")
+
+    print("\n😎😎 Deployment success! 😎😎")
 
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
