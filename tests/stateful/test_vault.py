@@ -1163,7 +1163,7 @@ def test_vault(
                     )
                     self.nativeBals[self.v.address] += st_native_amount
                     self.nativeBals[st_sender] -= st_native_amount
-                    assert tx.events["SwapNative"][0].values() == [
+                    assert tx.events["AddGasNative"][0].values() == [
                         hexStr(st_swapID),
                         st_native_amount,
                     ]
@@ -1230,7 +1230,7 @@ def test_vault(
                         else:
                             assert False, "Panicc"
 
-                        assert tx.events["SwapToken"][0].values() == [
+                        assert tx.events["AddGasToken"][0].values() == [
                             hexStr(st_swapID),
                             st_token_amount,
                             st_token,
