@@ -495,6 +495,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @notice  Add gas (topup) to an existing cross-chain call with the unique identifier swapID.
      *          A Chainflip supported token must be paid to this contract as part of the call.
      * @param swapID    The unique identifier for this swap (bytes32)
+     * @param token     Address of the token to provide.
+     * @param amount    Amount of tokens to provide.
      */
     function addGasToken(
         bytes32 swapID,
@@ -505,7 +507,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         emit AddGasToken(swapID, amount, address(token));
     }
 
-    ////////////////////////////////////////////////////////////½½//
+    //////////////////////////////////////////////////////////////
     //                                                          //
     //      Execute cross-chain call and swap (dest. chain)     //
     //                                                          //
