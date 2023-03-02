@@ -158,6 +158,7 @@ REV_MSG_CFREC_REVERTED = "CFReceiverFail: call reverted"
 REV_MSG_CFREC_SENDER = "CFReceiver: caller not Chainflip sender"
 
 # -----Token mapping-----
-BTC_UINT = 0
-ETH_UINT = 1
-USDC_UINT = 2
+NO_SWAP = 0
+BTC_UINT = 1
+ETH_UINT = 2
+USDC_UINT = 3

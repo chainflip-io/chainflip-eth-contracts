@@ -218,40 +218,92 @@ def all_flip_events():
 
 
 def all_vault_events():
-    print(f"\n🔐 Enable Vault xCalls\n")
-    cf.vault.enablexCalls({"from": GOVERNOR})
+    print(
+        f"\n💰 Alice swaps {TEST_AMNT} ETH with swapIntent BTC, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
+    )
+    cf.vault.xSwapNative(JUNK_INT, JUNK_HEX, BTC_UINT, {"amount": TEST_AMNT})
 
     print(
-        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_STR}, dstChain {JUNK_INT}, swaps {TEST_AMNT} ETH, swapIntent USDC and refund Address {ALICE}\n"
-    )
-    cf.vault.xCallNative(
-        JUNK_INT, JUNK_STR, "USDC", JUNK_HEX, ALICE, {"amount": TEST_AMNT}
-    )
-
-    print(
-        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_STR}, dstChain {JUNK_INT}, swaps {TEST_AMNT} IngressToken {cf.flip}, swapIntent USDC and refund Address {ALICE}\n"
-    )
-    cf.flip.approve(cf.vault, TEST_AMNT)
-    cf.vault.xCallToken(JUNK_INT, JUNK_STR, "USDC", JUNK_HEX, cf.flip, TEST_AMNT, ALICE)
-
-    print(f"\n🔐 Disable Vault xCalls\n")
-    cf.vault.disablexCalls({"from": GOVERNOR})
-
-    print(
-        f"\n💰 Alice swaps {TEST_AMNT} ETH with swapIntent BTC, destination address {JUNK_STR} and dstChain {JUNK_INT}\n"
-    )
-    cf.vault.xSwapNative(JUNK_INT, JUNK_STR, "BTC", {"amount": TEST_AMNT})
-
-    print(
-        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} swapIntent BTC, destination address {JUNK_STR} and dstChain {JUNK_INT}\n"
+        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} swapIntent BTC, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
     )
     cf.flip.approve(cf.vault, TEST_AMNT)
     cf.vault.xSwapToken(
         JUNK_INT,
-        JUNK_STR,
-        "BTC",
+        JUNK_HEX,
+        BTC_UINT,
         cf.flip,
         TEST_AMNT,
+    )
+
+    print(
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT} ETH, swapIntent USDC and refund Address {ALICE}\n"
+    )
+    cf.vault.xCallNative(
+        JUNK_INT,
+        JUNK_HEX,
+        USDC_UINT,
+        JUNK_HEX,
+        JUNK_INT,
+        JUNK_HEX,
+        {"amount": TEST_AMNT},
+    )
+
+    print(
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT} IngressToken {cf.flip}, swapIntent USDC and refund Address {ALICE}\n"
+    )
+    cf.flip.approve(cf.vault, TEST_AMNT)
+    cf.vault.xCallToken(
+        JUNK_INT, JUNK_HEX, USDC_UINT, JUNK_HEX, JUNK_INT, cf.flip, TEST_AMNT, JUNK_HEX
+    )
+
+    print(f"\n💰 Alice adds {TEST_AMNT} ETH to the swap with swapID {JUNK_HEX}\n")
+    cf.vault.addGasNative(JUNK_HEX, {"amount": TEST_AMNT})
+
+    print(
+        f"\n💰 Alice adds {TEST_AMNT} IngressToken {cf.flip} to the swap with swapID {JUNK_HEX}\n"
+    )
+    cf.flip.approve(cf.vault, TEST_AMNT)
+    cf.vault.addGasToken(JUNK_HEX, TEST_AMNT, cf.flip)
+
+    print(f"\n❌ Failed transfer of {TEST_AMNT} ETH to recipient {cf.flip}\n")
+    args = [[NATIVE_ADDR, cf.flip, TEST_AMNT]]
+    callDataNoSig = cf.vault.transfer.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    cf.vault.transfer(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        *args,
+    )
+
+    transferFailureAmount = cf.flip.balanceOf(cf.vault) + 1
+    print(
+        f"\n❌ Failed transfer of {transferFailureAmount} token {cf.flip} to recipient {NON_ZERO_ADDR} with reason 0x08c379a0....00000\n"
+    )
+    args = [[cf.flip, NON_ZERO_ADDR, transferFailureAmount]]
+    callDataNoSig = cf.vault.transfer.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    cf.vault.transfer(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        *args,
+    )
+
+    print(
+        f"\n❌ Failed batch transfer of 2x[{TEST_AMNT} ETH to recipient {cf.flip}] and 1x[{transferFailureAmount} token {cf.flip} to recipient {NON_ZERO_ADDR} with reason 0x08c379a0....00000]\n"
+    )
+    args = [
+        [
+            [NATIVE_ADDR, cf.flip, TEST_AMNT],
+            [NATIVE_ADDR, cf.flip, TEST_AMNT],
+            [cf.flip, NON_ZERO_ADDR, transferFailureAmount],
+        ]
+    ]
+    callDataNoSig = cf.vault.transferBatch.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    cf.vault.transferBatch(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        *args,
     )
 
     print(f"\n🔐 Governance suspends execution of claims\n")
