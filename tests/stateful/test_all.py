@@ -2,6 +2,7 @@ from consts import *
 from shared_tests import *
 from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
+from brownie.convert import to_bytes
 from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
@@ -1355,6 +1356,7 @@ def test_all(
 
         # addGasNative
         def rule_addGasNative(self, st_sender, st_swapID, st_native_amount):
+            st_swapID = to_bytes(st_swapID, type_str="bytes32")
 
             toLog = (st_swapID, st_sender)
             if self.v_suspended:
@@ -1387,6 +1389,8 @@ def test_all(
             st_token_amount,
             st_token,
         ):
+            st_swapID = to_bytes(st_swapID, type_str="bytes32")
+
             args = (
                 st_swapID,
                 st_token_amount,

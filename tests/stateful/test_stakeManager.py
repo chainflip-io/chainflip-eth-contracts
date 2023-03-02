@@ -55,7 +55,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.totalStake = 0
             self.minStake = INIT_MIN_STAKE
             self.allAddrs = self.stakers + [self.sm]
-            self.sm.setMinStake(INIT_MIN_STAKE)
+            self.sm.setMinStake(INIT_MIN_STAKE, {"from": cfDeploy.gov})
 
             # Eth bals shouldn't change in this test, but just to be sure...
             self.nativeBals = {
