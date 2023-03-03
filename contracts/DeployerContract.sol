@@ -7,7 +7,7 @@ import "./FLIP.sol";
 import "./interfaces/IShared.sol";
 
 contract DeployerContract is IShared {
-    address[] private whitelist;
+    address[] internal whitelist;
 
     Vault public vault;
     KeyManager public keyManager;

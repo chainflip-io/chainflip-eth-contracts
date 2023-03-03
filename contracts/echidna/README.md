@@ -16,7 +16,7 @@ There are some workarounds that have been done to get it working. First, we have
 
 A limitation caused by the previous solution is that deploying all contracts from the deployer makes it so Echidna does not see all the external functions of the contracts. Therefore, *Echidna.sol contracts have been created as a way to expose all the external functions to Echidna so it fuzzes them. The test contracts then inherit from those contracts.
 
-Finally, Echidna does not suppport constructors with parameters. Therefore, the parameters needed for all the contracts' constructors have been hardcoded in every test and then passed to the contracts at deloyment. This way the top level test contract has no constructor parameters. The constructor parameters need to be changed in the Deployer or the test if any constructor parameters need to be changed.
+Finally, Echidna does not suppport constructors with parameters. Therefore, the parameters needed for all the contracts' constructors have been hardcoded in every test and then passed to the contracts at deloyment. This way the top level test contract has no constructor parameters. The constructor parameters need to be changed in the DeployerEchidna or the test if any constructor parameters need to be changed.
 
 Note: Do not add both slither and slither analyzer to poetry. That get installed correctly (no error or warnings) but when executing the tool it gives errors about missing packages.
 

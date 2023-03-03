@@ -1,5 +1,5 @@
 testMode: "property"
-#codeSize Increased codeSize because Echidna fails when deploying all the contracts via Deployer.sol
+#codeSize Increased codeSize because Echidna fails when deploying all the contracts via DeployerEchidna.sol
 codeSize: 0x60000
 
 cryticArgs: # If we add more dependencies they will need to be added as symlinks here!
