@@ -6,34 +6,34 @@
           Also, it allows the CommunityKey to safeguard certain functions so the
           governor can execute them iff the communityKey allows it.
 
-## `isCommunityKey()`
+## `onlyCommunityKey()`
 
    Check that the caller is the Community Key address.
 
-## `isCommunityGuardDisabled()`
+## `onlyCommunityGuardDisabled()`
 
    Check that community has disabled the community guard.
 
-## `isCommunityGuardEnabled()`
+## `onlyCommunityGuardEnabled()`
 
    Check that community has disabled the community guard.
 
-## `isGovernor()`
+## `onlyGovernor()`
 
 Ensure that the caller is the governor address. Calls the getGovernor
         function which is implemented by the children.
 
-## `isSuspended()`
+## `onlySuspended()`
 
-## `isNotSuspended()`
+## `onlyNotSuspended()`
 
 ## `_getGovernor() → address` (internal)
 
  Get the governor's address. The contracts inheriting this (StakeManager and Vault)
          get the governor's address from the KeyManager through the AggKeyNonceConsumer's
          inheritance. Therefore, the implementation of this function must be left
-         to the children. This is a workaround since the isGovernor modifier can't be
-         made virtual. This contract needs to be marked as abstract.
+         to the children. This is not implemented as a virtual onlyGovernor modifier to force
+         the children to implement this function - virtual modifiers don't enforce that.
 
 Returns
 
@@ -44,8 +44,8 @@ Returns
  Get the community's address. The contracts inheriting this (StakeManager and Vault)
          get the community's address from the KeyManager through the AggKeyNonceConsumer's
          inheritance. Therefore, the implementation of this function must be left
-         to the children. This is a workaround since the isCommunityKey modifier can't be
-         made virtual. This contract needs to be marked as abstract.
+         to the children. This is not implemented as a virtual onlyCommunityKey modifier to force
+         the children to implement this function - virtual modifiers don't enforce that.
 
 Returns
 
@@ -76,7 +76,7 @@ Returns
 
 - The CommunityKey
 
-## `getCommunityGuard() → bool` (external)
+## `getCommunityGuardDisabled() → bool` (external)
 
  Get the Community Guard state
 

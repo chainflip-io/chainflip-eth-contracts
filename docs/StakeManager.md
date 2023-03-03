@@ -26,7 +26,7 @@ No description
 
 No description
 
-## `setFlip(contract FLIP flip)` (external)
+## `setFlip(contract IFLIP flip)` (external)
 
  Sets the FLIP address after initialization. We can't do this in the constructor
          because FLIP contract requires this contract's address on deployment for minting.
@@ -88,9 +88,15 @@ No description
 Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
         to be approved by the Community, it is a last resort. Used to rectify an emergency.
 
+## `govWithdrawNative()` (external)
+
+Withdraw any native tokens on this contract. The intended execution of this contract doesn't
+require any native tokens. This function is just to recover any native tokens that might have been sent to
+this contract by accident (or any other reason).
+
 ## `receive()` (external)
 
- @notice Allows this contract to receive ETH used to refund callers
+ @notice Allows this contract to receive native tokens
 
 ## `getFLIP() → contract IFLIP` (external)
 

@@ -17,3 +17,5 @@
 Returns
 
 - The KeyManager (IKeyManager)
+
+## `UpdatedKeyManager(address keyManager)`

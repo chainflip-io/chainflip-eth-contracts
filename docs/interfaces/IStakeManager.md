@@ -1,5 +1,15 @@
 # `IStakeManager`
 
+## `setFlip(contract IFLIP flip)` (external)
+
+ Sets the FLIP address after initialization. We can't do this in the constructor
+         because FLIP contract requires this contract's address on deployment for minting.
+         First this contract is deployed, then the FLIP contract and finally setFLIP
+         should be called. OnlyDeployer modifer for added security since tokens will be
+         minted to this contract before calling setFLIP.
+
+- `flip`: FLIP token address
+
 ## `stake(bytes32 nodeID, uint256 amount, address returnAddr)` (external)
 
          Stake some FLIP and attribute it to a nodeID
@@ -52,6 +62,12 @@
 Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
         to be approved by the Community, it is a last resort. Used to rectify an emergency.
 
+## `govWithdrawNative()` (external)
+
+Withdraw any native on this contract. The intended execution of this contract doesn't
+require any native. This function is just to recover any native that might have been sent to
+this contract by accident (or any other reason), since incoming native cannot be stopped.
+
 ## `getFLIP() → contract IFLIP` (external)
 
  Get the FLIP token address
@@ -90,3 +106,5 @@ Returns
 ## `MinStakeChanged(uint256 oldMinStake, uint256 newMinStake)`
 
 ## `GovernanceWithdrawal(address to, uint256 amount)`
+
+## `FLIPSet(address flip)`
