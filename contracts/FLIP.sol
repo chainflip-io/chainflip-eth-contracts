@@ -41,7 +41,8 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
 
     /**
      * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints and burns as appropriate
+     *          then mints or burns as appropriate. The message must be 
+     '          signed by the aggregate key.
      * @param sigData               signature over the abi-encoded function params
      * @param newTotalSupply        new total supply of FLIP
      * @param stateChainBlockNumber State Chain block number for the new total supply
