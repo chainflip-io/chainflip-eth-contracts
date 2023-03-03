@@ -93,6 +93,6 @@ Slightly modified from <https://github.com/smartcontractkit/chainlink/pull/1272/
 
     fu
 
-## `verifySigningKeyX(uint256 signingPubKeyX)` (public)
+## `verifySigningKeyX(uint256 signingPubKeyX)` (internal)
 
 No description

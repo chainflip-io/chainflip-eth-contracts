@@ -4,17 +4,21 @@ A token holder contract that can release its token balance gradually like a
 typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
 owner.
 
-## `constructor(address beneficiary_, address revoker_, bool revocable_, uint256 start_, uint256 cliff_, uint256 end_, bool canStake_, contract IStakeManager stakeManager_)` (public)
+## `onlyBeneficiary()`
+
+Ensure that the caller is the beneficiary address
+
+## `onlyRevoker()`
+
+Ensure that the caller is the revoker address
+
+## `constructor(address beneficiary_, address revoker_, uint256 cliff_, uint256 end_, bool canStake_, contract IStakeManager stakeManager_)` (public)
 
 No description
 
 - `beneficiary_`: address of the beneficiary to whom vested tokens are transferred
 
-- `revoker_`:   the person with the power to rug the vesting
-
-- `revocable_`: whether the vesting is revocable or not
-
-- `start_`: the unix time to start the vesting calculation at
+- `revoker_`:   the person with the power to revoke the vesting. Address(0) means it is not revocable.
 
 - `cliff_`: the unix time of the cliff, nothing withdrawable before this
 
@@ -61,4 +65,4 @@ Allows the revoker to retrieve tokens that have been unstaked
 
 ## `TokensReleased(contract IERC20 token, uint256 amount)`
 
-## `TokenVestingRevoked(contract IERC20 token)`
+## `TokenVestingRevoked(contract IERC20 token, uint256 refund)`

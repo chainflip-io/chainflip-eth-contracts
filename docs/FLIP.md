@@ -3,7 +3,7 @@
   The FLIP utility token which is used to stake in the FLIP system and pay for
           trap fees with
 
-## `constructor(uint256 flipTotalSupply, uint256 numGenesisValidators, uint256 genesisStake, address receiverGenesisValidatorFlip, contract IKeyManager keyManager)` (public)
+## `constructor(uint256 flipTotalSupply, uint256 numGenesisValidators, uint256 genesisStake, address receiverGenesisValidatorFlip, address receiverGenesisFlip, contract IKeyManager keyManager)` (public)
 
 No description
 

@@ -25,7 +25,7 @@ Returns
 
 - The CommunityKey
 
-## `getCommunityGuard() → bool` (external)
+## `getCommunityGuardDisabled() → bool` (external)
 
  Get the Community Guard state
 
@@ -48,3 +48,7 @@ Returns
 Returns
 
 - The governor address
+
+## `CommunityGuardDisabled(bool communityGuardDisabled)`
+
+## `Suspended(bool suspended)`

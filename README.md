@@ -7,7 +7,7 @@ Additional information can be found in the [Ethereum Research](https://github.co
 ## Dependencies
 
 - Python 2.7 or 3.5+
-For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
+  For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
 - [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
 
 ## Setup
@@ -40,9 +40,11 @@ Run tests with additional features:
 ```bash
 brownie test <test-name> -s --network hardhat --stateful <BOOL> --coverage --gas --hypothesis-seed <SEED>
 ```
+
 Flags:
+
 - `<test-name>` - Run a specific test. If no test-name is provided all tests are run.
--  `-s`- Runs with the `print` outputs in tests.
+- `-s`- Runs with the `print` outputs in tests.
 - `--stateful <BOOL>` - Runs (or not) stateful tests. Stateful tests might take several hours so it is recommended to set it to false.
 - `--gas` - generates a gas profile report
 - `--coverage` - generates and updates the test coverage report under reports/coverage.json
@@ -84,11 +86,13 @@ Echidna is used for fuzzing the contracts. Make sure to follow Echidna's install
 curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 ```
+
 Make sure solc is installed with the latest versions with support to at least Solidity 0.8.0. To install:
 
 `sudo snap install solc --edge`
 
 Then Echidna can be run as normal. Echidna is not capable of reading the inherited contracts from packages under node_modules and needs an extra remapping in the config files. So always specify one of the echidna.config.yml files. There are different configuration files that can be specified for the different test modes.
+
 ```bash
 ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
 ```
@@ -98,9 +102,10 @@ Then Echidna can be run as normal. Echidna is not capable of reading the inherit
 Pre-commit is part of the poetry virtual environment. Therefore, ensure that poetry is installed when commiting.
 
 Current pre-commit hooks implemented:
+
 - lint
 
-To perform a commit without running the pre-commits, add the --no-verify flag to the git commit command. (not recommended) 
+To perform a commit without running the pre-commits, add the --no-verify flag to the git commit command. (not recommended)
 
 ### Generating Docs
 
@@ -143,10 +148,11 @@ export WEB3_INFURA_PROJECT_ID=<Infura project id>
 export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED="<your seed phrase>"
-# Set an aggregate or governance key that you would like to use (optional)
+# Set an aggregate key, a governance address and a community address that you would like to use
 export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
-export GOV_KEY<gov key with leading parity byte, hex format, no leading 0x>
-export COMM_KEY<comm address, hex format, with leading 0x>
+export GOV_KEY=<gov address with leading parity byte, hex format, with leading 0x>
+export COMM_KEY=<comm address, hex format, with leading 0x>
+# Set genesis parameters
 export GENESIS_STAKE=<the stake each node should have at genesis> (default = 500000000000000000000000)
 export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
 
@@ -166,13 +172,11 @@ brownie run deploy_contracts --network rinkeby-alchemy
 
 `brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events
 
-
 ## Dev Tool
 
 A dev tool is available ease development and debugging. It can be used on live networks (goerli, mainnet..), private networks and locally deployed networks (hardhat). To use it, first ensure that you have been through the setup process and you are inside the poetry shell.
 
 The tool runs within the brownie framework and acts as a console-like client.
-
 
 ```bash
 # To connect to a locally deployed network (hardhat), no endpoint is required.
@@ -181,8 +185,8 @@ export WEB3_INFURA_PROJECT_ID=<Infura project id>
 # or
 export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
 
-# On the other hand, to connect to a private network, import the network 
-# config file and set the RPC_URL that should be used to access the chain
+# Instead, to connect to a private network, import the network config file and
+# set the RPC_URL that should be used to access the chain
 brownie networks import ./network-config.yaml
 export RPC_URL=<your_rpc_url>
 
@@ -192,7 +196,7 @@ export SEED="<your seed phrase>"
 export FLIP_ADDRESS=<Address of the deployed FLIP contract>
 export STAKE_MANAGER_ADDRESS=<Address of the deployed Stake Manager contract>
 export VAULT_ADDRESS=<Address of the deployed Vault contract>
-# Optional: only required when running USDC-related commands 
+# Optional: only required when running USDC-related commands
 export USDC_ADDRESS=<Address of the deployed Mock USDC contract>
 # Optional - if not provided the tool will automatically obtain it
 export KEY_MANAGER_ADDRESS=<Address of the deployed KeyManager contract>

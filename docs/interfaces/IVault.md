@@ -2,54 +2,58 @@
 
   The interface for functions Vault implements
 
-## `allBatch(struct IShared.SigData sigData, bytes32[] fetchSwapIDs, contract IERC20[] fetchTokens, contract IERC20[] tranTokens, address payable[] tranRecipients, uint256[] tranAmounts)` (external)
+## `allBatch(struct IShared.SigData sigData, struct IShared.DeployFetchParams[] deployFetchParamsArray, struct IShared.FetchParams[] fetchParamsArray, struct IShared.TransferParams[] transferParamsArray)` (external)
 
 No description
 
-## `transfer(struct IShared.SigData sigData, contract IERC20 token, address payable recipient, uint256 amount)` (external)
+## `transfer(struct IShared.SigData sigData, struct IShared.TransferParams transferParams)` (external)
 
 No description
 
-## `transferBatch(struct IShared.SigData sigData, contract IERC20[] tokens, address payable[] recipients, uint256[] amounts)` (external)
+## `transferBatch(struct IShared.SigData sigData, struct IShared.TransferParams[] transferParamsArray)` (external)
 
 No description
 
-## `fetchDepositEth(struct IShared.SigData sigData, bytes32 swapID)` (external)
+## `deployAndFetchBatch(struct IShared.SigData sigData, struct IShared.DeployFetchParams[] deployFetchParamsArray)` (external)
 
 No description
 
-## `fetchDepositEthBatch(struct IShared.SigData sigData, bytes32[] swapIDs)` (external)
+## `fetchBatch(struct IShared.SigData sigData, struct IShared.FetchParams[] fetchParamsArray)` (external)
 
 No description
 
-## `fetchDepositToken(struct IShared.SigData sigData, bytes32 swapID, contract IERC20 token)` (external)
+## `xSwapToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, contract IERC20 srcToken, uint256 amount)` (external)
 
 No description
 
-## `fetchDepositTokenBatch(struct IShared.SigData sigData, bytes32[] swapIDs, contract IERC20[] tokens)` (external)
+## `xSwapNative(uint32 dstChain, bytes dstAddress, uint16 dstToken)` (external)
 
 No description
 
-## `swapETH(string egressChainAndToken, bytes32 egressAddress)` (external)
+## `xCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeBudget, bytes refundAddress)` (external)
 
 No description
 
-## `swapToken(string egressChainAndToken, bytes32 egressAddress, address ingressToken, uint256 amount)` (external)
+## `xCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeBudget, contract IERC20 srcToken, uint256 amount, bytes refundAddress)` (external)
 
 No description
 
-## `govWithdraw(contract IERC20[] tokens)` (external)
+## `addGasNative(bytes32 swapID)` (external)
 
 No description
 
-## `enableSwaps()` (external)
+## `addGasToken(bytes32 swapID, uint256 amount, contract IERC20 token)` (external)
 
 No description
 
-## `disableSwaps()` (external)
+## `executexSwapAndCall(struct IShared.SigData sigData, struct IShared.TransferParams transferParams, uint32 srcChain, bytes srcAddress, bytes message)` (external)
 
 No description
 
-## `getSwapsEnabled() → bool` (external)
+## `executexCall(struct IShared.SigData sigData, address recipient, uint32 srcChain, bytes srcAddress, bytes message)` (external)
+
+No description
+
+## `govWithdraw(address[] tokens)` (external)
 
 No description

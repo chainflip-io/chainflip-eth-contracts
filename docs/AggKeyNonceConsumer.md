@@ -23,18 +23,9 @@ No description
 
 - `keyManager`: New KeyManager's address
 
-## `getKeyManager() → contract IKeyManager` (external)
+## `getKeyManager() → contract IKeyManager` (public)
 
  Get the KeyManager address/interface that's used to validate sigs
-
-Returns
-
-- The KeyManager (IKeyManager)
-
-## `_getKeyManager() → contract IKeyManager` (internal)
-
- Internal getter so child contracts can access the _keyManager reference
-         but cannot modify it as it is kept private.
 
 Returns
 
