@@ -3,7 +3,6 @@ from shared_tests import *
 from brownie import reverts, web3, chain
 from brownie.test import given, strategy
 
-
 # Need to also register a claim in this since the st_amounts sent etc depend on registerClaim
 @given(
     st_nodeID=strategy("uint", exclude=0),
@@ -129,3 +128,7 @@ def test_executeClaim_rev_suspended(cf, claimRegistered):
 
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX)
+
+
+def test_temp(cf):
+    assert True

@@ -5,7 +5,7 @@ from brownie import network, accounts
 
 
 def deploy_initial_Chainflip_contracts(
-    deployer, KeyManager, Vault, StakeManager, FLIP, *args
+    deployer, KeyManager, Vault, StakeManager, FLIP, DeployerContract, *args
 ):
 
     # Set the priority fee for all transactions
@@ -58,32 +58,49 @@ def deploy_initial_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
-    # Deploy Key Manager contract
-    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
+    # # Deploy Key Manager contract
+    # cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
 
-    # Deploy Vault contract
-    cf.vault = deployer.deploy(Vault, cf.keyManager)
+    # # Deploy Vault contract
+    # cf.vault = deployer.deploy(Vault, cf.keyManager)
 
-    # Deploy Stake Manager contract
-    cf.stakeManager = deployer.deploy(
-        StakeManager,
-        cf.keyManager,
+    # # Deploy Stake Manager contract
+    # cf.stakeManager = deployer.deploy(
+    #     StakeManager,
+    #     cf.keyManager,
+    #     MIN_STAKE,
+    # )
+
+    # # Deploy FLIP contract. Minting genesis validator FLIP to the Stake Manager.
+    # # The rest of genesis FLIP will be minted to the governance address for safekeeping.
+    # cf.flip = deployer.deploy(
+    #     FLIP,
+    #     INIT_SUPPLY,
+    #     cf.numGenesisValidators,
+    #     cf.genesisStake,
+    #     cf.stakeManager.address,
+    #     cf.gov,
+    #     cf.keyManager,
+    # )
+
+    # cf.stakeManager.setFlip(cf.flip.address, {"from": deployer})
+
+    # Deploy contracts via DeployerContract
+    deployerContract = deployer.deploy(
+        DeployerContract,
+        aggKey,
+        cf.gov,
+        cf.communityKey,
         MIN_STAKE,
-    )
-
-    # Deploy FLIP contract. Minting genesis validator FLIP to the Stake Manager.
-    # The rest of genesis FLIP will be minted to the governance address for safekeeping.
-    cf.flip = deployer.deploy(
-        FLIP,
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
-        cf.stakeManager.address,
-        cf.gov,
-        cf.keyManager,
     )
 
-    cf.stakeManager.setFlip(cf.flip.address, {"from": deployer})
+    cf.vault = Vault.at(deployerContract.vault())
+    cf.flip = FLIP.at(deployerContract.flip())
+    cf.keyManager = KeyManager.at(deployerContract.keyManager())
+    cf.stakeManager = StakeManager.at(deployerContract.stakeManager())
 
     # All the deployer rights and tokens have been delegated to the governance key.
     cf.safekeeper = cf.gov
@@ -94,13 +111,13 @@ def deploy_initial_Chainflip_contracts(
 
 # This should be used over deploy_initial_Chainflip_contracts for actual deployments
 def deploy_set_Chainflip_contracts(
-    deployer, KeyManager, Vault, StakeManager, FLIP, *args
+    deployer, KeyManager, Vault, StakeManager, FLIP, DeployerContract, *args
 ):
     cf = deploy_initial_Chainflip_contracts(
-        deployer, KeyManager, Vault, StakeManager, FLIP, *args
+        deployer, KeyManager, Vault, StakeManager, FLIP, DeployerContract, *args
     )
-    cf.whitelisted = [cf.vault.address, cf.stakeManager.address, cf.flip.address]
-    cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted, {"from": cf.deployer})
+    # cf.whitelisted = [cf.vault.address, cf.stakeManager.address, cf.flip.address]
+    # cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted, {"from": cf.deployer})
 
     return cf
 

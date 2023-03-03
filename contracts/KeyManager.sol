@@ -44,10 +44,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Sets the specific addresses that can call consumeKeyNonce. This
-     *          function can only ever be called once! Yes, it's possible to
-     *          frontrun this, but honestly, it's fine in practice - it just
-     *          needs to be set up successfully once, which is trivial
+     * @notice  Sets the specific addresses that can call consumeKeyNonce.
+     *          Deployed via Deploy.sol so it can't be frontrun. The FLIP
+     *          address can only be set once.
      * @param addrs   The addresses to whitelist
      */
     function setCanConsumeKeyNonce(address[] calldata addrs) external override {

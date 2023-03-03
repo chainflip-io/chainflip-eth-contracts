@@ -4,7 +4,16 @@ import json
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
-from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP, MockUSDC
+from brownie import (
+    chain,
+    accounts,
+    KeyManager,
+    Vault,
+    StakeManager,
+    FLIP,
+    MockUSDC,
+    DeployerContract,
+)
 from deploy import deploy_set_Chainflip_contracts, deploy_usdc_contract
 
 
@@ -52,7 +61,7 @@ def main():
             sys.exit("Deployment cancelled by user")
 
     cf = deploy_set_Chainflip_contracts(
-        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
+        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract, os.environ
     )
 
     print("Deployed with parameters\n----------------------------")

@@ -15,9 +15,11 @@ def isolation(fn_isolation):
 
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
-def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
+def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
-    return deploy_set_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
+    return deploy_set_Chainflip_contracts(
+        a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
+    )
 
 
 # Deploy the contracts and set up common test environment
@@ -51,11 +53,28 @@ def cf(a, cfDeploy):
 # Deploy the contracts for repeated tests without having to redeploy each time, with
 # all addresses whitelisted
 @pytest.fixture(scope="module")
-def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
+def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
-    cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
+    cf = deploy_initial_Chainflip_contracts(
+        a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
+    )
+
+    # Cha
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
-    cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
+    args = [
+        [cf.vault.address, cf.stakeManager.address, cf.flip.address],
+        cf.whitelisted,
+    ]
+    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+
+    cf.keyManager.updateCanConsumeKeyNonce(
+        AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, nonces, cf.keyManager.address),
+        *args,
+        {"from": cf.safekeeper},
+    )
+    # cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
 
     return cf
 
