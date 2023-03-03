@@ -185,8 +185,8 @@ export WEB3_INFURA_PROJECT_ID=<Infura project id>
 # or
 export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
 
-# On the other hand, to connect to a private network, import the network
-# config file and set the RPC_URL that should be used to access the chain
+# Instead, to connect to a private network, import the network config file and
+# set the RPC_URL that should be used to access the chain
 brownie networks import ./network-config.yaml
 export RPC_URL=<your_rpc_url>
 
