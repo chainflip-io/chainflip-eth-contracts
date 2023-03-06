@@ -64,6 +64,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
 
+    event debug(bytes data);
+    event debugString(string data);
+
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -637,6 +640,81 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         ICFReceiver(recipient).cfReceivexCall(srcChain, srcAddress, message);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                 Auxiliary chain actions                  //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Executes an arbitrary call made by the trusted Aggregate Key signer.
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
+     *                  the calldata to the function with an empty sigData) and sig over that
+     *                  that hash (uint) from the aggregate key.
+     * @dev             We fully trust the AggKey to not execute malicious code. If it wanted to steal
+     *                  the funds it could already do it via transfer. So no need to add safeguards to
+     *                  check that it doesn't call internal functions or transfer functions of some kind.
+     *                  However, some safeguards are implemented.
+     * @dev             Can be used to make calls to settle funds on an auxiliary chain.
+     * @param data      Array of actions to be executed.
+     */
+    function executeActions(
+        SigData calldata sigData,
+        Call[] calldata data
+    )
+        external
+        onlyNotSuspended
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.executeActions.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    data
+                )
+            )
+        )
+    {
+        uint256 length = data.length;
+        for (uint256 i = 0; i < length; ) {
+            // To prevent it from maliciously calling other protocols aka calling cfRecieve without transferring
+            // tokens or with malicious values.
+
+            // Get function selector. Copy first 4 bytes of callData to memory as yul doesn't support structs.
+            // It can technically be shorter and then we would be reading bytes from the next action. However,
+            // it is assumed that the callData is at least 4 bytes longas the calls are not malicious.
+            bytes4 selector;
+            bytes memory callData = data[i].callData;
+
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                selector := mload(add(callData, 32))
+            }
+
+            // Prevent calls to contracts that implement the ICFReceiver interface.
+            require(
+                selector != ICFReceiver.cfReceive.selector && selector != ICFReceiver.cfReceivexCall.selector,
+                "Vault: cfReceive not allowed"
+            );
+
+            // Prevent calls to this contract - transfers shouldn't be dangerous but via swapNative/swapToken
+            // it could potentially trigger an exploit on another chain.
+            require(data[i].target != address(this), "Vault: calling this contract");
+
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = data[i].target.call{value: data[i].value}(data[i].callData);
+            // We might not want to have this returnData due to gas costs. Also, if we just convert it to string
+            // for the revert it is unreadable when we do tx.events. So we just revert with a generic message.
+            require(success, "Vault: call failed");
+
+            // TODO: Check for deployAndFetch and Fetch functions? I don't think so.
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////

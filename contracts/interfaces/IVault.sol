@@ -8,6 +8,12 @@ import "./IGovernanceCommunityGuarded.sol";
  * @notice   The interface for functions Vault implements
  */
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
+    struct Call {
+        address target;
+        uint256 value;
+        bytes callData;
+    }
+
     function allBatch(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,
