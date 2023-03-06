@@ -1,3 +1,4 @@
+import sys
 from os import environ
 from consts import *
 from web3.auto import w3
@@ -58,17 +59,33 @@ def deploy_initial_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
+    publish_code = environment.get("PUBLISH_CODE") or False
+    if publish_code in ["true", "True", "TRUE"]:
+        user_input = input(
+            "\n[WARNING] You are about to publish the source code on Etherscan. Continue? [y/N] "
+        )
+        if user_input != "y":
+            sys.exit("Deployment cancelled by user")
+
+        # Etherscan API key required to publish source code - export ETHERSCAN_TOKEN=<API_KEY>
+        if "ETHERSCAN_TOKEN" not in environment:
+            raise Exception(f"Environment variable ETHERSCAN_TOKEN is not set")
+        publish_code = True
+    else:
+        # Force it to False in case the user has set it to an invalid value
+        publish_code = False
+
     # Deploy Key Manager contract
-    cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
+    cf.keyManager = deployer.deploy(
+        KeyManager, aggKey, cf.gov, cf.communityKey, publish_source=publish_code
+    )
 
     # Deploy Vault contract
-    cf.vault = deployer.deploy(Vault, cf.keyManager)
+    cf.vault = deployer.deploy(Vault, cf.keyManager, publish_source=publish_code)
 
     # Deploy Stake Manager contract
     cf.stakeManager = deployer.deploy(
-        StakeManager,
-        cf.keyManager,
-        MIN_STAKE,
+        StakeManager, cf.keyManager, MIN_STAKE, publish_source=publish_code
     )
 
     # Deploy FLIP contract. Minting genesis validator FLIP to the Stake Manager.
@@ -81,9 +98,10 @@ def deploy_initial_Chainflip_contracts(
         cf.stakeManager.address,
         cf.gov,
         cf.keyManager,
+        publish_source=publish_code,
     )
 
-    cf.stakeManager.setFlip(cf.flip.address, {"from": deployer})
+    cf.stakeManager.setFlip(cf.flip, {"from": deployer})
 
     # All the deployer rights and tokens have been delegated to the governance key.
     cf.safekeeper = cf.gov
@@ -99,7 +117,7 @@ def deploy_set_Chainflip_contracts(
     cf = deploy_initial_Chainflip_contracts(
         deployer, KeyManager, Vault, StakeManager, FLIP, *args
     )
-    cf.whitelisted = [cf.vault.address, cf.stakeManager.address, cf.flip.address]
+    cf.whitelisted = [cf.vault, cf.stakeManager, cf.flip]
     cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted, {"from": cf.deployer})
 
     return cf

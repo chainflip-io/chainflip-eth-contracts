@@ -33,7 +33,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
     /// @dev   Deployer address that can call setFlip
-    address private immutable deployer;
+    address private immutable _deployer;
 
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
@@ -47,7 +47,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
 
     constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
         _minStake = minStake;
-        deployer = msg.sender;
+        _deployer = msg.sender;
     }
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -267,7 +267,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
 
     /// @notice Ensure that the caller is the deployer address.
     modifier onlyDeployer() {
-        require(msg.sender == deployer, "Staking: not deployer");
+        require(msg.sender == _deployer, "Staking: not deployer");
         _;
     }
 }

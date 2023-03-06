@@ -20,6 +20,23 @@ def test_setCanConsumeKeyNonce(a, KeyManager, Vault, StakeManager, FLIP, st_whit
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(st_whitelist)
 
 
+@given(
+    st_sender=strategy("address"),
+    st_whitelist=strategy("address[]", unique=True),
+)
+def test_setCanConsumeKeyNonce_rev_sender(
+    a, KeyManager, Vault, StakeManager, FLIP, st_whitelist, st_sender
+):
+
+    cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
+
+    if st_sender != cf.deployer:
+        with reverts(REV_MSG_KEYMANAGER_NOT_DEPLOYER):
+            cf.keyManager.setCanConsumeKeyNonce(st_whitelist, {"from": st_sender})
+    else:
+        cf.keyManager.setCanConsumeKeyNonce(st_whitelist, {"from": st_sender})
+
+
 def test_setCanConsumeKeyNonce_rev_duplicate(a, KeyManager, Vault, StakeManager, FLIP):
     cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
     with reverts(REV_MSG_DUPLICATE):

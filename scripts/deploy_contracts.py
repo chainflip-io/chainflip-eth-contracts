@@ -38,16 +38,16 @@ def main():
         print(f"  Deployer: {DEPLOYER}")
         print(f"  Safekeeper & GovKey: {os.environ['GOV_KEY']}")
         print(f"  Community Key: {os.environ['COMM_KEY']}")
-        # print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
+        print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
         print(f"  Genesis Stake: {os.environ['GENESIS_STAKE']}")
         print(f"  Num Genesis Validators: {os.environ['NUM_GENESIS_VALIDATORS']}")
         print(
             f"\nFLIP tokens will be minted to the Safekeeper account {os.environ['GOV_KEY']}"
         )
-        input(
-            "\n[WARNING] You are about to deploy to the mainnet with the parameters above. Continue? [y/N]"
+        user_input = input(
+            "\n[WARNING] You are about to deploy to the mainnet with the parameters above. Continue? [y/N] "
         )
-        if input != "y":
+        if user_input != "y":
             ## Gracefully exit the script with a message.
             sys.exit("Deployment cancelled by user")
 
