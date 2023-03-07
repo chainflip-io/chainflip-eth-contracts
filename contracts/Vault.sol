@@ -647,14 +647,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Executes an arbitrary call made by the trusted Aggregate Key signer.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
-     *                  the calldata to the function with an empty sigData) and sig over that
-     *                  that hash (uint) from the aggregate key.
      * @dev             We fully trust the AggKey to not execute malicious code. If it wanted to steal
      *                  the funds it could already do it via transfer. So no need to add safeguards to
      *                  check that it doesn't call internal functions or transfer functions of some kind.
      *                  However, some safeguards are implemented.
      * @dev             Can be used to make calls to settle funds on an auxiliary chain.
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
+     *                  the calldata to the function with an empty sigData) and sig over that
+     *                  that hash (uint) from the aggregate key.
      * @param data      Array of actions to be executed.
      */
     function executeActions(
@@ -674,40 +674,56 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
+        // NOTE: Another approach would be to do an approve and then a function call. However, this is limited
+        // e.g. for axelar we need to do an extra functionc all to the gas contract.
+
         uint256 length = data.length;
         for (uint256 i = 0; i < length; ) {
-            // To prevent it from maliciously calling other protocols aka calling cfRecieve without transferring
-            // tokens or with malicious values.
+            // Prevent calls to this contract - transfers shouldn't be dangerous but via swapNative/swapToken
+            // it could potentially trigger an exploit on another chain.
+            require(data[i].target != address(this), "Vault: calling this contract");
 
-            // Get function selector. Copy first 4 bytes of callData to memory as yul doesn't support structs.
-            // It can technically be shorter and then we would be reading bytes from the next action. However,
-            // it is assumed that the callData is at least 4 bytes longas the calls are not malicious.
-            bytes4 selector;
+            // We can consider allowing calls to EOA adddresses and/or calls with no data, just for transferring
+            // Ether or triggering a fallback. However, these two shouldn't be use cases, it should only be calls
+            // to other protocols/contracts.
+            require(data[i].callData.length >= 4, "Vault: must call contract/function");
+            // We check that the length of the callData is >= 4 bytes to ensure that it's a call to a function.
+            // Also to avoid reading bytes from outside the callData when loading from memory in case of the
+            // length being zero or smaller than 4.
+            require(data[i].target.code.length > 0, "Vault: must call contract/function");
+            // NOTE: This can be modified to allow for calls to EOAs and/or calls with no data to transfer Native.
+            // To be discussed if we want that flexilibilty but it shouldn't be a use case. We probably want extra
+            // safeguards instead.
+
+            // Get function selector. First the callData is copied into memory since Yul doesn't support structs
             bytes memory callData = data[i].callData;
 
+            bytes4 selector;
             // solhint-disable-next-line no-inline-assembly
             assembly {
                 selector := mload(add(callData, 32))
             }
 
-            // Prevent calls to contracts that implement the ICFReceiver interface.
+            // To prevent it from maliciously calling other protocols aka calling contracts with the ICFRecieve
+            // interface without transferring tokens or with malicious values.
             require(
                 selector != ICFReceiver.cfReceive.selector && selector != ICFReceiver.cfReceivexCall.selector,
                 "Vault: cfReceive not allowed"
             );
-
-            // Prevent calls to this contract - transfers shouldn't be dangerous but via swapNative/swapToken
-            // it could potentially trigger an exploit on another chain.
-            require(data[i].target != address(this), "Vault: calling this contract");
 
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = data[i].target.call{value: data[i].value}(data[i].callData);
             // We might not want to have this returnData due to gas costs. Also, if we just convert it to string
             // for the revert it is unreadable when we do tx.events. So we just revert with a generic message.
             require(success, "Vault: call failed");
+            // Try this as it should allow the bytes to be read from the event (string(reason) is a mess).
+            // error CallFailed(uint256 callPosition, bytes reason);
+            // if (!success) revert CallFailed(i, data);
 
             // TODO: Check for deployAndFetch and Fetch functions? I don't think so.
-
+            // Consider adding a destCall as part of the Call struct and then fetch the address to be call from
+            // storage (via mapping or sthg). That could be controlled via Governance. However, we are anyway in
+            // big trouble if the AggKey is malicious and can call this function so it's probably not needed.
             unchecked {
                 ++i;
             }
