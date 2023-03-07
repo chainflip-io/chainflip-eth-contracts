@@ -647,11 +647,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Executes an arbitrary call made by the trusted Aggregate Key signer.
-     * @dev             We fully trust the AggKey to not execute malicious code. If it wanted to steal
-     *                  the funds it could already do it via transfer. So no need to add safeguards to
-     *                  check that it doesn't call internal functions or transfer functions of some kind.
-     *                  However, some safeguards are implemented.
-     * @dev             Can be used to make calls to settle funds on an auxiliary chain.
+     * @dev     We fully trust the AggKey to not execute malicious code. If it wanted to steal
+     *          the funds it could already do it via transfer. So no need to add safeguards to
+     *          check that it doesn't call internal functions or transfer functions of some kind.
+     *          However, some safeguards are implemented.
+     * @dev     Can be used to make calls to settle funds on an auxiliary chain.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
      *                  the calldata to the function with an empty sigData) and sig over that
      *                  that hash (uint) from the aggregate key.
@@ -675,7 +675,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // NOTE: Another approach would be to do an approve and then a function call. However, this is limited
-        // e.g. for axelar we need to do an extra functionc all to the gas contract.
+        // e.g. for axelar we need to do an extra function call to the gas contract.
+        // NOTE: We could consider adding a destCall as part of the Call struct and then fetch the address to be
+        // call from storage (via mapping or sthg). That could be controlled via Governance. However, we are anyway
+        // in big trouble if the AggKey is malicious and can call this function so it's probably not needed.
+        // NOTE: The only vault-exclusive function that we don't check for is the fetch function from a Deposit.
+        // We don't care about that being called as we don't even witness it.
 
         uint256 length = data.length;
         for (uint256 i = 0; i < length; ) {
@@ -688,10 +693,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             // to other protocols/contracts.
             require(data[i].callData.length >= 4, "Vault: must call contract/function");
             // We check that the length of the callData is >= 4 bytes to ensure that it's a call to a function.
-            // Also to avoid reading bytes from outside the callData when loading from memory in case of the
+            // The EVM would revert in that case, but we will be checking the selector first and we want to
+            // avoid reading bytes from outside the callData when loading from memory in case of the
             // length being zero or smaller than 4.
             require(data[i].target.code.length > 0, "Vault: must call contract/function");
-            // NOTE: This can be modified to allow for calls to EOAs and/or calls with no data to transfer Native.
+            // NOTE: Cheks above can be modified to allow for calls to EOAs and/or calls with no data to transfer Native.
             // To be discussed if we want that flexilibilty but it shouldn't be a use case. We probably want extra
             // safeguards instead.
 
@@ -712,18 +718,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             );
 
             // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = data[i].target.call{value: data[i].value}(data[i].callData);
+            (bool success, bytes memory returndata) = data[i].target.call{value: data[i].value}(data[i].callData);
+
             // We might not want to have this returnData due to gas costs. Also, if we just convert it to string
             // for the revert it is unreadable when we do tx.events. So we just revert with a generic message.
-            require(success, "Vault: call failed");
-            // Try this as it should allow the bytes to be read from the event (string(reason) is a mess).
-            // error CallFailed(uint256 callPosition, bytes reason);
-            // if (!success) revert CallFailed(i, data);
+            // require(success, "Vault: call failed");
+            if (!success) {
+                // Bubble up error
 
-            // TODO: Check for deployAndFetch and Fetch functions? I don't think so.
-            // Consider adding a destCall as part of the Call struct and then fetch the address to be call from
-            // storage (via mapping or sthg). That could be controlled via Governance. However, we are anyway in
-            // big trouble if the AggKey is malicious and can call this function so it's probably not needed.
+                // solhint-disable-next-line no-inline-assembly
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            }
+
             unchecked {
                 ++i;
             }

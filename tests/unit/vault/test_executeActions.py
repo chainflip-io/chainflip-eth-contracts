@@ -2,12 +2,13 @@ from consts import *
 from shared_tests import *
 from brownie import reverts
 from brownie.test import given, strategy
+from brownie.convert import to_bytes
 
 
 @given(
     st_sender=strategy("address"),
 )
-def test_executeActions_rev_erc20_max(cf, st_sender):
+def test_executeActions_rev_erc20_max(cf, st_sender, utils):
     function_call_bytes = cf.flip.transfer.encode_input(
         "0xf8e81D47203A594245E36C48e151709F0C19fBe8", 2**256 - 1
     )
@@ -18,7 +19,7 @@ def test_executeActions_rev_erc20_max(cf, st_sender):
         == "0xa9059cbb000000000000000000000000f8e81d47203a594245e36c48e151709f0c19fbe8ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     )
 
-    with reverts("Vault: call failed"):
+    with reverts(REV_MSG_ERC20_EXCEED_BAL):
         signed_call_cf(
             cf,
             cf.vault.executeActions,
@@ -43,7 +44,7 @@ def test_executeActions_rev_erc20(
     function_call_bytes = cf.flip.transfer.encode_input(st_recipient, st_amount)
 
     if st_amount > st_ini_amount:
-        with reverts("Vault: call failed"):
+        with reverts(REV_MSG_ERC20_EXCEED_BAL):
             signed_call_cf(
                 cf,
                 cf.vault.executeActions,
@@ -214,7 +215,7 @@ def test_executeActions_invalid_length(cf, st_data, st_receiver):
     else:
         # We assume the st_data won't exactly hit one of the KeyManager selectors and
         # with the exact parameters expected. If it does, then the test will fail.
-        with reverts("Vault: call failed"):
+        with reverts("Transaction reverted without a reason string"):
             signed_call_cf(
                 cf,
                 cf.vault.executeActions,
@@ -226,8 +227,6 @@ def test_executeActions_invalid_length(cf, st_data, st_receiver):
     st_data=strategy("bytes", min_size=1, max_size=3),
 )
 def test_executeActions_weird_length(cf, st_data):
-    # With weird lenght (1-3) calls to EOA still succeed (obviously)
-    # Calls to a contract with functions but not
     if len(st_data) > 0 and len(st_data) < 4:
         with reverts("Vault: must call contract/function"):
             signed_call_cf(
@@ -244,4 +243,5 @@ def test_executeActions_weird_length(cf, st_data):
 ##       Check what happens if the bytes passed are <4 => EVM wil revert
 ##       Check if we pass two actions with the first one being <4 bytes
 ##       Check when trying to transfer ETH if it reverts due to balance
+##       Test multiple calls and reverting one of them
 ##       Try interactions with Axelar/CCTP (Goerli/Sepolia?)
