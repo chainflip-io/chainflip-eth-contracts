@@ -10,7 +10,7 @@ import "./IGovernanceCommunityGuarded.sol";
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     struct Call {
         address target;
-        uint256 value;
+        uint256 valueNative;
         bytes callData;
     }
 
@@ -122,6 +122,14 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         bytes calldata srcAddress,
         bytes calldata message
     ) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                 Auxiliary chain actions                  //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function executeActions(SigData calldata sigData, Call[] calldata data) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

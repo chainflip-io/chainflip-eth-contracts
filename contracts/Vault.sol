@@ -662,6 +662,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         Call[] calldata data
     )
         external
+        override
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
@@ -684,8 +685,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
         uint256 length = data.length;
         for (uint256 i = 0; i < length; ) {
-            // Prevent calls to this contract - transfers shouldn't be dangerous but via swapNative/swapToken
-            // it could potentially trigger an exploit on another chain.
+            // Prevent calls to this contract as a general safeguard.
             require(data[i].target != address(this), "Vault: calling this contract");
 
             // We can consider allowing calls to EOA adddresses and/or calls with no data, just for transferring
@@ -718,14 +718,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             );
 
             // solhint-disable-next-line avoid-low-level-calls
-            (bool success, bytes memory returndata) = data[i].target.call{value: data[i].value}(data[i].callData);
+            (bool success, bytes memory returndata) = data[i].target.call{value: data[i].valueNative}(data[i].callData);
 
-            // We might not want to have this returnData due to gas costs. Also, if we just convert it to string
-            // for the revert it is unreadable when we do tx.events. So we just revert with a generic message.
+            // We might not want to have this returnData due to gas costs. For now we do.
             // require(success, "Vault: call failed");
             if (!success) {
                 // Bubble up error
-
                 // solhint-disable-next-line no-inline-assembly
                 assembly {
                     let returndata_size := mload(returndata)

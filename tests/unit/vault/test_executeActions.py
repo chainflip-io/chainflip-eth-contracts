@@ -9,13 +9,13 @@ from brownie.convert import to_bytes
     st_sender=strategy("address"),
 )
 def test_executeActions_rev_erc20_max(cf, st_sender, utils):
-    function_call_bytes = cf.flip.transfer.encode_input(
+    calldata = cf.flip.transfer.encode_input(
         "0xf8e81D47203A594245E36C48e151709F0C19fBe8", 2**256 - 1
     )
 
     # Health check
     assert (
-        function_call_bytes
+        calldata
         == "0xa9059cbb000000000000000000000000f8e81d47203a594245e36c48e151709f0c19fbe8ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     )
 
@@ -23,7 +23,7 @@ def test_executeActions_rev_erc20_max(cf, st_sender, utils):
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            [[cf.flip, 0, function_call_bytes]],
+            [[cf.flip, 0, calldata]],
             sender=st_sender,
         )
 
@@ -41,21 +41,21 @@ def test_executeActions_rev_erc20(
     cf.flip.transfer(cf.vault, st_ini_amount, {"from": cf.SAFEKEEPER})
     iniBal_recipient = cf.flip.balanceOf(st_recipient)
 
-    function_call_bytes = cf.flip.transfer.encode_input(st_recipient, st_amount)
+    calldata = cf.flip.transfer.encode_input(st_recipient, st_amount)
 
     if st_amount > st_ini_amount:
         with reverts(REV_MSG_ERC20_EXCEED_BAL):
             signed_call_cf(
                 cf,
                 cf.vault.executeActions,
-                [[cf.flip, 0, function_call_bytes]],
+                [[cf.flip, 0, calldata]],
                 sender=st_sender,
             )
     else:
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            [[cf.flip, 0, function_call_bytes]],
+            [[cf.flip, 0, calldata]],
             sender=st_sender,
         )
         assert cf.flip.balanceOf(cf.vault) == st_ini_amount - st_amount
@@ -95,14 +95,14 @@ def test_executeActions_rev_cfReceive(
     st_amount,
     cfReceiverMock,
 ):
-    function_call_bytes = cfReceiverMock.cfReceive.encode_input(
+    calldata = cfReceiverMock.cfReceive.encode_input(
         st_srcChain, st_srcAddress, st_message, st_token, st_amount
     )
     with reverts("Vault: cfReceive not allowed"):
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            [[cfReceiverMock, 0, function_call_bytes]],
+            [[cfReceiverMock, 0, calldata]],
             sender=st_sender,
         )
 
@@ -121,14 +121,14 @@ def test_executeActions_rev_cfReceivexCall(
     st_message,
     cfReceiverMock,
 ):
-    function_call_bytes = cfReceiverMock.cfReceivexCall.encode_input(
+    calldata = cfReceiverMock.cfReceivexCall.encode_input(
         st_srcChain, st_srcAddress, st_message
     )
     with reverts("Vault: cfReceive not allowed"):
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            [[cfReceiverMock, 0, function_call_bytes]],
+            [[cfReceiverMock, 0, calldata]],
             sender=st_sender,
         )
 
@@ -169,10 +169,10 @@ def test_bytesZeroLength(cf):
 
 @given(
     st_sender=strategy("address"),
-    st_eth_amount=strategy("uint256"),
+    st_native_amount=strategy("uint256"),
 )
 def test_executeActions_cfRecieve_onlySelector(
-    cf, cfReceiverMock, st_eth_amount, st_sender
+    cf, cfReceiverMock, st_native_amount, st_sender
 ):
     # Selector == 4 bytes + "0x" + dummy bits Brownie = 0:10
     encoded_call = cfReceiverMock.cfReceivexCall.encode_input(
@@ -183,7 +183,7 @@ def test_executeActions_cfRecieve_onlySelector(
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            [[cfReceiverMock, st_eth_amount, function_selector]],
+            [[cfReceiverMock, st_native_amount, function_selector]],
             sender=st_sender,
         )
 
@@ -195,7 +195,7 @@ def test_executeActions_cfRecieve_onlySelector(
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            [[cfReceiverMock, st_eth_amount, function_selector]],
+            [[cfReceiverMock, st_native_amount, function_selector]],
             sender=st_sender,
         )
 
@@ -204,7 +204,7 @@ def test_executeActions_cfRecieve_onlySelector(
     st_data=strategy("bytes"),
     st_receiver=strategy("address"),
 )
-def test_executeActions_invalid_length(cf, st_data, st_receiver):
+def test_executeActions_rev_length_eoa(cf, st_data, st_receiver):
     if len(st_data) > 0 and len(st_data) < 4:
         with reverts("Vault: must call contract/function"):
             signed_call_cf(
@@ -226,22 +226,172 @@ def test_executeActions_invalid_length(cf, st_data, st_receiver):
 @given(
     st_data=strategy("bytes", min_size=1, max_size=3),
 )
-def test_executeActions_weird_length(cf, st_data):
-    if len(st_data) > 0 and len(st_data) < 4:
-        with reverts("Vault: must call contract/function"):
+def test_executeActions_rev_length_contract(cf, st_data):
+    with reverts("Vault: must call contract/function"):
+        signed_call_cf(
+            cf,
+            cf.vault.executeActions,
+            [[cf.stakeManager, 0, st_data]],
+        )
+
+
+@given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
+    st_native_transfer=strategy("uint256", min_value=1, max_value=TEST_AMNT),
+    st_native_vault=strategy("uint256", max_value=TEST_AMNT),
+)
+def test_executeActions_rev_nativeBals(
+    cf,
+    Vault,
+    st_dstChain,
+    st_dstAddress,
+    st_dstToken,
+    st_native_transfer,
+    st_native_vault,
+):
+
+    # For the call to not fail we need a valid message call or a contract
+    # with a fallback function, since data cannot be empty.
+    # We deploy another Vault as a proxy for a bridge contract.
+    externalVault = cf.deployer.deploy(Vault, NON_ZERO_ADDR)
+
+    # Assert initial native balances are zero
+    assert web3.eth.get_balance(cf.vault.address) == 0
+    assert web3.eth.get_balance(externalVault.address) == 0
+
+    cf.SAFEKEEPER.transfer(cf.vault.address, st_native_vault)
+
+    calldata = externalVault.xSwapNative.encode_input(
+        st_dstChain, st_dstAddress, st_dstToken
+    )
+
+    if st_native_vault >= st_native_transfer:
+        signed_call_cf(
+            cf,
+            cf.vault.executeActions,
+            [[externalVault, st_native_transfer, calldata]],
+        )
+        assert (
+            web3.eth.get_balance(cf.vault.address)
+            == st_native_vault - st_native_transfer
+        )
+        assert web3.eth.get_balance(externalVault.address) == st_native_transfer
+    else:
+        with reverts("Transaction reverted without a reason string"):
             signed_call_cf(
                 cf,
                 cf.vault.executeActions,
-                [[cf.stakeManager, 0, st_data]],
+                [[externalVault, st_native_transfer, calldata]],
             )
+        assert web3.eth.get_balance(cf.vault.address) == st_native_vault
+        assert web3.eth.get_balance(externalVault.address) == 0
+
+
+@given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
+    st_native_amount=strategy("uint256", min_value=1, max_value=TEST_AMNT),
+)
+def test_executeActions_bridge_native(
+    cf, Vault, st_dstChain, st_dstAddress, st_dstToken, st_native_amount
+):
+
+    # For the call to not fail we need a valid message call or a contract
+    # with a fallback function, since data cannot be empty.
+    # We deploy another Vault as a proxy for a bridge contract.
+    externalVault = cf.deployer.deploy(Vault, NON_ZERO_ADDR)
+
+    # Assert initial native balances are zero
+    assert web3.eth.get_balance(cf.vault.address) == 0
+    assert web3.eth.get_balance(externalVault.address) == 0
+
+    cf.SAFEKEEPER.transfer(cf.vault.address, st_native_amount)
+
+    calldata = externalVault.xSwapNative.encode_input(
+        st_dstChain, st_dstAddress, st_dstToken
+    )
+
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        [[externalVault, st_native_amount, calldata]],
+    )
+    assert web3.eth.get_balance(cf.vault.address) == 0
+    assert web3.eth.get_balance(externalVault.address) == st_native_amount
+
+    assert tx.events["SwapNative"][0].values() == [
+        st_dstChain,
+        hexStr(st_dstAddress),
+        st_dstToken,
+        st_native_amount,
+        cf.vault.address,
+    ]
+
+
+@given(
+    st_dstChain=strategy("uint32"),
+    st_dstAddress=strategy("bytes"),
+    st_dstToken=strategy("uint16"),
+    st_token_approve=strategy("uint256", min_value=1, max_value=TEST_AMNT),
+    st_token_swap=strategy("uint256", min_value=1, max_value=TEST_AMNT),
+)
+def test_executeActions_bridge_token(
+    cf,
+    Vault,
+    st_dstChain,
+    st_dstAddress,
+    st_dstToken,
+    st_token_approve,
+    token,
+    st_token_swap,
+):
+
+    # For the call to not fail we need a valid message call or a contract
+    # with a fallback function, since data cannot be empty.
+    # We deploy another Vault as a proxy for a bridge contract.
+    externalVault = cf.deployer.deploy(Vault, NON_ZERO_ADDR)
+
+    # Assert initial native balances are zero
+    assert token.balanceOf(cf.vault.address) == 0
+    assert token.balanceOf(externalVault.address) == 0
+
+    token.transfer(cf.vault.address, st_token_approve, {"from": cf.SAFEKEEPER})
+
+    calldata0 = token.approve.encode_input(externalVault, st_token_approve)
+    calldata1 = externalVault.xSwapToken.encode_input(
+        st_dstChain, st_dstAddress, st_dstToken, token, st_token_swap
+    )
+
+    if st_token_approve >= st_token_swap:
+        tx = signed_call_cf(
+            cf,
+            cf.vault.executeActions,
+            [[token, 0, calldata0], [externalVault, 0, calldata1]],
+        )
+        assert token.balanceOf(cf.vault.address) == st_token_approve - st_token_swap
+        assert token.balanceOf(externalVault.address) == st_token_swap
+
+        assert tx.events["SwapToken"][0].values() == [
+            st_dstChain,
+            hexStr(st_dstAddress),
+            st_dstToken,
+            token,
+            st_token_swap,
+            cf.vault.address,
+        ]
     else:
-        assert False, "This shouldnt happen"
+        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+            signed_call_cf(
+                cf,
+                cf.vault.executeActions,
+                [[token, 0, calldata0], [externalVault, 0, calldata1]],
+            )
+        # Both actions should have reverted
+        assert token.balanceOf(cf.vault.address) == st_token_approve
+        assert token.balanceOf(externalVault.address) == 0
 
 
-## TODO: Add more tests for different executeActions scenarios
-##       Try calling internal functions to ensure they are not callable
-##       Check what happens if the bytes passed are <4 => EVM wil revert
-##       Check if we pass two actions with the first one being <4 bytes
-##       Check when trying to transfer ETH if it reverts due to balance
-##       Test multiple calls and reverting one of them
-##       Try interactions with Axelar/CCTP (Goerli/Sepolia?)
+## TODO: Try interactions with Axelar/CCTP (Goerli?)
