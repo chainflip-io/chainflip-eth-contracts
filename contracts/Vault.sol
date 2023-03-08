@@ -651,7 +651,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          the funds it could already do it via transfer. So no need to add safeguards to
      *          check that it doesn't call internal functions or transfer functions of some kind.
      *          However, some safeguards are implemented.
-     * @dev     Can be used to make calls to settle funds on an auxiliary chain.
+     * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
+     *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
      *                  the calldata to the function with an empty sigData) and sig over that
      *                  that hash (uint) from the aggregate key.
@@ -676,12 +677,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         // NOTE: Another approach would be to do an approve and then a function call. However, this is limited
-        // e.g. for axelar we need to do an extra function call to the gas contract.
-        // NOTE: We could consider adding a destCall as part of the Call struct and then fetch the address to be
-        // call from storage (via mapping or sthg). That could be controlled via Governance. However, we are anyway
-        // in big trouble if the AggKey is malicious and can call this function so it's probably not needed.
-        // NOTE: The only vault-exclusive function that we don't check for is the fetch function from a Deposit.
-        // We don't care about that being called as we don't even witness it.
+        // e.g. for axelar we need to do an extra function call to the gas contract. So the alternative is
+        // most likely to write every use case (Axelar, USDC, ...) with different logic. Too much overhead.
+        // NOTE: We could consider adding a whitelist check. If the AggKey is malicious it is probably
+        // too late anyway, but it can be a good way to prevent problems and limit this function.
+        // NOTE: I have implemented some safeguards. The only vault-exclusive function that we don't check for
+        // is the fetch function from a Deposit. We don't care about that being called as we don't even witness it
+        // and it basically just pulls funds to this contract.
 
         uint256 length = data.length;
         for (uint256 i = 0; i < length; ) {
@@ -697,9 +699,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             // avoid reading bytes from outside the callData when loading from memory in case of the
             // length being zero or smaller than 4.
             require(data[i].target.code.length > 0, "Vault: must call contract/function");
-            // NOTE: Cheks above can be modified to allow for calls to EOAs and/or calls with no data to transfer Native.
-            // To be discussed if we want that flexilibilty but it shouldn't be a use case. We probably want extra
-            // safeguards instead.
+            // NOTE: Cheks above can be modified to allow for calls to EOAs and/or calls with no data to transfer
+            // native tokens. To be discussed if we want that flexilibilty but it shouldn't be a use case. We
+            // probably want extra safeguards instead.
 
             // Get function selector. First the callData is copied into memory since Yul doesn't support structs
             bytes memory callData = data[i].callData;
