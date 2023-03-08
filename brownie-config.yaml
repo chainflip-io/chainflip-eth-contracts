@@ -2,7 +2,7 @@
 networks:
   default: development
 
-# Require OpenZepplin Contracts
+# Require OpenZeppelin Contracts
 dependencies:
   - OpenZeppelin/openzeppelin-contracts@4.0.0
 
@@ -12,8 +12,8 @@ compiler:
     optimizer:
       enabled: true
       runs: 1600
-    version: 0.8.7
-    # Path remapping to support OpenZepplin imports with NPM-style path
+    version: 0.8.16
+    # Path remapping to support OpenZeppelin imports with NPM-style path
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
 
