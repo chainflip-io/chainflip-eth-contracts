@@ -58,34 +58,8 @@ def deploy_initial_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
-    # # Deploy Key Manager contract
-    # cf.keyManager = deployer.deploy(KeyManager, aggKey, cf.gov, cf.communityKey)
-
-    # # Deploy Vault contract
-    # cf.vault = deployer.deploy(Vault, cf.keyManager)
-
-    # # Deploy Stake Manager contract
-    # cf.stakeManager = deployer.deploy(
-    #     StakeManager,
-    #     cf.keyManager,
-    #     MIN_STAKE,
-    # )
-
-    # # Deploy FLIP contract. Minting genesis validator FLIP to the Stake Manager.
-    # # The rest of genesis FLIP will be minted to the governance address for safekeeping.
-    # cf.flip = deployer.deploy(
-    #     FLIP,
-    #     INIT_SUPPLY,
-    #     cf.numGenesisValidators,
-    #     cf.genesisStake,
-    #     cf.stakeManager.address,
-    #     cf.gov,
-    #     cf.keyManager,
-    # )
-
-    # cf.stakeManager.setFlip(cf.flip.address, {"from": deployer})
-
-    # Deploy contracts via DeployerContract
+    # Deploy contracts via DeployerContract. Minting genesis validator FLIP to the Stake Manager.
+    # The rest of genesis FLIP will be minted to the governance address for safekeeping.
     deployerContract = deployer.deploy(
         DeployerContract,
         aggKey,
