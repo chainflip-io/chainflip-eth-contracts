@@ -238,7 +238,7 @@ def test_all(
             self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
-            self.lastValidateTime = self.km.tx.timestamp + 1
+            self.lastValidateTime = self.deployerContract.tx.timestamp + 1
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + (
                 [Signer.gen_signer(None, {})]

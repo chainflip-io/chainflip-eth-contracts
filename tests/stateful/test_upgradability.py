@@ -42,7 +42,7 @@ def test_upgradability(
             self.v = self.orig_v
             self.km = self.orig_km
 
-            self.lastValidateTime = self.km.tx.timestamp + 1
+            self.lastValidateTime = self.deployerContract.tx.timestamp + 1
             self.numTxsTested = 0
 
             # StakeManager

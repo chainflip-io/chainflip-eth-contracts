@@ -13,6 +13,7 @@ def test_constructor(a, cf):
         )
 
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
+    assert cf.keyManager.getLastValidateTime() == cf.deployerContract.tx.timestamp
 
 
 def test_constructor_AW(cfAW):
