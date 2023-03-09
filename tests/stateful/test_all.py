@@ -2160,20 +2160,13 @@ def test_all(
 
         # Tries to set the FLIP address. It should have been set right after the deployment.
         def rule_setFlip(self, st_sender, st_returnAddr):
-            deployer = self.sm.tx.sender
+            print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
+            with reverts(REV_MSG_NZ_ADDR):
+                self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
 
-            if st_sender != deployer:
-                print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
-                with reverts(REV_MSG_STAKEMAN_DEPLOYER):
-                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
-            else:
-                print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
-                with reverts(REV_MSG_NZ_ADDR):
-                    self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
-
-                print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
-                with reverts(REV_MSG_FLIP_ADDRESS):
-                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
+            print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
+            with reverts(REV_MSG_FLIP_ADDRESS):
+                self.sm.setFlip(st_returnAddr, {"from": st_sender})
 
         # FLIP
 
