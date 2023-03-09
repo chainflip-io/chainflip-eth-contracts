@@ -9,10 +9,10 @@ import "./interfaces/IShared.sol";
 contract DeployerContract is IShared {
     address[] internal whitelist;
 
-    Vault public vault;
-    KeyManager public keyManager;
-    StakeManager public stakeManager;
-    FLIP public flip;
+    Vault public immutable vault;
+    KeyManager public immutable keyManager;
+    StakeManager public immutable stakeManager;
+    FLIP public immutable flip;
 
     // Upon deployment of this contract, all the necessary contracts will be deployed in a
     // single transaction. This give atomocity to the deployment flow and it will even set

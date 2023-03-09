@@ -75,7 +75,9 @@ def test_transfer_rev_msgHash(cf):
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.transfer(sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT])
+        cf.vault.transfer(
+            sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
+        )
 
 
 def test_transfer_rev_sig(cf):
@@ -87,4 +89,6 @@ def test_transfer_rev_sig(cf):
     sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.vault.transfer(sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT])
+        cf.vault.transfer(
+            sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
+        )

@@ -11,10 +11,12 @@ def test_consumeKeyNonce(cfAW):
     assert not cfAW.keyManager.isNonceUsedByAggKey(nonce)
 
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-    tx = cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+    cfAW.keyManager.consumeKeyNonce(
+        sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
+    )
 
     assert nonce == sigData[4]
-    assert cfAW.keyManager.isNonceUsedByAggKey(sigData[4])
+    assert cfAW.keyManager.isNonceUsedByAggKey(sigData[4], {"from": cfAW.ALICE})
 
 
 def test_consumeKeyNonce_rev_msgHash(cfAW):
@@ -22,7 +24,9 @@ def test_consumeKeyNonce_rev_msgHash(cfAW):
     # is used directly for contractMsgHash
     with reverts(REV_MSG_MSGHASH):
         cfAW.keyManager.consumeKeyNonce(
-            AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address), JUNK_HEX_PAD
+            AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address),
+            JUNK_HEX_PAD,
+            {"from": cfAW.ALICE},
         )
 
 
@@ -30,7 +34,9 @@ def test_consumeKeyNonce_rev_sig(cfAW):
     sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
     sigData[3] = JUNK_HEX
     with reverts(REV_MSG_SIG):
-        cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+        cfAW.keyManager.consumeKeyNonce(
+            sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
+        )
 
 
 @given(st_addr=strategy("address"))
@@ -38,7 +44,9 @@ def test_consumeKeyNonce_rev_keyManAddr(cfAW, st_addr):
     if st_addr != cfAW.keyManager:
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, st_addr)
         with reverts(REV_MSG_WRONG_KEYMANADDR):
-            cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+            cfAW.keyManager.consumeKeyNonce(
+                sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
+            )
 
 
 @given(st_chainID=strategy("uint256"))
@@ -47,7 +55,9 @@ def test_consumeKeyNonce_rev_chainID(cfAW, st_chainID):
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
         sigData[1] = st_chainID
         with reverts(REV_MSG_WRONG_CHAINID):
-            cfAW.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+            cfAW.keyManager.consumeKeyNonce(
+                sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
+            )
 
 
 # Transactions sent from non-EOA accounts breaks brownie coverage - skip coverage
@@ -64,7 +74,9 @@ def test_consumeKeyNonce_checkAll(a, cf):
         else:
             sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
             with reverts(REV_MSG_WHITELIST):
-                cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+                cf.keyManager.consumeKeyNonce(
+                    sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE}
+                )
 
 
 # Split test_consumeKeyNonce_check in two because brownie coverage crashes when
@@ -88,7 +100,9 @@ def test_consumeKeyNonce_check_nonwhitelisted(a, cf):
     for addr in list(a):
         sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
         with reverts(REV_MSG_WHITELIST):
-            cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+            cf.keyManager.consumeKeyNonce(
+                sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE}
+            )
 
 
 def test_consumeKeyNonce_rev_used_nonce(a, cfAW):
@@ -96,6 +110,7 @@ def test_consumeKeyNonce_rev_used_nonce(a, cfAW):
     cfAW.keyManager.consumeKeyNonce(
         sigData,
         cleanHexStr(sigData[2]),
+        {"from": cfAW.ALICE},
     )
 
     # Replay attack
@@ -103,4 +118,5 @@ def test_consumeKeyNonce_rev_used_nonce(a, cfAW):
         cfAW.keyManager.consumeKeyNonce(
             sigData,
             cleanHexStr(sigData[2]),
+            {"from": cfAW.ALICE},
         )

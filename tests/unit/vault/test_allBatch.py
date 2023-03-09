@@ -145,7 +145,7 @@ def test_allBatch_rev_msgHash(cf):
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.allBatch(sigData, *args)
+        cf.vault.allBatch(sigData, *args, {"from": cf.ALICE})
 
 
 def test_allBatch_rev_sig(cf):
@@ -161,7 +161,7 @@ def test_allBatch_rev_sig(cf):
     sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.vault.allBatch(sigData, *args)
+        cf.vault.allBatch(sigData, *args, {"from": cf.ALICE})
 
 
 def test_allBatch_rev_deploy(cf):

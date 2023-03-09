@@ -50,7 +50,6 @@ def cf(a, cfDeploy):
     cf.whitelisted = [
         cf.vault.address,
         cf.stakeManager.address,
-        cf.keyManager.address,
         cf.flip.address,
     ]
 
