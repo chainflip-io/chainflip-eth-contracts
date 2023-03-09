@@ -97,3 +97,5 @@ def main():
         f = open(f"{dir_path}{DEPLOY_ARTEFACT_ID}.json", "w")
         f.write(json_content)
         f.close()
+
+

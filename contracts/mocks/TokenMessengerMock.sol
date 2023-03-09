@@ -24,7 +24,9 @@ contract TokenMessengerMock {
     ) external {
         // emits DepositForBurn & MessageSent
     }
+}
 
+contract MessageTransmitter {
     event MessageReceived(
         address indexed caller,
         uint32 sourceDomain,
