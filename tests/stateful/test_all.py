@@ -2574,7 +2574,7 @@ def test_all(
                                 "        REV_MSG_SIG rule_upgrade_stakeManager",
                                 st_sleep_time,
                             )
-                            self.sm.executeClaim(JUNK_HEX)
+                            self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
                     chain.sleep(CLAIM_DELAY * 2)
 
