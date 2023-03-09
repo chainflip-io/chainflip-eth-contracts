@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
@@ -20,7 +19,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           valid aggragate signature can be submitted to the contract which
  *           updates the total supply by minting or burning the necessary FLIP.
  */
-contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded, ReentrancyGuard {
+contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
     // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
@@ -126,7 +125,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     )
         external
         override
-        nonReentrant
         onlyNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
