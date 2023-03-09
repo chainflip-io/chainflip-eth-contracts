@@ -58,9 +58,9 @@ def deploy_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
-    # Deploy contracts via DeployerContract. Minting genesis validator FLIP to the Stake Manager.
+    # Deploy contracts via cf.deployerContract. Minting genesis validator FLIP to the Stake Manager.
     # The rest of genesis FLIP will be minted to the governance address for safekeeping.
-    deployerContract = deployer.deploy(
+    cf.deployerContract = deployer.deploy(
         DeployerContract,
         aggKey,
         cf.gov,
@@ -71,10 +71,10 @@ def deploy_Chainflip_contracts(
         cf.genesisStake,
     )
 
-    cf.vault = Vault.at(deployerContract.vault())
-    cf.flip = FLIP.at(deployerContract.flip())
-    cf.keyManager = KeyManager.at(deployerContract.keyManager())
-    cf.stakeManager = StakeManager.at(deployerContract.stakeManager())
+    cf.vault = Vault.at(cf.deployerContract.vault())
+    cf.flip = FLIP.at(cf.deployerContract.flip())
+    cf.keyManager = KeyManager.at(cf.deployerContract.keyManager())
+    cf.stakeManager = StakeManager.at(cf.deployerContract.stakeManager())
 
     # All the deployer rights and tokens have been delegated to the governance key.
     cf.safekeeper = cf.gov

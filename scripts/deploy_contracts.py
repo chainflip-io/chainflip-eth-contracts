@@ -75,6 +75,7 @@ def main():
     print(f"  Num Genesis Validators: {cf.numGenesisValidators}" + "\n")
 
     print("Deployed contract addresses\n----------------------------")
+    print(f"  DeployerContract: {cf.deployerContract.address}")
     print(f"  KeyManager: {cf.keyManager.address}")
     print(f"  StakeManager: {cf.stakeManager.address}")
     print(f"  FLIP: {cf.flip.address}")

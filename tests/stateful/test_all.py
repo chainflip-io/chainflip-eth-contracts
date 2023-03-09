@@ -238,7 +238,7 @@ def test_all(
             self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
-            self.lastValidateTime = self.km.tx.timestamp
+            self.lastValidateTime = self.km.tx.timestamp + 1
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + (
                 [Signer.gen_signer(None, {})]
@@ -2267,6 +2267,8 @@ def test_all(
             )
             toWhitelist = self.currentWhitelist.copy()
 
+            # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
+            # as part of the constructor, so we don't need to call it here.
             newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
             signer = self._get_key_prob(AGG)
@@ -2490,6 +2492,8 @@ def test_all(
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
             newStakeManager = st_sender.deploy(StakeManager, self.km, INIT_MIN_STAKE)
 
+            # In case of deploying a new StakeManager, the setFLIP function will probably be part of
+            # the constructor to avoid frontrunning, as there is no deployer check now.
             newStakeManager.setFlip(self.f, {"from": st_sender})
 
             # Keep old StakeManager whitelisted

@@ -42,7 +42,7 @@ def test_upgradability(
             self.v = self.orig_v
             self.km = self.orig_km
 
-            self.lastValidateTime = self.km.tx.timestamp
+            self.lastValidateTime = self.km.tx.timestamp + 1
             self.numTxsTested = 0
 
             # StakeManager
@@ -79,6 +79,9 @@ def test_upgradability(
                 st_sender,
                 newKeyManager.address,
             )
+
+            # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
+            # as part of the constructor, so we don't need to call it here.
             newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
             for aggKeyNonceConsumer in aggKeyNonceConsumers:
@@ -217,6 +220,8 @@ def test_upgradability(
                 MIN_STAKE,
             )
 
+            # In case of deploying a new StakeManager, the setFLIP function will probably be part of
+            # the constructor to avoid frontrunning, as there is no deployer check now.
             newStakeManager.setFlip(self.f, {"from": st_sender})
 
             # Keep old StakeManager whitelisted
