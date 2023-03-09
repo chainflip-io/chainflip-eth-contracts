@@ -14,7 +14,7 @@ from brownie import (
     MockUSDC,
     DeployerContract,
 )
-from deploy import deploy_set_Chainflip_contracts, deploy_usdc_contract
+from deploy import deploy_Chainflip_contracts, deploy_usdc_contract
 
 
 def main():
@@ -60,7 +60,7 @@ def main():
             ## Gracefully exit the script with a message.
             sys.exit("Deployment cancelled by user")
 
-    cf = deploy_set_Chainflip_contracts(
+    cf = deploy_Chainflip_contracts(
         DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract, os.environ
     )
 

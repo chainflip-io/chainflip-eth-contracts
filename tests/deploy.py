@@ -4,7 +4,7 @@ from web3.auto import w3
 from brownie import network, accounts
 
 
-def deploy_initial_Chainflip_contracts(
+def deploy_Chainflip_contracts(
     deployer, KeyManager, Vault, StakeManager, FLIP, DeployerContract, *args
 ):
 
@@ -79,19 +79,6 @@ def deploy_initial_Chainflip_contracts(
     # All the deployer rights and tokens have been delegated to the governance key.
     cf.safekeeper = cf.gov
     cf.deployer = deployer
-
-    return cf
-
-
-# This should be used over deploy_initial_Chainflip_contracts for actual deployments
-def deploy_set_Chainflip_contracts(
-    deployer, KeyManager, Vault, StakeManager, FLIP, DeployerContract, *args
-):
-    cf = deploy_initial_Chainflip_contracts(
-        deployer, KeyManager, Vault, StakeManager, FLIP, DeployerContract, *args
-    )
-    # cf.whitelisted = [cf.vault.address, cf.stakeManager.address, cf.flip.address]
-    # cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted, {"from": cf.deployer})
 
     return cf
 

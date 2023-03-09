@@ -43,7 +43,7 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, stakedMin):
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
 
     chain.sleep(CLAIM_DELAY + 5)
-    cf.stakeManager.executeClaim(JUNK_HEX)
+    cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM

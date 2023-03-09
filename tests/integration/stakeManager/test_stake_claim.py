@@ -24,7 +24,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
 
     # Claiming before enough time passed should revert
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(nodeID1)
+        cf.stakeManager.executeClaim(nodeID1, {"from": cf.ALICE})
 
     chain.sleep(CLAIM_DELAY + 5)
 
@@ -36,7 +36,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
     stakeTest(cf, 0, nodeID1, MIN_STAKE, stakeTx1, stakeAmount1, NON_ZERO_ADDR)
 
     # Execute claim
-    execClaimTx1 = cf.stakeManager.executeClaim(nodeID1)
+    execClaimTx1 = cf.stakeManager.executeClaim(nodeID1, {"from": cf.ALICE})
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID1) == NULL_CLAIM
@@ -68,7 +68,7 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
 
     # Executing the 1st claim again should revert
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(nodeID1)
+        cf.stakeManager.executeClaim(nodeID1, {"from": cf.ALICE})
 
     # Register 2nd claim
     registerClaimTest(
@@ -79,10 +79,10 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
 
     # Executing the 1st claim again should revert
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(nodeID1)
+        cf.stakeManager.executeClaim(nodeID1, {"from": cf.ALICE})
 
     # Execute 2nd claim
-    execClaimTx2 = cf.stakeManager.executeClaim(nodeID2)
+    execClaimTx2 = cf.stakeManager.executeClaim(nodeID2, {"from": cf.ALICE})
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(nodeID2) == NULL_CLAIM
@@ -103,8 +103,8 @@ def test_registerClaim_stake_executeClaim_stake_registerClaim_executeClaim(cf):
 
     # Executing the 1st claim again should revert
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(nodeID1)
+        cf.stakeManager.executeClaim(nodeID1, {"from": cf.ALICE})
 
     # Executing the 2nd claim again should revert
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(nodeID2)
+        cf.stakeManager.executeClaim(nodeID2, {"from": cf.ALICE})

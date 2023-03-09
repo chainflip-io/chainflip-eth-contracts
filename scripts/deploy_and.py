@@ -13,7 +13,7 @@ from brownie import (
     chain,
     network,
 )
-from deploy import deploy_set_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 
 print(network.show_active())
 
@@ -28,7 +28,7 @@ COMMUNITY_KEY = accounts[6]
 COMMUNITY_KEY_2 = accounts[7]
 
 
-cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
+cf = deploy_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": ALICE})

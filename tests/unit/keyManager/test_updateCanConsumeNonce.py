@@ -1,5 +1,5 @@
 from consts import *
-from deploy import deploy_initial_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 from shared_tests import *
 from brownie import reverts, chain, web3
 from brownie.test import given, strategy

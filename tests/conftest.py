@@ -1,7 +1,7 @@
 import pytest
 from consts import *
-from deploy import deploy_initial_Chainflip_contracts
-from deploy import deploy_set_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 from brownie import chain
 from brownie.network import priority_fee
 from utils import *
@@ -17,7 +17,7 @@ def isolation(fn_isolation):
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
-    return deploy_set_Chainflip_contracts(
+    return deploy_Chainflip_contracts(
         a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
     )
 
@@ -47,6 +47,13 @@ def cf(a, cfDeploy):
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
 
+    cf.whitelisted = [
+        cf.vault.address,
+        cf.stakeManager.address,
+        cf.keyManager.address,
+        cf.flip.address,
+    ]
+
     return cf
 
 
@@ -55,7 +62,7 @@ def cf(a, cfDeploy):
 @pytest.fixture(scope="module")
 def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
-    cf = deploy_initial_Chainflip_contracts(
+    cf = deploy_Chainflip_contracts(
         a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
     )
 
@@ -74,7 +81,6 @@ def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP, DeployerContr
         *args,
         {"from": cf.safekeeper},
     )
-    # cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
 
     return cf
 
@@ -135,7 +141,9 @@ def claimRegistered(cf, stakedMin):
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
     tx = cf.stakeManager.registerClaim(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        *args,
+        {"from": cf.ALICE},
     )
 
     return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
@@ -155,7 +163,7 @@ def token2(cf, Token):
 
 # Vesting
 @pytest.fixture(scope="module")
-def addrs(a, TokenVesting):
+def addrs(a):
     class Context:
         pass
 
