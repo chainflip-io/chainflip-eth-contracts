@@ -163,7 +163,8 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
     # Obtain a bytes32 stringified address
     recipient_address_bytes32 = hexStr(to_bytes(mint_recipient_address, "bytes32"))
 
-    # TODO: Add input here for a particular destination_caller
+    # TODO: Add input here for a particular destination_caller. Then call depositForBurnWithCaller
+    # instead of depositForBurn
 
     # Check that we have the funds
     assert usdc.balanceOf(DEPLOYER) + usdc.balanceOf(depositor) >= tokens_to_transfer
@@ -202,6 +203,8 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         )
 
     else:
+        ini_usdc_bals = usdc.balanceOf(DEPLOYER)
+
         # If we are using the EOA, we need to approve the TokenMessengerCCTP
         usdc.approve(token_messenger_cctp, tokens_to_transfer, {"from": DEPLOYER})
         tx = token_messenger_cctp.depositForBurn(
@@ -211,6 +214,7 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
             usdc.address,
             {"from": DEPLOYER},
         )
+        assert usdc.balanceOf(DEPLOYER) == ini_usdc_bals - tokens_to_transfer
 
     # Check DepositForBurn event
     assert tx.events["DepositForBurn"]["nonce"] != 0
@@ -294,9 +298,30 @@ def get_and_submit_attestation(
 
     expected_nonce = input("Enter expected nonce: ")
 
-    tx = message_transmitter_cctp.receiveMessage(
-        message, attestation_response, {"from": depositor}
-    )
+    # We assume that if depositor != DEPLOYER then it's the Vault contract
+    if depositor != DEPLOYER:
+        # Most likely when going through the Vault depositor ==
+        vault = Vault.at(depositor)
+        keyManager_address = vault.getKeyManager()
+
+        # Doing it through the Vault means we need to encode the calldata
+        calldata = message_transmitter_cctp.receiveMessage.encode_input(
+            message, attestation_response
+        )
+        args = [[message_transmitter_cctp, 0, calldata]]
+        callDataNoSig = vault.executeActions.encode_input(
+            agg_null_sig(keyManager_address, chain.id), args
+        )
+        tx = vault.executeActions(
+            AGG_SIGNER_1.getSigData(callDataNoSig, keyManager_address),
+            args,
+            {"from": DEPLOYER},
+        )
+
+    else:
+        tx = message_transmitter_cctp.receiveMessage(
+            message, attestation_response, {"from": DEPLOYER}
+        )
 
     tx.info()
     print("Attestation succesfully submitted!")
