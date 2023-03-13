@@ -124,7 +124,7 @@ def main():
             bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address)
         elif action == "3":
             message = input(
-                "We will get the attestation and submit it. Input the message emitted in the source chain in format '0x...' : "
+                "We will get the attestation and submit it.\nInput the message emitted in the source chain in format '0x...' : "
             )
             get_and_submit_attestation(
                 message, fuji_to_goerli, depositor, mint_recipient_address
@@ -163,8 +163,29 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
     # Obtain a bytes32 stringified address
     recipient_address_bytes32 = hexStr(to_bytes(mint_recipient_address, "bytes32"))
 
-    # TODO: Add input here for a particular destination_caller. Then call depositForBurnWithCaller
-    # instead of depositForBurn
+    egress_minter = input(
+        "Input the address that shall do the USDC mint on the egress chain in format '0x...'. Just press enter to allow any address to mint : "
+    )
+    if egress_minter == "":
+        egress_minter = "0x0"
+        fcn = token_messenger_cctp.depositForBurn
+        args = (
+            tokens_to_transfer,
+            destination_domain,
+            recipient_address_bytes32,
+            usdc.address,
+        )
+    else:
+        # Convert address to bytes32
+        egress_minter = hexStr(to_bytes(egress_minter, "bytes32"))
+        fcn = token_messenger_cctp.depositForBurnWithCaller
+        args = (
+            tokens_to_transfer,
+            destination_domain,
+            recipient_address_bytes32,
+            usdc.address,
+            egress_minter,
+        )
 
     # Check that we have the funds
     assert usdc.balanceOf(DEPLOYER) + usdc.balanceOf(depositor) >= tokens_to_transfer
@@ -181,7 +202,8 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
                 tokens_to_transfer - ini_usdc_bals,
                 {"from": DEPLOYER, "required_confs": 1},
             )
-        assert usdc.balanceOf(vault.address) >= tokens_to_transfer
+        # Commenting it out as might fail if not enough time has passed since transfer
+        # assert usdc.balanceOf(vault.address) >= tokens_to_transfer
 
         # Doing it through the Vault means we need to encode the calldata
         syncNonce(keyManager_address)
@@ -189,12 +211,7 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         calldata0 = usdc.approve.encode_input(
             token_messenger_cctp.address, tokens_to_transfer
         )
-        calldata1 = token_messenger_cctp.depositForBurn.encode_input(
-            tokens_to_transfer,
-            destination_domain,
-            recipient_address_bytes32,
-            usdc.address,
-        )
+        calldata1 = fcn.encode_input(*args)
 
         args = [[usdc, 0, calldata0], [token_messenger_cctp, 0, calldata1]]
         callDataNoSig = vault.executeActions.encode_input(
@@ -215,11 +232,8 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
             tokens_to_transfer,
             {"from": DEPLOYER, "required_confs": 1},
         )
-        tx = token_messenger_cctp.depositForBurn(
-            tokens_to_transfer,
-            destination_domain,
-            recipient_address_bytes32,
-            usdc.address,
+        tx = fcn(
+            *args,
             {"from": DEPLOYER},
         )
         assert usdc.balanceOf(DEPLOYER) == ini_usdc_bals - tokens_to_transfer
@@ -235,10 +249,8 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         tx.events["DepositForBurn"]["destinationTokenMessenger"]
         == egress_token_messenger_cctp
     )
-    # No destination caller.
-    # TODO: We should try with depositForBurnWithCaller later so only a certain address
-    # can mint on the egress chain (EOA or Vault)
-    assert tx.events["DepositForBurn"]["destinationCaller"] == "0x0"
+    # It will be empty (zeros) if not specified
+    assert tx.events["DepositForBurn"]["destinationCaller"] == egress_minter
     assert tx.events["MessageSent"]["message"] != JUNK_HEX
 
     nonce = tx.events["DepositForBurn"]["nonce"]
