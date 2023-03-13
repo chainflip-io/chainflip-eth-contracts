@@ -177,11 +177,15 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         ini_usdc_bals = usdc.balanceOf(vault.address)
         if ini_usdc_bals < tokens_to_transfer:
             usdc.transfer(
-                vault.address, tokens_to_transfer - ini_usdc_bals, {"from": DEPLOYER}
+                vault.address,
+                tokens_to_transfer - ini_usdc_bals,
+                {"from": DEPLOYER, "required_confs": 1},
             )
         assert usdc.balanceOf(vault.address) >= tokens_to_transfer
 
         # Doing it through the Vault means we need to encode the calldata
+        syncNonce(keyManager_address)
+
         calldata0 = usdc.approve.encode_input(
             token_messenger_cctp.address, tokens_to_transfer
         )
@@ -206,7 +210,11 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         ini_usdc_bals = usdc.balanceOf(DEPLOYER)
 
         # If we are using the EOA, we need to approve the TokenMessengerCCTP
-        usdc.approve(token_messenger_cctp, tokens_to_transfer, {"from": DEPLOYER})
+        usdc.approve(
+            token_messenger_cctp,
+            tokens_to_transfer,
+            {"from": DEPLOYER, "required_confs": 1},
+        )
         tx = token_messenger_cctp.depositForBurn(
             tokens_to_transfer,
             destination_domain,
@@ -309,11 +317,18 @@ def get_and_submit_attestation(
             message, attestation_response
         )
         args = [[message_transmitter_cctp, 0, calldata]]
+
+        syncNonce(keyManager_address)
+
         callDataNoSig = vault.executeActions.encode_input(
             agg_null_sig(keyManager_address, chain.id), args
         )
+        # Get the latest used nonce, as this is not synched
         tx = vault.executeActions(
-            AGG_SIGNER_1.getSigData(callDataNoSig, keyManager_address),
+            AGG_SIGNER_1.getSigData(
+                callDataNoSig,
+                keyManager_address,
+            ),
             args,
             {"from": DEPLOYER},
         )
@@ -344,3 +359,14 @@ def get_and_submit_attestation(
     print("Values are correct! Success!")
 
     return tx
+
+
+# The deployed contract might have already signed some messages, so we need to sync the nonce
+# of the contract with the nonces in consts.py used to signed the messages.
+def syncNonce(keyManager_address):
+    keyManager = KeyManager.at(keyManager_address)
+    while keyManager.isNonceUsedByAggKey(nonces[AGG]) != False:
+        nonces[AGG] += 1
+
+    print("Synched Nonce: ", nonces[AGG])
+    return nonces

@@ -160,9 +160,7 @@ def test_bytesZeroLength(cf):
     # native tokens to the stakeManager. This way we check the call has really zero calldata.
     with reverts("Vault: must call contract/function"):
         cf.vault.executeActions(
-            AGG_SIGNER_1.getSigDataWithNonces(
-                callDataNoSigModif, nonces, cf.keyManager.address
-            ),
+            AGG_SIGNER_1.getSigData(callDataNoSigModif, cf.keyManager.address),
             args,
         )
 
