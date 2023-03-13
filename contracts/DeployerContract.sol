@@ -6,6 +6,12 @@ import "./StakeManager.sol";
 import "./FLIP.sol";
 import "./interfaces/IShared.sol";
 
+/**
+ * @title    Deployer contract
+ * @notice   Upon deployment of this contract, all the necessary contracts will be
+ *           deployed in a single transaction. This give atomocity to the deployment
+ *           flow by deploying all the contracts and setting them up appropriately.
+ */
 contract DeployerContract is IShared {
     address[] internal whitelist;
 
@@ -14,9 +20,6 @@ contract DeployerContract is IShared {
     StakeManager public immutable stakeManager;
     FLIP public immutable flip;
 
-    // Upon deployment of this contract, all the necessary contracts will be deployed in a
-    // single transaction. This give atomocity to the deployment flow and it will even set
-    // the whitelist correctly.
     constructor(
         Key memory aggKey,
         address govKey,
@@ -37,7 +40,10 @@ contract DeployerContract is IShared {
             govKey,
             _keyManager
         );
+        // Set the FLIP address to the StakeManager contract
         _stakeManager.setFlip(FLIP(address(_flip)));
+
+        // Set the whitelist to the KeyManager contract
         whitelist = [address(_vault), address(_stakeManager), address(_flip)];
         _keyManager.setCanConsumeKeyNonce(whitelist);
 
