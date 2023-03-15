@@ -182,13 +182,15 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
 
 def canConsumeKeyNonce_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+    cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE})
 
 
 def canConsumeKeyNonce_rev_test(cf, signer):
     sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
     with reverts(REV_MSG_SIG):
-        cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]))
+        cf.keyManager.consumeKeyNonce(
+            sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE}
+        )
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random

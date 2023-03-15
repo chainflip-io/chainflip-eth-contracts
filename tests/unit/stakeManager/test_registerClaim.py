@@ -11,9 +11,7 @@ from brownie.test import given, strategy
     # and make the test fail even though nothing is wrong
     st_expiryTimeDiff=strategy("uint", min_value=5, max_value=365 * DAY),
 )
-def test_registerClaim_st_amount_rand(
-    cf, stakedMin, st_amount, st_staker, st_expiryTimeDiff
-):
+def test_registerClaim_st_amount_rand(cf, st_amount, st_staker, st_expiryTimeDiff):
     args = (
         JUNK_HEX,
         st_amount,
@@ -39,7 +37,7 @@ def test_registerClaim_st_amount_rand(
 # Specific st_amounts that should/shouldn't work
 
 
-def test_registerClaim_min_expiryTime(cf, stakedMin):
+def test_registerClaim_min_expiryTime(cf):
     registerClaimTest(
         cf,
         cf.stakeManager,
@@ -114,7 +112,7 @@ def test_registerClaim_rev_msgHash(cf, stakedMin):
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.stakeManager.registerClaim(sigData, *args)
+        cf.stakeManager.registerClaim(sigData, *args, {"from": cf.ALICE})
 
 
 def test_registerClaim_rev_sig(cf, stakedMin):
@@ -127,7 +125,7 @@ def test_registerClaim_rev_sig(cf, stakedMin):
     sigData[3] += 1
 
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.registerClaim(sigData, *args)
+        cf.stakeManager.registerClaim(sigData, *args, {"from": cf.ALICE})
 
 
 @given(

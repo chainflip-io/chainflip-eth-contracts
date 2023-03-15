@@ -13,9 +13,10 @@ def test_constructor(a, cf):
         )
 
     assert cf.keyManager.getNumberWhitelistedAddresses() == len(cf.whitelisted)
+    assert cf.keyManager.getLastValidateTime() == cf.deployerContract.tx.timestamp
 
 
-def test_constructor_AW(a, cfAW):
+def test_constructor_AW(cfAW):
     assert cfAW.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
     assert cfAW.keyManager.getGovernanceKey() == cfAW.GOVERNOR
     assert cfAW.keyManager.canConsumeKeyNonceSet() == True

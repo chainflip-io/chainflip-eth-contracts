@@ -180,7 +180,7 @@ def test_executexSwapAndCallEth_rev_msgHash(cf):
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.executexSwapAndCall(sigData, *args)
+        cf.vault.executexSwapAndCall(sigData, *args, {"from": cf.ALICE})
 
 
 # rev if cfReceiver reverts the call

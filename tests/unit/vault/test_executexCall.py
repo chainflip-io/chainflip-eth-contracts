@@ -58,7 +58,7 @@ def test_executexCall_rev_noCfReceive(cf, token):
         signed_call_cf(cf, cf.vault.executexCall, *args)
 
 
-def test_executexCall_rev_nzAddrs(cf, token):
+def test_executexCall_rev_nzAddrs(cf):
     args = [
         ZERO_ADDR,
         JUNK_INT,
@@ -83,7 +83,7 @@ def test_executexCallEth_rev_msgHash(cf):
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.executexCall(sigData, *args)
+        cf.vault.executexCall(sigData, *args, {"from": cf.ALICE})
 
 
 # rev if cfReceiver reverts the call
