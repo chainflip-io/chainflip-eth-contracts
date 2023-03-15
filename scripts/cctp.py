@@ -14,6 +14,8 @@ from brownie import (
     Vault,
     StakeManager,
     FLIP,
+    AxelarGatewayMock,
+    AxelarGasService,
 )
 from deploy import deploy_set_Chainflip_contracts
 from brownie.convert import to_bytes
@@ -56,11 +58,18 @@ USDC_FUJI_ADDRESS = "0x5425890298aed601595a70AB815c96711a31Bc65"
 MESSAGE_TRANSMITTER_CCTP_FUJI = "0xa9fb1b3009dcb79e2fe346c16a604b8fa8ae0a79"
 ETH_DESTINATION_DOMAIN = 0
 
+aUSDC_FUJI_ADDRESS = "0x57F1c63497AEe0bE305B8852b354CEc793da43bB"
+GATEWAY_FUJI_ADDRESS = "0xC249632c2D40b9001FE907806902f63038B737Ab"
+# GAS_SERVICE_FUJI_ADDRESS = "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6"
+
 # Goerli
 TOKENMESSENGER_CCTP_GOERLI_ADDRESS = "0xd0c3da58f55358142b8d3e06c1c30c5c6114efe8"
 USDC_GOERLI_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 MESSAGE_TRANSMITTER_CCTP_GOERLI = "0x26413e8157cd32011e726065a5462e97dd4d03d9"
 FUJI_DESTINATION_DOMAIN = 1
+
+GATEWAY_GOERLI_ADDRESS = "0xe432150cce91c13a887f7D836923d5597adD8E31"
+aUSDC_GOERLI_ADDRESS = "0x254d06f33bDc5b8ee05b2ea472107E300226659A"
 
 # Bridging properties
 tokens_to_transfer = 1 * 10**6
@@ -88,7 +97,7 @@ def main():
     print(f"Chain ID: {chain.id}")
 
     action = input(
-        "What do you want to do? [1] Bridge USDC Source chain [2] Get Attestation [3] Get & Submit attestation on egress chain: "
+        "What do you want to do? [1] Bridge USDC/aUSDC [2] Get Attestation [3] Get & Submit attestation on egress chain: "
     )
 
     if action not in ["1", "2", "3"]:
@@ -121,7 +130,13 @@ def main():
         )
 
         if action == "1":
-            bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address)
+            bridge_action = input(
+                "[1] Bridge USDC via CCTP [2] Bridge aUSDC via Axelar : "
+            )
+            if bridge_action == "1":
+                bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address)
+            elif bridge_action == "2":
+                bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address)
         elif action == "3":
             message = input(
                 "We will get the attestation and submit it.\nInput the message emitted in the source chain in format '0x...' : "
@@ -203,6 +218,7 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
                 {"from": DEPLOYER, "required_confs": 1},
             )
         # Commenting it out as might fail if not enough time has passed since transfer
+        # so probably the node hasn't updated the balance yet.
         # assert usdc.balanceOf(vault.address) >= tokens_to_transfer
 
         # Doing it through the Vault means we need to encode the calldata
@@ -265,6 +281,84 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
     print("Mint recipient: ", mint_recipient)
     print("destinationDomain: ", destination_domain)
     print("destination_caller: ", destination_caller)
+
+
+def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
+    # The contract pointers below will fail if we are in the wrong network.
+    if fuji_to_goerli == "1":
+        # FUJI TO GOERLI
+        axelar_gateway = AxelarGatewayMock.at(GATEWAY_FUJI_ADDRESS)
+        aUsdc = Token.at(aUSDC_FUJI_ADDRESS)
+        dst_chain = "ethereum-2"
+        # axelar_gas_service = AxelarGasService.at(GAS_SERVICE_FUJI_ADDRESS)
+    else:
+        # GOERLI to FUJI - for now not supported
+        axelar_gateway = AxelarGatewayMock.at(GATEWAY_GOERLI_ADDRESS)
+        aUsdc = Token.at(aUSDC_GOERLI_ADDRESS)
+        dst_chain = "Avalanche"
+
+    fcn = axelar_gateway.sendToken
+    args = (
+        dst_chain,  ## destination chain name
+        mint_recipient_address[
+            2:
+        ],  ## some destination address. For some reason I have to remove "0x"
+        "aUSDC",  ## asset symbol
+        tokens_to_transfer,  ## amount (in atomic units)
+    )
+
+    # If we want to send to tokens via the Vault, first fund it.
+    if depositor != DEPLOYER:
+        # Do this to ensure the depositor is a Vault if it's not the EOA
+        vault = Vault.at(depositor)
+        keyManager_address = vault.getKeyManager()
+        ini_usdc_bals = aUsdc.balanceOf(vault.address)
+        if ini_usdc_bals < tokens_to_transfer:
+            aUsdc.transfer(
+                vault.address,
+                tokens_to_transfer - ini_usdc_bals,
+                {"from": DEPLOYER, "required_confs": 1},
+            )
+        # Doing it through the Vault means we need to encode the calldata
+        syncNonce(keyManager_address)
+
+        calldata0 = aUsdc.approve.encode_input(
+            axelar_gateway.address, tokens_to_transfer
+        )
+        calldata1 = fcn.encode_input(*args)
+
+        args = [[aUsdc, 0, calldata0], [axelar_gateway, 0, calldata1]]
+        callDataNoSig = vault.executeActions.encode_input(
+            agg_null_sig(keyManager_address, chain.id), args
+        )
+        tx = vault.executeActions(
+            AGG_SIGNER_1.getSigData(callDataNoSig, keyManager_address),
+            args,
+            {"from": DEPLOYER},
+        )
+
+    else:
+        # Make a transfer from FUJI-EOA to an Address in Goerli. For now we don't
+        # use Squid to call Vault's swap function. Instead we send it to a Deposit and
+        # then fetch it with the Vault via deployAndFetch or via fetch.
+        aUsdc.approve(
+            axelar_gateway.address,
+            tokens_to_transfer,
+            {"from": DEPLOYER, "required_confs": 1},
+        )
+
+        # This will automatically mint the tokens on the other chain. On testnet they don't seem to
+        # support USDC transfers, only aUSDC. Real network should also support USDC. Otherwise we need
+        # to use Squid on top of it. But we want USDC in the auxiliary chain.
+        tx = fcn(
+            *args,
+            {"from": DEPLOYER, "required_confs": 1},
+        )
+
+    tx.info()
+    print(
+        f"Success! aUSDC tokens should appear on the egress chain {dst_chain} at address {mint_recipient_address}"
+    )
 
 
 def get_attestation(message):
@@ -382,3 +476,50 @@ def syncNonce(keyManager_address):
 
     print("Synched Nonce: ", nonces[AGG])
     return nonces
+
+
+# def axelar_and_squid():
+#         SQUID_GOERLI_ADDRESS = "0xe25e5ae59592bFbA3b5359000fb72E6c21D3228E"
+#         # This second action is to mimic the case where we want to ingress from a chain we don't support and we
+#         # need either Squid to transfer to a Deposit (that should be easy to do) or we want Squid to call SwapToken
+#         # or swapNative and pass the xswap information to the Vault. It should work no problem even though it's quite
+#         # a hustle to set up.
+
+#         # TODO: This is failing on the egress side for some reason. Also, the gas is not being witnessed, it might
+#         # need to be part of the same contract.
+#         # Try to do it via SimpleCallContract.send() to see if it picks up the gas and if it works. Otherwise we can
+#         # just let it go and assume that this is feasible using Squid.
+
+#         aUsdc.approve(
+#             axelar_gateway.address,
+#             tokens_to_transfer,
+#             {"from": DEPLOYER, "required_confs": 1},
+#         )
+
+#         # Encoded payayload calltype (Default=0) + refundRecipient
+#         # payload = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000037876b47dee43492dac3d87f7682df52ddbc65ca"
+#         # payload all zeroos
+#         payload = "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000037876b47dee43492dac3d87f7682df52ddbc65ca0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+#         axelar_gas_service.payNativeGasForContractCallWithToken(
+#             DEPLOYER,
+#             "ethereum-2",
+#             SQUID_GOERLI_ADDRESS[2:],
+#             payload,
+#             "aUSDC",
+#             tokens_to_transfer,
+#             DEPLOYER,
+#             {"from": DEPLOYER, "value": 1 * 10**18, "required_confs": 1},
+#         )
+#         print(error_from_string("BurnFailed(string)"))
+
+#         # We try to send the aUSDC to AXLR, then to Squid on the egress chain and then so it calls the Vault
+#         tx = axelar_gateway.callContractWithToken(
+#             "ethereum-2",  ## destination chain name
+#             SQUID_GOERLI_ADDRESS[2:],  ## some destination address (should be your own)
+#             payload,  ## message
+#             "aUSDC",  ## asset symbol
+#             tokens_to_transfer,  ## amount (in atomic units)
+#             {"from": DEPLOYER, "required_confs": 1},
+#         )
+
+#         tx.info()
