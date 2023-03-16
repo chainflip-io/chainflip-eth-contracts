@@ -36,7 +36,7 @@ contract TestEchidna is DeployerEchidna {
         return
             flip.getKeyManager() == stakeManager.getKeyManager() &&
             stakeManager.getKeyManager() == vault.getKeyManager() &&
-            vault.getKeyManager() == km;
+            vault.getKeyManager() == keyManager;
     }
 
     function echidna_govKey() external view returns (bool) {
@@ -142,7 +142,7 @@ contract TestEchidna is DeployerEchidna {
     }
 
     function echidna_flipBalance() external view returns (bool) {
-        return flip.balanceOf(address(sm)) == NUM_GENESIS_VALIDATORS * GENESIS_STAKE;
+        return flip.balanceOf(address(stakeManager)) == NUM_GENESIS_VALIDATORS * GENESIS_STAKE;
     }
     /* solhint-enable  func-name-mixedcase*/
 }

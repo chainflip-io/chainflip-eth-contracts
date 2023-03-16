@@ -128,7 +128,7 @@ contract TestEchidnaGovComm is DeployerEchidna {
     }
 
     function checkwhitelistAddrs() external view {
-        assert(keyManager.getNumberWhitelistedAddresses() == 4);
+        assert(keyManager.getNumberWhitelistedAddresses() == 3);
         for (uint256 i = 0; i < whitelist.length; i++) {
             assert(keyManager.canConsumeKeyNonce(whitelist[i]) == true);
         }
