@@ -31,8 +31,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     mapping(bytes32 => Claim) private _pendingClaims;
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
-    /// @dev   Deployer address that can call setFlip
-    address private immutable _deployer;
 
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
@@ -46,7 +44,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
 
     constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
         _minStake = minStake;
-        _deployer = msg.sender;
     }
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -73,11 +70,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
      *          because FLIP contract requires this contract's address on deployment for minting.
      *          First this contract is deployed, then the FLIP contract and finally setFLIP
-     *          should be called. OnlyDeployer modifer for added security since tokens will be
-     *          minted to this contract before calling setFLIP.
+     *          should be called. Deployed via Deploy.sol so it can't be frontrun. The FLIP
+     *          address can only be set once.
      * @param flip FLIP token address
      */
-    function setFlip(IFLIP flip) external override onlyDeployer nzAddr(address(flip)) {
+    function setFlip(IFLIP flip) external override nzAddr(address(flip)) {
         require(address(_FLIP) == address(0), "Staking: Flip address already set");
         _FLIP = flip;
         emit FLIPSet(address(flip));
@@ -255,17 +252,5 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      */
     function getPendingClaim(bytes32 nodeID) external view override returns (Claim memory) {
         return _pendingClaims[nodeID];
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Modifiers                       //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Ensure that the caller is the deployer address.
-    modifier onlyDeployer() {
-        require(msg.sender == _deployer, "Staking: not deployer");
-        _;
     }
 }

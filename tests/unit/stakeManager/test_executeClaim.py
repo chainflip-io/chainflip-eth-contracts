@@ -3,7 +3,6 @@ from shared_tests import *
 from brownie import reverts, web3, chain
 from brownie.test import given, strategy
 
-
 # Need to also register a claim in this since the st_amounts sent etc depend on registerClaim
 @given(
     st_nodeID=strategy("uint", exclude=0),
@@ -46,12 +45,12 @@ def test_executeClaim_rand(
             or getChainTime() > expiryTime
         ):
             with reverts(REV_MSG_NOT_ON_TIME):
-                cf.stakeManager.executeClaim(st_nodeID)
+                cf.stakeManager.executeClaim(st_nodeID, {"from": cf.ALICE})
         elif st_amount > maxValidst_amount:
             with reverts(REV_MSG_INTEGER_OVERFLOW):
-                cf.stakeManager.executeClaim(st_nodeID)
+                cf.stakeManager.executeClaim(st_nodeID, {"from": cf.ALICE})
         else:
-            tx = cf.stakeManager.executeClaim(st_nodeID)
+            tx = cf.stakeManager.executeClaim(st_nodeID, {"from": cf.ALICE})
 
             # Check things that should've changed
             assert cf.stakeManager.getPendingClaim(st_nodeID) == NULL_CLAIM
@@ -71,7 +70,7 @@ def test_executeClaim_min_delay(cf, claimRegistered):
     assert maxValidst_amount != 0
 
     chain.sleep(CLAIM_DELAY)
-    tx = cf.stakeManager.executeClaim(JUNK_HEX)
+    tx = cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
@@ -90,7 +89,7 @@ def test_executeClaim_max_delay(cf, claimRegistered):
     maxValidst_amount = cf.flip.balanceOf(cf.stakeManager)
 
     chain.sleep(claim[3] - getChainTime() - 2)
-    tx = cf.stakeManager.executeClaim(JUNK_HEX)
+    tx = cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
     # Check things that should've changed
     assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
@@ -107,7 +106,7 @@ def test_executeClaim_rev_too_early(cf, claimRegistered):
     chain.sleep(CLAIM_DELAY - 5)
 
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(JUNK_HEX)
+        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
 
 def test_executeClaim_rev_too_late(cf, claimRegistered):
@@ -115,7 +114,7 @@ def test_executeClaim_rev_too_late(cf, claimRegistered):
     chain.sleep(claim[3] - getChainTime() + 5)
 
     with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(JUNK_HEX)
+        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
 
 def test_executeClaim_rev_suspended(cf, claimRegistered):
@@ -128,4 +127,8 @@ def test_executeClaim_rev_suspended(cf, claimRegistered):
     cf.stakeManager.suspend({"from": cf.GOVERNOR})
 
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.stakeManager.executeClaim(JUNK_HEX)
+        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
+
+
+def test_temp(cf):
+    assert True

@@ -13,7 +13,7 @@ from brownie import (
     chain,
     network,
 )
-from deploy import deploy_set_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 
 print(network.show_active())
 
@@ -28,19 +28,12 @@ COMMUNITY_KEY = accounts[6]
 COMMUNITY_KEY_2 = accounts[7]
 
 
-cf = deploy_set_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
+cf = deploy_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": ALICE})
 cf.flip.transfer(BOB, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": BOB})
-
-print("========================= 😎  Deployed! 😎 ==========================\n")
-print(f"KeyManager deployed by {DEPLOYER} to address: {cf.keyManager.address}\n")
-print(f"Vault deployed by {DEPLOYER} to address: {cf.vault.address}\n")
-print(f"StakeManager deployed by {DEPLOYER} to address: {cf.stakeManager.address}\n")
-print(f"FLIP deployed by {DEPLOYER} to address: {cf.flip.address}\n")
-print("======================================================================")
 
 
 def main():
@@ -57,6 +50,14 @@ def all_events():
     all_flip_events()
     print(f"\n-- Key Manager Events --\n")
     all_keyManager_events()
+
+    print("========================= 😎  Deployed! 😎 ==========================\n")
+    print(f"Deployer: {DEPLOYER}\n")
+    print(f"KeyManager: {cf.keyManager.address}\n")
+    print(f"Vault: {cf.vault.address}\n")
+    print(f"StakeManager: {cf.stakeManager.address}\n")
+    print(f"FLIP: {cf.flip.address}\n")
+    print("======================================================================")
 
 
 def all_stakeManager_events():

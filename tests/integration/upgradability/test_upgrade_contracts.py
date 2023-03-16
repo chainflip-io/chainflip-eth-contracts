@@ -23,18 +23,18 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
         [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
     )
     sigdata = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    cf.vault.transfer(
-        sigdata,
-        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
-    )
+    cf.vault.transfer(sigdata, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE})
 
     # Reusing current keyManager aggregateKey for simplicity
-    newKeyManager = cf.SAFEKEEPER.deploy(
+    newKeyManager = cf.DENICE.deploy(
         KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
     toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newKeyManager]
-    newKeyManager.setCanConsumeKeyNonce(toWhitelist)
+
+    # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
+    # as part of the constructor, so we don't need to call it here.
+    newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": cf.ALICE})
 
     aggKeyNonceConsumers = [cf.vault, cf.stakeManager, cf.flip]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
@@ -66,8 +66,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
     # nonce is available on the new keyManager so it relies on signing over the keyManager address
     with reverts(REV_MSG_WRONG_KEYMANADDR):
         cf.vault.transfer(
-            sigdata,
-            [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
+            sigdata, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
         )
 
     # Check that a new transfer works and uses the new keyManager
@@ -77,17 +76,13 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
         agg_null_sig(newKeyManager, chain.id), [NATIVE_ADDR, cf.ALICE, TEST_AMNT]
     )
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, newKeyManager)
-    cf.vault.transfer(
-        sigData,
-        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
-    )
+    cf.vault.transfer(sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE})
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == True
 
     # Try another replay attack
     with reverts(REV_MSG_KEYMANAGER_NONCE):
         cf.vault.transfer(
-            sigData,
-            [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
+            sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
         )
 
 
@@ -108,7 +103,7 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     # Replicate a vault with funds - 1000 NATIVE
     cf.DENICE.transfer(cf.vault, totalFunds)
 
-    newVault = cf.SAFEKEEPER.deploy(Vault, cf.keyManager)
+    newVault = cf.DENICE.deploy(Vault, cf.keyManager)
 
     # Check that newly deployed Vault can't validate signatures (not whitelisted yet)
     # Technically we could precomute the deployed address and whitelist it before deployment
@@ -196,12 +191,11 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     st_sender=strategy("address"),
 )
 def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
-    newStakeManager = cf.SAFEKEEPER.deploy(StakeManager, cf.keyManager, MIN_STAKE)
+    newStakeManager = cf.DENICE.deploy(StakeManager, cf.keyManager, MIN_STAKE)
 
-    with reverts(REV_MSG_STAKEMAN_DEPLOYER):
-        newStakeManager.setFlip(cf.flip, {"from": cf.ALICE})
-
-    tx = newStakeManager.setFlip(cf.flip)
+    # In case of deploying a new StakeManager, the setFLIP function will probably be part of
+    # the constructor to avoid frontrunning, as there is no deployer check now.
+    tx = newStakeManager.setFlip(cf.flip, {"from": cf.ALICE})
     assert tx.events["FLIPSet"][0].values()[0] == cf.flip
 
     # Keep old StakeManager whitelisted
@@ -227,7 +221,7 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
 
     # Execute pending claim
     initialFlipBalance = cf.flip.balanceOf(cf.DENICE)
-    cf.stakeManager.executeClaim(nodeID)
+    cf.stakeManager.executeClaim(nodeID, {"from": cf.ALICE})
     finalFlipBalance = cf.flip.balanceOf(cf.DENICE)
     assert finalFlipBalance - initialFlipBalance == claimAmount
     assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
@@ -246,7 +240,7 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
 
     assert cf.flip.balanceOf(newStakeManager) == 0
     assert cf.flip.balanceOf(cf.stakeManager) == totalFlipstaked
-    cf.stakeManager.executeClaim(nodeID)
+    cf.stakeManager.executeClaim(nodeID, {"from": cf.ALICE})
     assert cf.flip.balanceOf(newStakeManager) == totalFlipstaked
     assert cf.flip.balanceOf(cf.stakeManager) == 0
 
@@ -282,4 +276,4 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
         getChainTime() + (CLAIM_DELAY * 2),
     )
     chain.sleep(CLAIM_DELAY)
-    newStakeManager.executeClaim(nodeID)
+    newStakeManager.executeClaim(nodeID, {"from": cf.ALICE})

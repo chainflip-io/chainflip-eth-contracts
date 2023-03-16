@@ -4,8 +4,17 @@ import json
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
-from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP, MockUSDC
-from deploy import deploy_set_Chainflip_contracts, deploy_usdc_contract
+from brownie import (
+    chain,
+    accounts,
+    KeyManager,
+    Vault,
+    StakeManager,
+    FLIP,
+    MockUSDC,
+    DeployerContract,
+)
+from deploy import deploy_Chainflip_contracts, deploy_usdc_contract
 
 
 def main():
@@ -51,8 +60,8 @@ def main():
             ## Gracefully exit the script with a message.
             sys.exit("Deployment cancelled by user")
 
-    cf = deploy_set_Chainflip_contracts(
-        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
+    cf = deploy_Chainflip_contracts(
+        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract, os.environ
     )
 
     print("Deployed with parameters\n----------------------------")
@@ -66,6 +75,7 @@ def main():
     print(f"  Num Genesis Validators: {cf.numGenesisValidators}" + "\n")
 
     print("Deployed contract addresses\n----------------------------")
+    print(f"  DeployerContract: {cf.deployerContract.address}")
     print(f"  KeyManager: {cf.keyManager.address}")
     print(f"  StakeManager: {cf.stakeManager.address}")
     print(f"  FLIP: {cf.flip.address}")

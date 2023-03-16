@@ -16,7 +16,7 @@ from brownie import (
     FLIP,
     web3,
 )
-from deploy import deploy_set_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 
@@ -224,7 +224,7 @@ def snapshot(
 def deployNewContracts(airdropper):
     printAndLog("Deploying new contracts")
 
-    cf = deploy_set_Chainflip_contracts(
+    cf = deploy_Chainflip_contracts(
         airdropper, KeyManager, Vault, StakeManager, FLIP, os.environ
     )
 

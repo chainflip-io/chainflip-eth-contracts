@@ -26,9 +26,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     bool private _canConsumeKeyNonceSet;
     uint256 private _numberWhitelistedAddresses;
 
-    /// @dev   Deployer address that can call setCanConsumeKeyNonce
-    address private immutable _deployer;
-
     constructor(
         Key memory initialAggKey,
         address initialGovKey,
@@ -38,7 +35,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _govKey = initialGovKey;
         _commKey = initialCommKey;
         _lastValidateTime = block.timestamp;
-        _deployer = msg.sender;
     }
 
     //////////////////////////////////////////////////////////////
@@ -48,11 +44,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Sets the specific addresses that can call consumeKeyNonce. This
-     *          function can only ever be called once by the deployer.
+     * @notice  Sets the specific addresses that can call consumeKeyNonce.
+     *          Deployed via Deploy.sol so it can't be frontrun. The FLIP
+     *          address can only be set once.
      * @param addrs   The addresses to whitelist
      */
-    function setCanConsumeKeyNonce(address[] calldata addrs) external override onlyDeployer {
+    function setCanConsumeKeyNonce(address[] calldata addrs) external override {
         require(!_canConsumeKeyNonceSet, "KeyManager: already set");
         _canConsumeKeyNonceSet = true;
 
@@ -427,12 +424,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /// @dev    Call consumeKeyNonceWhitelisted
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
         _consumeKeyNonce(sigData, contractMsgHash);
-        _;
-    }
-
-    /// @notice Ensure that the caller is the deployer address.
-    modifier onlyDeployer() {
-        require(msg.sender == _deployer, "KeyManager: not deployer");
         _;
     }
 }

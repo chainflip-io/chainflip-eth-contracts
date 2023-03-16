@@ -55,7 +55,9 @@ def test_deployAndFetchBatch_token_rev_msgHash(cf, token):
         sigData[2] += 1
         # Fetch the deposit
         with reverts(REV_MSG_MSGHASH):
-            cf.vault.deployAndFetchBatch(sigData, [[JUNK_HEX_PAD, tok]])
+            cf.vault.deployAndFetchBatch(
+                sigData, [[JUNK_HEX_PAD, tok]], {"from": cf.ALICE}
+            )
 
 
 def test_deployAndFetchBatch_rev_sig(cf, token):
@@ -68,7 +70,9 @@ def test_deployAndFetchBatch_rev_sig(cf, token):
         sigData[3] += 1
         # Fetch the deposit
         with reverts(REV_MSG_SIG):
-            cf.vault.deployAndFetchBatch(sigData, [[JUNK_HEX_PAD, tok]])
+            cf.vault.deployAndFetchBatch(
+                sigData, [[JUNK_HEX_PAD, tok]], {"from": cf.ALICE}
+            )
 
 
 # Deploying a Deposit on an address that already contains a Deposit should revert.
