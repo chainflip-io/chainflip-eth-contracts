@@ -161,6 +161,18 @@ commands = {
     "viewAggKey": (lambda: viewAggKey(), "Display the Aggregate key", [], False),
     "viewGovKey": (lambda: viewGovKey(), "Display the governance address", [], False),
     "viewCommKey": (lambda: viewCommKey(), "Display the community address", [], False),
+    "canConsumeNonce": (
+        lambda address: canConsumeNonce(address),
+        "Check if an address can consume a nonce",
+        ["address"],
+        False,
+    ),
+    "numWhitelistAddrs": (
+        lambda: numWhitelistAddrs(),
+        "Display the number of whitelisted addresses",
+        [],
+        False,
+    ),
     "isNonceUsed": (
         lambda nonce: isNonceUsed(nonce),
         "Check if a nonce has been used in the KeyManager",
@@ -460,6 +472,15 @@ def viewCommKey():
     print(f"Community Address: {communityKey}")
 
 
+def canConsumeNonce(address):
+    print(keyManager.canConsumeKeyNonce(address))
+
+
+def numWhitelistAddrs():
+    num = keyManager.getNumberWhitelistedAddresses()
+    print(f"Number of whitelisted addresses: {num}")
+
+
 def isNonceUsed(nonce):
     used = keyManager.isNonceUsedByAggKey(nonce)
     if used:
@@ -489,6 +510,7 @@ def viewAll():
     viewAggKey()
     viewGovKey()
     viewCommKey()
+    numWhitelistAddrs()
     viewLastSigTime()
     viewCurrentTime()
 
