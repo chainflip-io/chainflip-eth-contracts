@@ -1,7 +1,7 @@
 import pytest
 from consts import *
-from deploy import deploy_initial_Chainflip_contracts
-from deploy import deploy_set_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 from brownie import chain
 from brownie.network import priority_fee
 from utils import *
@@ -15,9 +15,11 @@ def isolation(fn_isolation):
 
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
-def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP):
+def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
-    return deploy_set_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
+    return deploy_Chainflip_contracts(
+        a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
+    )
 
 
 # Deploy the contracts and set up common test environment
@@ -45,17 +47,39 @@ def cf(a, cfDeploy):
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
 
+    cf.whitelisted = [
+        cf.vault.address,
+        cf.stakeManager.address,
+        cf.flip.address,
+    ]
+
     return cf
 
 
 # Deploy the contracts for repeated tests without having to redeploy each time, with
 # all addresses whitelisted
 @pytest.fixture(scope="module")
-def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP):
+def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
-    cf = deploy_initial_Chainflip_contracts(a[9], KeyManager, Vault, StakeManager, FLIP)
+    cf = deploy_Chainflip_contracts(
+        a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
+    )
+
+    # Cha
     cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
-    cf.keyManager.setCanConsumeKeyNonce(cf.whitelisted)
+    args = [
+        [cf.vault.address, cf.stakeManager.address, cf.flip.address],
+        cf.whitelisted,
+    ]
+    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+
+    cf.keyManager.updateCanConsumeKeyNonce(
+        AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, nonces, cf.keyManager.address),
+        *args,
+        {"from": cf.safekeeper},
+    )
 
     return cf
 
@@ -116,7 +140,9 @@ def claimRegistered(cf, stakedMin):
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
     tx = cf.stakeManager.registerClaim(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        *args,
+        {"from": cf.ALICE},
     )
 
     return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
@@ -136,7 +162,7 @@ def token2(cf, Token):
 
 # Vesting
 @pytest.fixture(scope="module")
-def addrs(a, TokenVesting):
+def addrs(a):
     class Context:
         pass
 

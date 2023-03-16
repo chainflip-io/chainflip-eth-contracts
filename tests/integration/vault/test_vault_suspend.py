@@ -50,17 +50,12 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
             token,
             st_amount,
             toHex(st_receiver.address),
+            {"from": cf.ALICE},
         )
 
     # xSwapToken
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.xSwapToken(
-            0,
-            JUNK_HEX,
-            BTC_UINT,
-            token,
-            st_amount,
-        )
+        cf.vault.xSwapToken(0, JUNK_HEX, BTC_UINT, token, st_amount, {"from": cf.ALICE})
 
     # xCallNative
     with reverts(REV_MSG_GOV_SUSPENDED):

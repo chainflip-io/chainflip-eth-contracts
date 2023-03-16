@@ -64,7 +64,7 @@ def test_fetchBatch_token_rev_msgHash(cf, token):
         sigData[2] += 1
         # Fetch the deposit
         with reverts(REV_MSG_MSGHASH):
-            cf.vault.fetchBatch(sigData, [[NON_ZERO_ADDR, tok]])
+            cf.vault.fetchBatch(sigData, [[NON_ZERO_ADDR, tok]], {"from": cf.ALICE})
 
 
 def test_fetchBatch_rev_sig(cf, token):
@@ -77,7 +77,7 @@ def test_fetchBatch_rev_sig(cf, token):
         sigData[3] += 1
         # Fetch the deposit
         with reverts(REV_MSG_SIG):
-            cf.vault.fetchBatch(sigData, [[NON_ZERO_ADDR, tok]])
+            cf.vault.fetchBatch(sigData, [[NON_ZERO_ADDR, tok]], {"from": cf.ALICE})
 
 
 # Calling the fetch function on a non-deployed contract (empty address) will revert

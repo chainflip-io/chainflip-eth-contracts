@@ -25,7 +25,7 @@ def test_setAggKeyWithAggKey_rev_nonceTimesGAddr(cfAW):
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
     sigData[3] = ZERO_ADDR
     with reverts(REV_MSG_INPUTS_0):
-        cfAW.keyManager.setAggKeyWithAggKey(sigData, newKey)
+        cfAW.keyManager.setAggKeyWithAggKey(sigData, newKey, {"from": cfAW.ALICE})
 
 
 def test_setAggKeyWithAggKey_rev_msgHash(cfAW):
@@ -36,7 +36,9 @@ def test_setAggKeyWithAggKey_rev_msgHash(cfAW):
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
     sigData[2] += 1
     with reverts(REV_MSG_MSGHASH):
-        cfAW.keyManager.setAggKeyWithAggKey(sigData, AGG_SIGNER_2.getPubData())
+        cfAW.keyManager.setAggKeyWithAggKey(
+            sigData, AGG_SIGNER_2.getPubData(), {"from": cfAW.ALICE}
+        )
 
 
 def test_setAggKeyWithAggKey_rev_sig(cfAW):
@@ -47,4 +49,6 @@ def test_setAggKeyWithAggKey_rev_sig(cfAW):
     sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
     sigData[3] += 1
     with reverts(REV_MSG_SIG):
-        cfAW.keyManager.setAggKeyWithAggKey(sigData, AGG_SIGNER_2.getPubData())
+        cfAW.keyManager.setAggKeyWithAggKey(
+            sigData, AGG_SIGNER_2.getPubData(), {"from": cfAW.ALICE}
+        )
