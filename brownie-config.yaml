@@ -12,7 +12,7 @@ compiler:
     optimizer:
       enabled: true
       runs: 1600
-    version: 0.8.16
+    version: 0.8.19
     # Path remapping to support OpenZeppelin imports with NPM-style path
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
