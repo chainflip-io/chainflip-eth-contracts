@@ -30,28 +30,30 @@ contract TestEchidnaGovComm is DeployerEchidna {
 
     /* solhint-disable  func-name-mixedcase*/
     function echidna_flipSupply() external returns (bool) {
-        return f.totalSupply() == INIT_SUPPLY;
+        return flip.totalSupply() == INIT_SUPPLY;
     }
 
     function echidna_kmReference() external returns (bool) {
         return
-            f.getKeyManager() == sm.getKeyManager() &&
-            sm.getKeyManager() == v.getKeyManager() &&
-            v.getKeyManager() == km;
+            flip.getKeyManager() == stakeManager.getKeyManager() &&
+            stakeManager.getKeyManager() == vault.getKeyManager() &&
+            vault.getKeyManager() == keyManager;
     }
 
     function echidna_aggKey() external returns (bool) {
-        return km.getAggregateKey().pubKeyX == PUBKEYX && km.getAggregateKey().pubKeyYParity == PUBKEYYPARITY;
+        return
+            keyManager.getAggregateKey().pubKeyX == PUBKEYX &&
+            keyManager.getAggregateKey().pubKeyYParity == PUBKEYYPARITY;
     }
 
     // Gov key changes
     function setGovKeyWithGovKey(address newGovKey) external override {
-        km.setGovKeyWithGovKey(newGovKey);
+        keyManager.setGovKeyWithGovKey(newGovKey);
         govKey = newGovKey;
         assert(
-            sm.getGovernor() == v.getGovernor() &&
-                v.getGovernor() == km.getGovernanceKey() &&
-                km.getGovernanceKey() == govKey
+            stakeManager.getGovernor() == vault.getGovernor() &&
+                vault.getGovernor() == keyManager.getGovernanceKey() &&
+                keyManager.getGovernanceKey() == govKey
         );
     }
 
@@ -59,76 +61,76 @@ contract TestEchidnaGovComm is DeployerEchidna {
 
     // Comm key changes
     function setCommKeyWithCommKey(address newCommKey) external override {
-        km.setCommKeyWithCommKey(newCommKey);
+        keyManager.setCommKeyWithCommKey(newCommKey);
         commKey = newCommKey;
         assert(
-            sm.getCommunityKey() == v.getCommunityKey() &&
-                v.getCommunityKey() == km.getCommunityKey() &&
-                km.getCommunityKey() == commKey
+            stakeManager.getCommunityKey() == vault.getCommunityKey() &&
+                vault.getCommunityKey() == keyManager.getCommunityKey() &&
+                keyManager.getCommunityKey() == commKey
         );
     }
 
     // No signature has been validated
     function echidna_lastValidateTime() external returns (bool) {
-        return _lastValidateTime == km.getLastValidateTime();
+        return _lastValidateTime == keyManager.getLastValidateTime();
     }
 
     function echidna_whitelistSet() external returns (bool) {
-        return km.canConsumeKeyNonceSet();
+        return keyManager.canConsumeKeyNonceSet();
     }
 
     // Suspend and resume functions
     function suspendVault() external override {
-        v.suspend();
-        assert(v.getSuspendedState() == true);
+        vault.suspend();
+        assert(vault.getSuspendedState() == true);
     }
 
     function suspendStakeManager() external override {
-        sm.suspend();
-        assert(sm.getSuspendedState() == true);
+        stakeManager.suspend();
+        assert(stakeManager.getSuspendedState() == true);
     }
 
     function resumeVault() external override {
-        v.resume();
-        assert(v.getSuspendedState() == false);
+        vault.resume();
+        assert(vault.getSuspendedState() == false);
     }
 
     function resumeStakeManager() external override {
-        sm.resume();
-        assert(sm.getSuspendedState() == false);
+        stakeManager.resume();
+        assert(stakeManager.getSuspendedState() == false);
     }
 
     // Community Guard
     function enableCommunityGuardVault() external override {
-        v.enableCommunityGuard();
-        assert(v.getCommunityGuardDisabled() == false);
+        vault.enableCommunityGuard();
+        assert(vault.getCommunityGuardDisabled() == false);
     }
 
     function disableCommunityGuardVault() external override {
-        v.disableCommunityGuard();
-        assert(v.getCommunityGuardDisabled() == true);
+        vault.disableCommunityGuard();
+        assert(vault.getCommunityGuardDisabled() == true);
     }
 
     function enableCommunityGuardStakeManager() external override {
-        v.enableCommunityGuard();
-        assert(v.getCommunityGuardDisabled() == false);
+        vault.enableCommunityGuard();
+        assert(vault.getCommunityGuardDisabled() == false);
     }
 
     function disableCommunityGuardStakeManager() external override {
-        sm.disableCommunityGuard();
-        assert(sm.getCommunityGuardDisabled() == true);
+        stakeManager.disableCommunityGuard();
+        assert(stakeManager.getCommunityGuardDisabled() == true);
     }
 
     function setMinStake(uint256 newMinStake) external override {
-        sm.setMinStake(newMinStake);
+        stakeManager.setMinStake(newMinStake);
         minStake = newMinStake;
-        assert(sm.getMinimumStake() == minStake);
+        assert(stakeManager.getMinimumStake() == minStake);
     }
 
     function checkwhitelistAddrs() external view {
-        assert(km.getNumberWhitelistedAddresses() == 4);
+        assert(keyManager.getNumberWhitelistedAddresses() == 3);
         for (uint256 i = 0; i < whitelist.length; i++) {
-            assert(km.canConsumeKeyNonce(whitelist[i]) == true);
+            assert(keyManager.canConsumeKeyNonce(whitelist[i]) == true);
         }
     }
 
@@ -143,7 +145,7 @@ contract TestEchidnaGovComm is DeployerEchidna {
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external {
-        try v.allBatch(sigData, deployFetchParamsArray, fetchParamsArray, transferParamsArray) {
+        try vault.allBatch(sigData, deployFetchParamsArray, fetchParamsArray, transferParamsArray) {
             assert(false);
         } catch {
             assert(true);
