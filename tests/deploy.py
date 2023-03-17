@@ -26,10 +26,7 @@ def deploy_Chainflip_contracts(
 
     aggKey = environment.get("AGG_KEY")
     if aggKey:
-        parity = aggKey[0:2]
-        x = aggKey[2:]
-        parity = "00" if parity == "02" or parity == "00" else "01"
-        aggKey = [int(x, 16), int(parity, 16)]
+        aggKey = getKeysFromAggKey(aggKey)
     else:
         aggKey = AGG_SIGNER_1.getPubData()
 
