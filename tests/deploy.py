@@ -59,9 +59,9 @@ def deploy_Chainflip_contracts(
     )
 
     # Deploy contracts via cf.deployerContract. Minting genesis validator FLIP to the Stake Manager.
-    # The rest of genesis FLIP will be minted to the governance address for safekeeping.
-    cf.deployerContract = deployer.deploy(
-        DeployerContract,
+    # The rest of genesis FLIP will be minted to the governance address for safekeeping. Adding
+    # required confirmations to avoid errors when checking contracts.address
+    cf.deployerContract = DeployerContract.deploy(
         aggKey,
         cf.gov,
         cf.communityKey,
@@ -69,6 +69,7 @@ def deploy_Chainflip_contracts(
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
+        {"from": deployer, "required_confs": 2},
     )
 
     cf.vault = Vault.at(cf.deployerContract.vault())
