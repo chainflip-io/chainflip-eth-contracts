@@ -69,7 +69,7 @@ def deploy_Chainflip_contracts(
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
-        {"from": deployer, "required_confs": 2},
+        {"from": deployer, "required_confs": 1},
     )
 
     cf.vault = Vault.at(cf.deployerContract.vault())
