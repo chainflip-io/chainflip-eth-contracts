@@ -3,17 +3,13 @@ pragma solidity ^0.8.0;
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
 
+import "../SquidMulticall.sol";
+
 /**
  * @title    Vault interface
  * @notice   The interface for functions Vault implements
  */
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
-    struct Call {
-        address target;
-        uint256 valueNative;
-        bytes callData;
-    }
-
     function allBatch(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,
@@ -129,7 +125,13 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function executeActions(SigData calldata sigData, Call[] calldata data) external;
+    function executeActions(
+        SigData calldata sigData,
+        address token,
+        uint256 amount,
+        address payable multicallAddr,
+        SquidMulticall.Call[] calldata calls
+    ) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

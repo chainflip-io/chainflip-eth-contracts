@@ -10,6 +10,8 @@ import "./Deposit.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
+import "./SquidMulticall.sol";
+
 /**
  * @title    Vault contract
  * @notice   The vault for holding and transferring native/tokens and deploying contracts for fetching
@@ -63,6 +65,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
+
+    error TransferFailed();
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -656,11 +660,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
      *                  the calldata to the function with an empty sigData) and sig over that
      *                  that hash (uint) from the aggregate key.
-     * @param data      Array of actions to be executed.
+     * @param calls      Array of actions to be executed.
      */
     function executeActions(
         SigData calldata sigData,
-        Call[] calldata data
+        address token,
+        uint256 amount,
+        address payable multicallAddr,
+        SquidMulticall.Call[] calldata calls
     )
         external
         override
@@ -671,72 +678,42 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(
                     this.executeActions.selector,
                     SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    data
+                    token,
+                    amount,
+                    multicallAddr,
+                    calls
                 )
             )
         )
     {
-        // NOTE: Another approach would be to do an approve and then a function call. However, this is limited
-        // e.g. for axelar we need to do an extra function call to the gas contract. So the alternative is
-        // most likely to write every use case (Axelar, USDC, ...) with different logic. Too much overhead.
-        // NOTE: We could consider adding a whitelist check. If the AggKey is malicious it is probably
-        // too late anyway, but it can be a good way to prevent problems and limit this function.
-        // NOTE: I have implemented some safeguards. The only vault-exclusive function that we don't check for
-        // is the fetch function from a Deposit. We don't care about that being called as we don't even witness it
-        // and it basically just pulls funds to this contract.
+        // Copied from Squid's Router from fundAndRunMulticall. We could technically also call that
+        // instead of calling the Multicall directly but then we are "exposed" to Squid's sudo powers
+        // upgrading the Router contract or pausing it. On the contrary, the Multicall contract is
+        // not owned nor upgradable => it's immutable in my mind. Also, we bypass one level of
+        // transfers, as otherwise we would need to approve to the Router and then the Router would
+        // transfer to the Multicall.
 
-        uint256 length = data.length;
-        for (uint256 i = 0; i < length; ) {
-            // Prevent calls to this contract as a general safeguard.
-            require(data[i].target != address(this), "Vault: calling this contract");
+        uint256 valueToSend;
 
-            // We can consider allowing calls to EOA adddresses and/or calls with no data, just for transferring
-            // Ether or triggering a fallback. However, these two shouldn't be use cases, it should only be calls
-            // to other protocols/contracts.
-            require(data[i].callData.length >= 4, "Vault: must call contract/function");
-            // We check that the length of the callData is >= 4 bytes to ensure that it's a call to a function.
-            // The EVM would revert in that case, but we will be checking the selector first and we want to
-            // avoid reading bytes from outside the callData when loading from memory in case of the
-            // length being zero or smaller than 4.
-            require(data[i].target.code.length > 0, "Vault: must call contract/function");
-            // NOTE: Cheks above can be modified to allow for calls to EOAs and/or calls with no data to transfer
-            // native tokens. To be discussed if we want that flexilibilty but it shouldn't be a use case. We
-            // probably want extra safeguards instead.
-
-            // Get function selector. First the callData is copied into memory since Yul doesn't support structs
-            bytes memory callData = data[i].callData;
-
-            bytes4 selector;
-            // solhint-disable-next-line no-inline-assembly
-            assembly {
-                selector := mload(add(callData, 32))
-            }
-
-            // To prevent it from maliciously calling other protocols aka calling contracts with the ICFRecieve
-            // interface without transferring tokens or with malicious values.
-            require(
-                selector != ICFReceiver.cfReceive.selector && selector != ICFReceiver.cfReceivexCall.selector,
-                "Vault: cfReceive not allowed"
-            );
-
-            // solhint-disable-next-line avoid-low-level-calls
-            (bool success, bytes memory returndata) = data[i].target.call{value: data[i].valueNative}(data[i].callData);
-
-            // We might not want to have this returnData due to gas costs. For now we do.
-            // require(success, "Vault: call failed");
-            if (!success) {
-                // Bubble up error
-                // solhint-disable-next-line no-inline-assembly
-                assembly {
-                    let returndata_size := mload(returndata)
-                    revert(add(32, returndata), returndata_size)
-                }
-            }
-
-            unchecked {
-                ++i;
+        // We might want to use this just for callData execution - e.g. minting USDC via CCTP so
+        // amount might be ==0 in some cases.
+        if (amount > 0) {
+            // TODO: Should we use ETH_ADDRESS instead? I assume we don't need to use Squid here, so we
+            // can just use ETH_ADDRESS for consistency. We could just reuse the _transfer function
+            if (token == address(0)) {
+                valueToSend = amount;
+            } else {
+                // _transferTokenToMulticall(token, amount, multicallAddr);
+                // DIFF: instead of transferFrom we use transfer
+                (bool success, bytes memory returnData) = token.call(
+                    abi.encodeWithSelector(IERC20(token).transfer.selector, multicallAddr, amount)
+                );
+                bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
+                if (!transferred || token.code.length == 0) revert TransferFailed();
             }
         }
+
+        SquidMulticall(multicallAddr).run{value: valueToSend}(calls);
     }
 
     //////////////////////////////////////////////////////////////

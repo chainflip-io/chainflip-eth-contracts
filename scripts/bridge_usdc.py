@@ -71,6 +71,9 @@ FUJI_DESTINATION_DOMAIN = 1
 GATEWAY_GOERLI_ADDRESS = "0xe432150cce91c13a887f7D836923d5597adD8E31"
 aUSDC_GOERLI_ADDRESS = "0x254d06f33bDc5b8ee05b2ea472107E300226659A"
 
+# Squid has the same address for all test networks
+SQUID_MULTICALL_ADDRESS = "0x7a4F2BCdDf68C98202cbad13c4f3a04FF2405681"
+
 # Bridging properties
 tokens_to_transfer = 1 * 10**6
 
@@ -168,6 +171,7 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         token_messenger_cctp = TokenMessengerMock.at(TOKENMESSENGER_CCTP_FUJI_ADDRESS)
         destination_domain = ETH_DESTINATION_DOMAIN
         egress_token_messenger_cctp = TOKENMESSENGER_CCTP_GOERLI_ADDRESS
+
     else:
         # GOERLI to FUJI
         usdc = Token.at(USDC_GOERLI_ADDRESS)
@@ -207,6 +211,8 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
 
     # If we want to send to tokens via the Vault, first fund it.
     if depositor != DEPLOYER:
+        squid_multicall = SQUID_MULTICALL_ADDRESS
+
         # Do this to ensure the depositor is a Vault if it's not the EOA
         vault = Vault.at(depositor)
         keyManager_address = vault.getKeyManager()
@@ -224,20 +230,29 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         # Doing it through the Vault means we need to encode the calldata
         syncNonce(keyManager_address)
 
-        calldata0 = usdc.approve.encode_input(
-            token_messenger_cctp.address, tokens_to_transfer
-        )
-        calldata1 = fcn.encode_input(*args)
+        call0 = [
+            0,
+            usdc.address,
+            0,
+            usdc.approve.encode_input(token_messenger_cctp.address, tokens_to_transfer),
+            0,
+        ]
+        call1 = [0, token_messenger_cctp.address, 0, fcn.encode_input(*args), 0]
 
-        args = [[usdc, 0, calldata0], [token_messenger_cctp, 0, calldata1]]
+        calls = [call0, call1]
+
+        args = [usdc, tokens_to_transfer, squid_multicall, calls]
         callDataNoSig = vault.executeActions.encode_input(
-            agg_null_sig(keyManager_address, chain.id), args
+            agg_null_sig(keyManager_address, chain.id), *args
         )
         tx = vault.executeActions(
             AGG_SIGNER_1.getSigData(callDataNoSig, keyManager_address),
-            args,
+            *args,
             {"from": DEPLOYER},
         )
+
+        ## If done through Squid, the depositor of the USDC becomes the Multicall
+        depositor = squid_multicall
 
     else:
         ini_usdc_bals = usdc.balanceOf(DEPLOYER)
@@ -309,33 +324,45 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
 
     # If we want to send to tokens via the Vault, first fund it.
     if depositor != DEPLOYER:
+        squid_multicall = SQUID_MULTICALL_ADDRESS
+
         # Do this to ensure the depositor is a Vault if it's not the EOA
         vault = Vault.at(depositor)
         keyManager_address = vault.getKeyManager()
-        ini_usdc_bals = aUsdc.balanceOf(vault.address)
-        if ini_usdc_bals < tokens_to_transfer:
+        ini_aUsdc_bals = aUsdc.balanceOf(vault.address)
+        if ini_aUsdc_bals < tokens_to_transfer:
             aUsdc.transfer(
                 vault.address,
-                tokens_to_transfer - ini_usdc_bals,
+                tokens_to_transfer - ini_aUsdc_bals,
                 {"from": DEPLOYER, "required_confs": 1},
             )
         # Doing it through the Vault means we need to encode the calldata
         syncNonce(keyManager_address)
 
-        calldata0 = aUsdc.approve.encode_input(
-            axelar_gateway.address, tokens_to_transfer
-        )
-        calldata1 = fcn.encode_input(*args)
+        print("balance aUsdc Vault", aUsdc.balanceOf(vault.address))
+        call0 = [
+            0,
+            aUsdc.address,
+            0,
+            aUsdc.approve.encode_input(axelar_gateway.address, tokens_to_transfer),
+            0,
+        ]
+        call1 = [0, axelar_gateway.address, 0, fcn.encode_input(*args), 0]
 
-        args = [[aUsdc, 0, calldata0], [axelar_gateway, 0, calldata1]]
+        calls = [call0, call1]
+
+        args = [aUsdc, tokens_to_transfer, squid_multicall, calls]
         callDataNoSig = vault.executeActions.encode_input(
-            agg_null_sig(keyManager_address, chain.id), args
+            agg_null_sig(keyManager_address, chain.id), *args
         )
         tx = vault.executeActions(
             AGG_SIGNER_1.getSigData(callDataNoSig, keyManager_address),
-            args,
+            *args,
             {"from": DEPLOYER},
         )
+
+        ## If done through Squid, the depositor of the USDC becomes the Multicall
+        depositor = squid_multicall
 
     else:
         # Make a transfer from FUJI-EOA to an Address in Goerli. For now we don't
@@ -414,20 +441,31 @@ def get_and_submit_attestation(
 
     # We assume that if depositor != DEPLOYER then it's the Vault contract
     if depositor != DEPLOYER:
+        squid_multicall = SQUID_MULTICALL_ADDRESS
         # Most likely when going through the Vault depositor ==
         vault = Vault.at(depositor)
         keyManager_address = vault.getKeyManager()
 
-        # Doing it through the Vault means we need to encode the calldata
-        calldata = message_transmitter_cctp.receiveMessage.encode_input(
-            message, attestation_response
-        )
-        args = [[message_transmitter_cctp, 0, calldata]]
-
         syncNonce(keyManager_address)
 
+        # Doing it through the Vault means we need to encode the calldata
+
+        calls = [
+            [
+                0,
+                message_transmitter_cctp.address,
+                0,
+                message_transmitter_cctp.receiveMessage.encode_input(
+                    message, attestation_response
+                ),
+                0,
+            ]
+        ]
+
+        args = ["0x0000000000000000000000000000000000000000", 0, squid_multicall, calls]
+
         callDataNoSig = vault.executeActions.encode_input(
-            agg_null_sig(keyManager_address, chain.id), args
+            agg_null_sig(keyManager_address, chain.id), *args
         )
         # Get the latest used nonce, as this is not synched
         tx = vault.executeActions(
@@ -435,10 +473,12 @@ def get_and_submit_attestation(
                 callDataNoSig,
                 keyManager_address,
             ),
-            args,
+            *args,
             {"from": DEPLOYER},
         )
 
+        ## If done through Squid, the depositor of the USDC becomes the Multicall
+        depositor = squid_multicall
     else:
         tx = message_transmitter_cctp.receiveMessage(
             message, attestation_response, {"from": DEPLOYER}
