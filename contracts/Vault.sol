@@ -239,15 +239,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(IERC20(token).transfer.selector, recipient, amount)
             );
 
-            if (success) {
-                if (returndata.length > 0) {
-                    if (abi.decode(returndata, (bool)) == false) {
-                        emit TransferTokenFailed(recipient, amount, token, returndata);
-                    }
-                }
-            } else {
-                emit TransferTokenFailed(recipient, amount, token, returndata);
-            }
+            // No need to check token.code.length since it comes from a gated call
+            bool transferred = success && (abi.decode(returndata, (bool)) || returndata.length == uint256(0));
+            if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }
 
