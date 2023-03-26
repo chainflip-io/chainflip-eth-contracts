@@ -567,24 +567,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata srcAddress,
         bytes calldata message
     ) private {
+        uint256 nativeAmount;
+
         if (transferParams.token == _NATIVE_ADDR) {
-            ICFReceiver(transferParams.recipient).cfReceive{value: transferParams.amount}(
-                srcChain,
-                srcAddress,
-                message,
-                transferParams.token,
-                transferParams.amount
-            );
+            nativeAmount = transferParams.amount;
         } else {
             IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
-            ICFReceiver(transferParams.recipient).cfReceive(
-                srcChain,
-                srcAddress,
-                message,
-                transferParams.token,
-                transferParams.amount
-            );
         }
+
+        ICFReceiver(transferParams.recipient).cfReceive{value: nativeAmount}(
+            srcChain,
+            srcAddress,
+            message,
+            transferParams.token,
+            transferParams.amount
+        );
     }
 
     //////////////////////////////////////////////////////////////
