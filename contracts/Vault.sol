@@ -10,6 +10,8 @@ import "./Deposit.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
+import "./SquidMulticall.sol";
+
 /**
  * @title    Vault contract
  * @notice   The vault for holding and transferring native/tokens and deploying contracts for fetching
@@ -63,6 +65,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
+
+    error TransferFailed();
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -628,6 +632,69 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         ICFReceiver(recipient).cfReceivexCall(srcChain, srcAddress, message);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                 Auxiliary chain actions                  //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Transfer funds and pass calldata to be executed on another multicall contract.
+     * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
+     *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
+     *                  the calldata to the function with an empty sigData) and sig over that
+     *                  that hash (uint) from the aggregate key.
+     * @param token     Address of the source token to swap.
+     * @param amount    Amount of the source token to send.
+     * @param multicallAddr Address of the Multicall contract to call.
+     * @param calls     Array of actions to be executed.
+
+     */
+    function executeActions(
+        SigData calldata sigData,
+        address token,
+        uint256 amount,
+        address payable multicallAddr,
+        SquidMulticall.Call[] calldata calls
+    )
+        external
+        override
+        onlyNotSuspended
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.executeActions.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    token,
+                    amount,
+                    multicallAddr,
+                    calls
+                )
+            )
+        )
+    {
+        // Logic mimicking the Squid's Router fundAndRunMulticall.
+        uint256 valueToSend;
+
+        if (amount > 0) {
+            // TODO: Should we use ETH_ADDRESS instead for consistency instead of 0x0 as Squid does.
+            if (token == address(0)) {
+                valueToSend = amount;
+            } else {
+                // solhint-disable-next-line avoid-low-level-calls
+                (bool success, bytes memory returnData) = token.call(
+                    abi.encodeWithSelector(IERC20(token).transfer.selector, multicallAddr, amount)
+                );
+                bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
+                if (!transferred || token.code.length == 0) revert TransferFailed();
+            }
+        }
+
+        SquidMulticall(multicallAddr).run{value: valueToSend}(calls);
     }
 
     //////////////////////////////////////////////////////////////
