@@ -238,7 +238,7 @@ def test_all(
             self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
-            self.lastValidateTime = self.km.tx.timestamp
+            self.lastValidateTime = self.deployerContract.tx.timestamp + 1
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + (
                 [Signer.gen_signer(None, {})]
@@ -2160,20 +2160,13 @@ def test_all(
 
         # Tries to set the FLIP address. It should have been set right after the deployment.
         def rule_setFlip(self, st_sender, st_returnAddr):
-            deployer = self.sm.tx.sender
+            print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
+            with reverts(REV_MSG_NZ_ADDR):
+                self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
 
-            if st_sender != deployer:
-                print("        REV_MSG_STAKEMAN_DEPLOYER rule_setFlip", st_sender)
-                with reverts(REV_MSG_STAKEMAN_DEPLOYER):
-                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
-            else:
-                print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
-                with reverts(REV_MSG_NZ_ADDR):
-                    self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
-
-                print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
-                with reverts(REV_MSG_FLIP_ADDRESS):
-                    self.sm.setFlip(st_returnAddr, {"from": st_sender})
+            print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
+            with reverts(REV_MSG_FLIP_ADDRESS):
+                self.sm.setFlip(st_returnAddr, {"from": st_sender})
 
         # FLIP
 
@@ -2267,6 +2260,8 @@ def test_all(
             )
             toWhitelist = self.currentWhitelist.copy()
 
+            # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
+            # as part of the constructor, so we don't need to call it here.
             newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
             signer = self._get_key_prob(AGG)
@@ -2490,6 +2485,8 @@ def test_all(
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
             newStakeManager = st_sender.deploy(StakeManager, self.km, INIT_MIN_STAKE)
 
+            # In case of deploying a new StakeManager, the setFLIP function will probably be part of
+            # the constructor to avoid frontrunning, as there is no deployer check now.
             newStakeManager.setFlip(self.f, {"from": st_sender})
 
             # Keep old StakeManager whitelisted
@@ -2577,7 +2574,7 @@ def test_all(
                                 "        REV_MSG_SIG rule_upgrade_stakeManager",
                                 st_sleep_time,
                             )
-                            self.sm.executeClaim(JUNK_HEX)
+                            self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
                     chain.sleep(CLAIM_DELAY * 2)
 

@@ -27,7 +27,7 @@ import random
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_sender=strategy("address"),
 )
-def test_executexSwapAndCallEth(
+def test_executexSwapAndCallNative(
     cf,
     cfReceiverMock,
     st_sender,
@@ -56,7 +56,7 @@ def test_executexSwapAndCallEth(
 
     assert tx.events["ReceivedxSwapAndCall"][0].values() == [
         st_srcChain,
-        st_srcAddress,
+        hexStr(st_srcAddress),
         message,
         NATIVE_ADDR,
         st_amount,
@@ -106,7 +106,7 @@ def test_executexSwapAndCall_revToken(cf, cfReceiverMock):
 
 
 # Trying to send ETH when there's none in the Vault
-def test_executexSwapAndCallEth_rev_not_enough_eth(cf, cfReceiverMock):
+def test_executexSwapAndCallNative_rev_not_enough_eth(cf, cfReceiverMock):
     args = [
         [NATIVE_ADDR, cfReceiverMock, TEST_AMNT],
         JUNK_INT,
@@ -166,7 +166,7 @@ def test_executexSwapAndCall_rev_nzAmount(cf, cfReceiverMock, token):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
 
-def test_executexSwapAndCallEth_rev_msgHash(cf):
+def test_executexSwapAndCallNative_rev_msgHash(cf):
     args = [
         [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
         JUNK_INT,
@@ -180,11 +180,11 @@ def test_executexSwapAndCallEth_rev_msgHash(cf):
     sigData[2] += 1
 
     with reverts(REV_MSG_MSGHASH):
-        cf.vault.executexSwapAndCall(sigData, *args)
+        cf.vault.executexSwapAndCall(sigData, *args, {"from": cf.ALICE})
 
 
 # rev if cfReceiver reverts the call
-def test_executexSwapAndCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
+def test_executexSwapAndCallNative_rev_CFReceiver(cf, cfReceiverFailMock):
     cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
@@ -207,7 +207,7 @@ def test_executexSwapAndCallEth_rev_CFReceiver(cf, cfReceiverFailMock):
 @given(
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
 )
-def test_executexSwapAndCallEth_tryCatch(cf, cfReceiverTryMock, st_amount):
+def test_executexSwapAndCallNative_tryCatch(cf, cfReceiverTryMock, st_amount):
     cf.SAFEKEEPER.transfer(cf.vault, st_amount)
 
     startBalVault = cf.vault.balance()
@@ -263,7 +263,7 @@ def test_executexSwapAndCallToken_tryCatch(cf, cfReceiverTryMock, st_amount, tok
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_sender=strategy("address"),
 )
-def test_executexSwapAndCallEth(
+def test_executexSwapAndCallToken(
     cf,
     cfReceiverMock,
     st_sender,

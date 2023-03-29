@@ -15,6 +15,7 @@ class _BaseStateMachine:
         cls.v = cfDeploy.vault
         cls.sm = cfDeploy.stakeManager
         cls.f = cfDeploy.flip
+        cls.deployerContract = cfDeploy.deployerContract
 
         cls.COMMUNITY_KEY = cfDeploy.communityKey
         cls.COMMUNITY_KEY_2 = a[7]

@@ -23,13 +23,13 @@ def test_suspend_executeClaim(cf, claimRegistered):
 
     # Test that attempting to execute the claim fails
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.stakeManager.executeClaim(JUNK_HEX)
+        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
     # Resume the StakeManager
     cf.stakeManager.resume({"from": cf.GOVERNOR})
 
     # Execute the claim
-    tx = cf.stakeManager.executeClaim(JUNK_HEX)
+    tx = cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
     # Verify tx result
     assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
@@ -56,7 +56,7 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
 
     # Test that attempting to execute the claim fails
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.stakeManager.executeClaim(JUNK_HEX)
+        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
     # Withdraw FLIP via governance motion
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
@@ -74,14 +74,14 @@ def test_suspend_govWithdraw_executeClaim(cf, claimRegistered):
 
     # Sanity check that we're still suspended
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.stakeManager.executeClaim(JUNK_HEX)
+        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
     # Resume the StakeManager
     cf.stakeManager.resume({"from": cf.GOVERNOR})
 
     # Attempt the execution, should fail because of balance in the Stake Manager
     with reverts(REV_MSG_ERC20_EXCEED_BAL):
-        cf.stakeManager.executeClaim(JUNK_HEX)
+        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
 
 
 @given(st_native_amount=strategy("uint"))

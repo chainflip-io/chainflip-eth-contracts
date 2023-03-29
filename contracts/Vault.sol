@@ -243,15 +243,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(IERC20(token).transfer.selector, recipient, amount)
             );
 
-            if (success) {
-                if (returndata.length > 0) {
-                    if (abi.decode(returndata, (bool)) == false) {
-                        emit TransferTokenFailed(recipient, amount, token, returndata);
-                    }
-                }
-            } else {
-                emit TransferTokenFailed(recipient, amount, token, returndata);
-            }
+            // No need to check token.code.length since it comes from a gated call
+            bool transferred = success && (abi.decode(returndata, (bool)) || returndata.length == uint256(0));
+            if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }
 
@@ -577,24 +571,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata srcAddress,
         bytes calldata message
     ) private {
+        uint256 nativeAmount;
+
         if (transferParams.token == _NATIVE_ADDR) {
-            ICFReceiver(transferParams.recipient).cfReceive{value: transferParams.amount}(
-                srcChain,
-                srcAddress,
-                message,
-                transferParams.token,
-                transferParams.amount
-            );
+            nativeAmount = transferParams.amount;
         } else {
             IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
-            ICFReceiver(transferParams.recipient).cfReceive(
-                srcChain,
-                srcAddress,
-                message,
-                transferParams.token,
-                transferParams.amount
-            );
         }
+
+        ICFReceiver(transferParams.recipient).cfReceive{value: nativeAmount}(
+            srcChain,
+            srcAddress,
+            message,
+            transferParams.token,
+            transferParams.amount
+        );
     }
 
     //////////////////////////////////////////////////////////////

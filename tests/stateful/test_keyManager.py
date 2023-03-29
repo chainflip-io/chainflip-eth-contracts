@@ -31,7 +31,10 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeployAllWhitelist):
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
-            self.lastValidateTime = self.km.tx.timestamp
+            # When using cfDeployAllWhitelist, there is a extra updateCanConsumeKeyNonce call
+            # that causes the timestamp to be off by 1 in a hardhat test. In a real live network
+            # it will be off by more than one, but we intend to test this only in hardhat.
+            self.lastValidateTime = self.deployerContract.tx.timestamp + 1
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + (
                 [Signer.gen_signer(None, {})]
