@@ -7,6 +7,12 @@ from brownie.network import priority_fee
 from utils import *
 
 
+# Test isolation
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
+
+
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
