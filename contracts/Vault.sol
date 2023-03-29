@@ -650,17 +650,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Executes an arbitrary call made by the trusted Aggregate Key signer.
-     * @dev     We fully trust the AggKey to not execute malicious code. If it wanted to steal
-     *          the funds it could already do it via transfer. So no need to add safeguards to
-     *          check that it doesn't call internal functions or transfer functions of some kind.
-     *          However, some safeguards are implemented.
+     * @notice  Transfer funds and pass calldata to be executed on another multicall contract.
      * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
      *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
      * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
      *                  the calldata to the function with an empty sigData) and sig over that
      *                  that hash (uint) from the aggregate key.
-     * @param calls      Array of actions to be executed.
+     * @param token     Address of the source token to swap.
+     * @param amount    Amount of the source token to send.
+     * @param multicallAddr Address of the Multicall contract to call.
+     * @param calls     Array of actions to be executed.
+
      */
     function executeActions(
         SigData calldata sigData,
@@ -686,25 +686,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        // Copied from Squid's Router from fundAndRunMulticall. We could technically also call that
-        // instead of calling the Multicall directly but then we are "exposed" to Squid's sudo powers
-        // upgrading the Router contract or pausing it. On the contrary, the Multicall contract is
-        // not owned nor upgradable => it's immutable in my mind. Also, we bypass one level of
-        // transfers, as otherwise we would need to approve to the Router and then the Router would
-        // transfer to the Multicall.
-
+        // Logic mimicking the Squid's Router fundAndRunMulticall.
         uint256 valueToSend;
 
-        // We might want to use this just for callData execution - e.g. minting USDC via CCTP so
-        // amount might be ==0 in some cases.
         if (amount > 0) {
-            // TODO: Should we use ETH_ADDRESS instead? I assume we don't need to use Squid here, so we
-            // can just use ETH_ADDRESS for consistency. We could just reuse the _transfer function
+            // TODO: Should we use ETH_ADDRESS instead for consistency instead of 0x0 as Squid does.
             if (token == address(0)) {
                 valueToSend = amount;
             } else {
-                // _transferTokenToMulticall(token, amount, multicallAddr);
-                // DIFF: instead of transferFrom we use transfer
+                // solhint-disable-next-line avoid-low-level-calls
                 (bool success, bytes memory returnData) = token.call(
                     abi.encodeWithSelector(IERC20(token).transfer.selector, multicallAddr, amount)
                 );
