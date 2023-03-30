@@ -5,23 +5,28 @@ import json
 sys.path.append(os.path.abspath("tests"))
 from consts import *
 from brownie import (
+    project,
     accounts,
-    Token,
-    TokenMessengerMock,
     network,
-    MessageTransmitter,
+    Token,
     KeyManager,
     Vault,
     StakeManager,
     FLIP,
-    AxelarGatewayMock,
-    AxelarGasService,
+    DeployerContract,
 )
-from deploy import deploy_set_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 from brownie.convert import to_bytes
 
 import requests
 import time
+
+# Load the required interfaces
+_project = project.get_loaded_projects()[0]
+ITokenMessengerMock = _project.interface.ITokenMessengerMock
+IMessageTransmitterMock = _project.interface.IMessageTransmitterMock
+IAxelarGateway = _project.interface.IAxelarGateway
+
 
 # NOTE: When forking a network (in another terminal) it spins a copy of the network
 # with the default hardhat chain id 31337. Another option is to declare the network
@@ -158,8 +163,8 @@ def main():
 
 # Unclear if we want to deploy new contracts or if we want to point to already deployed ones
 def deploy():
-    return deploy_set_Chainflip_contracts(
-        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
+    return deploy_Chainflip_contracts(
+        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract, os.environ
     )
 
 
@@ -168,14 +173,14 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
     if fuji_to_goerli == "1":
         # FUJI TO GOERLI
         usdc = Token.at(USDC_FUJI_ADDRESS)
-        token_messenger_cctp = TokenMessengerMock.at(TOKENMESSENGER_CCTP_FUJI_ADDRESS)
+        token_messenger_cctp = ITokenMessengerMock(TOKENMESSENGER_CCTP_FUJI_ADDRESS)
         destination_domain = ETH_DESTINATION_DOMAIN
         egress_token_messenger_cctp = TOKENMESSENGER_CCTP_GOERLI_ADDRESS
 
     else:
         # GOERLI to FUJI
         usdc = Token.at(USDC_GOERLI_ADDRESS)
-        token_messenger_cctp = TokenMessengerMock.at(TOKENMESSENGER_CCTP_GOERLI_ADDRESS)
+        token_messenger_cctp = ITokenMessengerMock(TOKENMESSENGER_CCTP_GOERLI_ADDRESS)
         destination_domain = FUJI_DESTINATION_DOMAIN
         egress_token_messenger_cctp = TOKENMESSENGER_CCTP_FUJI_ADDRESS
 
@@ -302,13 +307,12 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
     # The contract pointers below will fail if we are in the wrong network.
     if fuji_to_goerli == "1":
         # FUJI TO GOERLI
-        axelar_gateway = AxelarGatewayMock.at(GATEWAY_FUJI_ADDRESS)
+        axelar_gateway = IAxelarGateway(GATEWAY_FUJI_ADDRESS)
         aUsdc = Token.at(aUSDC_FUJI_ADDRESS)
         dst_chain = "ethereum-2"
-        # axelar_gas_service = AxelarGasService.at(GAS_SERVICE_FUJI_ADDRESS)
     else:
         # GOERLI to FUJI - for now not supported
-        axelar_gateway = AxelarGatewayMock.at(GATEWAY_GOERLI_ADDRESS)
+        axelar_gateway = IAxelarGateway(GATEWAY_GOERLI_ADDRESS)
         aUsdc = Token.at(aUSDC_GOERLI_ADDRESS)
         dst_chain = "Avalanche"
 
@@ -339,7 +343,6 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
         # Doing it through the Vault means we need to encode the calldata
         syncNonce(keyManager_address)
 
-        print("balance aUsdc Vault", aUsdc.balanceOf(vault.address))
         call0 = [
             0,
             aUsdc.address,
@@ -418,14 +421,16 @@ def get_and_submit_attestation(
     attestation_response = get_attestation(message)
 
     if fuji_to_goerli == "1":
-        message_transmitter_cctp = MessageTransmitter.at(
+        message_transmitter_cctp = IMessageTransmitterMock(
             MESSAGE_TRANSMITTER_CCTP_GOERLI
         )
         source_domain = FUJI_DESTINATION_DOMAIN
         usdc_address = USDC_GOERLI_ADDRESS
         source_token_messenger = TOKENMESSENGER_CCTP_FUJI_ADDRESS
     else:
-        message_transmitter_cctp = MessageTransmitter.at(MESSAGE_TRANSMITTER_CCTP_FUJI)
+        message_transmitter_cctp = IMessageTransmitterMock(
+            MESSAGE_TRANSMITTER_CCTP_FUJI
+        )
         source_domain = ETH_DESTINATION_DOMAIN
         usdc_address = USDC_FUJI_ADDRESS
         source_token_messenger = TOKENMESSENGER_CCTP_GOERLI_ADDRESS

@@ -10,8 +10,6 @@ import "./Deposit.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
-import "./SquidMulticall.sol";
-
 /**
  * @title    Vault contract
  * @notice   The vault for holding and transferring native/tokens and deploying contracts for fetching
@@ -65,8 +63,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
-
-    error TransferFailed();
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -658,7 +654,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address token,
         uint256 amount,
         address payable multicallAddr,
-        SquidMulticall.Call[] calldata calls
+        IMulticall.Call[] calldata calls
     )
         external
         override
@@ -677,12 +673,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        // Logic mimicking the Squid's Router fundAndRunMulticall.
+        // Fund and run multicall
         uint256 valueToSend;
 
         if (amount > 0) {
-            // TODO: Should we use ETH_ADDRESS instead for consistency instead of 0x0 as Squid does.
-            if (token == address(0)) {
+            if (token == _NATIVE_ADDR) {
                 valueToSend = amount;
             } else {
                 // solhint-disable-next-line avoid-low-level-calls
@@ -690,11 +685,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                     abi.encodeWithSelector(IERC20(token).transfer.selector, multicallAddr, amount)
                 );
                 bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
-                if (!transferred || token.code.length == 0) revert TransferFailed();
+                if (!transferred || token.code.length == 0) {
+                    // Bubble up error
+                    // solhint-disable-next-line no-inline-assembly
+                    assembly {
+                        let returndata_size := mload(returnData)
+                        revert(add(32, returnData), returndata_size)
+                    }
+                }
             }
         }
 
-        SquidMulticall(multicallAddr).run{value: valueToSend}(calls);
+        IMulticall(multicallAddr).run{value: valueToSend}(calls);
     }
 
     //////////////////////////////////////////////////////////////

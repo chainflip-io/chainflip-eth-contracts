@@ -1,8 +1,6 @@
 pragma solidity ^0.8.0;
 
-// Brownie needs a contract to be able to encode the inputs, the interface is not enough.
-// We can probably import the real contracts instead, this is just a quick fix.
-contract TokenMessengerMock {
+interface ITokenMessengerMock {
     event DepositForBurn(
         uint64 indexed nonce,
         address indexed burnToken,
@@ -21,9 +19,7 @@ contract TokenMessengerMock {
         uint32 destinationDomain,
         bytes32 mintRecipient,
         address burnToken
-    ) external {
-        // emits DepositForBurn & MessageSent
-    }
+    ) external;
 
     function depositForBurnWithCaller(
         uint256 amount,
@@ -31,10 +27,10 @@ contract TokenMessengerMock {
         bytes32 mintRecipient,
         address burnToken,
         bytes32 destinationCaller
-    ) external returns (uint64 nonce) {}
+    ) external returns (uint64 nonce);
 }
 
-contract MessageTransmitter {
+interface IMessageTransmitterMock {
     event MessageReceived(
         address indexed caller,
         uint32 sourceDomain,
@@ -45,9 +41,5 @@ contract MessageTransmitter {
 
     event MintAndWithdraw(address indexed mintRecipient, uint256 amount, address indexed mintToken);
 
-    function receiveMessage(bytes calldata message, bytes calldata attestation) external returns (bool success) {
-        // MessageTransmitter Emits MessageReceived
-        // USDC contract will emit mint to recipient
-        // TokenMessenger also emits MintAndWithdraw
-    }
+    function receiveMessage(bytes calldata message, bytes calldata attestation) external returns (bool success);
 }
