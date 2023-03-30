@@ -17,7 +17,7 @@ from brownie import (
     AxelarGatewayMock,
     AxelarGasService,
 )
-from deploy import deploy_set_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts
 from brownie.convert import to_bytes
 
 import requests
@@ -158,7 +158,7 @@ def main():
 
 # Unclear if we want to deploy new contracts or if we want to point to already deployed ones
 def deploy():
-    return deploy_set_Chainflip_contracts(
+    return deploy_Chainflip_contracts(
         DEPLOYER, KeyManager, Vault, StakeManager, FLIP, os.environ
     )
 
