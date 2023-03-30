@@ -57,6 +57,7 @@ contract SquidMulticall is ISquidMulticall, IERC721Receiver, IERC1155Receiver {
                 continue;
             }
 
+            // solhint-disable-next-line avoid-low-level-calls
             (bool success, bytes memory data) = call.target.call{value: call.value}(call.callData);
             if (!success) revert CallFailed(i, data);
         }
@@ -72,6 +73,7 @@ contract SquidMulticall is ISquidMulticall, IERC721Receiver, IERC1155Receiver {
     }
 
     function _safeTransferFrom(address token, address from, uint256 amount) private {
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = token.call(
             abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(this), amount)
         );
@@ -80,6 +82,7 @@ contract SquidMulticall is ISquidMulticall, IERC721Receiver, IERC1155Receiver {
     }
 
     function _setCallDataParameter(bytes memory callData, uint256 parameterPosition, uint256 value) private pure {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             // 36 bytes shift because 32 for prefix + 4 for selector
             mstore(add(callData, add(36, mul(parameterPosition, 32))), value)
