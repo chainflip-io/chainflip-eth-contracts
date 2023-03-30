@@ -66,8 +66,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
 
-    error TransferFailed();
-
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -681,8 +679,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 valueToSend;
 
         if (amount > 0) {
-            // TODO: Should we use ETH_ADDRESS instead for consistency instead of 0x0 as Squid does.
-            if (token == address(0)) {
+            if (token == _NATIVE_ADDR) {
                 valueToSend = amount;
             } else {
                 // solhint-disable-next-line avoid-low-level-calls
@@ -690,7 +687,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                     abi.encodeWithSelector(IERC20(token).transfer.selector, multicallAddr, amount)
                 );
                 bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
-                if (!transferred || token.code.length == 0) revert TransferFailed();
+                if (!transferred || token.code.length == 0) {
+                    // Bubble up error
+                    // solhint-disable-next-line no-inline-assembly
+                    assembly {
+                        let returndata_size := mload(returnData)
+                        revert(add(32, returnData), returndata_size)
+                    }
+                }
             }
         }
 
