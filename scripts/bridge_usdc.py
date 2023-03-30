@@ -310,7 +310,6 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
         axelar_gateway = IAxelarGateway(GATEWAY_FUJI_ADDRESS)
         aUsdc = Token.at(aUSDC_FUJI_ADDRESS)
         dst_chain = "ethereum-2"
-        # axelar_gas_service = AxelarGasService.at(GAS_SERVICE_FUJI_ADDRESS)
     else:
         # GOERLI to FUJI - for now not supported
         axelar_gateway = IAxelarGateway(GATEWAY_GOERLI_ADDRESS)
@@ -344,7 +343,6 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
         # Doing it through the Vault means we need to encode the calldata
         syncNonce(keyManager_address)
 
-        print("balance aUsdc Vault", aUsdc.balanceOf(vault.address))
         call0 = [
             0,
             aUsdc.address,
