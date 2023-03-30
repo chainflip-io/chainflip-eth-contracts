@@ -1,19 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.17;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
-contract SquidMulticall is IERC721Receiver, IERC1155Receiver {
-    bytes4 public constant ERC165_INTERFACE_ID = 0x01ffc9a7;
-    bytes4 public constant ERC721_TOKENRECEIVER_INTERFACE_ID = 0x150b7a02;
-    bytes4 public constant ERC1155_TOKENRECEIVER_INTERFACE_ID = 0x4e2312e0;
-
-    bool private isRunning;
-
-    error TransferFailed();
-
+interface ISquidMulticall {
     enum CallType {
         Default,
         FullTokenBalance,
@@ -31,6 +23,19 @@ contract SquidMulticall is IERC721Receiver, IERC1155Receiver {
 
     error AlreadyRunning();
     error CallFailed(uint256 callPosition, bytes reason);
+
+    function run(Call[] calldata calls) external payable;
+}
+
+// Copying the entire contract since we will use it for testing locally.
+contract SquidMulticall is ISquidMulticall, IERC721Receiver, IERC1155Receiver {
+    bytes4 public constant ERC165_INTERFACE_ID = 0x01ffc9a7;
+    bytes4 public constant ERC721_TOKENRECEIVER_INTERFACE_ID = 0x150b7a02;
+    bytes4 public constant ERC1155_TOKENRECEIVER_INTERFACE_ID = 0x4e2312e0;
+
+    bool private isRunning;
+
+    error TransferFailed();
 
     function run(Call[] calldata calls) external payable {
         // Prevents reentrancy
@@ -52,7 +57,6 @@ contract SquidMulticall is IERC721Receiver, IERC1155Receiver {
                 continue;
             }
 
-            // solhint-disable-next-line avoid-low-level-calls
             (bool success, bytes memory data) = call.target.call{value: call.value}(call.callData);
             if (!success) revert CallFailed(i, data);
         }
@@ -60,7 +64,7 @@ contract SquidMulticall is IERC721Receiver, IERC1155Receiver {
         isRunning = false;
     }
 
-    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return
             interfaceId == ERC1155_TOKENRECEIVER_INTERFACE_ID ||
             interfaceId == ERC721_TOKENRECEIVER_INTERFACE_ID ||
@@ -68,7 +72,6 @@ contract SquidMulticall is IERC721Receiver, IERC1155Receiver {
     }
 
     function _safeTransferFrom(address token, address from, uint256 amount) private {
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = token.call(
             abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(this), amount)
         );
@@ -77,24 +80,17 @@ contract SquidMulticall is IERC721Receiver, IERC1155Receiver {
     }
 
     function _setCallDataParameter(bytes memory callData, uint256 parameterPosition, uint256 value) private pure {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             // 36 bytes shift because 32 for prefix + 4 for selector
             mstore(add(callData, add(36, mul(parameterPosition, 32))), value)
         }
     }
 
-    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
         return IERC1155Receiver.onERC1155Received.selector;
     }
 
@@ -104,7 +100,7 @@ contract SquidMulticall is IERC721Receiver, IERC1155Receiver {
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata
-    ) external pure override returns (bytes4) {
+    ) external pure returns (bytes4) {
         return IERC1155Receiver.onERC1155BatchReceived.selector;
     }
 

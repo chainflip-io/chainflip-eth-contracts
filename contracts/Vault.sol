@@ -10,8 +10,6 @@ import "./Deposit.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
-import "./SquidMulticall.sol";
-
 /**
  * @title    Vault contract
  * @notice   The vault for holding and transferring native/tokens and deploying contracts for fetching
@@ -656,7 +654,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address token,
         uint256 amount,
         address payable multicallAddr,
-        SquidMulticall.Call[] calldata calls
+        IMulticall.Call[] calldata calls
     )
         external
         override
@@ -675,7 +673,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             )
         )
     {
-        // Logic mimicking the Squid's Router fundAndRunMulticall.
+        // Fund and run multicall
         uint256 valueToSend;
 
         if (amount > 0) {
@@ -698,7 +696,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             }
         }
 
-        SquidMulticall(multicallAddr).run{value: valueToSend}(calls);
+        IMulticall(multicallAddr).run{value: valueToSend}(calls);
     }
 
     //////////////////////////////////////////////////////////////

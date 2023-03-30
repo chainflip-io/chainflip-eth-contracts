@@ -2,8 +2,7 @@ pragma solidity ^0.8.0;
 
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
-
-import "../SquidMulticall.sol";
+import "./IMulticall.sol";
 
 /**
  * @title    Vault interface
@@ -130,7 +129,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         address token,
         uint256 amount,
         address payable multicallAddr,
-        SquidMulticall.Call[] calldata calls
+        IMulticall.Call[] calldata calls
     ) external;
 
     //////////////////////////////////////////////////////////////
