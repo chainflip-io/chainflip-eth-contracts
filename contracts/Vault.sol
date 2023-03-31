@@ -680,19 +680,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             if (token == _NATIVE_ADDR) {
                 valueToSend = amount;
             } else {
-                // solhint-disable-next-line avoid-low-level-calls
-                (bool success, bytes memory returnData) = token.call(
-                    abi.encodeWithSelector(IERC20(token).transfer.selector, multicallAddr, amount)
-                );
-                bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
-                if (!transferred || token.code.length == 0) {
-                    // Bubble up error
-                    // solhint-disable-next-line no-inline-assembly
-                    assembly {
-                        let returndata_size := mload(returnData)
-                        revert(add(32, returnData), returndata_size)
-                    }
-                }
+                IERC20(token).safeTransfer(multicallAddr, amount);
             }
         }
 
