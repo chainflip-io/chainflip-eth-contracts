@@ -239,15 +239,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(IERC20(token).transfer.selector, recipient, amount)
             );
 
-            if (success) {
-                if (returndata.length > 0) {
-                    if (abi.decode(returndata, (bool)) == false) {
-                        emit TransferTokenFailed(recipient, amount, token, returndata);
-                    }
-                }
-            } else {
-                emit TransferTokenFailed(recipient, amount, token, returndata);
-            }
+            // No need to check token.code.length since it comes from a gated call
+            bool transferred = success && (abi.decode(returndata, (bool)) || returndata.length == uint256(0));
+            if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }
 
@@ -573,24 +567,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata srcAddress,
         bytes calldata message
     ) private {
+        uint256 nativeAmount;
+
         if (transferParams.token == _NATIVE_ADDR) {
-            ICFReceiver(transferParams.recipient).cfReceive{value: transferParams.amount}(
-                srcChain,
-                srcAddress,
-                message,
-                transferParams.token,
-                transferParams.amount
-            );
+            nativeAmount = transferParams.amount;
         } else {
             IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
-            ICFReceiver(transferParams.recipient).cfReceive(
-                srcChain,
-                srcAddress,
-                message,
-                transferParams.token,
-                transferParams.amount
-            );
         }
+
+        ICFReceiver(transferParams.recipient).cfReceive{value: nativeAmount}(
+            srcChain,
+            srcAddress,
+            message,
+            transferParams.token,
+            transferParams.amount
+        );
     }
 
     //////////////////////////////////////////////////////////////
@@ -637,6 +628,75 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         )
     {
         ICFReceiver(recipient).cfReceivexCall(srcChain, srcAddress, message);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                 Auxiliary chain actions                  //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Transfer funds and pass calldata to be executed on another multicall contract.
+     * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
+     *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
+     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
+     *                  the calldata to the function with an empty sigData) and sig over that
+     *                  that hash (uint) from the aggregate key.
+     * @param token     Address of the source token to swap.
+     * @param amount    Amount of the source token to send.
+     * @param multicallAddr Address of the Multicall contract to call.
+     * @param calls     Array of actions to be executed.
+
+     */
+    function executeActions(
+        SigData calldata sigData,
+        address token,
+        uint256 amount,
+        address payable multicallAddr,
+        IMulticall.Call[] calldata calls
+    )
+        external
+        override
+        onlyNotSuspended
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.executeActions.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    token,
+                    amount,
+                    multicallAddr,
+                    calls
+                )
+            )
+        )
+    {
+        // Fund and run multicall
+        uint256 valueToSend;
+
+        if (amount > 0) {
+            if (token == _NATIVE_ADDR) {
+                valueToSend = amount;
+            } else {
+                // solhint-disable-next-line avoid-low-level-calls
+                (bool success, bytes memory returnData) = token.call(
+                    abi.encodeWithSelector(IERC20(token).transfer.selector, multicallAddr, amount)
+                );
+                bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
+                if (!transferred || token.code.length == 0) {
+                    // Bubble up error
+                    // solhint-disable-next-line no-inline-assembly
+                    assembly {
+                        let returndata_size := mload(returnData)
+                        revert(add(32, returnData), returndata_size)
+                    }
+                }
+            }
+        }
+
+        IMulticall(multicallAddr).run{value: valueToSend}(calls);
     }
 
     //////////////////////////////////////////////////////////////
