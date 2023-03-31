@@ -273,3 +273,8 @@ def mockUsdc(cf, MockUSDC):
 @pytest.fixture(scope="module")
 def utils(cf, Utils):
     return cf.SAFEKEEPER.deploy(Utils)
+
+
+@pytest.fixture(scope="module")
+def multicall(cf, SquidMulticall):
+    return cf.SAFEKEEPER.deploy(SquidMulticall)
