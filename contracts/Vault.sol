@@ -567,13 +567,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata srcAddress,
         bytes calldata message
     ) private {
-        uint256 nativeAmount;
-
-        if (transferParams.token == _NATIVE_ADDR) {
-            nativeAmount = transferParams.amount;
-        } else {
-            IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
-        }
+        uint256 nativeAmount = _fundWithToken(transferParams.token, transferParams.amount, transferParams.recipient);
 
         ICFReceiver(transferParams.recipient).cfReceive{value: nativeAmount}(
             srcChain,
@@ -677,14 +671,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 valueToSend;
 
         if (amount > 0) {
-            if (token == _NATIVE_ADDR) {
-                valueToSend = amount;
-            } else {
-                IERC20(token).safeTransfer(multicallAddr, amount);
-            }
+            valueToSend = _fundWithToken(token, amount, multicallAddr);
         }
 
         IMulticall(multicallAddr).run{value: valueToSend}(calls);
+    }
+
+    function _fundWithToken(address token, uint256 amount, address payable recipient) private returns (uint256) {
+        if (token == _NATIVE_ADDR) {
+            return amount;
+        } else {
+            IERC20(token).safeTransfer(recipient, amount);
+            return 0;
+        }
     }
 
     //////////////////////////////////////////////////////////////
