@@ -140,11 +140,19 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
             )
         )
     {
+        Claim memory pendingClaim = _pendingClaims[nodeID];
         require(
-            // Must be fresh or have been executed & deleted, or past the expiry
-            block.timestamp > uint256(_pendingClaims[nodeID].expiryTime),
+            // Must be fresh or have been executed & deleted
+            block.timestamp > uint256(pendingClaim.expiryTime),
             "Staking: a pending claim exists"
         );
+
+        // Do we want this?
+        // expiryTime > 0 signals that there is an expired claim
+        // (== 0 would be a fresh, or executed&deleted)
+        if (pendingClaim.expiryTime > 0) {
+            emit ClaimExpired(nodeID, pendingClaim.amount);
+        }
 
         uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
         require(expiryTime > startTime, "Staking: expiry time too soon");
@@ -166,17 +174,19 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      */
     function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
-        require(
-            block.timestamp >= claim.startTime && block.timestamp <= claim.expiryTime,
-            "Staking: early, late, or execd"
-        );
+        require(block.timestamp >= claim.startTime, "Staking: early or already execd");
 
         // Housekeeping
         delete _pendingClaims[nodeID];
-        emit ClaimExecuted(nodeID, claim.amount);
 
-        // Send the tokens
-        _FLIP.transfer(claim.staker, claim.amount);
+        if (block.timestamp <= claim.expiryTime) {
+            emit ClaimExecuted(nodeID, claim.amount);
+
+            // Send the tokens
+            _FLIP.transfer(claim.staker, claim.amount);
+        } else {
+            emit ClaimExpired(nodeID, claim.amount);
+        }
     }
 
     /**

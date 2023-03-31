@@ -244,6 +244,8 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
     assert cf.flip.balanceOf(stakeManager) == prevStakeManBal
     assert stakeManager.getMinimumStake() == minStake
 
+    return tx
+
 
 # Function used to do function calls that require a signature
 def signed_call_cf(cf, fcn, *args, **kwargs):

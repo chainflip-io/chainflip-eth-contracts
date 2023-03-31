@@ -60,12 +60,12 @@ def test_registerClaim_rev_just_under_min_expiryTime(cf, stakedMin):
 
 def test_registerClaim_claim_expired(cf, stakedMin):
     _, st_amount = stakedMin
-    args = (JUNK_HEX, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
+    args = (JUNK_HEX, st_amount + 1, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
 
     signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
     chain.sleep(CLAIM_DELAY + 10)
-    registerClaimTest(
+    tx = registerClaimTest(
         cf,
         cf.stakeManager,
         JUNK_HEX,
@@ -73,6 +73,10 @@ def test_registerClaim_claim_expired(cf, stakedMin):
         MIN_STAKE,
         cf.DENICE,
         getChainTime() + (2 * CLAIM_DELAY),
+    )
+    assert tx.events["ClaimExpired"][0].values() == (
+        JUNK_HEX,
+        st_amount + 1,
     )
 
 
