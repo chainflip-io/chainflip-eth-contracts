@@ -160,7 +160,7 @@ def test_vault(
         st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
-        st_dstNativeBudget = strategy("uint")
+        st_gasAmount = strategy("uint")
         st_refundAddress = strategy("bytes")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_native_amounts, st_sender):
@@ -1009,7 +1009,7 @@ def test_vault(
             st_native_amount,
             st_dstChain,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
         ):
             args = (
@@ -1017,7 +1017,7 @@ def test_vault(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
@@ -1055,7 +1055,7 @@ def test_vault(
                             st_native_amount,
                             st_sender,
                             hexStr(st_message),
-                            st_dstNativeBudget,
+                            st_gasAmount,
                             hexStr(st_refundAddress),
                         ]
 
@@ -1068,7 +1068,7 @@ def test_vault(
             st_token,
             st_dstChain,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
         ):
             args = (
@@ -1076,7 +1076,7 @@ def test_vault(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 st_token,
                 st_token_amount,
                 st_refundAddress,
@@ -1138,7 +1138,7 @@ def test_vault(
                             st_token_amount,
                             st_sender,
                             hexStr(st_message),
-                            st_dstNativeBudget,
+                            st_gasAmount,
                             hexStr(st_refundAddress),
                         ]
 

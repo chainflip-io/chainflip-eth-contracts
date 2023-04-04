@@ -106,7 +106,7 @@ No description
 
 - `amount`:        Amount of tokens to swap.
 
-## `xCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeBudget, bytes refundAddress)` (external)
+## `xCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 gasAmount, bytes refundAddress)` (external)
 
  Performs a cross-chain call to the destination address on the destination chain. Native tokens must be paid
          to this contract. The swap intent determines if the provided tokens should be swapped to a different token
@@ -123,11 +123,11 @@ No description
 
 - `message`:       The message to be sent to the egress chain. This is a general purpose message.
 
-- `dstNativeBudget`:  The amount of native gas to be used on the destination chain's call.
+- `gasAmount`:  The amount of native gas to be used on the destination chain's call.
 
 - `refundAddress`: Address for any future refunds to the user.
 
-## `xCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeBudget, contract IERC20 srcToken, uint256 amount, bytes refundAddress)` (external)
+## `xCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 gasAmount, contract IERC20 srcToken, uint256 amount, bytes refundAddress)` (external)
 
  Performs a cross-chain call to the destination chain and destination address. An ERC20 token amount
          needs to be approved to this contract. The ERC20 token must be supported by the Chainflip Protocol.
@@ -146,7 +146,7 @@ No description
 
 - `message`:       The message to be sent to the egress chain. This is a general purpose message.
 
-- `dstNativeBudget`:  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
+- `gasAmount`:  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
                      source token.
 
 - `srcToken`:      Address of the source token.
@@ -230,14 +230,14 @@ No description
 
 ## `SwapToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, address srcToken, uint256 amount, address sender)`
 
-## `XCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, uint256 amount, address sender, bytes message, uint256 dstNativeBudget, bytes refundAddress)`
+## `XCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, uint256 amount, address sender, bytes message, uint256 gasAmount, bytes refundAddress)`
 
 dstAddress is not indexed because indexing a dynamic type (string) to be able to filter,
      makes it so we won't be able to decode it unless we specifically search for it. If we want
      to filter it and decode it then we would need to have both the indexed and the non-indexed
      version in the event.
 
-## `XCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, address srcToken, uint256 amount, address sender, bytes message, uint256 dstNativeBudget, bytes refundAddress)`
+## `XCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, address srcToken, uint256 amount, address sender, bytes message, uint256 gasAmount, bytes refundAddress)`
 
 ## `AddGasNative(bytes32 swapID, uint256 amount)`
 

@@ -46,7 +46,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         address indexed sender,
         bytes message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes refundAddress
     );
     event XCallToken(
@@ -57,7 +57,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         address indexed sender,
         bytes message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes refundAddress
     );
 
@@ -401,7 +401,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call.
+     * @param gasAmount  The amount of native gas to be used on the destination chain's call.
      * @param refundAddress Address for any future refunds to the user.
      */
     function xCallNative(
@@ -409,19 +409,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes calldata dstAddress,
         uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes calldata refundAddress
     ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit XCallNative(
-            dstChain,
-            dstAddress,
-            dstToken,
-            msg.value,
-            msg.sender,
-            message,
-            dstNativeBudget,
-            refundAddress
-        );
+        emit XCallNative(dstChain, dstAddress, dstToken, msg.value, msg.sender, message, gasAmount, refundAddress);
     }
 
     /**
@@ -440,7 +431,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
+     * @param gasAmount  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
      *                      source token.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
@@ -451,7 +442,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         bytes memory dstAddress,
         uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         IERC20 srcToken,
         uint256 amount,
         bytes calldata refundAddress
@@ -465,7 +456,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             amount,
             msg.sender,
             message,
-            dstNativeBudget,
+            gasAmount,
             refundAddress
         );
     }

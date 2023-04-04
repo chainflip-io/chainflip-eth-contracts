@@ -66,7 +66,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         bytes calldata dstAddress,
         uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes calldata refundAddress
     ) external payable;
 
@@ -75,7 +75,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         bytes calldata dstAddress,
         uint16 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         IERC20 srcToken,
         uint256 amount,
         bytes calldata refundAddress
