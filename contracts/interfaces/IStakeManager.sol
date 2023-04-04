@@ -60,7 +60,7 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      * @param nodeID    The nodeID of the staker
      * @param amount    The amount of stake to be locked up
      * @param staker    The staker who is to be sent FLIP
-     * @param expiryTime   The last valid block height that can execute this claim (uint48)
+     * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
      */
     function registerClaim(
         SigData calldata sigData,
@@ -76,7 +76,7 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      *          auction while being a validator, the amount sent back = stake +
      *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
      *          claim before 48h have passed after registering it, or after the specified
-     *          expiry block height
+     *          expiry timestamp
      * @dev     No need for nzUint(nodeID) since that is handled by
      *          `uint(block.number) <= claim.startTime`
      * @param nodeID    The nodeID of the staker

@@ -111,7 +111,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @param nodeID    The nodeID of the staker
      * @param amount    The amount of stake to be locked up
      * @param staker    The staker who is to be sent FLIP
-     * @param expiryTime   The last valid block height that can execute this claim (uint48)
+     * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
      */
     function registerClaim(
         SigData calldata sigData,
