@@ -10,7 +10,7 @@ from shared_tests import *
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
     st_refundAddress=strategy("bytes"),
@@ -112,7 +112,7 @@ def test_swapToken(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_gasAmount=strategy("uint"),
@@ -162,7 +162,7 @@ def test_swapToken_rev_bal(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_gasAmount=strategy("uint"),
@@ -215,7 +215,7 @@ def test_swapToken_rev_suspended(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
     st_gasAmount=strategy("uint"),
@@ -300,7 +300,7 @@ def test_swapETHAndCall(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
     st_gasAmount=strategy("uint"),

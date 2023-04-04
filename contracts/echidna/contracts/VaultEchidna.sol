@@ -36,14 +36,14 @@ contract VaultEchidna is IShared {
         v.fetchBatch(sigData, fetchParamsArray);
     }
 
-    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint16 dstToken) external payable virtual {
+    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint32 dstToken) external payable virtual {
         v.xSwapNative{value: msg.value}(dstChain, dstAddress, dstToken);
     }
 
     function xSwapToken(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         IERC20 srcToken,
         uint256 amount
     ) external virtual {
@@ -53,7 +53,7 @@ contract VaultEchidna is IShared {
     function xCallNative(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
         uint256 dstNativeGas,
         bytes calldata refundAddress
@@ -64,7 +64,7 @@ contract VaultEchidna is IShared {
     function xCallToken(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
         uint256 dstNativeGas,
         IERC20 srcToken,
