@@ -105,6 +105,8 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
      *          will be sent back. If losing an auction while being a validator,
      *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
+     * @dev     Non need to emit an expiry event when overriden by a new claim since the State
+     *          Chain won't allow for a node to register a new claim before the old is executed/expires.
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
@@ -140,19 +142,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
             )
         )
     {
-        Claim memory pendingClaim = _pendingClaims[nodeID];
         require(
-            // Must be fresh or have been executed & deleted
-            block.timestamp > uint256(pendingClaim.expiryTime),
+            // Must be fresh or have been executed & deleted, or past the expiry
+            block.timestamp > uint256(_pendingClaims[nodeID].expiryTime),
             "Staking: a pending claim exists"
         );
-
-        // Do we want this?
-        // expiryTime > 0 signals that there is an expired claim
-        // (== 0 would be a fresh, or executed&deleted)
-        if (pendingClaim.expiryTime > 0) {
-            emit ClaimExpired(nodeID, pendingClaim.amount);
-        }
 
         uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
         require(expiryTime > startTime, "Staking: expiry time too soon");
