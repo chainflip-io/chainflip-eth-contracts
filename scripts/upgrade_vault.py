@@ -31,7 +31,6 @@ def upgrade_empty_vault():
     vault = Vault.at(VAULT_ADDRESS)
     stakeManager = StakeManager.at(STAKE_MANAGER_ADDRESS)
     flip = FLIP.at(FLIP_ADDRESS)
-    # new_vault = Vault.at(NEW_VAULT_ADDRESS)
 
     new_vault = deploy_vault(keyManager)
     whitelist_new_vault(keyManager, vault, stakeManager, flip, new_vault)
@@ -79,10 +78,9 @@ def whitelist_new_vault(keyManager, vault, stakeManager, flip, new_vault):
 
 
 # NOTE: This might be called first to set the AggKey to a known key. That is in the case
-# we have deployed the initial contracts with a dummy AggKey.
-# Then it can be called two days after upgrading the Vault to set back the dummy AggKey.
-# This is a mock of what should be done via multisig, as the governance in the real
-# contracts will be the multisig. To try out.
+# we have deployed the initial contracts with a dummy AggKey. Then it can be called two
+# days after upgrading the Vault to set back the dummy AggKey. This is a mock of what
+# should be done via multisig, as the governance in the real contracts will be the multisig.
 def update_agg_key():
     KEY_MANAGER_ADDRESS = os.environ["KEY_MANAGER_ADDRESS"]
     keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
@@ -91,8 +89,8 @@ def update_agg_key():
 
     newAggKey = getKeysFromAggKey(newAggKey)
 
-    # NOTE: This will fail if two days haven't passed since deployment or since last time
-    # a signature was verified.
+    # NOTE: This will fail if two days haven't passed since deployment or since
+    # last time a signature was verified.
     tx = keyManager.setAggKeyWithGovKey(
         newAggKey, {"from": DEPLOYER, "required_confs": 1}
     )
