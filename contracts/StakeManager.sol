@@ -105,8 +105,8 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
      *          will be sent back. If losing an auction while being a validator,
      *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-     * @dev     Non need to emit an expiry event when overriden by a new claim since the State
-     *          Chain won't allow for a node to register a new claim before the old is executed/expires.
+     * @dev     No need to emit an expiry event when overriden by a new claim since the State Chain
+     *          won't allow for a node to register a new claim before the old is executed/expires.
      * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
      *                  for this function with empty msgHash and sig) and sig over that hash
      *                  from the current aggregate key (uint)
