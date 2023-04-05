@@ -1,10 +1,10 @@
 pragma solidity ^0.8.0;
 
-import "./Vault.sol";
-import "./KeyManager.sol";
-import "./StakeManager.sol";
-import "./FLIP.sol";
-import "./interfaces/IShared.sol";
+import "../Vault.sol";
+import "../KeyManager.sol";
+import "../StakeManager.sol";
+import "../FLIP.sol";
+import "../interfaces/IShared.sol";
 
 /**
  * @title    Deployer contract
