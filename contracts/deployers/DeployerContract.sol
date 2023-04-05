@@ -20,6 +20,7 @@ contract DeployerContract is IShared {
     StakeManager public immutable stakeManager;
     FLIP public immutable flip;
 
+    // The underlying contracts will check for non-zero inputs.
     constructor(
         Key memory aggKey,
         address govKey,
@@ -40,10 +41,10 @@ contract DeployerContract is IShared {
             govKey,
             _keyManager
         );
-        // Set the FLIP address to the StakeManager contract
+        // Set the FLIP address in the StakeManager contract
         _stakeManager.setFlip(FLIP(address(_flip)));
 
-        // Set the whitelist to the KeyManager contract
+        // Set the whitelist in the KeyManager contract
         whitelist = [address(_vault), address(_stakeManager), address(_flip)];
         _keyManager.setCanConsumeKeyNonce(whitelist);
 

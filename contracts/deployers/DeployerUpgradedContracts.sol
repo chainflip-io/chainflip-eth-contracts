@@ -30,7 +30,7 @@ contract DeployerUpgradedContracts is Shared {
         // Set the FLIP address in the StakeManager contract
         _stakeManager.setFlip(FLIP(address(_flip)));
 
-        // Set values to storage
+        // Storing all the contracts for traceability.
         vault = _vault;
         keyManager = _keyManager;
         stakeManager = _stakeManager;
