@@ -30,7 +30,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
         KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
-    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newKeyManager]
+    toWhitelist = [cf.vault, cf.stakeManager, cf.flip]
 
     # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
     # as part of the constructor, so we don't need to call it here.
