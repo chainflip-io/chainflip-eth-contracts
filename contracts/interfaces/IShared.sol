@@ -27,6 +27,7 @@ interface IShared {
         uint256 sig;
         uint256 nonce;
         address kTimesGAddress;
+        address nonceConsumerAddr;
     }
 
     /**

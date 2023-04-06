@@ -117,7 +117,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.allBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     deployFetchParamsArray,
                     fetchParamsArray,
                     transferParamsArray
@@ -163,7 +163,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.transfer.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     transferParams
                 )
             )
@@ -191,7 +191,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.transferBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     transferParamsArray
                 )
             )
@@ -271,7 +271,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.deployAndFetchBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     deployFetchParamsArray
                 )
             )
@@ -310,7 +310,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.fetchBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     fetchParamsArray
                 )
             )
@@ -538,7 +538,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.executexSwapAndCall.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     transferParams,
                     srcChain,
                     srcAddress,
@@ -618,7 +618,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.executexCall.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     recipient,
                     srcChain,
                     srcAddress,
@@ -664,7 +664,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             keccak256(
                 abi.encodeWithSelector(
                     this.executeActions.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
                     token,
                     amount,
                     multicallAddr,

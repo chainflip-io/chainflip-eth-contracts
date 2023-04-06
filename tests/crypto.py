@@ -57,10 +57,10 @@ class Signer:
     def getPubDataWith0x(self):
         return [self.pubKeyXInt, self.pubKeyYPar]
 
-    def getSigData(self, msgToHash, keyManagerAddress):
-        return self.getSigDataWithNonces(msgToHash, self.nonces, keyManagerAddress)
+    def getSigData(self, msgToHash, keyManagerAddress, nonceConsumerAddress):
+        return self.getSigDataWithNonces(msgToHash, self.nonces, keyManagerAddress, nonceConsumerAddress)
 
-    def getSigDataWithNonces(self, msgToHash, nonces, keyManagerAddress):
+    def getSigDataWithNonces(self, msgToHash, nonces, keyManagerAddress, nonceConsumerAddress):
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
         sigData = [
@@ -70,6 +70,7 @@ class Signer:
             s,
             nonces[self.AGG],
             nonceTimesGeneratorAddress,
+            nonceConsumerAddress
         ]
 
         # Since nonces is passed by reference, it will be altered for all other signers too
