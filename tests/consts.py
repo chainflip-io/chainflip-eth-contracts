@@ -55,6 +55,16 @@ def agg_null_sig(kmAddr, chainId):
     return (kmAddr, chainId, 0, 0, nonces[AGG], ZERO_ADDR)
 
 
+# Deployed contract might have already signed some messages, so we need to sync the nonce
+# of the contract with the nonces in consts.py used to signed the messages.
+def syncNonce(keyManager):
+    while keyManager.isNonceUsedByAggKey(nonces[AGG]) != False:
+        nonces[AGG] += 1
+
+    print("Synched Nonce: ", nonces[AGG])
+    return nonces
+
+
 # Keys for use in tests
 
 # Original keys in the constructor

@@ -233,7 +233,7 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         # assert usdc.balanceOf(vault.address) >= tokens_to_transfer
 
         # Doing it through the Vault means we need to encode the calldata
-        syncNonce(keyManager_address)
+        syncNonce(KeyManager.at(keyManager_address))
 
         call0 = [
             0,
@@ -341,7 +341,7 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
                 {"from": DEPLOYER, "required_confs": 1},
             )
         # Doing it through the Vault means we need to encode the calldata
-        syncNonce(keyManager_address)
+        syncNonce(KeyManager.at(keyManager_address))
 
         call0 = [
             0,
@@ -451,7 +451,7 @@ def get_and_submit_attestation(
         vault = Vault.at(depositor)
         keyManager_address = vault.getKeyManager()
 
-        syncNonce(keyManager_address)
+        syncNonce(KeyManager.at(keyManager_address))
 
         # Doing it through the Vault means we need to encode the calldata
 
@@ -510,17 +510,6 @@ def get_and_submit_attestation(
     print("Values are correct! Success!")
 
     return tx
-
-
-# The deployed contract might have already signed some messages, so we need to sync the nonce
-# of the contract with the nonces in consts.py used to signed the messages.
-def syncNonce(keyManager_address):
-    keyManager = KeyManager.at(keyManager_address)
-    while keyManager.isNonceUsedByAggKey(nonces[AGG]) != False:
-        nonces[AGG] += 1
-
-    print("Synched Nonce: ", nonces[AGG])
-    return nonces
 
 
 # def axelar_and_squid():
