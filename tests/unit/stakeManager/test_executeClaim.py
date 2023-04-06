@@ -116,6 +116,7 @@ def test_executeClaim_rev_too_late(cf, claimRegistered):
 
     tx = cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
     assert tx.events["ClaimExpired"][0].values() == [JUNK_HEX, claim[0]]
+    assert cf.stakeManager.getPendingClaim(JUNK_HEX) == NULL_CLAIM
 
 
 def test_executeClaim_rev_suspended(cf, claimRegistered):

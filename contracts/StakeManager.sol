@@ -168,7 +168,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      */
     function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
-        require(block.timestamp >= claim.startTime, "Staking: early or already execd");
+        require(block.timestamp >= claim.startTime && claim.expiryTime > 0, "Staking: early or already execd");
 
         // Housekeeping
         delete _pendingClaims[nodeID];

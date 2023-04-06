@@ -256,7 +256,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
             claim = self.pendingClaims[st_nodeID]
 
-            if not claim[2] <= getChainTime():
+            # Claim can be empty
+            if not claim[2] <= getChainTime() or claim == NULL_CLAIM:
                 print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
@@ -267,15 +268,10 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
-                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
-                # Claim expired
-                if not getChainTime() <= claim[3]:
-                    assert tx.events["ClaimExpired"][0].values() == [
-                        st_nodeID,
-                        claim[1],
-                    ]
-                else:
+                # Claim not expired
+                if getChainTime() <= claim[3]:
                     self.flipBals[claim[1]] += claim[0]
                     self.flipBals[self.sm] -= claim[0]
                     self.totalStake -= claim[0]
