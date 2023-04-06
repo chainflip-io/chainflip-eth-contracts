@@ -81,31 +81,35 @@ def deploy_Chainflip_contracts(
     return cf
 
 
-def deploy_upgraded_contracts(
+def deploy_new_vault(deployer, Vault, KeyManager, keyManager_address):
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
+    keyManager = KeyManager.at(keyManager_address)
+    vault = Vault.deploy(keyManager, {"from": deployer, "required_confs": 1})
+
+    return vault
+
+
+def deploy_new_stakeManager(
     deployer,
     KeyManager,
-    Vault,
     StakeManager,
     FLIP,
-    DeployerUpgradedContracts,
+    DeployerStakeManager,
     keyManager_address,
     flip_address,
 ):
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
 
-    class Context:
-        pass
-
-    cf = Context()
-
-    cf.flip = FLIP.at(flip_address)
-    cf.keyManager = KeyManager.at(keyManager_address)
+    flip = FLIP.at(flip_address)
+    keyManager = KeyManager.at(keyManager_address)
 
     # Minimal check to ensure that at least the two contracts provided are the correct.
-    assert cf.flip.getKeyManager() == cf.keyManager.address
+    assert flip.getKeyManager() == keyManager.address
 
-    cf.upgraderContract = DeployerUpgradedContracts.deploy(
+    deployerStakeManager = DeployerStakeManager.deploy(
         MIN_STAKE,
         keyManager_address,
         flip_address,
@@ -113,12 +117,9 @@ def deploy_upgraded_contracts(
     )
 
     # New upgraded contracts
-    cf.vault = Vault.at(cf.upgraderContract.vault())
-    cf.stakeManager = StakeManager.at(cf.upgraderContract.stakeManager())
+    stakeManager = StakeManager.at(deployerStakeManager.stakeManager())
 
-    cf.deployer = deployer
-
-    return cf
+    return (deployerStakeManager, stakeManager)
 
 
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.

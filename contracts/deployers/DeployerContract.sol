@@ -48,7 +48,7 @@ contract DeployerContract is IShared {
         whitelist = [address(_vault), address(_stakeManager), address(_flip)];
         _keyManager.setCanConsumeKeyNonce(whitelist);
 
-        // Set values to storage
+        // Storing all addresses for traceability.
         vault = _vault;
         keyManager = _keyManager;
         stakeManager = _stakeManager;
