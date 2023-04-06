@@ -2121,21 +2121,29 @@ def test_all(
 
             claim = self.pendingClaims[st_nodeID]
 
-            if not claim[2] <= getChainTime() <= claim[3]:
+            if not claim[2] <= getChainTime():
                 print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
-            elif self.flipBals[self.sm] < claim[0]:
+            # If it's expired it won't revert regardless of the token balances
+            elif self.flipBals[self.sm] < claim[0] and not getChainTime() <= claim[3]:
                 print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
-                self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
-                self.flipBals[claim[1]] += claim[0]
-                self.flipBals[self.sm] -= claim[0]
-                self.totalStake -= claim[0]
+                # Claim expired
+                if getChainTime() <= claim[3]:
+                    assert tx.events["ClaimExpired"][0].values() == [
+                        st_nodeID,
+                        claim[1],
+                    ]
+                else:
+                    self.flipBals[claim[1]] += claim[0]
+                    self.flipBals[self.sm] -= claim[0]
+                    self.totalStake -= claim[0]
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
 
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,

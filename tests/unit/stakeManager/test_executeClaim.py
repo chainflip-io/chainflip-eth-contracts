@@ -40,12 +40,13 @@ def test_executeClaim_rand(
 
         chain.sleep(st_sleepTime)
 
-        if (
-            getChainTime() < tx.timestamp + CLAIM_DELAY - 1
-            or getChainTime() > expiryTime
-        ):
+        if getChainTime() < (tx.timestamp + CLAIM_DELAY - 1):
             with reverts(REV_MSG_NOT_ON_TIME):
                 cf.stakeManager.executeClaim(st_nodeID, {"from": cf.ALICE})
+        elif getChainTime() > expiryTime:
+            tx = cf.stakeManager.executeClaim(st_nodeID, {"from": cf.ALICE})
+            assert tx.events["ClaimExpired"][0].values() == [st_nodeID, st_amount]
+
         elif st_amount > maxValidst_amount:
             with reverts(REV_MSG_INTEGER_OVERFLOW):
                 cf.stakeManager.executeClaim(st_nodeID, {"from": cf.ALICE})
@@ -113,8 +114,8 @@ def test_executeClaim_rev_too_late(cf, claimRegistered):
     _, claim = claimRegistered
     chain.sleep(claim[3] - getChainTime() + 5)
 
-    with reverts(REV_MSG_NOT_ON_TIME):
-        cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
+    tx = cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
+    assert tx.events["ClaimExpired"][0].values() == [JUNK_HEX, claim[0]]
 
 
 def test_executeClaim_rev_suspended(cf, claimRegistered):
@@ -128,7 +129,3 @@ def test_executeClaim_rev_suspended(cf, claimRegistered):
 
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stakeManager.executeClaim(JUNK_HEX, {"from": cf.ALICE})
-
-
-def test_temp(cf):
-    assert True
