@@ -2,7 +2,7 @@ from consts import *
 from shared_tests import *
 from brownie import network
 from brownie.test import given, strategy
-from deploy import deploy_upgraded_contracts
+from deploy import deploy_new_vault, deploy_new_stakeManager
 
 
 @given(
@@ -91,7 +91,7 @@ def test_deployer_constructor(
 )
 def test_upgrader_constructor(
     DeployerContract,
-    DeployerUpgradedContracts,
+    DeployerStakeManager,
     FLIP,
     Vault,
     KeyManager,
@@ -109,7 +109,7 @@ def test_upgrader_constructor(
     st_pubKeyX = AGG_SIGNER_1.getPubData()[0]
     st_pubKeyYParity = AGG_SIGNER_1.getPubData()[1]
 
-    # Deploy with the default AGG_SIG to we can upgrade it later
+    # Deploy with the default AGG_SIG so we can upgrade it later
     deployerContract = addrs.DEPLOYER.deploy(
         DeployerContract,
         AGG_SIGNER_1.getPubData(),
@@ -126,16 +126,21 @@ def test_upgrader_constructor(
     keyManager = KeyManager.at(deployerContract.keyManager())
     stakeManager = StakeManager.at(deployerContract.stakeManager())
 
-    cf = deploy_upgraded_contracts(
+    new_vault = deploy_new_vault(addrs.DEPLOYER, Vault, KeyManager, keyManager.address)
+
+    (deployerStakeManager, new_stakeManager) = deploy_new_stakeManager(
         addrs.DEPLOYER,
         KeyManager,
-        Vault,
         StakeManager,
         FLIP,
-        DeployerUpgradedContracts,
-        keyManager,
-        flip,
+        DeployerStakeManager,
+        keyManager.address,
+        flip.address,
     )
+
+    assert deployerStakeManager.keyManager() == keyManager.address
+    assert deployerStakeManager.flip() == flip.address
+    assert deployerStakeManager.stakeManager() == new_stakeManager.address
 
     # Check the old contracts have remained untouched
     check_contracts_state(
@@ -152,9 +157,6 @@ def test_upgrader_constructor(
         keyManager,
         stakeManager,
     )
-
-    new_vault = Vault.at(cf.vault)
-    new_stakeManager = StakeManager.at(cf.stakeManager)
 
     # Manually transfer FLIP funds and upgrade the whitelist to mimic the StateChain.
     # so we can do the same contract state check.

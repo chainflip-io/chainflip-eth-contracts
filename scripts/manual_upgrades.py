@@ -53,14 +53,17 @@ def main():
 #    any extra step but a Vault with funds require a transfer of tokens to the
 #    new vault. For this initial upgrade, this should not be needed.
 
-# 4. Run whitelist_new_vault with any account. This will sign a message with the
+# 5. If we have registered a claim, wait for CLAIM_DELAY and execute it via
+#    execute_claim. This will move all the FLIP to the new StakeManager.
+
+# 6. Run whitelist_new_vault with any account. This will sign a message with the
 #    AggKey updating the whitelist with the new contracts. At the same time it will
 #    dewhitelist the old ones.
 
 
 # NOTE: This will fail if two days haven't passed since deployment or since
 # last time a signature was verified. It will also fail if the DEPLOYER is not
-# the governance key.
+# the governance key. If the govKey is a multisig it this will fail.
 def update_agg_key():
     KEY_MANAGER_ADDRESS = os.environ["KEY_MANAGER_ADDRESS"]
     keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
