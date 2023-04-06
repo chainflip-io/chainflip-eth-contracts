@@ -2135,7 +2135,7 @@ def test_all(
                 tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
                 # Claim expired
-                if getChainTime() <= claim[3]:
+                if not getChainTime() <= claim[3]:
                     assert tx.events["ClaimExpired"][0].values() == [
                         st_nodeID,
                         claim[1],
