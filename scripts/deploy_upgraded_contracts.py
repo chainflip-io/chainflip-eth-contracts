@@ -32,6 +32,11 @@ keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
 
 addressDump = {}
 
+# This script, so far, supports deploying a new StakeManager and/or a new Vault.
+# Run deploy_vault_stakemanager to deploy both
+# Run deploy_vault to deploy only the new Vault
+# Run deploy_stakeManager to deploy only the new StakeManager
+
 
 def main():
     print()
@@ -50,16 +55,16 @@ def deploy_vault():
     store_artifacts()
 
 
-def _deploy_vault():
-    new_vault = deploy_new_vault(DEPLOYER, Vault, KeyManager, keyManager_address)
-    addressDump["VAULT_ADDRESS"] = new_vault.address
-
-
 # This will deploy the new StakeManager. It assumes a StakeManager and a KeyManager
 # are already deployed. The Vault contract remains unchanged.
 def deploy_stakeManager():
     _deploy_stakeManager()
     store_artifacts()
+
+
+def _deploy_vault():
+    new_vault = deploy_new_vault(DEPLOYER, Vault, KeyManager, keyManager_address)
+    addressDump["VAULT_ADDRESS"] = new_vault.address
 
 
 def _deploy_stakeManager():
