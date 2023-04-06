@@ -47,6 +47,14 @@ def getKeyFromValue(dic, value):
             return key
 
 
+# Calculate pubKeyX and pubKeyYParity from the inputted aggKey
+def getKeysFromAggKey(aggKey):
+    parity = aggKey[0:2]
+    x = aggKey[2:]
+    parity = "00" if parity == "02" or parity == "00" else "01"
+    return [int(x, 16), int(parity, 16)]
+
+
 # This deletes elements in the lists inputted to the length of the shortest
 # such that they're all the same length and returns the new lengths. The effect
 # persists in the scope of whatever fcn calls trimToShortest since lists are a reference

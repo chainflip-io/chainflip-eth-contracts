@@ -137,9 +137,9 @@ commands = {
     ),
     # Transactions to Key Manager
     "setAggKeyWGovKey": (
-        lambda pubKeyX, pubKeyYParity: setAggKeyWGovKey(pubKeyX, pubKeyYParity),
+        lambda aggKey: setAggKeyWGovKey(aggKey),
         "Set a new AggKey with the GovKey",
-        ["uint256", "uint8"],
+        ["string"],
         True,
     ),
     "setGovKeyWGovKey": (
@@ -420,8 +420,8 @@ def executeClaim(nodeId):
 
 
 # Could also input a single aggKey and split them into two in the code (as in deploy.py)
-def setAggKeyWGovKey(pubKeyX, pubKeyYParity):
-    aggKey = [pubKeyX, pubKeyYParity]
+def setAggKeyWGovKey(aggKey):
+    aggKey = getKeysFromAggKey(aggKey)
     tx = keyManager.setAggKeyWithGovKey(
         aggKey, {"from": userAddress, "required_confs": 1}
     )
