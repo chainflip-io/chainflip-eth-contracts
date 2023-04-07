@@ -4,7 +4,7 @@ import "../../Vault.sol";
 import "../../FLIP.sol";
 import "../../KeyManager.sol";
 import "../../StakeManager.sol";
-import "../../DeployerContract.sol";
+import "../../deployers/DeployerContract.sol";
 
 import "./KeyManagerEchidna.sol";
 import "./StakeManagerEchidna.sol";
