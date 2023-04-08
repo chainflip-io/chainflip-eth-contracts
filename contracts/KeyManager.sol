@@ -150,6 +150,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
         require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
+        require(sigData.nonceConsumerAddr == msg.sender, "KeyManager: wrong nonceConsumerAddr");
         _consumeKeyNonce(sigData, contractMsgHash);
     }
 
@@ -423,6 +424,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /// @dev    Call consumeKeyNonceWhitelisted
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
+        require(sigData.nonceConsumerAddr == address(this), "KeyManager: wrong consumer KeyManager");
         _consumeKeyNonce(sigData, contractMsgHash);
         _;
     }

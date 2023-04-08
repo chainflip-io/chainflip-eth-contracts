@@ -62,15 +62,44 @@ def test_sig_replay(
         callDataNoSig, cf.keyManager.address, cf.stakeManager.address
     )
 
-    # Mimic a frontrunning bot
-    with reverts(REV_MSG_MSGHASH):
+    # Mimic a frontrunning bot - it will now fail because of wrong nonceConsumerAddr
+    with reverts("KeyManager: wrong nonceConsumerAddr"):
         new_stakeManager.registerClaim(
             sigdata,
             *args,
             {"from": st_sender},
         )
 
-    # Our transaction shouldn't fail
+    # Check if a frontrunning bot could consume our nonce if we have "removed" the whitelist.
+    # First it will fail due towhitelist.
+    msgHashHex = cleanHexStr(web3.keccak(hexstr=callDataNoSig))
+    with reverts(REV_MSG_WHITELIST):
+        cf.keyManager.consumeKeyNonce(sigdata, msgHashHex, {"from": st_sender})
+
+    # Mimic removal of whitelist
+    st_sender_whitelisted = new_whitelist[:]
+    st_sender_whitelisted.append(st_sender)
+
+    args_aux = [new_whitelist, st_sender_whitelisted]
+    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id, cf.keyManager.address), *args_aux
+    )
+    cf.keyManager.updateCanConsumeKeyNonce(
+        AGG_SIGNER_1.getSigDataWithNonces(
+            callDataNoSig, nonces, cf.keyManager.address, cf.keyManager.address
+        ),
+        *args_aux,
+        {"from": st_sender},
+    )
+
+    # Attacker consumes our nonce without needing to resign. They do need to modify
+    # the consumerKeyNonce but that's not a problem. They don't even need to rehash
+    # the message, as we are using the same sigData.sig and same msgHashHex.
+    sigdata_modif = sigdata[:]
+    sigdata_modif[6] = st_sender
+    cf.keyManager.consumeKeyNonce(sigdata_modif, msgHashHex, {"from": st_sender})
+
+    # Our transaction fails due to nonce being consumed.
     cf.stakeManager.registerClaim(
         sigdata,
         *args,
