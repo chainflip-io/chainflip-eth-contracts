@@ -91,6 +91,8 @@ REV_MSG_SIG = "KeyManager: Sig invalid"
 REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
 REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
 REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
+REV_MSG_WRONG_NONCECONSUMER = "KeyManager: wrong nonceConsumerAddr"
+
 # modifiers
 REV_MSG_DELAY = "KeyManager: not enough time"
 REV_MSG_KEYMANAGER_GOVERNOR = "KeyManager: not governor"
