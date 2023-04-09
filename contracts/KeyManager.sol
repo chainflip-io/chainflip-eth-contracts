@@ -83,7 +83,15 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             keccak256(
                 abi.encodeWithSelector(
                     this.updateCanConsumeKeyNonce.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
+                    SigData(
+                        sigData.keyManAddr,
+                        sigData.chainID,
+                        0,
+                        0,
+                        sigData.nonce,
+                        address(0),
+                        sigData.nonceConsumerAddr
+                    ),
                     currentAddrs,
                     newAddrs
                 )
@@ -149,8 +157,16 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *          can skip the whitelisting check.
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
-        require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
+        //require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
+
+        // We might or might want this check. We might want it now for dev/debug purposes
+        // but we might remove entirely the sigData.nonceConsumerAddr.This is because the
+        // msgHash or sig verification will fail anyway if this is not fulfilled
+        // For now leaving it here so it's the same as chainID and keyManagerAddr
         require(sigData.nonceConsumerAddr == msg.sender, "KeyManager: wrong nonceConsumerAddr");
+
+        // This could be encode packed, but not necessary to overcomplicate it now.
+        contractMsgHash = keccak256(abi.encode(contractMsgHash, msg.sender));
         _consumeKeyNonce(sigData, contractMsgHash);
     }
 
@@ -175,7 +191,15 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             keccak256(
                 abi.encodeWithSelector(
                     this.setAggKeyWithAggKey.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
+                    SigData(
+                        sigData.keyManAddr,
+                        sigData.chainID,
+                        0,
+                        0,
+                        sigData.nonce,
+                        address(0),
+                        sigData.nonceConsumerAddr
+                    ),
                     newAggKey
                 )
             )
@@ -217,7 +241,15 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             keccak256(
                 abi.encodeWithSelector(
                     this.setGovKeyWithAggKey.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
+                    SigData(
+                        sigData.keyManAddr,
+                        sigData.chainID,
+                        0,
+                        0,
+                        sigData.nonce,
+                        address(0),
+                        sigData.nonceConsumerAddr
+                    ),
                     newGovKey
                 )
             )
@@ -256,7 +288,15 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             keccak256(
                 abi.encodeWithSelector(
                     this.setCommKeyWithAggKey.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
+                    SigData(
+                        sigData.keyManAddr,
+                        sigData.chainID,
+                        0,
+                        0,
+                        sigData.nonce,
+                        address(0),
+                        sigData.nonceConsumerAddr
+                    ),
                     newCommKey
                 )
             )
@@ -424,7 +464,13 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /// @dev    Call consumeKeyNonceWhitelisted
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
-        require(sigData.nonceConsumerAddr == address(this), "KeyManager: wrong consumer KeyManager");
+        // We might or might want this check. We might want it now for dev/debug purposes
+        // but we might remove entirely the sigData.nonceConsumerAddr.This is because the
+        // msgHash or sig verification will fail anyway if this is not fulfilled
+        // For now leaving it here so it's the same as chainID and keyManagerAddr
+        require(sigData.nonceConsumerAddr == address(this), "KeyManager: wrong nonceConsumerAddr");
+        contractMsgHash = keccak256(abi.encode(contractMsgHash, address(this)));
+
         _consumeKeyNonce(sigData, contractMsgHash);
         _;
     }

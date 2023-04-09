@@ -44,7 +44,15 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
             keccak256(
                 abi.encodeWithSelector(
                     this.updateKeyManager.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0), address(this)),
+                    SigData(
+                        sigData.keyManAddr,
+                        sigData.chainID,
+                        0,
+                        0,
+                        sigData.nonce,
+                        address(0),
+                        sigData.nonceConsumerAddr
+                    ),
                     keyManager
                 )
             )

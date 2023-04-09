@@ -25,26 +25,9 @@ def test_sig_replay(
         cf.flip.address,
     )
 
-    # We try this with the StakeManager, as it's the most problematic case
-    new_whitelist = [
-        cf.flip.address,
-        cf.vault.address,
-        cf.stakeManager.address,
-        new_stakeManager.address,
-    ]
-
-    args = [cf.whitelisted, new_whitelist]
-    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id, cf.keyManager.address), *args
-    )
-    cf.keyManager.updateCanConsumeKeyNonce(
-        AGG_SIGNER_1.getSigDataWithNonces(
-            callDataNoSig, nonces, cf.keyManager.address, cf.keyManager.address
-        ),
-        *args,
-        {"from": st_sender},
-    )
-
+    # Trying with stakeManager first and then with Vault. Assuming that we have
+    # removed the whitelist check in the KeyManager.
+    rev_msg_nonceConsumerAddr = "KeyManager: wrong nonceConsumerAddr"
     # Manually transfer FLIP funds and upgrade the whitelist to mimic the StateChain.
     # so we can do the same contract state check.
     args = [
@@ -54,99 +37,144 @@ def test_sig_replay(
         getChainTime() + (2 * CLAIM_DELAY),
     ]
 
+    # Generate original calldata for the call that is to be frontrunned
     callDataNoSig = cf.stakeManager.registerClaim.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id, cf.stakeManager.address), *args
     )
-
     sigdata = AGG_SIGNER_1.getSigData(
         callDataNoSig, cf.keyManager.address, cf.stakeManager.address
     )
 
-    # Mimic a frontrunning bot - it will now fail because of wrong nonceConsumerAddr
-    with reverts("KeyManager: wrong nonceConsumerAddr"):
+    # Mimic a frontrunning bot - it will now fail because of wrong nonceConsumerAddr. But
+    # if we remove that, then the msgHash should fail.
+    with reverts(rev_msg_nonceConsumerAddr):
         new_stakeManager.registerClaim(
             sigdata,
             *args,
             {"from": st_sender},
         )
 
-    # Check if a frontrunning bot could consume our nonce if we have "removed" the whitelist.
-    # First it will fail due towhitelist.
-    msgHashHex = cleanHexStr(web3.keccak(hexstr=callDataNoSig))
-    with reverts(REV_MSG_WHITELIST):
-        cf.keyManager.consumeKeyNonce(sigdata, msgHashHex, {"from": st_sender})
+    # If we try to bypass that, it will still fail msgHash
+    sigdata_modif = sigdata[:]
+    sigdata_modif[6] = new_stakeManager
+    with reverts(REV_MSG_MSGHASH):
+        new_stakeManager.registerClaim(
+            sigdata_modif,
+            *args,
+            {"from": st_sender},
+        )
 
-    # Mimic removal of whitelist
-    st_sender_whitelisted = new_whitelist[:]
-    st_sender_whitelisted.append(st_sender)
-
-    args_aux = [new_whitelist, st_sender_whitelisted]
-    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id, cf.keyManager.address), *args_aux
-    )
-    cf.keyManager.updateCanConsumeKeyNonce(
-        AGG_SIGNER_1.getSigDataWithNonces(
-            callDataNoSig, nonces, cf.keyManager.address, cf.keyManager.address
-        ),
-        *args_aux,
-        {"from": st_sender},
+    # Try updating the msgHash too to match the updated nonceConsumerAddress.
+    # It should then fail sig verif
+    callDataNoSig_new = cf.stakeManager.registerClaim.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id, new_stakeManager.address), *args
     )
 
-    # Attacker consumes our nonce without needing to resign. They do need to modify
-    # the consumerKeyNonce but that's not a problem. They don't even need to rehash
-    # the message, as we are using the same sigData.sig and same msgHashHex.
+    sigdata_new = AGG_SIGNER_1.getSigData(
+        callDataNoSig_new, cf.keyManager.address, new_stakeManager.address
+    )
+    # But the attacker can't sign, so they have to use the old sigData.sig and
+    # same for the nonceTimesGeneratorAddress
+    sigdata_new[3] = sigdata[3]
+    sigdata_new[5] = sigdata[5]
+    assert sigdata_new[6] == new_stakeManager.address
+
+    with reverts(REV_MSG_SIG):
+        new_stakeManager.registerClaim(
+            sigdata_new,
+            *args,
+            {"from": st_sender},
+        )
+
+    # Same trials but by trying to frontrun the call to canConsumeKey
+    # to consume the nonce
+
+    # Try 0: Calling as is should fail the consumerNonceAddr check
+    with reverts(rev_msg_nonceConsumerAddr):
+        cf.keyManager.consumeKeyNonce(sigdata, sigdata[2], {"from": st_sender})
+
+    # Try 1: Bypassing the consumerNonceAddr check
     sigdata_modif = sigdata[:]
     sigdata_modif[6] = st_sender
-    cf.keyManager.consumeKeyNonce(sigdata_modif, msgHashHex, {"from": st_sender})
+    with reverts(REV_MSG_MSGHASH):
+        cf.keyManager.consumeKeyNonce(sigdata_modif, sigdata[2], {"from": st_sender})
 
-    # Our transaction fails due to nonce being consumed.
+    # Try 2: Also modifying the msgHash so pass both the consumerAddrs check and
+    # the msgHashcheck. Then sig verif should fail.
+    callDataNoSig_new = cf.stakeManager.registerClaim.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id, st_sender), *args
+    )
+
+    sigdata_new = AGG_SIGNER_1.getSigData(
+        callDataNoSig_new, cf.keyManager.address, str(st_sender)
+    )
+    # Mimicking crypto.py to get the intermediate hash that we can
+    # "fish" from the call from consumerNonce to KeyManager
+    msgHashHex = cleanHexStr(web3.keccak(hexstr=callDataNoSig_new))
+
+    # As before, the attacker can't sign, so they have to use the old sigData.sig and
+    # same for the nonceTimesGeneratorAddress
+    sigdata_new[3] = sigdata[3]
+    sigdata_new[5] = sigdata[5]
+    assert sigdata_new[6] == st_sender
+
+    with reverts(REV_MSG_SIG):
+        cf.keyManager.consumeKeyNonce(
+            sigdata_new, int(msgHashHex, 16), {"from": st_sender}
+        )
+
+    # Our transaction will pass
     cf.stakeManager.registerClaim(
         sigdata,
         *args,
         {"from": st_sender},
     )
 
-    # Try that in the Vault
-    new_vault = deploy_new_vault(cf.deployer, Vault, KeyManager, cf.keyManager.address)
-    # First fund both vaults with some tokens
-    cf.flip.transfer(cf.vault.address, 1000, {"from": cf.gov})
-    cf.flip.transfer(new_vault.address, 2000, {"from": cf.gov})
+    # # Try that in the Vault
+    # new_vault = deploy_new_vault(cf.deployer, Vault, KeyManager, cf.keyManager.address)
+    # # First fund both vaults with some tokens
+    # cf.flip.transfer(cf.vault.address, 1000, {"from": cf.gov})
+    # cf.flip.transfer(new_vault.address, 2000, {"from": cf.gov})
 
-    # Update whitelist to include both Vaults and dewhitelist new_stakeManager (just for housekeeping)
-    current_whitelist = [
-        cf.vault.address,
-        cf.flip.address,
-        new_stakeManager.address,
-        cf.stakeManager.address,
-    ]
-    new_whitelist = [
-        cf.vault.address,
-        cf.flip.address,
-        new_stakeManager.address,
-        new_vault.address,
-    ]
-    args = [current_whitelist, new_whitelist]
-    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id, cf.keyManager.address), *args
-    )
-    cf.keyManager.updateCanConsumeKeyNonce(
-        AGG_SIGNER_1.getSigDataWithNonces(
-            callDataNoSig, nonces, cf.keyManager.address, cf.keyManager.address
-        ),
-        *args,
-        {"from": st_sender},
-    )
+    # # Update whitelist to include both Vaults and dewhitelist new_stakeManager (just for housekeeping)
+    # current_whitelist = [
+    #     cf.vault.address,
+    #     cf.flip.address,
+    #     new_stakeManager.address,
+    #     cf.stakeManager.address,
+    # ]
+    # new_whitelist = [
+    #     cf.vault.address,
+    #     cf.flip.address,
+    #     new_stakeManager.address,
+    #     new_vault.address,
+    # ]
+    # args = [current_whitelist, new_whitelist]
+    # callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
+    #     agg_null_sig(cf.keyManager.address, chain.id, cf.keyManager.address), *args
+    # )
+    # cf.keyManager.updateCanConsumeKeyNonce(
+    #     AGG_SIGNER_1.getSigDataWithNonces(
+    #         callDataNoSig, nonces, cf.keyManager.address, cf.keyManager.address
+    #     ),
+    #     *args,
+    #     {"from": st_sender},
+    # )
 
-    args = [[cf.flip, cf.BOB, TEST_AMNT]]
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id, cf.vault.address), *args
-    )
-    sigdata = AGG_SIGNER_1.getSigData(
-        callDataNoSig, cf.keyManager.address, cf.vault.address
-    )
+    # args = [[cf.flip, cf.BOB, TEST_AMNT]]
+    # callDataNoSig = cf.vault.transfer.encode_input(
+    #     agg_null_sig(cf.keyManager.address, chain.id, cf.vault.address), *args
+    # )
+    # sigdata = AGG_SIGNER_1.getSigData(
+    #     callDataNoSig, cf.keyManager.address, cf.vault.address
+    # )
 
-    # Bot frontruns us calling the new contract
-    with reverts(REV_MSG_MSGHASH):
-        new_vault.transfer(sigdata, *args, {"from": st_sender})
+    # # Bot frontruns us calling the new contract
+    # with reverts(REV_MSG_MSGHASH):
+    #     new_vault.transfer(sigdata, *args, {"from": st_sender})
 
-    tx = cf.vault.transfer(sigdata, *args, {"from": st_sender})
+    # tx = cf.vault.transfer(sigdata, *args, {"from": st_sender})
+
+
+# TODO: Same as for Vault and StakeManager will need to be tried for
+# a signed function in the KeyManager (e.g. setGovKeyWithAggKey)
