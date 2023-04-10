@@ -115,17 +115,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.allBatch.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     deployFetchParamsArray,
                     fetchParamsArray,
                     transferParamsArray
@@ -169,17 +164,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.transfer.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     transferParams
                 )
             )
@@ -205,17 +195,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.transferBatch.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     transferParamsArray
                 )
             )
@@ -293,17 +278,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.deployAndFetchBatch.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     deployFetchParamsArray
                 )
             )
@@ -340,17 +320,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.fetchBatch.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     fetchParamsArray
                 )
             )
@@ -576,17 +551,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.executexSwapAndCall.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     transferParams,
                     srcChain,
                     srcAddress,
@@ -664,17 +634,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.executexCall.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     recipient,
                     srcChain,
                     srcAddress,
@@ -718,17 +683,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.executeActions.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     token,
                     amount,
                     multicallAddr,

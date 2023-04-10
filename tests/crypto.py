@@ -67,9 +67,10 @@ class Signer:
     ):
 
         # Encode the data
-        msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
+        # msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
+        msgHashHex = msgToHash
 
-        # Mimic abi.encode with padding. It could technically be padded
+        # Mimic abi.encode with padding. It could technically be packed
         # but it's not like we are saving much gas.
         msgToHash = msgHashHex + cleanHexStrPad(nonceConsumerAddress)
         msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))

@@ -61,17 +61,12 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.updateFlipSupply.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     newTotalSupply,
                     stateChainBlockNumber,
                     staker

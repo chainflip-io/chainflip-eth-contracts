@@ -1,5 +1,9 @@
 pragma solidity ^0.8.0;
 
+import "../StakeManager.sol";
+
+// import "../interfaces/IShared.sol";
+
 contract Utils {
     // Decode the lowLevelData (reason) returned from a failed transaction from a try/catch statement.
     // A check might need to be added in the assembly for returnData.length>0 but we don't really
@@ -14,5 +18,29 @@ contract Utils {
             returnData := add(returnData, 0x04)
         }
         return abi.decode(returnData, (string)); // All that remains is the revert string
+    }
+
+    // This is a workaround for abi.encode that should be done via web3py
+    function registerClaimEncode(
+        StakeManager.SigData calldata sigData,
+        bytes32 nodeID,
+        uint256 amount,
+        address staker,
+        uint48 expiryTime
+    ) public pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    StakeManager.registerClaim.selector,
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
+                    nodeID,
+                    amount,
+                    staker,
+                    expiryTime
+                )
+            );
     }
 }

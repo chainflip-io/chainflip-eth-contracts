@@ -81,17 +81,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.updateCanConsumeKeyNonce.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     currentAddrs,
                     newAddrs
                 )
@@ -189,17 +184,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.setAggKeyWithAggKey.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     newAggKey
                 )
             )
@@ -239,17 +229,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.setGovKeyWithAggKey.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     newGovKey
                 )
             )
@@ -286,17 +271,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         consumesKeyNonce(
             sigData,
             keccak256(
-                abi.encodeWithSelector(
+                abi.encode(
                     this.setCommKeyWithAggKey.selector,
-                    SigData(
-                        sigData.keyManAddr,
-                        sigData.chainID,
-                        0,
-                        0,
-                        sigData.nonce,
-                        address(0),
-                        sigData.nonceConsumerAddr
-                    ),
+                    sigData.keyManAddr,
+                    sigData.chainID,
+                    sigData.nonce,
+                    sigData.nonceConsumerAddr,
                     newCommKey
                 )
             )
