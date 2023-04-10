@@ -21,13 +21,10 @@ interface IShared {
      *       struct since they should always be used together
      */
     struct SigData {
-        address keyManAddr;
-        uint256 chainID;
         uint256 msgHash;
         uint256 sig;
         uint256 nonce;
         address kTimesGAddress;
-        address nonceConsumerAddr;
     }
 
     /**

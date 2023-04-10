@@ -131,10 +131,10 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
             keccak256(
                 abi.encode(
                     this.registerClaim.selector,
-                    sigData.keyManAddr,
-                    sigData.chainID,
+                    getKeyManager(),
+                    block.chainid,
                     sigData.nonce,
-                    sigData.nonceConsumerAddr,
+                    address(this),
                     nodeID,
                     amount,
                     staker,

@@ -125,6 +125,11 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *                  to check it against the hash in sigData (bytes32) (here that's normally
      *                  a hash over the calldata to the function with an empty sigData)
      */
+
+    // The msgHash should be over the chainID, nonce, nonceConsumerAddr, and the keyManagerAddr.
+    // If those are not correct, the hash won't match and it will fail anyway. They have been
+    // hardcoded in the contract so we don't really need to check them here. If an attacker or
+    // a replayer changes any of those, the hash will be different and the signature will fail.
     function _consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) internal {
         Key memory key = _aggKey;
         // We require the msgHash param in the sigData is equal to the contract
@@ -135,8 +140,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             "KeyManager: Sig invalid"
         );
         require(!_isNonceUsedByAggKey[sigData.nonce], "KeyManager: nonce already used");
-        require(sigData.keyManAddr == address(this), "KeyManager: wrong keyManAddr");
-        require(sigData.chainID == block.chainid, "KeyManager: wrong chainID");
+        // require(sigData.keyManAddr == address(this), "KeyManager: wrong keyManAddr");
+        // require(sigData.chainID == block.chainid, "KeyManager: wrong chainID");
 
         _lastValidateTime = block.timestamp;
         _isNonceUsedByAggKey[sigData.nonce] = true;
