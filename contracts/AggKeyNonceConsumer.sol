@@ -41,15 +41,13 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         nzAddr(address(keyManager))
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encode(
-                    this.updateKeyManager.selector,
-                    sigData.keyManAddr,
-                    sigData.chainID,
-                    sigData.nonce,
-                    sigData.nonceConsumerAddr,
-                    keyManager
-                )
+            abi.encode(
+                this.updateKeyManager.selector,
+                sigData.keyManAddr,
+                sigData.chainID,
+                sigData.nonce,
+                sigData.nonceConsumerAddr,
+                keyManager
             )
         )
     {
@@ -78,8 +76,8 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Calls consumeKeyNonce in _keyManager
-    modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
-        getKeyManager().consumeKeyNonce(sigData, contractMsgHash);
+    modifier consumesKeyNonce(SigData calldata sigData, bytes memory encodedContractCall) {
+        getKeyManager().consumeKeyNonce(sigData, encodedContractCall);
         _;
     }
 }

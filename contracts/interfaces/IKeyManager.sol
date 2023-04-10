@@ -32,7 +32,7 @@ interface IKeyManager is IShared {
         address[] calldata newAddrs
     ) external;
 
-    function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
+    function consumeKeyNonce(SigData memory sigData, bytes memory encodedContractCall) external;
 
     function setAggKeyWithAggKey(SigData memory sigData, Key memory newAggKey) external;
 

@@ -72,8 +72,8 @@ class Signer:
 
         # Mimic abi.encode with padding. It could technically be packed
         # but it's not like we are saving much gas.
-        msgToHash = msgHashHex + cleanHexStrPad(nonceConsumerAddress)
-        msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
+        # msgToHash = msgHashHex + cleanHexStrPad(nonceConsumerAddress)
+        # msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
 
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
         sigData = [

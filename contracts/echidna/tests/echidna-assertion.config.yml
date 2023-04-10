@@ -1,9 +1,0 @@
-testMode: "assertion"
-#codeSize Increased codeSize because Echidna fails when deploying all the contracts via DeployerEchidna.sol
-codeSize: 0x60000
-
-cryticArgs: # If we add more dependencies they will need to be added as symlinks here!
-  [
-    "--solc-remaps",
-    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
-  ]

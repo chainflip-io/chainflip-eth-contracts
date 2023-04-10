@@ -151,7 +151,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @dev     Split this function from consumeKeyNonceWhitelisted so the functions in this contract
      *          can skip the whitelisting check.
      */
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
+    function consumeKeyNonce(SigData calldata sigData, bytes memory encodedContractCall) external override {
         //require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
 
         // We might or might want this check. We might want it now for dev/debug purposes
@@ -161,7 +161,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         require(sigData.nonceConsumerAddr == msg.sender, "KeyManager: wrong nonceConsumerAddr");
 
         // This could be encode packed, but not necessary to overcomplicate it now.
-        contractMsgHash = keccak256(abi.encode(contractMsgHash, msg.sender));
+        bytes32 contractMsgHash = keccak256(abi.encode(encodedContractCall, msg.sender));
         _consumeKeyNonce(sigData, contractMsgHash);
     }
 
