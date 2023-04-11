@@ -472,7 +472,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          Native tokens must be paid to this contract as part of the call.
      * @param swapID    The unique identifier for this swap (bytes32)
      */
-    function addGasNative(bytes32 swapID) external payable override onlyNotSuspended {
+    function addGasNative(bytes32 swapID) external payable override nzUint(msg.value) onlyNotSuspended {
         emit AddGasNative(swapID, msg.value);
     }
 

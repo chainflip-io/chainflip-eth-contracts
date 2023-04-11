@@ -280,4 +280,5 @@ contract MockUSDT is Context {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual {}
 }
