@@ -36,7 +36,7 @@ contract DexAggSrcChainMock is Shared {
     function swapNativeAndCallViaChainflip(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         address dexAddress,
         address dstTokenAddr,
         address userToken,
@@ -60,7 +60,7 @@ contract DexAggSrcChainMock is Shared {
     function swapTokenAndCallViaChainflip(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         address dexAddress,
         address dstTokenAddr,
         address userToken,

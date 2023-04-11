@@ -287,12 +287,12 @@ def test_all(
         st_addr = strategy("address", length=MAX_NUM_SENDERS)
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_dstToken = strategy("uint16")
+        st_dstToken = strategy("uint32")
         st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
         st_refundAddress = strategy("bytes")
-        st_dstNativeBudget = strategy("uint")
+        st_gasAmount = strategy("uint")
 
         # KeyManager
 
@@ -1221,7 +1221,7 @@ def test_all(
             st_native_amount,
             st_dstChain,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
         ):
             args = (
@@ -1229,7 +1229,7 @@ def test_all(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
@@ -1267,7 +1267,7 @@ def test_all(
                             st_native_amount,
                             st_sender,
                             hexStr(st_message),
-                            st_dstNativeBudget,
+                            st_gasAmount,
                             hexStr(st_refundAddress),
                         ]
 
@@ -1280,7 +1280,7 @@ def test_all(
             st_token,
             st_dstChain,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
         ):
             args = (
@@ -1288,7 +1288,7 @@ def test_all(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 st_token,
                 st_token_amount,
                 st_refundAddress,
@@ -1350,7 +1350,7 @@ def test_all(
                             st_token_amount,
                             st_sender,
                             hexStr(st_message),
-                            st_dstNativeBudget,
+                            st_gasAmount,
                             hexStr(st_refundAddress),
                         ]
 
