@@ -114,6 +114,14 @@ contract TestEchidna is DeployerEchidna {
     }
 
     // Proxies for a signed function - Assert if the call is not reverted
+    function executeClaim_revert(bytes32 nodeID) external {
+        try stakeManager.executeClaim(nodeID) {
+            assert(false);
+        } catch {
+            assert(true);
+        }
+    }
+
     function allBatch_revert(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,

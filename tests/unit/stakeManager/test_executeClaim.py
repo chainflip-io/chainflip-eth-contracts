@@ -3,6 +3,18 @@ from shared_tests import *
 from brownie import reverts, web3, chain
 from brownie.test import given, strategy
 
+
+@given(
+    st_nodeID=strategy("uint", exclude=0),
+    st_sender=strategy("address"),
+)
+def test_executeClaim_empty(cf, st_nodeID, st_sender):
+    assert cf.stakeManager.getPendingClaim(st_nodeID) == NULL_CLAIM
+
+    with reverts(REV_MSG_NOT_ON_TIME):
+        cf.stakeManager.executeClaim(st_nodeID, {"from": st_sender})
+
+
 # Need to also register a claim in this since the st_amounts sent etc depend on registerClaim
 @given(
     st_nodeID=strategy("uint", exclude=0),
