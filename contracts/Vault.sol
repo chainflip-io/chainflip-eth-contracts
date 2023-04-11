@@ -25,11 +25,11 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event TransferNativeFailed(address payable indexed recipient, uint256 amount);
     event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
 
-    event SwapNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, uint256 amount, address indexed sender);
+    event SwapNative(uint32 dstChain, bytes dstAddress, uint32 dstToken, uint256 amount, address indexed sender);
     event SwapToken(
         uint32 dstChain,
         bytes dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         address srcToken,
         uint256 amount,
         address indexed sender
@@ -42,22 +42,22 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event XCallNative(
         uint32 dstChain,
         bytes dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         uint256 amount,
         address indexed sender,
         bytes message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes refundAddress
     );
     event XCallToken(
         uint32 dstChain,
         bytes dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         address srcToken,
         uint256 amount,
         address indexed sender,
         bytes message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes refundAddress
     );
 
@@ -353,7 +353,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function xSwapNative(
         uint32 dstChain,
         bytes memory dstAddress,
-        uint16 dstToken
+        uint32 dstToken
     ) external payable override onlyNotSuspended nzUint(msg.value) {
         emit SwapNative(dstChain, dstAddress, dstToken, msg.value, msg.sender);
     }
@@ -373,7 +373,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function xSwapToken(
         uint32 dstChain,
         bytes memory dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         IERC20 srcToken,
         uint256 amount
     ) external override onlyNotSuspended nzUint(amount) {
@@ -401,27 +401,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call.
+     * @param gasAmount  The amount of native gas to be used on the destination chain's call.
      * @param refundAddress Address for any future refunds to the user.
      */
     function xCallNative(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes calldata refundAddress
     ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit XCallNative(
-            dstChain,
-            dstAddress,
-            dstToken,
-            msg.value,
-            msg.sender,
-            message,
-            dstNativeBudget,
-            refundAddress
-        );
+        emit XCallNative(dstChain, dstAddress, dstToken, msg.value, msg.sender, message, gasAmount, refundAddress);
     }
 
     /**
@@ -440,7 +431,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
+     * @param gasAmount  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
      *                      source token.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
@@ -449,9 +440,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function xCallToken(
         uint32 dstChain,
         bytes memory dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         IERC20 srcToken,
         uint256 amount,
         bytes calldata refundAddress
@@ -465,7 +456,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             amount,
             msg.sender,
             message,
-            dstNativeBudget,
+            gasAmount,
             refundAddress
         );
     }

@@ -10,11 +10,11 @@ from shared_tests import *
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
     st_refundAddress=strategy("bytes"),
-    st_dstNativeBudget=strategy("uint"),
+    st_gasAmount=strategy("uint"),
     st_sender=strategy("address"),
 )
 def test_swapToken(
@@ -26,7 +26,7 @@ def test_swapToken(
     token,
     st_amount,
     st_refundAddress,
-    st_dstNativeBudget,
+    st_gasAmount,
     st_sender,
 ):
 
@@ -47,7 +47,7 @@ def test_swapToken(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 token,
                 st_amount,
                 st_refundAddress,
@@ -89,7 +89,7 @@ def test_swapToken(
             st_dstAddress,
             st_dstToken,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             token,
             st_amount,
             st_refundAddress,
@@ -104,7 +104,7 @@ def test_swapToken(
             st_amount,
             st_sender,
             hexStr(st_message),
-            st_dstNativeBudget,
+            st_gasAmount,
             hexStr(st_refundAddress),
         ]
 
@@ -112,10 +112,10 @@ def test_swapToken(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeBudget=strategy("uint"),
+    st_gasAmount=strategy("uint"),
     st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
@@ -127,7 +127,7 @@ def test_swapToken_rev_bal(
     st_message,
     token,
     st_amount,
-    st_dstNativeBudget,
+    st_gasAmount,
     st_refundAddress,
     st_sender,
 ):
@@ -151,7 +151,7 @@ def test_swapToken_rev_bal(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 token,
                 st_amount,
                 st_refundAddress,
@@ -162,10 +162,10 @@ def test_swapToken_rev_bal(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeBudget=strategy("uint"),
+    st_gasAmount=strategy("uint"),
     st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
@@ -177,7 +177,7 @@ def test_swapToken_rev_suspended(
     st_message,
     token,
     st_amount,
-    st_dstNativeBudget,
+    st_gasAmount,
     st_refundAddress,
     st_sender,
 ):
@@ -190,7 +190,7 @@ def test_swapToken_rev_suspended(
             st_dstAddress,
             st_dstToken,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             token,
             st_amount,
             st_refundAddress,
@@ -215,10 +215,10 @@ def test_swapToken_rev_suspended(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", max_value=TEST_AMNT),
-    st_dstNativeBudget=strategy("uint"),
+    st_gasAmount=strategy("uint"),
     st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
@@ -230,7 +230,7 @@ def test_swapETHAndCall(
     st_dstToken,
     st_message,
     st_amount,
-    st_dstNativeBudget,
+    st_gasAmount,
     st_refundAddress,
 ):
 
@@ -249,7 +249,7 @@ def test_swapETHAndCall(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 st_refundAddress,
                 {"from": st_sender, "amount": st_amount},
             )
@@ -280,7 +280,7 @@ def test_swapETHAndCall(
             st_dstAddress,
             st_dstToken,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
             {"from": st_sender, "amount": st_amount},
         )
@@ -292,7 +292,7 @@ def test_swapETHAndCall(
             st_amount,
             st_sender,
             hexStr(st_message),
-            st_dstNativeBudget,
+            st_gasAmount,
             hexStr(st_refundAddress),
         ]
 
@@ -300,10 +300,10 @@ def test_swapETHAndCall(
 @given(
     st_dstChain=strategy("uint32"),
     st_dstAddress=strategy("bytes"),
-    st_dstToken=strategy("uint16"),
+    st_dstToken=strategy("uint32"),
     st_message=strategy("bytes"),
     st_amount=strategy("uint", exclude=0, max_value=TEST_AMNT),
-    st_dstNativeBudget=strategy("uint"),
+    st_gasAmount=strategy("uint"),
     st_refundAddress=strategy("bytes"),
     st_sender=strategy("address"),
 )
@@ -315,7 +315,7 @@ def test_swapETHAndCall_rev_suspended(
     st_dstToken,
     st_message,
     st_amount,
-    st_dstNativeBudget,
+    st_gasAmount,
     st_refundAddress,
 ):
     cf.vault.suspend({"from": cf.gov})
@@ -327,7 +327,7 @@ def test_swapETHAndCall_rev_suspended(
             st_dstAddress,
             st_dstToken,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
             {"from": st_sender, "amount": st_amount},
         )

@@ -30,11 +30,11 @@ No description
 
 No description
 
-## `xCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeBudget, bytes refundAddress)` (external)
+## `xCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 gasAmount, bytes refundAddress)` (external)
 
 No description
 
-## `xCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeBudget, contract IERC20 srcToken, uint256 amount, bytes refundAddress)` (external)
+## `xCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 gasAmount, contract IERC20 srcToken, uint256 amount, bytes refundAddress)` (external)
 
 No description
 
