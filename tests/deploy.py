@@ -26,10 +26,7 @@ def deploy_Chainflip_contracts(
 
     aggKey = environment.get("AGG_KEY")
     if aggKey:
-        parity = aggKey[0:2]
-        x = aggKey[2:]
-        parity = "00" if parity == "02" or parity == "00" else "01"
-        aggKey = [int(x, 16), int(parity, 16)]
+        aggKey = getKeysFromAggKey(aggKey)
     else:
         aggKey = AGG_SIGNER_1.getPubData()
 
@@ -82,6 +79,47 @@ def deploy_Chainflip_contracts(
     cf.deployer = deployer
 
     return cf
+
+
+def deploy_new_vault(deployer, Vault, KeyManager, keyManager_address):
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
+    keyManager = KeyManager.at(keyManager_address)
+    vault = Vault.deploy(keyManager, {"from": deployer, "required_confs": 1})
+
+    return vault
+
+
+def deploy_new_stakeManager(
+    deployer,
+    KeyManager,
+    StakeManager,
+    FLIP,
+    DeployerStakeManager,
+    keyManager_address,
+    flip_address,
+):
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
+    flip = FLIP.at(flip_address)
+    keyManager = KeyManager.at(keyManager_address)
+
+    # Minimal check to ensure that at least the two contracts provided are the correct.
+    assert flip.getKeyManager() == keyManager.address
+
+    deployerStakeManager = DeployerStakeManager.deploy(
+        MIN_STAKE,
+        keyManager_address,
+        flip_address,
+        {"from": deployer, "required_confs": 1},
+    )
+
+    # New upgraded contracts
+    stakeManager = StakeManager.at(deployerStakeManager.stakeManager())
+
+    return (deployerStakeManager, stakeManager)
 
 
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
