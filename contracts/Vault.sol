@@ -240,7 +240,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             );
 
             // No need to check token.code.length since it comes from a gated call
-            bool transferred = success && (abi.decode(returndata, (bool)) || returndata.length == uint256(0));
+            bool transferred = success && (returndata.length == uint256(0) || abi.decode(returndata, (bool)));
             if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }

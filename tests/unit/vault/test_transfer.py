@@ -92,3 +92,31 @@ def test_transfer_rev_sig(cf):
         cf.vault.transfer(
             sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
         )
+
+
+def test_transfer_rev_usdt(cf, mockUSDT, utils):
+    args = [[mockUSDT.address, cf.ALICE, TEST_AMNT]]
+    tx = signed_call_cf(cf, cf.vault.transfer, *args)
+
+    assert tx.events["TransferTokenFailed"]["recipient"] == cf.ALICE
+    assert tx.events["TransferTokenFailed"]["amount"] == TEST_AMNT
+    assert tx.events["TransferTokenFailed"]["token"] == mockUSDT.address
+    assert (
+        utils.decodeRevertData(tx.events["TransferTokenFailed"]["reason"])
+        == REV_MSG_ERC20_EXCEED_BAL
+    )
+
+
+def test_transfer_usdt(cf, mockUSDT, utils):
+    mockUSDT.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
+    args = [[mockUSDT.address, cf.ALICE, TEST_AMNT]]
+    iniBal_vault = mockUSDT.balanceOf(cf.vault)
+    iniBal_Alice = mockUSDT.balanceOf(cf.ALICE)
+    assert iniBal_vault == TEST_AMNT
+
+    tx = signed_call_cf(cf, cf.vault.transfer, *args)
+
+    assert iniBal_vault - TEST_AMNT == mockUSDT.balanceOf(cf.vault)
+    assert iniBal_Alice + TEST_AMNT == mockUSDT.balanceOf(cf.ALICE)
+
+    assert ["TransferTokenFailed"] not in tx.events
