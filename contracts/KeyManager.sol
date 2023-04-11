@@ -21,10 +21,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     /// @dev    The last time that a sig was verified (used for a dead man's switch)
     uint256 private _lastValidateTime;
     mapping(uint256 => bool) private _isNonceUsedByAggKey;
-    /// @dev    Whitelist for who can call canConsumeNonce
-    mapping(address => bool) private _canConsumeKeyNonce;
-    bool private _canConsumeKeyNonceSet;
-    uint256 private _numberWhitelistedAddresses;
 
     constructor(
         Key memory initialAggKey,
@@ -44,73 +40,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Sets the specific addresses that can call consumeKeyNonce.
-     *          Deployed via Deploy.sol so it can't be frontrun. The FLIP
-     *          address can only be set once.
-     * @param addrs   The addresses to whitelist
-     */
-    function setCanConsumeKeyNonce(address[] calldata addrs) external override {
-        require(!_canConsumeKeyNonceSet, "KeyManager: already set");
-        _canConsumeKeyNonceSet = true;
-
-        for (uint256 i = 0; i < addrs.length; i++) {
-            // Avoid duplicated newAddrs. Otherwise we could brick the updateCanConsumeKeyNonce
-            // since it relies on the _numberWhitelistedAddresses and it has this check
-            require(!_canConsumeKeyNonce[addrs[i]], "KeyManager: address already whitelisted");
-            _canConsumeKeyNonce[addrs[i]] = true;
-        }
-
-        _numberWhitelistedAddresses = addrs.length;
-
-        emit AggKeyNonceConsumersSet(addrs);
-    }
-
-    /**
-     * @notice  Replaces all the addresses that can call consumeKeyNonce. Must delist all addresses and then
-                add an arbitrary number of new addresses. To be used if any other contracts is updated.
-     * @param currentAddrs   List of current whitelisted addresses
-     * @param newAddrs   List of new addresses to whitelist
-     */
-    function updateCanConsumeKeyNonce(
-        SigData calldata sigData,
-        address[] calldata currentAddrs,
-        address[] calldata newAddrs
-    )
-        external
-        override
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateCanConsumeKeyNonce.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    currentAddrs,
-                    newAddrs
-                )
-            )
-        )
-    {
-        require(currentAddrs.length == _numberWhitelistedAddresses, "KeyManager: array incorrect length");
-
-        // Remove current whitelisted addresses
-        for (uint256 i = 0; i < currentAddrs.length; i++) {
-            require(_canConsumeKeyNonce[currentAddrs[i]], "KeyManager: cannot dewhitelist");
-            _canConsumeKeyNonce[currentAddrs[i]] = false;
-        }
-
-        //  Whitelist any number of new addresses
-        for (uint256 i = 0; i < newAddrs.length; i++) {
-            // Avoid duplicated newAddrs
-            require(!_canConsumeKeyNonce[newAddrs[i]], "KeyManager: address already whitelisted");
-            _canConsumeKeyNonce[newAddrs[i]] = true;
-        }
-
-        _numberWhitelistedAddresses = newAddrs.length;
-
-        emit AggKeyNonceConsumersUpdated(currentAddrs, newAddrs);
-    }
-
-    /**
      * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime
      * @dev     It would be nice to split this up, but these checks
      *          need to be made atomicly always. This needs to be available
@@ -124,16 +53,18 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     function _consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) internal {
         Key memory key = _aggKey;
-        // We require the msgHash param in the sigData is equal to the contract
-        // message hash (the rules coded into the contract)
-        require(sigData.msgHash == uint256(contractMsgHash), "KeyManager: invalid msgHash");
+
         require(
-            verifySignature(sigData.msgHash, sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddress),
+            verifySignature(
+                uint256(contractMsgHash),
+                sigData.sig,
+                key.pubKeyX,
+                key.pubKeyYParity,
+                sigData.kTimesGAddress
+            ),
             "KeyManager: Sig invalid"
         );
         require(!_isNonceUsedByAggKey[sigData.nonce], "KeyManager: nonce already used");
-        require(sigData.keyManAddr == address(this), "KeyManager: wrong keyManAddr");
-        require(sigData.chainID == block.chainid, "KeyManager: wrong chainID");
 
         _lastValidateTime = block.timestamp;
         _isNonceUsedByAggKey[sigData.nonce] = true;
@@ -149,8 +80,12 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *          can skip the whitelisting check.
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
-        require(_canConsumeKeyNonce[msg.sender], "KeyManager: not whitelisted");
-        _consumeKeyNonce(sigData, contractMsgHash);
+        // Do we want to hash chainID and keyManAddr here or on the original call?
+        // uint256 msgHash = uint256(keccak256(abi.encode(contractMsgHash, sigData.nonce, msg.sender)));
+        bytes32 msgHash = keccak256(
+            abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
+        );
+        _consumeKeyNonce(sigData, msgHash);
     }
 
     /**
@@ -169,16 +104,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         override
         nzKey(newAggKey)
         validAggKey(newAggKey)
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.setAggKeyWithAggKey.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newAggKey
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.setAggKeyWithAggKey.selector, newAggKey)))
     {
         emit AggKeySetByAggKey(_aggKey, newAggKey);
         _aggKey = newAggKey;
@@ -211,16 +137,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         external
         override
         nzAddr(newGovKey)
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.setGovKeyWithAggKey.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newGovKey
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.setGovKeyWithAggKey.selector, newGovKey)))
     {
         emit GovKeySetByAggKey(_govKey, newGovKey);
         _govKey = newGovKey;
@@ -250,16 +167,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         external
         override
         nzAddr(newCommKey)
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.setCommKeyWithAggKey.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newCommKey
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.setCommKeyWithAggKey.selector, newCommKey)))
     {
         emit CommKeySetByAggKey(_commKey, newCommKey);
         _commKey = newCommKey;
@@ -343,32 +251,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
-     * @notice  Get whether addr is whitelisted for validating a sig
-     * @param addr  The address to check
-     * @return  Whether or not addr is whitelisted or not
-     */
-    function canConsumeKeyNonce(address addr) external view override returns (bool) {
-        return _canConsumeKeyNonce[addr];
-    }
-
-    /**
-     * @notice  Get whether or not _canConsumeKeyNonce has already been set, which
-     *          prevents it from being set again
-     * @return  The value of _canConsumeKeyNonceSet
-     */
-    function canConsumeKeyNonceSet() external view override returns (bool) {
-        return _canConsumeKeyNonceSet;
-    }
-
-    /**
-     * @notice  Get number of whitelisted addresses
-     * @return  The value of _numberWhitelistedAddresses
-     */
-    function getNumberWhitelistedAddresses() external view override returns (uint256) {
-        return _numberWhitelistedAddresses;
-    }
-
-    /**
      *  @notice Allows this contract to receive native
      */
     receive() external payable {}
@@ -423,6 +305,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /// @dev    Call consumeKeyNonceWhitelisted
     modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
+        // Do we want to hash chainID and keyManAddr here or on the original call?
+        // TODO: We are not hashing the msg.sender here since anyone can make the calls to
+        // this function. Hashing address(this) should be enough, right?
+        uint256 msgHash = uint256(keccak256(abi.encode(contractMsgHash, sigData.nonce, block.chainid, address(this))));
         _consumeKeyNonce(sigData, contractMsgHash);
         _;
     }

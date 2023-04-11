@@ -114,15 +114,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.allBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    deployFetchParamsArray,
-                    fetchParamsArray,
-                    transferParamsArray
-                )
-            )
+            keccak256(abi.encode(this.allBatch.selector, deployFetchParamsArray, fetchParamsArray, transferParamsArray))
         )
     {
         // Fetch by deploying new deposits
@@ -158,16 +150,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         nzAddr(transferParams.token)
         nzAddr(transferParams.recipient)
         nzUint(transferParams.amount)
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.transfer.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    transferParams
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.transfer.selector, transferParams)))
     {
         _transfer(transferParams.token, transferParams.recipient, transferParams.amount);
     }
@@ -186,16 +169,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         onlyNotSuspended
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.transferBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    transferParamsArray
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.transferBatch.selector, transferParamsArray)))
     {
         _transferBatch(transferParamsArray);
     }
@@ -266,16 +240,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         onlyNotSuspended
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.deployAndFetchBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    deployFetchParamsArray
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.deployAndFetchBatch.selector, deployFetchParamsArray)))
     {
         _deployAndFetchBatch(deployFetchParamsArray);
     }
@@ -305,16 +270,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         external
         override
         onlyNotSuspended
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.fetchBatch.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    fetchParamsArray
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.fetchBatch.selector, fetchParamsArray)))
     {
         _fetchBatch(fetchParamsArray);
     }
@@ -526,16 +482,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         nzUint(transferParams.amount)
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.executexSwapAndCall.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    transferParams,
-                    srcChain,
-                    srcAddress,
-                    message
-                )
-            )
+            keccak256(abi.encode(this.executexSwapAndCall.selector, transferParams, srcChain, srcAddress, message))
         )
     {
         // Logic in another internal function to avoid the stackTooDeep error
@@ -606,16 +553,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         nzAddr(recipient)
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.executexCall.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    recipient,
-                    srcChain,
-                    srcAddress,
-                    message
-                )
-            )
+            keccak256(abi.encode(this.executexCall.selector, recipient, srcChain, srcAddress, message))
         )
     {
         ICFReceiver(recipient).cfReceivexCall(srcChain, srcAddress, message);
@@ -652,16 +590,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.executeActions.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    token,
-                    amount,
-                    multicallAddr,
-                    calls
-                )
-            )
+            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, calls))
         )
     {
         // Fund and run multicall
