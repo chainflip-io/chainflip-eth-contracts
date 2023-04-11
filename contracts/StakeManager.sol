@@ -216,11 +216,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         emit GovernanceWithdrawal(recipient, amount);
     }
 
-    /**
-     *  @notice Allows this contract to receive native tokens
-     */
-    receive() external payable {}
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //
