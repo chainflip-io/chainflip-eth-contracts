@@ -308,8 +308,13 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         // Do we want to hash chainID and keyManAddr here or on the original call?
         // TODO: We are not hashing the msg.sender here since anyone can make the calls to
         // this function. Hashing address(this) should be enough, right?
-        uint256 msgHash = uint256(keccak256(abi.encode(contractMsgHash, sigData.nonce, block.chainid, address(this))));
-        _consumeKeyNonce(sigData, contractMsgHash);
+        // TODO: We can remove one of the address(this) in the hash, just writing it here to be
+        // consistent and potentially make it easier on the Rust side to not need to hash
+        // differently for calls to the KeyManager or calls to the other nonceConsumer contracts.
+        bytes32 msgHash = keccak256(
+            abi.encode(contractMsgHash, sigData.nonce, address(this), block.chainid, address(this))
+        );
+        _consumeKeyNonce(sigData, msgHash);
         _;
     }
 }
