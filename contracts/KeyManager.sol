@@ -104,7 +104,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         override
         nzKey(newAggKey)
         validAggKey(newAggKey)
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.setAggKeyWithAggKey.selector, newAggKey)))
+        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setAggKeyWithAggKey.selector, newAggKey)))
     {
         emit AggKeySetByAggKey(_aggKey, newAggKey);
         _aggKey = newAggKey;
@@ -137,7 +137,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         external
         override
         nzAddr(newGovKey)
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.setGovKeyWithAggKey.selector, newGovKey)))
+        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setGovKeyWithAggKey.selector, newGovKey)))
     {
         emit GovKeySetByAggKey(_govKey, newGovKey);
         _govKey = newGovKey;
@@ -167,7 +167,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         external
         override
         nzAddr(newCommKey)
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.setCommKeyWithAggKey.selector, newCommKey)))
+        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setCommKeyWithAggKey.selector, newCommKey)))
     {
         emit CommKeySetByAggKey(_commKey, newCommKey);
         _commKey = newCommKey;
@@ -304,7 +304,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /// @dev    Call consumeKeyNonceWhitelisted
-    modifier consumesKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) {
+    modifier consumeKeyNonceKeyManager(SigData calldata sigData, bytes32 contractMsgHash) {
         // Do we want to hash chainID and keyManAddr here or on the original call?
         // TODO: We are not hashing the msg.sender here since anyone can make the calls to
         // this function. Hashing address(this) should be enough, right?

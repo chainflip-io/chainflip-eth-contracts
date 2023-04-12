@@ -128,16 +128,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         nzAddr(staker)
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.registerClaim.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    nodeID,
-                    amount,
-                    staker,
-                    expiryTime
-                )
-            )
+            keccak256(abi.encode(this.registerClaim.selector, nodeID, amount, staker, expiryTime))
         )
     {
         require(

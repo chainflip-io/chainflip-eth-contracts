@@ -60,15 +60,7 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
         nzAddr(staker)
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateFlipSupply.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newTotalSupply,
-                    stateChainBlockNumber,
-                    staker
-                )
-            )
+            keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber, staker))
         )
     {
         require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "FLIP: old FLIP supply update");

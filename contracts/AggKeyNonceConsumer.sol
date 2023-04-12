@@ -39,16 +39,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         external
         override
         nzAddr(address(keyManager))
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateKeyManager.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    keyManager
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager)))
     {
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
