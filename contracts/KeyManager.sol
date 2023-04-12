@@ -80,8 +80,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      *          can skip the whitelisting check.
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
-        // Do we want to hash chainID and keyManAddr here or on the original call?
-        // uint256 msgHash = uint256(keccak256(abi.encode(contractMsgHash, sigData.nonce, msg.sender)));
         bytes32 msgHash = keccak256(
             abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
         );
@@ -303,14 +301,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _;
     }
 
-    /// @dev    Call consumeKeyNonceWhitelisted
+    /// @dev    Call _consumeKeyNonce
     modifier consumeKeyNonceKeyManager(SigData calldata sigData, bytes32 contractMsgHash) {
-        // Do we want to hash chainID and keyManAddr here or on the original call?
-        // TODO: We are not hashing the msg.sender here since anyone can make the calls to
-        // this function. Hashing address(this) should be enough, right?
-        // TODO: We can remove one of the address(this) in the hash, just writing it here to be
-        // consistent and potentially make it easier on the Rust side to not need to hash
-        // differently for calls to the KeyManager or calls to the other nonceConsumer contracts.
         bytes32 msgHash = keccak256(
             abi.encode(contractMsgHash, sigData.nonce, address(this), block.chainid, address(this))
         );

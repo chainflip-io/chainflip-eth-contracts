@@ -1,7 +1,6 @@
 from consts import *
 from brownie import reverts, chain, web3
-from brownie.convert import to_bytes
-from brownie.convert.utils import get_type_strings
+
 from utils import *
 from eth_abi import encode_abi
 
@@ -269,29 +268,9 @@ def signed_call_km(keyManager, nonceConsumerAddress, fcn, *args, **kwargs):
 
 
 def signed_call(keyManager, nonceConsumerAddress, fcn, signer, sender, *args):
-    # Sign the tx
-
-    # Health check - function arguments contains an extra sigData
-    assert len(fcn.abi["inputs"]) == len(args) + 1
-
-    # Get the function selector signature
-    fcnSig = fcn.signature
-    fcnSig = to_bytes(fcnSig, "bytes4")
-
-    # Get the function types from the abi
-    types = get_type_strings(fcn.abi["inputs"])
-
-    # Replace the first parameter (sigData) for the selector
-    type_fcnSig = ["bytes4"]
-    sigData_type = "(uint256,uint256,address)"
-    assert types[0] == sigData_type
-    types[0] = type_fcnSig
-
-    msgToHash = encode_abi(["bytes4", "(address,address,uint256)"], [fcnSig, *args])
-    contractMsgHash = web3.keccak(msgToHash)
 
     sigData = signer.getSigDataWithNonces(
-        contractMsgHash, nonces, keyManager.address, nonceConsumerAddress
+        keyManager, nonceConsumerAddress, fcn, signer, nonces, *args
     )
 
     return fcn(

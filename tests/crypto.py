@@ -4,6 +4,10 @@ import umbral
 from umbral import SecretKey
 from py_ecc.secp256k1 import secp256k1
 from eth_abi import encode_abi
+from brownie.convert import to_bytes
+from brownie.convert.utils import get_type_strings
+from brownie.convert.normalize import format_input
+import copy
 
 # Fcns return a list instead of a tuple since they need to be modified
 # for some tests (e.g. to make them revert)
@@ -58,31 +62,26 @@ class Signer:
     def getPubDataWith0x(self):
         return [self.pubKeyXInt, self.pubKeyYPar]
 
-    def getSigData(self, contractMsgHash, keyManagerAddress):
+    def getSigData(self, keyManager, nonceConsumerAddress, fcn, signer, *args):
         return self.getSigDataWithNonces(
-            contractMsgHash, self.nonces, keyManagerAddress
+            self, keyManager, nonceConsumerAddress, fcn, signer, self.nonces, *args
         )
 
     def getSigDataWithNonces(
-        self, contractMsgHash, nonces, keyManagerAddress, nonceConsumerAddress
+        self, keyManager, nonceConsumerAddress, fcn, signer, nonces, *args
     ):
-        # encode the extra signature parameters from the keyManager (nonce,
-        # nonceConsumerAddress, chainID and keyManagerAddress) and hash them
-        msgToHash = encode_abi(
-            ["bytes32", "uint256", "address", "uint256", "address"],
-            [
-                contractMsgHash,
-                nonces[self.AGG],
-                nonceConsumerAddress,
-                chain.id,
-                keyManagerAddress,
-            ],
+        contractMsgHash = Signer.generate_contractMsgHash(fcn, *args)
+
+        msgHash = Signer.generate_msgHash(
+            contractMsgHash, nonces, keyManager.address, nonceConsumerAddress
         )
 
-        # msgToHash will be in hex format (HexBytes('0x8ce..'))
-        # No need for "hexstr="" as msgToHash a hex byte object
-        msgHashHex = cleanHexStr(web3.keccak(msgToHash))
-        [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
+        sigData = signer.generate_sigData(msgHash, nonces)
+        return sigData
+
+    def generate_sigData(self, msgHash, nonces):
+
+        [s, nonceTimesGeneratorAddress] = self.sign(msgHash)
         sigData = [
             s,
             nonces[self.AGG],
@@ -92,6 +91,70 @@ class Signer:
         # Since nonces is passed by reference, it will be altered for all other signers too
         nonces[self.AGG] += 1
         return sigData
+
+    # Generate the contractMsgHash by hashing the function selector and the function arguments
+    @staticmethod
+    def generate_contractMsgHash(fcn, *args):
+        # Health check - function arguments contains an extra sigData
+        assert len(fcn.abi["inputs"]) == len(args) + 1
+
+        # Get the function selector signature
+        fcnSig = fcn.signature
+        fcnSig = to_bytes(fcnSig, "bytes4")
+
+        # Get the function types from the abi
+        types = get_type_strings(fcn.abi["inputs"])
+
+        # Replace the first parameter (sigData) for the selector
+        type_fcnSig = "bytes4"
+        sigData_type = "(uint256,uint256,address)"
+        assert types[0] == sigData_type
+        types[0] = type_fcnSig
+
+        # Format inputs according to abi, otherwise brownie accounts fail to be understood as addresses
+        # Remove sigData input to match args. We need to first remove sigData
+        modified_abi = copy.deepcopy(fcn.abi)
+        # Remove sigData
+        modified_abi["inputs"].pop(0)
+        formatted_args = format_input(modified_abi, args)
+
+        contractMsgToHash = encode_abi(types, [fcnSig, *formatted_args])
+        return web3.keccak(contractMsgToHash)
+
+    # Generate the msgHash by hashing the contractMsgHash, the nonces, the keyManager address and the chainID
+    @staticmethod
+    def generate_msgHash(
+        contractMsgHash, nonces, keyManagerAddress, nonceConsumerAddress, **kwargs
+    ):
+        chainId = kwargs.get("chainId", chain.id)
+
+        # Format inputs according to abi, otherwise brownie accounts fail to be understood as addresses
+        aux_abi = {
+            "inputs": [
+                {"type": "bytes32"},
+                {"type": "uint256"},
+                {"type": "address"},
+                {"type": "uint256"},
+                {"type": "address"},
+            ]
+        }
+        args = [
+            contractMsgHash,
+            nonces["Agg"],
+            nonceConsumerAddress,
+            chainId,
+            keyManagerAddress,
+        ]
+        formatted_args = format_input(aux_abi, args)
+
+        # msgToHash will be in hex format (HexBytes('0x8ce..'))
+        msgToHash = encode_abi(
+            ["bytes32", "uint256", "address", "uint256", "address"],
+            formatted_args,
+        )
+
+        # No need for "hexstr="" as msgToHash a hex byte obj
+        return cleanHexStr(web3.keccak(msgToHash))
 
     # @dev reference /contracts/abstract/SchnorrSECP256k1.sol
     def sign(self, msgHashHex):
