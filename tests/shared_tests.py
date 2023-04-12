@@ -1,6 +1,9 @@
 from consts import *
 from brownie import reverts, chain, web3
+from brownie.convert import to_bytes
+from brownie.convert.utils import get_type_strings
 from utils import *
+from eth_abi import encode_abi
 
 # ----------Vault----------
 
@@ -246,30 +249,53 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
 
 
 # Function used to do function calls that require a signature
-def signed_call_cf(cf, fcn, *args, **kwargs):
+def signed_call_cf(cf, nonceConsumerAddress, fcn, *args, **kwargs):
     # Get default values
     sender = kwargs.get("sender", cf.safekeeper)
     keyManager = kwargs.get("keyManager", cf.keyManager)
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
-    return signed_call(keyManager, fcn, signer, sender, *args)
+    return signed_call(keyManager, nonceConsumerAddress, fcn, signer, sender, *args)
 
 
 # Another separate signed call to make tests less verbose
-def signed_call_km(keyManager, fcn, *args, **kwargs):
+def signed_call_km(keyManager, nonceConsumerAddress, fcn, *args, **kwargs):
     # Get default values
     # Workaround because kwargs.get("sender", kwargs.get("cf").deployer) doesn't work if there is no "cf" key
     sender = kwargs.get("sender") if "sender" in kwargs else kwargs.get("cf").safekeeper
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
-    return signed_call(keyManager, fcn, signer, sender, *args)
+    return signed_call(keyManager, nonceConsumerAddress, fcn, signer, sender, *args)
 
 
-def signed_call(keyManager, fcn, signer, sender, *args):
-    # Sign the tx without a msgHash or sig
-    callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
+def signed_call(keyManager, nonceConsumerAddress, fcn, signer, sender, *args):
+    # Sign the tx
+
+    # Health check - function arguments contains an extra sigData
+    assert len(fcn.abi["inputs"]) == len(args) + 1
+
+    # Get the function selector signature
+    fcnSig = fcn.signature
+    fcnSig = to_bytes(fcnSig, "bytes4")
+
+    # Get the function types from the abi
+    types = get_type_strings(fcn.abi["inputs"])
+
+    # Replace the first parameter (sigData) for the selector
+    type_fcnSig = ["bytes4"]
+    sigData_type = "(uint256,uint256,address)"
+    assert types[0] == sigData_type
+    types[0] = type_fcnSig
+
+    msgToHash = encode_abi(["bytes4", "(address,address,uint256)"], [fcnSig, *args])
+    contractMsgHash = web3.keccak(msgToHash)
+
+    sigData = signer.getSigDataWithNonces(
+        contractMsgHash, nonces, keyManager.address, nonceConsumerAddress
+    )
+
     return fcn(
-        signer.getSigDataWithNonces(callDataNoSig, nonces, keyManager.address),
+        sigData,
         *args,
         {"from": sender},
     )

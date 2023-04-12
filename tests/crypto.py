@@ -3,6 +3,7 @@ from brownie import chain
 import umbral
 from umbral import SecretKey
 from py_ecc.secp256k1 import secp256k1
+from eth_abi import encode_abi
 
 # Fcns return a list instead of a tuple since they need to be modified
 # for some tests (e.g. to make them revert)
@@ -57,16 +58,32 @@ class Signer:
     def getPubDataWith0x(self):
         return [self.pubKeyXInt, self.pubKeyYPar]
 
-    def getSigData(self, msgToHash, keyManagerAddress):
-        return self.getSigDataWithNonces(msgToHash, self.nonces, keyManagerAddress)
+    def getSigData(self, contractMsgHash, keyManagerAddress):
+        return self.getSigDataWithNonces(
+            contractMsgHash, self.nonces, keyManagerAddress
+        )
 
-    def getSigDataWithNonces(self, msgToHash, nonces, keyManagerAddress):
-        msgHashHex = cleanHexStr(web3.keccak(hexstr=msgToHash))
+    def getSigDataWithNonces(
+        self, contractMsgHash, nonces, keyManagerAddress, nonceConsumerAddress
+    ):
+        # encode the extra signature parameters from the keyManager (nonce,
+        # nonceConsumerAddress, chainID and keyManagerAddress) and hash them
+        msgToHash = encode_abi(
+            ["bytes32", "uint256", "address", "uint256", "address"],
+            [
+                contractMsgHash,
+                nonces[self.AGG],
+                nonceConsumerAddress,
+                chain.id,
+                keyManagerAddress,
+            ],
+        )
+
+        # msgToHash will be in hex format (HexBytes('0x8ce..'))
+        # No need for "hexstr="" as msgToHash a hex byte object
+        msgHashHex = cleanHexStr(web3.keccak(msgToHash))
         [s, nonceTimesGeneratorAddress] = self.sign(msgHashHex)
         sigData = [
-            keyManagerAddress,
-            chain.id,
-            int(msgHashHex, 16),
             s,
             nonces[self.AGG],
             nonceTimesGeneratorAddress,

@@ -15,8 +15,8 @@ def test_transfer_native_fails_recipient(cf, token):
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
 
-    args = [[NATIVE_ADDR, token, TEST_AMNT]]
-    tx = signed_call_cf(cf, cf.vault.transfer, *args)
+    args = [[NATIVE_ADDR, token.address, TEST_AMNT]]
+    tx = signed_call_cf(cf, cf.vault.address, cf.vault.transfer, *args)
 
     assert tx.events["TransferNativeFailed"][0].values() == [token, TEST_AMNT]
     assert cf.vault.balance() == startBalVault
