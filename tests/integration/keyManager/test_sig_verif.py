@@ -229,7 +229,6 @@ def test_sig_msgHash(cf, st_sender, st_new_govKey, st_address, st_chainId, st_am
     msgHash_verification(
         cf,
         cf.keyManager.setGovKeyWithAggKey,
-        cf.keyManager.address,
         st_sender,
         st_address,
         st_chainId,
@@ -245,7 +244,6 @@ def test_sig_msgHash(cf, st_sender, st_new_govKey, st_address, st_chainId, st_am
     msgHash_verification(
         cf,
         cf.stakeManager.registerClaim,
-        cf.stakeManager.address,
         st_sender,
         st_address,
         st_chainId,
@@ -256,7 +254,6 @@ def test_sig_msgHash(cf, st_sender, st_new_govKey, st_address, st_chainId, st_am
     msgHash_verification(
         cf,
         cf.vault.fetchBatch,
-        cf.vault.address,
         st_sender,
         st_address,
         st_chainId,
@@ -267,7 +264,6 @@ def test_sig_msgHash(cf, st_sender, st_new_govKey, st_address, st_chainId, st_am
 def contractMsgHash_sigVerification(
     fcn, keyManager, contractMsgHash, sigData, st_sig, st_sender, st_address, *args
 ):
-
     # Try bruteforcing
     st_sigData = [st_sig, sigData[1], st_address]
     with reverts(REV_MSG_SIG):
@@ -293,11 +289,13 @@ def contractMsgHash_sigVerification(
     with reverts(REV_MSG_SIG):
         fcn(sigData_modif, *args, {"from": st_sender})
 
-    # Check that changing the nonce will fail
-    sigData_modif = sigData[:]
-    sigData_modif[1] = st_sig
-    with reverts(REV_MSG_SIG):
-        fcn(sigData_modif, *args, {"from": st_sender})
+    # Check that changing the nonce will fail. Seems like the hypothesis is smart
+    # enough to figure this one out, so we add a check.
+    if st_sig != sigData_modif[1]:
+        sigData_modif = sigData[:]
+        sigData_modif[1] = st_sig
+        with reverts(REV_MSG_SIG):
+            fcn(sigData_modif, *args, {"from": st_sender})
 
     # Check we can't bruteforce the signature by changing both sig and kTimesGAddress
     sigData_modif = sigData[:]
@@ -341,15 +339,13 @@ def contractMsgHash_sigVerification(
         )
 
 
-def msgHash_verification(
-    cf, fcn, nonceConsumerAddress, st_sender, st_address, st_chainId, *args
-):
+def msgHash_verification(cf, fcn, st_sender, st_address, st_chainId, *args):
+    nonceConsumerAddress = fcn._address
 
     # Sign over another KeyManagerAddress and check that it doesn't pass
     with reverts(REV_MSG_SIG):
         signed_call_cf(
             cf,
-            cf.keyManager.address,
             fcn,
             *args,
             sender=st_sender,
@@ -357,13 +353,19 @@ def msgHash_verification(
         )
 
     # Sign over another nonceConsumerAddr and check that it doesn't pass
+    contractMsgHash = Signer.generate_contractMsgHash(fcn, *args)
+    msgHash = Signer.generate_msgHash(
+        contractMsgHash,
+        nonces,
+        cf.keyManager.address,
+        st_address,
+    )
+    sigData = AGG_SIGNER_1.generate_sigData(msgHash, nonces)
     with reverts(REV_MSG_SIG):
-        signed_call_cf(
-            cf,
-            st_address,
-            fcn,
+        fcn(
+            sigData,
             *args,
-            sender=st_sender,
+            {"from": st_sender},
         )
 
     # Sign over another ChainID and check that it doesn't pass
@@ -411,7 +413,6 @@ def newKeyManager_replay_test(
     if nonceConsumer != None:
         signed_call_cf(
             cf,
-            nonceConsumer.address,
             nonceConsumer.updateKeyManager,
             new_keyManager.address,
             sender=st_sender,

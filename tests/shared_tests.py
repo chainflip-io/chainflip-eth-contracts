@@ -248,26 +248,27 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
 
 
 # Function used to do function calls that require a signature
-def signed_call_cf(cf, nonceConsumerAddress, fcn, *args, **kwargs):
+def signed_call_cf(cf, fcn, *args, **kwargs):
     # Get default values
     sender = kwargs.get("sender", cf.safekeeper)
     keyManager = kwargs.get("keyManager", cf.keyManager)
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
-    return signed_call(keyManager, nonceConsumerAddress, fcn, signer, sender, *args)
+    return signed_call(keyManager, fcn, signer, sender, *args)
 
 
 # Another separate signed call to make tests less verbose
-def signed_call_km(keyManager, nonceConsumerAddress, fcn, *args, **kwargs):
+def signed_call_km(keyManager, fcn, *args, **kwargs):
     # Get default values
     # Workaround because kwargs.get("sender", kwargs.get("cf").deployer) doesn't work if there is no "cf" key
     sender = kwargs.get("sender") if "sender" in kwargs else kwargs.get("cf").safekeeper
     signer = kwargs.get("signer", AGG_SIGNER_1)
 
-    return signed_call(keyManager, nonceConsumerAddress, fcn, signer, sender, *args)
+    return signed_call(keyManager, fcn, signer, sender, *args)
 
 
-def signed_call(keyManager, nonceConsumerAddress, fcn, signer, sender, *args):
+def signed_call(keyManager, fcn, signer, sender, *args):
+    nonceConsumerAddress = fcn._address
 
     sigData = signer.getSigDataWithNonces(
         keyManager, nonceConsumerAddress, fcn, signer, nonces, *args
