@@ -63,7 +63,7 @@ class Signer:
         return [self.pubKeyXInt, self.pubKeyYPar]
 
     def getSigData(self, keyManager, fcn, *args):
-        return self.getSigDataWithNonces(self, keyManager, fcn, self.nonces, *args)
+        return self.getSigDataWithNonces(keyManager, fcn, self.nonces, *args)
 
     def getSigDataWithNonces(self, keyManager, fcn, nonces, *args):
         # Get the nonceConsumer's address that will make the call to verify the signature

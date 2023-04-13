@@ -67,11 +67,9 @@ def test_sig_keyManager(cf, st_sender, st_new_govKey, st_sig, st_address, KeyMan
     )
 
 
-# We want to test that if two instances of the same contract that
-# inherit AggKeyNonceConsumer are whitelisted, the same signature
-# cannot be used to call any of the two contracts, effectively
-# invalidating the nonce. A frontrunner could use this to grief
-# us and confuse the StateChain.
+# We want to test that if there are two instances of the same contract that
+# inherit AggKeyNonceConsumer, the same signature cannot be used to call any
+# of the two contracts.
 @given(
     st_sender=strategy("address"),
     st_sig=strategy("uint256", exclude=0),

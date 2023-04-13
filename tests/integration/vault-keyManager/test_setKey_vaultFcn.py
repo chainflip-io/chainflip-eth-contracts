@@ -16,7 +16,7 @@ from random import choices
     st_sender=strategy("address"),
 )
 def test_setAggKeyWithAggKey_allBatch(
-    cfAW,
+    cf,
     token,
     token2,
     Deposit,
@@ -32,7 +32,7 @@ def test_setAggKeyWithAggKey_allBatch(
         return
 
     # Change agg keys
-    setAggKeyWithAggKey_test(cfAW)
+    setAggKeyWithAggKey_test(cf)
 
     # Sort out deposits first so enough can be sent to the create2 addresses
     fetchMinLen = trimToShortest([st_fetchAmounts, st_fetchSwapIDs])
@@ -49,18 +49,18 @@ def test_setAggKeyWithAggKey_allBatch(
         # Get the address to deposit to and deposit
         if tok == NATIVE_ADDR:
             depositAddr = getCreate2Addr(
-                cfAW.vault.address, id.hex(), Deposit, cleanHexStrPad(NATIVE_ADDR)
+                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(NATIVE_ADDR)
             )
-            cfAW.SAFEKEEPER.transfer(depositAddr, am)
+            cf.SAFEKEEPER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
-                cfAW.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
+                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
             )
-            tok.transfer(depositAddr, am, {"from": cfAW.SAFEKEEPER})
+            tok.transfer(depositAddr, am, {"from": cf.SAFEKEEPER})
 
-    assert cfAW.vault.balance() == 0
-    assert token.balanceOf(cfAW.vault) == 0
-    assert token2.balanceOf(cfAW.vault) == 0
+    assert cf.vault.balance() == 0
+    assert token.balanceOf(cf.vault) == 0
+    assert token2.balanceOf(cf.vault) == 0
 
     # Transfers
     tranMinLen = trimToShortest([st_tranRecipients, st_tranAmounts])
@@ -81,7 +81,7 @@ def test_setAggKeyWithAggKey_allBatch(
         ]
     )
 
-    nativeStartBalVault = cfAW.vault.balance()
+    nativeStartBalVault = cf.vault.balance()
     nativeBals = [web3.eth.get_balance(str(recip)) for recip in st_tranRecipients]
     tokenBals = [token.balanceOf(recip) for recip in st_tranRecipients]
     token2Bals = [token2.balanceOf(recip) for recip in st_tranRecipients]
@@ -94,25 +94,25 @@ def test_setAggKeyWithAggKey_allBatch(
 
     # Check allBatch fails with the old agg key
     with reverts(REV_MSG_SIG):
-        signed_call_cf(cfAW, cfAW.vault.allBatch, *args, sender=st_sender)
+        signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll fail gracefully
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
         tx = signed_call_cf(
-            cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
+            cf, cf.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
         )
         # There might be multiple failures, so just check that there is at least one
         assert len(tx.events["TransferTokenFailed"]) >= 1
     else:
         signed_call_cf(
-            cfAW, cfAW.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
+            cf, cf.vault.allBatch, *args, sender=st_sender, signer=AGG_SIGNER_2
         )
 
-        assert cfAW.vault.balance() == nativeStartBalVault + (
+        assert cf.vault.balance() == nativeStartBalVault + (
             fetchTotals[NATIVE_ADDR] - tranTotals[NATIVE_ADDR]
         )
-        assert token.balanceOf(cfAW.vault) == fetchTotals[token] - tranTotals[token]
-        assert token2.balanceOf(cfAW.vault) == fetchTotals[token2] - tranTotals[token2]
+        assert token.balanceOf(cf.vault) == fetchTotals[token] - tranTotals[token]
+        assert token2.balanceOf(cf.vault) == fetchTotals[token2] - tranTotals[token2]
 
         for i in range(len(st_tranRecipients)):
             if tranTokens[i] == NATIVE_ADDR:

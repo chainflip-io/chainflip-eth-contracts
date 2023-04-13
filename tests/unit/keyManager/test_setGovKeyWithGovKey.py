@@ -3,8 +3,8 @@ from brownie import reverts
 from shared_tests import *
 
 
-def test_setGovKeyWithGovKey(cfAW):
-    setGovKeyWithGovKey_test(cfAW)
+def test_setGovKeyWithGovKey(cf):
+    setGovKeyWithGovKey_test(cf)
 
 
 def test_setGovKeyWithGovKey_rev(cf):
