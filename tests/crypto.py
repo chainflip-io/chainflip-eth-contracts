@@ -62,21 +62,20 @@ class Signer:
     def getPubDataWith0x(self):
         return [self.pubKeyXInt, self.pubKeyYPar]
 
-    def getSigData(self, keyManager, nonceConsumerAddress, fcn, signer, *args):
-        return self.getSigDataWithNonces(
-            self, keyManager, nonceConsumerAddress, fcn, signer, self.nonces, *args
-        )
+    def getSigData(self, keyManager, fcn, *args):
+        return self.getSigDataWithNonces(self, keyManager, fcn, self.nonces, *args)
 
-    def getSigDataWithNonces(
-        self, keyManager, nonceConsumerAddress, fcn, signer, nonces, *args
-    ):
+    def getSigDataWithNonces(self, keyManager, fcn, nonces, *args):
+        # Get the nonceConsumer's address that will make the call to verify the signature
+        nonceConsumerAddress = fcn._address
+
         contractMsgHash = Signer.generate_contractMsgHash(fcn, *args)
 
         msgHash = Signer.generate_msgHash(
             contractMsgHash, nonces, keyManager.address, nonceConsumerAddress
         )
         # Return sigData
-        return signer.generate_sigData(msgHash, nonces)
+        return self.generate_sigData(msgHash, nonces)
 
     def generate_sigData(self, msgHash, nonces):
 

@@ -268,11 +268,7 @@ def signed_call_km(keyManager, fcn, *args, **kwargs):
 
 
 def signed_call(keyManager, fcn, signer, sender, *args):
-    nonceConsumerAddress = fcn._address
-
-    sigData = signer.getSigDataWithNonces(
-        keyManager, nonceConsumerAddress, fcn, signer, nonces, *args
-    )
+    sigData = signer.getSigDataWithNonces(keyManager, fcn, nonces, *args)
 
     return fcn(
         sigData,
