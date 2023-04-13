@@ -75,9 +75,8 @@ class Signer:
         msgHash = Signer.generate_msgHash(
             contractMsgHash, nonces, keyManager.address, nonceConsumerAddress
         )
-
-        sigData = signer.generate_sigData(msgHash, nonces)
-        return sigData
+        # Return sigData
+        return signer.generate_sigData(msgHash, nonces)
 
     def generate_sigData(self, msgHash, nonces):
 
@@ -107,14 +106,13 @@ class Signer:
 
         # Replace the first parameter (sigData) for the selector
         type_fcnSig = "bytes4"
-        sigData_type = "(uint256,uint256,address)"
-        assert types[0] == sigData_type
+        assert types[0] == "(uint256,uint256,address)"
         types[0] = type_fcnSig
 
         # Format inputs according to abi, otherwise brownie accounts fail to be understood as addresses
         # Remove sigData input to match args. We need to first remove sigData
         modified_abi = copy.deepcopy(fcn.abi)
-        # Remove sigData
+        # Remove sigData type
         modified_abi["inputs"].pop(0)
         formatted_args = format_input(modified_abi, args)
 
