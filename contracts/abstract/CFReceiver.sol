@@ -19,7 +19,7 @@ import "../interfaces/ICFReceiver.sol";
 
 abstract contract CFReceiver is ICFReceiver {
     /// @dev The address used to indicate whether the funds received are native or a token
-    address internal constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address private constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @dev    Chainflip's Vault address where xSwaps and xCalls will be originated from.
     address public cfVault;
