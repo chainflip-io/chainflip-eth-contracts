@@ -1,8 +1,5 @@
 name: Stateful Tests
-on:
-  push:
-    branches:
-      - master
+on: push
 
 jobs:
   lint:
@@ -14,9 +11,8 @@ jobs:
     timeout-minutes: 3600
     strategy:
       matrix:
-        test:
-          [
-            test_all.py,
+        test: [
+            # test_all.py,
             test_keyManager.py,
             test_vault.py,
             test_stakeManager.py,

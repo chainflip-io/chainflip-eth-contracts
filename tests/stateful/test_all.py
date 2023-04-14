@@ -18,7 +18,7 @@ def test_all(
     BaseStateMachine,
     state_machine,
     a,
-    cfDeployAllWhitelist,
+    cfDeploy,
     Deposit,
     Token,
     StakeManager,
@@ -97,12 +97,12 @@ def test_all(
         def __init__(
             cls,
             a,
-            cfDeployAllWhitelist,
+            cfDeploy,
             Deposit,
             Token,
             CFReceiverMock,
         ):
-            super().__init__(cls, a, cfDeployAllWhitelist)
+            super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
@@ -197,8 +197,8 @@ def test_all(
             self.km = self.orig_km
             self.cfReceiverMock = self.orig_cfRec
 
-            self.governor = cfDeployAllWhitelist.gov
-            self.communityKey = cfDeployAllWhitelist.communityKey
+            self.governor = cfDeploy.gov
+            self.communityKey = cfDeploy.communityKey
 
             self.allAddrs = self.stakers
             self.allAddrs = [
@@ -244,7 +244,7 @@ def test_all(
                 [Signer.gen_signer(None, {})]
                 * (TOTAL_KEYS - len(self.keyIDToCurKeys.values()))
             )
-            self.currentWhitelist = cfDeployAllWhitelist.whitelisted
+            self.currentWhitelist = cfDeploy.whitelisted
 
             # StakeManager
             self.totalStake = 0
@@ -2992,7 +2992,7 @@ def test_all(
     state_machine(
         StateMachine,
         a,
-        cfDeployAllWhitelist,
+        cfDeploy,
         Deposit,
         Token,
         CFReceiverMock,

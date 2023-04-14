@@ -42,7 +42,7 @@ def test_upgradability(
             self.v = self.orig_v
             self.km = self.orig_km
 
-            self.lastValidateTime = self.deployerContract.tx.timestamp + 1
+            self.lastValidateTime = self.deployerContract.tx.timestamp
             self.numTxsTested = 0
 
             # StakeManager
@@ -72,17 +72,11 @@ def test_upgradability(
                 KeyManager, self.km.getAggregateKey(), st_sender, cf.communityKey
             )
 
-            toWhitelist = [self.v, self.sm, self.f]
-
             print(
                 "                    rule_upgrade_keyManager",
                 st_sender,
                 newKeyManager.address,
             )
-
-            # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
-            # as part of the constructor, so we don't need to call it here.
-            newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
             for aggKeyNonceConsumer in aggKeyNonceConsumers:
                 assert aggKeyNonceConsumer.getKeyManager() == self.km
@@ -105,26 +99,6 @@ def test_upgradability(
         ):
 
             newVault = st_sender.deploy(Vault, self.km)
-
-            # Keep old Vault whitelisted
-            currentWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-            ]
-            toWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                newVault,
-            ]
-            signed_call_km(
-                self.km,
-                self.km.updateCanConsumeKeyNonce,
-                currentWhitelist,
-                toWhitelist,
-                sender=cf.ALICE,
-            )
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
             args = [
@@ -155,7 +129,7 @@ def test_upgradability(
 
             chain.sleep(st_sleep_time)
 
-            # Transfer all the remaining funds to new Vault and dewhitelist
+            # Transfer all the remaining funds to the new Vault
             startBalVault = self.v.balance()
             startBalRecipient = newVault.balance()
 
@@ -190,22 +164,6 @@ def test_upgradability(
             assert newVault.balance() - startBalRecipient == amountToTransfer
             assert newVault.balance() == self.TOTAL_FUNDS
 
-            # Dewhitelist old Vault
-            currentWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                newVault,
-            ]
-            toWhitelist = [self.sm, self.f, newVault]
-            signed_call_km(
-                self.km,
-                self.km.updateCanConsumeKeyNonce,
-                currentWhitelist,
-                toWhitelist,
-                sender=cf.ALICE,
-            )
-
             self.v = newVault
             self.lastValidateTime = tx.timestamp
             self.v_communityKey = self.v_communityKey
@@ -223,26 +181,6 @@ def test_upgradability(
             # In case of deploying a new StakeManager, the setFLIP function will probably be part of
             # the constructor to avoid frontrunning, as there is no deployer check now.
             newStakeManager.setFlip(self.f, {"from": st_sender})
-
-            # Keep old StakeManager whitelisted
-            currentWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-            ]
-            toWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                newStakeManager,
-            ]
-            signed_call_km(
-                self.km,
-                self.km.updateCanConsumeKeyNonce,
-                currentWhitelist,
-                toWhitelist,
-                sender=st_sender,
-            )
 
             chain.sleep(st_sleep_time)
 
@@ -277,22 +215,6 @@ def test_upgradability(
             assert self.f.balanceOf(newStakeManager) == self.totalFlipstaked
             assert self.f.balanceOf(self.sm) == 0
 
-            # Dewhitelist old StakeManager
-            currentWhitelist = [
-                self.v,
-                self.sm,
-                self.f,
-                newStakeManager,
-            ]
-            toWhitelist = [self.v, newStakeManager, self.f]
-            signed_call_km(
-                self.km,
-                self.km.updateCanConsumeKeyNonce,
-                currentWhitelist,
-                toWhitelist,
-                sender=cf.ALICE,
-            )
-
             self.sm = newStakeManager
             self.sm_communityKey = self.sm_communityKey
             self.sm_guard = False
@@ -325,17 +247,6 @@ def test_upgradability(
             assert self.sm_guard == self.sm.getCommunityGuardDisabled()
             assert self.sm_suspended == self.sm.getSuspendedState()
             assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
-
-        def invariant_keyManager_whitelist(self):
-            aggKeyNonceConsumers = [
-                self.v,
-                self.f,
-                self.sm,
-            ]
-            assert self.km.getNumberWhitelistedAddresses() == len(aggKeyNonceConsumers)
-
-            for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer.address) == True
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
