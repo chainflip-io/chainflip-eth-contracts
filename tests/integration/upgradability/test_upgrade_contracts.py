@@ -125,7 +125,7 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     # Time where fetchs (and maybe transfers) still can be done from the oldVault
     chain.sleep(DAY)
 
-    # Transfer all the remaining funds to new Vault and dewhitelist
+    # Transfer all the remaining funds to new Vault
     transfer_native(cf, cf.vault, newVault, cf.vault.balance())
     assert newVault.balance() == totalFunds
     assert cf.vault.balance() == 0

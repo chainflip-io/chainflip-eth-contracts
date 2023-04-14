@@ -182,19 +182,6 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
     assert cf.keyManager.getCommunityKey() == commkey
 
 
-def canConsumeKeyNonce_test(cf, signer):
-    sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE})
-
-
-def canConsumeKeyNonce_rev_test(cf, signer):
-    sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    with reverts(REV_MSG_SIG):
-        cf.keyManager.consumeKeyNonce(
-            sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE}
-        )
-
-
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
