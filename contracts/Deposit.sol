@@ -32,7 +32,7 @@ contract Deposit {
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);
         } else {
-            // Not checking the return value to avoid reverts for tokens with no return value.
+            // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
             token.transfer(msg.sender, token.balanceOf(address(this)));
         }
     }

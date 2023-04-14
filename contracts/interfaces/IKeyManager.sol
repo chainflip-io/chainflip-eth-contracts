@@ -46,8 +46,6 @@ interface IKeyManager is IShared {
 
     function setCommKeyWithCommKey(address newCommKey) external;
 
-    function govWithdrawNative() external;
-
     function govAction(bytes32 message) external;
 
     //////////////////////////////////////////////////////////////
