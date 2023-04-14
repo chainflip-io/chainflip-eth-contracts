@@ -298,7 +298,7 @@ def test_all(
         st_sig_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         st_addrs = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_msg_data = strategy("bytes")
+        st_msg_data = strategy("bytes32")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
         st_message_govAction = strategy("bytes32")
 
@@ -1642,22 +1642,30 @@ def test_all(
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
         def rule_consumeKeyNonce(self, st_sender, st_sig_key_idx, st_msg_data):
-            sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                st_msg_data.hex(), nonces, self.km.address
+
+            contractMsgHash = Signer.generate_contractMsgHash(
+                self.km.consumeKeyNonce, st_msg_data
             )
+            sigData = self.allKeys[st_sig_key_idx].generate_sigData(
+                Signer.generate_msgHash(
+                    contractMsgHash, nonces, self.km.address, self.km.address
+                ),
+                nonces,
+            )
+
             toLog = (st_sender, st_sig_key_idx, st_msg_data)
 
             if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
                 print("                    rule_consumeKeyNonce", *toLog)
                 tx = self.km.consumeKeyNonce(
-                    sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                    sigData, contractMsgHash, {"from": st_sender}
                 )
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print("        REV_MSG_SIG rule_consumeKeyNonce", *toLog)
                     self.km.consumeKeyNonce(
-                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                        sigData, contractMsgHash, {"from": st_sender}
                     )
 
         # Replace a key with a setKeyWithAggKey call - used to update aggKey, govKey and commKey
