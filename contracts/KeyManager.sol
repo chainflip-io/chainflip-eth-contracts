@@ -67,7 +67,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
-     * @notice  Concatenates the contractMsgHashed with the nonce, the address of the caller,
+     * @notice  Concatenates the contractMsgHash with the nonce, the address of the caller,
      *          the chainId, and the address of this contract, then hashes that and verifies the
      *          signature. This is done to prevent replay attacks.
      * @param sigData   The keccak256 hash over the msg (uint256).
