@@ -2124,20 +2124,31 @@ def test_all(
         def rule_upgrade_Vault(self, st_sender, st_native_amount, st_sleep_time):
             newVault = st_sender.deploy(Vault, self.km)
 
-            args = [
-                [
-                    NATIVE_ADDR,
-                    st_sender,
-                    st_native_amount,
-                ]
-            ]
+            tokens = [NATIVE_ADDR, self.tokenA, self.tokenB]
+            recipients = [newVault, newVault, newVault]
+            args = [craftTransferParamsArray(tokens, recipients, amountsToTransfer)]
+
             signer = self._get_key_prob(AGG)
             toLog = (*args, st_sender)
             if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault", *toLog)
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
-                        self.km, self.v.transfer, *args, signer=signer, sender=st_sender
+                        self.km,
+                        self.v.transferBatch,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print("        REV_MSG_SIG rule_upgrade_Vault", *toLog)
+                with reverts(REV_MSG_SIG):
+                    signed_call_km(
+                        self.km,
+                        self.v.transferBatch,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
                     )
             else:
 
@@ -2155,11 +2166,6 @@ def test_all(
                 ]
 
                 print("                    rule_upgrade_vault", *amountsToTransfer)
-
-                tokens = [NATIVE_ADDR, self.tokenA, self.tokenB]
-                recipients = [newVault, newVault, newVault]
-
-                args = [craftTransferParamsArray(tokens, recipients, amountsToTransfer)]
 
                 tx = signed_call_km(
                     self.km,
