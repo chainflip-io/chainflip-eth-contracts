@@ -2124,14 +2124,27 @@ def test_all(
         def rule_upgrade_Vault(self, st_sender, st_native_amount, st_sleep_time):
             newVault = st_sender.deploy(Vault, self.km)
 
+            # Transfer all the remaining native and other funds (TokenA & TokenB) to new Vault
+            iniNativeBalance = self.v.balance()
+            initTokenABalance = self.tokenA.balanceOf(self.v)
+            iniTokenBBalance = self.tokenB.balanceOf(self.v)
+
+            amountsToTransfer = [
+                iniNativeBalance,
+                initTokenABalance,
+                iniTokenBBalance,
+            ]
+
             tokens = [NATIVE_ADDR, self.tokenA, self.tokenB]
             recipients = [newVault, newVault, newVault]
             args = [craftTransferParamsArray(tokens, recipients, amountsToTransfer)]
 
             signer = self._get_key_prob(AGG)
-            toLog = (*args, st_sender)
             if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault", *toLog)
+                print(
+                    "        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault",
+                    *amountsToTransfer,
+                )
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
                         self.km,
@@ -2141,7 +2154,7 @@ def test_all(
                         sender=st_sender,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_upgrade_Vault", *toLog)
+                print("        REV_MSG_SIG rule_upgrade_Vault", *amountsToTransfer)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
@@ -2153,17 +2166,6 @@ def test_all(
             else:
 
                 chain.sleep(st_sleep_time)
-
-                # Transfer all the remaining native and other funds (TokenA & TokenB) to new Vault
-                iniNativeBalance = self.v.balance()
-                initTokenABalance = self.tokenA.balanceOf(self.v)
-                iniTokenBBalance = self.tokenB.balanceOf(self.v)
-
-                amountsToTransfer = [
-                    iniNativeBalance,
-                    initTokenABalance,
-                    iniTokenBBalance,
-                ]
 
                 print("                    rule_upgrade_vault", *amountsToTransfer)
 
