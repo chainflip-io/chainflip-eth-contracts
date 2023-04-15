@@ -94,6 +94,18 @@ def test_consumeKeyNonce_rev_chainID(cf, st_chainID, st_contractMsgHash, st_send
                 sigData, st_contractMsgHash, {"from": st_sender}
             )
 
+    # Proof that it would pass verification with the right chainID
+    sigData = AGG_SIGNER_1.generate_sigData(
+        Signer.generate_msgHash(
+            st_contractMsgHash,
+            nonces,
+            cf.keyManager.address,
+            st_sender,
+        ),
+        nonces,
+    )
+    cf.keyManager.consumeKeyNonce(sigData, st_contractMsgHash, {"from": st_sender})
+
 
 @given(st_contractMsgHash=strategy("bytes32"), st_sender=strategy("address"))
 def test_consumeKeyNonce_rev_replay(cf, st_contractMsgHash, st_sender):
