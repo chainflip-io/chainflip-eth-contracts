@@ -2255,6 +2255,18 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print(
+                    "        REV_MSG_SIG rule_upgrade_stakeManager",
+                )
+                with reverts(REV_MSG_SIG):
+                    signed_call_km(
+                        self.km,
+                        self.sm.registerClaim,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
+                    )
             else:
                 chain.sleep(st_sleep_time)
 
