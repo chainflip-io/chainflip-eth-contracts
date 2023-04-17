@@ -32,9 +32,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
 
-    /// @dev    The last block number in which the State Chain updated the totalSupply
-    uint256 private _lastSupplyUpdateBlockNum = 0;
-
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
     //     uint amount;
@@ -108,9 +105,8 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
      *          will be sent back. If losing an auction while being a validator,
      *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current aggregate key (uint)
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
      * @param nodeID    The nodeID of the staker
      * @param amount    The amount of stake to be locked up
      * @param staker    The staker who is to be sent FLIP
@@ -131,16 +127,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         nzAddr(staker)
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.registerClaim.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    nodeID,
-                    amount,
-                    staker,
-                    expiryTime
-                )
-            )
+            keccak256(abi.encode(this.registerClaim.selector, nodeID, amount, staker, expiryTime))
         )
     {
         require(
@@ -169,17 +156,19 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      */
     function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
         Claim memory claim = _pendingClaims[nodeID];
-        require(
-            block.timestamp >= claim.startTime && block.timestamp <= claim.expiryTime,
-            "Staking: early, late, or execd"
-        );
+        require(block.timestamp >= claim.startTime && claim.expiryTime > 0, "Staking: early or already execd");
 
         // Housekeeping
         delete _pendingClaims[nodeID];
-        emit ClaimExecuted(nodeID, claim.amount);
 
-        // Send the tokens
-        _FLIP.transfer(claim.staker, claim.amount);
+        if (block.timestamp <= claim.expiryTime) {
+            emit ClaimExecuted(nodeID, claim.amount);
+
+            // Send the tokens
+            _FLIP.transfer(claim.staker, claim.amount);
+        } else {
+            emit ClaimExpired(nodeID, claim.amount);
+        }
     }
 
     /**
@@ -217,80 +206,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         address recipient = getKeyManager().getGovernanceKey();
         payable(recipient).transfer(amount);
         emit GovernanceWithdrawal(recipient, amount);
-    }
-
-    /**
-     * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints or burns as appropriate. The message must be 
-     '          signed by the aggregate key.
-     * @param sigData               signature over the abi-encoded function params
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     * @param staker Staking contract owner of the tokens to be minted/burnt
-     */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber,
-        address staker
-    )
-        external
-        override
-        nzUint(newTotalSupply)
-        nzAddr(staker)
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateFlipSupply.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newTotalSupply,
-                    stateChainBlockNumber,
-                    staker
-                )
-            )
-        )
-    {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
-        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
-        IFLIP flip = _FLIP;
-        uint256 oldSupply = flip.totalSupply();
-        if (newTotalSupply < oldSupply) {
-            uint256 amount = oldSupply - newTotalSupply;
-            flip.burn(staker, amount);
-        } else if (newTotalSupply > oldSupply) {
-            uint256 amount = newTotalSupply - oldSupply;
-            flip.mint(staker, amount);
-        }
-        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
-    }
-
-    function updateFLIPStakeManager(
-        SigData calldata sigData,
-        address newStakeManager
-    )
-        external
-        nzAddr(newStakeManager)
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateFLIPStakeManager.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newStakeManager
-                )
-            )
-        )
-    {
-        _FLIP.updateStakeManager(newStakeManager);
-    }
-
-    /**
-     * @notice  Get the last state chain block number of the last supply update
-     * @return  The state chain block number of the last supply update
-     */
-    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
-        return _lastSupplyUpdateBlockNum;
     }
 
     /**

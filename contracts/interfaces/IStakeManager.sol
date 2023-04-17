@@ -17,10 +17,10 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         uint48 expiryTime
     );
     event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
+    event ClaimExpired(bytes32 indexed nodeID, uint256 amount);
     event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
     event GovernanceWithdrawal(address to, uint256 amount);
     event FLIPSet(address flip);
-    event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
 
     struct Claim {
         uint256 amount;
@@ -55,9 +55,8 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
      *          will be sent back. If losing an auction while being a validator,
      *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current aggregate key (uint)
+     * @param sigData   Struct containing the signature data over the message to verify,
+     *                  signed by the aggregate key.
      * @param nodeID    The nodeID of the staker
      * @param amount    The amount of stake to be locked up
      * @param staker    The staker who is to be sent FLIP
@@ -90,21 +89,6 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      * @param newMinStake   The new minimum stake
      */
     function setMinStake(uint256 newMinStake) external;
-
-    /**
-     * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints and burns as appropriate
-     * @param sigData               signature over the abi-encoded function params
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     * @param staker Staking contract owner of the tokens to be minted/burnt
-     */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber,
-        address staker
-    ) external;
 
     /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
@@ -146,10 +130,4 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      * @return  The claim (Claim)
      */
     function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
-
-    /**
-     * @notice  Get the last state chain block number that the supply was updated at
-     * @return  The state chain block number of the last update
-     */
-    function getLastSupplyUpdateBlockNumber() external view returns (uint256);
 }

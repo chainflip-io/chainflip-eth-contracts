@@ -78,18 +78,8 @@ AGG_SIGNER_2 = Signer(AGG_PRIV_HEX_2, AGG, nonces)
 NULL_KEY = (0, 0)
 BAD_AGG_KEY = [0xEE2E4DC8797847D69A9E59C1B051E3EF2ABD7A60AA7EDC3100A69666DF9AC525, 0x01]
 
-# setCanConsumeKeyNonce
-REV_MSG_SET = "KeyManager: already set"
-REV_MSG_DUPLICATE = "KeyManager: address already whitelisted"
-# updateCanConsumeKeyNonce
-REV_MSG_LENGTH = "KeyManager: array incorrect length"
-REV_MSG_CANNOT_DEWHITELIST = "KeyManager: cannot dewhitelist"
 # consumeKeyNonce
-REV_MSG_WHITELIST = "KeyManager: not whitelisted"
-REV_MSG_MSGHASH = "KeyManager: invalid msgHash"
 REV_MSG_SIG = "KeyManager: Sig invalid"
-REV_MSG_WRONG_KEYMANADDR = "KeyManager: wrong keyManAddr"
-REV_MSG_WRONG_CHAINID = "KeyManager: wrong chainID"
 REV_MSG_KEYMANAGER_NONCE = "KeyManager: nonce already used"
 # modifiers
 REV_MSG_DELAY = "KeyManager: not enough time"
@@ -127,7 +117,7 @@ REV_MSG_MIN_STAKE = "Staking: stake too small"
 REV_MSG_SM_ARR_LEN = "Staking: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
-REV_MSG_NOT_ON_TIME = "Staking: early, late, or execd"
+REV_MSG_NOT_ON_TIME = "Staking: early or already execd"
 REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
 REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 

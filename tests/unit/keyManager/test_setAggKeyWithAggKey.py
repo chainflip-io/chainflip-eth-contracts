@@ -3,52 +3,52 @@ from brownie import reverts
 from shared_tests import *
 
 
-def test_setAggKeyWithAggKey(cfAW):
-    setAggKeyWithAggKey_test(cfAW)
+def test_setAggKeyWithAggKey(cf):
+    setAggKeyWithAggKey_test(cf)
 
 
 def test_setAggKeyWithAggKey_rev_newPubKeyX(cf):
     setKey_rev_newPubKeyX_test(cf)
 
 
-def test_setAggKeyWithAggKey_rev_pubKeyX(cfAW):
+def test_setAggKeyWithAggKey_rev_pubKeyX(cf):
     newKey = AGG_SIGNER_2.getPubData()
     newKey[0] = 0
     with reverts(REV_MSG_NZ_PUBKEYX):
-        signed_call_cf(cfAW, cfAW.keyManager.setAggKeyWithAggKey, newKey)
+        signed_call_cf(cf, cf.keyManager.setAggKeyWithAggKey, newKey)
 
 
-def test_setAggKeyWithAggKey_rev_nonceTimesGAddr(cfAW):
+def test_setAggKeyWithAggKey_rev_nonceTimesGAddr(cf):
     newKey = AGG_SIGNER_2.getPubData()
-    nullSig = agg_null_sig(cfAW.keyManager.address, chain.id)
-    callDataNoSig = cfAW.keyManager.setAggKeyWithAggKey.encode_input(nullSig, newKey)
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
-    sigData[3] = ZERO_ADDR
+
+    sigData = AGG_SIGNER_1.getSigData(
+        cf.keyManager, cf.keyManager.setAggKeyWithAggKey, newKey
+    )
+    sigData[2] = ZERO_ADDR
+
     with reverts(REV_MSG_INPUTS_0):
-        cfAW.keyManager.setAggKeyWithAggKey(sigData, newKey, {"from": cfAW.ALICE})
+        cf.keyManager.setAggKeyWithAggKey(sigData, newKey, {"from": cf.ALICE})
 
 
-def test_setAggKeyWithAggKey_rev_msgHash(cfAW):
-    nullSig = agg_null_sig(cfAW.keyManager.address, chain.id)
-    callDataNoSig = cfAW.keyManager.setAggKeyWithAggKey.encode_input(
-        nullSig, AGG_SIGNER_2.getPubData()
+def test_setAggKeyWithAggKey_rev_sig(cf):
+    newKey = AGG_SIGNER_2.getPubData()
+
+    sigData = AGG_SIGNER_1.getSigData(
+        cf.keyManager, cf.keyManager.setAggKeyWithAggKey, newKey
     )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
-    sigData[2] += 1
-    with reverts(REV_MSG_MSGHASH):
-        cfAW.keyManager.setAggKeyWithAggKey(
-            sigData, AGG_SIGNER_2.getPubData(), {"from": cfAW.ALICE}
-        )
 
+    sigdata_modif = sigData[:]
+    sigdata_modif[0] += 1
 
-def test_setAggKeyWithAggKey_rev_sig(cfAW):
-    nullSig = agg_null_sig(cfAW.keyManager.address, chain.id)
-    callDataNoSig = cfAW.keyManager.setAggKeyWithAggKey.encode_input(
-        nullSig, AGG_SIGNER_2.getPubData()
-    )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cfAW.keyManager.address)
-    sigData[3] += 1
     with reverts(REV_MSG_SIG):
-        cfAW.keyManager.setAggKeyWithAggKey(
-            sigData, AGG_SIGNER_2.getPubData(), {"from": cfAW.ALICE}
-        )
+        cf.keyManager.setAggKeyWithAggKey(sigdata_modif, newKey, {"from": cf.ALICE})
+
+    sigdata_modif = sigData[:]
+    sigdata_modif[1] += 1
+    with reverts(REV_MSG_SIG):
+        cf.keyManager.setAggKeyWithAggKey(sigdata_modif, newKey, {"from": cf.ALICE})
+
+    sigdata_modif = sigData[:]
+    sigdata_modif[2] = NON_ZERO_ADDR
+    with reverts(REV_MSG_SIG):
+        cf.keyManager.setAggKeyWithAggKey(sigdata_modif, newKey, {"from": cf.ALICE})

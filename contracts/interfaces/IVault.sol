@@ -48,12 +48,12 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function xSwapToken(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         IERC20 srcToken,
         uint256 amount
     ) external;
 
-    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint16 dstToken) external payable;
+    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint32 dstToken) external payable;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -64,18 +64,18 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function xCallNative(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         bytes calldata refundAddress
     ) external payable;
 
     function xCallToken(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         IERC20 srcToken,
         uint256 amount,
         bytes calldata refundAddress

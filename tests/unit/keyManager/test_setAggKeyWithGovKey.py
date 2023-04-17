@@ -5,9 +5,9 @@ from shared_tests import *
 import time
 
 
-def test_setAggKeyWithGovKey(cfAW):
+def test_setAggKeyWithGovKey(cf):
     chain.sleep(AGG_KEY_TIMEOUT)
-    setAggKeyWithGovKey_test(cfAW)
+    setAggKeyWithGovKey_test(cf)
 
 
 def test_setAggKeyWithGovKey_rev_time(cf):

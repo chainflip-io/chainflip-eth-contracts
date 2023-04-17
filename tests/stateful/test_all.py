@@ -18,7 +18,7 @@ def test_all(
     BaseStateMachine,
     state_machine,
     a,
-    cfDeployAllWhitelist,
+    cfDeploy,
     Deposit,
     Token,
     StakeManager,
@@ -97,12 +97,12 @@ def test_all(
         def __init__(
             cls,
             a,
-            cfDeployAllWhitelist,
+            cfDeploy,
             Deposit,
             Token,
             CFReceiverMock,
         ):
-            super().__init__(cls, a, cfDeployAllWhitelist)
+            super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
@@ -197,8 +197,8 @@ def test_all(
             self.km = self.orig_km
             self.cfReceiverMock = self.orig_cfRec
 
-            self.governor = cfDeployAllWhitelist.gov
-            self.communityKey = cfDeployAllWhitelist.communityKey
+            self.governor = cfDeploy.gov
+            self.communityKey = cfDeploy.communityKey
 
             self.allAddrs = self.stakers
             self.allAddrs = [
@@ -238,13 +238,12 @@ def test_all(
             self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
-            self.lastValidateTime = self.deployerContract.tx.timestamp + 1
+            self.lastValidateTime = self.deployerContract.tx.timestamp
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + (
                 [Signer.gen_signer(None, {})]
                 * (TOTAL_KEYS - len(self.keyIDToCurKeys.values()))
             )
-            self.currentWhitelist = cfDeployAllWhitelist.whitelisted
 
             # StakeManager
             self.totalStake = 0
@@ -287,19 +286,19 @@ def test_all(
         st_addr = strategy("address", length=MAX_NUM_SENDERS)
         st_recip = strategy("address", length=MAX_NUM_SENDERS)
         st_recips = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_dstToken = strategy("uint16")
+        st_dstToken = strategy("uint32")
         st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
         st_refundAddress = strategy("bytes")
-        st_dstNativeBudget = strategy("uint")
+        st_gasAmount = strategy("uint")
 
         # KeyManager
 
         st_sig_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         st_new_key_idx = strategy("uint", max_value=TOTAL_KEYS - 1)
         st_addrs = strategy("address[]", length=MAX_NUM_SENDERS, unique=True)
-        st_msg_data = strategy("bytes")
+        st_msg_data = strategy("bytes32")
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
         st_message_govAction = strategy("bytes32")
 
@@ -440,13 +439,6 @@ def test_all(
                         self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
                     )
 
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_allBatch", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
-                    )
-
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_allBatch", signer)
                 with reverts(REV_MSG_SIG):
@@ -548,12 +540,7 @@ def test_all(
                     signed_call_km(
                         self.km, self.v.transfer, *args, signer=signer, sender=st_sender
                     )
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST _vault_transfer", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km, self.v.transfer, *args, signer=signer, sender=st_sender
-                    )
+
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG _vault_transfer", signer)
                 with reverts(REV_MSG_SIG):
@@ -644,16 +631,6 @@ def test_all(
                         sender=st_sender,
                     )
 
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_vault_transferBatch", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km,
-                        self.v.transferBatch,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_vault_transferBatch", *toLog)
                 with reverts(REV_MSG_SIG):
@@ -784,16 +761,7 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositNative", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km,
-                        self.v.deployAndFetchBatch,
-                        [[st_swapID, NATIVE_ADDR]],
-                        signer=signer,
-                        sender=st_sender,
-                    )
+
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_fetchDepositNative", signer)
                 with reverts(REV_MSG_SIG):
@@ -863,18 +831,7 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositNativeBatch", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km,
-                        self.v.deployAndFetchBatch,
-                        craftDeployFetchParamsArray(
-                            st_swapIDs, [NATIVE_ADDR] * len(st_swapIDs)
-                        ),
-                        signer=signer,
-                        sender=st_sender,
-                    )
+
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_fetchDepositNativeBatch", *toLog)
                 with reverts(REV_MSG_SIG):
@@ -952,16 +909,7 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST _fetchDepositToken", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km,
-                        self.v.deployAndFetchBatch,
-                        args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
+
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG _fetchDepositToken", signer)
                 with reverts(REV_MSG_SIG):
@@ -1022,16 +970,6 @@ def test_all(
             if self.v_suspended:
                 print("        REV_MSG_GOV_SUSPENDED _fetchDepositTokenBatch")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_call_km(
-                        self.km,
-                        self.v.deployAndFetchBatch,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_fetchDepositTokenBatch", *toLog)
-                with reverts(REV_MSG_WHITELIST):
                     signed_call_km(
                         self.km,
                         self.v.deployAndFetchBatch,
@@ -1221,7 +1159,7 @@ def test_all(
             st_native_amount,
             st_dstChain,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
         ):
             args = (
@@ -1229,7 +1167,7 @@ def test_all(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 st_refundAddress,
             )
             toLog = (*args, st_sender)
@@ -1267,7 +1205,7 @@ def test_all(
                             st_native_amount,
                             st_sender,
                             hexStr(st_message),
-                            st_dstNativeBudget,
+                            st_gasAmount,
                             hexStr(st_refundAddress),
                         ]
 
@@ -1280,7 +1218,7 @@ def test_all(
             st_token,
             st_dstChain,
             st_message,
-            st_dstNativeBudget,
+            st_gasAmount,
             st_refundAddress,
         ):
             args = (
@@ -1288,7 +1226,7 @@ def test_all(
                 st_dstAddress,
                 st_dstToken,
                 st_message,
-                st_dstNativeBudget,
+                st_gasAmount,
                 st_token,
                 st_token_amount,
                 st_refundAddress,
@@ -1350,7 +1288,7 @@ def test_all(
                             st_token_amount,
                             st_sender,
                             hexStr(st_message),
-                            st_dstNativeBudget,
+                            st_gasAmount,
                             hexStr(st_refundAddress),
                         ]
 
@@ -1497,16 +1435,6 @@ def test_all(
                             signer=signer,
                             sender=st_sender,
                         )
-                elif not self.v in self.currentWhitelist:
-                    print("        REV_MSG_WHITELIST rule_executexSwapAndCall", *toLog)
-                    with reverts(REV_MSG_WHITELIST):
-                        signed_call_km(
-                            self.km,
-                            self.v.executexSwapAndCall,
-                            *args,
-                            signer=signer,
-                            sender=st_sender,
-                        )
 
                 elif signer != self.keyIDToCurKeys[AGG]:
                     print("        REV_MSG_SIG rule_executexSwapAndCall", signer)
@@ -1581,17 +1509,6 @@ def test_all(
                 if st_token_amount == 0:
                     print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
                     with reverts(REV_MSG_NZ_UINT):
-                        signed_call_km(
-                            self.km,
-                            self.v.executexSwapAndCall,
-                            *args,
-                            signer=signer,
-                            sender=st_sender,
-                        )
-
-                elif not self.v in self.currentWhitelist:
-                    print("        REV_MSG_WHITELIST rule_executexSwapAndCall", *toLog)
-                    with reverts(REV_MSG_WHITELIST):
                         signed_call_km(
                             self.km,
                             self.v.executexSwapAndCall,
@@ -1690,16 +1607,6 @@ def test_all(
                     signed_call_km(
                         self.km, self.v.executexCall, *args, sender=st_sender
                     )
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_executexCall", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km,
-                        self.v.executexCall,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
 
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_executexCall", signer)
@@ -1725,78 +1632,6 @@ def test_all(
 
         # KeyManager
 
-        # Dewhitelist all other addresses. Do this only rarely to prevent contracts not being functional too often
-        def rule_updateCanConsumeKeyNonce_dewhitelist(
-            self, st_sender, st_addr, st_addrs
-        ):
-            # So dewhitelisting only happens 1/5 of the times
-            if st_addr != self.governor:
-                return
-
-            toWhitelist = st_addrs
-            args = (self.currentWhitelist, toWhitelist)
-            signer = self._get_key_prob(AGG)
-
-            if signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_updateCanConsumeKeyNonce_dewhitelist")
-                with reverts(REV_MSG_SIG):
-                    signed_call_km(
-                        self.km,
-                        self.km.updateCanConsumeKeyNonce,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-            else:
-                print(
-                    "                    rule_updateCanConsumeKeyNonce_dewhitelist",
-                    st_sender,
-                )
-                tx = signed_call_km(
-                    self.km,
-                    self.km.updateCanConsumeKeyNonce,
-                    *args,
-                    signer=signer,
-                    sender=st_sender,
-                )
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
-
-        # Updates the list of addresses that are nonce consumers. Dewhitelist other contracts
-        def rule_updateCanConsumeKeyNonce_whitelist(self, st_sender):
-            # Regardless of what is whitelisted, whitelist the current contracts
-            toWhitelist = [self.v, self.sm, self.f] + list(a)
-            args = (self.currentWhitelist, toWhitelist)
-            signer = self._get_key_prob(AGG)
-
-            if signer != self.keyIDToCurKeys[AGG]:
-                print(
-                    "        REV_MSG_SIG rule_updateCanConsumeKeyNonce_whitelist",
-                    st_sender,
-                )
-                with reverts(REV_MSG_SIG):
-                    signed_call_km(
-                        self.km,
-                        self.km.updateCanConsumeKeyNonce,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-            else:
-                print(
-                    "                    rule_updateCanConsumeKeyNonce_whitelist",
-                    st_sender,
-                )
-                tx = signed_call_km(
-                    self.km,
-                    self.km.updateCanConsumeKeyNonce,
-                    *args,
-                    signer=signer,
-                    sender=st_sender,
-                )
-                self.currentWhitelist = toWhitelist
-                self.lastValidateTime = tx.timestamp
-
         # Get the key that is probably what we want, but also has a low chance of choosing
         # the 'wrong' key which will cause a revert and tests the full range. Maximises useful
         # results whilst still testing the full range.
@@ -1807,28 +1642,30 @@ def test_all(
         # Checks if consumeKeyNonce returns the correct value when called with a random sender,
         # signing key, random keyID that the signing key is supposed to be, and random msgData
         def rule_consumeKeyNonce(self, st_sender, st_sig_key_idx, st_msg_data):
-            sigData = self.allKeys[st_sig_key_idx].getSigDataWithNonces(
-                st_msg_data.hex(), nonces, self.km.address
+
+            contractMsgHash = Signer.generate_contractMsgHash(
+                self.km.consumeKeyNonce, st_msg_data
             )
+            sigData = self.allKeys[st_sig_key_idx].generate_sigData(
+                Signer.generate_msgHash(
+                    contractMsgHash, nonces, self.km.address, st_sender
+                ),
+                nonces,
+            )
+
             toLog = (st_sender, st_sig_key_idx, st_msg_data)
 
-            if not st_sender in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_consumeKeyNonce", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    self.km.consumeKeyNonce(
-                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
-                    )
-            elif self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
+            if self.allKeys[st_sig_key_idx] == self.keyIDToCurKeys[AGG]:
                 print("                    rule_consumeKeyNonce", *toLog)
                 tx = self.km.consumeKeyNonce(
-                    sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                    sigData, contractMsgHash, {"from": st_sender}
                 )
                 self.lastValidateTime = tx.timestamp
             else:
                 with reverts(REV_MSG_SIG):
                     print("        REV_MSG_SIG rule_consumeKeyNonce", *toLog)
                     self.km.consumeKeyNonce(
-                        sigData, cleanHexStr(sigData[2]), {"from": st_sender}
+                        sigData, contractMsgHash, {"from": st_sender}
                     )
 
         # Replace a key with a setKeyWithAggKey call - used to update aggKey, govKey and commKey
@@ -2054,16 +1891,6 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-            elif not self.sm in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_registerClaim", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km,
-                        self.sm.registerClaim,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
             elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_registerClaim", signer)
                 with reverts(REV_MSG_SIG):
@@ -2121,21 +1948,26 @@ def test_all(
 
             claim = self.pendingClaims[st_nodeID]
 
-            if not claim[2] <= getChainTime() <= claim[3]:
+            # Claim can be empty
+            if not claim[2] <= getChainTime() or claim == NULL_CLAIM:
                 print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
-            elif self.flipBals[self.sm] < claim[0]:
+            # If it's expired it won't revert regardless of the token balances
+            elif self.flipBals[self.sm] < claim[0] and not getChainTime() <= claim[3]:
                 print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
-                self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
-                self.flipBals[claim[1]] += claim[0]
-                self.flipBals[self.sm] -= claim[0]
-                self.totalStake -= claim[0]
+                # Claim not expired
+                if getChainTime() <= claim[3]:
+                    self.flipBals[claim[1]] += claim[0]
+                    self.flipBals[self.sm] -= claim[0]
+                    self.totalStake -= claim[0]
+
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
 
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
@@ -2187,17 +2019,7 @@ def test_all(
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender, st_amount_supply)
 
-            if not self.f in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_updateFlipSupply", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km,
-                        self.f.updateFlipSupply,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-            elif signer != self.keyIDToCurKeys[AGG]:
+            if signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_updateFlipSupply", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
@@ -2258,34 +2080,9 @@ def test_all(
             newKeyManager = st_sender.deploy(
                 KeyManager, self.km.getAggregateKey(), self.governor, self.communityKey
             )
-            toWhitelist = self.currentWhitelist.copy()
-
-            # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
-            # as part of the constructor, so we don't need to call it here.
-            newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": st_sender})
 
             signer = self._get_key_prob(AGG)
 
-            # If any nonceConsumer is not whitelisted in oldKeyManager, check and return
-            for aggKeyNonceConsumer in aggKeyNonceConsumers:
-                if not aggKeyNonceConsumer in self.currentWhitelist:
-                    assert self.km.canConsumeKeyNonce(aggKeyNonceConsumer) == False
-                    with reverts(REV_MSG_WHITELIST):
-                        print(
-                            "        REV_MSG_WHITELIST rule_upgrade_keyManager",
-                            st_sender,
-                            newKeyManager.address,
-                        )
-                        signed_call_km(
-                            self.km,
-                            aggKeyNonceConsumer.updateKeyManager,
-                            newKeyManager,
-                            signer=signer,
-                            sender=st_sender,
-                        )
-                    return
-
-            # All whitelisted
             if signer != self.keyIDToCurKeys[AGG]:
                 print(
                     "        REV_MSG_SIG rule_upgrade_keyManager",
@@ -2322,82 +2119,33 @@ def test_all(
                 self._updateBalancesOnUpgrade(self.km, newKeyManager)
                 self.km = newKeyManager
                 self.lastValidateTime = self.km.tx.timestamp
-                self.currentWhitelist = toWhitelist
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
         def rule_upgrade_Vault(self, st_sender, st_native_amount, st_sleep_time):
             newVault = st_sender.deploy(Vault, self.km)
 
-            # Keep old Vault whitelisted
-            toWhitelist = self.currentWhitelist.copy() + [newVault]
-            args = [
-                [
-                    NATIVE_ADDR,
-                    st_sender,
-                    st_native_amount,
-                ]
+            # Transfer all the remaining native and other funds (TokenA & TokenB) to new Vault
+            iniNativeBalance = self.v.balance()
+            initTokenABalance = self.tokenA.balanceOf(self.v)
+            iniTokenBBalance = self.tokenB.balanceOf(self.v)
+
+            amountsToTransfer = [
+                iniNativeBalance,
+                initTokenABalance,
+                iniTokenBBalance,
             ]
+
+            tokens = [NATIVE_ADDR, self.tokenA, self.tokenB]
+            recipients = [newVault, newVault, newVault]
+            args = [craftTransferParamsArray(tokens, recipients, amountsToTransfer)]
+
             signer = self._get_key_prob(AGG)
-            toLog = (*args, st_sender)
             if self.v_suspended:
-                print("        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault")
+                print(
+                    "        REV_MSG_GOV_SUSPENDED rule_upgrade_Vault",
+                    *amountsToTransfer,
+                )
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    signed_call_km(
-                        self.km, self.v.transfer, *args, signer=signer, sender=st_sender
-                    )
-            # if old vault is not whitelisted it will fail later
-            elif not self.v in self.currentWhitelist:
-                print("        REV_MSG_WHITELIST rule_upgrade_Vault", *toLog)
-                with reverts(REV_MSG_WHITELIST):
-                    signed_call_km(
-                        self.km, self.v.transfer, *args, signer=signer, sender=st_sender
-                    )
-            else:
-                args = (self.currentWhitelist, toWhitelist)
-
-                if signer != self.keyIDToCurKeys[AGG]:
-                    print("        REV_MSG_SIG rule_upgrade_Vault", *toLog)
-                    with reverts(REV_MSG_SIG):
-                        signed_call_km(
-                            self.km,
-                            self.km.updateCanConsumeKeyNonce,
-                            *args,
-                            signer=signer,
-                            sender=st_sender,
-                        )
-                else:
-                    # UpdateCanConsumeKeyNonce
-                    signed_call_km(
-                        self.km,
-                        self.km.updateCanConsumeKeyNonce,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-                    self.currentWhitelist = toWhitelist.copy()
-
-                    chain.sleep(st_sleep_time)
-
-                    # Transfer all the remaining native and other funds (TokenA & TokenB) to new Vault and dewhitelist
-                    iniNativeBalance = self.v.balance()
-                    initTokenABalance = self.tokenA.balanceOf(self.v)
-                    iniTokenBBalance = self.tokenB.balanceOf(self.v)
-
-                    amountsToTransfer = [
-                        iniNativeBalance,
-                        initTokenABalance,
-                        iniTokenBBalance,
-                    ]
-
-                    print("                    rule_upgrade_vault", *amountsToTransfer)
-
-                    tokens = [NATIVE_ADDR, self.tokenA, self.tokenB]
-                    recipients = [newVault, newVault, newVault]
-
-                    args = [
-                        craftTransferParamsArray(tokens, recipients, amountsToTransfer)
-                    ]
-
                     signed_call_km(
                         self.km,
                         self.v.transferBatch,
@@ -2405,81 +2153,86 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-
-                    # Check that all balances have been transferred
-                    assert self.v.balance() == 0
-                    assert self.tokenA.balanceOf(self.v) == 0
-                    assert self.tokenB.balanceOf(self.v) == 0
-
-                    assert self.tokenA.balanceOf(newVault) == initTokenABalance
-                    assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
-
-                    self._updateBalancesOnUpgrade(self.v, newVault)
-
-                    # Dewhitelist old Vault
-                    toWhitelist = self.currentWhitelist.copy()
-                    toWhitelist.remove(self.v)
-
-                    # UpdateCanConsumeKeyNonce
-                    args = (
-                        self.currentWhitelist,
-                        toWhitelist,
-                    )
-                    tx = signed_call_km(
+            elif signer != self.keyIDToCurKeys[AGG]:
+                print("        REV_MSG_SIG rule_upgrade_Vault", *amountsToTransfer)
+                with reverts(REV_MSG_SIG):
+                    signed_call_km(
                         self.km,
-                        self.km.updateCanConsumeKeyNonce,
+                        self.v.transferBatch,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
+            else:
 
-                    # Update state variables
-                    self.v = newVault
-                    self.lastValidateTime = tx.timestamp
-                    self.currentWhitelist = toWhitelist
-                    self.v_communityGuardDisabled = False
-                    self.communityKey = self.communityKey
-                    self.v_suspended = False
+                chain.sleep(st_sleep_time)
 
-                    # Deploy a new CFReceiverMock that receives from the new Vault
-                    self.cfReceiverMock = st_sender.deploy(CFReceiverMock, self.v)
+                print("                    rule_upgrade_vault", *amountsToTransfer)
 
-                    # Create new addresses for the new Vault and initialize Balances
-                    newCreate2EthAddrs = [
-                        getCreate2Addr(
-                            self.v.address,
-                            cleanHexStrPad(swapID),
-                            Deposit,
-                            cleanHexStrPad(NATIVE_ADDR),
-                        )
-                        for swapID in range(MAX_SWAPID + 1)
-                    ]
-                    newCreate2TokenAAddrs = [
-                        getCreate2Addr(
-                            self.v.address,
-                            cleanHexStrPad(swapID),
-                            Deposit,
-                            cleanHexStrPad(self.tokenA.address),
-                        )
-                        for swapID in range(MAX_SWAPID + 1)
-                    ]
-                    newCreate2TokenBAddrs = [
-                        getCreate2Addr(
-                            self.v.address,
-                            cleanHexStrPad(swapID),
-                            Deposit,
-                            cleanHexStrPad(self.tokenB.address),
-                        )
-                        for swapID in range(MAX_SWAPID + 1)
-                    ]
+                tx = signed_call_km(
+                    self.km,
+                    self.v.transferBatch,
+                    *args,
+                    signer=signer,
+                    sender=st_sender,
+                )
 
-                    for swapID in range(MAX_SWAPID + 1):
-                        # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
-                        self._addNewAddress(newCreate2EthAddrs[swapID])
-                        self._addNewAddress(newCreate2TokenAAddrs[swapID])
-                        self._addNewAddress(newCreate2TokenBAddrs[swapID])
+                # Check that all balances have been transferred
+                assert self.v.balance() == 0
+                assert self.tokenA.balanceOf(self.v) == 0
+                assert self.tokenB.balanceOf(self.v) == 0
 
-                    self.deployedDeposits = dict()
+                assert self.tokenA.balanceOf(newVault) == initTokenABalance
+                assert self.tokenB.balanceOf(newVault) == iniTokenBBalance
+
+                self._updateBalancesOnUpgrade(self.v, newVault)
+
+                # Update state variables
+                self.v = newVault
+                self.lastValidateTime = tx.timestamp
+                self.v_communityGuardDisabled = False
+                self.communityKey = self.communityKey
+                self.v_suspended = False
+
+                # Deploy a new CFReceiverMock that receives from the new Vault
+                self.cfReceiverMock = st_sender.deploy(CFReceiverMock, self.v)
+
+                # Create new addresses for the new Vault and initialize Balances
+                newCreate2EthAddrs = [
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(swapID),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
+                    )
+                    for swapID in range(MAX_SWAPID + 1)
+                ]
+                newCreate2TokenAAddrs = [
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(swapID),
+                        Deposit,
+                        cleanHexStrPad(self.tokenA.address),
+                    )
+                    for swapID in range(MAX_SWAPID + 1)
+                ]
+                newCreate2TokenBAddrs = [
+                    getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(swapID),
+                        Deposit,
+                        cleanHexStrPad(self.tokenB.address),
+                    )
+                    for swapID in range(MAX_SWAPID + 1)
+                ]
+
+                for swapID in range(MAX_SWAPID + 1):
+                    # No need to update balances but we need to add new addresses to the self.Address list and the bals dictionary
+                    self._addNewAddress(newCreate2EthAddrs[swapID])
+                    self._addNewAddress(newCreate2TokenAAddrs[swapID])
+                    self._addNewAddress(newCreate2TokenBAddrs[swapID])
+
+                self.deployedDeposits = dict()
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
@@ -2489,11 +2242,8 @@ def test_all(
             # the constructor to avoid frontrunning, as there is no deployer check now.
             newStakeManager.setFlip(self.f, {"from": st_sender})
 
-            # Keep old StakeManager whitelisted
-            toWhitelist = self.currentWhitelist.copy() + [newStakeManager]
             args = (JUNK_HEX, 1, newStakeManager, 1)
             signer = self._get_key_prob(AGG)
-            toLog = (*args, st_sender)
 
             if self.sm_suspended:
                 print("        REV_MSG_GOV_SUSPENDED rule_upgrade_stakeManager")
@@ -2505,13 +2255,11 @@ def test_all(
                         signer=signer,
                         sender=st_sender,
                     )
-            # If old stakeManager is not whitelisted it will revert later on
-            elif not self.sm in self.currentWhitelist:
+            elif signer != self.keyIDToCurKeys[AGG]:
                 print(
-                    "        REV_MSG_WHITELIST rule_upgrade_stakeManager",
-                    *toLog,
+                    "        REV_MSG_SIG rule_upgrade_stakeManager",
                 )
-                with reverts(REV_MSG_WHITELIST):
+                with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
                         self.sm.registerClaim,
@@ -2520,105 +2268,58 @@ def test_all(
                         sender=st_sender,
                     )
             else:
+                chain.sleep(st_sleep_time)
+
+                # Generate claim to move all FLIP to new stakeManager
+                expiryTime = getChainTime() + (CLAIM_DELAY * 10)
+                claimAmount = self.flipBals[self.sm]
+                # Register Claim to transfer all flip
                 args = (
-                    self.currentWhitelist,
-                    toWhitelist,
+                    JUNK_HEX,
+                    claimAmount,
+                    newStakeManager,
+                    expiryTime,
                 )
-                if signer != self.keyIDToCurKeys[AGG]:
-                    print(
-                        "        REV_MSG_SIG rule_upgrade_stakeManager",
-                        *toLog,
-                    )
-                    with reverts(REV_MSG_SIG):
-                        signed_call_km(
-                            self.km,
-                            self.km.updateCanConsumeKeyNonce,
-                            *args,
-                            signer=signer,
-                            sender=st_sender,
+                tx = signed_call_km(
+                    self.km,
+                    self.sm.registerClaim,
+                    *args,
+                    signer=signer,
+                    sender=st_sender,
+                )
+
+                chain.sleep(st_sleep_time)
+                if st_sleep_time < CLAIM_DELAY:
+                    with reverts(REV_MSG_NOT_ON_TIME):
+                        print(
+                            "        REV_MSG_SIG rule_upgrade_stakeManager",
+                            st_sleep_time,
                         )
-                else:
-                    signed_call_km(
-                        self.km,
-                        self.km.updateCanConsumeKeyNonce,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-                    self.currentWhitelist = toWhitelist.copy()
+                        self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
-                    chain.sleep(st_sleep_time)
+                chain.sleep(CLAIM_DELAY * 2)
 
-                    # Generate claim to move all FLIP to new stakeManager
-                    expiryTime = getChainTime() + (CLAIM_DELAY * 10)
-                    claimAmount = self.flipBals[self.sm]
-                    # Register Claim to transfer all flip
-                    args = (
-                        JUNK_HEX,
-                        claimAmount,
-                        newStakeManager,
-                        expiryTime,
-                    )
-                    tx = signed_call_km(
-                        self.km,
-                        self.sm.registerClaim,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
+                print("                   rule_executeClaim", newStakeManager.address)
+                assert self.f.balanceOf(newStakeManager) == 0
+                assert self.f.balanceOf(self.sm) == self.flipBals[self.sm]
 
-                    chain.sleep(st_sleep_time)
-                    if st_sleep_time < CLAIM_DELAY:
-                        with reverts(REV_MSG_NOT_ON_TIME):
-                            print(
-                                "        REV_MSG_SIG rule_upgrade_stakeManager",
-                                st_sleep_time,
-                            )
-                            self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
+                self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
-                    chain.sleep(CLAIM_DELAY * 2)
+                assert self.f.balanceOf(newStakeManager) == self.flipBals[self.sm]
+                assert self.f.balanceOf(self.sm) == 0
 
-                    print(
-                        "                   rule_executeClaim", newStakeManager.address
-                    )
-                    assert self.f.balanceOf(newStakeManager) == 0
-                    assert self.f.balanceOf(self.sm) == self.flipBals[self.sm]
+                self._updateBalancesOnUpgrade(self.sm, newStakeManager)
+                self.sm = newStakeManager
+                self.minStake = INIT_MIN_STAKE
+                self.lastValidateTime = tx.timestamp
+                self.sm_communityGuardDisabled = False
+                self.communityKey = self.communityKey
+                self.sm_suspended = False
 
-                    self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
-
-                    assert self.f.balanceOf(newStakeManager) == self.flipBals[self.sm]
-                    assert self.f.balanceOf(self.sm) == 0
-
-                    # Dewhitelist old StakeManager
-                    toWhitelist = self.currentWhitelist.copy()
-                    toWhitelist.remove(self.sm)
-
-                    # UpdateCanConsumeKeyNonce
-                    args = (
-                        self.currentWhitelist,
-                        toWhitelist,
-                    )
-                    tx = signed_call_km(
-                        self.km,
-                        self.km.updateCanConsumeKeyNonce,
-                        *args,
-                        signer=signer,
-                        sender=st_sender,
-                    )
-
-                    self._updateBalancesOnUpgrade(self.sm, newStakeManager)
-                    self.sm = newStakeManager
-                    self.minStake = INIT_MIN_STAKE
-                    self.lastValidateTime = tx.timestamp
-                    self.currentWhitelist = toWhitelist
-                    self.sm_communityGuardDisabled = False
-                    self.communityKey = self.communityKey
-                    self.sm_suspended = False
-
-                    # Reset all pending claims
-                    self.pendingClaims = {
-                        nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
-                    }
+                # Reset all pending claims
+                self.pendingClaims = {
+                    nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
+                }
 
         # Governance Community Guarded
 
@@ -2915,11 +2616,6 @@ def test_all(
 
             assert self.sm.getFLIP() == self.f.address
 
-        def invariant_whitelist(self):
-            assert self.km.getNumberWhitelistedAddresses() == len(self.currentWhitelist)
-            for address in self.currentWhitelist:
-                assert self.km.canConsumeKeyNonce(address) == True
-
         # Check the keys are correct after every tx
         def invariant_keys(self):
             assert (
@@ -2987,7 +2683,7 @@ def test_all(
     state_machine(
         StateMachine,
         a,
-        cfDeployAllWhitelist,
+        cfDeploy,
         Deposit,
         Token,
         CFReceiverMock,

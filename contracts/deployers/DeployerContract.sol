@@ -13,8 +13,6 @@ import "../interfaces/IShared.sol";
  *           flow by deploying all the contracts and setting them up appropriately.
  */
 contract DeployerContract is IShared {
-    address[] internal whitelist;
-
     Vault public immutable vault;
     KeyManager public immutable keyManager;
     StakeManager public immutable stakeManager;
@@ -43,10 +41,6 @@ contract DeployerContract is IShared {
         );
         // Set the FLIP address in the StakeManager contract
         _stakeManager.setFlip(FLIP(address(_flip)));
-
-        // Set the whitelist in the KeyManager contract
-        whitelist = [address(_vault), address(_stakeManager), address(_flip)];
-        _keyManager.setCanConsumeKeyNonce(whitelist);
 
         // Storing all addresses for traceability.
         vault = _vault;
