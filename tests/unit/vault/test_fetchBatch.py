@@ -54,30 +54,28 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
         assert web3.eth.get_code(web3.toChecksumAddress(addr)).hex() != "0x"
 
 
-def test_fetchBatch_token_rev_msgHash(cf, token):
-    for tok in [token, NATIVE_ADDR]:
-        callDataNoSig = cf.vault.fetchBatch.encode_input(
-            agg_null_sig(cf.keyManager.address, chain.id), [[NON_ZERO_ADDR, tok]]
-        )
-
-        sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-        sigData[2] += 1
-        # Fetch the deposit
-        with reverts(REV_MSG_MSGHASH):
-            cf.vault.fetchBatch(sigData, [[NON_ZERO_ADDR, tok]], {"from": cf.ALICE})
-
-
 def test_fetchBatch_rev_sig(cf, token):
     for tok in [token, NATIVE_ADDR]:
-        callDataNoSig = cf.vault.fetchBatch.encode_input(
-            agg_null_sig(cf.keyManager.address, chain.id), [[NON_ZERO_ADDR, tok]]
+        args = [[NON_ZERO_ADDR, tok]]
+
+        sigData = AGG_SIGNER_1.getSigDataWithNonces(
+            cf.keyManager, cf.vault.fetchBatch, nonces, args
         )
 
-        sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-        sigData[3] += 1
-        # Fetch the deposit
+        sigData_modif = sigData[:]
+        sigData_modif[0] += 1
         with reverts(REV_MSG_SIG):
-            cf.vault.fetchBatch(sigData, [[NON_ZERO_ADDR, tok]], {"from": cf.ALICE})
+            cf.vault.fetchBatch(sigData_modif, args, {"from": cf.ALICE})
+
+        sigData_modif = sigData[:]
+        sigData_modif[1] += 1
+        with reverts(REV_MSG_SIG):
+            cf.vault.fetchBatch(sigData_modif, args, {"from": cf.ALICE})
+
+        sigData_modif = sigData[:]
+        sigData_modif[2] = NON_ZERO_ADDR
+        with reverts(REV_MSG_SIG):
+            cf.vault.fetchBatch(sigData_modif, args, {"from": cf.ALICE})
 
 
 # Calling the fetch function on a non-deployed contract (empty address) will revert

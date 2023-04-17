@@ -14,8 +14,6 @@ interface IKeyManager is IShared {
     event CommKeySetByAggKey(address oldCommKey, address newCommKey);
     event CommKeySetByCommKey(address oldCommKey, address newCommKey);
     event SignatureAccepted(SigData sigData, address signer);
-    event AggKeyNonceConsumersSet(address[] addrs);
-    event AggKeyNonceConsumersUpdated(address[] currentAddrs, address[] newAddrs);
     event GovernanceAction(bytes32 message);
 
     //////////////////////////////////////////////////////////////
@@ -23,14 +21,6 @@ interface IKeyManager is IShared {
     //                  State-changing functions                //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    function setCanConsumeKeyNonce(address[] calldata addrs) external;
-
-    function updateCanConsumeKeyNonce(
-        SigData calldata sigData,
-        address[] calldata currentAddrs,
-        address[] calldata newAddrs
-    ) external;
 
     function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
 
@@ -65,10 +55,4 @@ interface IKeyManager is IShared {
     function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
 
     function getLastValidateTime() external view returns (uint256);
-
-    function canConsumeKeyNonce(address addr) external view returns (bool);
-
-    function canConsumeKeyNonceSet() external view returns (bool);
-
-    function getNumberWhitelistedAddresses() external view returns (uint256);
 }

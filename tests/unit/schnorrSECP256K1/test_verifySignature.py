@@ -1,9 +1,27 @@
 from consts import *
 from brownie import reverts
+from brownie.test import given, strategy
 
 
-def test_verifySignature_rev_pubKeyX(cf, schnorrTest):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
+@given(
+    st_address=strategy("address", exclude=0),
+    st_sig=strategy("uint256", exclude=0),
+)
+def test_verifySignature(schnorrTest, st_address, st_sig):
+    sigData = AGG_SIGNER_1.generate_sigData(JUNK_HEX_PAD, nonces)
+
+    if st_sig != sigData[0] or st_address != sigData[2]:
+        schnorrTest.testVerifySignature(
+            JUNK_INT, st_sig, *AGG_SIGNER_1.getPubData(), st_address
+        )
+
+    schnorrTest.testVerifySignature(
+        JUNK_INT, sigData[0], *AGG_SIGNER_1.getPubData(), sigData[2]
+    )
+
+
+def test_verifySignature_rev_pubKeyX(schnorrTest):
+    sigData = AGG_SIGNER_1.generate_sigData(JUNK_HEX_PAD, nonces)
 
     signerPubData = AGG_SIGNER_1.getPubData()
     signerPubData[0] += Signer.HALF_Q_INT
@@ -11,55 +29,58 @@ def test_verifySignature_rev_pubKeyX(cf, schnorrTest):
     print(REV_MSG_PUB_KEY_X)
 
     with reverts(REV_MSG_PUB_KEY_X):
-        schnorrTest.testVerifySignature(*sigData[2:4], *signerPubData, sigData[5])
-
-
-def test_verifySignature_rev_SigLessQ(cf, schnorrTest):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    sigData[3] = Signer.Q_INT
-
-    with reverts(REV_MSG_SIG_LESS_Q):
         schnorrTest.testVerifySignature(
-            *sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5]
+            JUNK_INT, sigData[0], *signerPubData, sigData[2]
         )
 
 
-def test_verifySignature_rev_nonceTimesGeneratorAddress_zero(cf, schnorrTest):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
+def test_verifySignature_rev_SigLessQ(schnorrTest):
+    sigData = AGG_SIGNER_1.generate_sigData(JUNK_HEX_PAD, nonces)
+    sigData[0] = Signer.Q_INT
+
+    with reverts(REV_MSG_SIG_LESS_Q):
+        schnorrTest.testVerifySignature(
+            JUNK_INT, sigData[0], *AGG_SIGNER_1.getPubData(), sigData[2]
+        )
+
+
+def test_verifySignature_rev_nonceTimesGeneratorAddress_zero(schnorrTest):
+    sigData = AGG_SIGNER_1.generate_sigData(JUNK_HEX_PAD, nonces)
 
     signerPubData = AGG_SIGNER_1.getPubData()
 
-    print(*sigData[2:4], *signerPubData, ZERO_ADDR)
+    print(JUNK_INT, sigData[0], *signerPubData, ZERO_ADDR)
 
     with reverts(REV_MSG_INPUTS_0):
-        schnorrTest.testVerifySignature(*sigData[2:4], *signerPubData, ZERO_ADDR)
+        schnorrTest.testVerifySignature(JUNK_INT, sigData[0], *signerPubData, ZERO_ADDR)
 
 
-def test_verifySignature_rev_signingPubKeyX_zero(cf, schnorrTest):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
+def test_verifySignature_rev_signingPubKeyX_zero(schnorrTest):
+    sigData = AGG_SIGNER_1.generate_sigData(JUNK_HEX_PAD, nonces)
 
     signerPubData = AGG_SIGNER_1.getPubData()
     signerPubData[0] = 0
 
     with reverts(REV_MSG_INPUTS_0):
-        schnorrTest.testVerifySignature(*sigData[2:4], *signerPubData, sigData[5])
-
-
-def test_verifySignature_rev_signature_zero(cf, schnorrTest):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    sigData[3] = 0
-
-    with reverts(REV_MSG_INPUTS_0):
         schnorrTest.testVerifySignature(
-            *sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5]
+            JUNK_INT, sigData[0], *signerPubData, sigData[2]
         )
 
 
-def test_verifySignature_rev_msgHash_zero(cf, schnorrTest):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    sigData[2] = 0
+def test_verifySignature_rev_signature_zero(schnorrTest):
+    sigData = AGG_SIGNER_1.generate_sigData(JUNK_HEX_PAD, nonces)
+    sigData[0] = 0
 
     with reverts(REV_MSG_INPUTS_0):
         schnorrTest.testVerifySignature(
-            *sigData[2:4], *AGG_SIGNER_1.getPubData(), sigData[5]
+            JUNK_INT, sigData[0], *AGG_SIGNER_1.getPubData(), sigData[2]
+        )
+
+
+def test_verifySignature_rev_msgHash_zero(schnorrTest):
+    sigData = AGG_SIGNER_1.generate_sigData(JUNK_HEX_PAD, nonces)
+
+    with reverts(REV_MSG_INPUTS_0):
+        schnorrTest.testVerifySignature(
+            0, sigData[0], *AGG_SIGNER_1.getPubData(), sigData[2]
         )

@@ -43,7 +43,8 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
      * @notice  Compares a given new FLIP supply against the old supply,
      *          then mints or burns as appropriate. The message must be 
      '          signed by the aggregate key.
-     * @param sigData               signature over the abi-encoded function params
+     * @param sigData               Struct containing the signature data over the message
+     *                              to verify, signed by the aggregate key.
      * @param newTotalSupply        new total supply of FLIP
      * @param stateChainBlockNumber State Chain block number for the new total supply
      * @param staker Staking contract owner of the tokens to be minted/burnt
@@ -60,15 +61,7 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
         nzAddr(staker)
         consumesKeyNonce(
             sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateFlipSupply.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    newTotalSupply,
-                    stateChainBlockNumber,
-                    staker
-                )
-            )
+            keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber, staker))
         )
     {
         require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "FLIP: old FLIP supply update");

@@ -15,7 +15,7 @@ def test_transfer_native_fails_recipient(cf, token):
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
 
-    args = [[NATIVE_ADDR, token, TEST_AMNT]]
+    args = [[NATIVE_ADDR, token.address, TEST_AMNT]]
     tx = signed_call_cf(cf, cf.vault.transfer, *args)
 
     assert tx.events["TransferNativeFailed"][0].values() == [token, TEST_AMNT]
@@ -66,29 +66,23 @@ def test_transfer_rev_amount(cf):
         signed_call_cf(cf, cf.vault.transfer, *args)
 
 
-def test_transfer_rev_msgHash(cf):
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
-    )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[2] += 1
-
-    with reverts(REV_MSG_MSGHASH):
-        cf.vault.transfer(
-            sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
-        )
-
-
 def test_transfer_rev_sig(cf):
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
+    args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.vault.transfer, nonces, *args
     )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[3] += 1
 
+    sigData_modif = sigData[:]
+    sigData_modif[0] += 1
     with reverts(REV_MSG_SIG):
-        cf.vault.transfer(
-            sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
-        )
+        cf.vault.transfer(sigData_modif, *args, {"from": cf.ALICE})
+
+    sigData_modif = sigData[:]
+    sigData_modif[1] += 1
+    with reverts(REV_MSG_SIG):
+        cf.vault.transfer(sigData_modif, *args, {"from": cf.ALICE})
+
+    sigData_modif = sigData[:]
+    sigData_modif[2] = NON_ZERO_ADDR
+    with reverts(REV_MSG_SIG):
+        cf.vault.transfer(sigData_modif, *args, {"from": cf.ALICE})

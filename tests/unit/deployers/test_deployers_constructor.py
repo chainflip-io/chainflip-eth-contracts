@@ -158,40 +158,19 @@ def test_upgrader_constructor(
         stakeManager,
     )
 
-    # Manually transfer FLIP funds and upgrade the whitelist to mimic the StateChain.
-    # so we can do the same contract state check.
     args = [
         JUNK_HEX,
         flip.balanceOf(stakeManager.address),
         new_stakeManager.address,
         getChainTime() + (2 * CLAIM_DELAY),
     ]
-    callDataNoSig = stakeManager.registerClaim.encode_input(
-        agg_null_sig(keyManager.address, chain.id), *args
-    )
-    stakeManager.registerClaim(
-        AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, nonces, keyManager.address),
-        *args,
-        {"from": st_sender},
-    )
+
+    # Manually transfer FLIP funds.
+    signed_call(keyManager, stakeManager.registerClaim, AGG_SIGNER_1, st_sender, *args)
 
     # Execute claim
     chain.sleep(CLAIM_DELAY)
     stakeManager.executeClaim(JUNK_HEX, {"from": st_sender})
-
-    # Update whitelist
-    current_whitelist = [vault.address, flip.address, stakeManager.address]
-    new_whitelist = [new_vault.address, flip.address, new_stakeManager.address]
-
-    args = [current_whitelist, new_whitelist]
-    callDataNoSig = keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(keyManager.address, chain.id), *args
-    )
-    keyManager.updateCanConsumeKeyNonce(
-        AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, nonces, keyManager.address),
-        *args,
-        {"from": st_sender},
-    )
 
     check_contracts_state(
         st_pubKeyX,
@@ -238,12 +217,5 @@ def check_contracts_state(
         flip.balanceOf(st_govKey)
         == st_initSupply - st_numGenesisValidators * st_genesisStake
     )
-
-    assert keyManager.canConsumeKeyNonceSet() == True
-    assert keyManager.getNumberWhitelistedAddresses() == 3
-    assert keyManager.canConsumeKeyNonce(vault.address) == True
-    assert keyManager.canConsumeKeyNonce(stakeManager.address) == True
-    assert keyManager.canConsumeKeyNonce(flip.address) == True
-    assert keyManager.canConsumeKeyNonce(keyManager.address) == False
 
     assert vault.getKeyManager() == keyManager.address
