@@ -32,6 +32,9 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
 
+    /// @dev    The last block number in which the State Chain updated the totalSupply
+    uint256 private _lastSupplyUpdateBlockNum = 0;
+
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
     //     uint amount;
@@ -214,6 +217,80 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         address recipient = getKeyManager().getGovernanceKey();
         payable(recipient).transfer(amount);
         emit GovernanceWithdrawal(recipient, amount);
+    }
+
+    /**
+     * @notice  Compares a given new FLIP supply against the old supply,
+     *          then mints or burns as appropriate. The message must be 
+     '          signed by the aggregate key.
+     * @param sigData               signature over the abi-encoded function params
+     * @param newTotalSupply        new total supply of FLIP
+     * @param stateChainBlockNumber State Chain block number for the new total supply
+     * @param staker Staking contract owner of the tokens to be minted/burnt
+     */
+    function updateFlipSupply(
+        SigData calldata sigData,
+        uint256 newTotalSupply,
+        uint256 stateChainBlockNumber,
+        address staker
+    )
+        external
+        override
+        nzUint(newTotalSupply)
+        nzAddr(staker)
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.updateFlipSupply.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    newTotalSupply,
+                    stateChainBlockNumber,
+                    staker
+                )
+            )
+        )
+    {
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
+        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
+        IFLIP flip = _FLIP;
+        uint256 oldSupply = flip.totalSupply();
+        if (newTotalSupply < oldSupply) {
+            uint256 amount = oldSupply - newTotalSupply;
+            flip.burn(staker, amount);
+        } else if (newTotalSupply > oldSupply) {
+            uint256 amount = newTotalSupply - oldSupply;
+            flip.mint(staker, amount);
+        }
+        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
+    }
+
+    function updateFLIPStakeManager(
+        SigData calldata sigData,
+        address newStakeManager
+    )
+        external
+        nzAddr(newStakeManager)
+        consumesKeyNonce(
+            sigData,
+            keccak256(
+                abi.encodeWithSelector(
+                    this.updateFLIPStakeManager.selector,
+                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
+                    newStakeManager
+                )
+            )
+        )
+    {
+        _FLIP.updateStakeManager(newStakeManager);
+    }
+
+    /**
+     * @notice  Get the last state chain block number of the last supply update
+     * @return  The state chain block number of the last supply update
+     */
+    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
+        return _lastSupplyUpdateBlockNum;
     }
 
     /**
