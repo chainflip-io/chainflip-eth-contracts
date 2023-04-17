@@ -32,6 +32,9 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev   Time after registerClaim required to wait before call to executeClaim
     uint48 public constant CLAIM_DELAY = 2 days;
 
+    /// @dev    The last block number in which the State Chain updated the totalSupply
+    uint256 private _lastSupplyUpdateBlockNum = 0;
+
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
     //     uint amount;
@@ -182,6 +185,68 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     }
 
     /**
+     * @notice  Compares a given new FLIP supply against the old supply,
+     *          then mints or burns as appropriate. The message must be 
+     '          signed by the aggregate key.
+     * @param sigData               Struct containing the signature data over the message
+     *                              to verify, signed by the aggregate key.
+     * @param newTotalSupply        new total supply of FLIP
+     * @param stateChainBlockNumber State Chain block number for the new total supply
+     * @param account Account of the tokens to be minted/burnt
+     */
+    function updateFlipSupply(
+        SigData calldata sigData,
+        uint256 newTotalSupply,
+        uint256 stateChainBlockNumber,
+        address account
+    )
+        external
+        override
+        nzUint(newTotalSupply)
+        nzAddr(account)
+        consumesKeyNonce(
+            sigData,
+            keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber, account))
+        )
+    {
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
+        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
+        IFLIP flip = _FLIP;
+        uint256 oldSupply = flip.totalSupply();
+        // NOTE: Consider having address(this) instead of account to not be able to burn tokens from other addresses.
+        // NOTE: If we keep it like this, do we need to check for account != 0? _mint and _burn already do that. TO TEST.
+        if (newTotalSupply < oldSupply) {
+            uint256 amount = oldSupply - newTotalSupply;
+            flip.burn(account, amount);
+        } else if (newTotalSupply > oldSupply) {
+            uint256 amount = newTotalSupply - oldSupply;
+            flip.mint(account, amount);
+        }
+        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
+    }
+
+    /**
+     * @notice  Updates the address that is allowed to mint/burn FLIP tokens. This will be used when the StakeManager
+     *          contract is upgraded and we need to update the address that is allowed to mint/burn FLIP tokens.
+     * @param sigData           Struct containing the signature data over the message
+     *                          to verify, signed by the aggregate key.
+     * @param newStakeManager   New StakeManager address that will mint/burn FLIP tokens
+     */
+    function updateFLIPStakeManager(
+        SigData calldata sigData,
+        address newStakeManager
+    )
+        external
+        nzAddr(newStakeManager)
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFLIPStakeManager.selector, newStakeManager)))
+    {
+        // Adding some small safeguard that at least the contract is not an EOA and has a reference to the FLIP contract
+        // Only downside is that we have to maintain this getFLIP(), but this seems like a low requirement.
+        require(IStakeManager(newStakeManager).getFLIP() == _FLIP, "Staking: invalid FLIP address");
+        _FLIP.updateStakeManager(newStakeManager);
+    }
+
+    /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
      */
@@ -244,5 +309,13 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      */
     function getPendingClaim(bytes32 nodeID) external view override returns (Claim memory) {
         return _pendingClaims[nodeID];
+    }
+
+    /**
+     * @notice  Get the last state chain block number of the last supply update
+     * @return  The state chain block number of the last supply update
+     */
+    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
+        return _lastSupplyUpdateBlockNum;
     }
 }
