@@ -44,7 +44,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @dev     It would be nice to split this up, but these checks
      *          need to be made atomicly always. This needs to be available
      *          in this contract and in the Vault etc
-     * @param sigData   The keccak256 hash over the msg (uint256).
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
      * @param msgHash   The hash of the message being signed. The hash of the function
      *                  call parameters is concatenated and hashed together with the nonce, the
      *                  address of the caller, the chainId, and the address of this contract.
@@ -70,9 +71,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @notice  Concatenates the contractMsgHash with the nonce, the address of the caller,
      *          the chainId, and the address of this contract, then hashes that and verifies the
      *          signature. This is done to prevent replay attacks.
-     * @param sigData   The keccak256 hash over the msg (uint256).
+     * @param sigData           Struct containing the signature data over the message
+     *                          to verify, signed by the aggregate key.
      * @param contractMsgHash   The hash of the function's call parameters. This will be hashed
-     *                  over other parameters to prevent replay attacks.
+     *                          over other parameters to prevent replay attacks.
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
         bytes32 msgHash = keccak256(
@@ -83,9 +85,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /**
      * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
-     * @param sigData   The keccak256 hash over the msg (uint256) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current aggregate key (uint256)
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
      * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
      *                  the parity of the y component (uint8)
      */
@@ -117,9 +118,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /**
      * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
-     * @param sigData   The keccak256 hash over the msg (uint256) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current aggregate key (uint256)
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
      * @param newGovKey The new governance key to be set.
 
      */
@@ -147,9 +147,8 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
 
     /**
      * @notice  Set a new community key. Requires a signature from the current aggregate key
-     * @param sigData   The keccak256 hash over the msg (uint256) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current aggregate key (uint256)
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param newCommKey The new community key to be set.
 
      */

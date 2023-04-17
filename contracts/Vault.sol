@@ -96,9 +96,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @dev     FetchAndDeploy is executed first to handle the edge case , which probably shouldn't
      *          happen anyway, where a deploy and a fetch for the same address are in the same batch.
      *          Transfers are executed last to ensure that all fetching has been completed first.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param deployFetchParamsArray    The array of deploy and fetch parameters
      * @param fetchParamsArray    The array of fetch parameters
      * @param transferParamsArray The array of transfer parameters
@@ -135,9 +134,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers native or a token from this vault to a recipient
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param transferParams       The transfer parameters
      */
     function transfer(
@@ -157,9 +155,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers native or tokens from this vault to recipients.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's a hash over
-     *                  the calldata to the function with an empty sigData) and sig over
-     *                  that hash (uint) from the aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param transferParamsArray The array of transfer parameters.
      */
     function transferBatch(
@@ -228,9 +225,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /**
      * @notice  Retrieves any token from multiple address, deterministically generated using
      *          create2, by creating a contract for that address, sending it to this vault.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param deployFetchParamsArray    The array of deploy and fetch parameters
      */
     function deployAndFetchBatch(
@@ -258,9 +254,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Retrieves any token addresses where a Deposit contract is already deployed.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param fetchParamsArray    The array of fetch parameters
      */
     function fetchBatch(
@@ -459,9 +454,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          completing a cross-chain swap and call. The ICFReceiver interface is expected on
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
-     *                  the calldata to the function with an empty sigData) and sig over that
-     *                  that hash (uint) from the aggregate key.
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param transferParams  The transfer parameters
      * @param srcChain        The source chain where the call originated from.
      * @param srcAddress      The address where the transfer originated within the ingress chain.
@@ -533,9 +527,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap. This is used for cross-chain messaging
      *          without any swap taking place on the Chainflip Protocol.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param srcChain       The source chain where the call originated from.
      * @param srcAddress     The address where the transfer originated from in the ingressParams.
      * @param message        The message to be passed to the recipient.
@@ -569,9 +562,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @notice  Transfer funds and pass calldata to be executed on another multicall contract.
      * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
      *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally a hash over
-     *                  the calldata to the function with an empty sigData) and sig over that
-     *                  that hash (uint) from the aggregate key.
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
      * @param token     Address of the source token to swap.
      * @param amount    Amount of the source token to send.
      * @param multicallAddr Address of the Multicall contract to call.
