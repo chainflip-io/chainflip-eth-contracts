@@ -1,6 +1,8 @@
 from consts import *
 from brownie import reverts, chain, web3
+
 from utils import *
+from eth_abi import encode_abi
 
 # ----------Vault----------
 
@@ -180,19 +182,6 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
     assert cf.keyManager.getCommunityKey() == commkey
 
 
-def canConsumeKeyNonce_test(cf, signer):
-    sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    cf.keyManager.consumeKeyNonce(sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE})
-
-
-def canConsumeKeyNonce_rev_test(cf, signer):
-    sigData = signer.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-    with reverts(REV_MSG_SIG):
-        cf.keyManager.consumeKeyNonce(
-            sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE}
-        )
-
-
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
@@ -266,10 +255,10 @@ def signed_call_km(keyManager, fcn, *args, **kwargs):
 
 
 def signed_call(keyManager, fcn, signer, sender, *args):
-    # Sign the tx without a msgHash or sig
-    callDataNoSig = fcn.encode_input(agg_null_sig(keyManager.address, chain.id), *args)
+    sigData = signer.getSigDataWithNonces(keyManager, fcn, nonces, *args)
+
     return fcn(
-        signer.getSigDataWithNonces(callDataNoSig, nonces, keyManager.address),
+        sigData,
         *args,
         {"from": sender},
     )

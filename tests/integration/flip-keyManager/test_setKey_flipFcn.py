@@ -3,29 +3,29 @@ from shared_tests import *
 from brownie import reverts, web3
 
 
-def test_setAggKeyWithAggKey_updateFlipSupply(cfAW):
+def test_setAggKeyWithAggKey_updateFlipSupply(cf):
     # Change agg keys
-    setAggKeyWithAggKey_test(cfAW)
+    setAggKeyWithAggKey_test(cf)
 
     stateChainBlockNumber = 1
 
-    args = (NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cfAW.stakeManager.address)
+    args = (NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.stakeManager.address)
 
     # Updating supply with old key should revert
     with reverts(REV_MSG_SIG):
-        signed_call_cf(cfAW, cfAW.flip.updateFlipSupply, *args, sender=cfAW.ALICE)
+        signed_call_cf(cf, cf.flip.updateFlipSupply, *args, sender=cf.ALICE)
 
     tx = signed_call_cf(
-        cfAW, cfAW.flip.updateFlipSupply, *args, sender=cfAW.ALICE, signer=AGG_SIGNER_2
+        cf, cf.flip.updateFlipSupply, *args, sender=cf.ALICE, signer=AGG_SIGNER_2
     )
 
     # Check things that should've changed
-    assert cfAW.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
+    assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
     assert (
-        cfAW.flip.balanceOf(cfAW.stakeManager)
+        cf.flip.balanceOf(cf.stakeManager)
         == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + STAKEMANAGER_INITIAL_BALANCE
     )
-    assert cfAW.flip.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
+    assert cf.flip.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx.events["FlipSupplyUpdated"][0].values() == [
         INIT_SUPPLY,
         NEW_TOTAL_SUPPLY_MINT,
@@ -33,4 +33,4 @@ def test_setAggKeyWithAggKey_updateFlipSupply(cfAW):
     ]
 
     # Check things that shouldn't have changed
-    assert cfAW.stakeManager.getMinimumStake() == MIN_STAKE
+    assert cf.stakeManager.getMinimumStake() == MIN_STAKE

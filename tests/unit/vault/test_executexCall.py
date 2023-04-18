@@ -76,14 +76,25 @@ def test_executexCallEth_rev_msgHash(cf):
         JUNK_HEX,
         JUNK_HEX,
     ]
-    callDataNoSig = cf.vault.executexCall.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[2] += 1
 
-    with reverts(REV_MSG_MSGHASH):
-        cf.vault.executexCall(sigData, *args, {"from": cf.ALICE})
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.vault.executexCall, nonces, *args
+    )
+
+    sigData_modif = sigData[:]
+    sigData_modif[0] += 1
+    with reverts(REV_MSG_SIG):
+        cf.vault.executexCall(sigData_modif, *args, {"from": cf.ALICE})
+
+    sigData_modif = sigData[:]
+    sigData_modif[1] += 1
+    with reverts(REV_MSG_SIG):
+        cf.vault.executexCall(sigData_modif, *args, {"from": cf.ALICE})
+
+    sigData_modif = sigData[:]
+    sigData_modif[2] = NON_ZERO_ADDR
+    with reverts(REV_MSG_SIG):
+        cf.vault.executexCall(sigData_modif, *args, {"from": cf.ALICE})
 
 
 # rev if cfReceiver reverts the call

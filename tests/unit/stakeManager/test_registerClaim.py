@@ -102,30 +102,28 @@ def test_registerClaim_rev_st_staker(cf, stakedMin):
         signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
 
-def test_registerClaim_rev_msgHash(cf, stakedMin):
-    _, st_amount = stakedMin
-    args = (JUNK_HEX, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[2] += 1
-
-    with reverts(REV_MSG_MSGHASH):
-        cf.stakeManager.registerClaim(sigData, *args, {"from": cf.ALICE})
-
-
 def test_registerClaim_rev_sig(cf, stakedMin):
     _, st_amount = stakedMin
     args = (JUNK_HEX, st_amount, cf.DENICE, getChainTime() + CLAIM_DELAY + 5)
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    sigData[3] += 1
 
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.stakeManager.registerClaim, nonces, *args
+    )
+
+    sigData_modif = sigData[:]
+    sigData_modif[0] += 1
     with reverts(REV_MSG_SIG):
-        cf.stakeManager.registerClaim(sigData, *args, {"from": cf.ALICE})
+        cf.stakeManager.registerClaim(sigData_modif, *args, {"from": cf.ALICE})
+
+    sigData_modif = sigData[:]
+    sigData_modif[1] += 1
+    with reverts(REV_MSG_SIG):
+        cf.stakeManager.registerClaim(sigData_modif, *args, {"from": cf.ALICE})
+
+    sigData_modif = sigData[:]
+    sigData_modif[2] = NON_ZERO_ADDR
+    with reverts(REV_MSG_SIG):
+        cf.stakeManager.registerClaim(sigData_modif, *args, {"from": cf.ALICE})
 
 
 @given(

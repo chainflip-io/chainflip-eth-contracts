@@ -47,68 +47,6 @@ def cf(a, cfDeploy):
     cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
     cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
 
-    cf.whitelisted = [
-        cf.vault.address,
-        cf.stakeManager.address,
-        cf.flip.address,
-    ]
-
-    return cf
-
-
-# Deploy the contracts for repeated tests without having to redeploy each time, with
-# all addresses whitelisted
-@pytest.fixture(scope="module")
-def cfDeployAllWhitelist(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
-    # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
-    cf = deploy_Chainflip_contracts(
-        a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
-    )
-
-    # Cha
-    cf.whitelisted = [cf.vault, cf.stakeManager, cf.keyManager, cf.flip] + list(a)
-    args = [
-        [cf.vault.address, cf.stakeManager.address, cf.flip.address],
-        cf.whitelisted,
-    ]
-    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-
-    cf.keyManager.updateCanConsumeKeyNonce(
-        AGG_SIGNER_1.getSigDataWithNonces(callDataNoSig, nonces, cf.keyManager.address),
-        *args,
-        {"from": cf.safekeeper},
-    )
-
-    return cf
-
-
-# Deploy the contracts and set up common test environment, with all addresses whitelisted
-@pytest.fixture(scope="module")
-def cfAW(a, cfDeployAllWhitelist):
-    cf = cfDeployAllWhitelist
-
-    # It's a bit easier to not get mixed up with accounts if they're named
-    # Can't define this in consts because `a` needs to be imported into the test
-    cf.SAFEKEEPER = cf.safekeeper
-    cf.ALICE = a[1]
-    cf.BOB = a[2]
-    cf.CHARLIE = a[3]
-    cf.DENICE = a[4]
-
-    # It's the same as SAFEKEEPER but shouldn't cause confusion tbh
-    cf.GOVERNOR = cfDeployAllWhitelist.gov
-    # Set a second governor for tests
-    cf.GOVERNOR_2 = a[5]
-
-    # Set Community Key addresses for tests - a[6] & a[7]
-    cf.COMMUNITY_KEY = cfDeployAllWhitelist.communityKey
-    cf.COMMUNITY_KEY_2 = a[7]
-
-    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
-    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
-
     return cf
 
 
@@ -136,11 +74,11 @@ def claimRegistered(cf, stakedMin):
     expiryTime = getChainTime() + (2 * CLAIM_DELAY)
     args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
 
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.stakeManager.registerClaim, nonces, *args
     )
     tx = cf.stakeManager.registerClaim(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        sigData,
         *args,
         {"from": cf.ALICE},
     )

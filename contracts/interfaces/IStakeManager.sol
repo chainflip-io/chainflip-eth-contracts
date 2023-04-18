@@ -54,9 +54,8 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
      *          will be sent back. If losing an auction while being a validator,
      *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-     * @param sigData   The keccak256 hash over the msg (uint) (which is the calldata
-     *                  for this function with empty msgHash and sig) and sig over that hash
-     *                  from the current aggregate key (uint)
+     * @param sigData   Struct containing the signature data over the message to verify,
+     *                  signed by the aggregate key.
      * @param nodeID    The nodeID of the staker
      * @param amount    The amount of stake to be locked up
      * @param staker    The staker who is to be sent FLIP

@@ -68,10 +68,3 @@ def test_constructor(
         flip.balanceOf(st_govKey)
         == st_initSupply - st_numGenesisValidators * st_genesisStake
     )
-
-    assert keyManager.canConsumeKeyNonceSet() == True
-    assert keyManager.getNumberWhitelistedAddresses() == 3
-    assert keyManager.canConsumeKeyNonce(vault.address) == True
-    assert keyManager.canConsumeKeyNonce(stakeManager.address) == True
-    assert keyManager.canConsumeKeyNonce(flip.address) == True
-    assert keyManager.canConsumeKeyNonce(keyManager.address) == False

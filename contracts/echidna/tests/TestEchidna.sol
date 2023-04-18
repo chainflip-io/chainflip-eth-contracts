@@ -79,10 +79,6 @@ contract TestEchidna is DeployerEchidna {
         return _lastValidateTime == keyManager.getLastValidateTime();
     }
 
-    function echidna_whitelistSet() external view returns (bool) {
-        return keyManager.canConsumeKeyNonceSet();
-    }
-
     // ´echidna_revert_*´ takes no parameters and expects a revert
     // Different calls expected to revert should be in different echidna_revert_ functions
     // since echidna checks that the call is reverted at any point
@@ -106,14 +102,6 @@ contract TestEchidna is DeployerEchidna {
 
     // ASSERTION TESTING - need to run echidna in testMode: "assertion"
 
-    function checkwhitelistAddrs() external view {
-        assert(keyManager.getNumberWhitelistedAddresses() == 3);
-        for (uint256 i = 0; i < whitelist.length; i++) {
-            assert(keyManager.canConsumeKeyNonce(whitelist[i]) == true);
-        }
-    }
-
-    // Proxies for a signed function - Assert if the call is not reverted
     function allBatch_revert(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,

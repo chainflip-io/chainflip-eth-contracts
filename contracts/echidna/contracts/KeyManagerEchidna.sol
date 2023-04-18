@@ -8,18 +8,6 @@ contract KeyManagerEchidna is IShared {
 
     // Expose KeyManager functions to Echidna - making them virtual to override them in tests when needed
 
-    function setCanConsumeKeyNonce(address[] calldata addrs) external virtual {
-        km.setCanConsumeKeyNonce(addrs);
-    }
-
-    function updateCanConsumeKeyNonce(
-        SigData calldata sigData,
-        address[] calldata currentAddrs,
-        address[] calldata newAddrs
-    ) external virtual {
-        km.updateCanConsumeKeyNonce(sigData, currentAddrs, newAddrs);
-    }
-
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external virtual {
         km.consumeKeyNonce(sigData, contractMsgHash);
     }

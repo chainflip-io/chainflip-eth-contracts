@@ -3,36 +3,36 @@ from shared_tests import *
 from brownie import reverts, web3
 
 
-def test_setGovKeyWithGovKey_setMinStake(cfAW):
+def test_setGovKeyWithGovKey_setMinStake(cf):
     # Change gov keys with Gov Key
-    setGovKeyWithGovKey_test(cfAW)
+    setGovKeyWithGovKey_test(cf)
     # Check that only new governor can set minStake
-    setMinStake_newGov(cfAW)
+    setMinStake_newGov(cf)
 
 
-def test_setGovKeyWithAggKey_setMinStake(cfAW):
+def test_setGovKeyWithAggKey_setMinStake(cf):
     # Change gov keys with Agg Key
-    setGovKeyWithAggKey_test(cfAW)
+    setGovKeyWithAggKey_test(cf)
     # Check that only new governor can set minStake
-    setMinStake_newGov(cfAW)
+    setMinStake_newGov(cf)
 
 
-def setMinStake_newGov(cfAW):
+def setMinStake_newGov(cf):
     newMinStake = int(MIN_STAKE * 1.5)
 
     # Changing minStake with old key should revert
     with reverts(REV_MSG_GOV_GOVERNOR):
-        cfAW.stakeManager.setMinStake(newMinStake, {"from": cfAW.GOVERNOR})
+        cf.stakeManager.setMinStake(newMinStake, {"from": cf.GOVERNOR})
 
     # Change minStake with new key
-    tx = cfAW.stakeManager.setMinStake(newMinStake, {"from": cfAW.GOVERNOR_2})
+    tx = cf.stakeManager.setMinStake(newMinStake, {"from": cf.GOVERNOR_2})
 
     # Check things that should've changed
-    assert cfAW.stakeManager.getMinimumStake() == newMinStake
+    assert cf.stakeManager.getMinimumStake() == newMinStake
     assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
 
     # Check things that shouldn't have changed
-    assert cfAW.flip.balanceOf(cfAW.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
+    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
 
 
 # Check that updating the Governor Key in the KeyManager takes effect

@@ -8,50 +8,36 @@ from brownie.test import given, strategy
 
 ## Update processs KeyManager:
 # Deploy new keyManager
-# Whitelist current contracts in new KeyManager
-# (whitelisting before updating references to ensure contracts can always validate)
 # Update all keyManager references
-# Dewhitelist contracts in old KeyManager
+# Start signing with the new keyManager's address
 @given(
     st_sender=strategy("address"),
 )
 def test_upgrade_keyManager(cf, KeyManager, st_sender):
+    args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
 
     # Try initial transfer to later test a replay attack on the newly deployed keyManager
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        [NATIVE_ADDR, cf.ALICE, TEST_AMNT],
+    contractMsgHash = Signer.generate_contractMsgHash(cf.vault.transfer, *args)
+    msgHash = Signer.generate_msgHash(
+        contractMsgHash, nonces, cf.keyManager.address, cf.vault.address
     )
-    sigdata = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-    cf.vault.transfer(sigdata, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE})
+    sigData = AGG_SIGNER_1.generate_sigData(msgHash, nonces)
+
+    cf.vault.transfer(sigData, *args, {"from": cf.ALICE})
 
     # Reusing current keyManager aggregateKey for simplicity
     newKeyManager = cf.DENICE.deploy(
         KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
-    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newKeyManager]
-
-    # If we deploy an upgraded KeyManager we can probably have setCanConsumeKeyNonce
-    # as part of the constructor, so we don't need to call it here.
-    newKeyManager.setCanConsumeKeyNonce(toWhitelist, {"from": cf.ALICE})
-
     aggKeyNonceConsumers = [cf.vault, cf.stakeManager, cf.flip]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
-    signed_call_cf(
-        cf,
-        cf.keyManager.updateCanConsumeKeyNonce,
-        cf.whitelisted,
-        [],
-        sender=st_sender,
-    )
-
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         # Check that messages signed with old keyManager's address revert in the new one
-        with reverts(REV_MSG_WRONG_KEYMANADDR):
+        with reverts(REV_MSG_SIG):
             signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, NON_ZERO_ADDR)
 
         # Try one validation per contract to check that they can validate
@@ -64,19 +50,24 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 
     # Try replay attack using transaction called on the previous keyManager
     # nonce is available on the new keyManager so it relies on signing over the keyManager address
-    with reverts(REV_MSG_WRONG_KEYMANADDR):
+    with reverts(REV_MSG_SIG):
         cf.vault.transfer(
-            sigdata, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
+            sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE}
         )
 
     # Check that a new transfer works and uses the new keyManager
     currentNonce = nonces[AGG]
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == False
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(newKeyManager, chain.id), [NATIVE_ADDR, cf.ALICE, TEST_AMNT]
+
+    args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
+    contractMsgHash = Signer.generate_contractMsgHash(cf.vault.transfer, *args)
+    msgHash = Signer.generate_msgHash(
+        contractMsgHash, nonces, newKeyManager.address, cf.vault.address
     )
-    sigData = AGG_SIGNER_1.getSigData(callDataNoSig, newKeyManager)
+    sigData = AGG_SIGNER_1.generate_sigData(msgHash, nonces)
+
     cf.vault.transfer(sigData, [NATIVE_ADDR, cf.ALICE, TEST_AMNT], {"from": cf.ALICE})
+
     assert newKeyManager.isNonceUsedByAggKey(currentNonce) == True
 
     # Try another replay attack
@@ -87,13 +78,11 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 
 
 ## Update process Vault:
-# Deploy new Vault
-# Whitelist new Vault. Old vault still needs to be active to be able to fetch active swaps
+# Deploy new Vault. New Vault can start generating deposit addresses.
+# Old vault still needs to be active to be able to fetch active swaps.
 # Transfer tokens from old Vault to new Vault.
 # At the end we will anyway have to do a final transfer from Vault to Vault, so no need to transfer all the balance now.
-# Therefore we can still make some swap-transfers from old Vault or we can do them from the new one, whatever is easier for the stateChain
 # Once a certain amount of time has passed (no more old vault fetches) we transfer remaining amount to new Vault
-# DeWhitelist old Vault, which should have zero balance
 @given(
     st_sender=strategy("address"),
 )
@@ -105,24 +94,7 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
 
     newVault = cf.DENICE.deploy(Vault, cf.keyManager)
 
-    # Check that newly deployed Vault can't validate signatures (not whitelisted yet)
-    # Technically we could precomute the deployed address and whitelist it before deployment
-    # but that is unnecessary
-    with reverts(REV_MSG_WHITELIST):
-        args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-        signed_call_cf(cf, newVault.transfer, *args, sender=st_sender)
-
-    # Keep old Vault whitelisted
-    currentWhitelist = cf.whitelisted
-    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newVault]
-
-    signed_call_cf(
-        cf,
-        cf.keyManager.updateCanConsumeKeyNonce,
-        currentWhitelist,
-        toWhitelist,
-        sender=st_sender,
-    )
+    args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
 
     # Vault can now validate and fetch but it has zero balance so it can't transfer
     tx = signed_call_cf(cf, newVault.transfer, *args, sender=st_sender)
@@ -153,24 +125,10 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     # Time where fetchs (and maybe transfers) still can be done from the oldVault
     chain.sleep(DAY)
 
-    # Transfer all the remaining funds to new Vault and dewhitelist
+    # Transfer all the remaining funds to new Vault
     transfer_native(cf, cf.vault, newVault, cf.vault.balance())
     assert newVault.balance() == totalFunds
     assert cf.vault.balance() == 0
-
-    currentWhitelist = [cf.vault, cf.stakeManager, cf.flip, newVault]
-    toWhitelist = [newVault, cf.stakeManager, cf.flip]
-    signed_call_cf(
-        cf,
-        cf.keyManager.updateCanConsumeKeyNonce,
-        currentWhitelist,
-        toWhitelist,
-        sender=st_sender,
-    )
-
-    # Old Vault cannot validate Signatures anymore
-    with reverts(REV_MSG_WHITELIST):
-        signed_call_cf(cf, cf.vault.transfer, *args, sender=st_sender)
 
     fetchNative(cf, newVault, depositAddrNew)
     transfer_native(cf, newVault, cf.ALICE, TEST_AMNT)
@@ -178,13 +136,12 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
 
 
 ## Update process StakeManager:
-# Deploy new StakeManager and whitelist it(and begin witnessing any new stakes)
+# Deploy new StakeManager and begin witnessing any new stakes.
 # Pause all register claim signature generation on the State Chain (~7days)
 # Wait 7 days for all currently pending claims to expire or be executed
 # At some point stop witnessing stake calls to old StakeManager (on state chain)
 # Generate a special claim sig to move all FLIP to the new Stake Manager and register it
 # After the CLAIM_DELAY, execute the special claim sig - all FLIP is transfered
-# Dewhilist old StakeManager
 @given(
     # adding extra +5 to make up for differences between time.time() and chain time
     st_expiryTimeDiff=strategy("uint", min_value=CLAIM_DELAY + 5, max_value=7 * DAY),
@@ -197,17 +154,6 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
     # the constructor to avoid frontrunning, as there is no deployer check now.
     tx = newStakeManager.setFlip(cf.flip, {"from": cf.ALICE})
     assert tx.events["FLIPSet"][0].values()[0] == cf.flip
-
-    # Keep old StakeManager whitelisted
-    currentWhitelist = cf.whitelisted
-    toWhitelist = [cf.vault, cf.stakeManager, cf.flip, newStakeManager]
-    signed_call_cf(
-        cf,
-        cf.keyManager.updateCanConsumeKeyNonce,
-        currentWhitelist,
-        toWhitelist,
-        sender=st_sender,
-    )
 
     # Last register claim before stopping state's chain claim signature registry
     nodeID = JUNK_HEX
@@ -243,27 +189,6 @@ def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
     cf.stakeManager.executeClaim(nodeID, {"from": cf.ALICE})
     assert cf.flip.balanceOf(newStakeManager) == totalFlipstaked
     assert cf.flip.balanceOf(cf.stakeManager) == 0
-
-    # Dewhitelist old StakeManager
-    currentWhitelist = [
-        cf.vault,
-        cf.stakeManager,
-        cf.flip,
-        newStakeManager,
-    ]
-    toWhitelist = [cf.vault, newStakeManager, cf.flip]
-    signed_call_cf(
-        cf,
-        cf.keyManager.updateCanConsumeKeyNonce,
-        currentWhitelist,
-        toWhitelist,
-        sender=st_sender,
-    )
-
-    # Check that claims cannot be registered in old StakeManager
-    with reverts(REV_MSG_WHITELIST):
-        args = (nodeID, claimAmount, cf.DENICE, expiryTime)
-        signed_call_cf(cf, cf.stakeManager.registerClaim, *args)
 
     # Check that claims can be registered and executed in the new StakeManager
     registerClaimTest(
