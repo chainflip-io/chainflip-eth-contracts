@@ -77,7 +77,8 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
 
     # addGasNative
     with reverts(REV_MSG_GOV_SUSPENDED):
-        cf.vault.addGasNative(JUNK_HEX, {"from": st_receiver, "amount": st_amount})
+        # Send an amount > 0
+        cf.vault.addGasNative(JUNK_HEX, {"from": st_receiver, "amount": st_amount + 1})
 
     # addGasToken
     with reverts(REV_MSG_GOV_SUSPENDED):

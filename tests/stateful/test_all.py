@@ -25,6 +25,7 @@ def test_all(
     KeyManager,
     Vault,
     CFReceiverMock,
+    MockUSDT,
 ):
 
     # Vault
@@ -94,21 +95,14 @@ def test_all(
         """
 
         # Set up the initial test conditions once
-        def __init__(
-            cls,
-            a,
-            cfDeploy,
-            Deposit,
-            Token,
-            CFReceiverMock,
-        ):
+        def __init__(cls, a, cfDeploy, Deposit, Token, CFReceiverMock, MockUSDT):
             super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
             )
             cls.tokenB = a[0].deploy(
-                Token, "NotAPonziB", "NAPB", INIT_TOKEN_SUPPLY * 10
+                MockUSDT, "NotAPonziB", "NAPB", INIT_TOKEN_SUPPLY * 10
             )
             cls.tokensList = (NATIVE_ADDR, cls.tokenA, cls.tokenB)
 
@@ -2561,21 +2555,6 @@ def test_all(
                 self.nativeBals[sender] -= amount
                 self.nativeBals[receiver] += amount
 
-        # Governance attemps to withdraw StakeManager's NATIVE
-        def rule_govWithdrawalNative_sm(self):
-            self._govWithdrawalNative(self.sm)
-
-        # Governance attemps to withdraw KeyManager's NATIVE
-        def rule_govWithdrawalNative_km(self):
-            self._govWithdrawalNative(self.km)
-
-        # Governance attemps to withdraw contract's native- final balances will be check by the invariants
-        def _govWithdrawalNative(self, contract):
-            print("                    rule_govWithdrawalNative")
-            contract.govWithdrawNative({"from": self.governor})
-            self.nativeBals[self.governor] += self.nativeBals[contract]
-            self.nativeBals[contract] = 0
-
         def rule_govAction(self, st_sender, st_message_govAction):
             if st_sender != self.governor:
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
@@ -2687,5 +2666,6 @@ def test_all(
         Deposit,
         Token,
         CFReceiverMock,
+        MockUSDT,
         settings=settings,
     )

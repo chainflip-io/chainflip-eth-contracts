@@ -220,4 +220,4 @@ def multicall(cf, SquidMulticall):
 
 @pytest.fixture(scope="module")
 def mockUSDT(cf, MockUSDT):
-    return cf.SAFEKEEPER.deploy(MockUSDT, "Tether USD", "USDT")
+    return cf.SAFEKEEPER.deploy(MockUSDT, "Tether USD", "USDT", INIT_USDC_SUPPLY)

@@ -97,19 +97,20 @@ def test_fetchBatch_rev_notdeployed(cf, token):
 
 
 # Calling the fetch function on a contract without the fetch function will revert
-def test_fetchBatch_rev_noFunction(cf, token):
-    # Using the keyManager as a proxy for a deployed contract without a fetch function
+def test_fetchBatch_rev_noFunction(cf, token, cfLoopbackMock):
+    # Using the Loopbback mock as a proxy for a deployed contract without a fetch function
+    # that can receive tokens
     for tok in [token, NATIVE_ADDR]:
 
         if tok == token:
-            tok.transfer(cf.keyManager.address, TEST_AMNT, {"from": cf.SAFEKEEPER})
+            tok.transfer(cfLoopbackMock.address, TEST_AMNT, {"from": cf.SAFEKEEPER})
         else:
-            cf.SAFEKEEPER.transfer(cf.keyManager.address, TEST_AMNT)
+            cf.SAFEKEEPER.transfer(cfLoopbackMock.address, TEST_AMNT)
 
         with reverts():
-            signed_call_cf(cf, cf.vault.fetchBatch, [[cf.keyManager.address, tok]])
+            signed_call_cf(cf, cf.vault.fetchBatch, [[cfLoopbackMock.address, tok]])
 
         if tok == token:
-            assert tok.balanceOf(cf.keyManager.address) == TEST_AMNT
+            assert tok.balanceOf(cfLoopbackMock.address) == TEST_AMNT
         else:
-            assert web3.eth.get_balance(cf.keyManager.address) == TEST_AMNT
+            assert web3.eth.get_balance(cfLoopbackMock.address) == TEST_AMNT
