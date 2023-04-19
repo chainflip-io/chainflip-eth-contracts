@@ -1296,7 +1296,10 @@ def test_all(
                     print("        REV_MSG_GOV_SUSPENDED _addGasNative")
                     self.v.addGasNative(st_swapID, {"from": st_sender})
             else:
-                if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
+                if (
+                    web3.eth.get_balance(str(st_sender)) >= st_native_amount
+                    and st_native_amount > 0
+                ):
                     print("                    rule_addGasNative", *toLog)
                     tx = self.v.addGasNative(
                         st_swapID,
