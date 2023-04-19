@@ -25,7 +25,7 @@ contract MockUSDT is Context {
     /**
      * @dev Sets the values for {name} and {symbol}.
      *
-     * The defaut value of {decimals} is 18. To select a different value for
+     * The defaut value of {decimals} is 6. To select a different value for
      * {decimals} you should overload it.
      *
      * All three of these values are immutable: they can only be set once during
@@ -57,7 +57,7 @@ contract MockUSDT is Context {
      * For example, if `decimals` equals `2`, a balance of `505` tokens should
      * be displayed to a user as `5,05` (`505 / 10 ** 2`).
      *
-     * Tokens usually opt for a value of 18, imitating the relationship between
+     * Tokens usually opt for a value of 6, imitating the relationship between
      * Ether and Wei. This is the value {ERC20} uses, unless this function is
      * overloaded;
      *
@@ -66,7 +66,7 @@ contract MockUSDT is Context {
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
     function decimals() public view returns (uint8) {
-        return 18;
+        return 6;
     }
 
     /**
