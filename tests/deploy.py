@@ -103,11 +103,11 @@ def deploy_new_stakeManager(
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
 
-    flip = FLIP.at(flip_address)
-    keyManager = KeyManager.at(keyManager_address)
-
+    # TODO: We probably don't need this check, we should just deploy a new StakeManager.
     # Minimal check to ensure that at least the two contracts provided are the correct.
-    assert flip.getKeyManager() == keyManager.address
+    # flip = FLIP.at(flip_address)
+    # keyManager = KeyManager.at(keyManager_address)
+
 
     deployerStakeManager = DeployerStakeManager.deploy(
         MIN_STAKE,

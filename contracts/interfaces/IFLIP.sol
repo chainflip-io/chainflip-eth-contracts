@@ -16,5 +16,5 @@ interface IFLIP is IERC20 {
 
     function burn(address owner, uint amount) external;
 
-    function updateStakeManager(address newOwner) external;
+    function updateIssuer(address newOwner) external;
 }

@@ -209,11 +209,13 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
             keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber, account))
         )
     {
+        // TODO: Should we also add a suspended check? However, we might want to be able to slash nodes when we
+        // are in safeMode or this contract is suspended. TBD.
         require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
         IFLIP flip = _FLIP;
         uint256 oldSupply = flip.totalSupply();
-        // NOTE: Consider having address(this) instead of account to not be able to burn tokens from other addresses.
+        // TODO: Consider having address(this) instead of account to not be able to burn tokens from other addresses.
         // NOTE: If we keep it like this, do we need to check for account != 0? _mint and _burn already do that. TO TEST.
         if (newTotalSupply < oldSupply) {
             uint256 amount = oldSupply - newTotalSupply;
@@ -228,22 +230,31 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /**
      * @notice  Updates the address that is allowed to mint/burn FLIP tokens. This will be used when the StakeManager
      *          contract is upgraded and we need to update the address that is allowed to mint/burn FLIP tokens.
-     * @param sigData           Struct containing the signature data over the message
-     *                          to verify, signed by the aggregate key.
-     * @param newStakeManager   New StakeManager address that will mint/burn FLIP tokens
+     * @param sigData     Struct containing the signature data over the message
+     *                    to verify, signed by the aggregate key.
+     * @param newIssuer   New StakeManager contract that will mint/burn FLIP tokens.
      */
-    function updateFLIPStakeManager(
+    function updateFlipIssuer(
         SigData calldata sigData,
-        address newStakeManager
+        address newIssuer
     )
         external
-        nzAddr(newStakeManager)
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFLIPStakeManager.selector, newStakeManager)))
+        nzAddr(newIssuer)
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {
+        // TODO: Should we also add a suspended check? In other contracts, when suspended they can't be upgraded. In this
+        // case when suspended all claims will expire so we could just do that and upgrade after that. I think it makes
+        // sense to add the modifier in this case.
+
         // Adding some small safeguard that at least the contract is not an EOA and has a reference to the FLIP contract
-        // Only downside is that we have to maintain this getFLIP(), but this seems like a low requirement.
-        require(IStakeManager(newStakeManager).getFLIP() == _FLIP, "Staking: invalid FLIP address");
-        _FLIP.updateStakeManager(newStakeManager);
+        // Only downsides are that we have to maintain this getFLIP() on the new contract and that we cannot pass it to
+        // a multisig. We would need to create a dummy StakeManager contract controlled by the multisig and pass that.
+        // Otherwise this adds some sanity check. However, we have probably already submitted a claim and executed it,
+        // so it only prevents a missmatch between the claim and the new contract. That might still be good enough.
+        IFLIP flip = IStakeManager(newIssuer).getFLIP();
+        require(flip == _FLIP, "Staking: invalid FLIP address");
+
+        _FLIP.updateIssuer(newIssuer);
     }
 
     /**

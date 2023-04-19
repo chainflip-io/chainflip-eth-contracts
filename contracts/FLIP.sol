@@ -12,7 +12,9 @@ import "./AggKeyNonceConsumer.sol";
  *           trap fees with
  */
 contract FLIP is ERC20, IFLIP, Shared {
-    address public _stakeManager;
+    address public _issuer;
+
+    event IssuerUpdated(address oldIssuer, address newIssuer);
 
     // StakeManager and GenesisValidatorFlip are the same (stakeManager). We
     // leave them separate in case we consider having receiverGenesisValidatorFlip
@@ -23,7 +25,7 @@ contract FLIP is ERC20, IFLIP, Shared {
         uint256 genesisStake,
         address receiverGenesisValidatorFlip, // Stake Manager
         address receiverGenesisFlip,
-        address stakeManager // Stake Manager
+        address issuer // Stake Manager
     )
         ERC20("Chainflip", "FLIP")
         nzAddr(receiverGenesisValidatorFlip)
@@ -33,7 +35,7 @@ contract FLIP is ERC20, IFLIP, Shared {
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _mint(receiverGenesisValidatorFlip, genesisValidatorFlip);
         _mint(receiverGenesisFlip, flipTotalSupply - genesisValidatorFlip);
-        _stakeManager = stakeManager;
+        _issuer = issuer;
     }
 
     //////////////////////////////////////////////////////////////
@@ -42,23 +44,33 @@ contract FLIP is ERC20, IFLIP, Shared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
+    // TODO: What about calling this function increaseSupply and decreaseSupply?
+    // TODO: We could to a two-step ownership transfer but given that this will be done through
+    // the SC (not manually) and that we are always one bad tx away from disaster I'm not sure
+    // this would add more than just complexity
+
     // Only the stateChain can mint/burn tokens via aggKey signed messages through the StakeManager.updateFlipSupply()
-    // _mint already checks for address zero - TO TEST
-    function mint(address receiver, uint amount) external override nzUint(amount) onlyStakeManager {
-        _mint(receiver, amount);
+    // _mint already checks for address zero but not for zero amount
+    // The StakeManager should not call this with amount = 0. But there is no real reason to revert.
+    function mint(address account, uint amount) external override onlyIssuer {
+        _mint(account, amount);
     }
 
-    // _burn already checks for address zero
-    function burn(address stakeManager, uint amount) external override nzUint(amount) onlyStakeManager {
-        _burn(stakeManager, amount);
+    // _mint already checks for address zero but not for zero amount
+    // The StakeManager should not call this with amount = 0. But there is no real reason to revert.
+    function burn(address account, uint amount) external override onlyIssuer {
+        _burn(account, amount);
     }
 
-    function updateStakeManager(address newstakeManager) external override nzAddr(newstakeManager) onlyStakeManager {
-        _stakeManager = newstakeManager;
+    function updateIssuer(address issuer) external override nzAddr(issuer) onlyIssuer {
+        emit IssuerUpdated(_issuer, issuer);
+        _issuer = issuer;
     }
 
-    modifier onlyStakeManager() {
-        require(msg.sender == _stakeManager, "FLIP: only stakeManager");
+    // TODO: Call it something bit more generic instead of StakeManager
+    // Issuer, TokenIssuer, supplyManager, SupplyUpdater,TokenManager, TokenSupply...
+    modifier onlyIssuer() {
+        require(msg.sender == _issuer, "FLIP: only issuer");
         _;
     }
 }
