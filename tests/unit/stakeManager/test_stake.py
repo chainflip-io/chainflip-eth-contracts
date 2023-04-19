@@ -21,10 +21,9 @@ def test_stake_st_amount_rand(cf, st_amount):
         stakeTest(cf, 0, JUNK_HEX, MIN_STAKE, tx, st_amount, NON_ZERO_ADDR)
 
 
-# For some reason the snapshot doesn't revert after this test,
-# can't put it before `test_stake_st_amount_rand`
 def test_stake_min(cf, stakedMin):
-    stakeTest(cf, 0, JUNK_HEX, MIN_STAKE, *stakedMin, NON_ZERO_ADDR)
+    tx, amount = stakedMin
+    stakeTest(cf, 0, JUNK_HEX, MIN_STAKE, tx, amount, NON_ZERO_ADDR)
 
 
 def test_stake_rev_st_amount_just_under_minStake(cf):
