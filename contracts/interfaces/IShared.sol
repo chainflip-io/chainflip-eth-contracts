@@ -17,13 +17,10 @@ interface IShared {
     }
 
     /**
-     * @dev  Contains a signature and the msgHash that the signature is over. Kept as a single
-     *       struct since they should always be used together
+     * @dev  Contains a signature and the nonce used to create it. Also the recovered address
+     *       to check that the signature is valid
      */
     struct SigData {
-        address keyManAddr;
-        uint256 chainID;
-        uint256 msgHash;
         uint256 sig;
         uint256 nonce;
         address kTimesGAddress;

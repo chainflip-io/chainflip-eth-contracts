@@ -75,10 +75,6 @@ contract TestEchidnaGovComm is DeployerEchidna {
         return _lastValidateTime == keyManager.getLastValidateTime();
     }
 
-    function echidna_whitelistSet() external returns (bool) {
-        return keyManager.canConsumeKeyNonceSet();
-    }
-
     // Suspend and resume functions
     function suspendVault() external override {
         vault.suspend();
@@ -125,13 +121,6 @@ contract TestEchidnaGovComm is DeployerEchidna {
         stakeManager.setMinStake(newMinStake);
         minStake = newMinStake;
         assert(stakeManager.getMinimumStake() == minStake);
-    }
-
-    function checkwhitelistAddrs() external view {
-        assert(keyManager.getNumberWhitelistedAddresses() == 3);
-        for (uint256 i = 0; i < whitelist.length; i++) {
-            assert(keyManager.canConsumeKeyNonce(whitelist[i]) == true);
-        }
     }
 
     // ´echidna_revert_*´ takes no parameters and expects a revert

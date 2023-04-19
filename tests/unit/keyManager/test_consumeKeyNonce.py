@@ -6,117 +6,120 @@ from brownie.test import given, strategy
 import pytest
 
 
-def test_consumeKeyNonce(cfAW):
+@given(st_contractMsgHash=strategy("bytes32"), st_sender=strategy("address"))
+def test_consumeKeyNonce(cf, st_contractMsgHash, st_sender):
     nonce = nonces[AGG]
-    assert not cfAW.keyManager.isNonceUsedByAggKey(nonce)
+    assert not cf.keyManager.isNonceUsedByAggKey(nonce)
 
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-    cfAW.keyManager.consumeKeyNonce(
-        sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
+    sigData = AGG_SIGNER_1.generate_sigData(
+        Signer.generate_msgHash(
+            st_contractMsgHash, nonces, cf.keyManager.address, st_sender
+        ),
+        nonces,
     )
 
-    assert nonce == sigData[4]
-    assert cfAW.keyManager.isNonceUsedByAggKey(sigData[4], {"from": cfAW.ALICE})
+    cf.keyManager.consumeKeyNonce(sigData, st_contractMsgHash, {"from": st_sender})
+
+    assert cf.keyManager.isNonceUsedByAggKey(nonce, {"from": cf.ALICE})
 
 
-def test_consumeKeyNonce_rev_msgHash(cfAW):
-    # Fails because msgHash in sigData is a hash of JUNK_HEX_PAD, whereas JUNK_HEX_PAD
-    # is used directly for contractMsgHash
-    with reverts(REV_MSG_MSGHASH):
-        cfAW.keyManager.consumeKeyNonce(
-            AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address),
-            JUNK_HEX_PAD,
-            {"from": cfAW.ALICE},
-        )
+@given(
+    st_contractMsgHash=strategy("bytes32"),
+    st_sender=strategy("address"),
+    st_sig=strategy("uint256", exclude=0),
+    st_kTimesGAddress=strategy("address"),
+)
+def test_consumeKeyNonce_rev_sig(
+    cf, st_contractMsgHash, st_sender, st_sig, st_kTimesGAddress
+):
 
+    msgHash = Signer.generate_msgHash(JUNK_HEX, nonces, cf.keyManager.address, cf.ALICE)
+    sigData = AGG_SIGNER_1.generate_sigData(msgHash, nonces)
 
-def test_consumeKeyNonce_rev_sig(cfAW):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-    sigData[3] = JUNK_HEX
+    if st_contractMsgHash != JUNK_HEX:
+        with reverts(REV_MSG_SIG):
+            cf.keyManager.consumeKeyNonce(
+                sigData, st_contractMsgHash, {"from": cf.ALICE}
+            )
+
+    # Bruteforce the signature
+    sigData_modif = sigData[:]
+    sigData_modif[0] = st_sig
     with reverts(REV_MSG_SIG):
-        cfAW.keyManager.consumeKeyNonce(
-            sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
-        )
+        cf.keyManager.consumeKeyNonce(sigData_modif, JUNK_HEX, {"from": cf.ALICE})
+
+    # Bruteforce the kTimesGAddress
+    sigData_modif = sigData[:]
+    sigData_modif[2] = st_kTimesGAddress
+    with reverts(REV_MSG_SIG):
+        cf.keyManager.consumeKeyNonce(sigData_modif, JUNK_HEX, {"from": cf.ALICE})
+
+    # Check that changing the nonce will fail. Seems like the hypothesis is smart
+    # enough to figure this one out, so we add a check.
+    if st_sig != sigData_modif[1]:
+        sigData_modif = sigData[:]
+        sigData_modif[1] = st_sig
+        with reverts(REV_MSG_SIG):
+            cf.keyManager.consumeKeyNonce(sigData_modif, JUNK_HEX, {"from": cf.ALICE})
+
+    if st_sender != cf.ALICE:
+        with reverts(REV_MSG_SIG):
+            cf.keyManager.consumeKeyNonce(sigData, JUNK_HEX, {"from": st_sender})
+    else:
+        cf.keyManager.consumeKeyNonce(sigData, JUNK_HEX, {"from": st_sender})
 
 
-@given(st_addr=strategy("address"))
-def test_consumeKeyNonce_rev_keyManAddr(cfAW, st_addr):
-    if st_addr != cfAW.keyManager:
-        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, st_addr)
-        with reverts(REV_MSG_WRONG_KEYMANADDR):
-            cfAW.keyManager.consumeKeyNonce(
-                sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
-            )
+# Check that signing the message for another chain won't pass verification
+@given(
+    st_contractMsgHash=strategy("bytes32"),
+    st_sender=strategy("address"),
+    st_chainID=strategy("uint256"),
+)
+def test_consumeKeyNonce_rev_chainID(cf, st_chainID, st_contractMsgHash, st_sender):
 
-
-@given(st_chainID=strategy("uint256"))
-def test_consumeKeyNonce_rev_chainID(cfAW, st_chainID):
-    if st_chainID != chain.id:
-        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-        sigData[1] = st_chainID
-        with reverts(REV_MSG_WRONG_CHAINID):
-            cfAW.keyManager.consumeKeyNonce(
-                sigData, cleanHexStr(sigData[2]), {"from": cfAW.ALICE}
-            )
-
-
-# Transactions sent from non-EOA accounts breaks brownie coverage - skip coverage
-@pytest.mark.skip_coverage
-def test_consumeKeyNonce_checkAll(a, cf):
-    whitelisted = [cf.vault, cf.stakeManager]
-    for addr in whitelisted + list(a):
-        if addr in whitelisted:
-            sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-            cf.ALICE.transfer(to=addr, amount=ONE_NATIVE)
-            cf.keyManager.consumeKeyNonce(
-                sigData, cleanHexStr(sigData[2]), {"from": addr}
-            )
-        else:
-            sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-            with reverts(REV_MSG_WHITELIST):
-                cf.keyManager.consumeKeyNonce(
-                    sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE}
-                )
-
-
-# Split test_consumeKeyNonce_check in two because brownie coverage crashes when
-# sending a transaction from a non-EOA address. Using whitelisted a[0] as workaround
-# instead of sending the transaction from Vault/KeyManager/StakeManager
-def test_consumeKeyNonce_check_whitelisted(a, cfAW):
-    for addr in cfAW.whitelisted:
-        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-        # cfAW.ALICE.transfer(to=addr, amount=ONE_NATIVE)
-        # Sending transaction from whitelisted non-EOA address as a workaround
-        cfAW.keyManager.consumeKeyNonce(
-            # sigData, cleanHexStr(sigData[2]), {"from": addr}
-            sigData,
-            cleanHexStr(sigData[2]),
-            {"from": a[0]},
-        )
-
-
-def test_consumeKeyNonce_check_nonwhitelisted(a, cf):
-    # Current whitelisted [cf.vault, cf.keyManager, cf.stakeManager, cf.flip]
-    for addr in list(a):
-        sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cf.keyManager.address)
-        with reverts(REV_MSG_WHITELIST):
-            cf.keyManager.consumeKeyNonce(
-                sigData, cleanHexStr(sigData[2]), {"from": cf.ALICE}
-            )
-
-
-def test_consumeKeyNonce_rev_used_nonce(a, cfAW):
-    sigData = AGG_SIGNER_1.getSigData(JUNK_HEX_PAD, cfAW.keyManager.address)
-    cfAW.keyManager.consumeKeyNonce(
-        sigData,
-        cleanHexStr(sigData[2]),
-        {"from": cfAW.ALICE},
+    sigData = AGG_SIGNER_1.generate_sigData(
+        Signer.generate_msgHash(
+            st_contractMsgHash,
+            nonces,
+            cf.keyManager.address,
+            st_sender,
+            chainId=st_chainID,
+        ),
+        nonces,
     )
 
-    # Replay attack
+    if st_chainID != chain.id:
+        with reverts(REV_MSG_SIG):
+            cf.keyManager.consumeKeyNonce(
+                sigData, st_contractMsgHash, {"from": st_sender}
+            )
+
+    # Proof that it would pass verification with the right chainID
+    sigData = AGG_SIGNER_1.generate_sigData(
+        Signer.generate_msgHash(
+            st_contractMsgHash,
+            nonces,
+            cf.keyManager.address,
+            st_sender,
+        ),
+        nonces,
+    )
+    cf.keyManager.consumeKeyNonce(sigData, st_contractMsgHash, {"from": st_sender})
+
+
+@given(st_contractMsgHash=strategy("bytes32"), st_sender=strategy("address"))
+def test_consumeKeyNonce_rev_replay(cf, st_contractMsgHash, st_sender):
+    nonce = nonces[AGG]
+    assert not cf.keyManager.isNonceUsedByAggKey(nonce)
+
+    sigData = AGG_SIGNER_1.generate_sigData(
+        Signer.generate_msgHash(
+            st_contractMsgHash, nonces, cf.keyManager.address, st_sender
+        ),
+        nonces,
+    )
+
+    cf.keyManager.consumeKeyNonce(sigData, st_contractMsgHash, {"from": st_sender})
+
     with reverts(REV_MSG_KEYMANAGER_NONCE):
-        cfAW.keyManager.consumeKeyNonce(
-            sigData,
-            cleanHexStr(sigData[2]),
-            {"from": cfAW.ALICE},
-        )
+        cf.keyManager.consumeKeyNonce(sigData, st_contractMsgHash, {"from": st_sender})

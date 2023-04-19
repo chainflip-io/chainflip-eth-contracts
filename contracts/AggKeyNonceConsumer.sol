@@ -27,9 +27,8 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
 
     /**
      * @notice  Update KeyManager reference. Used if KeyManager contract is updated
-     * @param sigData   The keccak256 hash over the msg (uint) (here that's normally
-     *                  a hash over the calldata to the function with an empty sigData) and
-     *                  sig over that hash (uint) from the aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
      */
     function updateKeyManager(
@@ -39,16 +38,7 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         external
         override
         nzAddr(address(keyManager))
-        consumesKeyNonce(
-            sigData,
-            keccak256(
-                abi.encodeWithSelector(
-                    this.updateKeyManager.selector,
-                    SigData(sigData.keyManAddr, sigData.chainID, 0, 0, sigData.nonce, address(0)),
-                    keyManager
-                )
-            )
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager)))
     {
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));

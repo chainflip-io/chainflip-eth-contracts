@@ -45,34 +45,31 @@ def test_deployAndFetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_toke
     assert web3.eth.get_balance(cf.vault.address) == nativeTotal
 
 
-def test_deployAndFetchBatch_token_rev_msgHash(cf, token):
-    for tok in [token, NATIVE_ADDR]:
-        callDataNoSig = cf.vault.deployAndFetchBatch.encode_input(
-            agg_null_sig(cf.keyManager.address, chain.id), [[JUNK_HEX_PAD, tok]]
-        )
-
-        sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-        sigData[2] += 1
-        # Fetch the deposit
-        with reverts(REV_MSG_MSGHASH):
-            cf.vault.deployAndFetchBatch(
-                sigData, [[JUNK_HEX_PAD, tok]], {"from": cf.ALICE}
-            )
-
-
 def test_deployAndFetchBatch_rev_sig(cf, token):
     for tok in [token, NATIVE_ADDR]:
-        callDataNoSig = cf.vault.deployAndFetchBatch.encode_input(
-            agg_null_sig(cf.keyManager.address, chain.id), [[JUNK_HEX_PAD, tok]]
+        args = [[JUNK_HEX_PAD, tok]]
+
+        sigData = AGG_SIGNER_1.getSigDataWithNonces(
+            cf.keyManager, cf.vault.deployAndFetchBatch, nonces, args
         )
 
-        sigData = AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address)
-        sigData[3] += 1
-        # Fetch the deposit
+        sigData_modif = sigData[:]
+        sigData_modif[0] += 1
+
         with reverts(REV_MSG_SIG):
-            cf.vault.deployAndFetchBatch(
-                sigData, [[JUNK_HEX_PAD, tok]], {"from": cf.ALICE}
-            )
+            cf.vault.deployAndFetchBatch(sigData_modif, args, {"from": cf.ALICE})
+
+        sigData_modif = sigData[:]
+        sigData_modif[1] += 1
+
+        with reverts(REV_MSG_SIG):
+            cf.vault.deployAndFetchBatch(sigData_modif, args, {"from": cf.ALICE})
+
+        sigData_modif = sigData[:]
+        sigData_modif[2] = NON_ZERO_ADDR
+
+        with reverts(REV_MSG_SIG):
+            cf.vault.deployAndFetchBatch(sigData_modif, args, {"from": cf.ALICE})
 
 
 # Deploying a Deposit on an address that already contains a Deposit should revert.

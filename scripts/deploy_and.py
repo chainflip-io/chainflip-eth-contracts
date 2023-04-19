@@ -10,6 +10,7 @@ from brownie import (
     Vault,
     StakeManager,
     FLIP,
+    DeployerContract,
     chain,
     network,
 )
@@ -28,7 +29,9 @@ COMMUNITY_KEY = accounts[6]
 COMMUNITY_KEY_2 = accounts[7]
 
 
-cf = deploy_Chainflip_contracts(DEPLOYER, KeyManager, Vault, StakeManager, FLIP)
+cf = deploy_Chainflip_contracts(
+    DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract
+)
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": cf.safekeeper})
 cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": ALICE})
@@ -71,13 +74,28 @@ def all_stakeManager_events():
         agg_null_sig(cf.keyManager.address, chain.id), *args
     )
     cf.stakeManager.registerClaim(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address), *args
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        *args,
+        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n💰 Alice executes a claim for nodeID {JUNK_INT}\n")
-    cf.stakeManager.executeClaim(JUNK_INT)
+    cf.stakeManager.executeClaim(JUNK_INT, {"from": ALICE})
+
+    args = (JUNK_INT, claim_amount, ALICE, chain.time() + (2 * CLAIM_DELAY))
+    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
+        agg_null_sig(cf.keyManager.address, chain.id), *args
+    )
+    cf.stakeManager.registerClaim(
+        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+        *args,
+        {"from": ALICE},
+    )
+    chain.sleep(CLAIM_DELAY * 3)
+    print(f"\n💰 Alice executes a claim after expiry for nodeID {JUNK_INT}\n")
+    cf.stakeManager.executeClaim(JUNK_INT, {"from": ALICE})
 
     new_min_stake = int(MIN_STAKE / 3)
     print(f"\n💰 Denice sets the minimum stake to {new_min_stake}\n")
@@ -107,6 +125,7 @@ def all_stakeManager_events():
     cf.stakeManager.updateKeyManager(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         NON_ZERO_ADDR,
+        {"from": ALICE},
     )
 
 
@@ -132,6 +151,7 @@ def all_keyManager_events():
     cf.keyManager.setAggKeyWithAggKey(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         AGG_SIGNER_2.getPubData(),
+        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
@@ -143,6 +163,7 @@ def all_keyManager_events():
     cf.keyManager.setAggKeyWithAggKey(
         AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address),
         AGG_SIGNER_1.getPubData(),
+        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
@@ -154,6 +175,7 @@ def all_keyManager_events():
     cf.keyManager.setGovKeyWithAggKey(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         GOVERNOR,
+        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
@@ -170,6 +192,7 @@ def all_keyManager_events():
     cf.keyManager.setCommKeyWithAggKey(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         COMMUNITY_KEY,
+        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
@@ -179,6 +202,11 @@ def all_keyManager_events():
     cf.keyManager.govAction(JUNK_HEX, {"from": GOVERNOR})
 
     print(f"\n🔑 Update the Key Nonce Consumer list (whitelist) 🔑\n")
+    cf.whitelisted = [
+        cf.vault.address,
+        cf.stakeManager.address,
+        cf.flip.address,
+    ]
     callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
         agg_null_sig(cf.keyManager.address, chain.id), cf.whitelisted, cf.whitelisted
     )
@@ -186,6 +214,7 @@ def all_keyManager_events():
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         cf.whitelisted,
         cf.whitelisted,
+        {"from": ALICE},
     )
 
 
@@ -215,6 +244,7 @@ def all_flip_events():
     cf.flip.updateKeyManager(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         NON_ZERO_ADDR,
+        {"from": DENICE},
     )
 
 
@@ -222,18 +252,21 @@ def all_vault_events():
     print(
         f"\n💰 Alice swaps {TEST_AMNT} ETH with swapIntent BTC, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
     )
-    cf.vault.xSwapNative(JUNK_INT, JUNK_HEX, BTC_UINT, {"amount": TEST_AMNT})
+    cf.vault.xSwapNative(
+        JUNK_INT, JUNK_HEX, BTC_UINT, {"amount": TEST_AMNT, "from": ALICE}
+    )
 
     print(
         f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} swapIntent BTC, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
     )
-    cf.flip.approve(cf.vault, TEST_AMNT)
+    cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
     cf.vault.xSwapToken(
         JUNK_INT,
         JUNK_HEX,
         BTC_UINT,
         cf.flip,
         TEST_AMNT,
+        {"from": ALICE},
     )
 
     print(
@@ -246,25 +279,33 @@ def all_vault_events():
         JUNK_HEX,
         JUNK_INT,
         JUNK_HEX,
-        {"amount": TEST_AMNT},
+        {"amount": TEST_AMNT, "from": ALICE},
     )
 
     print(
         f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT} IngressToken {cf.flip}, swapIntent USDC and refund Address {ALICE}\n"
     )
-    cf.flip.approve(cf.vault, TEST_AMNT)
+    cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
     cf.vault.xCallToken(
-        JUNK_INT, JUNK_HEX, USDC_UINT, JUNK_HEX, JUNK_INT, cf.flip, TEST_AMNT, JUNK_HEX
+        JUNK_INT,
+        JUNK_HEX,
+        USDC_UINT,
+        JUNK_HEX,
+        JUNK_INT,
+        cf.flip,
+        TEST_AMNT,
+        JUNK_HEX,
+        {"from": ALICE},
     )
 
     print(f"\n💰 Alice adds {TEST_AMNT} ETH to the swap with swapID {JUNK_HEX}\n")
-    cf.vault.addGasNative(JUNK_HEX, {"amount": TEST_AMNT})
+    cf.vault.addGasNative(JUNK_HEX, {"amount": TEST_AMNT, "from": ALICE})
 
     print(
         f"\n💰 Alice adds {TEST_AMNT} IngressToken {cf.flip} to the swap with swapID {JUNK_HEX}\n"
     )
-    cf.flip.approve(cf.vault, TEST_AMNT)
-    cf.vault.addGasToken(JUNK_HEX, TEST_AMNT, cf.flip)
+    cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
+    cf.vault.addGasToken(JUNK_HEX, TEST_AMNT, cf.flip, {"from": ALICE})
 
     print(f"\n❌ Failed transfer of {TEST_AMNT} ETH to recipient {cf.flip}\n")
     args = [[NATIVE_ADDR, cf.flip, TEST_AMNT]]
@@ -274,6 +315,7 @@ def all_vault_events():
     cf.vault.transfer(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         *args,
+        {"from": ALICE},
     )
 
     transferFailureAmount = cf.flip.balanceOf(cf.vault) + 1
@@ -287,6 +329,7 @@ def all_vault_events():
     cf.vault.transfer(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         *args,
+        {"from": ALICE},
     )
 
     print(
@@ -305,6 +348,7 @@ def all_vault_events():
     cf.vault.transferBatch(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         *args,
+        {"from": ALICE},
     )
 
     print(f"\n🔐 Governance suspends execution of claims\n")
@@ -331,4 +375,5 @@ def all_vault_events():
     cf.vault.updateKeyManager(
         AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
         NON_ZERO_ADDR,
+        {"from": ALICE},
     )

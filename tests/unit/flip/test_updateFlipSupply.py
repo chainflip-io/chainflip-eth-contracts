@@ -129,16 +129,16 @@ def test_updateFlipSupply_rev(cf):
             sender=cf.ALICE,
         )
 
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
-        2,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
+    contractMsgHash = Signer.generate_contractMsgHash(
+        cf.flip.updateFlipSupply, 2, stateChainBlockNumber, cf.stakeManager.address
+    )
+    msgHash = Signer.generate_msgHash(
+        contractMsgHash, nonces, cf.keyManager.address, cf.flip.address
     )
 
-    with reverts(REV_MSG_MSGHASH):
+    with reverts(REV_MSG_SIG):
         cf.flip.updateFlipSupply(
-            AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+            AGG_SIGNER_1.generate_sigData(msgHash, nonces),
             NEW_TOTAL_SUPPLY_MINT,
             stateChainBlockNumber,
             cf.stakeManager.address,
