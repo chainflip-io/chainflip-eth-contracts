@@ -99,6 +99,7 @@ def deploy_new_stakeManager(
     DeployerStakeManager,
     keyManager_address,
     flip_address,
+    min_stake,
 ):
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
@@ -110,16 +111,31 @@ def deploy_new_stakeManager(
     assert flip.getKeyManager() == keyManager.address
 
     deployerStakeManager = DeployerStakeManager.deploy(
-        MIN_STAKE,
+        min_stake,
         keyManager_address,
         flip_address,
         {"from": deployer, "required_confs": 1},
     )
 
-    # New upgraded contracts
+    # New upgraded contract
     stakeManager = StakeManager.at(deployerStakeManager.stakeManager())
 
     return (deployerStakeManager, stakeManager)
+
+
+def deploy_new_keyManager(deployer, KeyManager, aggKey, govKey, communityKey):
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
+    # Deploy a new KeyManager
+    keyManager = deployer.deploy(
+        KeyManager,
+        aggKey,
+        govKey,
+        communityKey,
+    )
+
+    return keyManager
 
 
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.

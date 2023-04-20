@@ -1,7 +1,6 @@
 from consts import *
 from shared_tests import *
-from brownie import reverts, web3, chain
-from brownie.test import given, strategy
+from deploy import deploy_new_keyManager
 
 # FLIP, Vault and StakeManager inherit AggKeyNonceConsumer
 def test_constructor(cf):
@@ -14,8 +13,12 @@ def test_updateKeyManager(cf, KeyManager):
     aggKeyNonceConsumers = [cf.flip, cf.stakeManager, cf.vault]
 
     # Reusing current keyManager aggregateKey for simplicity
-    newKeyManager = cf.SAFEKEEPER.deploy(
-        KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
+    newKeyManager = deploy_new_keyManager(
+        cf.SAFEKEEPER,
+        KeyManager,
+        cf.keyManager.getAggregateKey(),
+        cf.gov,
+        cf.COMMUNITY_KEY,
     )
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:

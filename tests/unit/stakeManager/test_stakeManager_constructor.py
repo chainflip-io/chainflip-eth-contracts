@@ -1,5 +1,6 @@
 from consts import *
 from shared_tests import *
+from brownie import reverts
 from brownie.test import given, strategy
 
 

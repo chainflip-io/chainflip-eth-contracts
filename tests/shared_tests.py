@@ -1,8 +1,7 @@
 from consts import *
-from brownie import reverts, chain, web3
+from brownie import web3
 
 from utils import *
-from eth_abi import encode_abi
 
 # ----------Vault----------
 
@@ -83,18 +82,6 @@ def setAggKeyWithAggKey_test(cf):
         AGG_SIGNER_1.getPubDataWith0x(),
         AGG_SIGNER_2.getPubDataWith0x(),
     ]
-
-
-def setKey_rev_newPubKeyX_test(cf):
-    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
-
-    with reverts(REV_MSG_PUB_KEY_X):
-        signed_call_cf(
-            cf,
-            cf.keyManager.setAggKeyWithAggKey,
-            BAD_AGG_KEY,
-            sender=cf.ALICE,
-        )
 
 
 def setAggKeyWithGovKey_test(cf):

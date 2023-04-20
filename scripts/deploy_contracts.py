@@ -28,16 +28,16 @@ def main():
 
     # Check that all environment variables are set when deploying to a live network.
     # SEED and the endpoint are checked automatically by Brownie.
-    # env_var_names = [
-    #     "AGG_KEY",
-    #     "GOV_KEY",
-    #     "COMM_KEY",
-    #     "GENESIS_STAKE",
-    #     "NUM_GENESIS_VALIDATORS",
-    # ]
-    # for env_var_name in env_var_names:
-    #     if env_var_name not in os.environ:
-    #         raise Exception(f"Environment variable {env_var_name} is not set")
+    env_var_names = [
+        "AGG_KEY",
+        "GOV_KEY",
+        "COMM_KEY",
+        "GENESIS_STAKE",
+        "NUM_GENESIS_VALIDATORS",
+    ]
+    for env_var_name in env_var_names:
+        if env_var_name not in os.environ:
+            raise Exception(f"Environment variable {env_var_name} is not set")
 
     # For live deployment, add a confirmation step to allow the user to verify the parameters.
     if chain.id == 1:
