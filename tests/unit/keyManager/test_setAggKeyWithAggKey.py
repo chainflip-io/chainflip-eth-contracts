@@ -8,7 +8,15 @@ def test_setAggKeyWithAggKey(cf):
 
 
 def test_setAggKeyWithAggKey_rev_newPubKeyX(cf):
-    setKey_rev_newPubKeyX_test(cf)
+    assert cf.keyManager.getAggregateKey() == AGG_SIGNER_1.getPubDataWith0x()
+
+    with reverts(REV_MSG_PUB_KEY_X):
+        signed_call_cf(
+            cf,
+            cf.keyManager.setAggKeyWithAggKey,
+            BAD_AGG_KEY,
+            sender=cf.ALICE,
+        )
 
 
 def test_setAggKeyWithAggKey_rev_pubKeyX(cf):

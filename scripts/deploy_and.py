@@ -2,6 +2,7 @@ import sys
 from os import path
 
 sys.path.append(path.abspath("tests"))
+from shared_tests import *
 from consts import *
 from brownie import (
     chain,
@@ -70,14 +71,8 @@ def all_stakeManager_events():
     claim_amount = int(MIN_STAKE / 3)
     print(f"\n💰 Alice registers a claim for {claim_amount} with nodeID {JUNK_INT}\n")
     args = (JUNK_INT, claim_amount, ALICE, chain.time() + (2 * CLAIM_DELAY))
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    cf.stakeManager.registerClaim(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        *args,
-        {"from": ALICE},
-    )
+
+    signed_call_cf(cf, cf.stakeManager.registerClaim, *args, sender=ALICE)
 
     chain.sleep(CLAIM_DELAY)
 
@@ -85,14 +80,9 @@ def all_stakeManager_events():
     cf.stakeManager.executeClaim(JUNK_INT, {"from": ALICE})
 
     args = (JUNK_INT, claim_amount, ALICE, chain.time() + (2 * CLAIM_DELAY))
-    callDataNoSig = cf.stakeManager.registerClaim.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    cf.stakeManager.registerClaim(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        *args,
-        {"from": ALICE},
-    )
+
+    signed_call_cf(cf, cf.stakeManager.registerClaim, *args, sender=ALICE)
+
     chain.sleep(CLAIM_DELAY * 3)
     print(f"\n💰 Alice executes a claim after expiry for nodeID {JUNK_INT}\n")
     cf.stakeManager.executeClaim(JUNK_INT, {"from": ALICE})
@@ -119,14 +109,8 @@ def all_stakeManager_events():
     # Last StakeManager event to emit because we set a wrong new KeyManager address
 
     print(f"\n🔑 Update the keyManager address in Stake Manager🔑\n")
-    callDataNoSig = cf.stakeManager.updateKeyManager.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), NON_ZERO_ADDR
-    )
-    cf.stakeManager.updateKeyManager(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        NON_ZERO_ADDR,
-        {"from": ALICE},
-    )
+
+    signed_call_cf(cf, cf.stakeManager.updateKeyManager, NON_ZERO_ADDR, sender=ALICE)
 
 
 def all_keyManager_events():
@@ -145,37 +129,33 @@ def all_keyManager_events():
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n🔑 Aggregate Key sets the new Aggregate Key 🔑\n")
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_2.getPubData()
-    )
-    cf.keyManager.setAggKeyWithAggKey(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+
+    signed_call(
+        cf.keyManager,
+        cf.keyManager.setAggKeyWithAggKey,
+        AGG_SIGNER_1,
+        ALICE,
         AGG_SIGNER_2.getPubData(),
-        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n🔑 Aggregate Key sets the new Aggregate Key 🔑\n")
-    callDataNoSig = cf.keyManager.setAggKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), AGG_SIGNER_1.getPubData()
-    )
-    cf.keyManager.setAggKeyWithAggKey(
-        AGG_SIGNER_2.getSigData(callDataNoSig, cf.keyManager.address),
+
+    signed_call(
+        cf.keyManager,
+        cf.keyManager.setAggKeyWithAggKey,
+        AGG_SIGNER_2,
+        ALICE,
         AGG_SIGNER_1.getPubData(),
-        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n🔑 Aggregate Key sets the new Governance Key 🔑\n")
-    callDataNoSig = cf.keyManager.setGovKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), GOVERNOR
-    )
-    cf.keyManager.setGovKeyWithAggKey(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        GOVERNOR,
-        {"from": ALICE},
+
+    signed_call(
+        cf.keyManager, cf.keyManager.setGovKeyWithAggKey, AGG_SIGNER_1, ALICE, GOVERNOR
     )
 
     chain.sleep(CLAIM_DELAY)
@@ -186,13 +166,13 @@ def all_keyManager_events():
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n🔑 Aggregate Key sets the new Community Key 🔑\n")
-    callDataNoSig = cf.keyManager.setCommKeyWithAggKey.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), COMMUNITY_KEY
-    )
-    cf.keyManager.setCommKeyWithAggKey(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
+
+    signed_call(
+        cf.keyManager,
+        cf.keyManager.setCommKeyWithAggKey,
+        AGG_SIGNER_1,
+        ALICE,
         COMMUNITY_KEY,
-        {"from": ALICE},
     )
 
     chain.sleep(CLAIM_DELAY)
@@ -201,50 +181,27 @@ def all_keyManager_events():
 
     cf.keyManager.govAction(JUNK_HEX, {"from": GOVERNOR})
 
-    print(f"\n🔑 Update the Key Nonce Consumer list (whitelist) 🔑\n")
-    cf.whitelisted = [
-        cf.vault.address,
-        cf.stakeManager.address,
-        cf.flip.address,
-    ]
-    callDataNoSig = cf.keyManager.updateCanConsumeKeyNonce.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), cf.whitelisted, cf.whitelisted
-    )
-    cf.keyManager.updateCanConsumeKeyNonce(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        cf.whitelisted,
-        cf.whitelisted,
-        {"from": ALICE},
-    )
-
 
 def all_flip_events():
     stateChainBlockNumber = 100
     print(
         f"\n💰 Denice sets the new total supply to {NEW_TOTAL_SUPPLY_MINT} at state chain block {stateChainBlockNumber}\n"
     )
-    callDataNoSig = cf.flip.updateFlipSupply.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id),
+
+    signed_call(
+        cf.keyManager,
+        cf.flip.updateFlipSupply,
+        AGG_SIGNER_1,
+        DENICE,
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
         cf.stakeManager.address,
-    )
-    cf.flip.updateFlipSupply(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        NEW_TOTAL_SUPPLY_MINT,
-        stateChainBlockNumber,
-        cf.stakeManager.address,
-        {"from": DENICE},
     )
 
     print(f"\n🔑 Update the keyManager address in FLIP🔑\n")
-    callDataNoSig = cf.flip.updateKeyManager.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), NON_ZERO_ADDR
-    )
-    cf.flip.updateKeyManager(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        NON_ZERO_ADDR,
-        {"from": DENICE},
+
+    signed_call(
+        cf.keyManager, cf.flip.updateKeyManager, AGG_SIGNER_1, DENICE, NON_ZERO_ADDR
     )
 
 
@@ -307,28 +264,15 @@ def all_vault_events():
 
     print(f"\n❌ Failed transfer of {TEST_AMNT} ETH to recipient {cf.flip}\n")
     args = [[NATIVE_ADDR, cf.flip, TEST_AMNT]]
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        *args,
-        {"from": ALICE},
-    )
+
+    signed_call(cf.keyManager, cf.vault.transfer, AGG_SIGNER_1, ALICE, *args)
 
     transferFailureAmount = cf.flip.balanceOf(cf.vault) + 1
     print(
         f"\n❌ Failed transfer of {transferFailureAmount} token {cf.flip} to recipient {NON_ZERO_ADDR} with reason 0x08c379a0....00000\n"
     )
     args = [[cf.flip, NON_ZERO_ADDR, transferFailureAmount]]
-    callDataNoSig = cf.vault.transfer.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    cf.vault.transfer(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        *args,
-        {"from": ALICE},
-    )
+    signed_call(cf.keyManager, cf.vault.transfer, AGG_SIGNER_1, ALICE, *args)
 
     print(
         f"\n❌ Failed batch transfer of 2x[{TEST_AMNT} ETH to recipient {cf.flip}] and 1x[{transferFailureAmount} token {cf.flip} to recipient {NON_ZERO_ADDR} with reason 0x08c379a0....00000]\n"
@@ -340,14 +284,8 @@ def all_vault_events():
             [cf.flip, NON_ZERO_ADDR, transferFailureAmount],
         ]
     ]
-    callDataNoSig = cf.vault.transferBatch.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), *args
-    )
-    cf.vault.transferBatch(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        *args,
-        {"from": ALICE},
-    )
+
+    signed_call(cf.keyManager, cf.vault.transferBatch, AGG_SIGNER_1, ALICE, *args)
 
     print(f"\n🔐 Governance suspends execution of claims\n")
     cf.vault.suspend({"from": GOVERNOR})
@@ -367,11 +305,7 @@ def all_vault_events():
     cf.vault.resume({"from": GOVERNOR})
 
     print(f"\n🔑 Update the keyManager address in the Vault🔑\n")
-    callDataNoSig = cf.vault.updateKeyManager.encode_input(
-        agg_null_sig(cf.keyManager.address, chain.id), NON_ZERO_ADDR
-    )
-    cf.vault.updateKeyManager(
-        AGG_SIGNER_1.getSigData(callDataNoSig, cf.keyManager.address),
-        NON_ZERO_ADDR,
-        {"from": ALICE},
+
+    signed_call(
+        cf.keyManager, cf.vault.updateKeyManager, AGG_SIGNER_1, ALICE, NON_ZERO_ADDR
     )

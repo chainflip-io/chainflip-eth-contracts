@@ -1,7 +1,7 @@
 from consts import *
-from brownie import network, reverts
+from brownie import reverts
 from brownie.test import given, strategy
-from deploy import deploy_new_stakeManager, deploy_new_vault
+from deploy import deploy_new_stakeManager, deploy_new_vault, deploy_new_keyManager
 from shared_tests import *
 
 # Using a function for each contract to test the replay attack as a proxy for signed function.
@@ -95,6 +95,7 @@ def test_sig_stakeManager(
         DeployerStakeManager,
         cf.keyManager.address,
         cf.flip.address,
+        MIN_STAKE,
     )
 
     args = [
@@ -391,7 +392,8 @@ def newKeyManager_replay_test(
     cf, KeyManager, nonceConsumer, fcn, sigData, contractMsgHash, st_sender, *args
 ):
     # Deploy a new KeyManager
-    new_keyManager = cf.deployer.deploy(
+    new_keyManager = deploy_new_keyManager(
+        cf.deployer,
         KeyManager,
         cf.keyManager.getAggregateKey(),
         cf.keyManager.getGovernanceKey(),
