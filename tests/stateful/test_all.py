@@ -2686,7 +2686,5 @@ def test_all(
         Token,
         CFReceiverMock,
         MockUSDT,
-        FLIP,
-        DeployerStakeManager,
         settings=settings,
     )
