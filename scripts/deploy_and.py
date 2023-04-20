@@ -281,7 +281,7 @@ def all_vault_events():
     )
 
     print(
-        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, IngressToken {cf.flip}, dstToken 3 and refund Address {ALICE}\n"
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, IngressToken {cf.flip}, dstToken 3 and refund Address {JUNK_HEX}\n"
     )
     cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
     cf.vault.xCallToken(
