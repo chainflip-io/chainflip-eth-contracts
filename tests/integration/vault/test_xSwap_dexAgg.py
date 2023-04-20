@@ -40,7 +40,7 @@ def test_dex_executexCallNative(
     tx = dexAggSrcMock.swapNativeAndCallViaChainflip(
         st_dstChain,
         toHex(dexAggDstMock.address),
-        ETH_UINT,
+        2,
         dexMock,
         token,
         token2,
@@ -63,7 +63,7 @@ def test_dex_executexCallNative(
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
     assert tx.events["XCallNative"]["dstChain"] == st_dstChain
     assert tx.events["XCallNative"]["dstAddress"] == toHex(dexAggDstMock.address)
-    assert tx.events["XCallNative"]["dstToken"] == ETH_UINT
+    assert tx.events["XCallNative"]["dstToken"] == 2
     assert tx.events["XCallNative"]["amount"] == st_amount
     assert tx.events["XCallNative"]["sender"] == dexAggSrcMock.address
     assert tx.events["XCallNative"]["refundAddress"] == toHex(st_sender.address)
@@ -150,7 +150,7 @@ def test_dex_executexCallToken(
     tx = dexAggSrcMock.swapTokenAndCallViaChainflip(
         st_dstChain,
         toHex(dexAggDstMock.address),
-        ETH_UINT,
+        2,
         dexMock,
         NATIVE_ADDR,
         token2,
@@ -175,7 +175,7 @@ def test_dex_executexCallToken(
     # Check that the event with the expected values was emitted. The message is verified by decoding it on the egress side.
     assert tx.events["XCallToken"]["dstChain"] == st_dstChain
     assert tx.events["XCallToken"]["dstAddress"] == toHex(dexAggDstMock.address)
-    assert tx.events["XCallToken"]["dstToken"] == ETH_UINT
+    assert tx.events["XCallToken"]["dstToken"] == 2
     assert tx.events["XCallToken"]["srcToken"] == token.address
     assert tx.events["XCallToken"]["amount"] == st_amount
     assert tx.events["XCallToken"]["sender"] == dexAggSrcMock.address

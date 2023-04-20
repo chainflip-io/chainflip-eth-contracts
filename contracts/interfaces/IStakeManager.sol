@@ -113,13 +113,6 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      */
     function govWithdraw() external;
 
-    /**
-     * @notice Withdraw any native on this contract. The intended execution of this contract doesn't
-     * require any native. This function is just to recover any native that might have been sent to
-     * this contract by accident (or any other reason), since incoming native cannot be stopped.
-     */
-    function govWithdrawNative() external;
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //

@@ -250,32 +250,30 @@ def all_flip_events():
 
 def all_vault_events():
     print(
-        f"\n💰 Alice swaps {TEST_AMNT} ETH with swapIntent BTC, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
+        f"\n💰 Alice swaps {TEST_AMNT} ETH with dstToken 1, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
     )
-    cf.vault.xSwapNative(
-        JUNK_INT, JUNK_HEX, BTC_UINT, {"amount": TEST_AMNT, "from": ALICE}
-    )
+    cf.vault.xSwapNative(JUNK_INT, JUNK_HEX, 1, {"amount": TEST_AMNT, "from": ALICE})
 
     print(
-        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} swapIntent BTC, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
+        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} dstToken 1, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
     )
     cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
     cf.vault.xSwapToken(
         JUNK_INT,
         JUNK_HEX,
-        BTC_UINT,
+        1,
         cf.flip,
         TEST_AMNT,
         {"from": ALICE},
     )
 
     print(
-        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT} ETH, swapIntent USDC and refund Address {ALICE}\n"
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, dstToken 3 and refund Address {JUNK_HEX}\n"
     )
     cf.vault.xCallNative(
         JUNK_INT,
         JUNK_HEX,
-        USDC_UINT,
+        3,
         JUNK_HEX,
         JUNK_INT,
         JUNK_HEX,
@@ -283,13 +281,13 @@ def all_vault_events():
     )
 
     print(
-        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT} IngressToken {cf.flip}, swapIntent USDC and refund Address {ALICE}\n"
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, IngressToken {cf.flip}, dstToken 3 and refund Address {JUNK_HEX}\n"
     )
     cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
     cf.vault.xCallToken(
         JUNK_INT,
         JUNK_HEX,
-        USDC_UINT,
+        3,
         JUNK_HEX,
         JUNK_INT,
         cf.flip,

@@ -270,25 +270,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         emit GovernanceWithdrawal(recipient, amount);
     }
 
-    /**
-     * @notice Withdraw any native tokens on this contract. The intended execution of this contract doesn't
-     * require any native tokens. This function is just to recover any native tokens that might have been sent to
-     * this contract by accident (or any other reason).
-     */
-    function govWithdrawNative() external override onlyGovernor {
-        uint256 amount = address(this).balance;
-
-        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = getKeyManager().getGovernanceKey();
-        payable(recipient).transfer(amount);
-        emit GovernanceWithdrawal(recipient, amount);
-    }
-
-    /**
-     *  @notice Allows this contract to receive native tokens
-     */
-    receive() external payable {}
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //

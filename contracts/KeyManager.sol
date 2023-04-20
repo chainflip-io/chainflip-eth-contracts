@@ -175,19 +175,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     }
 
     /**
-     * @notice Withdraw any native tokens on this contract. The intended execution of this contract doesn't
-     * require any native tokens. This function is just to recover any tokens that might have been sent to
-     * this contract by accident (or any other reason).
-     */
-    function govWithdrawNative() external override onlyGovernor {
-        uint256 amount = address(this).balance;
-
-        // Could use msg.sender but hardcoding the get call just for extra safety
-        address recipient = _getGovernanceKey();
-        payable(recipient).transfer(amount);
-    }
-
-    /**
      * @notice Emit an event containing an action message. Can only be called by the governor.
      */
     function govAction(bytes32 message) external override onlyGovernor {
@@ -241,11 +228,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     function isNonceUsedByAggKey(uint256 nonce) external view override returns (bool) {
         return _isNonceUsedByAggKey[nonce];
     }
-
-    /**
-     *  @notice Allows this contract to receive native
-     */
-    receive() external payable {}
 
     /**
      * @notice  Get the current governance key
