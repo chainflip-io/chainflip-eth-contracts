@@ -79,6 +79,7 @@ def _deploy_stakeManager():
         DeployerStakeManager,
         keyManager_address,
         flip_address,
+        MIN_STAKE,
     )
     addressDump["STAKE_MANAGER_ADDRESS"] = new_stakeManager.address
     addressDump["DEPLOYER_SM"] = deployerStakeManager.address

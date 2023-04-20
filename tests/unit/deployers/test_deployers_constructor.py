@@ -136,6 +136,7 @@ def test_upgrader_constructor(
         DeployerStakeManager,
         keyManager.address,
         flip.address,
+        MIN_STAKE,
     )
 
     assert deployerStakeManager.keyManager() == keyManager.address

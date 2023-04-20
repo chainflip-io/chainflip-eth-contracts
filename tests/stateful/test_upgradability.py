@@ -4,15 +4,23 @@ from brownie import reverts, chain, web3
 from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
-from random import choice, choices
 from shared_tests import *
+from deploy import deploy_new_stakeManager, deploy_new_vault, deploy_new_keyManager
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
 # Stateful test for testing contract upgrades
 def test_upgradability(
-    BaseStateMachine, state_machine, a, cf, StakeManager, KeyManager, Vault
+    BaseStateMachine,
+    state_machine,
+    a,
+    cf,
+    StakeManager,
+    KeyManager,
+    Vault,
+    FLIP,
+    DeployerStakeManager,
 ):
     class StateMachine(BaseStateMachine):
 
@@ -26,7 +34,7 @@ def test_upgradability(
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cf, StakeManager, KeyManager, Vault):
+        def __init__(cls, a, cf):
             super().__init__(cls, a, cf)
             cls.totalFlipstaked = cf.flip.balanceOf(cf.stakeManager)
 
@@ -68,8 +76,12 @@ def test_upgradability(
             aggKeyNonceConsumers = [self.f, self.sm, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity
-            newKeyManager = st_sender.deploy(
-                KeyManager, self.km.getAggregateKey(), st_sender, cf.communityKey
+            newKeyManager = deploy_new_keyManager(
+                st_sender,
+                KeyManager,
+                self.km.getAggregateKey(),
+                st_sender,
+                cf.communityKey,
             )
 
             print(
@@ -97,8 +109,7 @@ def test_upgradability(
         def rule_upgrade_Vault(
             self, st_sender, st_vault_transfer_amount, st_sleep_time
         ):
-
-            newVault = st_sender.deploy(Vault, self.km)
+            newVault = deploy_new_vault(st_sender, Vault, KeyManager, self.km)
 
             # Vault can now validate and fetch but it has zero balance so it can't transfer
             args = [
@@ -172,15 +183,16 @@ def test_upgradability(
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
-            newStakeManager = st_sender.deploy(
+            (_, newStakeManager) = deploy_new_stakeManager(
+                st_sender,
+                KeyManager,
                 StakeManager,
-                self.km,
+                FLIP,
+                DeployerStakeManager,
+                self.km.address,
+                self.f.address,
                 MIN_STAKE,
             )
-
-            # In case of deploying a new StakeManager, the setFLIP function will probably be part of
-            # the constructor to avoid frontrunning, as there is no deployer check now.
-            newStakeManager.setFlip(self.f, {"from": st_sender})
 
             chain.sleep(st_sleep_time)
 
@@ -256,8 +268,5 @@ def test_upgradability(
         StateMachine,
         a,
         cf,
-        StakeManager,
-        KeyManager,
-        Vault,
         settings=settings,
     )

@@ -2,6 +2,7 @@ from consts import *
 from shared_tests import *
 from brownie import reverts, web3, chain
 from brownie.test import given, strategy
+from deploy import deploy_new_stakeManager, deploy_new_vault, deploy_new_keyManager
 
 # Goal is to test upgrading contracts (deploy a new version) except FLIP.
 
@@ -26,8 +27,8 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
     cf.vault.transfer(sigData, *args, {"from": cf.ALICE})
 
     # Reusing current keyManager aggregateKey for simplicity
-    newKeyManager = cf.DENICE.deploy(
-        KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
+    newKeyManager = deploy_new_keyManager(
+        cf.DENICE, KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
     aggKeyNonceConsumers = [cf.vault, cf.stakeManager, cf.flip]
@@ -86,13 +87,13 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
 @given(
     st_sender=strategy("address"),
 )
-def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
+def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager):
 
     totalFunds = cf.DENICE.balance() / 10
     # Replicate a vault with funds - 1000 NATIVE
     cf.DENICE.transfer(cf.vault, totalFunds)
 
-    newVault = cf.DENICE.deploy(Vault, cf.keyManager)
+    newVault = deploy_new_vault(cf.DENICE, Vault, KeyManager, cf.keyManager)
 
     args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
 
@@ -147,13 +148,26 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender):
     st_expiryTimeDiff=strategy("uint", min_value=CLAIM_DELAY + 5, max_value=7 * DAY),
     st_sender=strategy("address"),
 )
-def test_upgrade_StakeManager(cf, StakeManager, st_expiryTimeDiff, st_sender):
-    newStakeManager = cf.DENICE.deploy(StakeManager, cf.keyManager, MIN_STAKE)
-
-    # In case of deploying a new StakeManager, the setFLIP function will probably be part of
-    # the constructor to avoid frontrunning, as there is no deployer check now.
-    tx = newStakeManager.setFlip(cf.flip, {"from": cf.ALICE})
-    assert tx.events["FLIPSet"][0].values()[0] == cf.flip
+def test_upgrade_StakeManager(
+    cf,
+    StakeManager,
+    st_expiryTimeDiff,
+    st_sender,
+    KeyManager,
+    FLIP,
+    DeployerStakeManager,
+    MIN_STAKE,
+):
+    (_, newStakeManager) = deploy_new_stakeManager(
+        st_sender,
+        KeyManager,
+        StakeManager,
+        FLIP,
+        DeployerStakeManager,
+        cf.keyManager.address,
+        cf.f.address,
+        MIN_STAKE,
+    )
 
     # Last register claim before stopping state's chain claim signature registry
     nodeID = JUNK_HEX

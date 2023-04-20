@@ -7,6 +7,7 @@ from utils import *
 from hypothesis import strategies as hypStrat
 from random import choice, choices
 import time
+from deploy import deploy_new_stakeManager, deploy_new_vault, deploy_new_keyManager
 
 settings = {
     "stateful_step_count": 100,
@@ -26,6 +27,8 @@ def test_all(
     Vault,
     CFReceiverMock,
     MockUSDT,
+    FLIP,
+    DeployerStakeManager,
 ):
 
     # Vault
@@ -2074,8 +2077,12 @@ def test_all(
             aggKeyNonceConsumers = [self.f, self.sm, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity.
-            newKeyManager = st_sender.deploy(
-                KeyManager, self.km.getAggregateKey(), self.governor, self.communityKey
+            newKeyManager = deploy_new_keyManager(
+                st_sender,
+                KeyManager,
+                self.km.getAggregateKey(),
+                self.governor,
+                self.communityKey,
             )
 
             signer = self._get_key_prob(AGG)
@@ -2118,8 +2125,8 @@ def test_all(
                 self.lastValidateTime = self.km.tx.timestamp
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
-        def rule_upgrade_Vault(self, st_sender, st_native_amount, st_sleep_time):
-            newVault = st_sender.deploy(Vault, self.km)
+        def rule_upgrade_Vault(self, st_sender, st_sleep_time):
+            newVault = deploy_new_vault(st_sender, Vault, KeyManager, self.km)
 
             # Transfer all the remaining native and other funds (TokenA & TokenB) to new Vault
             iniNativeBalance = self.v.balance()
@@ -2233,7 +2240,16 @@ def test_all(
 
         # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
         def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
-            newStakeManager = st_sender.deploy(StakeManager, self.km, INIT_MIN_STAKE)
+            (_, newStakeManager) = deploy_new_stakeManager(
+                st_sender,
+                KeyManager,
+                StakeManager,
+                FLIP,
+                DeployerStakeManager,
+                self.km.address,
+                self.f.address,
+                INIT_MIN_STAKE,
+            )
 
             # In case of deploying a new StakeManager, the setFLIP function will probably be part of
             # the constructor to avoid frontrunning, as there is no deployer check now.
@@ -2670,5 +2686,7 @@ def test_all(
         Token,
         CFReceiverMock,
         MockUSDT,
+        FLIP,
+        DeployerStakeManager,
         settings=settings,
     )
