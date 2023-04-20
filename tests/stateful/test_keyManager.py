@@ -40,7 +40,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
             self.numTxsTested = 0
             self.governor = cfDeploy.gov
             self.communityKey = cfDeploy.communityKey
-            self.nativeBalskm = 0
 
         # Variables that will be a random value with each fcn/rule called
 
@@ -196,24 +195,6 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
                         signer=self.allKeys[st_sig_key_idx],
                     )
 
-        # Transfer native to the keyManager to check govWithdrawalEth
-        def rule_transfer_native(self, st_sender, st_amount):
-            if st_sender.balance() >= st_amount:
-                print("                    rule_transfer_native", st_sender, st_amount)
-                st_sender.transfer(self.km, st_amount)
-                self.nativeBalskm += st_amount
-
-        # Governance attemps to withdraw any native - final balances will be check by the invariants
-        def rule_govWithdrawalEth(self):
-            iniEthBalsGov = self.governor.balance()
-            print("                    rule_govWithdrawalEth")
-            tx = self.km.govWithdrawNative({"from": self.governor})
-            assert (
-                iniEthBalsGov + self.nativeBalskm
-                == self.governor.balance() + calculateGasTransaction(tx)
-            )
-            self.nativeBalskm = 0
-
         def rule_govAction(self, st_sender, st_message):
             if st_sender != self.governor:
                 with reverts(REV_MSG_KEYMANAGER_GOVERNOR):
@@ -230,7 +211,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
             assert self.km.getLastValidateTime() == self.lastValidateTime
 
         def invariant_bals(self):
-            assert self.nativeBalskm == self.km.balance()
+            assert self.km.balance() == 0
 
         # Check the keys are correct after every tx
         def invariant_keys(self):

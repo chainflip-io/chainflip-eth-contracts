@@ -12,7 +12,14 @@ settings = {"stateful_step_count": 100, "max_examples": 50}
 
 # Stateful test for all functions in the Vault
 def test_vault(
-    BaseStateMachine, state_machine, a, cfDeploy, Deposit, Token, cfReceiverMock
+    BaseStateMachine,
+    state_machine,
+    a,
+    cfDeploy,
+    Deposit,
+    Token,
+    cfReceiverMock,
+    MockUSDT,
 ):
 
     # The max swapID to use. SwapID is needed as a salt to create a unique create2
@@ -48,7 +55,7 @@ def test_vault(
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cfDeploy, Deposit, Token, cfReceiverMock):
+        def __init__(cls, a, cfDeploy, Deposit, Token, cfReceiverMock, MockUSDT):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
@@ -56,7 +63,7 @@ def test_vault(
                 Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
             )
             cls.tokenB = a[0].deploy(
-                Token, "NotAPonziB", "NAPB", INIT_TOKEN_SUPPLY * 10
+                MockUSDT, "NotAPonziB", "NAPB", INIT_TOKEN_SUPPLY * 10
             )
             cls.tokensList = (NATIVE_ADDR, cls.tokenA, cls.tokenB)
 
@@ -1154,7 +1161,10 @@ def test_vault(
                     )
                     self.v.addGasNative(st_swapID, {"from": st_sender})
             else:
-                if web3.eth.get_balance(str(st_sender)) >= st_native_amount:
+                if (
+                    web3.eth.get_balance(str(st_sender)) >= st_native_amount
+                    and st_native_amount > 0
+                ):
                     print("                    rule_addGasNative", *toLog)
                     tx = self.v.addGasNative(
                         st_swapID,
@@ -1442,5 +1452,12 @@ def test_vault(
             print(f"Total rules executed = {self.numTxsTested-1}")
 
     state_machine(
-        StateMachine, a, cfDeploy, Deposit, Token, cfReceiverMock, settings=settings
+        StateMachine,
+        a,
+        cfDeploy,
+        Deposit,
+        Token,
+        cfReceiverMock,
+        MockUSDT,
+        settings=settings,
     )

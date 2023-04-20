@@ -17,7 +17,7 @@ AGG = "Agg"
 INIT_TOKEN_SUPPLY = int(10**8 * E_18)
 INIT_NATIVE_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
-# USDC uses 6 decimals
+# USDC and USDT use 6 decimals
 INIT_USDC_SUPPLY = int(20 * 10**6 * 10**6)
 INIT_USDC_ACCOUNT = int(10**6 * 10**6)
 TEST_AMNT_USDC = int(10**6)
@@ -114,11 +114,9 @@ CLAIM_DELAY = 2 * DAY
 NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
 
 REV_MSG_MIN_STAKE = "Staking: stake too small"
-REV_MSG_SM_ARR_LEN = "Staking: arrays not same length"
 REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "Staking: early or already execd"
-REV_MSG_STAKEMAN_DEPLOYER = "Staking: not deployer"
 REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
 
 # -----Vault-----
@@ -156,9 +154,3 @@ REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
 # -----CFReceiver-----
 REV_MSG_CFREC_REVERTED = "CFReceiverFail: call reverted"
 REV_MSG_CFREC_SENDER = "CFReceiver: caller not Chainflip sender"
-
-# -----Token mapping-----
-NO_SWAP = 0
-BTC_UINT = 1
-ETH_UINT = 2
-USDC_UINT = 3

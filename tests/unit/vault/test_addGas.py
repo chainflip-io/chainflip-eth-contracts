@@ -21,11 +21,11 @@ def test_addGas(cf, token, st_amount, st_sender, st_swapID):
                 token,
                 {"from": st_sender},
             )
-        # AddGasNative shouldn't revert if amount is 0
-        cf.vault.addGasNative(
-            st_swapID,
-            {"from": st_sender, "value": st_amount},
-        )
+        with reverts(REV_MSG_NZ_UINT):
+            cf.vault.addGasNative(
+                st_swapID,
+                {"from": st_sender, "value": st_amount},
+            )
     else:
         # Fund st_sender account
         token.transfer(st_sender, st_amount * 2)

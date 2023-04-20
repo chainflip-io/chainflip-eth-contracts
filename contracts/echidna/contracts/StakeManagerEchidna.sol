@@ -39,10 +39,6 @@ contract StakeManagerEchidna is IShared {
         sm.govWithdraw();
     }
 
-    function govWithdrawNative() external virtual {
-        sm.govWithdrawNative();
-    }
-
     // Expose AggKeyNonceConsumer functions to Echidna
 
     function updateKeyManagerStakeManager(SigData calldata sigData, IKeyManager keyManager) external virtual {

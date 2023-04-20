@@ -211,7 +211,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             );
 
             // No need to check token.code.length since it comes from a gated call
-            bool transferred = success && (abi.decode(returndata, (bool)) || returndata.length == uint256(0));
+            bool transferred = success && (returndata.length == uint256(0) || abi.decode(returndata, (bool)));
             if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }
@@ -423,7 +423,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          Native tokens must be paid to this contract as part of the call.
      * @param swapID    The unique identifier for this swap (bytes32)
      */
-    function addGasNative(bytes32 swapID) external payable override onlyNotSuspended {
+    function addGasNative(bytes32 swapID) external payable override onlyNotSuspended nzUint(msg.value) {
         emit AddGasNative(swapID, msg.value);
     }
 
