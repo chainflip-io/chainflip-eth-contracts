@@ -108,7 +108,6 @@ def deploy_new_stakeManager(
     # flip = FLIP.at(flip_address)
     # keyManager = KeyManager.at(keyManager_address)
 
-
     deployerStakeManager = DeployerStakeManager.deploy(
         MIN_STAKE,
         keyManager_address,

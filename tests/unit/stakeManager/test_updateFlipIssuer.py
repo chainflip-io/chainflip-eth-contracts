@@ -1,4 +1,3 @@
-
 from consts import *
 from brownie.test import given, strategy
 from brownie import reverts, chain
@@ -31,8 +30,17 @@ def test_updateIssuer_rev_nzAddr(cf):
             sender=cf.BOB,
         )
 
+
 def test_updateIssuer(cf, FLIP, DeployerStakeManager, KeyManager, StakeManager):
-    (deployerStakeManager, new_stakeManager) = deploy_new_stakeManager(cf.deployer, KeyManager, StakeManager, FLIP, DeployerStakeManager, cf.keyManager.address, cf.flip.address)
+    (deployerStakeManager, new_stakeManager) = deploy_new_stakeManager(
+        cf.deployer,
+        KeyManager,
+        StakeManager,
+        FLIP,
+        DeployerStakeManager,
+        cf.keyManager.address,
+        cf.flip.address,
+    )
 
     # The getFLIP() function will revert
     with reverts():
@@ -44,7 +52,15 @@ def test_updateIssuer(cf, FLIP, DeployerStakeManager, KeyManager, StakeManager):
         )
 
     # Deploy a new stakeManager with a fake flip address
-    (_, stakeManager_err) = deploy_new_stakeManager(cf.deployer, KeyManager, StakeManager, FLIP, DeployerStakeManager, cf.keyManager.address, NON_ZERO_ADDR)
+    (_, stakeManager_err) = deploy_new_stakeManager(
+        cf.deployer,
+        KeyManager,
+        StakeManager,
+        FLIP,
+        DeployerStakeManager,
+        cf.keyManager.address,
+        NON_ZERO_ADDR,
+    )
 
     with reverts("Staking: invalid FLIP address"):
         signed_call_cf(
@@ -59,9 +75,12 @@ def test_updateIssuer(cf, FLIP, DeployerStakeManager, KeyManager, StakeManager):
         cf.stakeManager.updateFlipIssuer,
         new_stakeManager.address,
         sender=cf.BOB,
-    )    
+    )
 
-    assert tx.events["IssuerUpdated"].values() == [cf.stakeManager.address, new_stakeManager.address]
+    assert tx.events["IssuerUpdated"].values() == [
+        cf.stakeManager.address,
+        new_stakeManager.address,
+    ]
 
     # Check that the new stakeManager can update the supply
     iniBals_sm = cf.flip.balanceOf(new_stakeManager.address)

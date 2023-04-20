@@ -130,7 +130,10 @@ def test_updateFlipSupply_rev(cf):
         )
 
     contractMsgHash = Signer.generate_contractMsgHash(
-        cf.stakeManager.updateFlipSupply, 2, stateChainBlockNumber, cf.stakeManager.address
+        cf.stakeManager.updateFlipSupply,
+        2,
+        stateChainBlockNumber,
+        cf.stakeManager.address,
     )
     msgHash = Signer.generate_msgHash(
         contractMsgHash, nonces, cf.keyManager.address, cf.stakeManager.address
@@ -159,16 +162,17 @@ def test_updateFlipSupply_constant(cf):
     assert tx.events["FlipSupplyUpdated"][0].values() == [
         cf.flip.totalSupply(),
         cf.flip.totalSupply(),
-        1,]
+        1,
+    ]
 
 
 # This will never happen, just verifying the logic
 # TODO: Unclear what the behaviour should be - tbd. We might hardcode
 # address(this) in the StakeManager contract.
 @given(
-        st_holder= strategy("address"),
-        st_receiver= strategy("address"),
-        st_amount= strategy("uint256", min_value=1, max_value=TEST_AMNT),
+    st_holder=strategy("address"),
+    st_receiver=strategy("address"),
+    st_amount=strategy("uint256", min_value=1, max_value=TEST_AMNT),
 )
 def test_updateFlippySupply_transfer(cf, st_holder, st_amount, st_receiver):
 
@@ -197,8 +201,8 @@ def test_updateFlippySupply_transfer(cf, st_holder, st_amount, st_receiver):
 
     finalBals_holder = cf.flip.balanceOf(st_holder)
     assert finalBals_holder == iniBals_holder - st_amount
-    
-    stateChainBlockNumber +=1
+
+    stateChainBlockNumber += 1
 
     tx = signed_call_cf(
         cf,
@@ -207,11 +211,11 @@ def test_updateFlippySupply_transfer(cf, st_holder, st_amount, st_receiver):
         stateChainBlockNumber,
         st_holder,
         sender=cf.BOB,
-    )    
+    )
 
     iniBals_receiver = cf.flip.balanceOf(st_receiver)
-    
-    stateChainBlockNumber +=1
+
+    stateChainBlockNumber += 1
 
     tx = signed_call_cf(
         cf,
