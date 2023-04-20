@@ -30,20 +30,19 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /// @dev    Holding pending claims for the 48h withdrawal delay
     mapping(bytes32 => Claim) private _pendingClaims;
     /// @dev   Time after registerClaim required to wait before call to executeClaim
-    uint40 public constant CLAIM_DELAY = 2 days;
+    uint48 public constant CLAIM_DELAY = 2 days;
 
     /// @dev    The last block number in which the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
 
     // Defined in IStakeManager, just here for convenience
     // struct Claim {
-    //     uint256 amount;
+    //     uint amount;
     //     address staker;
-    //     // 40 so that 160 (from staker) + 40 + 40  + 8 is 256 they can all be packed
+    //     // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
     //     // into a single 256 bit slot
-    //     uint40 startTime;
+    //     uint48 startTime;
     //     uint48 expiryTime;
-    //     bool transferIssuer;
     // }
 
     constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
@@ -121,8 +120,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         bytes32 nodeID,
         uint256 amount,
         address staker,
-        uint40 expiryTime,
-        bool transferIssuer
+        uint48 expiryTime
     )
         external
         override
@@ -132,7 +130,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         nzAddr(staker)
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.registerClaim.selector, nodeID, amount, staker, expiryTime, transferIssuer))
+            keccak256(abi.encode(this.registerClaim.selector, nodeID, amount, staker, expiryTime))
         )
     {
         require(
@@ -141,11 +139,11 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
             "Staking: a pending claim exists"
         );
 
-        uint40 startTime = uint40(block.timestamp) + CLAIM_DELAY;
+        uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
         require(expiryTime > startTime, "Staking: expiry time too soon");
 
-        _pendingClaims[nodeID] = Claim(amount, staker, startTime, expiryTime, transferIssuer);
-        emit ClaimRegistered(nodeID, amount, staker, startTime, expiryTime, transferIssuer);
+        _pendingClaims[nodeID] = Claim(amount, staker, startTime, expiryTime);
+        emit ClaimRegistered(nodeID, amount, staker, startTime, expiryTime);
     }
 
     /**
@@ -171,12 +169,6 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
 
             // Send the tokens
             _FLIP.transfer(claim.staker, claim.amount);
-
-            if (claim.transferIssuer) {
-                // Transfer the issuer key to the staker
-                // require(IStakeManager(claim.staker).getFLIP() == _FLIP, "Staking: invalid FLIP address");
-                _FLIP.updateIssuer(claim.staker);
-            }
         } else {
             emit ClaimExpired(nodeID, claim.amount);
         }
@@ -235,38 +227,35 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
     }
 
-    // NOTE: We could potentially leave this anyway, but in a situation of emergency we will probably pause it
-    // and govWithdraw the funds, not sure there is any case where we would want to update the issuer.
+    /**
+     * @notice  Updates the address that is allowed to mint/burn FLIP tokens. This will be used when the StakeManager
+     *          contract is upgraded and we need to update the address that is allowed to mint/burn FLIP tokens.
+     * @param sigData     Struct containing the signature data over the message
+     *                    to verify, signed by the aggregate key.
+     * @param newIssuer   New StakeManager contract that will mint/burn FLIP tokens.
+     */
+    function updateFlipIssuer(
+        SigData calldata sigData,
+        address newIssuer
+    )
+        external
+        nzAddr(newIssuer)
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
+    {
+        // TODO: Should we also add a suspended check? In other contracts, when suspended they can't be upgraded. In this
+        // case when suspended all claims will expire so we could just do that and upgrade after that. I think it makes
+        // sense to add the modifier in this case.
 
-    // /**
-    //  * @notice  Updates the address that is allowed to mint/burn FLIP tokens. This will be used when the StakeManager
-    //  *          contract is upgraded and we need to update the address that is allowed to mint/burn FLIP tokens.
-    //  * @param sigData     Struct containing the signature data over the message
-    //  *                    to verify, signed by the aggregate key.
-    //  * @param newIssuer   New StakeManager contract that will mint/burn FLIP tokens.
-    //  */
-    // function updateFlipIssuer(
-    //     SigData calldata sigData,
-    //     address newIssuer
-    // )
-    //     external
-    //     nzAddr(newIssuer)
-    //     consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
-    // {
-    //     // TODO: Should we also add a suspended check? In other contracts, when suspended they can't be upgraded. In this
-    //     // case when suspended all claims will expire so we could just do that and upgrade after that. I think it makes
-    //     // sense to add the modifier in this case.
+        // Adding some small safeguard that at least the contract is not an EOA and has a reference to the FLIP contract
+        // Only downsides are that we have to maintain this getFLIP() on the new contract and that we cannot pass it to
+        // a multisig. We would need to create a dummy StakeManager contract controlled by the multisig and pass that.
+        // Otherwise this adds some sanity check. However, we have probably already submitted a claim and executed it,
+        // so it only prevents a missmatch between the claim and the new contract. That might still be good enough.
+        IFLIP flip = IStakeManager(newIssuer).getFLIP();
+        require(flip == _FLIP, "Staking: invalid FLIP address");
 
-    //     // Adding some small safeguard that at least the contract is not an EOA and has a reference to the FLIP contract
-    //     // Only downsides are that we have to maintain this getFLIP() on the new contract and that we cannot pass it to
-    //     // a multisig. We would need to create a dummy StakeManager contract controlled by the multisig and pass that.
-    //     // Otherwise this adds some sanity check. However, we have probably already submitted a claim and executed it,
-    //     // so it only prevents a missmatch between the claim and the new contract. That might still be good enough.
-    //     IFLIP flip = IStakeManager(newIssuer).getFLIP();
-    //     require(flip == _FLIP, "Staking: invalid FLIP address");
-
-    //     _FLIP.updateIssuer(newIssuer);
-    // }
+        _FLIP.updateIssuer(newIssuer);
+    }
 
     /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs

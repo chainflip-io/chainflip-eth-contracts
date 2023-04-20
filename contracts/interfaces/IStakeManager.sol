@@ -13,9 +13,8 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         bytes32 indexed nodeID,
         uint256 amount,
         address indexed staker,
-        uint40 startTime,
-        uint40 expiryTime,
-        bool transferIssuer
+        uint48 startTime,
+        uint48 expiryTime
     );
     event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
     event ClaimExpired(bytes32 indexed nodeID, uint256 amount);
@@ -24,16 +23,13 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     event FLIPSet(address flip);
     event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
 
-    // uint48 was valid for 8,924,361 years
-    // uint40 is valid for 34,831 years
     struct Claim {
         uint256 amount;
         address staker;
-        // 40 so that 160 (from staker) + 40 + 40  + 8 is 256 they can all be packed
+        // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
         // into a single 256 bit slot
-        uint40 startTime;
+        uint48 startTime;
         uint48 expiryTime;
-        bool transferIssuer;
     }
 
     /**
@@ -72,8 +68,7 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         bytes32 nodeID,
         uint256 amount,
         address staker,
-        uint40 expiryTime,
-        bool transferIssuer
+        uint48 expiryTime
     ) external;
 
     /**
