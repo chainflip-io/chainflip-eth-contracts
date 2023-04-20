@@ -156,7 +156,6 @@ def test_upgrade_StakeManager(
     KeyManager,
     FLIP,
     DeployerStakeManager,
-    MIN_STAKE,
 ):
     (_, newStakeManager) = deploy_new_stakeManager(
         st_sender,
@@ -165,7 +164,7 @@ def test_upgrade_StakeManager(
         FLIP,
         DeployerStakeManager,
         cf.keyManager.address,
-        cf.f.address,
+        cf.flip.address,
         MIN_STAKE,
     )
 
