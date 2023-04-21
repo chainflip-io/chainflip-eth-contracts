@@ -37,7 +37,7 @@ contract DeployerContract is IShared {
             genesisStake,
             address(_stakeManager),
             govKey,
-            _keyManager
+            address(_stakeManager)
         );
         // Set the FLIP address in the StakeManager contract
         _stakeManager.setFlip(FLIP(address(_flip)));

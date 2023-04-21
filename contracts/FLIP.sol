@@ -2,17 +2,15 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IFLIP.sol";
-import "./interfaces/IKeyManager.sol";
-import "./AggKeyNonceConsumer.sol";
+import "./abstract/Shared.sol";
 
 /**
  * @title    FLIP contract
  * @notice   The FLIP utility token which is used to stake in the FLIP system and pay for
  *           trap fees with
  */
-contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
-    /// @dev    The last block number in which the State Chain updated the totalSupply
-    uint256 private _lastSupplyUpdateBlockNum = 0;
+contract FLIP is ERC20, IFLIP, Shared {
+    address public issuer;
 
     constructor(
         uint256 flipTotalSupply,
@@ -20,17 +18,18 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
         uint256 genesisStake,
         address receiverGenesisValidatorFlip, // Stake Manager
         address receiverGenesisFlip,
-        IKeyManager keyManager
+        address genesisIssuer // Stake Manager
     )
         ERC20("Chainflip", "FLIP")
         nzAddr(receiverGenesisValidatorFlip)
         nzAddr(receiverGenesisFlip)
         nzUint(flipTotalSupply)
-        AggKeyNonceConsumer(keyManager)
+        nzAddr(genesisIssuer)
     {
         uint256 genesisValidatorFlip = numGenesisValidators * genesisStake;
         _mint(receiverGenesisValidatorFlip, genesisValidatorFlip);
         _mint(receiverGenesisFlip, flipTotalSupply - genesisValidatorFlip);
+        issuer = genesisIssuer;
     }
 
     //////////////////////////////////////////////////////////////
@@ -40,54 +39,49 @@ contract FLIP is ERC20, AggKeyNonceConsumer, IFLIP {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Compares a given new FLIP supply against the old supply,
-     *          then mints or burns as appropriate. The message must be 
-     '          signed by the aggregate key.
-     * @param sigData               Struct containing the signature data over the message
-     *                              to verify, signed by the aggregate key.
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     * @param staker Staking contract owner of the tokens to be minted/burnt
+     * @notice Mint FLIP tokens to an account. This is controlled via an issuer
+     *         controlled by the StateChain to adjust the supply of FLIP tokens.
+     * @dev    The _mint function checks for zero address. We do not check for
+     *         zero amount because there is no real reason to revert and we want
+     *         to minimise reversion of State Chain calls
+     * @param account   Account to receive the newly minted tokens
+     * @param amount    Amount of tokens to mint
      */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber,
-        address staker
-    )
-        external
-        override
-        nzUint(newTotalSupply)
-        nzAddr(staker)
-        consumesKeyNonce(
-            sigData,
-            keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber, staker))
-        )
-    {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "FLIP: old FLIP supply update");
-        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
-        uint256 oldSupply = totalSupply();
-        if (newTotalSupply < oldSupply) {
-            uint256 amount = oldSupply - newTotalSupply;
-            _burn(staker, amount);
-        } else if (newTotalSupply > oldSupply) {
-            uint256 amount = newTotalSupply - oldSupply;
-            _mint(staker, amount);
-        }
-        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
+    function mint(address account, uint amount) external override onlyIssuer {
+        _mint(account, amount);
+    }
+
+    /**
+     * @notice Mint FLIP tokens to an account. This is controlled via an issuer
+     *         controlled by the StateChain to adjust the supply of FLIP tokens.
+     * @dev    The _burn function checks for zero address. We do not check for
+     *         zero amount because there is no real reason to revert and we want
+     *         to minimise reversion of State Chain calls.
+     * @param account   Account to burn the tokens from
+     * @param amount    Amount of tokens to burn
+     */
+    function burn(address account, uint amount) external override onlyIssuer {
+        _burn(account, amount);
+    }
+
+    /**
+     * @notice Update the issuer address. This is to be controlled by the StateChain.
+     * @param newIssuer   Account that can mint and burn FLIP tokens.
+     */
+    function updateIssuer(address newIssuer) external override nzAddr(issuer) onlyIssuer {
+        emit IssuerUpdated(issuer, newIssuer);
+        issuer = newIssuer;
     }
 
     //////////////////////////////////////////////////////////////
     //                                                          //
-    //                  Non-state-changing functions            //
+    //                        Modifiers                         //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /**
-     * @notice  Get the last state chain block number of the last supply update
-     * @return  The state chain block number of the last supply update
-     */
-    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
-        return _lastSupplyUpdateBlockNum;
+    /// @dev    Check that the caller is the token Issuer.
+    modifier onlyIssuer() {
+        require(msg.sender == issuer, "FLIP: not issuer");
+        _;
     }
 }

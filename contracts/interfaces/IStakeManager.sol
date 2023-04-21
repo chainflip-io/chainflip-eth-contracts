@@ -21,6 +21,7 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
     event GovernanceWithdrawal(address to, uint256 amount);
     event FLIPSet(address flip);
+    event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
 
     struct Claim {
         uint256 amount;
@@ -84,6 +85,17 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function executeClaim(bytes32 nodeID) external;
 
     /**
+     * @notice  Compares a given new FLIP supply against the old supply and mints or burns
+     *          FLIP tokens from this contract as appropriate.
+     *          It requires a message signed by the aggregate key.
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
+     * @param newTotalSupply        new total supply of FLIP
+     * @param stateChainBlockNumber State Chain block number for the new total supply
+     */
+    function updateFlipSupply(SigData calldata sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber) external;
+
+    /**
      * @notice      Set the minimum amount of stake needed for `stake` to be able
      *              to be called. Used to prevent spamming of stakes.
      * @param newMinStake   The new minimum stake
@@ -123,4 +135,10 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      * @return  The claim (Claim)
      */
     function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
+
+    /**
+     * @notice  Get the last state chain block number that the supply was updated at
+     * @return  The state chain block number of the last update
+     */
+    function getLastSupplyUpdateBlockNumber() external view returns (uint256);
 }
