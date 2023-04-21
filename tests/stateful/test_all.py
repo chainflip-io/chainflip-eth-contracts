@@ -2012,7 +2012,6 @@ def test_all(
             args = (
                 new_total_supply,
                 newSupplyBlockNumber,
-                self.sm.address,
             )
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender, st_amount_supply)
