@@ -9,7 +9,6 @@ import "../abstract/Shared.sol";
  * @title    Deployer of a new StakeManager contract
  * @notice   Contract used to upgrade the StakeManager contract. It assumes that
  *           the FLIP and the KeyManager contracts have already been deployed.
- *           The whitelisting and funds will need to be upgraded by the State Chain.
  */
 contract DeployerStakeManager is Shared {
     KeyManager public immutable keyManager;

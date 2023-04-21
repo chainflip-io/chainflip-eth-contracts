@@ -2251,10 +2251,6 @@ def test_all(
                 INIT_MIN_STAKE,
             )
 
-            # In case of deploying a new StakeManager, the setFLIP function will probably be part of
-            # the constructor to avoid frontrunning, as there is no deployer check now.
-            newStakeManager.setFlip(self.f, {"from": st_sender})
-
             args = (JUNK_HEX, 1, newStakeManager, 1)
             signer = self._get_key_prob(AGG)
 
@@ -2686,7 +2682,5 @@ def test_all(
         Token,
         CFReceiverMock,
         MockUSDT,
-        FLIP,
-        DeployerStakeManager,
         settings=settings,
     )
