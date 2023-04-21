@@ -73,7 +73,7 @@ def test_upgradability(
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.f, self.sm]
+            aggKeyNonceConsumers = [self.sm, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = deploy_new_keyManager(
