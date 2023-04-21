@@ -73,7 +73,7 @@ def test_upgradability(
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.f, self.sm, self.v]
+            aggKeyNonceConsumers = [self.f, self.sm]
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = deploy_new_keyManager(
@@ -251,12 +251,7 @@ def test_upgradability(
         # KeyManager might have changed but references must be updated
         # FLIP contract should have remained the same
         def invariant_addresses(self):
-            assert (
-                self.km.address
-                == self.v.getKeyManager()
-                == self.sm.getKeyManager()
-                == self.f.getKeyManager()
-            )
+            assert self.km.address == self.v.getKeyManager() == self.sm.getKeyManager()
 
             assert self.sm.getFLIP() == self.f.address
 

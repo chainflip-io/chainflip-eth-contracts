@@ -2000,8 +2000,6 @@ def test_all(
             with reverts(REV_MSG_FLIP_ADDRESS):
                 self.sm.setFlip(st_returnAddr, {"from": st_sender})
 
-        # FLIP
-
         # Updates Flip Supply minting/burning stakeManager tokens
         def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
 
@@ -2070,11 +2068,23 @@ def test_all(
                     self.lastSupplyBlockNumber = newSupplyBlockNumber
                     self.lastValidateTime = tx.timestamp
 
+        # FLIP
+
+        def rule_issue_rev_issuer(self, st_sender, st_amount):
+            # st_sender should never match the stakeManager issuer
+            print("        REV_MSG_FLIP rule_issue_rev_iisuer", st_sender)
+            with reverts(REV_MSG_FLIP_ISSUER):
+                self.f.mint(st_sender, st_amount, {"from": st_sender})
+            with reverts(REV_MSG_FLIP_ISSUER):
+                self.f.burn(st_sender, st_amount, {"from": st_sender})
+            with reverts(REV_MSG_FLIP_ISSUER):
+                self.f.updateIssuer(st_sender, {"from": st_sender})
+
         # AggKeyNonceConsumer - upgradability
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.f, self.sm, self.v]
+            aggKeyNonceConsumers = [self.sm, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity.
             newKeyManager = deploy_new_keyManager(
@@ -2318,6 +2328,14 @@ def test_all(
                 assert self.f.balanceOf(self.sm) == 0
 
                 self._updateBalancesOnUpgrade(self.sm, newStakeManager)
+
+                signed_call_km(
+                    self.km,
+                    self.sm.updateFlipIssuer,
+                    newStakeManager.address,
+                    sender=st_sender,
+                )
+
                 self.sm = newStakeManager
                 self.minStake = INIT_MIN_STAKE
                 self.lastValidateTime = tx.timestamp
@@ -2601,12 +2619,7 @@ def test_all(
 
         # Regardless of contract redeployment check that references are correct
         def invariant_addresses(self):
-            assert (
-                self.km.address
-                == self.v.getKeyManager()
-                == self.sm.getKeyManager()
-                == self.f.getKeyManager()
-            )
+            assert self.km.address == self.v.getKeyManager() == self.sm.getKeyManager()
 
             assert self.sm.getFLIP() == self.f.address
 
