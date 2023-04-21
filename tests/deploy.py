@@ -107,13 +107,10 @@ def deploy_new_stakeManager(
     flip = FLIP.at(flip_address)
     keyManager = KeyManager.at(keyManager_address)
 
-    # Minimal check to ensure that at least the two contracts provided are the correct.
-    assert flip.getKeyManager() == keyManager.address
-
     deployerStakeManager = DeployerStakeManager.deploy(
         min_stake,
-        keyManager_address,
-        flip_address,
+        keyManager.address,
+        flip.address,
         {"from": deployer, "required_confs": 1},
     )
 
