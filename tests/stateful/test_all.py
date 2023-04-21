@@ -2299,7 +2299,7 @@ def test_all(
                     newStakeManager,
                     expiryTime,
                 )
-                tx = signed_call_km(
+                signed_call_km(
                     self.km,
                     self.sm.registerClaim,
                     *args,
@@ -2329,7 +2329,7 @@ def test_all(
 
                 self._updateBalancesOnUpgrade(self.sm, newStakeManager)
 
-                signed_call_km(
+                tx = signed_call_km(
                     self.km,
                     self.sm.updateFlipIssuer,
                     newStakeManager.address,
