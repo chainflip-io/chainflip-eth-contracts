@@ -9,14 +9,18 @@ def test_setAggKeyWithAggKey_updateFlipSupply(cf):
 
     stateChainBlockNumber = 1
 
-    args = (NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber, cf.stakeManager.address)
+    args = (NEW_TOTAL_SUPPLY_MINT, stateChainBlockNumber)
 
     # Updating supply with old key should revert
     with reverts(REV_MSG_SIG):
-        signed_call_cf(cf, cf.flip.updateFlipSupply, *args, sender=cf.ALICE)
+        signed_call_cf(cf, cf.stakeManager.updateFlipSupply, *args, sender=cf.ALICE)
 
     tx = signed_call_cf(
-        cf, cf.flip.updateFlipSupply, *args, sender=cf.ALICE, signer=AGG_SIGNER_2
+        cf,
+        cf.stakeManager.updateFlipSupply,
+        *args,
+        sender=cf.ALICE,
+        signer=AGG_SIGNER_2
     )
 
     # Check things that should've changed
@@ -25,7 +29,7 @@ def test_setAggKeyWithAggKey_updateFlipSupply(cf):
         cf.flip.balanceOf(cf.stakeManager)
         == NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + STAKEMANAGER_INITIAL_BALANCE
     )
-    assert cf.flip.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
+    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx.events["FlipSupplyUpdated"][0].values() == [
         INIT_SUPPLY,
         NEW_TOTAL_SUPPLY_MINT,

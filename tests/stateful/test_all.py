@@ -2024,7 +2024,7 @@ def test_all(
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
-                        self.f.updateFlipSupply,
+                        self.sm.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2035,7 +2035,7 @@ def test_all(
                 with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
                     signed_call_km(
                         self.km,
-                        self.f.updateFlipSupply,
+                        self.sm.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2048,7 +2048,7 @@ def test_all(
                         )
                         signed_call_km(
                             self.km,
-                            self.f.updateFlipSupply,
+                            self.sm.updateFlipSupply,
                             *args,
                             signer=signer,
                             sender=st_sender,
@@ -2057,7 +2057,7 @@ def test_all(
                     print("                    rule_updateFlipSupply", *toLog)
                     tx = signed_call_km(
                         self.km,
-                        self.f.updateFlipSupply,
+                        self.sm.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2630,7 +2630,9 @@ def test_all(
 
         # Check the state variables after every tx
         def invariant_state_vars(self):
-            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            assert (
+                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            )
             assert self.sm.getMinimumStake() == self.minStake
             assert self.sm_communityGuardDisabled == self.sm.getCommunityGuardDisabled()
             assert self.sm_suspended == self.sm.getSuspendedState()

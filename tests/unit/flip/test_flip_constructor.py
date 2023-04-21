@@ -5,7 +5,6 @@ from brownie.test import given, strategy
 
 
 def test_flip_constructor(cf):
-    assert cf.flip.getLastSupplyUpdateBlockNumber() == 0
     assert cf.flip.totalSupply() == INIT_SUPPLY
     assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
 

@@ -411,7 +411,9 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             assert self.community == self.sm.getCommunityKey()
             assert self.communityGuardDisabled == self.sm.getCommunityGuardDisabled()
             assert self.suspended == self.sm.getSuspendedState()
-            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            assert (
+                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            )
             assert self.sm.getMinimumStake() == self.minStake
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim
