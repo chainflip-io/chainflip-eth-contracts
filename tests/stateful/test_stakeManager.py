@@ -262,7 +262,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             # If it's expired it won't revert regardless of the token balances
-            elif self.flipBals[self.sm] < claim[0] and not getChainTime() <= claim[3]:
+            elif self.flipBals[self.sm] < claim[0] and getChainTime() <= claim[3]:
                 print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
@@ -298,7 +298,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                         )
                 else:
                     print("                    rule_updateFlipSupply ", newTotalSupply)
-                    
+
                     self.lastSupplyBlockNumber += 1
                     signed_call_km(
                         self.km,
