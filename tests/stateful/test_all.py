@@ -2330,6 +2330,7 @@ def test_all(
                     self.km,
                     self.sm.updateFlipIssuer,
                     newStakeManager.address,
+                    signer=signer,
                     sender=st_sender,
                 )
 
