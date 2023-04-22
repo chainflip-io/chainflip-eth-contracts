@@ -258,8 +258,6 @@ def test_all(
 
             self.sm_communityGuardDisabled = self.sm.getCommunityGuardDisabled()
             self.sm_suspended = self.sm.getSuspendedState()
-
-            # Flip
             self.lastSupplyBlockNumber = 0
 
             # Dictionary swapID:deployedAddress
@@ -1954,13 +1952,13 @@ def test_all(
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             # If it's expired it won't revert regardless of the token balances
-            elif self.flipBals[self.sm] < claim[0] and not getChainTime() <= claim[3]:
+            elif self.flipBals[self.sm] < claim[0] and getChainTime() <= claim[3]:
                 print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
-                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
                 # Claim not expired
                 if getChainTime() <= claim[3]:
@@ -2341,6 +2339,7 @@ def test_all(
                 self.sm_communityGuardDisabled = False
                 self.communityKey = self.communityKey
                 self.sm_suspended = False
+                self.lastSupplyBlockNumber = 0
 
                 # Reset all pending claims
                 self.pendingClaims = {
