@@ -278,6 +278,49 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
 
+        def rule_updateFlipSupply(self, st_amount, st_signer_agg, st_sender):
+            print("                    rule_updateFlipSupply", st_amount)
+
+            currentSupply = self.f.totalSupply()
+            newTotalSupply = currentSupply + st_amount + 1
+
+            if newTotalSupply > 0:
+                if st_signer_agg != AGG_SIGNER_1:
+                    print("        REV_MSG_SIG rule_registerClaim", newTotalSupply)
+                    with reverts(REV_MSG_SIG):
+                        signed_call_km(
+                            self.km,
+                            self.sm.updateFlipSupply,
+                            newTotalSupply,
+                            0,
+                            signer=st_signer_agg,
+                            sender=st_sender,
+                        )
+                else:
+                    print("                    rule_updateFlipSupply ", newTotalSupply)
+                    
+                    self.lastSupplyBlockNumber += 1
+                    signed_call_km(
+                        self.km,
+                        self.sm.updateFlipSupply,
+                        newTotalSupply,
+                        self.lastSupplyBlockNumber,
+                        signer=st_signer_agg,
+                        sender=st_sender,
+                    )
+                    self.flipBals[self.sm] += st_amount + 1
+
+                    self.lastSupplyBlockNumber += 1
+                    signed_call_km(
+                        self.km,
+                        self.sm.updateFlipSupply,
+                        newTotalSupply - st_amount,
+                        self.lastSupplyBlockNumber,
+                        signer=st_signer_agg,
+                        sender=st_sender,
+                    )
+                    self.flipBals[self.sm] -= st_amount
+
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
         def rule_setMinStake(self, st_minStake, st_sender):
