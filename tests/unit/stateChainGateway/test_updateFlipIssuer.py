@@ -48,7 +48,7 @@ def test_updateIssuer(
     ]
 
     # Check that the new stateChainGateway can update the supply
-    iniBals.scg = cf.flip.balanceOf(new_stateChainGateway.address)
+    iniBals_scg = cf.flip.balanceOf(new_stateChainGateway.address)
     tx = signed_call_cf(
         cf,
         new_stateChainGateway.updateFlipSupply,
@@ -62,4 +62,4 @@ def test_updateIssuer(
         new_stateChainGateway.address,
         1,
     ]
-    assert cf.flip.balanceOf(new_stateChainGateway.address) == iniBals.scg + 1
+    assert cf.flip.balanceOf(new_stateChainGateway.address) == iniBals_scg + 1
