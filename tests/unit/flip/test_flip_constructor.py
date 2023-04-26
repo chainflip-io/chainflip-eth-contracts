@@ -6,7 +6,7 @@ from brownie.test import given, strategy
 
 def test_flip_constructor(cf):
     assert cf.flip.totalSupply() == INIT_SUPPLY
-    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
+    assert cf.flip.balanceOf(cf.stateChainGateway) == GATEWAY_INITIAL_BALANCE
 
 
 def test_flip_constructor_reverts_nz(cf, FLIP):
@@ -17,7 +17,7 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
             0,
             cf.numGenesisValidators,
             cf.genesisStake,
-            cf.stakeManager.address,
+            cf.stateChainGateway.address,
             cf.SAFEKEEPER,
             cf.keyManager,
         )
@@ -39,7 +39,7 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
             INIT_SUPPLY,
             cf.numGenesisValidators,
             cf.genesisStake,
-            cf.stakeManager.address,
+            cf.stateChainGateway.address,
             ZERO_ADDR,
             cf.keyManager,
         )
@@ -50,7 +50,7 @@ def test_flip_constructor_reverts_nz(cf, FLIP):
             INIT_SUPPLY,
             cf.numGenesisValidators,
             cf.genesisStake,
-            cf.stakeManager.address,
+            cf.stateChainGateway.address,
             cf.SAFEKEEPER,
             ZERO_ADDR,
         )

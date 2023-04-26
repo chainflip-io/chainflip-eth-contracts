@@ -9,7 +9,7 @@ from brownie import (
     accounts,
     KeyManager,
     Vault,
-    StakeManager,
+    StateChainGateway,
     FLIP,
     MockUSDC,
     DeployerContract,
@@ -61,7 +61,13 @@ def main():
             sys.exit("Deployment cancelled by user")
 
     cf = deploy_Chainflip_contracts(
-        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract, os.environ
+        DEPLOYER,
+        KeyManager,
+        Vault,
+        StateChainGateway,
+        FLIP,
+        DeployerContract,
+        os.environ,
     )
 
     print("Deployed with parameters\n----------------------------")
@@ -77,7 +83,7 @@ def main():
     print("Deployed contract addresses\n----------------------------")
     print(f"  DeployerContract: {cf.deployerContract.address}")
     print(f"  KeyManager: {cf.keyManager.address}")
-    print(f"  StakeManager: {cf.stakeManager.address}")
+    print(f"  StateChainGateway: {cf.stateChainGateway.address}")
     print(f"  FLIP: {cf.flip.address}")
     print(f"  Vault: {cf.vault.address}")
 
@@ -85,7 +91,7 @@ def main():
 
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
-        "STAKE_MANAGER_ADDRESS": cf.stakeManager.address,
+        "GATEWAY_ADDRESS": cf.stateChainGateway.address,
         "VAULT_ADDRESS": cf.vault.address,
         "FLIP_ADDRESS": cf.flip.address,
     }

@@ -9,11 +9,11 @@ from brownie import (
     accounts,
     KeyManager,
     Vault,
-    StakeManager,
+    StateChainGateway,
     FLIP,
-    DeployerStakeManager,
+    DeployerStateChainGateway,
 )
-from deploy import deploy_new_vault, deploy_new_stakeManager
+from deploy import deploy_new_vault, deploy_new_stateChainGateway
 
 
 AUTONOMY_SEED = os.environ["SEED"]
@@ -32,33 +32,33 @@ keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
 
 addressDump = {}
 
-# This script, so far, supports deploying a new StakeManager and/or a new Vault.
-# Run deploy_vault_stakemanager to deploy both
+# This script, so far, supports deploying a new StateChainGateway and/or a new Vault.
+# Run deploy_vault_gateway to deploy both
 # Run deploy_vault to deploy only the new Vault
-# Run deploy_stakeManager to deploy only the new StakeManager
+# Run deploy_stateChainGateway to deploy only the new StateChainGateway
 
 
 def main():
     print()
 
 
-def deploy_vault_stakemanager():
+def deploy_vault_gateway():
     _deploy_vault()
-    _deploy_stakeManager()
+    _deploy_stateChainGateway()
     store_artifacts()
 
 
 # This will deploy the new Vault. It assumes KeyManager is already deployed.
-# The StakeManager and KeyManager contracts remains unchanged.
+# The StateChainGateway and KeyManager contracts remains unchanged.
 def deploy_vault():
     _deploy_vault()
     store_artifacts()
 
 
-# This will deploy the new StakeManager. It assumes a StakeManager and a KeyManager
+# This will deploy the new StateChainGateway. It assumes a StateChainGateway and a KeyManager
 # are already deployed. The Vault contract remains unchanged.
-def deploy_stakeManager():
-    _deploy_stakeManager()
+def deploy_stateChainGateway():
+    _deploy_stateChainGateway()
     store_artifacts()
 
 
@@ -67,22 +67,22 @@ def _deploy_vault():
     addressDump["VAULT_ADDRESS"] = new_vault.address
 
 
-def _deploy_stakeManager():
+def _deploy_stateChainGateway():
     FLIP_ADDRESS = os.environ["FLIP_ADDRESS"]
     flip_address = f"0x{cleanHexStr(FLIP_ADDRESS)}"
 
-    (deployerStakeManager, new_stakeManager) = deploy_new_stakeManager(
+    (deployerStateChainGateway, new_stateChainGateway) = deploy_new_stateChainGateway(
         DEPLOYER,
         KeyManager,
-        StakeManager,
+        StateChainGateway,
         FLIP,
-        DeployerStakeManager,
+        DeployerStateChainGateway,
         keyManager_address,
         flip_address,
         MIN_STAKE,
     )
-    addressDump["STAKE_MANAGER_ADDRESS"] = new_stakeManager.address
-    addressDump["DEPLOYER_SM"] = deployerStakeManager.address
+    addressDump["GATEWAY_ADDRESS"] = new_stateChainGateway.address
+    addressDump["DEPLOYER_SM"] = deployerStateChainGateway.address
     addressDump["FLIP_ADDRESS"] = flip_address
 
 
@@ -97,9 +97,9 @@ def store_artifacts():
         print(f"  FLIP: {addressDump['FLIP_ADDRESS']}")
 
     print("New deployed contract addresses\n----------------------------")
-    if "STAKE_MANAGER_ADDRESS" in addressDump:
+    if "GATEWAY_ADDRESS" in addressDump:
         print(f"  DeployerContract: {addressDump['DEPLOYER_SM']}")
-        print(f"  StakeManager: {addressDump['STAKE_MANAGER_ADDRESS']}")
+        print(f"  StateChainGateway: {addressDump['GATEWAY_ADDRESS']}")
     if "VAULT_ADDRESS" in addressDump:
         print(f"  Vault: {addressDump['VAULT_ADDRESS']}")
 

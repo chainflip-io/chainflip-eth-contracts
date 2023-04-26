@@ -2,7 +2,7 @@ from consts import *
 from shared_tests import *
 from brownie import network
 from brownie.test import given, strategy
-from deploy import deploy_new_vault, deploy_new_stakeManager
+from deploy import deploy_new_vault, deploy_new_stateChainGateway
 
 
 @given(
@@ -10,7 +10,7 @@ from deploy import deploy_new_vault, deploy_new_stakeManager
     st_pubKeyYParity=strategy("uint8", exclude=0),
     st_govKey=strategy("address", exclude=0),
     st_commKey=strategy("address", exclude=0),
-    st_minStake=strategy("uint256", exclude=0),
+    st_minFunding=strategy("uint256", exclude=0),
     st_initSupply=strategy(
         "uint256", min_value=INIT_SUPPLY / 2, max_value=INIT_SUPPLY * 10
     ),
@@ -28,13 +28,13 @@ def test_deployer_constructor(
     FLIP,
     Vault,
     KeyManager,
-    StakeManager,
+    StateChainGateway,
     addrs,
     st_pubKeyX,
     st_pubKeyYParity,
     st_govKey,
     st_commKey,
-    st_minStake,
+    st_minFunding,
     st_initSupply,
     st_numGenesisValidators,
     st_genesisStake,
@@ -46,7 +46,7 @@ def test_deployer_constructor(
         [st_pubKeyX, st_pubKeyYParity],
         st_govKey,
         st_commKey,
-        st_minStake,
+        st_minFunding,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
@@ -55,21 +55,21 @@ def test_deployer_constructor(
     vault = Vault.at(deployerContract.vault())
     flip = FLIP.at(deployerContract.flip())
     keyManager = KeyManager.at(deployerContract.keyManager())
-    stakeManager = StakeManager.at(deployerContract.stakeManager())
+    stateChainGateway = StateChainGateway.at(deployerContract.stateChainGateway())
 
     check_contracts_state(
         st_pubKeyX,
         st_pubKeyYParity,
         st_govKey,
         st_commKey,
-        st_minStake,
+        st_minFunding,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
         vault,
         flip,
         keyManager,
-        stakeManager,
+        stateChainGateway,
     )
 
 
@@ -91,11 +91,11 @@ def test_deployer_constructor(
 )
 def test_upgrader_constructor(
     DeployerContract,
-    DeployerStakeManager,
+    DeployerStateChainGateway,
     FLIP,
     Vault,
     KeyManager,
-    StakeManager,
+    StateChainGateway,
     addrs,
     st_govKey,
     st_commKey,
@@ -115,7 +115,7 @@ def test_upgrader_constructor(
         AGG_SIGNER_1.getPubData(),
         st_govKey,
         st_commKey,
-        MIN_STAKE,
+        MIN_FUNDING,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
@@ -124,24 +124,26 @@ def test_upgrader_constructor(
     vault = Vault.at(deployerContract.vault())
     flip = FLIP.at(deployerContract.flip())
     keyManager = KeyManager.at(deployerContract.keyManager())
-    stakeManager = StakeManager.at(deployerContract.stakeManager())
+    stateChainGateway = StateChainGateway.at(deployerContract.stateChainGateway())
 
     new_vault = deploy_new_vault(addrs.DEPLOYER, Vault, KeyManager, keyManager.address)
 
-    (deployerStakeManager, new_stakeManager) = deploy_new_stakeManager(
+    (deployerStateChainGateway, new_stateChainGateway) = deploy_new_stateChainGateway(
         addrs.DEPLOYER,
         KeyManager,
-        StakeManager,
+        StateChainGateway,
         FLIP,
-        DeployerStakeManager,
+        DeployerStateChainGateway,
         keyManager.address,
         flip.address,
-        MIN_STAKE,
+        MIN_FUNDING,
     )
 
-    assert deployerStakeManager.keyManager() == keyManager.address
-    assert deployerStakeManager.flip() == flip.address
-    assert deployerStakeManager.stakeManager() == new_stakeManager.address
+    assert deployerStateChainGateway.keyManager() == keyManager.address
+    assert deployerStateChainGateway.flip() == flip.address
+    assert (
+        deployerStateChainGateway.stateChainGateway() == new_stateChainGateway.address
+    )
 
     # Check the old contracts have remained untouched
     check_contracts_state(
@@ -149,43 +151,45 @@ def test_upgrader_constructor(
         st_pubKeyYParity,
         st_govKey,
         st_commKey,
-        MIN_STAKE,
+        MIN_FUNDING,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
         vault,
         flip,
         keyManager,
-        stakeManager,
+        stateChainGateway,
     )
 
     args = [
         JUNK_HEX,
-        flip.balanceOf(stakeManager.address),
-        new_stakeManager.address,
-        getChainTime() + (2 * CLAIM_DELAY),
+        flip.balanceOf(stateChainGateway.address),
+        new_stateChainGateway.address,
+        getChainTime() + (2 * REDEMPTION_DELAY),
     ]
 
     # Manually transfer FLIP funds.
-    signed_call(keyManager, stakeManager.registerClaim, AGG_SIGNER_1, st_sender, *args)
+    signed_call(
+        keyManager, stateChainGateway.registerRedemption, AGG_SIGNER_1, st_sender, *args
+    )
 
-    # Execute claim
-    chain.sleep(CLAIM_DELAY)
-    stakeManager.executeClaim(JUNK_HEX, {"from": st_sender})
+    # Execute redemption
+    chain.sleep(REDEMPTION_DELAY)
+    stateChainGateway.executeRedemption(JUNK_HEX, {"from": st_sender})
 
     check_contracts_state(
         st_pubKeyX,
         st_pubKeyYParity,
         st_govKey,
         st_commKey,
-        MIN_STAKE,
+        MIN_FUNDING,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
         new_vault,
         flip,
         keyManager,
-        new_stakeManager,
+        new_stateChainGateway,
     )
 
 
@@ -194,25 +198,27 @@ def check_contracts_state(
     st_pubKeyYParity,
     st_govKey,
     st_commKey,
-    st_minStake,
+    st_minFunding,
     st_initSupply,
     st_numGenesisValidators,
     st_genesisStake,
     vault,
     flip,
     keyManager,
-    stakeManager,
+    stateChainGateway,
 ):
     assert keyManager.getAggregateKey() == [st_pubKeyX, st_pubKeyYParity]
     assert keyManager.getGovernanceKey() == st_govKey
     assert keyManager.getCommunityKey() == st_commKey
 
-    assert stakeManager.getMinimumStake() == st_minStake
-    assert stakeManager.getFLIP() == flip.address
-    assert stakeManager.getKeyManager() == keyManager.address
+    assert stateChainGateway.getMinimumFunding() == st_minFunding
+    assert stateChainGateway.getFLIP() == flip.address
+    assert stateChainGateway.getKeyManager() == keyManager.address
 
     assert flip.totalSupply() == st_initSupply
-    assert flip.balanceOf(stakeManager) == st_numGenesisValidators * st_genesisStake
+    assert (
+        flip.balanceOf(stateChainGateway) == st_numGenesisValidators * st_genesisStake
+    )
     assert (
         flip.balanceOf(st_govKey)
         == st_initSupply - st_numGenesisValidators * st_genesisStake

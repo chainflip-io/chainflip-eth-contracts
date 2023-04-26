@@ -11,7 +11,7 @@ from brownie import (
     Token,
     KeyManager,
     Vault,
-    StakeManager,
+    StateChainGateway,
     FLIP,
     DeployerContract,
 )
@@ -164,7 +164,13 @@ def main():
 # Unclear if we want to deploy new contracts or if we want to point to already deployed ones
 def deploy():
     return deploy_Chainflip_contracts(
-        DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract, os.environ
+        DEPLOYER,
+        KeyManager,
+        Vault,
+        StateChainGateway,
+        FLIP,
+        DeployerContract,
+        os.environ,
     )
 
 

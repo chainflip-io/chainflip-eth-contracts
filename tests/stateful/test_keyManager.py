@@ -20,7 +20,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
         This test calls functions from KeyManager in random orders. Keys are attempted to be set
         as random keys with a random signing key - all keys are from a pool of the default AGG_KEY
         and GOV_KEY plus freshly generated keys at the start of each run.
-        The parameters used are so that they're small enough to increase the likelihood of the same
+        The parameters used are so that they're.scgall enough to increase the likelihood of the same
         address being used in multiple interactions and large enough to ensure there's variety in them
         """
 
@@ -98,7 +98,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
-        # in itself, since Hypothesis usually picks small values as part of shrinking
+        # in itself, since Hypothesis usually picks.scgall values as part of shrinking
         def rule_sleep_2_days(self):
             print("                    rule_sleep_2_days")
             chain.sleep(2 * DAY)
@@ -222,14 +222,14 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
             assert (
                 self.governor
                 == self.km.getGovernanceKey()
-                == self.sm.getGovernor()
+                == self.scg.getGovernor()
                 == self.v.getGovernor()
             )
 
             assert (
                 self.communityKey
                 == self.km.getCommunityKey()
-                == self.sm.getCommunityKey()
+                == self.scg.getCommunityKey()
                 == self.v.getCommunityKey()
             )
 

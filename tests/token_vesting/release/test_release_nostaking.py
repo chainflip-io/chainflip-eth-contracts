@@ -40,7 +40,7 @@ def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
             cliff,
             end,
             False,
-            cf.stakeManager,
+            cf.stateChainGateway,
             0,
         )
 
@@ -66,7 +66,7 @@ def test_release_all(addrs, cf, tokenVestingNoStaking, maths):
         cliff,
         end,
         False,
-        cf.stakeManager,
+        cf.stateChainGateway,
         0,
     )
 
@@ -113,7 +113,7 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingNoStaking, math
             cliff,
             end,
             False,
-            cf.stakeManager,
+            cf.stateChainGateway,
             0,
         )
 

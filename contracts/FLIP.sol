@@ -6,8 +6,7 @@ import "./abstract/Shared.sol";
 
 /**
  * @title    FLIP contract
- * @notice   The FLIP utility token which is used to stake in the FLIP system and pay for
- *           trap fees with
+ * @notice   The FLIP utility token which is used in the StateChain.
  */
 contract FLIP is ERC20, IFLIP, Shared {
     address public issuer;
@@ -16,9 +15,9 @@ contract FLIP is ERC20, IFLIP, Shared {
         uint256 flipTotalSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake,
-        address receiverGenesisValidatorFlip, // Stake Manager
+        address receiverGenesisValidatorFlip, // StateChainGateway
         address receiverGenesisFlip,
-        address genesisIssuer // Stake Manager
+        address genesisIssuer //StateChainGateway
     )
         ERC20("Chainflip", "FLIP")
         nzAddr(receiverGenesisValidatorFlip)
@@ -65,7 +64,8 @@ contract FLIP is ERC20, IFLIP, Shared {
     }
 
     /**
-     * @notice Update the issuer address. This is to be controlled by the StateChain.
+     * @notice Update the issuer address. This is to be controlled via an issuer
+     *         controlled by the StateChain.
      * @param newIssuer   Account that can mint and burn FLIP tokens.
      */
     function updateIssuer(address newIssuer) external override nzAddr(issuer) onlyIssuer {

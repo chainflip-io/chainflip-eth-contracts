@@ -19,7 +19,16 @@ def check_released(tv, cf, tx, address, totalReleased, recentlyReleased):
 
 
 def check_state(
-    tv, cf, beneficiary, revoker, revocable, cliff, end, canStake, stakeManager, revoked
+    tv,
+    cf,
+    beneficiary,
+    revoker,
+    revocable,
+    cliff,
+    end,
+    canStake,
+    stateChainGateway,
+    revoked,
 ):
     assert tv.beneficiary() == beneficiary
     assert tv.revoker() == revoker
@@ -28,7 +37,7 @@ def check_state(
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == canStake
-    assert tv.stakeManager() == stakeManager
+    assert tv.stateChainGateway() == stateChainGateway
     assert tv.revoked(cf.flip) == revoked
 
 

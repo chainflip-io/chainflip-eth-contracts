@@ -18,7 +18,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
             cliff,
             end,
             STAKABLE,
-            cf.stakeManager,
+            cf.stateChainGateway,
         )
 
     tv = addrs.DEPLOYER.deploy(
@@ -28,7 +28,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         cliff,
         end,
         NON_STAKABLE,
-        cf.stakeManager,
+        cf.stateChainGateway,
     )
     check_state(
         tv,
@@ -39,7 +39,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         cliff,
         end,
         False,
-        cf.stakeManager,
+        cf.stateChainGateway,
         0,
     )
 
@@ -52,7 +52,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         valid_staking_cliff,
         end,
         STAKABLE,
-        cf.stakeManager,
+        cf.stateChainGateway,
     )
     check_state(
         tv,
@@ -63,7 +63,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         valid_staking_cliff,
         end,
         True,
-        cf.stakeManager,
+        cf.stateChainGateway,
         0,
     )
 
@@ -77,7 +77,7 @@ def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, cf):
             cliff,
             end,
             STAKABLE,
-            cf.stakeManager,
+            cf.stateChainGateway,
         )
 
 
@@ -90,7 +90,7 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
             cliff,
             0,
             STAKABLE,
-            cf.stakeManager,
+            cf.stateChainGateway,
         )
 
 
@@ -103,7 +103,7 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, 
             cliff,
             cliff - 1,
             STAKABLE,
-            cf.stakeManager,
+            cf.stateChainGateway,
         )
 
 
@@ -116,11 +116,11 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, cf):
             cliff - (YEAR * 2),
             end - (YEAR * 2),
             STAKABLE,
-            cf.stakeManager,
+            cf.stateChainGateway,
         )
 
 
-def test_tokenVesting_constructor_rev_stakeManager(addrs, TokenVesting):
+def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVesting):
     with reverts(REV_MSG_INVALID_STAKEMANAGER):
         addrs.DEPLOYER.deploy(
             TokenVesting,
