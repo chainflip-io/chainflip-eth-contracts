@@ -33,13 +33,13 @@ class Signer:
 
         self.nonces = nonces
 
-    @cla.scgethod
+    @classmethod
     def priv_key_to_pubX_int(cls, privKey):
         pubKey = privKey.public_key()
         pubKeyX = bytes(pubKey)[1:]
         return int(cleanHexStr(pubKeyX), 16)
 
-    @cla.scgethod
+    @classmethod
     def gen_key(cls):
         key = SecretKey.random()
         while cls.priv_key_to_pubX_int(key) >= cls.HALF_Q_INT:
@@ -47,11 +47,11 @@ class Signer:
 
         return key
 
-    @cla.scgethod
+    @classmethod
     def gen_key_hex(cls):
         return cls.gen_key().to_secret_bytes().hex()
 
-    @cla.scgethod
+    @classmethod
     def gen_signer(cls, keyID, nonces):
         privKeyHex = cls.gen_key_hex()
         return cls(privKeyHex, keyID, nonces)
