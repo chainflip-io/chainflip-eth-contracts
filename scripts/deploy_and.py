@@ -85,7 +85,8 @@ def all_stateChainGateway_events():
     chain.sleep(REDEMPTION_DELAY)
 
     print(f"\n💰 Alice executes a redemption for nodeID {JUNK_INT}\n")
-    cf.stateChainGateway.executeRedemption(JUNK_INT, {"from": ALICE})
+    tx = cf.stateChainGateway.executeRedemption(JUNK_INT, {"from": ALICE})
+    assert "RedemptionExecuted" in tx.events
 
     args = (JUNK_INT, redemption_amount, ALICE, chain.time() + (2 * REDEMPTION_DELAY))
 
