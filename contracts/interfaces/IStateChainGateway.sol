@@ -75,8 +75,7 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
      * @notice  Execute a pending redemption to get back funds. Cannot execute a pending
      *          redemption before 48h have passed after registering it, or after the specified
      *          expiry time
-     * @dev     No need for nzUint(nodeID) since that is handled by
-     *          `uint(block.number) <= redemption.startTime`
+     * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
      * @param nodeID    The nodeID of the funder
      */
     function executeRedemption(bytes32 nodeID) external;
@@ -128,8 +127,8 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
      * @notice  Get the pending redemption for the input nodeID. If there was never
      *          a pending redemption for this nodeID, or it has already been executed
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
-     * @param nodeID    The nodeID which is has a pending redemption
-     * @return  The redemption (Redemption)
+     * @param nodeID   The nodeID which has a pending redemption
+     * @return         The redemption (Redemption struct)
      */
     function getPendingRedemption(bytes32 nodeID) external view returns (Redemption memory);
 

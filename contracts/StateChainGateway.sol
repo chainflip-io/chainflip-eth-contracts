@@ -278,7 +278,8 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @notice  Get the pending redemption for the input nodeID. If there was never
      *          a pending redemption for this nodeID, or it has already been executed
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
-     * @return  The redemption (Redemption struct)
+     * @param nodeID   The nodeID which has a pending redemption
+     * @return         The redemption (Redemption struct)
      */
     function getPendingRedemption(bytes32 nodeID) external view override returns (Redemption memory) {
         return _pendingRedemptions[nodeID];
