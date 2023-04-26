@@ -3,12 +3,12 @@ from brownie import reverts
 
 
 def test_constructor(cf):
-    constructor_test(cf, cf.stakeManager)
+    constructor_test(cf, cf.stateChainGateway)
     constructor_test(cf, cf.vault)
 
 
 def test_communityGuard(cf):
-    communityGuard_test(cf, cf.stakeManager)
+    communityGuard_test(cf, cf.stateChainGateway)
     communityGuard_test(cf, cf.vault)
 
 

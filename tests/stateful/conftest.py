@@ -13,7 +13,7 @@ class _BaseStateMachine:
         cls.a = a
         cls.km = cfDeploy.keyManager
         cls.v = cfDeploy.vault
-        cls.sm = cfDeploy.stakeManager
+        cls.sm = cfDeploy.stateChainGateway
         cls.f = cfDeploy.flip
         cls.deployerContract = cfDeploy.deployerContract
 

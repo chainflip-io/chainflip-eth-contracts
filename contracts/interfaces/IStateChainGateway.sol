@@ -5,28 +5,28 @@ import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
 
 /**
- * @title    StakeManager interface
+ * @title    StateChainGateway interface
  */
-interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
-    event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
+interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
+    event Funded(bytes32 indexed nodeID, uint256 amount, address funder, address indexed returnAddr);
     event ClaimRegistered(
         bytes32 indexed nodeID,
         uint256 amount,
-        address indexed staker,
+        address indexed funder,
         uint48 startTime,
         uint48 expiryTime
     );
     event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
     event ClaimExpired(bytes32 indexed nodeID, uint256 amount);
-    event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
+    event MinFundingChanged(uint256 oldMinStake, uint256 newMinFunding);
     event GovernanceWithdrawal(address to, uint256 amount);
     event FLIPSet(address flip);
     event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
 
     struct Claim {
         uint256 amount;
-        address staker;
-        // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
+        address funder;
+        // 48 so that 160 (from funder) + 48 + 48 is 256 they can all be packed
         // into a single 256 bit slot
         uint48 startTime;
         uint48 expiryTime;
@@ -43,14 +43,14 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function setFlip(IFLIP flip) external;
 
     /**
-     * @notice          Stake some FLIP and attribute it to a nodeID
-     * @dev             Requires the staker to have called `approve` in FLIP
-     * @param amount    The amount of stake to be locked up
-     * @param nodeID    The nodeID of the staker
-     * @param returnAddr    The address which the staker requires to be used
+     * @notice          Add FLIP funds to a StateChain account identified with a nodeID
+     * @dev             Requires the funder to have called `approve` in FLIP
+     * @param amount    The amount of FLIP tokens
+     * @param nodeID    The nodeID of the funder
+     * @param returnAddr    The address which the funder requires to be used
      *                      when claiming back FLIP for `nodeID`
      */
-    function stake(bytes32 nodeID, uint256 amount, address returnAddr) external;
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount, address returnAddr) external;
 
     /**
      * @notice  Claim back stake. If only losing an auction, the same amount initially staked
@@ -58,16 +58,16 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
      * @param sigData   Struct containing the signature data over the message to verify,
      *                  signed by the aggregate key.
-     * @param nodeID    The nodeID of the staker
+     * @param nodeID    The nodeID of the funder
      * @param amount    The amount of stake to be locked up
-     * @param staker    The staker who is to be sent FLIP
+     * @param funder    The funder who is to be sent FLIP
      * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
      */
     function registerClaim(
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
-        address staker,
+        address funder,
         uint48 expiryTime
     ) external;
 
@@ -80,7 +80,7 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
      *          expiry timestamp
      * @dev     No need for nzUint(nodeID) since that is handled by
      *          `uint(block.number) <= claim.startTime`
-     * @param nodeID    The nodeID of the staker
+     * @param nodeID    The nodeID of the funder
      */
     function executeClaim(bytes32 nodeID) external;
 
@@ -96,11 +96,11 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function updateFlipSupply(SigData calldata sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber) external;
 
     /**
-     * @notice      Set the minimum amount of stake needed for `stake` to be able
-     *              to be called. Used to prevent spamming of stakes.
-     * @param newMinStake   The new minimum stake
+     * @notice      Set the minimum amount of funds needed for `fundStateChainAccount` to be able
+     *              to be called. Used to prevent spamming of funding.
+     * @param newMinFunding   The new minimum funding amount
      */
-    function setMinStake(uint256 newMinStake) external;
+    function setMinFunding(uint256 newMinFunding) external;
 
     /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
@@ -121,11 +121,11 @@ interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function getFLIP() external view returns (IFLIP);
 
     /**
-     * @notice  Get the minimum amount of stake that's required for a bid
-     *          attempt in the auction to be valid - used to prevent sybil attacks
-     * @return  The minimum stake (uint)
+     * @notice  Get the minimum amount of funds that's required for funding
+     *          an account on the StateChain.
+     * @return  The minimum amount (uint)
      */
-    function getMinimumStake() external view returns (uint256);
+    function getMinimumFunding() external view returns (uint256);
 
     /**
      * @notice  Get the pending claim for the input nodeID. If there was never

@@ -1,4 +1,4 @@
-from brownie import chain, accounts, KeyManager, Vault, StakeManager, FLIP
+from brownie import chain, accounts, KeyManager, Vault, StateChainGateway, FLIP
 
 flip = FLIP.at("0x2822d24137073632AA367daA84671100da631187")
 

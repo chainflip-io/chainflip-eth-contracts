@@ -9,7 +9,7 @@ from brownie import (
     accounts,
     KeyManager,
     Vault,
-    StakeManager,
+    StateChainGateway,
     FLIP,
     network,
     web3,
@@ -33,12 +33,12 @@ def main():
 # NOTE: This is to be used to manually upgrade contracts when having control over
 # the governance key and no CF network has been deployed yet. To be used in mainnet
 # if there is a need to upgrade a contract before the Vault has any funds. The
-# StakeManager would require moving the genesis Stake between Vaults.
+# StateChainGateway would require moving the genesis Stake between Vaults.
 
 # Steps:
 
 # 1. Deploy the new contracts using deploy_upgraded_contracts.py. Either deploy
-#    a new vault (deploy_vault) or a new stakeManager (deploy_stakeManager) or both
+#    a new vault (deploy_vault) or a new stateChainGateway (deploy_stateChainGateway) or both
 #    (deploy_vault_stakemanager).
 
 # 2. Assuming no CF network has been deployed yet and that the current AggKey is a
@@ -49,13 +49,13 @@ def main():
 
 # 3. Input the known private key in consts.py as AGG_PRIV_HEX_1.
 
-# 4. If we are upgrading a StakeManager contract, we need to register a claim to
-#    move all the FLIP to the new StakeManager. An EMPTY vault doesn't require
+# 4. If we are upgrading a StateChainGateway contract, we need to register a claim to
+#    move all the FLIP to the new StateChainGateway. An EMPTY vault doesn't require
 #    any extra step but a Vault with funds require a transfer of tokens to the
 #    new vault. For this initial upgrade, this should not be needed.
 
 # 5. If we have registered a claim, wait for CLAIM_DELAY and execute it via
-#    execute_claim. This will move all the FLIP to the new StakeManager.
+#    execute_claim. This will move all the FLIP to the new StateChainGateway.
 
 
 # NOTE: This will fail if two days haven't passed since deployment or since
@@ -88,15 +88,15 @@ def register_claim_genesis_flip():
     assert NEW_STAKE_MANAGER_ADDRESS != STAKE_MANAGER_ADDRESS, "Same address"
 
     flip = FLIP.at(FLIP_ADDRESS)
-    stakeManager = StakeManager.at(STAKE_MANAGER_ADDRESS)
+    stateChainGateway = StateChainGateway.at(STAKE_MANAGER_ADDRESS)
     keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
 
-    flip_balance = flip.balanceOf(stakeManager.address)
+    flip_balance = flip.balanceOf(stateChainGateway.address)
 
-    assert flip_balance > 0, "StakeManager has no FLIP"
+    assert flip_balance > 0, "StateChainGateway has no FLIP"
 
     print(
-        f"FLIP balance of StakeManager {flip_balance}. Registering a claim to the new StakeManager {NEW_STAKE_MANAGER_ADDRESS}"
+        f"FLIP balance of StateChainGateway {flip_balance}. Registering a claim to the new StateChainGateway {NEW_STAKE_MANAGER_ADDRESS}"
     )
     user_input = input("Continue? (y/[N])")
     if user_input not in ["y", "Y", "yes", "Yes", "YES"]:
@@ -108,7 +108,7 @@ def register_claim_genesis_flip():
     args = [JUNK_HEX, flip_balance, NEW_STAKE_MANAGER_ADDRESS, 2**47]
 
     tx = signed_call(
-        keyManager, stakeManager.registerClaim, AGG_SIGNER_1, DEPLOYER, *args
+        keyManager, stateChainGateway.registerClaim, AGG_SIGNER_1, DEPLOYER, *args
     )
 
     tx.info()
@@ -121,7 +121,7 @@ def execute_claim():
     # chain.sleep(CLAIM_DELAY)
 
     # This can fail if the claim is not registered or if the CLAIM_DELAY time has not passed
-    tx = StakeManager.at(STAKE_MANAGER_ADDRESS).executeClaim(
+    tx = StateChainGateway.at(STAKE_MANAGER_ADDRESS).executeClaim(
         JUNK_HEX, {"from": DEPLOYER, "required_confs": 1}
     )
     tx.info()

@@ -9,25 +9,25 @@ from shared_tests import *
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
 
-# Stateful test for all functions in the StakeManager
-def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
+# Stateful test for all functions in the StateChainGateway
+def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
 
-    NUM_STAKERS = 5
-    INIT_STAKE = 10**7 * E_18
+    NUM_FUNDERS = 5
+    INIT_FUNDING = 10**7 * E_18
     # Setting this low because Brownie/Hypothesis 'shrinks' random
     # numbers so that they cluster near the minimum, and we want to maximise
     # the amount of non-reverted txs there are, while also allowing for some reverts
-    INIT_MIN_STAKE = 1000
-    MAX_TEST_STAKE = 10**6 * E_18
+    INIT_MIN_FUNDING = 1000
+    MAX_TEST_FUND = 10**6 * E_18
     INIT_FLIP_SM = 25 * 10**4 * E_18
 
     class StateMachine(BaseStateMachine):
 
         """
-        This test calls functions from StakeManager in random orders. There's a NUM_STAKERS number
-        of stakers that randomly `stake` and are randomly the recipients of `claim`.
+        This test calls functions from StateChainGateway in random orders. There's a NUM_FUNDERS number
+        of funders that randomly `fund` and are randomly the recipients of `claim`.
         The parameters used are so that they're small enough to increase the likelihood of the same
-        address being used in multiple interactions (e.g. 2  x stakes then a claim etc) and large
+        address being used in multiple interactions (e.g. 2  x funds then a claim etc) and large
         enough to ensure there's variety in them
         """
 
@@ -35,27 +35,27 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
         def __init__(cls, a, cfDeploy):
             super().__init__(cls, a, cfDeploy)
 
-            # Set the initial minStake to be different than the default in cfDeploy
+            # Set the initial minFunding to be different than the default in cfDeploy
 
-            cls.stakers = a[:NUM_STAKERS]
+            cls.funders = a[:NUM_FUNDERS]
 
-            for staker in cls.stakers:
-                cls.f.transfer(staker, INIT_STAKE, {"from": a[0]})
-            # Send excess from the deployer to the zero address so that all stakers start
+            for funder in cls.funders:
+                cls.f.transfer(funder, INIT_FUNDING, {"from": a[0]})
+            # Send excess from the deployer to the zero address so that all funders start
             # with the same balance to make the accounting simpler
             cls.f.transfer(
                 "0x0000000000000000000000000000000000000001",
-                cls.f.balanceOf(a[0]) - INIT_STAKE,
+                cls.f.balanceOf(a[0]) - INIT_FUNDING,
                 {"from": a[0]},
             )
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             self.lastSupplyBlockNumber = 0
-            self.totalStake = 0
-            self.minStake = INIT_MIN_STAKE
-            self.allAddrs = self.stakers + [self.sm]
-            self.sm.setMinStake(INIT_MIN_STAKE, {"from": cfDeploy.gov})
+            self.totalFunding = 0
+            self.minFunding = INIT_MIN_FUNDING
+            self.allAddrs = self.funders + [self.sm]
+            self.sm.setMinFunding(INIT_MIN_FUNDING, {"from": cfDeploy.gov})
 
             # Eth bals shouldn't change in this test, but just to be sure...
             self.nativeBals = {
@@ -64,13 +64,13 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 for addr in self.allAddrs
             }
             self.flipBals = {
-                addr: INIT_STAKE
-                if addr in self.stakers
+                addr: INIT_FUNDING
+                if addr in self.funders
                 else (INIT_FLIP_SM if addr == self.sm else 0)
                 for addr in self.allAddrs
             }
             self.pendingClaims = {
-                nodeID: NULL_CLAIM for nodeID in range(NUM_STAKERS + 1)
+                nodeID: NULL_CLAIM for nodeID in range(NUM_FUNDERS + 1)
             }
 
             # Store initial transaction number for each of the accounts to later calculate gas spendings
@@ -89,14 +89,14 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         st_sender = strategy("address")
         st_returnAddr = strategy("address")
-        st_staker = strategy("address", length=NUM_STAKERS)
+        st_funder = strategy("address", length=NUM_FUNDERS)
         # +1 since nodeID==0 is unusable
-        st_nodeID = strategy("uint", max_value=NUM_STAKERS)
-        st_amount = strategy("uint", max_value=MAX_TEST_STAKE)
+        st_nodeID = strategy("uint", max_value=NUM_FUNDERS)
+        st_amount = strategy("uint", max_value=MAX_TEST_FUND)
         st_expiry_time_diff = strategy("uint", max_value=CLAIM_DELAY * 10)
         st_sleep_time = strategy("uint", max_value=7 * DAY, exclude=0)
         # In reality this high amount isn't really realistic, but for the sake of testing
-        st_minStake = strategy("uint", max_value=int(INIT_STAKE / 2))
+        st_minFunding = strategy("uint", max_value=int(INIT_FUNDING / 2))
         # So there's a 1% chance of a bad sig to maximise useful txs
         st_signer_agg = hypStrat.sampled_from(
             ([AGG_SIGNER_1] * 99) + [Signer.gen_signer(None, {})]
@@ -105,40 +105,45 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             [AGG_SIGNER_1] + ([Signer.gen_signer(None, {})] * 99)
         )
 
-        # Stakes a random amount from a random staker to a random nodeID
-        def rule_stake(self, st_staker, st_nodeID, st_amount, st_returnAddr):
+        # Funds a random amount from a random funder to a random nodeID
+        def rule_fundStateChainAccount(
+            self, st_funder, st_nodeID, st_amount, st_returnAddr
+        ):
             args = (st_nodeID, st_amount, st_returnAddr)
-            toLog = (*args, st_staker)
+            toLog = (*args, st_funder)
             if st_nodeID == 0:
-                print("        NODEID rule_stake", *toLog)
+                print("        NODEID rule_fundStateChainAccount", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(*args, {"from": st_staker})
-            elif st_amount < self.minStake:
-                print("        REV_MSG_MIN_STAKE rule_stake", *toLog)
-                with reverts(REV_MSG_MIN_STAKE):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(*args, {"from": st_staker})
-            elif st_amount > self.flipBals[st_staker]:
-                print("        REV_MSG_ERC20_EXCEED_BAL rule_stake", *toLog)
+                    self.f.approve(self.sm.address, st_amount, {"from": st_funder})
+                    self.sm.fundStateChainAccount(*args, {"from": st_funder})
+            elif st_amount < self.minFunding:
+                print("        REV_MSG_MIN_FUNDING rule_fundStateChainAccount", *toLog)
+                with reverts(REV_MSG_MIN_FUNDING):
+                    self.f.approve(self.sm.address, st_amount, {"from": st_funder})
+                    self.sm.fundStateChainAccount(*args, {"from": st_funder})
+            elif st_amount > self.flipBals[st_funder]:
+                print(
+                    "        REV_MSG_ERC20_EXCEED_BAL rule_fundStateChainAccount",
+                    *toLog,
+                )
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                    self.sm.stake(*args, {"from": st_staker})
+                    self.f.approve(self.sm.address, st_amount, {"from": st_funder})
+                    self.sm.fundStateChainAccount(*args, {"from": st_funder})
             else:
-                print("                    rule_stake", *toLog)
-                self.f.approve(self.sm.address, st_amount, {"from": st_staker})
-                self.sm.stake(*args, {"from": st_staker})
+                print("                    rule_fundStateChainAccount", *toLog)
+                self.f.approve(self.sm.address, st_amount, {"from": st_funder})
+                self.sm.fundStateChainAccount(*args, {"from": st_funder})
 
-                self.flipBals[st_staker] -= st_amount
+                self.flipBals[st_funder] -= st_amount
                 self.flipBals[self.sm] += st_amount
-                self.totalStake += st_amount
+                self.totalFunding += st_amount
 
         # Claims a random amount from a random nodeID to a random recipient
         def rule_registerClaim(
             self,
             st_signer_agg,
             st_nodeID,
-            st_staker,
+            st_funder,
             st_amount,
             st_sender,
             st_expiry_time_diff,
@@ -146,7 +151,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             args = (
                 st_nodeID,
                 st_amount,
-                st_staker,
+                st_funder,
                 getChainTime() + st_expiry_time_diff,
             )
             toLog = (*args, st_signer_agg, st_sender)
@@ -229,7 +234,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
 
                 self.pendingClaims[st_nodeID] = (
                     st_amount,
-                    st_staker,
+                    st_funder,
                     tx.timestamp + CLAIM_DELAY,
                     args[3],
                 )
@@ -274,7 +279,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 if getChainTime() <= claim[3]:
                     self.flipBals[claim[1]] += claim[0]
                     self.flipBals[self.sm] -= claim[0]
-                    self.totalStake -= claim[0]
+                    self.totalFunding -= claim[0]
 
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
 
@@ -321,26 +326,32 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     )
                     self.flipBals[self.sm] -= st_amount
 
-        # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
+        # Sets the minimum funding as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
-        def rule_setMinStake(self, st_minStake, st_sender):
-            if st_minStake == 0:
+        def rule_setMinFunding(self, st_minFunding, st_sender):
+            if st_minFunding == 0:
                 print(
-                    "        REV_MSG_NZ_UINT rule_setMinstake", st_minStake, st_sender
+                    "        REV_MSG_NZ_UINT rule_setMinFunding",
+                    st_minFunding,
+                    st_sender,
                 )
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setMinStake(st_minStake, {"from": st_sender})
+                    self.sm.setMinFunding(st_minFunding, {"from": st_sender})
             elif st_sender != self.governor:
-                print("        REV_MSG_SIG rule_setMinstake", st_minStake, st_sender)
+                print(
+                    "        REV_MSG_SIG rule_setMinFunding", st_minFunding, st_sender
+                )
                 with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.sm.setMinStake(st_minStake, {"from": st_sender})
+                    self.sm.setMinFunding(st_minFunding, {"from": st_sender})
             else:
-                print("                    rule_setMinstake", st_minStake, st_sender)
-                self.sm.setMinStake(st_minStake, {"from": st_sender})
+                print(
+                    "                    rule_setMinFunding", st_minFunding, st_sender
+                )
+                self.sm.setMinFunding(st_minFunding, {"from": st_sender})
 
-                self.minStake = st_minStake
+                self.minFunding = st_minFunding
 
-        # Suspends the stake Manager if st_sender matches the governor address. It has
+        # Suspends the State Chain Gateway if st_sender matches the governor address. It has
         # has a 1/20 chance of being the governor - don't want to suspend it too often.
         def rule_suspend(self, st_sender):
             if st_sender == self.governor:
@@ -357,8 +368,8 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_GOV_GOVERNOR):
                     self.sm.suspend({"from": st_sender})
 
-        # Resumes the stake Manager if it is suspended. We always resume it to avoid
-        # having the stakeManager suspended too often
+        # Resumes the State Chain Gateway if it is suspended. We always resume it to avoid
+        # having the stateChainGateway suspended too often
         def rule_resume(self, st_sender):
             if self.suspended:
                 if st_sender != self.governor:
@@ -457,7 +468,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             assert (
                 self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             )
-            assert self.sm.getMinimumStake() == self.minStake
+            assert self.sm.getMinimumFunding() == self.minFunding
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim
 

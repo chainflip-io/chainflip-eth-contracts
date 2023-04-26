@@ -11,7 +11,7 @@ from shared_tests import *
 
 
 def update_issuer(cf, new_issuer):
-    signed_call_cf(cf, cf.stakeManager.updateFlipIssuer, new_issuer)
+    signed_call_cf(cf, cf.stateChainGateway.updateFlipIssuer, new_issuer)
 
 
 @given(
@@ -68,7 +68,7 @@ def test_issue_zeroAmount(cf):
 @given(
     st_sender=strategy("address"), st_amount=strategy("uint256", max_value=TEST_AMNT)
 )
-def test_issue_rev_notStakeManager(cf, st_sender, st_amount):
+def test_issue_rev_notStateChainGateway(cf, st_sender, st_amount):
 
     with reverts(REV_MSG_FLIP_ISSUER):
         cf.flip.mint(NON_ZERO_ADDR, st_amount, {"from": st_sender})

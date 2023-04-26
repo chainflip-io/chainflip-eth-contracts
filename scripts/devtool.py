@@ -6,7 +6,7 @@ from consts import *
 
 from brownie import (
     accounts,
-    StakeManager,
+    StateChainGateway,
     FLIP,
     Vault,
     KeyManager,
@@ -201,7 +201,7 @@ commands = {
 }
 
 flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
-stakeManager = StakeManager.at(f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}")
+stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}")
 vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
 
 
@@ -216,7 +216,7 @@ keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
 
 contractAddresses = {
     "flip": f"0x{cleanHexStr(FLIP_ADDRESS)}",
-    "stakeManager": f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}",
+    "stateChainGateway": f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}",
     "vault": f"0x{cleanHexStr(VAULT_ADDRESS)}",
     "keyManager": f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}",
 }
@@ -287,7 +287,7 @@ def help():
     # Print the available commands and their descriptions
     print("\nUsage:  command <arg0> <arg1> ... <argN>")
     print(
-        "Note: Contract names can be used as addresses including `user` `vault`, `stakeManager` ...\n"
+        "Note: Contract names can be used as addresses including `user` `vault`, `stateChainGateway` ...\n"
     )
 
     print("Available commands:\n")
@@ -315,7 +315,7 @@ def print_separators(numCommands):
     elif numCommands == 9:
         print("Transfer Tokens\n---------------")
     elif numCommands == 12:
-        print("TX to StakeManager\n---------------")
+        print("TX to StateChainGateway\n---------------")
     elif numCommands == 14:
         print("TX to KeyManager\n---------------")
     elif numCommands == 17:
@@ -397,12 +397,12 @@ def stake(amount, node_id):
         return
 
     tx = flip.approve(
-        stakeManager, amountInWei, {"from": userAddress, "required_confs": 1}
+        stateChainGateway, amountInWei, {"from": userAddress, "required_confs": 1}
     )
     print(f"Approving {amount} FLIP in tx {tx.txid}")
 
     # Setting required_confs to 1 to ensure we get back the mined tx with all info.
-    tx = stakeManager.stake(
+    tx = stateChainGateway.stake(
         node_id,
         amountInWei,
         userAddress,
@@ -414,7 +414,9 @@ def stake(amount, node_id):
 
 
 def executeClaim(nodeId):
-    tx = stakeManager.executeClaim(nodeId, {"from": userAddress, "required_confs": 1})
+    tx = stateChainGateway.executeClaim(
+        nodeId, {"from": userAddress, "required_confs": 1}
+    )
     print(f"Executing claim for node {nodeId} in tx {tx.txid}")
     tx.info()
 
@@ -443,17 +445,17 @@ def setComKeyWComKey(newComKey):
 
 
 def viewPendClaim(nodeId):
-    claim = stakeManager.getPendingClaim(nodeId)
+    claim = stateChainGateway.getPendingClaim(nodeId)
     if claim == [0, ZERO_ADDR, 0, 0]:
         print(f"No pending claim for node {nodeId}")
     else:
         print(
-            f"Claim with for node {nodeId} with amount {claim[0]}, staker {claim[1]}, startTime {claim[2]}, expiryTime {claim[3]}"
+            f"Claim with for node {nodeId} with amount {claim[0]}, funder {claim[1]}, startTime {claim[2]}, expiryTime {claim[3]}"
         )
 
 
 def viewMinStake():
-    minStake = stakeManager.getMinimumStake()
+    minStake = stateChainGateway.getMinimumFunding()
     print(f"Min stake: {minStake / 10 ** (flip.decimals())} FLIP ")
 
 

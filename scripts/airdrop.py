@@ -12,7 +12,7 @@ from brownie import (
     accounts,
     KeyManager,
     Vault,
-    StakeManager,
+    StateChainGateway,
     FLIP,
     web3,
 )
@@ -24,7 +24,7 @@ from web3._utils.filters import construct_event_filter_params
 logname = "airdrop.log"
 logging.basicConfig(filename=logname, level=logging.INFO)
 
-rinkebyOldStakeManager = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
+rinkebyOldStateChainGateway = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
 oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
 rinkebyOldFlip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
 oldFlipSnapshotFilename = "snapshotOldFlip.csv"
@@ -98,7 +98,7 @@ def main():
             printAndLog("Script stopped by user")
             return False
         (
-            newStakeManager,
+            newStateChainGateway,
             newVault,
             newFlip,
             newKeyManager,
@@ -110,7 +110,7 @@ def main():
 
         # Ensure that contracts have been deployed and addresses are in the log
         (
-            newStakeManager,
+            newStateChainGateway,
             newVault,
             newFlip,
             newKeyManager,
@@ -135,12 +135,12 @@ def main():
             printAndLog("Script stopped by user")
             return False
 
-        airdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStakeManager)
+        airdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStateChainGateway)
     else:
         printAndLog("Skipped Airdrop - already completed succesfully")
 
     # Always verify Airdrop even if we have already run it before
-    verifyAirdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStakeManager)
+    verifyAirdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStateChainGateway)
 
 
 # Take a snapshot of all token holders and their balances at a certain block number. Store the data in a
@@ -225,23 +225,23 @@ def deployNewContracts(airdropper):
     printAndLog("Deploying new contracts")
 
     cf = deploy_Chainflip_contracts(
-        airdropper, KeyManager, Vault, StakeManager, FLIP, os.environ
+        airdropper, KeyManager, Vault, StateChainGateway, FLIP, os.environ
     )
 
-    newStakeManager = cf.stakeManager.address
+    newStateChainGateway = cf.stateChainGateway.address
     newVault = cf.vault.address
     newFlip = cf.flip.address
     newKeyManager = cf.keyManager.address
 
     listOfTx = []
 
-    logging.info("StakeManager address:" + newStakeManager)
+    logging.info("StateChainGateway address:" + newStateChainGateway)
     logging.info("Vault address:" + newVault)
     logging.info("FLIP address:" + newFlip)
     logging.info("KeyManager address:" + newKeyManager)
     logging.info(contractDeploymentSuccessMessage)
 
-    return (newStakeManager, newVault, newFlip, newKeyManager)
+    return (newStateChainGateway, newVault, newFlip, newKeyManager)
 
 
 # --- Airdrop process ----
@@ -252,46 +252,48 @@ def deployNewContracts(airdropper):
 # a protection against airdropping twice.
 # 2- Loop through the oldFLIP holders list and airdrop them if they are not in the list of addresses to skip.
 # 3- Log every transaction id for traceability and for future runs.
-# 4- Check if there is a need to do ain airdrop to the newStakeManager due to totalSupply differences between old and new.
+# 4- Check if there is a need to do ain airdrop to the newStateChainGateway due to totalSupply differences between old and new.
 # 5- Check that all transactions have been confirmed.
 # 6- Log succesful airdrop message.
 # -----------------------
-def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
+def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway):
     printAndLog("Starting airdrop process")
 
     (
         oldFlipHolderAccounts,
         oldFlipholderBalances,
         oldFliptotalSupply,
-        oldStakeManagerBalance,
+        oldStateChainGatewayBalance,
         oldFlipDeployerBalance,
-    ) = readCSVSnapshotChecksum(snapshot_csv, rinkebyOldStakeManager, oldFlipDeployer)
+    ) = readCSVSnapshotChecksum(
+        snapshot_csv, rinkebyOldStateChainGateway, oldFlipDeployer
+    )
 
     newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
     # Craft list of addresses that should be skipped when aidropping. Skip following receivers: airdropper,
-    # newStakeManager, oldStakeManager and oldFlipDeployer. Also skip receivers that have already received
+    # newStateChainGateway, oldStateChainGateway and oldFlipDeployer. Also skip receivers that have already received
     # their airdrop. OldFlipDeployer can be the same as airdropper, that should be fine.
     skip_receivers_list = [
         str(airdropper),
-        newStakeManager,
-        rinkebyOldStakeManager,
+        newStateChainGateway,
+        rinkebyOldStateChainGateway,
         oldFlipDeployer,
     ]
 
     (
         initialMintTXs,
         listAirdropTXs,
-        newStakeManagerBalance,
+        newStateChainGatewayBalance,
         airdropperBalance,
     ) = getTXsAndMintBalancesFromTransferEvents(
-        airdropper, newFlipContractObject, newStakeManager
+        airdropper, newFlipContractObject, newStateChainGateway
     )
 
     # Check that the airdropper has the balance to airdrop for the loop airdrop transfer
     assert (
         airdropperBalance
-        >= oldFliptotalSupply - oldStakeManagerBalance - oldFlipDeployerBalance
+        >= oldFliptotalSupply - oldStateChainGatewayBalance - oldFlipDeployerBalance
     )
     # Assertion for extra check in our particular case - just before we start all the airdrop
     newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
@@ -313,8 +315,8 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
             # Health check (not required)
             assert receiverNewFlip not in [
                 str(airdropper),
-                newStakeManager,
-                rinkebyOldStakeManager,
+                newStateChainGateway,
+                rinkebyOldStateChainGateway,
                 oldFlipDeployer,
             ]
 
@@ -334,24 +336,28 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
             skip_counter += 1
 
     # OldFLIP supply is most likely different than the new initial flip supply (INIT_SUPPLY). We need to ensure that when minting the
-    # supply difference the newStakeManager and oldStakeManager will end up with the same balance. If new Stake Manager has less balance
+    # supply difference the newStateChainGateway and oldStateChainGateway will end up with the same balance. If new Stake Manager has less balance
     # than the old one and the difference is bigger than the supply difference, we need to make an extra transfer from airdropper to the
     # new Stake Manager. This should be the case in this airdrop.
     # Technically it could be the case where some of newSupply tokens that will be minted would have to go to the airdroper, but that won't
     # be the case in this airdrop (and probably never).
-    stakeManagerBalanceDifference = oldStakeManagerBalance - newStakeManagerBalance
+    stateChainGatewayBalanceDifference = (
+        oldStateChainGatewayBalance - newStateChainGatewayBalance
+    )
     if (
-        stakeManagerBalanceDifference > 0
-        and stakeManagerBalanceDifference > newFlipToBeMinted
+        stateChainGatewayBalanceDifference > 0
+        and stateChainGatewayBalanceDifference > newFlipToBeMinted
     ):
-        printAndLog("Do extra transfer from airdropper to StakeManager")
-        # Transfer the difference between the stakeManager difference and the newFlipTobeMinted later on by the State chain
+        printAndLog("Do extra transfer from airdropper to StateChainGateway")
+        # Transfer the difference between the stateChainGateway difference and the newFlipTobeMinted later on by the State chain
         # Also should work if newFlipToBeMinted < 0. We need to transfer that extra amount so the stateChain can burn it later
-        amountToTransfer = stakeManagerBalanceDifference - newFlipToBeMinted
+        amountToTransfer = stateChainGatewayBalanceDifference - newFlipToBeMinted
         # Check that the airdropper has the balance to airdrop
         assert airdropperBalance >= amountToTransfer
         tx = newFlipContract.transfer(
-            newStakeManager, amountToTransfer, {"from": airdropper, "required_confs": 0}
+            newStateChainGateway,
+            amountToTransfer,
+            {"from": airdropper, "required_confs": 0},
         )
         logging.info("Airdrop transaction Tx Hash:" + tx.txid)
         listOfTxSent.append(tx.txid)
@@ -360,7 +366,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
     printAndLog(
         "Skipped number of transfers: "
         + str(skip_counter)
-        + ". Should have skipped at least 2 (oldStakeManager and oldFlipDeployer)"
+        + ". Should have skipped at least 2 (oldStateChainGateway and oldFlipDeployer)"
     )
 
     # After all tx's have been send wait for the receipts. This could break (or could have broken before) so extra safety mechanism is added when rerunning script
@@ -375,9 +381,9 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStakeManager):
 # 1- Read snapshot oldFLIP
 # 2- Get all the airdrop transfer events
 # 3- Compare transfer events to the snapshot holders balances
-# 4- Check that the difference in supplies will be fixed when the newSupply is minted to the stakeManager
+# 4- Check that the difference in supplies will be fixed when the newSupply is minted to the stateChainGateway
 # -------------------------------
-def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
+def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStateChainGateway):
 
     printAndLog("Verifying airdrop")
 
@@ -392,10 +398,10 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
     (
         initialMintTXs,
         listAirdropTXs,
-        newStakeManagerBalance,
+        newStateChainGatewayBalance,
         airdropperBalance,
     ) = getTXsAndMintBalancesFromTransferEvents(
-        airdropper, newFlipContractObject, newStakeManager
+        airdropper, newFlipContractObject, newStateChainGateway
     )
 
     # Check list of receivers and amounts against old FLIP snapshot csv file
@@ -403,14 +409,16 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
         oldFlipHolderAccounts,
         oldFlipholderBalances,
         oldFliptotalSupply,
-        oldStakeManagerBalance,
+        oldStateChainGatewayBalance,
         oldFlipDeployerBalance,
-    ) = readCSVSnapshotChecksum(initalSnapshot, rinkebyOldStakeManager, oldFlipDeployer)
+    ) = readCSVSnapshotChecksum(
+        initalSnapshot, rinkebyOldStateChainGateway, oldFlipDeployer
+    )
 
-    # Minus two oldFlipHolders - we don't airdrop to neither oldStakeManager nor oldFlipDeployer (could be same as airdropper)
+    # Minus two oldFlipHolders - we don't airdrop to neither oldStateChainGateway nor oldFlipDeployer (could be same as airdropper)
     assert len(listAirdropTXs) == len(oldFlipHolderAccounts) - 2
 
-    # Remove oldStakeManager and oldFliperDeployer
+    # Remove oldStateChainGateway and oldFliperDeployer
     del oldFlipHolderAccounts[0:2]
     del oldFlipholderBalances[0:2]
 
@@ -437,13 +445,15 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStakeManager):
     airdropperRealBalance = newFlipContract.balanceOf.call(str(airdropper))
     assert airdropperBalance == airdropperRealBalance
 
-    # Do final checking of stakeManager and airdropper balances
+    # Do final checking of stateChainGateway and airdropper balances
     newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
 
-    # Check that when updateFlipSupply mints the remaining supply to the StakeManager the balances match.
-    # Again, it could be the case where tokens would need to be airdropper to the stakeManager to be burnt, or that some of newSupply
+    # Check that when updateFlipSupply mints the remaining supply to the StateChainGateway the balances match.
+    # Again, it could be the case where tokens would need to be airdropper to the stateChainGateway to be burnt, or that some of newSupply
     # tokens that will be minted would have to go to the airdroper, but that won't be the case in this airdrop (and probably never)
-    assert newStakeManagerBalance + newFlipToBeMinted == oldStakeManagerBalance
+    assert (
+        newStateChainGatewayBalance + newFlipToBeMinted == oldStateChainGatewayBalance
+    )
     assert oldFlipDeployerBalance == airdropperBalance
 
     printAndLog("😎  Airdrop verified succesfully! 😎")
@@ -473,11 +483,11 @@ def getContractFromAddress(flip_address):
 
 # ---------------------------------------
 # Get all confirmed newFLIP transfer events from the airdropper to other addresses. Also get the mint events.
-# Then calculate the stakeManager and airdropper balance after mint. Account for a potential airdrop to the
-# stakeManager to make up for the totalSupply difference - to make all the later checking easier.
+# Then calculate the stateChainGateway and airdropper balance after mint. Account for a potential airdrop to the
+# stateChainGateway to make up for the totalSupply difference - to make all the later checking easier.
 # ---------------------------------------
 def getTXsAndMintBalancesFromTransferEvents(
-    airdropper, flipContractObject, stakeManager
+    airdropper, flipContractObject, stateChainGateway
 ):
     printAndLog("Getting all transfer events")
     events = list(
@@ -490,15 +500,15 @@ def getTXsAndMintBalancesFromTransferEvents(
 
     listAirdropTXs = []
     initialMintTXs = []
-    airdropedAmountToStakeManager = 0
+    airdropedAmountToStateChainGateway = 0
     # Get all transfer events from the airdropper and the initial minting.
     for event in events:
         toAddress = event.args.to
         fromAddress = event.args["from"]
         amount = event.args.value
-        # If there has been an airdrop to the stakeManager just account for the amount to make checking easier
-        if fromAddress == str(airdropper) and toAddress == stakeManager:
-            airdropedAmountToStakeManager = amount
+        # If there has been an airdrop to the stateChainGateway just account for the amount to make checking easier
+        if fromAddress == str(airdropper) and toAddress == stateChainGateway:
+            airdropedAmountToStateChainGateway = amount
         # Addresses should be unique but just in case
         elif fromAddress == str(airdropper) and (toAddress not in listAirdropTXs):
             listAirdropTXs.append([toAddress, amount])
@@ -506,23 +516,25 @@ def getTXsAndMintBalancesFromTransferEvents(
         elif fromAddress == ZERO_ADDR:
             initialMintTXs.append([toAddress, amount])
 
-    # Check amounts against the newFlipDeployer(airdropper) and the newStakeManager
+    # Check amounts against the newFlipDeployer(airdropper) and the newStateChainGateway
     assert len(initialMintTXs) == 2, logging.error("Minted more times than expected")
 
     # This should always apply so long as the FLIP contract has been deployed
-    assert initialMintTXs[0][0] == stakeManager, logging.error(
+    assert initialMintTXs[0][0] == stateChainGateway, logging.error(
         "First mint receiver should be the new Stake Manager"
     )
-    stakeManagerMintBalance = initialMintTXs[0][1] + airdropedAmountToStakeManager
+    stateChainGatewayMintBalance = (
+        initialMintTXs[0][1] + airdropedAmountToStateChainGateway
+    )
     assert initialMintTXs[1][0] == str(airdropper), logging.error(
         "First mint receiver should be the airdropper"
     )
-    airdropperMintBalance = initialMintTXs[1][1] - airdropedAmountToStakeManager
+    airdropperMintBalance = initialMintTXs[1][1] - airdropedAmountToStateChainGateway
 
     return (
         initialMintTXs,
         listAirdropTXs,
-        int(stakeManagerMintBalance),
+        int(stateChainGatewayMintBalance),
         int(airdropperMintBalance),
     )
 
@@ -601,12 +613,14 @@ def getAndCheckDeployedAddresses(parsedLog):
     index = parsedLog.index(contractDeploymentSuccessMessage)
     # Parse contract addresses
     # Stake Manager
-    assert parsedLog[index - 4].split(":")[0] == "StakeManager address", logging.error(
-        "Something is wrong in the logging of the deployed StakeManager address"
+    assert (
+        parsedLog[index - 4].split(":")[0] == "StateChainGateway address"
+    ), logging.error(
+        "Something is wrong in the logging of the deployed StateChainGateway address"
     )
-    newStakeManager = parsedLog[index - 4].split(":")[1]
-    assert newStakeManager != ZERO_ADDR, logging.error(
-        "Something is wrong with the deployed StakeManager's address"
+    newStateChainGateway = parsedLog[index - 4].split(":")[1]
+    assert newStateChainGateway != ZERO_ADDR, logging.error(
+        "Something is wrong with the deployed StateChainGateway's address"
     )
     # Vault
     assert parsedLog[index - 3].split(":")[0] == "Vault address", logging.error(
@@ -635,10 +649,10 @@ def getAndCheckDeployedAddresses(parsedLog):
         "Something is wrong with the deployed KeyManager's address"
     )
 
-    return (newStakeManager, newVault, newFlip, newKeyManager)
+    return (newStateChainGateway, newVault, newFlip, newKeyManager)
 
 
-def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
+def readCSVSnapshotChecksum(snapshot_csv, stateChainGateway, deployer):
     printAndLog("Reading snapshot from file: " + snapshot_csv)
 
     # Read csv file
@@ -662,10 +676,10 @@ def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
             assert totalSupply == int(b)
 
     # Assumption that we get the events in order, so first two events should be the initial mints
-    assert holderAccounts[0] == stakeManager, logging.error(
+    assert holderAccounts[0] == stateChainGateway, logging.error(
         "First holder should be the Stake Manager"
     )
-    stakeManagerBalance = holderBalances[0]
+    stateChainGatewayBalance = holderBalances[0]
     assert holderAccounts[1] == deployer, logging.error(
         "Second holder should be the deployer"
     )
@@ -675,6 +689,6 @@ def readCSVSnapshotChecksum(snapshot_csv, stakeManager, deployer):
         holderAccounts,
         holderBalances,
         int(totalSupply),
-        int(stakeManagerBalance),
+        int(stateChainGatewayBalance),
         int(deployerBalance),
     )

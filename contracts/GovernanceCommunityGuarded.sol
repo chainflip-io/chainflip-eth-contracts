@@ -20,7 +20,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     bool private _suspended = false;
 
     /**
-     * @notice  Get the governor's address. The contracts inheriting this (StakeManager and Vault)
+     * @notice  Get the governor's address. The contracts inheriting this (StateChainGateway and Vault)
      *          get the governor's address from the KeyManager through the AggKeyNonceConsumer's
      *          inheritance. Therefore, the implementation of this function must be left
      *          to the children. This is not implemented as a virtual onlyGovernor modifier to force
@@ -30,7 +30,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     function _getGovernor() internal view virtual returns (address);
 
     /**
-     * @notice  Get the community's address. The contracts inheriting this (StakeManager and Vault)
+     * @notice  Get the community's address. The contracts inheriting this (StateChainGateway and Vault)
      *          get the community's address from the KeyManager through the AggKeyNonceConsumer's
      *          inheritance. Therefore, the implementation of this function must be left
      *          to the children. This is not implemented as a virtual onlyCommunityKey modifier to force

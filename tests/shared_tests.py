@@ -174,26 +174,28 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
 # similar tests that test specific desired values
 # Can't put the if conditions for `amount` in this fcn like in test_claim because
 # it's we need to accomodate already having a tx because it's best to test
-# `stakedMin` directly
-def stakeTest(cf, prevTotal, nodeID, minStake, tx, amount, returnAddr):
+# `fundedMin` directly
+def fundTest(cf, prevTotal, nodeID, minFunding, tx, amount, returnAddr):
     assert (
-        cf.flip.balanceOf(cf.stakeManager)
-        == prevTotal + amount + STAKEMANAGER_INITIAL_BALANCE
+        cf.flip.balanceOf(cf.stateChainGateway)
+        == prevTotal + amount + GATEWAY_INITIAL_BALANCE
     )
-    assert tx.events["Staked"][0].values() == [nodeID, amount, tx.sender, returnAddr]
-    assert cf.stakeManager.getMinimumStake() == minStake
+    assert tx.events["Funded"][0].values() == [nodeID, amount, tx.sender, returnAddr]
+    assert cf.stateChainGateway.getMinimumFunding() == minFunding
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
 # inputs through @given, so this is a common fcn that can be used for `test_claim` and
 # similar tests that test specific desired values
-def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expiryTime):
+def registerClaimTest(
+    cf, stateChainGateway, nodeID, minFunding, amount, receiver, expiryTime
+):
     prevReceiverBal = cf.flip.balanceOf(receiver)
-    prevStakeManBal = cf.flip.balanceOf(stakeManager)
+    prevStakeManBal = cf.flip.balanceOf(stateChainGateway)
 
     tx = signed_call_cf(
         cf,
-        stakeManager.registerClaim,
+        stateChainGateway.registerClaim,
         nodeID,
         amount,
         receiver,
@@ -202,7 +204,7 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
 
     startTime = tx.timestamp + CLAIM_DELAY
     # Check things that should've changed
-    assert stakeManager.getPendingClaim(nodeID) == (
+    assert stateChainGateway.getPendingClaim(nodeID) == (
         amount,
         receiver,
         startTime,
@@ -217,8 +219,8 @@ def registerClaimTest(cf, stakeManager, nodeID, minStake, amount, receiver, expi
     )
     # Check things that shouldn't have changed
     assert cf.flip.balanceOf(receiver) == prevReceiverBal
-    assert cf.flip.balanceOf(stakeManager) == prevStakeManBal
-    assert stakeManager.getMinimumStake() == minStake
+    assert cf.flip.balanceOf(stateChainGateway) == prevStakeManBal
+    assert stateChainGateway.getMinimumFunding() == minFunding
 
 
 # Function used to do function calls that require a signature

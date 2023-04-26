@@ -5,7 +5,7 @@ from brownie import network, accounts
 
 
 def deploy_Chainflip_contracts(
-    deployer, KeyManager, Vault, StakeManager, FLIP, DeployerContract, *args
+    deployer, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract, *args
 ):
 
     # Set the priority fee for all transactions
@@ -55,14 +55,14 @@ def deploy_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
-    # Deploy contracts via cf.deployerContract. Minting genesis validator FLIP to the Stake Manager.
+    # Deploy contracts via cf.deployerContract. Minting genesis validator FLIP to the State Chain Gateway.
     # The rest of genesis FLIP will be minted to the governance address for safekeeping. Adding
     # required confirmations to avoid errors when checking contracts.address
     cf.deployerContract = DeployerContract.deploy(
         aggKey,
         cf.gov,
         cf.communityKey,
-        MIN_STAKE,
+        MIN_FUNDING,
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
@@ -72,7 +72,7 @@ def deploy_Chainflip_contracts(
     cf.vault = Vault.at(cf.deployerContract.vault())
     cf.flip = FLIP.at(cf.deployerContract.flip())
     cf.keyManager = KeyManager.at(cf.deployerContract.keyManager())
-    cf.stakeManager = StakeManager.at(cf.deployerContract.stakeManager())
+    cf.stateChainGateway = StateChainGateway.at(cf.deployerContract.stateChainGateway())
 
     # All the deployer rights and tokens have been delegated to the governance key.
     cf.safekeeper = cf.gov
@@ -91,15 +91,15 @@ def deploy_new_vault(deployer, Vault, KeyManager, keyManager_address):
     return vault
 
 
-def deploy_new_stakeManager(
+def deploy_new_stateChainGateway(
     deployer,
     KeyManager,
-    StakeManager,
+    StateChainGateway,
     FLIP,
-    DeployerStakeManager,
+    DeployerStateChainGateway,
     keyManager_address,
     flip_address,
-    min_stake,
+    min_funding,
 ):
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
@@ -107,17 +107,19 @@ def deploy_new_stakeManager(
     flip = FLIP.at(flip_address)
     keyManager = KeyManager.at(keyManager_address)
 
-    deployerStakeManager = DeployerStakeManager.deploy(
-        min_stake,
+    deployerStateChainGateway = DeployerStateChainGateway.deploy(
+        min_funding,
         keyManager.address,
         flip.address,
         {"from": deployer, "required_confs": 1},
     )
 
     # New upgraded contract
-    stakeManager = StakeManager.at(deployerStakeManager.stakeManager())
+    stateChainGateway = StateChainGateway.at(
+        deployerStateChainGateway.stateChainGateway()
+    )
 
-    return (deployerStakeManager, stakeManager)
+    return (deployerStateChainGateway, stateChainGateway)
 
 
 def deploy_new_keyManager(deployer, KeyManager, aggKey, govKey, communityKey):

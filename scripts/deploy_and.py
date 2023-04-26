@@ -9,7 +9,7 @@ from brownie import (
     accounts,
     KeyManager,
     Vault,
-    StakeManager,
+    StateChainGateway,
     FLIP,
     DeployerContract,
     chain,
@@ -31,13 +31,13 @@ COMMUNITY_KEY_2 = accounts[7]
 
 
 cf = deploy_Chainflip_contracts(
-    DEPLOYER, KeyManager, Vault, StakeManager, FLIP, DeployerContract
+    DEPLOYER, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract
 )
 
 cf.flip.transfer(ALICE, MAX_TEST_STAKE, {"from": cf.safekeeper})
-cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": ALICE})
+cf.flip.approve(cf.stateChainGateway, MAX_TEST_STAKE, {"from": ALICE})
 cf.flip.transfer(BOB, MAX_TEST_STAKE, {"from": cf.safekeeper})
-cf.flip.approve(cf.stakeManager, MAX_TEST_STAKE, {"from": BOB})
+cf.flip.approve(cf.stateChainGateway, MAX_TEST_STAKE, {"from": BOB})
 
 
 def main():
@@ -46,7 +46,7 @@ def main():
 
 def all_events():
     print(f"\n-- Stake Manager Events --\n")
-    all_stakeManager_events()
+    all_stateChainGateway_events()
     chain.sleep(CLAIM_DELAY)
     print(f"\n-- Vault Events --\n")
     all_vault_events()
@@ -59,58 +59,60 @@ def all_events():
     print(f"Deployer: {DEPLOYER}\n")
     print(f"KeyManager: {cf.keyManager.address}\n")
     print(f"Vault: {cf.vault.address}\n")
-    print(f"StakeManager: {cf.stakeManager.address}\n")
+    print(f"StateChainGateway: {cf.stateChainGateway.address}\n")
     print(f"FLIP: {cf.flip.address}\n")
     print("======================================================================")
 
 
-def all_stakeManager_events():
+def all_stateChainGateway_events():
     print(f"\n💰 Alice stakes {MIN_STAKE} with nodeID {JUNK_INT}\n")
-    cf.stakeManager.stake(JUNK_INT, MIN_STAKE, NON_ZERO_ADDR, {"from": ALICE})
+    cf.stateChainGateway.stake(JUNK_INT, MIN_STAKE, NON_ZERO_ADDR, {"from": ALICE})
 
     claim_amount = int(MIN_STAKE / 3)
     print(f"\n💰 Alice registers a claim for {claim_amount} with nodeID {JUNK_INT}\n")
     args = (JUNK_INT, claim_amount, ALICE, chain.time() + (2 * CLAIM_DELAY))
 
-    signed_call_cf(cf, cf.stakeManager.registerClaim, *args, sender=ALICE)
+    signed_call_cf(cf, cf.stateChainGateway.registerClaim, *args, sender=ALICE)
 
     chain.sleep(CLAIM_DELAY)
 
     print(f"\n💰 Alice executes a claim for nodeID {JUNK_INT}\n")
-    cf.stakeManager.executeClaim(JUNK_INT, {"from": ALICE})
+    cf.stateChainGateway.executeClaim(JUNK_INT, {"from": ALICE})
 
     args = (JUNK_INT, claim_amount, ALICE, chain.time() + (2 * CLAIM_DELAY))
 
-    signed_call_cf(cf, cf.stakeManager.registerClaim, *args, sender=ALICE)
+    signed_call_cf(cf, cf.stateChainGateway.registerClaim, *args, sender=ALICE)
 
     chain.sleep(CLAIM_DELAY * 3)
     print(f"\n💰 Alice executes a claim after expiry for nodeID {JUNK_INT}\n")
-    cf.stakeManager.executeClaim(JUNK_INT, {"from": ALICE})
+    cf.stateChainGateway.executeClaim(JUNK_INT, {"from": ALICE})
 
     new_min_stake = int(MIN_STAKE / 3)
     print(f"\n💰 Denice sets the minimum stake to {new_min_stake}\n")
-    cf.stakeManager.setMinStake(new_min_stake, {"from": GOVERNOR})
+    cf.stateChainGateway.setMinFunding(new_min_stake, {"from": GOVERNOR})
 
     print(f"\n🔐 Governance suspends execution of claims\n")
-    cf.stakeManager.suspend({"from": GOVERNOR})
+    cf.stateChainGateway.suspend({"from": GOVERNOR})
 
     print(f"\n🔐 Community disables guard\n")
-    cf.stakeManager.disableCommunityGuard({"from": cf.communityKey})
+    cf.stateChainGateway.disableCommunityGuard({"from": cf.communityKey})
 
     print(f"\n💸 Governance withdraws all FLIP\n")
-    cf.stakeManager.govWithdraw({"from": GOVERNOR})
+    cf.stateChainGateway.govWithdraw({"from": GOVERNOR})
 
     print(f"\n🔐 Community enables guard\n")
-    cf.stakeManager.enableCommunityGuard({"from": cf.communityKey})
+    cf.stateChainGateway.enableCommunityGuard({"from": cf.communityKey})
 
     print(f"\n🔐 Governance resumes execution of claims\n")
-    cf.stakeManager.resume({"from": GOVERNOR})
+    cf.stateChainGateway.resume({"from": GOVERNOR})
 
-    # Last StakeManager event to emit because we set a wrong new KeyManager address
+    # Last StateChainGateway event to emit because we set a wrong new KeyManager address
 
     print(f"\n🔑 Update the keyManager address in Stake Manager🔑\n")
 
-    signed_call_cf(cf, cf.stakeManager.updateKeyManager, NON_ZERO_ADDR, sender=ALICE)
+    signed_call_cf(
+        cf, cf.stateChainGateway.updateKeyManager, NON_ZERO_ADDR, sender=ALICE
+    )
 
 
 def all_keyManager_events():
@@ -195,7 +197,7 @@ def all_flip_events():
         DENICE,
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
-        cf.stakeManager.address,
+        cf.stateChainGateway.address,
     )
 
     print(f"\n🔑 Update the keyManager address in FLIP🔑\n")

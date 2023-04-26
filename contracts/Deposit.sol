@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "./interfaces/IERC20Lite.sol";
 
 /**
- * @title    DepositToken contract
+ * @title    Deposit contract
  * @notice   Creates a contract with a known address and withdraws tokens from it.
  *           After deployment, the Vault will call fetch() to withdraw tokens.
  * @dev      The logic is not refactored into a single function because it's cheaper.

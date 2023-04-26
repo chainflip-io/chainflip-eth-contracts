@@ -5,7 +5,7 @@ from brownie.test import strategy, contract_strategy
 from utils import *
 from hypothesis import strategies as hypStrat
 from shared_tests import *
-from deploy import deploy_new_stakeManager, deploy_new_vault, deploy_new_keyManager
+from deploy import deploy_new_stateChainGateway, deploy_new_vault, deploy_new_keyManager
 
 settings = {"stateful_step_count": 100, "max_examples": 50}
 
@@ -16,11 +16,11 @@ def test_upgradability(
     state_machine,
     a,
     cf,
-    StakeManager,
+    StateChainGateway,
     KeyManager,
     Vault,
     FLIP,
-    DeployerStakeManager,
+    DeployerStateChainGateway,
 ):
     class StateMachine(BaseStateMachine):
 
@@ -28,7 +28,7 @@ def test_upgradability(
         TOTAL_FUNDS = 10**3 * E_18
 
         """
-        This test deploys a new version of the following contracts: StakeManager, Vault and KeyManager
+        This test deploys a new version of the following contracts: StateChainGateway, Vault and KeyManager
 
         All the references to these contracts need to be updated in the already deployed contracts.
         """
@@ -36,7 +36,7 @@ def test_upgradability(
         # Set up the initial test conditions once
         def __init__(cls, a, cf):
             super().__init__(cls, a, cf)
-            cls.totalFlipstaked = cf.flip.balanceOf(cf.stakeManager)
+            cls.totalFlipFunded = cf.flip.balanceOf(cf.stateChainGateway)
 
             # Store original contracts to be able to test upgradability
             cls.orig_sm = cls.sm
@@ -53,7 +53,7 @@ def test_upgradability(
             self.lastValidateTime = self.deployerContract.tx.timestamp
             self.numTxsTested = 0
 
-            # StakeManager
+            # StateChainGateway
             self.lastSupplyBlockNumber = 0
             self.sm_communityKey = self.sm.getCommunityKey()
             self.sm_guard = self.sm.getCommunityGuardDisabled()
@@ -181,29 +181,29 @@ def test_upgradability(
             self.v_guard = False
             self.v_suspended = False
 
-        # Deploys a new Stake Manager and transfers the FLIP tokens from the old SM to the new one
-        def rule_upgrade_stakeManager(self, st_sender, st_sleep_time):
-            (_, newStakeManager) = deploy_new_stakeManager(
+        # Deploys a new State Chain Gateway and transfers the FLIP tokens from the old SM to the new one
+        def rule_upgrade_stateChainGateway(self, st_sender, st_sleep_time):
+            (_, newStateChainGateway) = deploy_new_stateChainGateway(
                 st_sender,
                 KeyManager,
-                StakeManager,
+                StateChainGateway,
                 FLIP,
-                DeployerStakeManager,
+                DeployerStateChainGateway,
                 self.km.address,
                 self.f.address,
-                MIN_STAKE,
+                MIN_FUNDING,
             )
 
             chain.sleep(st_sleep_time)
 
-            # Generate claim to move all FLIP to new stakeManager
+            # Generate claim to move all FLIP to new stateChainGateway
             expiryTime = getChainTime() + (CLAIM_DELAY * 10)
-            claimAmount = self.totalFlipstaked
+            claimAmount = self.totalFlipFunded
             # Register Claim to transfer all flip
             args = (
                 JUNK_HEX,
                 claimAmount,
-                newStakeManager,
+                newStateChainGateway,
                 expiryTime,
             )
             signed_call_km(self.km, self.sm.registerClaim, *args, sender=st_sender)
@@ -212,19 +212,20 @@ def test_upgradability(
             if st_sleep_time < CLAIM_DELAY:
                 with reverts(REV_MSG_NOT_ON_TIME):
                     print(
-                        "        REV_MSG_SIG rule_upgrade_stakeManager", st_sleep_time
+                        "        REV_MSG_SIG rule_upgrade_stateChainGateway",
+                        st_sleep_time,
                     )
                     self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
             chain.sleep(CLAIM_DELAY * 2)
 
-            print("                   rule_executeClaim", newStakeManager.address)
-            assert self.f.balanceOf(newStakeManager) == 0
-            assert self.f.balanceOf(self.sm) == self.totalFlipstaked
+            print("                   rule_executeClaim", newStateChainGateway.address)
+            assert self.f.balanceOf(newStateChainGateway) == 0
+            assert self.f.balanceOf(self.sm) == self.totalFlipFunded
 
             self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
 
-            assert self.f.balanceOf(newStakeManager) == self.totalFlipstaked
+            assert self.f.balanceOf(newStateChainGateway) == self.totalFlipFunded
             assert self.f.balanceOf(self.sm) == 0
 
             assert self.f.issuer() == self.sm
@@ -232,11 +233,11 @@ def test_upgradability(
             signed_call_km(
                 self.km,
                 self.sm.updateFlipIssuer,
-                newStakeManager.address,
+                newStateChainGateway.address,
                 sender=st_sender,
             )
 
-            self.sm = newStakeManager
+            self.sm = newStateChainGateway
             self.sm_communityKey = self.sm_communityKey
             self.sm_guard = False
             self.sm_suspended = False
@@ -246,7 +247,7 @@ def test_upgradability(
         def invariant_bals(self):
             self.numTxsTested += 1
             assert self.v.balance() == self.TOTAL_FUNDS
-            assert self.f.balanceOf(self.sm) == self.totalFlipstaked
+            assert self.f.balanceOf(self.sm) == self.totalFlipFunded
 
         # KeyManager might have changed but references must be updated
         # FLIP contract should have remained the same
