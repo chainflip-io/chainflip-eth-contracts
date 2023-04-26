@@ -79,7 +79,7 @@ def _deploy_stateChainGateway():
         DeployerStateChainGateway,
         keyManager_address,
         flip_address,
-        MIN_STAKE,
+        MIN_FUNDING,
     )
     addressDump["GATEWAY_ADDRESS"] = new_stateChainGateway.address
     addressDump["DEPLOYER_SM"] = deployerStateChainGateway.address
