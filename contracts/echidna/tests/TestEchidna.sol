@@ -33,10 +33,7 @@ contract TestEchidna is DeployerEchidna {
     }
 
     function echidna_kmReference() external view returns (bool) {
-        return
-            flip.getKeyManager() == stakeManager.getKeyManager() &&
-            stakeManager.getKeyManager() == vault.getKeyManager() &&
-            vault.getKeyManager() == keyManager;
+        return stakeManager.getKeyManager() == vault.getKeyManager() && vault.getKeyManager() == keyManager;
     }
 
     function echidna_govKey() external view returns (bool) {

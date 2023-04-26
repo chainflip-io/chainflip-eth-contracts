@@ -258,8 +258,6 @@ def test_all(
 
             self.sm_communityGuardDisabled = self.sm.getCommunityGuardDisabled()
             self.sm_suspended = self.sm.getSuspendedState()
-
-            # Flip
             self.lastSupplyBlockNumber = 0
 
             # Dictionary swapID:deployedAddress
@@ -1954,13 +1952,13 @@ def test_all(
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             # If it's expired it won't revert regardless of the token balances
-            elif self.flipBals[self.sm] < claim[0] and not getChainTime() <= claim[3]:
+            elif self.flipBals[self.sm] < claim[0] and getChainTime() <= claim[3]:
                 print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             else:
                 print("                    rule_executeClaim", st_nodeID)
-                tx = self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                self.sm.executeClaim(st_nodeID, {"from": st_sender})
 
                 # Claim not expired
                 if getChainTime() <= claim[3]:
@@ -2000,8 +1998,6 @@ def test_all(
             with reverts(REV_MSG_FLIP_ADDRESS):
                 self.sm.setFlip(st_returnAddr, {"from": st_sender})
 
-        # FLIP
-
         # Updates Flip Supply minting/burning stakeManager tokens
         def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
 
@@ -2014,7 +2010,6 @@ def test_all(
             args = (
                 new_total_supply,
                 newSupplyBlockNumber,
-                self.sm.address,
             )
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender, st_amount_supply)
@@ -2024,7 +2019,7 @@ def test_all(
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
-                        self.f.updateFlipSupply,
+                        self.sm.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2035,7 +2030,7 @@ def test_all(
                 with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
                     signed_call_km(
                         self.km,
-                        self.f.updateFlipSupply,
+                        self.sm.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2048,7 +2043,7 @@ def test_all(
                         )
                         signed_call_km(
                             self.km,
-                            self.f.updateFlipSupply,
+                            self.sm.updateFlipSupply,
                             *args,
                             signer=signer,
                             sender=st_sender,
@@ -2057,7 +2052,7 @@ def test_all(
                     print("                    rule_updateFlipSupply", *toLog)
                     tx = signed_call_km(
                         self.km,
-                        self.f.updateFlipSupply,
+                        self.sm.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2070,11 +2065,23 @@ def test_all(
                     self.lastSupplyBlockNumber = newSupplyBlockNumber
                     self.lastValidateTime = tx.timestamp
 
+        # FLIP
+
+        def rule_issue_rev_issuer(self, st_sender, st_amount):
+            # st_sender should never match the stakeManager issuer
+            print("        REV_MSG_FLIP rule_issue_rev_iisuer", st_sender)
+            with reverts(REV_MSG_FLIP_ISSUER):
+                self.f.mint(st_sender, st_amount, {"from": st_sender})
+            with reverts(REV_MSG_FLIP_ISSUER):
+                self.f.burn(st_sender, st_amount, {"from": st_sender})
+            with reverts(REV_MSG_FLIP_ISSUER):
+                self.f.updateIssuer(st_sender, {"from": st_sender})
+
         # AggKeyNonceConsumer - upgradability
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.f, self.sm, self.v]
+            aggKeyNonceConsumers = [self.sm, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity.
             newKeyManager = deploy_new_keyManager(
@@ -2289,7 +2296,7 @@ def test_all(
                     newStakeManager,
                     expiryTime,
                 )
-                tx = signed_call_km(
+                signed_call_km(
                     self.km,
                     self.sm.registerClaim,
                     *args,
@@ -2318,12 +2325,22 @@ def test_all(
                 assert self.f.balanceOf(self.sm) == 0
 
                 self._updateBalancesOnUpgrade(self.sm, newStakeManager)
+
+                tx = signed_call_km(
+                    self.km,
+                    self.sm.updateFlipIssuer,
+                    newStakeManager.address,
+                    signer=signer,
+                    sender=st_sender,
+                )
+
                 self.sm = newStakeManager
                 self.minStake = INIT_MIN_STAKE
                 self.lastValidateTime = tx.timestamp
                 self.sm_communityGuardDisabled = False
                 self.communityKey = self.communityKey
                 self.sm_suspended = False
+                self.lastSupplyBlockNumber = 0
 
                 # Reset all pending claims
                 self.pendingClaims = {
@@ -2601,12 +2618,7 @@ def test_all(
 
         # Regardless of contract redeployment check that references are correct
         def invariant_addresses(self):
-            assert (
-                self.km.address
-                == self.v.getKeyManager()
-                == self.sm.getKeyManager()
-                == self.f.getKeyManager()
-            )
+            assert self.km.address == self.v.getKeyManager() == self.sm.getKeyManager()
 
             assert self.sm.getFLIP() == self.f.address
 
@@ -2630,7 +2642,9 @@ def test_all(
 
         # Check the state variables after every tx
         def invariant_state_vars(self):
-            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            assert (
+                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            )
             assert self.sm.getMinimumStake() == self.minStake
             assert self.sm_communityGuardDisabled == self.sm.getCommunityGuardDisabled()
             assert self.sm_suspended == self.sm.getSuspendedState()

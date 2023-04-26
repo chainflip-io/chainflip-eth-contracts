@@ -11,10 +11,7 @@ from deploy import deploy_new_stakeManager, deploy_new_vault, deploy_new_keyMana
 # Deploy new keyManager
 # Update all keyManager references
 # Start signing with the new keyManager's address
-@given(
-    st_sender=strategy("address"),
-)
-def test_upgrade_keyManager(cf, KeyManager, st_sender):
+def test_upgrade_keyManager(cf, KeyManager):
     args = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
 
     # Try initial transfer to later test a replay attack on the newly deployed keyManager
@@ -31,7 +28,7 @@ def test_upgrade_keyManager(cf, KeyManager, st_sender):
         cf.DENICE, KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
-    aggKeyNonceConsumers = [cf.vault, cf.stakeManager, cf.flip]
+    aggKeyNonceConsumers = [cf.vault, cf.stakeManager]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
@@ -143,6 +140,7 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager):
 # At some point stop witnessing stake calls to old StakeManager (on state chain)
 # Generate a special claim sig to move all FLIP to the new Stake Manager and register it
 # After the CLAIM_DELAY, execute the special claim sig - all FLIP is transfered
+# Transfer issuer rights to the new StakeManager
 @given(
     # adding extra +5 to make up for differences between time.time() and chain time
     st_expiryTimeDiff=strategy("uint", min_value=CLAIM_DELAY + 5, max_value=7 * DAY),
@@ -215,3 +213,11 @@ def test_upgrade_StakeManager(
     )
     chain.sleep(CLAIM_DELAY)
     newStakeManager.executeClaim(nodeID, {"from": cf.ALICE})
+
+    signed_call_cf(
+        cf,
+        cf.stakeManager.updateFlipIssuer,
+        newStakeManager.address,
+        sender=cf.BOB,
+    )
+    assert cf.flip.issuer() == newStakeManager.address

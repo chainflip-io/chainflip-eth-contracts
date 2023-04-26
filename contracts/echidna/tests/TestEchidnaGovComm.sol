@@ -34,10 +34,7 @@ contract TestEchidnaGovComm is DeployerEchidna {
     }
 
     function echidna_kmReference() external returns (bool) {
-        return
-            flip.getKeyManager() == stakeManager.getKeyManager() &&
-            stakeManager.getKeyManager() == vault.getKeyManager() &&
-            vault.getKeyManager() == keyManager;
+        return stakeManager.getKeyManager() == vault.getKeyManager() && vault.getKeyManager() == keyManager;
     }
 
     function echidna_aggKey() external returns (bool) {

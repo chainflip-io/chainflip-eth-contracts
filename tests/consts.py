@@ -94,7 +94,7 @@ REV_MSG_INPUTS_0 = "No zero inputs allowed"
 
 # -----FLIP-----
 INIT_SUPPLY = 9 * 10**7 * E_18
-REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "FLIP: old FLIP supply update"
+REV_MSG_FLIP_ISSUER = "FLIP: not issuer"
 
 REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
 REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
@@ -118,6 +118,7 @@ REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
 REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "Staking: early or already execd"
 REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
+REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "Staking: old FLIP supply update"
 
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60

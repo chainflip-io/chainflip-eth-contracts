@@ -211,7 +211,6 @@ def check_contracts_state(
     assert stakeManager.getFLIP() == flip.address
     assert stakeManager.getKeyManager() == keyManager.address
 
-    assert flip.getKeyManager() == keyManager.address
     assert flip.totalSupply() == st_initSupply
     assert flip.balanceOf(stakeManager) == st_numGenesisValidators * st_genesisStake
     assert (

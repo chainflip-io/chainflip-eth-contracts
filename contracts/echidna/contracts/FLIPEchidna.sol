@@ -8,18 +8,15 @@ contract FLIPEchidna is IShared {
 
     // Expose FLIP functions to Echidna  - making them virtual to override them in tests when needed
 
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber,
-        address staker
-    ) external virtual {
-        f.updateFlipSupply(sigData, newTotalSupply, stateChainBlockNumber, staker);
+    function mint(address account, uint amount) external virtual {
+        f.mint(account, amount);
     }
 
-    // Expose AggKeyNonceConsumer functions to Echidna
+    function burn(address account, uint amount) external virtual {
+        f.burn(account, amount);
+    }
 
-    function updateKeyManagerFLIP(SigData calldata sigData, IKeyManager keyManager) external virtual {
-        f.updateKeyManager(sigData, keyManager);
+    function updateIssuer(address newIssuer) external virtual {
+        f.updateIssuer(newIssuer);
     }
 }

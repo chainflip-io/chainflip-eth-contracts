@@ -262,7 +262,7 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                 with reverts(REV_MSG_NOT_ON_TIME):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
             # If it's expired it won't revert regardless of the token balances
-            elif self.flipBals[self.sm] < claim[0] and not getChainTime() <= claim[3]:
+            elif self.flipBals[self.sm] < claim[0] and getChainTime() <= claim[3]:
                 print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.sm.executeClaim(st_nodeID, {"from": st_sender})
@@ -277,6 +277,49 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
                     self.totalStake -= claim[0]
 
                 self.pendingClaims[st_nodeID] = NULL_CLAIM
+
+        def rule_updateFlipSupply(self, st_amount, st_signer_agg, st_sender):
+            print("                    rule_updateFlipSupply", st_amount)
+
+            currentSupply = self.f.totalSupply()
+            newTotalSupply = currentSupply + st_amount + 1
+
+            if newTotalSupply > 0:
+                if st_signer_agg != AGG_SIGNER_1:
+                    print("        REV_MSG_SIG rule_registerClaim", newTotalSupply)
+                    with reverts(REV_MSG_SIG):
+                        signed_call_km(
+                            self.km,
+                            self.sm.updateFlipSupply,
+                            newTotalSupply,
+                            0,
+                            signer=st_signer_agg,
+                            sender=st_sender,
+                        )
+                else:
+                    print("                    rule_updateFlipSupply ", newTotalSupply)
+
+                    self.lastSupplyBlockNumber += 1
+                    signed_call_km(
+                        self.km,
+                        self.sm.updateFlipSupply,
+                        newTotalSupply,
+                        self.lastSupplyBlockNumber,
+                        signer=st_signer_agg,
+                        sender=st_sender,
+                    )
+                    self.flipBals[self.sm] += st_amount + 1
+
+                    self.lastSupplyBlockNumber += 1
+                    signed_call_km(
+                        self.km,
+                        self.sm.updateFlipSupply,
+                        newTotalSupply - st_amount,
+                        self.lastSupplyBlockNumber,
+                        signer=st_signer_agg,
+                        sender=st_sender,
+                    )
+                    self.flipBals[self.sm] -= st_amount
 
         # Sets the minimum stake as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
@@ -411,7 +454,9 @@ def test_stakeManager(BaseStateMachine, state_machine, a, cfDeploy):
             assert self.community == self.sm.getCommunityKey()
             assert self.communityGuardDisabled == self.sm.getCommunityGuardDisabled()
             assert self.suspended == self.sm.getSuspendedState()
-            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            assert (
+                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            )
             assert self.sm.getMinimumStake() == self.minStake
             for nodeID, claim in self.pendingClaims.items():
                 assert self.sm.getPendingClaim(nodeID) == claim

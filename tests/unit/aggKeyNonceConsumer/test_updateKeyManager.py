@@ -4,13 +4,13 @@ from deploy import deploy_new_keyManager
 
 # FLIP, Vault and StakeManager inherit AggKeyNonceConsumer
 def test_constructor(cf):
-    aggKeyNonceConsumers = [cf.flip, cf.stakeManager, cf.vault]
+    aggKeyNonceConsumers = [cf.stakeManager, cf.vault]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         assert aggKeyNonceConsumer.getKeyManager() == cf.keyManager
 
 
 def test_updateKeyManager(cf, KeyManager):
-    aggKeyNonceConsumers = [cf.flip, cf.stakeManager, cf.vault]
+    aggKeyNonceConsumers = [cf.stakeManager, cf.vault]
 
     # Reusing current keyManager aggregateKey for simplicity
     newKeyManager = deploy_new_keyManager(

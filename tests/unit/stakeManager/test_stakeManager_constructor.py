@@ -7,13 +7,13 @@ from brownie.test import given, strategy
 def test_constructor(cf):
     assert cf.stakeManager.getKeyManager() == cf.keyManager.address
     assert cf.stakeManager.getKeyManager() == cf.keyManager.address
-    assert cf.flip.getLastSupplyUpdateBlockNumber() == 0
     assert cf.stakeManager.getMinimumStake() == MIN_STAKE
     assert cf.flip.totalSupply() == INIT_SUPPLY
     assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
+    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == 0
 
 
-# Tries to set the FLIP address. It should have been set right deployment.
+# Tries to set the FLIP address. It should have been set at deployment.
 @given(
     st_sender=strategy("address"),
     st_flip_address=strategy("address"),

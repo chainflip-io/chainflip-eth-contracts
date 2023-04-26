@@ -1,6 +1,6 @@
 from consts import *
 from brownie.test import given, strategy
-from brownie import reverts, chain
+from brownie import reverts
 from utils import *
 from shared_tests import *
 
@@ -13,16 +13,15 @@ def test_updateFlipSupply(cf):
     assert (
         cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + STAKEMANAGER_INITIAL_BALANCE
     )
-    assert cf.flip.getLastSupplyUpdateBlockNumber() == 0
+    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == 0
 
     stateChainBlockNumber = 1
 
     tx = signed_call_cf(
         cf,
-        cf.flip.updateFlipSupply,
+        cf.stakeManager.updateFlipSupply,
         NEW_TOTAL_SUPPLY_MINT,
         stateChainBlockNumber,
-        cf.stakeManager.address,
         sender=cf.ALICE,
     )
 
@@ -34,7 +33,7 @@ def test_updateFlipSupply(cf):
         + MIN_STAKE
         + STAKEMANAGER_INITIAL_BALANCE
     )
-    assert cf.flip.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
+    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx.events["FlipSupplyUpdated"][0].values() == [
         INIT_SUPPLY,
         NEW_TOTAL_SUPPLY_MINT,
@@ -45,10 +44,9 @@ def test_updateFlipSupply(cf):
 
     tx = signed_call_cf(
         cf,
-        cf.flip.updateFlipSupply,
+        cf.stakeManager.updateFlipSupply,
         INIT_SUPPLY,
         stateChainBlockNumber,
-        cf.stakeManager.address,
         sender=cf.ALICE,
     )
 
@@ -56,7 +54,7 @@ def test_updateFlipSupply(cf):
     assert (
         cf.flip.balanceOf(cf.stakeManager) == MIN_STAKE + STAKEMANAGER_INITIAL_BALANCE
     )
-    assert cf.flip.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
+    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == stateChainBlockNumber
     assert tx.events["FlipSupplyUpdated"][0].values() == [
         NEW_TOTAL_SUPPLY_MINT,
         INIT_SUPPLY,
@@ -69,10 +67,9 @@ def test_updateFlipSupply(cf):
     with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
         signed_call_cf(
             cf,
-            cf.flip.updateFlipSupply,
+            cf.stakeManager.updateFlipSupply,
             INIT_SUPPLY,
             stateChainBlockNumber,
-            cf.stakeManager.address,
             sender=cf.ALICE,
         )
 
@@ -84,16 +81,15 @@ def test_updateFlipSupply_unchangedSupply(cf):
     totalSupplyBefore = cf.flip.totalSupply()
 
     assert stakeManagerBalanceBefore == STAKEMANAGER_INITIAL_BALANCE
-    assert cf.flip.getLastSupplyUpdateBlockNumber() == 0
+    assert cf.stakeManager.getLastSupplyUpdateBlockNumber() == 0
 
     stateChainBlockNumber = 1
 
     signed_call_cf(
         cf,
-        cf.flip.updateFlipSupply,
+        cf.stakeManager.updateFlipSupply,
         cf.flip.totalSupply(),
         stateChainBlockNumber,
-        cf.stakeManager.address,
         sender=cf.ALICE,
     )
 
@@ -112,35 +108,41 @@ def test_updateFlipSupply_rev(cf):
     with reverts(REV_MSG_NZ_UINT):
         signed_call_cf(
             cf,
-            cf.flip.updateFlipSupply,
+            cf.stakeManager.updateFlipSupply,
             0,
             stateChainBlockNumber,
-            cf.stakeManager.address,
-            sender=cf.ALICE,
-        )
-
-    with reverts(REV_MSG_NZ_ADDR):
-        signed_call_cf(
-            cf,
-            cf.flip.updateFlipSupply,
-            NEW_TOTAL_SUPPLY_MINT,
-            stateChainBlockNumber,
-            ZERO_ADDR,
             sender=cf.ALICE,
         )
 
     contractMsgHash = Signer.generate_contractMsgHash(
-        cf.flip.updateFlipSupply, 2, stateChainBlockNumber, cf.stakeManager.address
+        cf.stakeManager.updateFlipSupply,
+        2,
+        stateChainBlockNumber,
     )
     msgHash = Signer.generate_msgHash(
-        contractMsgHash, nonces, cf.keyManager.address, cf.flip.address
+        contractMsgHash, nonces, cf.keyManager.address, cf.stakeManager.address
     )
 
     with reverts(REV_MSG_SIG):
-        cf.flip.updateFlipSupply(
+        cf.stakeManager.updateFlipSupply(
             AGG_SIGNER_1.generate_sigData(msgHash, nonces),
             NEW_TOTAL_SUPPLY_MINT,
             stateChainBlockNumber,
-            cf.stakeManager.address,
             {"from": cf.ALICE},
         )
+
+
+def test_updateFlipSupply_constant(cf):
+    tx = signed_call_cf(
+        cf,
+        cf.stakeManager.updateFlipSupply,
+        cf.flip.totalSupply(),
+        1,
+        sender=cf.ALICE,
+    )
+    assert "Transfer" not in tx.events
+    assert tx.events["FlipSupplyUpdated"][0].values() == [
+        cf.flip.totalSupply(),
+        cf.flip.totalSupply(),
+        1,
+    ]

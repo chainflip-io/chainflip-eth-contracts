@@ -73,7 +73,7 @@ def test_upgradability(
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.f, self.sm, self.v]
+            aggKeyNonceConsumers = [self.sm, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = deploy_new_keyManager(
@@ -227,10 +227,20 @@ def test_upgradability(
             assert self.f.balanceOf(newStakeManager) == self.totalFlipstaked
             assert self.f.balanceOf(self.sm) == 0
 
+            assert self.f.issuer() == self.sm
+
+            signed_call_km(
+                self.km,
+                self.sm.updateFlipIssuer,
+                newStakeManager.address,
+                sender=st_sender,
+            )
+
             self.sm = newStakeManager
             self.sm_communityKey = self.sm_communityKey
             self.sm_guard = False
             self.sm_suspended = False
+            assert self.f.issuer() == self.sm
 
         # Check that all the funds (NATIVE and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):
@@ -241,12 +251,7 @@ def test_upgradability(
         # KeyManager might have changed but references must be updated
         # FLIP contract should have remained the same
         def invariant_addresses(self):
-            assert (
-                self.km.address
-                == self.v.getKeyManager()
-                == self.sm.getKeyManager()
-                == self.f.getKeyManager()
-            )
+            assert self.km.address == self.v.getKeyManager() == self.sm.getKeyManager()
 
             assert self.sm.getFLIP() == self.f.address
 
@@ -258,7 +263,9 @@ def test_upgradability(
             assert self.sm_communityKey == self.sm.getCommunityKey()
             assert self.sm_guard == self.sm.getCommunityGuardDisabled()
             assert self.sm_suspended == self.sm.getSuspendedState()
-            assert self.f.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            assert (
+                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+            )
 
         # Print how many rules were executed at the end of each run
         def teardown(self):
