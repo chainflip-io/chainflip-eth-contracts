@@ -170,9 +170,9 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
-# inputs through @given, so this is a common fcn that can be used for `test_claim` and
+# inputs through @given, so this is a common fcn that can be used for `test_redemption` and
 # similar tests that test specific desired values
-# Can't put the if conditions for `amount` in this fcn like in test_claim because
+# Can't put the if conditions for `amount` in this fcn like in test_redemption because
 # it's we need to accomodate already having a tx because it's best to test
 # `fundedMin` directly
 def fundTest(cf, prevTotal, nodeID, minFunding, tx, amount, returnAddr):
@@ -185,9 +185,9 @@ def fundTest(cf, prevTotal, nodeID, minFunding, tx, amount, returnAddr):
 
 
 # Hypothesis/brownie doesn't allow you to specifically include values when generating random
-# inputs through @given, so this is a common fcn that can be used for `test_claim` and
+# inputs through @given, so this is a common fcn that can be used for `test_redemption` and
 # similar tests that test specific desired values
-def registerClaimTest(
+def registerRedemptionTest(
     cf, stateChainGateway, nodeID, minFunding, amount, receiver, expiryTime
 ):
     prevReceiverBal = cf.flip.balanceOf(receiver)
@@ -195,22 +195,22 @@ def registerClaimTest(
 
     tx = signed_call_cf(
         cf,
-        stateChainGateway.registerClaim,
+        stateChainGateway.registerRedemption,
         nodeID,
         amount,
         receiver,
         expiryTime,
     )
 
-    startTime = tx.timestamp + CLAIM_DELAY
+    startTime = tx.timestamp + REDEMPTION_DELAY
     # Check things that should've changed
-    assert stateChainGateway.getPendingClaim(nodeID) == (
+    assert stateChainGateway.getPendingRedemption(nodeID) == (
         amount,
         receiver,
         startTime,
         expiryTime,
     )
-    assert tx.events["ClaimRegistered"][0].values() == (
+    assert tx.events["RedemptionRegistered"][0].values() == (
         nodeID,
         amount,
         receiver,

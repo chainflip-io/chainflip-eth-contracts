@@ -54,7 +54,7 @@ def test_consumeKeyNonce_rev_sig(
     with reverts(REV_MSG_SIG):
         cf.keyManager.consumeKeyNonce(sigData_modif, JUNK_HEX, {"from": cf.ALICE})
 
-    # Check that changing the nonce will fail. Seems like the hypothesis is smart
+    # Check that changing the nonce will fail. Seems like the hypothesis is.scgart
     # enough to figure this one out, so we add a check.
     if st_sig != sigData_modif[1]:
         sigData_modif = sigData[:]

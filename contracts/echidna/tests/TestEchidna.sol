@@ -101,8 +101,8 @@ contract TestEchidna is DeployerEchidna {
     // ASSERTION TESTING - need to run echidna in testMode: "assertion"
 
     // Proxies for a signed function - Assert if the call is not reverted
-    function executeClaim_revert(bytes32 nodeID) external {
-        try stateChainGateway.executeClaim(nodeID) {
+    function executeRedemption_revert(bytes32 nodeID) external {
+        try stateChainGateway.executeRedemption(nodeID) {
             assert(false);
         } catch {
             assert(true);

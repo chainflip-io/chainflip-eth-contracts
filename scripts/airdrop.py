@@ -336,9 +336,9 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway):
             skip_counter += 1
 
     # OldFLIP supply is most likely different than the new initial flip supply (INIT_SUPPLY). We need to ensure that when minting the
-    # supply difference the newStateChainGateway and oldStateChainGateway will end up with the same balance. If new Stake Manager has less balance
+    # supply difference the newStateChainGateway and oldStateChainGateway will end up with the same balance. If new State Chain Gateway has less balance
     # than the old one and the difference is bigger than the supply difference, we need to make an extra transfer from airdropper to the
-    # new Stake Manager. This should be the case in this airdrop.
+    # new State Chain Gateway. This should be the case in this airdrop.
     # Technically it could be the case where some of newSupply tokens that will be minted would have to go to the airdroper, but that won't
     # be the case in this airdrop (and probably never).
     stateChainGatewayBalanceDifference = (
@@ -521,7 +521,7 @@ def getTXsAndMintBalancesFromTransferEvents(
 
     # This should always apply so long as the FLIP contract has been deployed
     assert initialMintTXs[0][0] == stateChainGateway, logging.error(
-        "First mint receiver should be the new Stake Manager"
+        "First mint receiver should be the new State Chain Gateway"
     )
     stateChainGatewayMintBalance = (
         initialMintTXs[0][1] + airdropedAmountToStateChainGateway
@@ -612,7 +612,7 @@ def getAndCheckDeployedAddresses(parsedLog):
     # So we can just use the index of the message string and parse the following lines. Added assertion for safety.
     index = parsedLog.index(contractDeploymentSuccessMessage)
     # Parse contract addresses
-    # Stake Manager
+    # State Chain Gateway
     assert (
         parsedLog[index - 4].split(":")[0] == "StateChainGateway address"
     ), logging.error(
@@ -677,7 +677,7 @@ def readCSVSnapshotChecksum(snapshot_csv, stateChainGateway, deployer):
 
     # Assumption that we get the events in order, so first two events should be the initial mints
     assert holderAccounts[0] == stateChainGateway, logging.error(
-        "First holder should be the Stake Manager"
+        "First holder should be the State Chain Gateway"
     )
     stateChainGatewayBalance = holderBalances[0]
     assert holderAccounts[1] == deployer, logging.error(

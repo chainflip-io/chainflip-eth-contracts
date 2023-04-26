@@ -33,7 +33,7 @@ keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
 addressDump = {}
 
 # This script, so far, supports deploying a new StateChainGateway and/or a new Vault.
-# Run deploy_vault_stakemanager to deploy both
+# Run deploy_vault_gateway to deploy both
 # Run deploy_vault to deploy only the new Vault
 # Run deploy_stateChainGateway to deploy only the new StateChainGateway
 
@@ -42,7 +42,7 @@ def main():
     print()
 
 
-def deploy_vault_stakemanager():
+def deploy_vault_gateway():
     _deploy_vault()
     _deploy_stateChainGateway()
     store_artifacts()
@@ -81,7 +81,7 @@ def _deploy_stateChainGateway():
         flip_address,
         MIN_STAKE,
     )
-    addressDump["STAKE_MANAGER_ADDRESS"] = new_stateChainGateway.address
+    addressDump["GATEWAY_ADDRESS"] = new_stateChainGateway.address
     addressDump["DEPLOYER_SM"] = deployerStateChainGateway.address
     addressDump["FLIP_ADDRESS"] = flip_address
 
@@ -97,9 +97,9 @@ def store_artifacts():
         print(f"  FLIP: {addressDump['FLIP_ADDRESS']}")
 
     print("New deployed contract addresses\n----------------------------")
-    if "STAKE_MANAGER_ADDRESS" in addressDump:
+    if "GATEWAY_ADDRESS" in addressDump:
         print(f"  DeployerContract: {addressDump['DEPLOYER_SM']}")
-        print(f"  StateChainGateway: {addressDump['STAKE_MANAGER_ADDRESS']}")
+        print(f"  StateChainGateway: {addressDump['GATEWAY_ADDRESS']}")
     if "VAULT_ADDRESS" in addressDump:
         print(f"  Vault: {addressDump['VAULT_ADDRESS']}")
 

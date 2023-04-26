@@ -9,21 +9,21 @@ import "./IGovernanceCommunityGuarded.sol";
  */
 interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     event Funded(bytes32 indexed nodeID, uint256 amount, address funder, address indexed returnAddr);
-    event ClaimRegistered(
+    event RedemptionRegistered(
         bytes32 indexed nodeID,
         uint256 amount,
         address indexed funder,
         uint48 startTime,
         uint48 expiryTime
     );
-    event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
-    event ClaimExpired(bytes32 indexed nodeID, uint256 amount);
+    event RedemptionExecuted(bytes32 indexed nodeID, uint256 amount);
+    event RedemptionExpired(bytes32 indexed nodeID, uint256 amount);
     event MinFundingChanged(uint256 oldMinStake, uint256 newMinFunding);
     event GovernanceWithdrawal(address to, uint256 amount);
     event FLIPSet(address flip);
     event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
 
-    struct Claim {
+    struct Redemption {
         uint256 amount;
         address funder;
         // 48 so that 160 (from funder) + 48 + 48 is 256 they can all be packed
@@ -48,22 +48,22 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
      * @param amount    The amount of FLIP tokens
      * @param nodeID    The nodeID of the funder
      * @param returnAddr    The address which the funder requires to be used
-     *                      when claiming back FLIP for `nodeID`
+     *                      when redemptioning back FLIP for `nodeID`
      */
     function fundStateChainAccount(bytes32 nodeID, uint256 amount, address returnAddr) external;
 
     /**
-     * @notice  Claim back stake. If only losing an auction, the same amount initially staked
-     *          will be sent back. If losing an auction while being a validator,
-     *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-     * @param sigData   Struct containing the signature data over the message to verify,
-     *                  signed by the aggregate key.
+     * @notice  Redeem FLIP from the StateChain. The State Chain will determine the amount
+     *          that can be redeemed, but a basic calculation for a validator would be:
+     *          amount redeemable = stake + rewards - penalties.
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
      * @param nodeID    The nodeID of the funder
-     * @param amount    The amount of stake to be locked up
-     * @param funder    The funder who is to be sent FLIP
-     * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
+     * @param amount    The amount of funds to be locked up
+     * @param funder    The funder who is sending the FLIP
+     * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
      */
-    function registerClaim(
+    function registerRedemption(
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
@@ -72,17 +72,14 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
     ) external;
 
     /**
-     * @notice  Execute a pending claim to get back stake. If only losing an auction,
-     *          the same amount initially staked will be sent back. If losing an
-     *          auction while being a validator, the amount sent back = stake +
-     *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
-     *          claim before 48h have passed after registering it, or after the specified
-     *          expiry timestamp
+     * @notice  Execute a pending redemption to get back funds. Cannot execute a pending
+     *          redemption before 48h have passed after registering it, or after the specified
+     *          expiry time
      * @dev     No need for nzUint(nodeID) since that is handled by
-     *          `uint(block.number) <= claim.startTime`
+     *          `uint(block.number) <= redemption.startTime`
      * @param nodeID    The nodeID of the funder
      */
-    function executeClaim(bytes32 nodeID) external;
+    function executeRedemption(bytes32 nodeID) external;
 
     /**
      * @notice  Compares a given new FLIP supply against the old supply and mints or burns
@@ -128,13 +125,13 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
     function getMinimumFunding() external view returns (uint256);
 
     /**
-     * @notice  Get the pending claim for the input nodeID. If there was never
-     *          a pending claim for this nodeID, or it has already been executed
+     * @notice  Get the pending redemption for the input nodeID. If there was never
+     *          a pending redemption for this nodeID, or it has already been executed
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
-     * @param nodeID    The nodeID which is has a pending claim
-     * @return  The claim (Claim)
+     * @param nodeID    The nodeID which is has a pending redemption
+     * @return  The redemption (Redemption)
      */
-    function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
+    function getPendingRedemption(bytes32 nodeID) external view returns (Redemption memory);
 
     /**
      * @notice  Get the last state chain block number that the supply was updated at

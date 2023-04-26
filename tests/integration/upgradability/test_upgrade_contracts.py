@@ -135,15 +135,17 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager):
 
 ## Update process StateChainGateway:
 # Deploy new StateChainGateway and begin witnessing any new fundings.
-# Pause all register claim signature generation on the State Chain (~7days)
-# Wait 7 days for all currently pending claims to expire or be executed
+# Pause all register redemption signature generation on the State Chain (~7days)
+# Wait 7 days for all currently pending redemptions to expire or be executed
 # At some point stop witnessing funding calls to old StateChainGateway (on state chain)
-# Generate a special claim sig to move all FLIP to the new State Chain Gateway and register it
-# After the CLAIM_DELAY, execute the special claim sig - all FLIP is transferred
+# Generate a special redemption sig to move all FLIP to the new State Chain Gateway and register it
+# After the REDEMPTION_DELAY, execute the special redemption sig - all FLIP is transferred
 # Transfer issuer rights to the new StateChainGateway
 @given(
     # adding extra +5 to make up for differences between time.time() and chain time
-    st_expiryTimeDiff=strategy("uint", min_value=CLAIM_DELAY + 5, max_value=7 * DAY),
+    st_expiryTimeDiff=strategy(
+        "uint", min_value=REDEMPTION_DELAY + 5, max_value=7 * DAY
+    ),
     st_sender=strategy("address"),
 )
 def test_upgrade_StateChainGateway(
@@ -166,65 +168,65 @@ def test_upgrade_StateChainGateway(
         MIN_FUNDING,
     )
 
-    # Last register claim before stopping state's chain claim signature registry
+    # Last register redemption before stopping state's chain redemption signature registry
     nodeID = JUNK_HEX
     expiryTime = getChainTime() + st_expiryTimeDiff
-    claimAmount = 123 * E_18
-    registerClaimTest(
+    redemptionAmount = 123 * E_18
+    registerRedemptionTest(
         cf,
         cf.stateChainGateway,
         nodeID,
         MIN_FUNDING,
-        claimAmount,
+        redemptionAmount,
         cf.DENICE,
         expiryTime,
     )
 
-    chain.sleep(CLAIM_DELAY)
+    chain.sleep(REDEMPTION_DELAY)
 
-    # Execute pending claim
+    # Execute pending redemption
     initialFlipBalance = cf.flip.balanceOf(cf.DENICE)
-    cf.stateChainGateway.executeClaim(nodeID, {"from": cf.ALICE})
+    cf.stateChainGateway.executeRedemption(nodeID, {"from": cf.ALICE})
     finalFlipBalance = cf.flip.balanceOf(cf.DENICE)
-    assert finalFlipBalance - initialFlipBalance == claimAmount
-    assert cf.stateChainGateway.getPendingClaim(nodeID) == NULL_CLAIM
+    assert finalFlipBalance - initialFlipBalance == redemptionAmount
+    assert cf.stateChainGateway.getPendingRedemption(nodeID) == NULL_CLAIM
 
-    chain.sleep(7 * DAY - CLAIM_DELAY)
+    chain.sleep(7 * DAY - REDEMPTION_DELAY)
 
-    # Generate claim to move all FLIP to new stateChainGateway
+    # Generate redemption to move all FLIP to new stateChainGateway
     totalFlipFunded = cf.flip.balanceOf(cf.stateChainGateway)
     expiryTime = getChainTime() + st_expiryTimeDiff
-    claimAmount = totalFlipFunded
-    registerClaimTest(
+    redemptionAmount = totalFlipFunded
+    registerRedemptionTest(
         cf,
         cf.stateChainGateway,
         nodeID,
         MIN_FUNDING,
-        claimAmount,
+        redemptionAmount,
         newStateChainGateway,
         expiryTime,
     )
 
-    chain.sleep(CLAIM_DELAY)
+    chain.sleep(REDEMPTION_DELAY)
 
     assert cf.flip.balanceOf(newStateChainGateway) == 0
     assert cf.flip.balanceOf(cf.stateChainGateway) == totalFlipFunded
-    cf.stateChainGateway.executeClaim(nodeID, {"from": cf.ALICE})
+    cf.stateChainGateway.executeRedemption(nodeID, {"from": cf.ALICE})
     assert cf.flip.balanceOf(newStateChainGateway) == totalFlipFunded
     assert cf.flip.balanceOf(cf.stateChainGateway) == 0
 
-    # Check that claims can be registered and executed in the new StateChainGateway
-    registerClaimTest(
+    # Check that redemptions can be registered and executed in the new StateChainGateway
+    registerRedemptionTest(
         cf,
         newStateChainGateway,
         nodeID,
         MIN_FUNDING,
-        claimAmount,
+        redemptionAmount,
         cf.DENICE,
-        getChainTime() + (CLAIM_DELAY * 2),
+        getChainTime() + (REDEMPTION_DELAY * 2),
     )
-    chain.sleep(CLAIM_DELAY)
-    newStateChainGateway.executeClaim(nodeID, {"from": cf.ALICE})
+    chain.sleep(REDEMPTION_DELAY)
+    newStateChainGateway.executeRedemption(nodeID, {"from": cf.ALICE})
 
     signed_call_cf(
         cf,

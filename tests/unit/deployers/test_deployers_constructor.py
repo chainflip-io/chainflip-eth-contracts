@@ -165,17 +165,17 @@ def test_upgrader_constructor(
         JUNK_HEX,
         flip.balanceOf(stateChainGateway.address),
         new_stateChainGateway.address,
-        getChainTime() + (2 * CLAIM_DELAY),
+        getChainTime() + (2 * REDEMPTION_DELAY),
     ]
 
     # Manually transfer FLIP funds.
     signed_call(
-        keyManager, stateChainGateway.registerClaim, AGG_SIGNER_1, st_sender, *args
+        keyManager, stateChainGateway.registerRedemption, AGG_SIGNER_1, st_sender, *args
     )
 
-    # Execute claim
-    chain.sleep(CLAIM_DELAY)
-    stateChainGateway.executeClaim(JUNK_HEX, {"from": st_sender})
+    # Execute redemption
+    chain.sleep(REDEMPTION_DELAY)
+    stateChainGateway.executeRedemption(JUNK_HEX, {"from": st_sender})
 
     check_contracts_state(
         st_pubKeyX,

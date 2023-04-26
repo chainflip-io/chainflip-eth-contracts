@@ -84,12 +84,12 @@ def test_all(
         keys at the start of each run.
 
         There's a MAX_NUM_SENDERS number of funders that randomly `fund` and are randomly
-        the recipients of `claim`. The parameters used are so that they're small enough
+        the recipients of `redemption`. The parameters used are so that they're.scgall enough
         to increase the likelihood of the same address being used in multiple
-        interactions (e.g. 2  x fundings then a claim etc) and large enough to ensure
+        interactions (e.g. 2  x fundings then a redemption etc) and large enough to ensure
         there's variety in them.
 
-        The parameters used are so that they're small enough to increase the likelihood of the same
+        The parameters used are so that they're.scgall enough to increase the likelihood of the same
         address being used in multiple interactions and large enough to ensure there's variety in them
         
         This test also deploys a new version of the following contracts: StateChainGateway, Vault and KeyManager
@@ -167,7 +167,7 @@ def test_all(
             initialVaultBalance = web3.eth.get_balance(cls.v.address)
             assert initialVaultBalance == cls.TOTAL_FUNDS
             initialKeyManagerBalance = web3.eth.get_balance(cls.km.address)
-            initialStateChainGatewayBalance = web3.eth.get_balance(cls.sm.address)
+            initialStateChainGatewayBalance = web3.eth.get_balance(cls.scg.address)
             cls.initialBalancesContracts = [
                 initialVaultBalance,
                 initialKeyManagerBalance,
@@ -175,7 +175,7 @@ def test_all(
             ]
 
             # Store original contracts to be able to test upgradability
-            cls.orig_sm = cls.sm
+            cls.orig.scg = cls.scg
             cls.orig_v = cls.v
             cls.orig_km = cls.km
 
@@ -189,7 +189,7 @@ def test_all(
         def setup(self):
 
             # Set original contracts to be able to test upgradability
-            self.sm = self.orig_sm
+            self.scg = self.orig.scg
             self.v = self.orig_v
             self.km = self.orig_km
             self.cfReceiverMock = self.orig_cfRec
@@ -205,7 +205,7 @@ def test_all(
                 *self.create2TokenBAddrs,
             ]
 
-            self.sm.setMinFunding(INIT_MIN_FUNDING, {"from": self.governor})
+            self.scg.setMinFunding(INIT_MIN_FUNDING, {"from": self.governor})
 
             self.nativeBals = {
                 # Accounts within "a" will have INIT_NATIVE_BAL - gas spent in setup/deployment
@@ -214,7 +214,7 @@ def test_all(
             }
 
             # Set intial balances of remaining contracts
-            contracts = [self.v, self.km, self.sm]
+            contracts = [self.v, self.km, self.scg]
             self.allAddrs += contracts
             for index in range(len(contracts)):
                 self.nativeBals[contracts[index]] = self.initialBalancesContracts[index]
@@ -248,16 +248,16 @@ def test_all(
             self.flipBals = {
                 addr: INIT_FUNDING
                 if addr in self.funders
-                else (INIT_FLIP_SM if addr == self.sm else 0)
+                else (INIT_FLIP_SM if addr == self.scg else 0)
                 for addr in self.allAddrs
             }
-            self.pendingClaims = {
+            self.pendingRedemptions = {
                 nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
             }
             self.numTxsTested = 0
 
-            self.sm_communityGuardDisabled = self.sm.getCommunityGuardDisabled()
-            self.sm_suspended = self.sm.getSuspendedState()
+            self.scg_communityGuardDisabled = self.scg.getCommunityGuardDisabled()
+            self.scg_suspended = self.scg.getSuspendedState()
             self.lastSupplyBlockNumber = 0
 
             # Dictionary swapID:deployedAddress
@@ -303,7 +303,7 @@ def test_all(
         st_returnAddr = strategy("address", length=MAX_NUM_SENDERS)
         st_nodeID = strategy("uint", max_value=MAX_NUM_SENDERS)
         st_amount = strategy("uint", max_value=MAX_TEST_FUND)
-        st_expiry_time_diff = strategy("uint", max_value=CLAIM_DELAY * 10)
+        st_expiry_time_diff = strategy("uint", max_value=REDEMPTION_DELAY * 10)
         # In reality this high amount isn't really realistic, but for the sake of testing
         st_minFunding = strategy("uint", max_value=int(INIT_FUNDING / 2))
 
@@ -1725,7 +1725,7 @@ def test_all(
 
         # Useful results are being impeded by most attempts at setAggKeyWithGovKey not having enough
         # delay - having 2 sleep methods makes it more common aswell as this which is enough of a delay
-        # in itself, since Hypothesis usually picks small values as part of shrinking
+        # in itself, since Hypothesis usually picks.scgall values as part of shrinking
         def rule_sleep_2_days(self):
             print("                    rule_sleep_2_days")
             chain.sleep(2 * DAY)
@@ -1821,15 +1821,15 @@ def test_all(
             if st_nodeID == 0:
                 print("        REV_MSG_NZ_BYTES32 rule_fundStateChainAccount", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_funder})
-                    self.sm.fundStateChainAccount(
+                    self.f.approve(self.scg.address, st_amount, {"from": st_funder})
+                    self.scg.fundStateChainAccount(
                         st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
                     )
             elif st_amount < self.minFunding:
                 print("        rule_fundStateChainAccount MIN_FUNDING", *toLog)
                 with reverts(REV_MSG_MIN_FUNDING):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_funder})
-                    self.sm.fundStateChainAccount(
+                    self.f.approve(self.scg.address, st_amount, {"from": st_funder})
+                    self.scg.fundStateChainAccount(
                         st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
                     )
             elif st_amount > self.flipBals[st_funder]:
@@ -1838,23 +1838,23 @@ def test_all(
                     *toLog,
                 )
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    self.f.approve(self.sm.address, st_amount, {"from": st_funder})
-                    self.sm.fundStateChainAccount(
+                    self.f.approve(self.scg.address, st_amount, {"from": st_funder})
+                    self.scg.fundStateChainAccount(
                         st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
                     )
             else:
                 print("                    rule_fundStateChainAccount ", *toLog)
-                self.f.approve(self.sm.address, st_amount, {"from": st_funder})
-                self.sm.fundStateChainAccount(
+                self.f.approve(self.scg.address, st_amount, {"from": st_funder})
+                self.scg.fundStateChainAccount(
                     st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
                 )
 
                 self.flipBals[st_funder] -= st_amount
-                self.flipBals[self.sm] += st_amount
+                self.flipBals[self.scg] += st_amount
                 self.totalFunding += st_amount
 
-        # Claims a random amount from a random nodeID to a random recipient
-        def rule_registerClaim(
+        # Redemptions a random amount from a random nodeID to a random recipient
+        def rule_registerRedemption(
             self, st_nodeID, st_funder, st_amount, st_sender, st_expiry_time_diff
         ):
             args = (
@@ -1866,114 +1866,119 @@ def test_all(
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender)
 
-            if self.sm_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _registerClaim")
+            if self.scg_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _registerRedemption")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
             elif st_nodeID == 0:
-                print("        NODEID rule_registerClaim", *toLog)
+                print("        NODEID rule_registerRedemption", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
             elif st_amount == 0:
-                print("        AMOUNT rule_registerClaim", *toLog)
+                print("        AMOUNT rule_registerRedemption", *toLog)
                 with reverts(REV_MSG_NZ_UINT):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
             elif signer != self.keyIDToCurKeys[AGG]:
-                print("        REV_MSG_SIG rule_registerClaim", signer)
+                print("        REV_MSG_SIG rule_registerRedemption", signer)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
-            elif getChainTime() <= self.pendingClaims[st_nodeID][3]:
-                print("        REV_MSG_CLAIM_EXISTS rule_registerClaim", *toLog)
+            elif getChainTime() <= self.pendingRedemptions[st_nodeID][3]:
+                print("        REV_MSG_CLAIM_EXISTS rule_registerRedemption", *toLog)
                 with reverts(REV_MSG_CLAIM_EXISTS):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
-            elif st_expiry_time_diff <= CLAIM_DELAY:
-                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerClaim", *toLog)
+            elif st_expiry_time_diff <= REDEMPTION_DELAY:
+                print("        REV_MSG_EXPIRY_TOO_SOON rule_registerRedemption", *toLog)
                 with reverts(REV_MSG_EXPIRY_TOO_SOON):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
             else:
-                print("                    rule_registerClaim ", *toLog)
+                print("                    rule_registerRedemption ", *toLog)
                 tx = signed_call_km(
                     self.km,
-                    self.sm.registerClaim,
+                    self.scg.registerRedemption,
                     *args,
                     signer=signer,
                     sender=st_sender,
                 )
-                self.pendingClaims[st_nodeID] = (
+                self.pendingRedemptions[st_nodeID] = (
                     st_amount,
                     st_funder,
-                    tx.timestamp + CLAIM_DELAY,
+                    tx.timestamp + REDEMPTION_DELAY,
                     args[3],
                 )
                 self.lastValidateTime = tx.timestamp
 
-        # Executes a random claim
-        def rule_executeClaim(self, st_nodeID, st_sender):
-            if self.sm_suspended:
-                print("        REV_MSG_GOV_SUSPENDED _executeClaim")
+        # Executes a random redemption
+        def rule_executeRedemption(self, st_nodeID, st_sender):
+            if self.scg_suspended:
+                print("        REV_MSG_GOV_SUSPENDED _executeRedemption")
                 with reverts(REV_MSG_GOV_SUSPENDED):
-                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                    self.scg.executeRedemption(st_nodeID, {"from": st_sender})
                 return
 
-            claim = self.pendingClaims[st_nodeID]
+            redemption = self.pendingRedemptions[st_nodeID]
 
-            # Claim can be empty
-            if not claim[2] <= getChainTime() or claim == NULL_CLAIM:
-                print("        REV_MSG_NOT_ON_TIME rule_executeClaim", st_nodeID)
+            # Redemption can be empty
+            if not redemption[2] <= getChainTime() or redemption == NULL_CLAIM:
+                print("        REV_MSG_NOT_ON_TIME rule_executeRedemption", st_nodeID)
                 with reverts(REV_MSG_NOT_ON_TIME):
-                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                    self.scg.executeRedemption(st_nodeID, {"from": st_sender})
             # If it's expired it won't revert regardless of the token balances
-            elif self.flipBals[self.sm] < claim[0] and getChainTime() <= claim[3]:
-                print("        REV_MSG_ERC20_EXCEED_BAL rule_executeClaim", st_nodeID)
+            elif (
+                self.flipBals[self.scg] < redemption[0]
+                and getChainTime() <= redemption[3]
+            ):
+                print(
+                    "        REV_MSG_ERC20_EXCEED_BAL rule_executeRedemption", st_nodeID
+                )
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                    self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                    self.scg.executeRedemption(st_nodeID, {"from": st_sender})
             else:
-                print("                    rule_executeClaim", st_nodeID)
-                self.sm.executeClaim(st_nodeID, {"from": st_sender})
+                print("                    rule_executeRedemption", st_nodeID)
+                self.scg.executeRedemption(st_nodeID, {"from": st_sender})
 
-                # Claim not expired
-                if getChainTime() <= claim[3]:
-                    self.flipBals[claim[1]] += claim[0]
-                    self.flipBals[self.sm] -= claim[0]
-                    self.totalFunding -= claim[0]
+                # Redemption not expired
+                if getChainTime() <= redemption[3]:
+                    self.flipBals[redemption[1]] += redemption[0]
+                    self.flipBals[self.scg] -= redemption[0]
+                    self.totalFunding -= redemption[0]
 
-                self.pendingClaims[st_nodeID] = NULL_CLAIM
+                self.pendingRedemptions[st_nodeID] = NULL_CLAIM
 
         # Sets the minimum funding as a random value, signs with a random (probability-weighted) sig,
         # and sends the tx from a random address
@@ -1986,18 +1991,18 @@ def test_all(
                     st_sender,
                 )
                 with reverts(REV_MSG_NZ_UINT):
-                    self.sm.setMinFunding(st_minFunding, {"from": st_sender})
+                    self.scg.setMinFunding(st_minFunding, {"from": st_sender})
             elif st_sender != self.governor:
                 print(
                     "        REV_MSG_SIG rule_setMinFunding", st_minFunding, st_sender
                 )
                 with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.sm.setMinFunding(st_minFunding, {"from": st_sender})
+                    self.scg.setMinFunding(st_minFunding, {"from": st_sender})
             else:
                 print(
                     "                    rule_setMinFunding", st_minFunding, st_sender
                 )
-                self.sm.setMinFunding(st_minFunding, {"from": st_sender})
+                self.scg.setMinFunding(st_minFunding, {"from": st_sender})
 
                 self.minFunding = st_minFunding
 
@@ -2005,16 +2010,16 @@ def test_all(
         def rule_setFlip(self, st_sender, st_returnAddr):
             print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
             with reverts(REV_MSG_NZ_ADDR):
-                self.sm.setFlip(ZERO_ADDR, {"from": st_sender})
+                self.scg.setFlip(ZERO_ADDR, {"from": st_sender})
 
             print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
             with reverts(REV_MSG_FLIP_ADDRESS):
-                self.sm.setFlip(st_returnAddr, {"from": st_sender})
+                self.scg.setFlip(st_returnAddr, {"from": st_sender})
 
         # Updates Flip Supply minting/burning stateChainGateway tokens
         def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
 
-            sm_inibalance = self.f.balanceOf(self.sm)
+            scg_inibalance = self.f.balanceOf(self.scg)
             new_total_supply = self.f.totalSupply() + st_amount_supply
 
             # Avoid newSupplyBlockNumber being a negative number
@@ -2032,7 +2037,7 @@ def test_all(
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
-                        self.sm.updateFlipSupply,
+                        self.scg.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2043,20 +2048,20 @@ def test_all(
                 with reverts(REV_MSG_OLD_FLIP_SUPPLY_UPDATE):
                     signed_call_km(
                         self.km,
-                        self.sm.updateFlipSupply,
+                        self.scg.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
             else:
-                if sm_inibalance + st_amount_supply < 0:
+                if scg_inibalance + st_amount_supply < 0:
                     with reverts(REV_MSG_BURN_BALANCE):
                         print(
                             "        REV_MSG_BURN_BALANCE rule_updateFlipSupply", *toLog
                         )
                         signed_call_km(
                             self.km,
-                            self.sm.updateFlipSupply,
+                            self.scg.updateFlipSupply,
                             *args,
                             signer=signer,
                             sender=st_sender,
@@ -2065,16 +2070,18 @@ def test_all(
                     print("                    rule_updateFlipSupply", *toLog)
                     tx = signed_call_km(
                         self.km,
-                        self.sm.updateFlipSupply,
+                        self.scg.updateFlipSupply,
                         *args,
                         signer=signer,
                         sender=st_sender,
                     )
 
                     assert self.f.totalSupply() == new_total_supply
-                    assert self.f.balanceOf(self.sm) == sm_inibalance + st_amount_supply
+                    assert (
+                        self.f.balanceOf(self.scg) == scg_inibalance + st_amount_supply
+                    )
 
-                    self.flipBals[self.sm] += st_amount_supply
+                    self.flipBals[self.scg] += st_amount_supply
                     self.lastSupplyBlockNumber = newSupplyBlockNumber
                     self.lastValidateTime = tx.timestamp
 
@@ -2094,7 +2101,7 @@ def test_all(
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.sm, self.v]
+            aggKeyNonceConsumers = [self.scg, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity.
             newKeyManager = deploy_new_keyManager(
@@ -2274,12 +2281,12 @@ def test_all(
             args = (JUNK_HEX, 1, newStateChainGateway, 1)
             signer = self._get_key_prob(AGG)
 
-            if self.sm_suspended:
+            if self.scg_suspended:
                 print("        REV_MSG_GOV_SUSPENDED rule_upgrade_stateChainGateway")
                 with reverts(REV_MSG_GOV_SUSPENDED):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2291,7 +2298,7 @@ def test_all(
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
                         self.km,
-                        self.sm.registerClaim,
+                        self.scg.registerRedemption,
                         *args,
                         signer=signer,
                         sender=st_sender,
@@ -2299,66 +2306,67 @@ def test_all(
             else:
                 chain.sleep(st_sleep_time)
 
-                # Generate claim to move all FLIP to new stateChainGateway
-                expiryTime = getChainTime() + (CLAIM_DELAY * 10)
-                claimAmount = self.flipBals[self.sm]
-                # Register Claim to transfer all flip
+                # Generate redemption to move all FLIP to new stateChainGateway
+                expiryTime = getChainTime() + (REDEMPTION_DELAY * 10)
+                redemptionAmount = self.flipBals[self.scg]
+                # Register Redemption to transfer all flip
                 args = (
                     JUNK_HEX,
-                    claimAmount,
+                    redemptionAmount,
                     newStateChainGateway,
                     expiryTime,
                 )
                 signed_call_km(
                     self.km,
-                    self.sm.registerClaim,
+                    self.scg.registerRedemption,
                     *args,
                     signer=signer,
                     sender=st_sender,
                 )
 
                 chain.sleep(st_sleep_time)
-                if st_sleep_time < CLAIM_DELAY:
+                if st_sleep_time < REDEMPTION_DELAY:
                     with reverts(REV_MSG_NOT_ON_TIME):
                         print(
                             "        REV_MSG_SIG rule_upgrade_stateChainGateway",
                             st_sleep_time,
                         )
-                        self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
+                        self.scg.executeRedemption(JUNK_HEX, {"from": st_sender})
 
-                chain.sleep(CLAIM_DELAY * 2)
+                chain.sleep(REDEMPTION_DELAY * 2)
 
                 print(
-                    "                   rule_executeClaim", newStateChainGateway.address
+                    "                   rule_executeRedemption",
+                    newStateChainGateway.address,
                 )
                 assert self.f.balanceOf(newStateChainGateway) == 0
-                assert self.f.balanceOf(self.sm) == self.flipBals[self.sm]
+                assert self.f.balanceOf(self.scg) == self.flipBals[self.scg]
 
-                self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
+                self.scg.executeRedemption(JUNK_HEX, {"from": st_sender})
 
-                assert self.f.balanceOf(newStateChainGateway) == self.flipBals[self.sm]
-                assert self.f.balanceOf(self.sm) == 0
+                assert self.f.balanceOf(newStateChainGateway) == self.flipBals[self.scg]
+                assert self.f.balanceOf(self.scg) == 0
 
-                self._updateBalancesOnUpgrade(self.sm, newStateChainGateway)
+                self._updateBalancesOnUpgrade(self.scg, newStateChainGateway)
 
                 tx = signed_call_km(
                     self.km,
-                    self.sm.updateFlipIssuer,
+                    self.scg.updateFlipIssuer,
                     newStateChainGateway.address,
                     signer=signer,
                     sender=st_sender,
                 )
 
-                self.sm = newStateChainGateway
+                self.scg = newStateChainGateway
                 self.minFunding = INIT_MIN_FUNDING
                 self.lastValidateTime = tx.timestamp
-                self.sm_communityGuardDisabled = False
+                self.scg_communityGuardDisabled = False
                 self.communityKey = self.communityKey
-                self.sm_suspended = False
+                self.scg_suspended = False
                 self.lastSupplyBlockNumber = 0
 
-                # Reset all pending claims
-                self.pendingClaims = {
+                # Reset all pending redemptions
+                self.pendingRedemptions = {
                     nodeID: NULL_CLAIM for nodeID in range(MAX_NUM_SENDERS + 1)
                 }
 
@@ -2370,34 +2378,34 @@ def test_all(
                 # To avoid suspending it very often
                 if st_addr != st_sender:
                     return
-                if self.sm_suspended:
+                if self.scg_suspended:
                     print("        REV_MSG_GOV_SUSPENDED _suspend")
                     with reverts(REV_MSG_GOV_SUSPENDED):
-                        self.sm.suspend({"from": st_sender})
+                        self.scg.suspend({"from": st_sender})
                 else:
                     print("                    rule_suspend", st_sender)
-                    self.sm.suspend({"from": st_sender})
-                    self.sm_suspended = True
+                    self.scg.suspend({"from": st_sender})
+                    self.scg_suspended = True
             else:
                 print("        REV_MSG_GOV_GOVERNOR _suspend")
                 with reverts(REV_MSG_GOV_GOVERNOR):
-                    self.sm.suspend({"from": st_sender})
+                    self.scg.suspend({"from": st_sender})
 
         # Resumes the State Chain Gateway if it is suspended. We always resume it to avoid
         # having the stateChainGateway suspended too often
         def rule_resume_stateChainGateway(self, st_sender):
-            if self.sm_suspended:
+            if self.scg_suspended:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
-                        self.sm.resume({"from": st_sender})
+                        self.scg.resume({"from": st_sender})
                 # Always resume
                 print("                    rule_resume", st_sender)
-                self.sm.resume({"from": self.governor})
-                self.sm_suspended = False
+                self.scg.resume({"from": self.governor})
+                self.scg_suspended = False
             else:
                 print("        REV_MSG_GOV_NOT_SUSPENDED _resume", st_sender)
                 with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                    self.sm.resume({"from": self.governor})
+                    self.scg.resume({"from": self.governor})
 
         # Suspends the State Chain Gateway if st_sender matches the governor address.
         def rule_suspend_vault(self, st_sender, st_addr):
@@ -2435,40 +2443,40 @@ def test_all(
                     self.v.resume({"from": self.governor})
 
         # Enable State Chain Gateway's community Guard
-        def rule_sm_enableCommunityGuard(self, st_sender):
-            if self.sm_communityGuardDisabled:
+        def rule_scg_enableCommunityGuard(self, st_sender):
+            if self.scg_communityGuardDisabled:
                 if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                        self.sm.enableCommunityGuard({"from": st_sender})
+                        self.scg.enableCommunityGuard({"from": st_sender})
                 # Always enable
-                print("                    rule_sm_enableCommunityGuard", st_sender)
-                self.sm.enableCommunityGuard({"from": self.communityKey})
-                self.sm_communityGuardDisabled = False
+                print("                    rule.scg_enableCommunityGuard", st_sender)
+                self.scg.enableCommunityGuard({"from": self.communityKey})
+                self.scg_communityGuardDisabled = False
             else:
                 print(
-                    "        REV_MSG_GOV_ENABLED_GUARD _sm_enableCommunityGuard",
+                    "        REV_MSG_GOV_ENABLED_GUARD .scg_enableCommunityGuard",
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.sm.enableCommunityGuard({"from": self.communityKey})
+                    self.scg.enableCommunityGuard({"from": self.communityKey})
 
         # Disable State Chain Gateway's community Guard
-        def rule_sm_disableCommunityGuard(self, st_sender):
-            if not self.sm_communityGuardDisabled:
+        def rule_scg_disableCommunityGuard(self, st_sender):
+            if not self.scg_communityGuardDisabled:
                 if st_sender != self.communityKey:
                     with reverts(REV_MSG_GOV_NOT_COMMUNITY):
-                        self.sm.disableCommunityGuard({"from": st_sender})
+                        self.scg.disableCommunityGuard({"from": st_sender})
                 # Always disable
-                print("                    rule_sm_disableCommunityGuard", st_sender)
-                self.sm.disableCommunityGuard({"from": self.communityKey})
-                self.sm_communityGuardDisabled = True
+                print("                    rule.scg_disableCommunityGuard", st_sender)
+                self.scg.disableCommunityGuard({"from": self.communityKey})
+                self.scg_communityGuardDisabled = True
             else:
                 print(
-                    "        REV_MSG_GOV_DISABLED_GUARD _sm_disableCommunityGuard",
+                    "        REV_MSG_GOV_DISABLED_GUARD .scg_disableCommunityGuard",
                     st_sender,
                 )
                 with reverts(REV_MSG_GOV_DISABLED_GUARD):
-                    self.sm.disableCommunityGuard({"from": self.communityKey})
+                    self.scg.disableCommunityGuard({"from": self.communityKey})
 
         # Enable Vault's community Guard
         def rule_vault_enableCommunityGuard(self, st_sender):
@@ -2507,32 +2515,32 @@ def test_all(
                     self.v.disableCommunityGuard({"from": self.communityKey})
 
         # Governance attemps to withdraw FLIP from the State Chain Gateway in case of emergency
-        def rule_sm_govWithdrawal(self, st_sender):
-            if self.sm_communityGuardDisabled:
+        def rule_scg_govWithdrawal(self, st_sender):
+            if self.scg_communityGuardDisabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
-                        self.sm.govWithdraw({"from": st_sender})
+                        self.scg.govWithdraw({"from": st_sender})
 
-                if self.sm_suspended:
+                if self.scg_suspended:
                     print("                    rule_govWithdrawal", st_sender)
-                    self.sm.govWithdraw({"from": self.governor})
+                    self.scg.govWithdraw({"from": self.governor})
                     # Governor has all the FLIP - do the checking and return the tokens for the invariant check
                     assert (
                         self.f.balanceOf(self.governor)
-                        == self.flipBals[self.governor] + self.flipBals[self.sm]
+                        == self.flipBals[self.governor] + self.flipBals[self.scg]
                     )
-                    assert self.f.balanceOf(self.sm) == 0
+                    assert self.f.balanceOf(self.scg) == 0
                     self.f.transfer(
-                        self.sm, self.flipBals[self.sm], {"from": self.governor}
+                        self.scg, self.flipBals[self.scg], {"from": self.governor}
                     )
                 else:
                     print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
                     with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.sm.govWithdraw({"from": self.governor})
+                        self.scg.govWithdraw({"from": self.governor})
             else:
                 print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
                 with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.sm.govWithdraw({"from": self.governor})
+                    self.scg.govWithdraw({"from": self.governor})
 
         # Governance attemps to withdraw all tokens from the Vault in case of emergency
         def rule_v_govWithdrawal(self, st_sender):
@@ -2585,8 +2593,8 @@ def test_all(
                     self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Transfer native to the stateChainGateway to check govWithdrawalNative. Using st_funder to make sure it is a key in the nativeBals dict
-        def _transfer_native_sm(self, st_funder, st_native_amount):
-            self._transfer_native(st_funder, self.sm, st_native_amount)
+        def _transfer_native_scg(self, st_funder, st_native_amount):
+            self._transfer_native(st_funder, self.scg, st_native_amount)
 
         # Transfer native to the stateChainGateway to check govWithdrawalNative. Using st_funder to make sure it is a key in the nativeBals dict
         def _transfer_native_km(self, st_funder, st_native_amount):
@@ -2614,7 +2622,7 @@ def test_all(
 
         # Check all the balances of every address are as they should be after every tx
         # If the contracts have been upgraded, the latest one should hold all the balance
-        # NOTE: Error in self.nativeBals assertion - calculateGasSpentByAddress seems to be smaller than expected and intermittently the native balance
+        # NOTE: Error in self.nativeBals assertion - calculateGasSpentByAddress seems to be.scgaller than expected and intermittently the native balance
         # assertion fails. Could be that the tx gas values are off or that brownie and/or history.filter has a bug and doesn't report all the
         # sent transactions. It's an error that only occurs at the end of a test, so it is unlikely that the calculations are wrong or that
         # we need to add the wait_for_transaction_receipt before doing the calculation. Adding a time.sleep(3) seems to make all runs pass.
@@ -2633,9 +2641,9 @@ def test_all(
 
         # Regardless of contract redeployment check that references are correct
         def invariant_addresses(self):
-            assert self.km.address == self.v.getKeyManager() == self.sm.getKeyManager()
+            assert self.km.address == self.v.getKeyManager() == self.scg.getKeyManager()
 
-            assert self.sm.getFLIP() == self.f.address
+            assert self.scg.getFLIP() == self.f.address
 
         # Check the keys are correct after every tx
         def invariant_keys(self):
@@ -2645,29 +2653,31 @@ def test_all(
             assert (
                 self.governor
                 == self.km.getGovernanceKey()
-                == self.sm.getGovernor()
+                == self.scg.getGovernor()
                 == self.v.getGovernor()
             )
             assert (
                 self.communityKey
                 == self.km.getCommunityKey()
-                == self.sm.getCommunityKey()
+                == self.scg.getCommunityKey()
                 == self.v.getCommunityKey()
             )
 
         # Check the state variables after every tx
         def invariant_state_vars(self):
             assert (
-                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+                self.scg.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             )
-            assert self.sm.getMinimumFunding() == self.minFunding
-            assert self.sm_communityGuardDisabled == self.sm.getCommunityGuardDisabled()
-            assert self.sm_suspended == self.sm.getSuspendedState()
+            assert self.scg.getMinimumFunding() == self.minFunding
+            assert (
+                self.scg_communityGuardDisabled == self.scg.getCommunityGuardDisabled()
+            )
+            assert self.scg_suspended == self.scg.getSuspendedState()
             assert self.v_communityGuardDisabled == self.v.getCommunityGuardDisabled()
             assert self.v_suspended == self.v.getSuspendedState()
             assert self.km.getLastValidateTime() == self.lastValidateTime
-            for nodeID, claim in self.pendingClaims.items():
-                assert self.sm.getPendingClaim(nodeID) == claim
+            for nodeID, redemption in self.pendingRedemptions.items():
+                assert self.scg.getPendingRedemption(nodeID) == redemption
             ## Check that there are contracts in the deposit Addresses
             for addr in self.deployedDeposits.values():
                 assert web3.eth.get_code(web3.toChecksumAddress(addr)).hex() != "0x"

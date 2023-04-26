@@ -102,12 +102,12 @@ def test_sig_stateChainGateway(
         JUNK_HEX,
         cf.flip.balanceOf(cf.stateChainGateway.address),
         cf.stateChainGateway.address,
-        getChainTime() + (2 * CLAIM_DELAY),
+        getChainTime() + (2 * REDEMPTION_DELAY),
     ]
 
     # Generate original calldata for the call that is to be frontrunned
     contractMsgHash = Signer.generate_contractMsgHash(
-        cf.stateChainGateway.registerClaim, *args
+        cf.stateChainGateway.registerRedemption, *args
     )
     msgHash = Signer.generate_msgHash(
         contractMsgHash, nonces, cf.keyManager.address, cf.stateChainGateway.address
@@ -118,7 +118,7 @@ def test_sig_stateChainGateway(
     args_modif = args[:]
     args_modif[1] = st_amount
     with reverts(REV_MSG_SIG):
-        cf.stateChainGateway.registerClaim(
+        cf.stateChainGateway.registerRedemption(
             sigData,
             *args_modif,
             {"from": st_sender},
@@ -127,14 +127,14 @@ def test_sig_stateChainGateway(
     # Mimic a frontrunning bot making the same call to the new stateChainGateway. It should
     # fail due to the nonceConsumer being different (msg.sender is hashed over)
     with reverts(REV_MSG_SIG):
-        new_stateChainGateway.registerClaim(
+        new_stateChainGateway.registerRedemption(
             sigData,
             *args,
             {"from": st_sender},
         )
 
     contractMsgHash_sigVerification(
-        cf.stateChainGateway.registerClaim,
+        cf.stateChainGateway.registerRedemption,
         cf.keyManager,
         contractMsgHash,
         sigData,
@@ -148,7 +148,7 @@ def test_sig_stateChainGateway(
         cf,
         KeyManager,
         cf.stateChainGateway,
-        cf.stateChainGateway.registerClaim,
+        cf.stateChainGateway.registerRedemption,
         sigData,
         contractMsgHash,
         st_sender,
@@ -242,7 +242,7 @@ def test_sig_msgHash(cf, st_sender, st_new_govKey, st_address, st_chainId, st_am
     ]
     msgHash_verification(
         cf,
-        cf.stateChainGateway.registerClaim,
+        cf.stateChainGateway.registerRedemption,
         st_sender,
         st_address,
         st_chainId,
@@ -274,7 +274,7 @@ def contractMsgHash_sigVerification(
 
     # Check that changing any of the parameters in sigData won't pass verification
     # This could technically revert, as it could be bruteforce, especially if
-    # the hypothesis generation is smart. But it shouldn't happen in practice.
+    # the hypothesis generation is.scgart. But it shouldn't happen in practice.
 
     # Bruteforce the signature
     sigData_modif = sigData[:]
@@ -288,7 +288,7 @@ def contractMsgHash_sigVerification(
     with reverts(REV_MSG_SIG):
         fcn(sigData_modif, *args, {"from": st_sender})
 
-    # Check that changing the nonce will fail. Seems like the hypothesis is smart
+    # Check that changing the nonce will fail. Seems like the hypothesis is.scgart
     # enough to figure this one out, so we add a check.
     if st_sig != sigData_modif[1]:
         sigData_modif = sigData[:]

@@ -39,14 +39,14 @@ def test_upgradability(
             cls.totalFlipFunded = cf.flip.balanceOf(cf.stateChainGateway)
 
             # Store original contracts to be able to test upgradability
-            cls.orig_sm = cls.sm
+            cls.orig.scg = cls.scg
             cls.orig_v = cls.v
             cls.orig_km = cls.km
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             # Set original contracts to be able to test upgradability
-            self.sm = self.orig_sm
+            self.scg = self.orig.scg
             self.v = self.orig_v
             self.km = self.orig_km
 
@@ -55,9 +55,9 @@ def test_upgradability(
 
             # StateChainGateway
             self.lastSupplyBlockNumber = 0
-            self.sm_communityKey = self.sm.getCommunityKey()
-            self.sm_guard = self.sm.getCommunityGuardDisabled()
-            self.sm_suspended = self.sm.getSuspendedState()
+            self.scg_communityKey = self.scg.getCommunityKey()
+            self.scg_guard = self.scg.getCommunityGuardDisabled()
+            self.scg_suspended = self.scg.getSuspendedState()
 
             # Vault - initialize with some funds
             a[3].transfer(self.v, self.TOTAL_FUNDS)
@@ -73,7 +73,7 @@ def test_upgradability(
 
         # Deploys a new keyManager and updates all the references to it
         def rule_upgrade_keyManager(self, st_sender):
-            aggKeyNonceConsumers = [self.sm, self.v]
+            aggKeyNonceConsumers = [self.scg, self.v]
 
             # Reusing current keyManager aggregateKey for simplicity
             newKeyManager = deploy_new_keyManager(
@@ -196,76 +196,81 @@ def test_upgradability(
 
             chain.sleep(st_sleep_time)
 
-            # Generate claim to move all FLIP to new stateChainGateway
-            expiryTime = getChainTime() + (CLAIM_DELAY * 10)
-            claimAmount = self.totalFlipFunded
-            # Register Claim to transfer all flip
+            # Generate redemption to move all FLIP to new stateChainGateway
+            expiryTime = getChainTime() + (REDEMPTION_DELAY * 10)
+            redemptionAmount = self.totalFlipFunded
+            # Register Redemption to transfer all flip
             args = (
                 JUNK_HEX,
-                claimAmount,
+                redemptionAmount,
                 newStateChainGateway,
                 expiryTime,
             )
-            signed_call_km(self.km, self.sm.registerClaim, *args, sender=st_sender)
+            signed_call_km(
+                self.km, self.scg.registerRedemption, *args, sender=st_sender
+            )
 
             chain.sleep(st_sleep_time)
-            if st_sleep_time < CLAIM_DELAY:
+            if st_sleep_time < REDEMPTION_DELAY:
                 with reverts(REV_MSG_NOT_ON_TIME):
                     print(
                         "        REV_MSG_SIG rule_upgrade_stateChainGateway",
                         st_sleep_time,
                     )
-                    self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
+                    self.scg.executeRedemption(JUNK_HEX, {"from": st_sender})
 
-            chain.sleep(CLAIM_DELAY * 2)
+            chain.sleep(REDEMPTION_DELAY * 2)
 
-            print("                   rule_executeClaim", newStateChainGateway.address)
+            print(
+                "                   rule_executeRedemption",
+                newStateChainGateway.address,
+            )
             assert self.f.balanceOf(newStateChainGateway) == 0
-            assert self.f.balanceOf(self.sm) == self.totalFlipFunded
+            assert self.f.balanceOf(self.scg) == self.totalFlipFunded
 
-            self.sm.executeClaim(JUNK_HEX, {"from": st_sender})
+            self.scg.executeRedemption(JUNK_HEX, {"from": st_sender})
 
             assert self.f.balanceOf(newStateChainGateway) == self.totalFlipFunded
-            assert self.f.balanceOf(self.sm) == 0
+            assert self.f.balanceOf(self.scg) == 0
 
-            assert self.f.issuer() == self.sm
+            assert self.f.issuer() == self.scg
 
             signed_call_km(
                 self.km,
-                self.sm.updateFlipIssuer,
+                self.scg.updateFlipIssuer,
                 newStateChainGateway.address,
                 sender=st_sender,
             )
 
-            self.sm = newStateChainGateway
-            self.sm_communityKey = self.sm_communityKey
-            self.sm_guard = False
-            self.sm_suspended = False
-            assert self.f.issuer() == self.sm
+            self.scg = newStateChainGateway
+            self.scg_communityKey = self.scg_communityKey
+            self.scg_guard = False
+            self.scg_suspended = False
+            assert self.f.issuer() == self.scg
 
         # Check that all the funds (NATIVE and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):
             self.numTxsTested += 1
             assert self.v.balance() == self.TOTAL_FUNDS
-            assert self.f.balanceOf(self.sm) == self.totalFlipFunded
+            assert self.f.balanceOf(self.scg) == self.totalFlipFunded
 
         # KeyManager might have changed but references must be updated
         # FLIP contract should have remained the same
         def invariant_addresses(self):
-            assert self.km.address == self.v.getKeyManager() == self.sm.getKeyManager()
+            assert self.km.address == self.v.getKeyManager() == self.scg.getKeyManager()
 
-            assert self.sm.getFLIP() == self.f.address
+            assert self.scg.getFLIP() == self.f.address
 
         # Check the state variables after every tx
         def invariant_state_vars(self):
             assert self.v_communityKey == self.v.getCommunityKey()
             assert self.v_guard == self.v.getCommunityGuardDisabled()
             assert self.v_suspended == self.v.getSuspendedState()
-            assert self.sm_communityKey == self.sm.getCommunityKey()
-            assert self.sm_guard == self.sm.getCommunityGuardDisabled()
-            assert self.sm_suspended == self.sm.getSuspendedState()
+            assert self.scg_communityKey == self.scg.getCommunityKey()
+            assert self.scg_guard == self.scg.getCommunityGuardDisabled()
+            assert self.scg_suspended == self.scg.getSuspendedState()
             assert (
-                self.sm.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
+                self.scg.getLastSupplyUpdateBlockNumber() == self.lastSupplyBlockNumber
             )
 
         # Print how many rules were executed at the end of each run

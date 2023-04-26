@@ -4,19 +4,19 @@ from brownie import web3, chain
 from utils import *
 
 
-def test_registerClaim_updateFlipSupply_executeClaim(cf, fundedMin):
+def test_registerRedemption_updateFlipSupply_executeRedemption(cf, fundedMin):
     _, amountFunded = fundedMin
-    claimAmount = amountFunded
+    redemptionAmount = amountFunded
     receiver = cf.DENICE
 
-    registerClaimTest(
+    registerRedemptionTest(
         cf,
         cf.stateChainGateway,
         JUNK_HEX,
         MIN_FUNDING,
-        claimAmount,
+        redemptionAmount,
         receiver,
-        getChainTime() + (2 * CLAIM_DELAY),
+        getChainTime() + (2 * REDEMPTION_DELAY),
     )
 
     stateChainBlockNumber = 1
@@ -41,19 +41,19 @@ def test_registerClaim_updateFlipSupply_executeClaim(cf, fundedMin):
     # Check things that shouldn't have changed
     assert cf.stateChainGateway.getMinimumFunding() == MIN_FUNDING
 
-    chain.sleep(CLAIM_DELAY + 5)
-    cf.stateChainGateway.executeClaim(JUNK_HEX, {"from": cf.ALICE})
+    chain.sleep(REDEMPTION_DELAY + 5)
+    cf.stateChainGateway.executeRedemption(JUNK_HEX, {"from": cf.ALICE})
 
     # Check things that should've changed
-    assert cf.stateChainGateway.getPendingClaim(JUNK_HEX) == NULL_CLAIM
+    assert cf.stateChainGateway.getPendingRedemption(JUNK_HEX) == NULL_CLAIM
 
     assert (
         cf.flip.balanceOf(cf.stateChainGateway)
         == amountFunded
         + (NEW_TOTAL_SUPPLY_MINT - INIT_SUPPLY + GATEWAY_INITIAL_BALANCE)
-        - claimAmount
+        - redemptionAmount
     )
-    assert cf.flip.balanceOf(receiver) == claimAmount
+    assert cf.flip.balanceOf(receiver) == redemptionAmount
     assert cf.flip.totalSupply() == NEW_TOTAL_SUPPLY_MINT
 
     # Check things that shouldn't have changed

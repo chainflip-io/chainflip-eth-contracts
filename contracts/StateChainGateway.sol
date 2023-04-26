@@ -8,7 +8,7 @@ import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
 /**
- * @title    StateChainGateway contract
+ * @title    State Chain Gateway contract
  * @notice   Manages the funding and redemption FLIP from/to stateChain accounts.
  *           Accounts on the FLIP state chain basically have full control
  *           of FLIP leaving the contract. FLIP can be added to the StateChain
@@ -26,16 +26,16 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
 
     /// @dev    The minimum amount of FLIP needed to fund an account, to prevent spamming
     uint256 private _minFunding;
-    /// @dev    Holding pending claims for the 48h withdrawal delay
-    mapping(bytes32 => Claim) private _pendingClaims;
-    /// @dev   Time after registerClaim required to wait before call to executeClaim
-    uint48 public constant CLAIM_DELAY = 2 days;
+    /// @dev    Holding pending redemptions for the 48h withdrawal delay
+    mapping(bytes32 => Redemption) private _pendingRedemptions;
+    /// @dev   Time after registerRedemption required to wait before call to executeRedemption
+    uint48 public constant REDEMPTION_DELAY = 2 days;
 
     /// @dev    The last block number in which the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
 
     // Defined in IStateChainGateway, just here for convenience
-    // struct Claim {
+    // struct Redemption {
     //     uint amount;
     //     address funder;
     //     // 48 so that 160 (from funder) + 48 + 48 is 256 they can all be packed
@@ -88,7 +88,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @param amount    The amount of FLIP tokens
      * @param nodeID    The nodeID of the funder
      * @param returnAddr    The address which the funder requires to be used
-     *                      when claiming back FLIP for `nodeID`
+     *                      when redemptioning back FLIP for `nodeID`
      */
     function fundStateChainAccount(
         bytes32 nodeID,
@@ -104,17 +104,17 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     }
 
     /**
-     * @notice  Claim back stake. If only losing an auction, the same amount initially staked
-     *          will be sent back. If losing an auction while being a validator,
-     *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
+     * @notice  Redeem FLIP from the StateChain. The State Chain will determine the amount
+     *          that can be redeemed, but a basic calculation for a validator would be:
+     *          amount redeemable = stake + rewards - penalties.
      * @param sigData   Struct containing the signature data over the message
      *                  to verify, signed by the aggregate key.
      * @param nodeID    The nodeID of the funder
-     * @param amount    The amount of stake to be locked up
-     * @param funder    The funder who is to be sent FLIP
-     * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
+     * @param amount    The amount of funds to be locked up
+     * @param funder    The funder who is sending the FLIP
+     * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
      */
-    function registerClaim(
+    function registerRedemption(
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
@@ -129,47 +129,47 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         nzAddr(funder)
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.registerClaim.selector, nodeID, amount, funder, expiryTime))
+            keccak256(abi.encode(this.registerRedemption.selector, nodeID, amount, funder, expiryTime))
         )
     {
         require(
             // Must be fresh or have been executed & deleted, or past the expiry
-            block.timestamp > uint256(_pendingClaims[nodeID].expiryTime),
-            "Gateway: a pending claim exists"
+            block.timestamp > uint256(_pendingRedemptions[nodeID].expiryTime),
+            "Gateway: a pending redemption exists"
         );
 
-        uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
+        uint48 startTime = uint48(block.timestamp) + REDEMPTION_DELAY;
         require(expiryTime > startTime, "Gateway: expiry time too soon");
 
-        _pendingClaims[nodeID] = Claim(amount, funder, startTime, expiryTime);
-        emit ClaimRegistered(nodeID, amount, funder, startTime, expiryTime);
+        _pendingRedemptions[nodeID] = Redemption(amount, funder, startTime, expiryTime);
+        emit RedemptionRegistered(nodeID, amount, funder, startTime, expiryTime);
     }
 
     /**
-     * @notice  Execute a pending claim to get back funds. If only losing an auction,
-     *          the same amount initially staked will be sent back. If losing an
-     *          auction while being a validator, the amount sent back = stake +
-     *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
-     *          claim before 48h have passed after registering it, or after the specified
+     * @notice  Execute a pending redemption to get back funds. Cannot execute a pending
+     *          redemption before 48h have passed after registering it, or after the specified
      *          expiry time
      * @dev     No need for nzUint(nodeID) since that is handled by
-     *          `uint(block.number) <= claim.startTime`
+     *          `uint(block.number) <= redemption.startTime`
      * @param nodeID    The nodeID of the funder
      */
-    function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
-        Claim memory claim = _pendingClaims[nodeID];
-        require(block.timestamp >= claim.startTime && claim.expiryTime > 0, "Gateway: early or already execd");
+    function executeRedemption(bytes32 nodeID) external override onlyNotSuspended {
+        Redemption memory redemption = _pendingRedemptions[nodeID];
+        require(
+            block.timestamp >= redemption.startTime && redemption.expiryTime > 0,
+            "Gateway: early or already execd"
+        );
 
         // Housekeeping
-        delete _pendingClaims[nodeID];
+        delete _pendingRedemptions[nodeID];
 
-        if (block.timestamp <= claim.expiryTime) {
-            emit ClaimExecuted(nodeID, claim.amount);
+        if (block.timestamp <= redemption.expiryTime) {
+            emit RedemptionExecuted(nodeID, redemption.amount);
 
             // Send the tokens
-            _FLIP.transfer(claim.funder, claim.amount);
+            _FLIP.transfer(redemption.funder, redemption.amount);
         } else {
-            emit ClaimExpired(nodeID, claim.amount);
+            emit RedemptionExpired(nodeID, redemption.amount);
         }
     }
 
@@ -213,7 +213,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     /**
      * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
      *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
-     *          transferred to it via the claim process. Finally the right to issue FLIP will be transferred.
+     *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
@@ -276,13 +276,13 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     }
 
     /**
-     * @notice  Get the pending claim for the input nodeID. If there was never
-     *          a pending claim for this nodeID, or it has already been executed
+     * @notice  Get the pending redemption for the input nodeID. If there was never
+     *          a pending redemption for this nodeID, or it has already been executed
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
-     * @return  The claim (Claim)
+     * @return  The redemption (Redemption struct)
      */
-    function getPendingClaim(bytes32 nodeID) external view override returns (Claim memory) {
-        return _pendingClaims[nodeID];
+    function getPendingRedemption(bytes32 nodeID) external view override returns (Redemption memory) {
+        return _pendingRedemptions[nodeID];
     }
 
     /**

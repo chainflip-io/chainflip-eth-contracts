@@ -17,18 +17,18 @@ contract StateChainGatewayEchidna is IShared {
         sm.fundStateChainAccount(nodeID, amount, returnAddr);
     }
 
-    function registerClaim(
+    function registerRedemption(
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
         address funder,
         uint48 expiryTime
     ) external virtual {
-        sm.registerClaim(sigData, nodeID, amount, funder, expiryTime);
+        sm.registerRedemption(sigData, nodeID, amount, funder, expiryTime);
     }
 
-    function executeClaim(bytes32 nodeID) external virtual {
-        sm.executeClaim(nodeID);
+    function executeRedemption(bytes32 nodeID) external virtual {
+        sm.executeRedemption(nodeID);
     }
 
     function setMinFunding(uint256 newMinFunding) external virtual {

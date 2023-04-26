@@ -91,7 +91,7 @@ def main():
 
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
-        "STAKE_MANAGER_ADDRESS": cf.stateChainGateway.address,
+        "GATEWAY_ADDRESS": cf.stateChainGateway.address,
         "VAULT_ADDRESS": cf.vault.address,
         "FLIP_ADDRESS": cf.flip.address,
     }

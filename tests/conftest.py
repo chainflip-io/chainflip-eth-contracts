@@ -69,23 +69,23 @@ def fundedMin(cf):
     )
 
 
-# Register a claim to use executeClaim with
+# Register a redemption to use executeRedemption with
 @pytest.fixture(scope="module")
-def claimRegistered(cf, fundedMin):
+def redemptionRegistered(cf, fundedMin):
     _, amount = fundedMin
-    expiryTime = getChainTime() + (2 * CLAIM_DELAY)
+    expiryTime = getChainTime() + (2 * REDEMPTION_DELAY)
     args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
 
     sigData = AGG_SIGNER_1.getSigDataWithNonces(
-        cf.keyManager, cf.stateChainGateway.registerClaim, nonces, *args
+        cf.keyManager, cf.stateChainGateway.registerRedemption, nonces, *args
     )
-    tx = cf.stateChainGateway.registerClaim(
+    tx = cf.stateChainGateway.registerRedemption(
         sigData,
         *args,
         {"from": cf.ALICE},
     )
 
-    return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
+    return tx, (amount, cf.DENICE, tx.timestamp + REDEMPTION_DELAY, expiryTime)
 
 
 # Deploy a generic token
