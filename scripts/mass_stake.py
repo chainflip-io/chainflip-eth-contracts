@@ -19,7 +19,7 @@ cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
 node_ids = []
 
-stake = 10**3 * E_18
+funding_amount = 10**3 * E_18
 return_addr = "0xffffffffffffffffffffffffffffffffffffffff"
 
 
@@ -36,15 +36,15 @@ def main():
     )
     print(f"Approving {to_approve / E_18} FLIP in tx {tx.txid}")
     for i, node_id in enumerate(node_ids):
-        to_stake = stake + (i * E_18)
+        to_fund = funding_amount + (i * E_18)
         node_id = node_id.strip()
-        tx = stateChainGateway.stake(
+        tx = stateChainGateway.fundStateChainAccount(
             node_id,
-            to_stake,
+            to_fund,
             return_addr,
             {"from": funder, "required_confs": 0, "gas_limit": 1000000},
         )
-        print(f"Staking {to_stake / E_18} FLIP to node {node_id} in tx {tx.txid}")
+        print(f"Staking {to_fund / E_18} FLIP to node {node_id} in tx {tx.txid}")
 
 
 def cleanHexStr(thing):
