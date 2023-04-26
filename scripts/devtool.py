@@ -216,7 +216,7 @@ keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
 
 contractAddresses = {
     "flip": f"0x{cleanHexStr(FLIP_ADDRESS)}",
-    "stateChainGateway": f"0x{cleanHexStr(GATEWAY_ADDRESS)}",
+    "gateway": f"0x{cleanHexStr(GATEWAY_ADDRESS)}",
     "vault": f"0x{cleanHexStr(VAULT_ADDRESS)}",
     "keyManager": f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}",
 }

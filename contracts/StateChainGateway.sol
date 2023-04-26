@@ -149,8 +149,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @notice  Execute a pending redemption to get back funds. Cannot execute a pending
      *          redemption before 48h have passed after registering it, or after the specified
      *          expiry time
-     * @dev     No need for nzUint(nodeID) since that is handled by
-     *          `uint(block.number) <= redemption.startTime`
+     * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
      * @param nodeID    The nodeID of the funder
      */
     function executeRedemption(bytes32 nodeID) external override onlyNotSuspended {
