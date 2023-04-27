@@ -175,12 +175,12 @@ def checkCurrentKeys(cf, aggKey, govKey, commkey):
 # Can't put the if conditions for `amount` in this fcn like in test_redemption because
 # it's we need to accomodate already having a tx because it's best to test
 # `fundedMin` directly
-def fundTest(cf, prevTotal, nodeID, minFunding, tx, amount, returnAddr):
+def fundTest(cf, prevTotal, nodeID, minFunding, tx, amount):
     assert (
         cf.flip.balanceOf(cf.stateChainGateway)
         == prevTotal + amount + GATEWAY_INITIAL_BALANCE
     )
-    assert tx.events["Funded"][0].values() == [nodeID, amount, tx.sender, returnAddr]
+    assert tx.events["Funded"][0].values() == [nodeID, amount, tx.sender]
     assert cf.stateChainGateway.getMinimumFunding() == minFunding
 
 

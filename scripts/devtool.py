@@ -405,9 +405,7 @@ def fund(amount, node_id):
     tx = stateChainGateway.fundStateChainAccount(
         node_id,
         amountInWei,
-        userAddress,
         {"from": userAddress, "required_confs": 1, "gas_limit": 1000000},
-        # {"from": userAddress, "required_confs": 1},
     )
     print(f"Staking {amount} FLIP to node {node_id} in tx {tx.txid}")
     tx.info()

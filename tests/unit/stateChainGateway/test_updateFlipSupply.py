@@ -9,7 +9,7 @@ def test_updateFlipSupply(cf):
 
     cf.flip.approve(cf.stateChainGateway.address, MIN_FUNDING, {"from": cf.ALICE})
     cf.stateChainGateway.fundStateChainAccount(
-        JUNK_HEX, MIN_FUNDING, NON_ZERO_ADDR, {"from": cf.ALICE}
+        JUNK_HEX, MIN_FUNDING, {"from": cf.ALICE}
     )
 
     assert (
