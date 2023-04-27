@@ -149,3 +149,16 @@ def test_updateFlipSupply_constant(cf):
         cf.flip.totalSupply(),
         1,
     ]
+
+
+def test_updateFlipSupply_rev_suspended(cf):
+    cf.stateChainGateway.suspend({"from": cf.GOVERNOR})
+
+    with reverts(REV_MSG_GOV_SUSPENDED):
+        signed_call_cf(
+            cf,
+            cf.stateChainGateway.updateFlipSupply,
+            cf.flip.totalSupply(),
+            1,
+            sender=cf.ALICE,
+        )

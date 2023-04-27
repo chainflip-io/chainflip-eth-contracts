@@ -2032,7 +2032,16 @@ def test_all(
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender, st_amount_supply)
 
-            if signer != self.keyIDToCurKeys[AGG]:
+            if self.scg_suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    signed_call_km(
+                        self.km,
+                        self.scg.updateFlipSupply,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_updateFlipSupply", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
