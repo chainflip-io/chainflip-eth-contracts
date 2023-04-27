@@ -20,7 +20,6 @@ cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 node_ids = []
 
 funding_amount = 10**3 * E_18
-return_addr = "0xffffffffffffffffffffffffffffffffffffffff"
 
 
 def main():
@@ -41,7 +40,6 @@ def main():
         tx = stateChainGateway.fundStateChainAccount(
             node_id,
             to_fund,
-            return_addr,
             {"from": funder, "required_confs": 0, "gas_limit": 1000000},
         )
         print(f"Staking {to_fund / E_18} FLIP to node {node_id} in tx {tx.txid}")

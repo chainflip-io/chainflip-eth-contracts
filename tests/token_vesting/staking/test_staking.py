@@ -40,7 +40,7 @@ def test_fundStateChainAccount(addrs, tokenVestingStaking, st_nodeID, st_amount,
     else:
         tx = tv.fundStateChainAccount(st_nodeID, st_amount, {"from": addrs.INVESTOR})
 
-        assert tx.events["Funded"][0].values() == (st_nodeID, st_amount, tv, tv)
+        assert tx.events["Funded"][0].values() == (st_nodeID, st_amount, tv)
 
 
 def test_fund_rev_beneficiary(a, addrs, tokenVestingStaking):

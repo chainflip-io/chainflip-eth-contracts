@@ -39,9 +39,9 @@ def test_registerRedemption_fund_executeRedemption_fund_registerRedemption_execu
     # 1st fund
     cf.flip.approve(cf.stateChainGateway.address, fundAmount1, {"from": cf.ALICE})
     fundTx1 = cf.stateChainGateway.fundStateChainAccount(
-        nodeID1, fundAmount1, NON_ZERO_ADDR, {"from": cf.ALICE}
+        nodeID1, fundAmount1, {"from": cf.ALICE}
     )
-    fundTest(cf, 0, nodeID1, MIN_FUNDING, fundTx1, fundAmount1, NON_ZERO_ADDR)
+    fundTest(cf, 0, nodeID1, MIN_FUNDING, fundTx1, fundAmount1)
 
     # Execute redemption
     execRedemptionTx1 = cf.stateChainGateway.executeRedemption(
@@ -66,7 +66,7 @@ def test_registerRedemption_fund_executeRedemption_fund_registerRedemption_execu
     # 2nd fund
     cf.flip.approve(cf.stateChainGateway.address, fundAmount2, {"from": cf.BOB})
     fundTx2 = cf.stateChainGateway.fundStateChainAccount(
-        nodeID2, fundAmount2, NON_ZERO_ADDR, {"from": cf.BOB}
+        nodeID2, fundAmount2, {"from": cf.BOB}
     )
 
     fundTest(
@@ -76,7 +76,6 @@ def test_registerRedemption_fund_executeRedemption_fund_registerRedemption_execu
         MIN_FUNDING,
         fundTx2,
         fundAmount2,
-        NON_ZERO_ADDR,
     )
 
     # Executing the 1st redemption again should revert
