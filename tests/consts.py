@@ -23,6 +23,7 @@ INIT_USDC_ACCOUNT = int(10**6 * 10**6)
 TEST_AMNT_USDC = int(10**6)
 
 # Time in seconds
+MINUTE = 60
 HOUR = 60 * 60
 DAY = HOUR * 24
 MONTH = 30 * DAY
@@ -110,7 +111,7 @@ MIN_FUNDING = 1 * E_18
 MAX_TEST_FUND = 1 * 10**7 * E_18
 
 # 13292
-REDEMPTION_DELAY = 2 * DAY
+REDEMPTION_DELAY = 2 * MINUTE
 NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
 
 REV_MSG_MIN_FUNDING = "Gateway: not enough funds"
