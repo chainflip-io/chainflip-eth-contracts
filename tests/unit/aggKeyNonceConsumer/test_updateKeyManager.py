@@ -2,15 +2,15 @@ from consts import *
 from shared_tests import *
 from deploy import deploy_new_keyManager
 
-# FLIP, Vault and StakeManager inherit AggKeyNonceConsumer
+# FLIP, Vault and StateChainGateway inherit AggKeyNonceConsumer
 def test_constructor(cf):
-    aggKeyNonceConsumers = [cf.stakeManager, cf.vault]
+    aggKeyNonceConsumers = [cf.stateChainGateway, cf.vault]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         assert aggKeyNonceConsumer.getKeyManager() == cf.keyManager
 
 
 def test_updateKeyManager(cf, KeyManager):
-    aggKeyNonceConsumers = [cf.stakeManager, cf.vault]
+    aggKeyNonceConsumers = [cf.stateChainGateway, cf.vault]
 
     # Reusing current keyManager aggregateKey for simplicity
     newKeyManager = deploy_new_keyManager(

@@ -3,36 +3,36 @@ from shared_tests import *
 from brownie import reverts, web3
 
 
-def test_setGovKeyWithGovKey_setMinStake(cf):
+def test_setGovKeyWithGovKey_setMinFunding(cf):
     # Change gov keys with Gov Key
     setGovKeyWithGovKey_test(cf)
-    # Check that only new governor can set minStake
-    setMinStake_newGov(cf)
+    # Check that only new governor can set minFunding
+    setMinFunding_newGov(cf)
 
 
-def test_setGovKeyWithAggKey_setMinStake(cf):
+def test_setGovKeyWithAggKey_setMinFunding(cf):
     # Change gov keys with Agg Key
     setGovKeyWithAggKey_test(cf)
-    # Check that only new governor can set minStake
-    setMinStake_newGov(cf)
+    # Check that only new governor can set minFunding
+    setMinFunding_newGov(cf)
 
 
-def setMinStake_newGov(cf):
-    newMinStake = int(MIN_STAKE * 1.5)
+def setMinFunding_newGov(cf):
+    newMinFunding = int(MIN_FUNDING * 1.5)
 
-    # Changing minStake with old key should revert
+    # Changing minFunding with old key should revert
     with reverts(REV_MSG_GOV_GOVERNOR):
-        cf.stakeManager.setMinStake(newMinStake, {"from": cf.GOVERNOR})
+        cf.stateChainGateway.setMinFunding(newMinFunding, {"from": cf.GOVERNOR})
 
-    # Change minStake with new key
-    tx = cf.stakeManager.setMinStake(newMinStake, {"from": cf.GOVERNOR_2})
+    # Change minFunding with new key
+    tx = cf.stateChainGateway.setMinFunding(newMinFunding, {"from": cf.GOVERNOR_2})
 
     # Check things that should've changed
-    assert cf.stakeManager.getMinimumStake() == newMinStake
-    assert tx.events["MinStakeChanged"][0].values() == [MIN_STAKE, newMinStake]
+    assert cf.stateChainGateway.getMinimumFunding() == newMinFunding
+    assert tx.events["MinFundingChanged"][0].values() == [MIN_FUNDING, newMinFunding]
 
     # Check things that shouldn't have changed
-    assert cf.flip.balanceOf(cf.stakeManager) == STAKEMANAGER_INITIAL_BALANCE
+    assert cf.flip.balanceOf(cf.stateChainGateway) == GATEWAY_INITIAL_BALANCE
 
 
 # Check that updating the Governor Key in the KeyManager takes effect

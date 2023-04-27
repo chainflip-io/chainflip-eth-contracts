@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "./interfaces/IStakeManager.sol";
+import "./interfaces/IStateChainGateway.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -35,7 +35,7 @@ contract TokenVesting is ReentrancyGuard {
     // If false, staking is not allowed
     bool public immutable canStake;
     // The staking contract to stake to if `canStake`
-    IStakeManager public immutable stakeManager;
+    IStateChainGateway public immutable stateChainGateway;
 
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
@@ -55,7 +55,7 @@ contract TokenVesting is ReentrancyGuard {
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
-     * @param stakeManager_ the staking contract to stake to if canStake
+     * @param stateChainGateway_ the staking contract to stake to if canStake
      */
     constructor(
         address beneficiary_,
@@ -63,12 +63,12 @@ contract TokenVesting is ReentrancyGuard {
         uint256 cliff_,
         uint256 end_,
         bool canStake_,
-        IStakeManager stakeManager_
+        IStateChainGateway stateChainGateway_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
-        require(address(stakeManager_) != address(0), "Vesting: stakeManager_ is the zero address");
+        require(address(stateChainGateway_) != address(0), "Vesting: stateChainGateway_ is the zero address");
         if (canStake_) require(cliff_ == end_, "Vesting: invalid staking contract cliff");
 
         beneficiary = beneficiary_;
@@ -76,23 +76,23 @@ contract TokenVesting is ReentrancyGuard {
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
-        stakeManager = stakeManager_;
+        stateChainGateway = stateChainGateway_;
     }
 
     /**
-     * @notice  stakes some tokens for the nodeID and forces the return
-     *          address of that stake to be this contract.
-     * @param nodeID the nodeID to stake for.
-     * @param amount the amount to stake out of the current funds in this contract.
+     * @notice  Funds an account in the statechain with some tokens for the nodeID
+     *          and forces the return address of that to be this contract.
+     * @param nodeID the nodeID to fund.
+     * @param amount the amount of FLIP out of the current funds in this contract.
      */
-    function stake(bytes32 nodeID, uint256 amount) external onlyBeneficiary {
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external onlyBeneficiary {
         require(canStake, "Vesting: cannot stake");
 
-        IERC20 flip = stakeManager.getFLIP();
+        IERC20 flip = stateChainGateway.getFLIP();
         require(!revoked[flip], "Vesting: FLIP revoked");
 
-        flip.approve(address(stakeManager), amount);
-        stakeManager.stake(nodeID, amount, address(this));
+        flip.approve(address(stateChainGateway), amount);
+        stateChainGateway.fundStateChainAccount(nodeID, amount, address(this));
     }
 
     /**

@@ -194,7 +194,7 @@ export RPC_URL=<your_rpc_url>
 export SEED="<your seed phrase>"
 # set the required deployed contract addresses. All in hex format, with leading 0x
 export FLIP_ADDRESS=<Address of the deployed FLIP contract>
-export STAKE_MANAGER_ADDRESS=<Address of the deployed Stake Manager contract>
+export GATEWAY_ADDRESS=<Address of the deployed StateChain Gateway contract>
 export VAULT_ADDRESS=<Address of the deployed Vault contract>
 # Optional: only required when running USDC-related commands
 export USDC_ADDRESS=<Address of the deployed Mock USDC contract>
@@ -212,11 +212,11 @@ brownie run devtool --network private-testnet
 # Display user address
 >> user
 
-# Example of checking the ETH balance of the stakeManager
->> balanceEth stakeManager
+# Example of checking the ETH balance of the State Chain Gateway
+>> balanceEth gateway
 
-# Example of staking 2k FLIP for nodeId 0xDEADBEEF to the Stake Manager
->> stake 2000 0xDEADBEEF
+# Example of staking 2k FLIP for nodeId 0xDEADBEEF to the State Chain Gateway
+>> fund 2000 0xDEADBEEF
 
 # To eventually exit the tool
 >> exit

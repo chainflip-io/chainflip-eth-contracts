@@ -6,7 +6,7 @@ from consts import *
 
 from brownie import (
     accounts,
-    StakeManager,
+    StateChainGateway,
     FLIP,
     Vault,
     KeyManager,
@@ -26,7 +26,7 @@ from datetime import datetime
 # from .only_airdrop import fetch_events
 
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
-STAKE_MANAGER_ADDRESS = environ["STAKE_MANAGER_ADDRESS"]
+GATEWAY_ADDRESS = environ["GATEWAY_ADDRESS"]
 VAULT_ADDRESS = environ["VAULT_ADDRESS"]
 
 # USDC and KeyManager are optional
@@ -122,16 +122,16 @@ commands = {
         ["float", "address"],
         True,
     ),
-    # Transactions to Stake Manager
-    "stake": (
-        lambda amount, nodeId: stake(amount, nodeId),
-        "Stake flip from the user address",
+    # Transactions to State Chain Gateway
+    "fund": (
+        lambda amount, nodeId: fund(amount, nodeId),
+        "Fund account from the user address",
         ["float", "bytes32"],
         True,
     ),
-    "executeClaim": (
-        lambda nodeId: executeClaim(nodeId),
-        "Execute an registered claim",
+    "executeRedemption": (
+        lambda nodeId: executeRedemption(nodeId),
+        "Execute an registered redemption",
         ["bytes32"],
         True,
     ),
@@ -201,7 +201,7 @@ commands = {
 }
 
 flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
-stakeManager = StakeManager.at(f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}")
+stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(GATEWAY_ADDRESS)}")
 vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
 
 
@@ -216,7 +216,7 @@ keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
 
 contractAddresses = {
     "flip": f"0x{cleanHexStr(FLIP_ADDRESS)}",
-    "stakeManager": f"0x{cleanHexStr(STAKE_MANAGER_ADDRESS)}",
+    "gateway": f"0x{cleanHexStr(GATEWAY_ADDRESS)}",
     "vault": f"0x{cleanHexStr(VAULT_ADDRESS)}",
     "keyManager": f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}",
 }
@@ -287,7 +287,7 @@ def help():
     # Print the available commands and their descriptions
     print("\nUsage:  command <arg0> <arg1> ... <argN>")
     print(
-        "Note: Contract names can be used as addresses including `user` `vault`, `stakeManager` ...\n"
+        "Note: Contract names can be used as addresses including `user` `vault`, `stateChainGateway` ...\n"
     )
 
     print("Available commands:\n")
@@ -315,7 +315,7 @@ def print_separators(numCommands):
     elif numCommands == 9:
         print("Transfer Tokens\n---------------")
     elif numCommands == 12:
-        print("TX to StakeManager\n---------------")
+        print("TX to StateChainGateway\n---------------")
     elif numCommands == 14:
         print("TX to KeyManager\n---------------")
     elif numCommands == 17:
@@ -389,7 +389,7 @@ def changeAddr(accountIndex):
     print("New user address: ", userAddress)
 
 
-def stake(amount, node_id):
+def fund(amount, node_id):
     amount = float(amount)
     amountInWei = amount * E_18
     if flip.balanceOf(userAddress) < amountInWei:
@@ -397,12 +397,12 @@ def stake(amount, node_id):
         return
 
     tx = flip.approve(
-        stakeManager, amountInWei, {"from": userAddress, "required_confs": 1}
+        stateChainGateway, amountInWei, {"from": userAddress, "required_confs": 1}
     )
     print(f"Approving {amount} FLIP in tx {tx.txid}")
 
     # Setting required_confs to 1 to ensure we get back the mined tx with all info.
-    tx = stakeManager.stake(
+    tx = stateChainGateway.fundStateChainAccount(
         node_id,
         amountInWei,
         userAddress,
@@ -413,9 +413,11 @@ def stake(amount, node_id):
     tx.info()
 
 
-def executeClaim(nodeId):
-    tx = stakeManager.executeClaim(nodeId, {"from": userAddress, "required_confs": 1})
-    print(f"Executing claim for node {nodeId} in tx {tx.txid}")
+def executeRedemption(nodeId):
+    tx = stateChainGateway.executeRedemption(
+        nodeId, {"from": userAddress, "required_confs": 1}
+    )
+    print(f"Executing redemption for node {nodeId} in tx {tx.txid}")
     tx.info()
 
 
@@ -442,18 +444,18 @@ def setComKeyWComKey(newComKey):
     tx.info()
 
 
-def viewPendClaim(nodeId):
-    claim = stakeManager.getPendingClaim(nodeId)
-    if claim == [0, ZERO_ADDR, 0, 0]:
-        print(f"No pending claim for node {nodeId}")
+def viewPendRedemption(nodeId):
+    redemption = stateChainGateway.getPendingRedemption(nodeId)
+    if redemption == [0, ZERO_ADDR, 0, 0]:
+        print(f"No pending redemption for node {nodeId}")
     else:
         print(
-            f"Claim with for node {nodeId} with amount {claim[0]}, staker {claim[1]}, startTime {claim[2]}, expiryTime {claim[3]}"
+            f"Redemption with for node {nodeId} with amount {redemption[0]}, funder {redemption[1]}, startTime {redemption[2]}, expiryTime {redemption[3]}"
         )
 
 
 def viewMinStake():
-    minStake = stakeManager.getMinimumStake()
+    minStake = stateChainGateway.getMinimumFunding()
     print(f"Min stake: {minStake / 10 ** (flip.decimals())} FLIP ")
 
 

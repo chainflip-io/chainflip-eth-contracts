@@ -15,10 +15,10 @@ def isolation(fn_isolation):
 
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
-def cfDeploy(a, KeyManager, Vault, StakeManager, FLIP, DeployerContract):
+def cfDeploy(a, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
     return deploy_Chainflip_contracts(
-        a[9], KeyManager, Vault, StakeManager, FLIP, DeployerContract
+        a[9], KeyManager, Vault, StateChainGateway, FLIP, DeployerContract
     )
 
 
@@ -44,8 +44,8 @@ def cf(a, cfDeploy):
     cf.COMMUNITY_KEY = cfDeploy.communityKey
     cf.COMMUNITY_KEY_2 = a[7]
 
-    cf.flip.transfer(cf.ALICE, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
-    cf.flip.transfer(cf.BOB, MAX_TEST_STAKE, {"from": cf.SAFEKEEPER})
+    cf.flip.transfer(cf.ALICE, MAX_TEST_FUND, {"from": cf.SAFEKEEPER})
+    cf.flip.transfer(cf.BOB, MAX_TEST_FUND, {"from": cf.SAFEKEEPER})
 
     return cf
 
@@ -58,32 +58,34 @@ def schnorrTest(cf, SchnorrSECP256K1Test):
 
 # Stake the minimum amount
 @pytest.fixture(scope="module")
-def stakedMin(cf):
-    amount = MIN_STAKE
-    cf.flip.approve(cf.stakeManager.address, amount, {"from": cf.ALICE})
+def fundedMin(cf):
+    amount = MIN_FUNDING
+    cf.flip.approve(cf.stateChainGateway.address, amount, {"from": cf.ALICE})
     return (
-        cf.stakeManager.stake(JUNK_HEX, amount, NON_ZERO_ADDR, {"from": cf.ALICE}),
+        cf.stateChainGateway.fundStateChainAccount(
+            JUNK_HEX, amount, NON_ZERO_ADDR, {"from": cf.ALICE}
+        ),
         amount,
     )
 
 
-# Register a claim to use executeClaim with
+# Register a redemption to use executeRedemption with
 @pytest.fixture(scope="module")
-def claimRegistered(cf, stakedMin):
-    _, amount = stakedMin
-    expiryTime = getChainTime() + (2 * CLAIM_DELAY)
+def redemptionRegistered(cf, fundedMin):
+    _, amount = fundedMin
+    expiryTime = getChainTime() + (2 * REDEMPTION_DELAY)
     args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
 
     sigData = AGG_SIGNER_1.getSigDataWithNonces(
-        cf.keyManager, cf.stakeManager.registerClaim, nonces, *args
+        cf.keyManager, cf.stateChainGateway.registerRedemption, nonces, *args
     )
-    tx = cf.stakeManager.registerClaim(
+    tx = cf.stateChainGateway.registerRedemption(
         sigData,
         *args,
         {"from": cf.ALICE},
     )
 
-    return tx, (amount, cf.DENICE, tx.timestamp + CLAIM_DELAY, expiryTime)
+    return tx, (amount, cf.DENICE, tx.timestamp + REDEMPTION_DELAY, expiryTime)
 
 
 # Deploy a generic token
@@ -133,10 +135,10 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         NON_STAKABLE,
-        cf.stakeManager,
+        cf.stateChainGateway,
     )
 
-    total = MAX_TEST_STAKE
+    total = MAX_TEST_FUND
 
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
@@ -159,10 +161,10 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         STAKABLE,
-        cf.stakeManager,
+        cf.stateChainGateway,
     )
 
-    total = MAX_TEST_STAKE
+    total = MAX_TEST_FUND
 
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 

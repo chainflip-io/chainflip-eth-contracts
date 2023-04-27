@@ -3,15 +3,15 @@ pragma solidity ^0.8.0;
 import "../../Vault.sol";
 import "../../FLIP.sol";
 import "../../KeyManager.sol";
-import "../../StakeManager.sol";
+import "../../StateChainGateway.sol";
 import "../../deployers/DeployerContract.sol";
 
 import "./KeyManagerEchidna.sol";
-import "./StakeManagerEchidna.sol";
+import "./StateChainGatewayEchidna.sol";
 import "./VaultEchidna.sol";
 import "./FLIPEchidna.sol";
 
-contract DeployerEchidna is DeployerContract, KeyManagerEchidna, StakeManagerEchidna, FLIPEchidna, VaultEchidna {
+contract DeployerEchidna is DeployerContract, KeyManagerEchidna, StateChainGatewayEchidna, FLIPEchidna, VaultEchidna {
     // Common constants across tests
     uint256 internal constant E_18 = 10 ** 18;
     uint256 internal constant PUBKEYX = 22479114112312168431982914496826057754130808976066989807481484372215659188398;
@@ -27,11 +27,11 @@ contract DeployerEchidna is DeployerContract, KeyManagerEchidna, StakeManagerEch
         Key memory aggKey,
         address govKey,
         address commKey,
-        uint256 minStake,
+        uint256 minFunding,
         uint256 initSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake
-    ) DeployerContract(aggKey, govKey, commKey, minStake, initSupply, numGenesisValidators, genesisStake) {
+    ) DeployerContract(aggKey, govKey, commKey, minFunding, initSupply, numGenesisValidators, genesisStake) {
         _lastValidateTime = block.timestamp;
     }
 }

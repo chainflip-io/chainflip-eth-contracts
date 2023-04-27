@@ -2,7 +2,7 @@ from consts import *
 from shared_tests import *
 from brownie import reverts, web3, chain
 from brownie.test import given, strategy
-from deploy import deploy_new_stakeManager, deploy_new_vault, deploy_new_keyManager
+from deploy import deploy_new_stateChainGateway, deploy_new_vault, deploy_new_keyManager
 
 # Goal is to test upgrading contracts (deploy a new version) except FLIP.
 
@@ -28,7 +28,7 @@ def test_upgrade_keyManager(cf, KeyManager):
         cf.DENICE, KeyManager, cf.keyManager.getAggregateKey(), cf.gov, cf.COMMUNITY_KEY
     )
 
-    aggKeyNonceConsumers = [cf.vault, cf.stakeManager]
+    aggKeyNonceConsumers = [cf.vault, cf.stateChainGateway]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
@@ -133,91 +133,105 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager):
     assert newVault.balance() == totalFunds
 
 
-## Update process StakeManager:
-# Deploy new StakeManager and begin witnessing any new stakes.
-# Pause all register claim signature generation on the State Chain (~7days)
-# Wait 7 days for all currently pending claims to expire or be executed
-# At some point stop witnessing stake calls to old StakeManager (on state chain)
-# Generate a special claim sig to move all FLIP to the new Stake Manager and register it
-# After the CLAIM_DELAY, execute the special claim sig - all FLIP is transfered
-# Transfer issuer rights to the new StakeManager
+## Update process StateChainGateway:
+# Deploy new StateChainGateway and begin witnessing any new fundings.
+# Pause all register redemption signature generation on the State Chain (~7days)
+# Wait 7 days for all currently pending redemptions to expire or be executed
+# At some point stop witnessing funding calls to old StateChainGateway (on state chain)
+# Generate a special redemption sig to move all FLIP to the new State Chain Gateway and register it
+# After the REDEMPTION_DELAY, execute the special redemption sig - all FLIP is transferred
+# Transfer issuer rights to the new StateChainGateway
 @given(
     # adding extra +5 to make up for differences between time.time() and chain time
-    st_expiryTimeDiff=strategy("uint", min_value=CLAIM_DELAY + 5, max_value=7 * DAY),
+    st_expiryTimeDiff=strategy(
+        "uint", min_value=REDEMPTION_DELAY + 5, max_value=7 * DAY
+    ),
     st_sender=strategy("address"),
 )
-def test_upgrade_StakeManager(
+def test_upgrade_StateChainGateway(
     cf,
-    StakeManager,
+    StateChainGateway,
     st_expiryTimeDiff,
     st_sender,
     KeyManager,
     FLIP,
-    DeployerStakeManager,
+    DeployerStateChainGateway,
 ):
-    (_, newStakeManager) = deploy_new_stakeManager(
+    (_, newStateChainGateway) = deploy_new_stateChainGateway(
         st_sender,
         KeyManager,
-        StakeManager,
+        StateChainGateway,
         FLIP,
-        DeployerStakeManager,
+        DeployerStateChainGateway,
         cf.keyManager.address,
         cf.flip.address,
-        MIN_STAKE,
+        MIN_FUNDING,
     )
 
-    # Last register claim before stopping state's chain claim signature registry
+    # Last register redemption before stopping state's chain redemption signature registry
     nodeID = JUNK_HEX
     expiryTime = getChainTime() + st_expiryTimeDiff
-    claimAmount = 123 * E_18
-    registerClaimTest(
-        cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, cf.DENICE, expiryTime
-    )
-
-    chain.sleep(CLAIM_DELAY)
-
-    # Execute pending claim
-    initialFlipBalance = cf.flip.balanceOf(cf.DENICE)
-    cf.stakeManager.executeClaim(nodeID, {"from": cf.ALICE})
-    finalFlipBalance = cf.flip.balanceOf(cf.DENICE)
-    assert finalFlipBalance - initialFlipBalance == claimAmount
-    assert cf.stakeManager.getPendingClaim(nodeID) == NULL_CLAIM
-
-    chain.sleep(7 * DAY - CLAIM_DELAY)
-
-    # Generate claim to move all FLIP to new stakeManager
-    totalFlipstaked = cf.flip.balanceOf(cf.stakeManager)
-    expiryTime = getChainTime() + st_expiryTimeDiff
-    claimAmount = totalFlipstaked
-    registerClaimTest(
-        cf, cf.stakeManager, nodeID, MIN_STAKE, claimAmount, newStakeManager, expiryTime
-    )
-
-    chain.sleep(CLAIM_DELAY)
-
-    assert cf.flip.balanceOf(newStakeManager) == 0
-    assert cf.flip.balanceOf(cf.stakeManager) == totalFlipstaked
-    cf.stakeManager.executeClaim(nodeID, {"from": cf.ALICE})
-    assert cf.flip.balanceOf(newStakeManager) == totalFlipstaked
-    assert cf.flip.balanceOf(cf.stakeManager) == 0
-
-    # Check that claims can be registered and executed in the new StakeManager
-    registerClaimTest(
+    redemptionAmount = 123 * E_18
+    registerRedemptionTest(
         cf,
-        newStakeManager,
+        cf.stateChainGateway,
         nodeID,
-        MIN_STAKE,
-        claimAmount,
+        MIN_FUNDING,
+        redemptionAmount,
         cf.DENICE,
-        getChainTime() + (CLAIM_DELAY * 2),
+        expiryTime,
     )
-    chain.sleep(CLAIM_DELAY)
-    newStakeManager.executeClaim(nodeID, {"from": cf.ALICE})
+
+    chain.sleep(REDEMPTION_DELAY)
+
+    # Execute pending redemption
+    initialFlipBalance = cf.flip.balanceOf(cf.DENICE)
+    cf.stateChainGateway.executeRedemption(nodeID, {"from": cf.ALICE})
+    finalFlipBalance = cf.flip.balanceOf(cf.DENICE)
+    assert finalFlipBalance - initialFlipBalance == redemptionAmount
+    assert cf.stateChainGateway.getPendingRedemption(nodeID) == NULL_CLAIM
+
+    chain.sleep(7 * DAY - REDEMPTION_DELAY)
+
+    # Generate redemption to move all FLIP to new stateChainGateway
+    totalFlipFunded = cf.flip.balanceOf(cf.stateChainGateway)
+    expiryTime = getChainTime() + st_expiryTimeDiff
+    redemptionAmount = totalFlipFunded
+    registerRedemptionTest(
+        cf,
+        cf.stateChainGateway,
+        nodeID,
+        MIN_FUNDING,
+        redemptionAmount,
+        newStateChainGateway,
+        expiryTime,
+    )
+
+    chain.sleep(REDEMPTION_DELAY)
+
+    assert cf.flip.balanceOf(newStateChainGateway) == 0
+    assert cf.flip.balanceOf(cf.stateChainGateway) == totalFlipFunded
+    cf.stateChainGateway.executeRedemption(nodeID, {"from": cf.ALICE})
+    assert cf.flip.balanceOf(newStateChainGateway) == totalFlipFunded
+    assert cf.flip.balanceOf(cf.stateChainGateway) == 0
+
+    # Check that redemptions can be registered and executed in the new StateChainGateway
+    registerRedemptionTest(
+        cf,
+        newStateChainGateway,
+        nodeID,
+        MIN_FUNDING,
+        redemptionAmount,
+        cf.DENICE,
+        getChainTime() + (REDEMPTION_DELAY * 2),
+    )
+    chain.sleep(REDEMPTION_DELAY)
+    newStateChainGateway.executeRedemption(nodeID, {"from": cf.ALICE})
 
     signed_call_cf(
         cf,
-        cf.stakeManager.updateFlipIssuer,
-        newStakeManager.address,
+        cf.stateChainGateway.updateFlipIssuer,
+        newStateChainGateway.address,
         sender=cf.BOB,
     )
-    assert cf.flip.issuer() == newStakeManager.address
+    assert cf.flip.issuer() == newStateChainGateway.address

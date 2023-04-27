@@ -100,25 +100,25 @@ REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
 REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
 REV_MSG_BURN_BALANCE = "ERC20: burn amount exceeds balance"
 
-# -----StakeManager-----
+# -----StateChainGateway-----
 NUM_GENESIS_VALIDATORS = 5
 GENESIS_STAKE = 50000 * E_18
-STAKEMANAGER_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
+GATEWAY_INITIAL_BALANCE = NUM_GENESIS_VALIDATORS * GENESIS_STAKE
 NEW_TOTAL_SUPPLY_MINT = (10 * 10**7) * E_18
 NEW_TOTAL_SUPPLY_BURN = (8 * 10**7) * E_18
-MIN_STAKE = 1000 * E_18
-MAX_TEST_STAKE = 1 * 10**7 * E_18
+MIN_FUNDING = 1000 * E_18
+MAX_TEST_FUND = 1 * 10**7 * E_18
 
 # 13292
-CLAIM_DELAY = 2 * DAY
+REDEMPTION_DELAY = 2 * DAY
 NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
 
-REV_MSG_MIN_STAKE = "Staking: stake too small"
-REV_MSG_CLAIM_EXISTS = "Staking: a pending claim exists"
-REV_MSG_EXPIRY_TOO_SOON = "Staking: expiry time too soon"
-REV_MSG_NOT_ON_TIME = "Staking: early or already execd"
-REV_MSG_FLIP_ADDRESS = "Staking: Flip address already set"
-REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "Staking: old FLIP supply update"
+REV_MSG_MIN_FUNDING = "Gateway: not enough funds"
+REV_MSG_CLAIM_EXISTS = "Gateway: a pending redemption exists"
+REV_MSG_EXPIRY_TOO_SOON = "Gateway: expiry time too soon"
+REV_MSG_NOT_ON_TIME = "Gateway: early or already execd"
+REV_MSG_FLIP_ADDRESS = "Gateway: Flip address already set"
+REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "Gateway: old FLIP supply update"
 
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
@@ -148,7 +148,7 @@ REV_MSG_INVALID_CLIFF = "Vesting: invalid staking contract cliff"
 REV_MSG_INVALID_BENEFICIARY = "Vesting: beneficiary_ is the zero address"
 REV_MSG_CLIFF_AFTER_END = "Vesting: cliff_ after end_"
 REV_MSG_INVALID_FINAL_TIME = "Vesting: final time is before current time"
-REV_MSG_INVALID_STAKEMANAGER = "Vesting: stakeManager_ is the zero address"
+REV_MSG_INVALID_STAKEMANAGER = "Vesting: stateChainGateway_ is the zero address"
 REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
 
 

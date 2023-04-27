@@ -42,7 +42,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
         cliff,
         end,
         True,
-        cf.stakeManager,
+        cf.stateChainGateway,
         True,
     )
     assert tv.released(cf.flip) == 0
@@ -77,7 +77,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
         cliff,
         end,
         STAKABLE,
-        cf.stakeManager,
+        cf.stateChainGateway,
     )
 
     with reverts(REV_MSG_NOT_REVOKER):
@@ -109,10 +109,10 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
 
-    tx = tv.stake(nodeID1, amount, {"from": addrs.INVESTOR})
+    tx = tv.fundStateChainAccount(nodeID1, amount, {"from": addrs.INVESTOR})
 
-    assert tx.events["Staked"][0].values() == (nodeID1, amount, tv, tv)
-    assert tx.events["Transfer"][0].values() == (tv, cf.stakeManager, amount)
+    assert tx.events["Funded"][0].values() == (nodeID1, amount, tv, tv)
+    assert tx.events["Transfer"][0].values() == (tv, cf.stateChainGateway, amount)
 
     assert cf.flip.balanceOf(tv) == 0
 
@@ -139,16 +139,16 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
 
 
 @given(
-    st_amount=strategy("uint256", min_value=MIN_STAKE, max_value=MAX_TEST_STAKE),
-    rewards=strategy("uint256", max_value=MAX_TEST_STAKE),
+    st_amount=strategy("uint256", min_value=MIN_FUNDING, max_value=MAX_TEST_FUND),
+    rewards=strategy("uint256", max_value=MAX_TEST_FUND),
 )
 def test_retrieve_revoked_funds_and_rewards(
     addrs, cf, tokenVestingStaking, st_amount, rewards
 ):
     tv, cliff, end, total = tokenVestingStaking
 
-    cf.flip.approve(cf.stakeManager.address, st_amount, {"from": addrs.INVESTOR})
-    tx = tv.stake(1, st_amount, {"from": addrs.INVESTOR})
+    cf.flip.approve(cf.stateChainGateway.address, st_amount, {"from": addrs.INVESTOR})
+    tx = tv.fundStateChainAccount(1, st_amount, {"from": addrs.INVESTOR})
     tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
     assert cf.flip.balanceOf(tv) == 0
@@ -173,10 +173,10 @@ def test_retrieve_revoked_funds_and_rewards(
 
 # If revoked when staked, we don't get the funds. Then we have to enforce that the beneficiary unstakes it.
 # When that happens the beneficiary can't release the funds but they can front-run our retrieveFunds.
-def test_stake_revoked_staked(addrs, cf, tokenVestingStaking):
+def test_fund_revoked_staked(addrs, cf, tokenVestingStaking):
     tv, cliff, end, total = tokenVestingStaking
     test_revoke_staked(addrs, cf, tokenVestingStaking)
     nodeID1 = web3.toHex(1)
     with reverts(REV_MSG_FLIP_REVOKED):
-        tv.stake(nodeID1, MAX_TEST_STAKE, {"from": addrs.INVESTOR})
-    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, MAX_TEST_STAKE)
+        tv.fundStateChainAccount(nodeID1, MAX_TEST_FUND, {"from": addrs.INVESTOR})
+    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, MAX_TEST_FUND)
