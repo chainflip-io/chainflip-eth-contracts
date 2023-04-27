@@ -22,12 +22,12 @@ def test_setMinFunding_fundStateChainAccount(cf):
     # Funding an amount valid for the last min but not the current min should revert
     with reverts(REV_MSG_MIN_FUNDING):
         cf.stateChainGateway.fundStateChainAccount(
-            JUNK_HEX, MIN_FUNDING, NON_ZERO_ADDR, {"from": cf.ALICE}
+            JUNK_HEX, MIN_FUNDING, {"from": cf.ALICE}
         )
 
     cf.flip.approve(cf.stateChainGateway.address, newMinFunding, {"from": cf.ALICE})
     fundTx = cf.stateChainGateway.fundStateChainAccount(
-        JUNK_HEX, newMinFunding, NON_ZERO_ADDR, {"from": cf.ALICE}
+        JUNK_HEX, newMinFunding, {"from": cf.ALICE}
     )
 
-    fundTest(cf, 0, JUNK_HEX, newMinFunding, fundTx, newMinFunding, NON_ZERO_ADDR)
+    fundTest(cf, 0, JUNK_HEX, newMinFunding, fundTx, newMinFunding)

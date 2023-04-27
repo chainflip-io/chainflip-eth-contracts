@@ -8,7 +8,7 @@ import "./IGovernanceCommunityGuarded.sol";
  * @title    StateChainGateway interface
  */
 interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
-    event Funded(bytes32 indexed nodeID, uint256 amount, address funder, address indexed returnAddr);
+    event Funded(bytes32 indexed nodeID, uint256 amount, address funder);
     event RedemptionRegistered(
         bytes32 indexed nodeID,
         uint256 amount,
@@ -47,10 +47,8 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
      * @dev             Requires the funder to have called `approve` in FLIP
      * @param amount    The amount of FLIP tokens
      * @param nodeID    The nodeID of the funder
-     * @param returnAddr    The address which the funder requires to be used
-     *                      when redemptioning back FLIP for `nodeID`
      */
-    function fundStateChainAccount(bytes32 nodeID, uint256 amount, address returnAddr) external;
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external;
 
     /**
      * @notice  Redeem FLIP from the StateChain. The State Chain will determine the amount

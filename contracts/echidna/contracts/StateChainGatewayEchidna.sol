@@ -12,9 +12,9 @@ contract StateChainGatewayEchidna is IShared {
         sm.setFlip(flip);
     }
 
-    function fundStateChainAccount(bytes32 nodeID, uint256 amount, address returnAddr) external virtual {
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external virtual {
         sm.getFLIP().approve(address(sm), amount);
-        sm.fundStateChainAccount(nodeID, amount, returnAddr);
+        sm.fundStateChainAccount(nodeID, amount);
     }
 
     function registerRedemption(
