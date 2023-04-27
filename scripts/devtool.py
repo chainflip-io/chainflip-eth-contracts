@@ -123,9 +123,9 @@ commands = {
         True,
     ),
     # Transactions to State Chain Gateway
-    "stake": (
-        lambda amount, nodeId: stake(amount, nodeId),
-        "Stake flip from the user address",
+    "fund": (
+        lambda amount, nodeId: fund(amount, nodeId),
+        "Fund account from the user address",
         ["float", "bytes32"],
         True,
     ),
@@ -389,7 +389,7 @@ def changeAddr(accountIndex):
     print("New user address: ", userAddress)
 
 
-def stake(amount, node_id):
+def fund(amount, node_id):
     amount = float(amount)
     amountInWei = amount * E_18
     if flip.balanceOf(userAddress) < amountInWei:
@@ -402,7 +402,7 @@ def stake(amount, node_id):
     print(f"Approving {amount} FLIP in tx {tx.txid}")
 
     # Setting required_confs to 1 to ensure we get back the mined tx with all info.
-    tx = stateChainGateway.stake(
+    tx = stateChainGateway.fundStateChainAccount(
         node_id,
         amountInWei,
         userAddress,
