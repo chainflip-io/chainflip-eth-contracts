@@ -175,7 +175,7 @@ def test_all(
             ]
 
             # Store original contracts to be able to test upgradability
-            cls.orig.scg = cls.scg
+            cls.orig_scg = cls.scg
             cls.orig_v = cls.v
             cls.orig_km = cls.km
 
@@ -189,7 +189,7 @@ def test_all(
         def setup(self):
 
             # Set original contracts to be able to test upgradability
-            self.scg = self.orig.scg
+            self.scg = self.orig_scg
             self.v = self.orig_v
             self.km = self.orig_km
             self.cfReceiverMock = self.orig_cfRec
