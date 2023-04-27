@@ -88,7 +88,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @param amount    The amount of FLIP tokens
      * @param nodeID    The nodeID of the funder
      * @param returnAddr    The address which the funder requires to be used
-     *                      when redemptioning back FLIP for `nodeID`
+     *                      when redeeming back FLIP for `nodeID`
      */
     function fundStateChainAccount(
         bytes32 nodeID,
