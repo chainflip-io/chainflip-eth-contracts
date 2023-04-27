@@ -63,3 +63,15 @@ def test_updateIssuer(
         1,
     ]
     assert cf.flip.balanceOf(new_stateChainGateway.address) == iniBals_scg + 1
+
+
+def test_updateIssuer_rev_suspended(cf):
+    cf.stateChainGateway.suspend({"from": cf.GOVERNOR})
+
+    with reverts(REV_MSG_GOV_SUSPENDED):
+        signed_call_cf(
+            cf,
+            cf.stateChainGateway.updateFlipIssuer,
+            NON_ZERO_ADDR,
+            sender=cf.BOB,
+        )

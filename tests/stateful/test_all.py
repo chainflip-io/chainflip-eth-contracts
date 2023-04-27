@@ -175,7 +175,7 @@ def test_all(
             ]
 
             # Store original contracts to be able to test upgradability
-            cls.orig.scg = cls.scg
+            cls.orig_scg = cls.scg
             cls.orig_v = cls.v
             cls.orig_km = cls.km
 
@@ -189,7 +189,7 @@ def test_all(
         def setup(self):
 
             # Set original contracts to be able to test upgradability
-            self.scg = self.orig.scg
+            self.scg = self.orig_scg
             self.v = self.orig_v
             self.km = self.orig_km
             self.cfReceiverMock = self.orig_cfRec
@@ -2028,7 +2028,16 @@ def test_all(
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender, st_amount_supply)
 
-            if signer != self.keyIDToCurKeys[AGG]:
+            if self.scg_suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    signed_call_km(
+                        self.km,
+                        self.scg.updateFlipSupply,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_updateFlipSupply", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(
