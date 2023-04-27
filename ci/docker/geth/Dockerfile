@@ -15,6 +15,7 @@ RUN geth init --datadir /geth/data /geth/genesis.json
 # Hardcode the full command
 ENTRYPOINT geth \
         --http.api=admin,db,debug,eth,miner,net,personal,shh,txpool,web3 \
+        --etherbase=0xa994738936572Fb88564d69134F67Aaa7C7d4A6E \
         --unlock=0xa994738936572Fb88564d69134F67Aaa7C7d4A6E \
         --rpc.allow-unprotected-txs \
         --password=/geth/password \
@@ -26,6 +27,7 @@ ENTRYPOINT geth \
         --ws.addr=0.0.0.0 \
         --miner.threads=1 \
         --networkid=10997 \
+        --http.port=8545 \
         --http.vhosts=* \
         --ws.origins=* \
         --ws.port=8546 \

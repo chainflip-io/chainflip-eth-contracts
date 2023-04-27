@@ -1,6 +1,8 @@
 name: Stateless Tests
 on: push
 
+concurrency:
+  group: ${{ github.ref }}
 jobs:
   lint:
     uses: ./.github/workflows/.lint.yml

@@ -48,6 +48,8 @@ jobs:
         image: ghcr.io/${{ github.repository }}/geth-base:latest
         ports:
           - 8545:8545
+          - 8546:8546
+          - 8551:8551
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
