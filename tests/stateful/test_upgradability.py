@@ -39,14 +39,14 @@ def test_upgradability(
             cls.totalFlipFunded = cf.flip.balanceOf(cf.stateChainGateway)
 
             # Store original contracts to be able to test upgradability
-            cls.orig.scg = cls.scg
+            cls.orig_scg = cls.scg
             cls.orig_v = cls.v
             cls.orig_km = cls.km
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
             # Set original contracts to be able to test upgradability
-            self.scg = self.orig.scg
+            self.scg = self.orig_scg
             self.v = self.orig_v
             self.km = self.orig_km
 
