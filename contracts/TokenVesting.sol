@@ -55,7 +55,7 @@ contract TokenVesting is ReentrancyGuard {
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
-     * @param stateChainGateway_ the staking contract to stake to if canStake
+     * @param stateChainGateway_ the contract to stake to if canStake
      */
     constructor(
         address beneficiary_,

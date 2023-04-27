@@ -194,7 +194,7 @@ export RPC_URL=<your_rpc_url>
 export SEED="<your seed phrase>"
 # set the required deployed contract addresses. All in hex format, with leading 0x
 export FLIP_ADDRESS=<Address of the deployed FLIP contract>
-export GATEWAY_ADDRESS=<Address of the deployed StateChain Gateway contract>
+export SC_GATEWAY_ADDRESS=<Address of the deployed StateChain Gateway contract>
 export VAULT_ADDRESS=<Address of the deployed Vault contract>
 # Optional: only required when running USDC-related commands
 export USDC_ADDRESS=<Address of the deployed Mock USDC contract>

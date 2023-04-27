@@ -81,7 +81,7 @@ def _deploy_stateChainGateway():
         flip_address,
         MIN_FUNDING,
     )
-    addressDump["GATEWAY_ADDRESS"] = new_stateChainGateway.address
+    addressDump["SC_GATEWAY_ADDRESS"] = new_stateChainGateway.address
     addressDump["DEPLOYER_SM"] = deployerStateChainGateway.address
     addressDump["FLIP_ADDRESS"] = flip_address
 
@@ -97,9 +97,9 @@ def store_artifacts():
         print(f"  FLIP: {addressDump['FLIP_ADDRESS']}")
 
     print("New deployed contract addresses\n----------------------------")
-    if "GATEWAY_ADDRESS" in addressDump:
+    if "SC_GATEWAY_ADDRESS" in addressDump:
         print(f"  DeployerContract: {addressDump['DEPLOYER_SM']}")
-        print(f"  StateChainGateway: {addressDump['GATEWAY_ADDRESS']}")
+        print(f"  StateChainGateway: {addressDump['SC_GATEWAY_ADDRESS']}")
     if "VAULT_ADDRESS" in addressDump:
         print(f"  Vault: {addressDump['VAULT_ADDRESS']}")
 

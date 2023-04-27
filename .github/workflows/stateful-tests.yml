@@ -19,7 +19,7 @@ jobs:
             test_all.py,
             test_keyManager.py,
             test_vault.py,
-            test_stakeManager.py,
+            test_stateChainGateway.py,
             test_upgradability.py,
           ]
     steps:
