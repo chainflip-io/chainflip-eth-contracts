@@ -291,9 +291,9 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
             currentSupply = self.f.totalSupply()
             newTotalSupply = currentSupply + st_amount + 1
 
-            if newTotalSupply > 0:
+            if newTotalSupply > 0 and not self.suspended:
                 if st_signer_agg != AGG_SIGNER_1:
-                    print("        REV_MSG_SIG rule_registerRedemption", newTotalSupply)
+                    print("        REV_MSG_SIG _updateFlipSupply", newTotalSupply)
                     with reverts(REV_MSG_SIG):
                         signed_call_km(
                             self.km,
