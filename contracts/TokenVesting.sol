@@ -92,7 +92,7 @@ contract TokenVesting is ReentrancyGuard {
         require(!revoked[flip], "Vesting: FLIP revoked");
 
         flip.approve(address(stateChainGateway), amount);
-        stateChainGateway.fundStateChainAccount(nodeID, amount, address(this));
+        stateChainGateway.fundStateChainAccount(nodeID, amount);
     }
 
     /**

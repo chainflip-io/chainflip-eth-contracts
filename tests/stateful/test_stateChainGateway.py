@@ -88,7 +88,6 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
         # Variables that will be a random value with each fcn/rule called
 
         st_sender = strategy("address")
-        st_returnAddr = strategy("address")
         st_funder = strategy("address", length=NUM_FUNDERS)
         # +1 since nodeID==0 is unusable
         st_nodeID = strategy("uint", max_value=NUM_FUNDERS)
@@ -106,10 +105,8 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
         )
 
         # Funds a random amount from a random funder to a random nodeID
-        def rule_fundStateChainAccount(
-            self, st_funder, st_nodeID, st_amount, st_returnAddr
-        ):
-            args = (st_nodeID, st_amount, st_returnAddr)
+        def rule_fundStateChainAccount(self, st_funder, st_nodeID, st_amount):
+            args = (st_nodeID, st_amount)
             toLog = (*args, st_funder)
             if st_nodeID == 0:
                 print("        NODEID rule_fundStateChainAccount", *toLog)
