@@ -67,7 +67,7 @@ def all_events():
 def all_stateChainGateway_events():
     print(f"\n💰 Alice funds with {MIN_FUNDING} with nodeID {JUNK_INT}\n")
     tx = cf.stateChainGateway.fundStateChainAccount(
-        JUNK_INT, MIN_FUNDING, NON_ZERO_ADDR, {"from": ALICE}
+        JUNK_INT, MIN_FUNDING, {"from": ALICE}
     )
     assert "Funded" in tx.events
 

@@ -300,7 +300,6 @@ def test_all(
         # StateChainGateway
 
         st_funder = strategy("address", length=MAX_NUM_SENDERS)
-        st_returnAddr = strategy("address", length=MAX_NUM_SENDERS)
         st_nodeID = strategy("uint", max_value=MAX_NUM_SENDERS)
         st_amount = strategy("uint", max_value=MAX_TEST_FUND)
         st_expiry_time_diff = strategy("uint", max_value=REDEMPTION_DELAY * 10)
@@ -1813,24 +1812,21 @@ def test_all(
         # StateChainGateway
 
         # Funds a random amount from a random funder to a random nodeID
-        def rule_fundStateChainAccount(
-            self, st_funder, st_nodeID, st_amount, st_returnAddr
-        ):
-            args = (st_nodeID, st_amount, st_returnAddr)
-            toLog = (*args, st_funder)
+        def rule_fundStateChainAccount(self, st_funder, st_nodeID, st_amount):
+            toLog = (st_nodeID, st_amount)
             if st_nodeID == 0:
                 print("        REV_MSG_NZ_BYTES32 rule_fundStateChainAccount", *toLog)
                 with reverts(REV_MSG_NZ_BYTES32):
                     self.f.approve(self.scg.address, st_amount, {"from": st_funder})
                     self.scg.fundStateChainAccount(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
+                        st_nodeID, st_amount, {"from": st_funder}
                     )
             elif st_amount < self.minFunding:
                 print("        rule_fundStateChainAccount MIN_FUNDING", *toLog)
                 with reverts(REV_MSG_MIN_FUNDING):
                     self.f.approve(self.scg.address, st_amount, {"from": st_funder})
                     self.scg.fundStateChainAccount(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
+                        st_nodeID, st_amount, {"from": st_funder}
                     )
             elif st_amount > self.flipBals[st_funder]:
                 print(
@@ -1840,13 +1836,13 @@ def test_all(
                 with reverts(REV_MSG_ERC20_EXCEED_BAL):
                     self.f.approve(self.scg.address, st_amount, {"from": st_funder})
                     self.scg.fundStateChainAccount(
-                        st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
+                        st_nodeID, st_amount, {"from": st_funder}
                     )
             else:
                 print("                    rule_fundStateChainAccount ", *toLog)
                 self.f.approve(self.scg.address, st_amount, {"from": st_funder})
                 self.scg.fundStateChainAccount(
-                    st_nodeID, st_amount, st_returnAddr, {"from": st_funder}
+                    st_nodeID, st_amount, {"from": st_funder}
                 )
 
                 self.flipBals[st_funder] -= st_amount
@@ -2007,14 +2003,14 @@ def test_all(
                 self.minFunding = st_minFunding
 
         # Tries to set the FLIP address. It should have been set right after the deployment.
-        def rule_setFlip(self, st_sender, st_returnAddr):
+        def rule_setFlip(self, st_sender, st_funder):
             print("        REV_MSG_NZ_ADDR rule_setFlip", st_sender)
             with reverts(REV_MSG_NZ_ADDR):
                 self.scg.setFlip(ZERO_ADDR, {"from": st_sender})
 
             print("        REV_MSG_FLIP_ADDRESS rule_setFlip", st_sender)
             with reverts(REV_MSG_FLIP_ADDRESS):
-                self.scg.setFlip(st_returnAddr, {"from": st_sender})
+                self.scg.setFlip(st_funder, {"from": st_sender})
 
         # Updates Flip Supply minting/burning stateChainGateway tokens
         def rule_updateFlipSupply(self, st_sender, st_amount_supply, blockNumber_incr):
@@ -2032,7 +2028,16 @@ def test_all(
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender, st_amount_supply)
 
-            if signer != self.keyIDToCurKeys[AGG]:
+            if self.scg_suspended:
+                with reverts(REV_MSG_GOV_SUSPENDED):
+                    signed_call_km(
+                        self.km,
+                        self.scg.updateFlipSupply,
+                        *args,
+                        signer=signer,
+                        sender=st_sender,
+                    )
+            elif signer != self.keyIDToCurKeys[AGG]:
                 print("        REV_MSG_SIG rule_updateFlipSupply", *toLog)
                 with reverts(REV_MSG_SIG):
                     signed_call_km(

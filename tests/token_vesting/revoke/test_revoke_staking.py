@@ -111,7 +111,7 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
 
     tx = tv.fundStateChainAccount(nodeID1, amount, {"from": addrs.INVESTOR})
 
-    assert tx.events["Funded"][0].values() == (nodeID1, amount, tv, tv)
+    assert tx.events["Funded"][0].values() == (nodeID1, amount, tv)
     assert tx.events["Transfer"][0].values() == (tv, cf.stateChainGateway, amount)
 
     assert cf.flip.balanceOf(tv) == 0

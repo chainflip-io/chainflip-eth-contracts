@@ -87,20 +87,14 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @dev             Requires the funder to have called `approve` in FLIP
      * @param amount    The amount of FLIP tokens
      * @param nodeID    The nodeID of the funder
-     * @param returnAddr    The address which the funder requires to be used
-     *                      when redeeming back FLIP for `nodeID`
      */
-    function fundStateChainAccount(
-        bytes32 nodeID,
-        uint256 amount,
-        address returnAddr
-    ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override nzBytes32(nodeID) {
         IFLIP flip = _FLIP;
         require(address(flip) != address(0), "Gateway: Flip not set");
         require(amount >= _minFunding, "Gateway: not enough funds");
         // Assumption of set token allowance by the user
         flip.transferFrom(msg.sender, address(this), amount);
-        emit Funded(nodeID, amount, msg.sender, returnAddr);
+        emit Funded(nodeID, amount, msg.sender);
     }
 
     /**
@@ -189,6 +183,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     )
         external
         override
+        onlyNotSuspended
         nzUint(newTotalSupply)
         consumesKeyNonce(
             sigData,
@@ -222,6 +217,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         address newIssuer
     )
         external
+        onlyNotSuspended
         nzAddr(newIssuer)
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {

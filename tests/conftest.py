@@ -63,7 +63,7 @@ def fundedMin(cf):
     cf.flip.approve(cf.stateChainGateway.address, amount, {"from": cf.ALICE})
     return (
         cf.stateChainGateway.fundStateChainAccount(
-            JUNK_HEX, amount, NON_ZERO_ADDR, {"from": cf.ALICE}
+            JUNK_HEX, amount, {"from": cf.ALICE}
         ),
         amount,
     )
