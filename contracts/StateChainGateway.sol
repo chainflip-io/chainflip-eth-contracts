@@ -183,6 +183,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     )
         external
         override
+        onlyNotSuspended
         nzUint(newTotalSupply)
         consumesKeyNonce(
             sigData,
@@ -216,6 +217,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         address newIssuer
     )
         external
+        onlyNotSuspended
         nzAddr(newIssuer)
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {
