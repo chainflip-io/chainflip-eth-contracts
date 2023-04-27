@@ -10,7 +10,7 @@ Echidna allows to easily test properties, reversion of function calls and assert
 
 Our contracts are not a perfect target for fuzzing due to the low amount of state variables (storage) and a high amount of calls that require a valid signature. Calls that require a valid signature get reverted given that fuzzing generates random inputs. However, this result itself is useful to assess that the signature mechanism cannot be easily brute-forced.
 
-Externally keeping track of all the calls (e.g. registered claims, amount staked..) is exactly what we do in the brownie stateful test. Replicating the same methodology is unnecessary. Therefore, the fuzzing does no intend to test all scenarios, it is more a health check testing the signed functions reversion and the basic governance and community function calls.
+Externally keeping track of all the calls (e.g. registered redemptions, amount staked..) is exactly what we do in the brownie stateful test. Replicating the same methodology is unnecessary. Therefore, the fuzzing does no intend to test all scenarios, it is more a health check testing the signed functions reversion and the basic governance and community function calls.
 
 There are some workarounds that have been done to get it working. First, we have several contracts that depend on each other. They are not isolated and need to be tested together. This makes the process more cumbersome since echidna is extremely limited in that regard and does not allow us to use the deployment script. To circumvent that we have created a deployer contract that deploys the other contracts on the constructor mimicking the deployment script.
 

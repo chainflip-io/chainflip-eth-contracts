@@ -3,22 +3,22 @@ from brownie import reverts
 
 
 def test_suspend(cf):
-    suspend(cf, cf.stakeManager)
+    suspend(cf, cf.stateChainGateway)
     suspend(cf, cf.vault)
 
 
 def test_suspend_rev_notGovernor(cf):
-    suspend_rev_notGovernor(cf, cf.stakeManager)
+    suspend_rev_notGovernor(cf, cf.stateChainGateway)
     suspend_rev_notGovernor(cf, cf.vault)
 
 
 def test_resume(cf):
-    resume(cf, cf.stakeManager)
+    resume(cf, cf.stateChainGateway)
     resume(cf, cf.vault)
 
 
 def test_resume_rev_notGovernor(cf):
-    resume_rev_notGovernor(cf, cf.stakeManager)
+    resume_rev_notGovernor(cf, cf.stateChainGateway)
     resume_rev_notGovernor(cf, cf.vault)
 
 

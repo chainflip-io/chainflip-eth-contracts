@@ -301,13 +301,13 @@ def test_executeActions_bridge_token(
 #     signed_call_cf(
 #         cf,
 #         cf.vault.executeActions,
-#         [[cf.stakeManager, 0, b'']],
+#         [[cf.stateChainGateway, 0, b'']],
 #     )
 
 ## TODO: TO update
 # Workaround: manual signed call with an empty array to get around Brownie bugs/limitations
 # def test_bytesZeroLength(cf):
-#     args = [[cf.stakeManager, 0, b""]]
+#     args = [[cf.stateChainGateway, 0, b""]]
 #     callDataNoSig = cf.vault.executeActions.encode_input(
 #         agg_null_sig(cf.keyManager.address, chain.id), args
 #     )
@@ -315,7 +315,7 @@ def test_executeActions_bridge_token(
 #     callDataNoSigModif = callDataNoSig[0 : len(callDataNoSig) - 32 * 2]
 
 #     # If we end up removing the check for the calldata length, this call would not fail and instead transfer the
-#     # native tokens to the stakeManager. This way we check the call has really zero calldata.
+#     # native tokens to the stateChainGateway. This way we check the call has really zero calldata.
 #     with reverts("Vault: must call contract/function"):
 #         cf.vault.executeActions(
 #             AGG_SIGNER_1.getSigData(callDataNoSigModif, cf.keyManager.address),
