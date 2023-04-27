@@ -80,15 +80,15 @@ def update_agg_key():
 
 # Assumption that we have the private key of the aggregate key
 def register_redemption_genesis_flip():
-    GATEWAY_ADDRESS = os.environ["GATEWAY_ADDRESS"]
-    NEW_GATEWAY_ADDRESS = os.environ["NEW_GATEWAY_ADDRESS"]
+    SC_GATEWAY_ADDRESS = os.environ["SC_GATEWAY_ADDRESS"]
+    NEW_SC_GATEWAY_ADDRESS = os.environ["NEW_SC_GATEWAY_ADDRESS"]
     FLIP_ADDRESS = os.environ["FLIP_ADDRESS"]
     KEY_MANAGER_ADDRESS = os.environ["KEY_MANAGER_ADDRESS"]
 
-    assert NEW_GATEWAY_ADDRESS != GATEWAY_ADDRESS, "Same address"
+    assert NEW_SC_GATEWAY_ADDRESS != SC_GATEWAY_ADDRESS, "Same address"
 
     flip = FLIP.at(FLIP_ADDRESS)
-    stateChainGateway = StateChainGateway.at(GATEWAY_ADDRESS)
+    stateChainGateway = StateChainGateway.at(SC_GATEWAY_ADDRESS)
     keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
 
     flip_balance = flip.balanceOf(stateChainGateway.address)
@@ -96,7 +96,7 @@ def register_redemption_genesis_flip():
     assert flip_balance > 0, "StateChainGateway has no FLIP"
 
     print(
-        f"FLIP balance of StateChainGateway {flip_balance}. Registering a redemption to the new StateChainGateway {NEW_GATEWAY_ADDRESS}"
+        f"FLIP balance of StateChainGateway {flip_balance}. Registering a redemption to the new StateChainGateway {NEW_SC_GATEWAY_ADDRESS}"
     )
     user_input = input("Continue? (y/[N])")
     if user_input not in ["y", "Y", "yes", "Yes", "YES"]:
@@ -105,7 +105,7 @@ def register_redemption_genesis_flip():
     syncNonce(keyManager)
 
     # Setting an infinit expiry time
-    args = [JUNK_HEX, flip_balance, NEW_GATEWAY_ADDRESS, 2**47]
+    args = [JUNK_HEX, flip_balance, NEW_SC_GATEWAY_ADDRESS, 2**47]
 
     tx = signed_call(
         keyManager, stateChainGateway.registerRedemption, AGG_SIGNER_1, DEPLOYER, *args
@@ -115,13 +115,13 @@ def register_redemption_genesis_flip():
 
 
 def execute_redemption():
-    GATEWAY_ADDRESS = os.environ["GATEWAY_ADDRESS"]
+    SC_GATEWAY_ADDRESS = os.environ["SC_GATEWAY_ADDRESS"]
 
     # For testing purposes we want to speed up time
     # chain.sleep(REDEMPTION_DELAY)
 
     # This can fail if the redemption is not registered or if the REDEMPTION_DELAY time has not passed
-    tx = StateChainGateway.at(GATEWAY_ADDRESS).executeRedemption(
+    tx = StateChainGateway.at(SC_GATEWAY_ADDRESS).executeRedemption(
         JUNK_HEX, {"from": DEPLOYER, "required_confs": 1}
     )
     tx.info()

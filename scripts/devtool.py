@@ -26,7 +26,7 @@ from datetime import datetime
 # from .only_airdrop import fetch_events
 
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
-GATEWAY_ADDRESS = environ["GATEWAY_ADDRESS"]
+SC_GATEWAY_ADDRESS = environ["SC_GATEWAY_ADDRESS"]
 VAULT_ADDRESS = environ["VAULT_ADDRESS"]
 
 # USDC and KeyManager are optional
@@ -201,7 +201,7 @@ commands = {
 }
 
 flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
-stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(GATEWAY_ADDRESS)}")
+stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(SC_GATEWAY_ADDRESS)}")
 vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
 
 
@@ -216,7 +216,7 @@ keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
 
 contractAddresses = {
     "flip": f"0x{cleanHexStr(FLIP_ADDRESS)}",
-    "gateway": f"0x{cleanHexStr(GATEWAY_ADDRESS)}",
+    "gateway": f"0x{cleanHexStr(SC_GATEWAY_ADDRESS)}",
     "vault": f"0x{cleanHexStr(VAULT_ADDRESS)}",
     "keyManager": f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}",
 }

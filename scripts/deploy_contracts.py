@@ -35,9 +35,9 @@ def main():
         "GENESIS_STAKE",
         "NUM_GENESIS_VALIDATORS",
     ]
-    for env_var_name in env_var_names:
-        if env_var_name not in os.environ:
-            raise Exception(f"Environment variable {env_var_name} is not set")
+    # for env_var_name in env_var_names:
+    #     if env_var_name not in os.environ:
+    #         raise Exception(f"Environment variable {env_var_name} is not set")
 
     # For live deployment, add a confirmation step to allow the user to verify the parameters.
     if chain.id == 1:
@@ -91,7 +91,7 @@ def main():
 
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
-        "GATEWAY_ADDRESS": cf.stateChainGateway.address,
+        "SC_GATEWAY_ADDRESS": cf.stateChainGateway.address,
         "VAULT_ADDRESS": cf.vault.address,
         "FLIP_ADDRESS": cf.flip.address,
     }

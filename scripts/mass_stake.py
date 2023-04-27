@@ -7,7 +7,7 @@ from consts import *
 from brownie import accounts, StateChainGateway, FLIP
 
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
-GATEWAY_ADDRESS = environ["GATEWAY_ADDRESS"]
+SC_GATEWAY_ADDRESS = environ["SC_GATEWAY_ADDRESS"]
 AUTONOMY_SEED = environ["SEED"]
 
 # File should be formatted as a list of NODE_IDs separated by a newline
@@ -24,7 +24,7 @@ funding_amount = 10**3 * E_18
 
 def main():
     flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
-    stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(GATEWAY_ADDRESS)}")
+    stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(SC_GATEWAY_ADDRESS)}")
     with open(NODE_ID_FILE, "r") as f:
         node_ids = f.readlines()
         f.close()
