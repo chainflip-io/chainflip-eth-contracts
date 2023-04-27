@@ -15,7 +15,7 @@ RUN geth init --datadir /geth/data /geth/genesis.json
 WORKDIR /geth
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
-    CMD geth attach --exec eth.blockNumber
+    CMD geth --datadir /geth/data attach --exec eth.blockNumber
 
 # Hardcode the full command
 ENTRYPOINT geth \
