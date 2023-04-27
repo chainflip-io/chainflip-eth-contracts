@@ -40,7 +40,7 @@ contract DeployerContract is IShared {
             address(_stateChainGateway)
         );
         // Set the FLIP address in the StateChainGateway contract
-        _stateChainGateway.setFlip(FLIP(address(_flip)));
+        _stateChainGateway.setFlip(_flip);
 
         // Storing all addresses for traceability.
         vault = _vault;
