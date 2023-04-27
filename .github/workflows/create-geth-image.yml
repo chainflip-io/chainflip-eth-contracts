@@ -17,7 +17,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/${{ github.repository }}/geth
+          images: ghcr.io/${{ github.repository }}/geth-base
           flavor: |
             latest=true
           tags: |
@@ -40,9 +40,11 @@ jobs:
           cache-to: type=gha,mode=max
   create:
     runs-on: ubuntu-latest
+    needs:
+      - build
     services:
       geth:
-        image: ghcr.io/${{ github.repository }}/geth:latest
+        image: ghcr.io/${{ github.repository }}/geth-base:latest
         ports:
           - 8545:8545
         credentials:
@@ -51,6 +53,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -80,5 +89,14 @@ jobs:
       - name: Install poetry dependencies
         run: poetry install
 
-      - name: Deploy contracts
+      - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
+
+      - name: Deploy contracts
+        run: brownie run deploy_contracts --network docker
+
+      - name: Commit and push new geth image
+        run: |
+          CONTAINER=$(docker ps --format '{{.Names}}' | grep geth)
+          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:latest
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:latest
