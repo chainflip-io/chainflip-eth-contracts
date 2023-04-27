@@ -12,6 +12,11 @@ RUN echo "3d0a95697e9c3ee59b57142bafc5eacaf9b6263c4854b6fedcddefad6bb89b27" > /g
 RUN geth account import --datadir /geth/data --password /geth/password /geth/key.prv
 RUN geth init --datadir /geth/data /geth/genesis.json
 
+WORKDIR /geth
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+    CMD geth attach --exec eth.blockNumber
+
 # Hardcode the full command
 ENTRYPOINT geth \
         --http.api=admin,db,debug,eth,miner,net,personal,shh,txpool,web3 \
@@ -36,3 +41,4 @@ ENTRYPOINT geth \
         --http \
         --mine \
         --ws
+
