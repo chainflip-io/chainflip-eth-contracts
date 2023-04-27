@@ -49,7 +49,7 @@ def test_vault(
         3 * MAX_SWAPID total) and also randomly sends native and the 2 ERC20 tokens to the create2
         addresses that correspond to the create2 addresses so that something can actually be fetched
         and transferred.
-        The parameters used are so that they're small enough to increase the likelihood of the same
+        The parameters used are so that they're.scgall enough to increase the likelihood of the same
         address being used in multiple interactions (e.g. 2  x transfers then a fetch etc) and large
         enough to ensure there's variety in them
         """
@@ -70,7 +70,7 @@ def test_vault(
             for token in [cls.tokenA, cls.tokenB]:
                 for recip in a[1:]:
                     token.transfer(recip, INIT_TOKEN_AMNT)
-                # Send excess from the deployer to the zero address so that all stakers start
+                # Send excess from the deployer to the zero address so that all funders start
                 # with the same balance to make the accounting simpler
                 token.transfer(
                     "0x0000000000000000000000000000000000000001",
@@ -772,7 +772,7 @@ def test_vault(
             print("                    rule_sleep_14_days")
             chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
 
-        # Suspends the stake Manager if st_sender matches the governor address. It has
+        # Suspends the State Chain Gateway if st_sender matches the governor address. It has
         # has a 1/20 chance of being the governor - don't want to suspend it too often.
         def rule_suspend(self, st_sender_any):
             if st_sender_any == self.governor:
@@ -789,8 +789,8 @@ def test_vault(
                 with reverts(REV_MSG_GOV_GOVERNOR):
                     self.v.suspend({"from": st_sender_any})
 
-        # Resumes the stake Manager if it is suspended. We always resume it to avoid
-        # having the stakeManager suspended too often
+        # Resumes the State Chain Gateway if it is suspended. We always resume it to avoid
+        # having the stateChainGateway suspended too often
         def rule_resume(self, st_sender):
             if self.suspended:
                 if st_sender != self.governor:

@@ -5,7 +5,7 @@ import "../contracts/DeployerEchidna.sol";
 contract TestEchidnaGovComm is DeployerEchidna {
     address internal govKey = address(this);
     address internal commKey = address(this);
-    uint256 internal minStake = 1000 * E_18;
+    uint256 internal minFunding = 1000 * E_18;
 
     // Echidna requires that no parameters are passed to the constructor so we need to set
     // constants for the deployments of the contracts
@@ -14,7 +14,7 @@ contract TestEchidnaGovComm is DeployerEchidna {
             Key(PUBKEYX, PUBKEYYPARITY),
             govKey,
             commKey,
-            minStake,
+            minFunding,
             INIT_SUPPLY,
             NUM_GENESIS_VALIDATORS,
             GENESIS_STAKE
@@ -34,7 +34,7 @@ contract TestEchidnaGovComm is DeployerEchidna {
     }
 
     function echidna_kmReference() external returns (bool) {
-        return stakeManager.getKeyManager() == vault.getKeyManager() && vault.getKeyManager() == keyManager;
+        return stateChainGateway.getKeyManager() == vault.getKeyManager() && vault.getKeyManager() == keyManager;
     }
 
     function echidna_aggKey() external returns (bool) {
@@ -48,7 +48,7 @@ contract TestEchidnaGovComm is DeployerEchidna {
         keyManager.setGovKeyWithGovKey(newGovKey);
         govKey = newGovKey;
         assert(
-            stakeManager.getGovernor() == vault.getGovernor() &&
+            stateChainGateway.getGovernor() == vault.getGovernor() &&
                 vault.getGovernor() == keyManager.getGovernanceKey() &&
                 keyManager.getGovernanceKey() == govKey
         );
@@ -61,7 +61,7 @@ contract TestEchidnaGovComm is DeployerEchidna {
         keyManager.setCommKeyWithCommKey(newCommKey);
         commKey = newCommKey;
         assert(
-            stakeManager.getCommunityKey() == vault.getCommunityKey() &&
+            stateChainGateway.getCommunityKey() == vault.getCommunityKey() &&
                 vault.getCommunityKey() == keyManager.getCommunityKey() &&
                 keyManager.getCommunityKey() == commKey
         );
@@ -78,9 +78,9 @@ contract TestEchidnaGovComm is DeployerEchidna {
         assert(vault.getSuspendedState() == true);
     }
 
-    function suspendStakeManager() external override {
-        stakeManager.suspend();
-        assert(stakeManager.getSuspendedState() == true);
+    function suspendStateChainGateway() external override {
+        stateChainGateway.suspend();
+        assert(stateChainGateway.getSuspendedState() == true);
     }
 
     function resumeVault() external override {
@@ -88,9 +88,9 @@ contract TestEchidnaGovComm is DeployerEchidna {
         assert(vault.getSuspendedState() == false);
     }
 
-    function resumeStakeManager() external override {
-        stakeManager.resume();
-        assert(stakeManager.getSuspendedState() == false);
+    function resumeStateChainGateway() external override {
+        stateChainGateway.resume();
+        assert(stateChainGateway.getSuspendedState() == false);
     }
 
     // Community Guard
@@ -104,20 +104,20 @@ contract TestEchidnaGovComm is DeployerEchidna {
         assert(vault.getCommunityGuardDisabled() == true);
     }
 
-    function enableCommunityGuardStakeManager() external override {
+    function enableCommunityGuardStateChainGateway() external override {
         vault.enableCommunityGuard();
         assert(vault.getCommunityGuardDisabled() == false);
     }
 
-    function disableCommunityGuardStakeManager() external override {
-        stakeManager.disableCommunityGuard();
-        assert(stakeManager.getCommunityGuardDisabled() == true);
+    function disableCommunityGuardStateChainGateway() external override {
+        stateChainGateway.disableCommunityGuard();
+        assert(stateChainGateway.getCommunityGuardDisabled() == true);
     }
 
-    function setMinStake(uint256 newMinStake) external override {
-        stakeManager.setMinStake(newMinStake);
-        minStake = newMinStake;
-        assert(stakeManager.getMinimumStake() == minStake);
+    function setMinFunding(uint256 newMinFunding) external override {
+        stateChainGateway.setMinFunding(newMinFunding);
+        minFunding = newMinFunding;
+        assert(stateChainGateway.getMinimumFunding() == minFunding);
     }
 
     // ´echidna_revert_*´ takes no parameters and expects a revert

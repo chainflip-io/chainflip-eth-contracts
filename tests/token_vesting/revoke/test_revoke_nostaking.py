@@ -47,7 +47,7 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
         cliff,
         end,
         False,
-        cf.stakeManager,
+        cf.stateChainGateway,
         True,
     )
     assert tv.released(cf.flip) == 0
@@ -85,7 +85,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
         cliff,
         end,
         NON_STAKABLE,
-        cf.stakeManager,
+        cf.stateChainGateway,
     )
 
     with reverts(REV_MSG_NOT_REVOKER):

@@ -1,52 +1,51 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IStakeManager.sol";
+import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/IFLIP.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
 /**
- * @title    StakeManager contract
- * @notice   Manages the staking of FLIP. Validators on the FLIP state chain
- *           basically have full control of FLIP leaving the contract. Bidders
- *           send their bid to this contract via `stake` with their state chain
- *           nodeID.
+ * @title    State Chain Gateway contract
+ * @notice   Manages the funding and redemption FLIP from/to stateChain accounts.
+ *           Accounts on the FLIP state chain basically have full control
+ *           of FLIP leaving the contract. FLIP can be added to the StateChain
+ *           account via `fundStateChainAccount` with their stateChain nodeID.
  *
  *           This contract also handles the minting and burning of FLIP after the
  *           initial supply is minted during FLIP's creation. At any time, a
  *           valid aggragate signature can be submitted to the contract which
  *           updates the total supply by minting or burning the necessary FLIP.
  */
-contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded {
+contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
-    // Disable because tokens are usually in caps
     // solhint-disable-next-line var-name-mixedcase
     IFLIP private _FLIP;
 
-    /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
-    uint256 private _minStake;
-    /// @dev    Holding pending claims for the 48h withdrawal delay
-    mapping(bytes32 => Claim) private _pendingClaims;
-    /// @dev   Time after registerClaim required to wait before call to executeClaim
-    uint48 public constant CLAIM_DELAY = 2 days;
+    /// @dev    The minimum amount of FLIP needed to fund an account, to prevent spamming
+    uint256 private _minFunding;
+    /// @dev    Holding pending redemptions for the 48h withdrawal delay
+    mapping(bytes32 => Redemption) private _pendingRedemptions;
+    /// @dev   Time after registerRedemption required to wait before call to executeRedemption
+    uint48 public constant REDEMPTION_DELAY = 2 days;
 
     /// @dev    The last block number in which the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
 
-    // Defined in IStakeManager, just here for convenience
-    // struct Claim {
+    // Defined in IStateChainGateway, just here for convenience
+    // struct Redemption {
     //     uint amount;
-    //     address staker;
-    //     // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
+    //     address funder;
+    //     // 48 so that 160 (from funder) + 48 + 48 is 256 they can all be packed
     //     // into a single 256 bit slot
     //     uint48 startTime;
     //     uint48 expiryTime;
     // }
 
-    constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
-        _minStake = minStake;
+    constructor(IKeyManager keyManager, uint256 minFunding) AggKeyNonceConsumer(keyManager) {
+        _minFunding = minFunding;
     }
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -73,53 +72,47 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
      * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
      *          because FLIP contract requires this contract's address on deployment for minting.
      *          First this contract is deployed, then the FLIP contract and finally setFLIP
-     *          should be called. Deployed via Deploy.sol so it can't be frontrun. The FLIP
-     *          address can only be set once.
+     *          should be called. Deployed via DeployerContract.sol so it can't be frontrun.
+     *          The FLIP address can only be set once.
      * @param flip FLIP token address
      */
     function setFlip(IFLIP flip) external override nzAddr(address(flip)) {
-        require(address(_FLIP) == address(0), "Staking: Flip address already set");
+        require(address(_FLIP) == address(0), "Gateway: Flip address already set");
         _FLIP = flip;
         emit FLIPSet(address(flip));
     }
 
     /**
-     * @notice          Stake some FLIP and attribute it to a nodeID
-     * @dev             Requires the staker to have called `approve` in FLIP
-     * @param amount    The amount of stake to be locked up
-     * @param nodeID    The nodeID of the staker
-     * @param returnAddr    The address which the staker requires to be used
-     *                      when claiming back FLIP for `nodeID`
+     * @notice          Add FLIP funds to a StateChain account identified with a nodeID
+     * @dev             Requires the funder to have called `approve` in FLIP
+     * @param amount    The amount of FLIP tokens
+     * @param nodeID    The nodeID of the funder
      */
-    function stake(
-        bytes32 nodeID,
-        uint256 amount,
-        address returnAddr
-    ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override nzBytes32(nodeID) {
         IFLIP flip = _FLIP;
-        require(address(flip) != address(0), "Staking: Flip not set");
-        require(amount >= _minStake, "Staking: stake too small");
+        require(address(flip) != address(0), "Gateway: Flip not set");
+        require(amount >= _minFunding, "Gateway: not enough funds");
         // Assumption of set token allowance by the user
         flip.transferFrom(msg.sender, address(this), amount);
-        emit Staked(nodeID, amount, msg.sender, returnAddr);
+        emit Funded(nodeID, amount, msg.sender);
     }
 
     /**
-     * @notice  Claim back stake. If only losing an auction, the same amount initially staked
-     *          will be sent back. If losing an auction while being a validator,
-     *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
+     * @notice  Redeem FLIP from the StateChain. The State Chain will determine the amount
+     *          that can be redeemed, but a basic calculation for a validator would be:
+     *          amount redeemable = stake + rewards - penalties.
      * @param sigData   Struct containing the signature data over the message
      *                  to verify, signed by the aggregate key.
-     * @param nodeID    The nodeID of the staker
-     * @param amount    The amount of stake to be locked up
-     * @param staker    The staker who is to be sent FLIP
-     * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
+     * @param nodeID    The nodeID of the funder
+     * @param amount    The amount of funds to be locked up
+     * @param funder    The funder who is sending the FLIP
+     * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
      */
-    function registerClaim(
+    function registerRedemption(
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
-        address staker,
+        address funder,
         uint48 expiryTime
     )
         external
@@ -127,50 +120,49 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
         onlyNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
-        nzAddr(staker)
+        nzAddr(funder)
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.registerClaim.selector, nodeID, amount, staker, expiryTime))
+            keccak256(abi.encode(this.registerRedemption.selector, nodeID, amount, funder, expiryTime))
         )
     {
         require(
             // Must be fresh or have been executed & deleted, or past the expiry
-            block.timestamp > uint256(_pendingClaims[nodeID].expiryTime),
-            "Staking: a pending claim exists"
+            block.timestamp > uint256(_pendingRedemptions[nodeID].expiryTime),
+            "Gateway: a pending redemption exists"
         );
 
-        uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
-        require(expiryTime > startTime, "Staking: expiry time too soon");
+        uint48 startTime = uint48(block.timestamp) + REDEMPTION_DELAY;
+        require(expiryTime > startTime, "Gateway: expiry time too soon");
 
-        _pendingClaims[nodeID] = Claim(amount, staker, startTime, expiryTime);
-        emit ClaimRegistered(nodeID, amount, staker, startTime, expiryTime);
+        _pendingRedemptions[nodeID] = Redemption(amount, funder, startTime, expiryTime);
+        emit RedemptionRegistered(nodeID, amount, funder, startTime, expiryTime);
     }
 
     /**
-     * @notice  Execute a pending claim to get back stake. If only losing an auction,
-     *          the same amount initially staked will be sent back. If losing an
-     *          auction while being a validator, the amount sent back = stake +
-     *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
-     *          claim before 48h have passed after registering it, or after the specified
+     * @notice  Execute a pending redemption to get back funds. Cannot execute a pending
+     *          redemption before 48h have passed after registering it, or after the specified
      *          expiry time
-     * @dev     No need for nzUint(nodeID) since that is handled by
-     *          `uint(block.number) <= claim.startTime`
-     * @param nodeID    The nodeID of the staker
+     * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
+     * @param nodeID    The nodeID of the funder
      */
-    function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
-        Claim memory claim = _pendingClaims[nodeID];
-        require(block.timestamp >= claim.startTime && claim.expiryTime > 0, "Staking: early or already execd");
+    function executeRedemption(bytes32 nodeID) external override onlyNotSuspended {
+        Redemption memory redemption = _pendingRedemptions[nodeID];
+        require(
+            block.timestamp >= redemption.startTime && redemption.expiryTime > 0,
+            "Gateway: early or already execd"
+        );
 
         // Housekeeping
-        delete _pendingClaims[nodeID];
+        delete _pendingRedemptions[nodeID];
 
-        if (block.timestamp <= claim.expiryTime) {
-            emit ClaimExecuted(nodeID, claim.amount);
+        if (block.timestamp <= redemption.expiryTime) {
+            emit RedemptionExecuted(nodeID, redemption.amount);
 
             // Send the tokens
-            _FLIP.transfer(claim.staker, claim.amount);
+            _FLIP.transfer(redemption.funder, redemption.amount);
         } else {
-            emit ClaimExpired(nodeID, claim.amount);
+            emit RedemptionExpired(nodeID, redemption.amount);
         }
     }
 
@@ -197,7 +189,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
             keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber))
         )
     {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Gateway: old FLIP supply update");
         _lastSupplyUpdateBlockNum = stateChainBlockNumber;
         IFLIP flip = _FLIP;
         uint256 oldSupply = flip.totalSupply();
@@ -214,7 +206,7 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     /**
      * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
      *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
-     *          transferred to it via the claim process. Finally the right to issue FLIP will be transferred.
+     *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
@@ -231,13 +223,13 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     }
 
     /**
-     * @notice      Set the minimum amount of stake needed for `stake` to be able
-     *              to be called. Used to prevent spamming of stakes.
-     * @param newMinStake   The new minimum stake
+     * @notice      Set the minimum amount of funds needed for `fundStateChainAccount` to be able
+     *              to be called. Used to prevent spamming of funding.
+     * @param newMinFunding   The new minimum funding amount
      */
-    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) onlyGovernor {
-        emit MinStakeChanged(_minStake, newMinStake);
-        _minStake = newMinStake;
+    function setMinFunding(uint256 newMinFunding) external override nzUint(newMinFunding) onlyGovernor {
+        emit MinFundingChanged(_minFunding, newMinFunding);
+        _minFunding = newMinFunding;
     }
 
     /**
@@ -268,22 +260,23 @@ contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunity
     }
 
     /**
-     * @notice  Get the minimum amount of stake that's required for a bid
-     *          attempt in the auction to be valid - used to prevent sybil attacks
-     * @return  The minimum stake (uint)
+     * @notice  Get the minimum amount of funds that's required for funding
+     *          an account on the StateChain.
+     * @return  The minimum amount (uint)
      */
-    function getMinimumStake() external view override returns (uint256) {
-        return _minStake;
+    function getMinimumFunding() external view override returns (uint256) {
+        return _minFunding;
     }
 
     /**
-     * @notice  Get the pending claim for the input nodeID. If there was never
-     *          a pending claim for this nodeID, or it has already been executed
+     * @notice  Get the pending redemption for the input nodeID. If there was never
+     *          a pending redemption for this nodeID, or it has already been executed
      *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
-     * @return  The claim (Claim)
+     * @param nodeID   The nodeID which has a pending redemption
+     * @return         The redemption (Redemption struct)
      */
-    function getPendingClaim(bytes32 nodeID) external view override returns (Claim memory) {
-        return _pendingClaims[nodeID];
+    function getPendingRedemption(bytes32 nodeID) external view override returns (Redemption memory) {
+        return _pendingRedemptions[nodeID];
     }
 
     /**

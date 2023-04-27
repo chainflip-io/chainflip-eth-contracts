@@ -5,7 +5,7 @@ import "../contracts/DeployerEchidna.sol";
 contract TestEchidna is DeployerEchidna {
     address internal govKey = address(1);
     address internal commKey = address(2);
-    uint256 internal minStake = 1000 * E_18;
+    uint256 internal minFunding = 1000 * E_18;
 
     // Echidna requires that no parameters are passed to the constructor so we need to set
     // constants for the deployments of the contracts
@@ -14,7 +14,7 @@ contract TestEchidna is DeployerEchidna {
             Key(PUBKEYX, PUBKEYYPARITY),
             govKey,
             commKey,
-            minStake,
+            minFunding,
             INIT_SUPPLY,
             NUM_GENESIS_VALIDATORS,
             GENESIS_STAKE
@@ -33,19 +33,19 @@ contract TestEchidna is DeployerEchidna {
     }
 
     function echidna_kmReference() external view returns (bool) {
-        return stakeManager.getKeyManager() == vault.getKeyManager() && vault.getKeyManager() == keyManager;
+        return stateChainGateway.getKeyManager() == vault.getKeyManager() && vault.getKeyManager() == keyManager;
     }
 
     function echidna_govKey() external view returns (bool) {
         return
-            stakeManager.getGovernor() == vault.getGovernor() &&
+            stateChainGateway.getGovernor() == vault.getGovernor() &&
             vault.getGovernor() == keyManager.getGovernanceKey() &&
             keyManager.getGovernanceKey() == govKey;
     }
 
     function echidna_commKey() external view returns (bool) {
         return
-            stakeManager.getCommunityKey() == vault.getCommunityKey() &&
+            stateChainGateway.getCommunityKey() == vault.getCommunityKey() &&
             vault.getCommunityKey() == keyManager.getCommunityKey() &&
             keyManager.getCommunityKey() == commKey;
     }
@@ -58,17 +58,18 @@ contract TestEchidna is DeployerEchidna {
 
     function echidna_suspended() external view returns (bool) {
         return
-            vault.getSuspendedState() == stakeManager.getSuspendedState() && stakeManager.getSuspendedState() == false;
+            vault.getSuspendedState() == stateChainGateway.getSuspendedState() &&
+            stateChainGateway.getSuspendedState() == false;
     }
 
     function echidna_guardDisabled() external view returns (bool) {
         return
-            vault.getCommunityGuardDisabled() == stakeManager.getCommunityGuardDisabled() &&
-            stakeManager.getCommunityGuardDisabled() == false;
+            vault.getCommunityGuardDisabled() == stateChainGateway.getCommunityGuardDisabled() &&
+            stateChainGateway.getCommunityGuardDisabled() == false;
     }
 
-    function echidna_minStake() external view returns (bool) {
-        return stakeManager.getMinimumStake() == minStake;
+    function echidna_minFunding() external view returns (bool) {
+        return stateChainGateway.getMinimumFunding() == minFunding;
     }
 
     // No signature has been validated
@@ -100,8 +101,8 @@ contract TestEchidna is DeployerEchidna {
     // ASSERTION TESTING - need to run echidna in testMode: "assertion"
 
     // Proxies for a signed function - Assert if the call is not reverted
-    function executeClaim_revert(bytes32 nodeID) external {
-        try stakeManager.executeClaim(nodeID) {
+    function executeRedemption_revert(bytes32 nodeID) external {
+        try stateChainGateway.executeRedemption(nodeID) {
             assert(false);
         } catch {
             assert(true);
@@ -136,7 +137,7 @@ contract TestEchidna is DeployerEchidna {
     }
 
     function echidna_flipBalance() external view returns (bool) {
-        return flip.balanceOf(address(stakeManager)) == NUM_GENESIS_VALIDATORS * GENESIS_STAKE;
+        return flip.balanceOf(address(stateChainGateway)) == NUM_GENESIS_VALIDATORS * GENESIS_STAKE;
     }
     /* solhint-enable  func-name-mixedcase*/
 }

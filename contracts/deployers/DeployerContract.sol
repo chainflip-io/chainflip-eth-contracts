@@ -2,7 +2,7 @@ pragma solidity ^0.8.0;
 
 import "../Vault.sol";
 import "../KeyManager.sol";
-import "../StakeManager.sol";
+import "../StateChainGateway.sol";
 import "../FLIP.sol";
 import "../interfaces/IShared.sol";
 
@@ -15,7 +15,7 @@ import "../interfaces/IShared.sol";
 contract DeployerContract is IShared {
     Vault public immutable vault;
     KeyManager public immutable keyManager;
-    StakeManager public immutable stakeManager;
+    StateChainGateway public immutable stateChainGateway;
     FLIP public immutable flip;
 
     // The underlying contracts will check for non-zero inputs.
@@ -23,29 +23,29 @@ contract DeployerContract is IShared {
         Key memory aggKey,
         address govKey,
         address commKey,
-        uint256 minStake,
+        uint256 minFunding,
         uint256 initSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake
     ) {
         KeyManager _keyManager = new KeyManager(aggKey, govKey, commKey);
         Vault _vault = new Vault(_keyManager);
-        StakeManager _stakeManager = new StakeManager(_keyManager, minStake);
+        StateChainGateway _stateChainGateway = new StateChainGateway(_keyManager, minFunding);
         FLIP _flip = new FLIP(
             initSupply,
             numGenesisValidators,
             genesisStake,
-            address(_stakeManager),
+            address(_stateChainGateway),
             govKey,
-            address(_stakeManager)
+            address(_stateChainGateway)
         );
-        // Set the FLIP address in the StakeManager contract
-        _stakeManager.setFlip(FLIP(address(_flip)));
+        // Set the FLIP address in the StateChainGateway contract
+        _stateChainGateway.setFlip(FLIP(address(_flip)));
 
         // Storing all addresses for traceability.
         vault = _vault;
         keyManager = _keyManager;
-        stakeManager = _stakeManager;
+        stateChainGateway = _stateChainGateway;
         flip = _flip;
     }
 }
