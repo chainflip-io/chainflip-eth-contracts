@@ -92,6 +92,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // then this function is the same as for the SCGateway (we could potentially move
         // it to inside the AggKeyNonceConsumer) and we couldn't have the scenario where
         // we succeed updating the KeyManager in the SCGateway but it fails on the Vault.
+        // Separating it feels "right" in a sense that it gives a power to every contract
+        // to check whatever they want, as the AggKeyNonceConsumer is just a generic
+        // pointer to the KeyManager (except for consumeKeyNonce).
         keyManager.getLastValidateTime();
     }
 
