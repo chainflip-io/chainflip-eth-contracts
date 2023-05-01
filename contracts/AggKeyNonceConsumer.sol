@@ -11,7 +11,7 @@ import "./abstract/Shared.sol";
  *           signature validated by the current KeyManager contract. This shall
  *           be done if the KeyManager contract is updated.
  */
-contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
+abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
@@ -40,9 +40,36 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         nzAddr(address(keyManager))
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager)))
     {
+        // Updating this to an address that is not a IKeyManager would basically brick all the
+        // calls that require a call to the KeyManager. In the case of the Vault and the
+        // StateChainGateway, they would completely brick the contract. We would not be able
+        // to validate any signature, nor get any of the addresses govKey, aggKey, commKey
+        // nor getLastValidateTime() so we wouldn't be able to do any govWithdrawal nor any
+        // nor any emergency action. The procotol would be bricked and everything would be lost.
+        // Therefore, we aim to check that all the interfaces needed are implemented.
+        // This contract will "check" the consumeKeyNonce while the child contract inheriting
+        // this should add their own checks in _checkKeyManager().
+        // This is just to avoid a catastrophic mistake. If an attacker controls the aggKey
+        // we are screwed anyway.
+
+        // We can't really call consumeKeyNonce so we follow a similar approach to the standards
+        // in ERC721, ERC1155... but returning consumeKeyNonce.selector, not
+        // onKeyManagerUpdated.selector as we require the specific consumeKeyNonce function.
+        require(
+            keyManager.onKeyManagerUpdated() == IKeyManager.consumeKeyNonce.selector,
+            "NonceCons: not consumeKeyNonce implementer"
+        );
+        _checkKeyManager(keyManager);
+
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
     }
+
+    /// @dev   This will be called when upgrading to a new KeyManager. This should check every
+    //         function that this contract needs to call from the new keyManager to ensure that
+    //         it's implemented. This is to ensure that the new KeyManager is compatible with
+    //         this contract.
+    function _checkKeyManager(IKeyManager keyManager) internal view virtual;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

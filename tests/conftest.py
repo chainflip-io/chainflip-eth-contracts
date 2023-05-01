@@ -223,3 +223,27 @@ def multicall(cf, SquidMulticall):
 @pytest.fixture(scope="module")
 def mockUSDT(cf, MockUSDT):
     return cf.SAFEKEEPER.deploy(MockUSDT, "Tether USD", "USDT", INIT_USDC_SUPPLY)
+
+
+@pytest.fixture(scope="module")
+def mockKeyManagers(
+    cf,
+    KeyManagerMock0,
+    KeyManagerMock1,
+    KeyManagerMock2,
+    KeyManagerMock3,
+    KeyManagerMock4,
+    KeyManagerMock5,
+    KeyManagerMock6,
+    KeyManagerMock7,
+):
+    km_0 = cf.SAFEKEEPER.deploy(KeyManagerMock0)
+    km_1 = cf.SAFEKEEPER.deploy(KeyManagerMock1)
+    km_2 = cf.SAFEKEEPER.deploy(KeyManagerMock2)
+    km_3 = cf.SAFEKEEPER.deploy(KeyManagerMock3)
+    km_4 = cf.SAFEKEEPER.deploy(KeyManagerMock4)
+    km_5 = cf.SAFEKEEPER.deploy(KeyManagerMock5)
+    km_6 = cf.SAFEKEEPER.deploy(KeyManagerMock6)
+    km_7 = cf.SAFEKEEPER.deploy(KeyManagerMock7)
+
+    return (km_0, km_1, km_2, km_3, km_4, km_5, km_6, km_7)

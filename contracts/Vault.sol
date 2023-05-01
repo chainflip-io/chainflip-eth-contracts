@@ -80,6 +80,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         return getKeyManager().getCommunityKey();
     }
 
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey(), getCommunityKey()
+    ///        and getLastValidateTime() functions implemented. These are the functions
+    ///        required for this contract to function.
+    function _checkKeyManager(IKeyManager keyManager) internal view override {
+        keyManager.getGovernanceKey();
+        keyManager.getCommunityKey();
+        // TODO: Could we potentially remove this?? If the KeyManager doesn't have that
+        // we won't be able to emergencyWithdraw, but we could still do the rest
+        // while giving us time to deploy a new KeyManager. The good thing of this is that
+        // then this function is the same as for the SCGateway (we could potentially move
+        // it to inside the AggKeyNonceConsumer) and we couldn't have the scenario where
+        // we succeed updating the KeyManager in the SCGateway but it fails on the Vault.
+        keyManager.getLastValidateTime();
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Transfer and Fetch                      //

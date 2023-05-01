@@ -181,6 +181,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         emit GovernanceAction(message);
     }
 
+    /**
+     * @notice Returns the function selector for `consumeKeyNonce` to signal that the contract is
+     *         able the verify signatures by having the consumeKeyNonce function implemented.
+     */
+    function onKeyManagerUpdated() public pure returns (bytes4) {
+        return this.consumeKeyNonce.selector;
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //
