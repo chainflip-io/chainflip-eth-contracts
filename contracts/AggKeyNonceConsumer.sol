@@ -44,13 +44,14 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         // calls that require a call to the KeyManager. In the case of the Vault and the
         // StateChainGateway, they would completely brick the contract. We would not be able
         // to validate any signature, nor get any of the addresses govKey, aggKey, commKey
-        // nor getLastValidateTime() so we wouldn't be able to do any govWithdrawal nor any
-        // nor any emergency action. The procotol would be bricked and everything would be lost.
+        // nor getLastValidateTime() so we wouldn't even be able to do any govWithdrawal nor any
+        // other emergency action. The procotol would be bricked and everything would be lost.
         // Therefore, we aim to check that all the interfaces needed are implemented.
-        // This contract will "check" the consumeKeyNonce while the child contract inheriting
-        // this should add their own checks in _checkKeyManager().
         // This is just to avoid a catastrophic mistake. If an attacker controls the aggKey
         // we are screwed anyway.
+
+        // This contract will "check" the consumeKeyNonce while the child contract inheriting
+        // this should add their own checks in _checkKeyManager().
 
         // We can't really call consumeKeyNonce so we follow a similar approach to the standards
         // in ERC721, ERC1155... but returning consumeKeyNonce.selector, not

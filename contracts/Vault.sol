@@ -86,15 +86,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function _checkKeyManager(IKeyManager keyManager) internal view override {
         keyManager.getGovernanceKey();
         keyManager.getCommunityKey();
-        // TODO: Could we potentially remove this?? If the KeyManager doesn't have that
-        // we won't be able to emergencyWithdraw, but we could still do the rest
-        // while giving us time to deploy a new KeyManager. The good thing of this is that
-        // then this function is the same as for the SCGateway (we could potentially move
-        // it to inside the AggKeyNonceConsumer) and we couldn't have the scenario where
-        // we succeed updating the KeyManager in the SCGateway but it fails on the Vault.
-        // Separating it feels "right" in a sense that it gives a power to every contract
-        // to check whatever they want, as the AggKeyNonceConsumer is just a generic
-        // pointer to the KeyManager (except for consumeKeyNonce).
         keyManager.getLastValidateTime();
     }
 
