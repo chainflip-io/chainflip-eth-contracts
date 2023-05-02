@@ -54,9 +54,11 @@ def test_updateKeyManager_rev_wrongKeyManager(cf, mockKeyManagers):
         with reverts("Transaction reverted without a reason string"):
             signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[3])
 
-        # PROBLEMATIC-ish for both cases
+        # For both option 2 and 3 a revert with no string would not not work, but it wouldn't
+        # brick the contracts, it would simply not allow to the upgrade to happen.
         # with reverts("Transaction reverted without a reason string"):
-        #     signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[4])
+        with reverts("NonceCons: not consumeKeyNonce implementer"):
+            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[4])
 
         # Should fail due to keyManager.getGovernanceKey()
         with reverts("Transaction reverted without a reason string"):
