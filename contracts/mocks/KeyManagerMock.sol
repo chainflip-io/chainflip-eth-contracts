@@ -15,14 +15,14 @@ contract KeyManagerMock0 {
 
 // This should fail because of the wrong return type
 contract KeyManagerMock1 is IShared {
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external returns (bytes4) {
+    function consumeKeyNonce(SigData calldata, bytes32) external pure returns (bytes4) {
         return this.consumeKeyNonce.selector;
     }
 }
 
 // Fails due to missing supportsConsumeKeyNonce()
 contract KeyManagerMock2 is IShared {
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external {
+    function consumeKeyNonce(SigData calldata, bytes32) external pure {
         revert("Mock revert reason");
     }
 }
@@ -31,7 +31,7 @@ contract KeyManagerMock2 is IShared {
 contract KeyManagerMock3 is IShared {
     error DummyError();
 
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external {
+    function consumeKeyNonce(SigData calldata, bytes32) external pure {
         revert DummyError();
     }
 }
@@ -40,7 +40,7 @@ contract KeyManagerMock3 is IShared {
 // instead of failing due to missing getCommunityKey(). Then we can't tell if it has failed
 // because the function doesn't exist or because it reverted with no data.
 contract KeyManagerMock4 is IShared {
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external {
+    function consumeKeyNonce(SigData calldata, bytes32) external pure {
         revert();
     }
 }

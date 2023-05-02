@@ -59,6 +59,7 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         require(address(keyManager).code.length > 0);
 
         // Making a low level call with arbitrary values.
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = address(keyManager).call(
             abi.encodeWithSelector(IKeyManager.consumeKeyNonce.selector, SigData(0, 0, address(0)), bytes32(0))
         );
