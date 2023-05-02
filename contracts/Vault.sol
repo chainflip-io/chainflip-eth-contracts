@@ -352,7 +352,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param gasAmount  The amount of native gas to be used on the destination chain's call.
+     * @param gasAmount     The amount to be used for gas in the egress chain.
      * @param refundAddress Address for any future refunds to the user.
      */
     function xCallNative(
@@ -382,8 +382,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param gasAmount  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
-     *                      source token.
+     * @param gasAmount     The amount to be used for gas in the egress chain.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
      * @param refundAddress Address for any future refunds to the user.
