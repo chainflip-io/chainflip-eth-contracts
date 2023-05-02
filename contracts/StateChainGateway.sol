@@ -217,6 +217,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         address newIssuer
     )
         external
+        override
         onlyNotSuspended
         nzAddr(newIssuer)
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))

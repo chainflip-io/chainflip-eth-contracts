@@ -90,6 +90,16 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
     function updateFlipSupply(SigData calldata sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber) external;
 
     /**
+     * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
+     *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
+     *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
+     * @param sigData     Struct containing the signature data over the message
+     *                    to verify, signed by the aggregate key.
+     * @param newIssuer   New contract that will issue FLIP tokens.
+     */
+    function updateFlipIssuer(SigData calldata sigData, address newIssuer) external;
+
+    /**
      * @notice      Set the minimum amount of funds needed for `fundStateChainAccount` to be able
      *              to be called. Used to prevent spamming of funding.
      * @param newMinFunding   The new minimum funding amount
