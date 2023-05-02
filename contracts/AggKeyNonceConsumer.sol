@@ -47,15 +47,17 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         // nor getLastValidateTime() so we wouldn't even be able to do any govWithdrawal nor any
         // other emergency action. The procotol would be bricked and everything would be lost.
         // Therefore, we aim to check that all the interfaces needed are implemented.
-        // This is just to avoid a catastrophic mistake. If an attacker controls the aggKey
-        // we are screwed anyway.
+        // This is just to avoid that updating to a wrong address becomes a catastrophic mistake.
+        // If an attacker controls the aggKey we are screwed anyway.
 
         // This contract will "check" the consumeKeyNonce while the child contract inheriting
-        // this should add their own checks in _checkKeyManager().
+        // this should add their own checks in _checkKeyManager(). That is any function call
+        // that performs to the IKeyManager.
 
-        // We can't really call consumeKeyNonce so we follow a similar approach to the standards
-        // in ERC721, ERC1155... but returning consumeKeyNonce.selector, not
-        // onKeyManagerUpdated.selector as we require the specific consumeKeyNonce function.
+        // To check the implementation of consumeKeyNonce we can't really just call it, so
+        // we follow a similar approach to the standards in ERC721, ERC1155... but returning
+        // consumeKeyNonce.selector, not onKeyManagerUpdated.selector as we require the
+        // specific consumeKeyNonce function.
         require(
             keyManager.onKeyManagerUpdated() == IKeyManager.consumeKeyNonce.selector,
             "NonceCons: not consumeKeyNonce implementer"
@@ -67,9 +69,9 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     }
 
     /// @dev   This will be called when upgrading to a new KeyManager. This should check every
-    //         function that this contract needs to call from the new keyManager to ensure that
-    //         it's implemented. This is to ensure that the new KeyManager is compatible with
-    //         this contract.
+    //         function that this child's contract needs to call from the new keyManager to
+    //         check that it's implemented. This is to ensure that the new KeyManager is
+    //         compatible with this contract and prevents bricking it.
     function _checkKeyManager(IKeyManager keyManager) internal view virtual;
 
     //////////////////////////////////////////////////////////////

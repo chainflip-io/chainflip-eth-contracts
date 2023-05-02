@@ -54,5 +54,5 @@ interface IKeyManager is IShared {
 
     function getLastValidateTime() external view returns (uint256);
 
-    function onKeyManagerUpdated() external returns (bytes4);
+    function onKeyManagerUpdated() external pure returns (bytes4);
 }

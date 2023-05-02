@@ -62,9 +62,8 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         return getKeyManager().getCommunityKey();
     }
 
-    /// @dev   Ensure that a new keyManager has the getGovernanceKey() and
-    ///        getCommunityKey() functions implemented. These are the functions
-    ///        required for this contract to function.
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey() and getCommunityKey()
+    ///        functions implemented. These are functions required for this contract to function.
     function _checkKeyManager(IKeyManager keyManager) internal view override {
         keyManager.getGovernanceKey();
         keyManager.getCommunityKey();
