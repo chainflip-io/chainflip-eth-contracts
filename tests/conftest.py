@@ -236,6 +236,7 @@ def mockKeyManagers(
     KeyManagerMock5,
     KeyManagerMock6,
     KeyManagerMock7,
+    KeyManagerMock8,
 ):
     km_0 = cf.SAFEKEEPER.deploy(KeyManagerMock0)
     km_1 = cf.SAFEKEEPER.deploy(KeyManagerMock1)
@@ -245,5 +246,6 @@ def mockKeyManagers(
     km_5 = cf.SAFEKEEPER.deploy(KeyManagerMock5)
     km_6 = cf.SAFEKEEPER.deploy(KeyManagerMock6)
     km_7 = cf.SAFEKEEPER.deploy(KeyManagerMock7)
+    km_8 = cf.SAFEKEEPER.deploy(KeyManagerMock8)
 
-    return (km_0, km_1, km_2, km_3, km_4, km_5, km_6, km_7)
+    return (km_0, km_1, km_2, km_3, km_4, km_5, km_6, km_7, km_8)

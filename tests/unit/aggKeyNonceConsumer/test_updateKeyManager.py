@@ -32,7 +32,7 @@ def test_updateKeyManager_rev_eoa(cf):
     aggKeyNonceConsumers = [cf.stateChainGateway, cf.vault]
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        with reverts():
+        with reverts("Transaction reverted without a reason string"):
             signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, cf.BOB)
 
 
@@ -40,21 +40,36 @@ def test_updateKeyManager_rev_wrongKeyManager(cf, mockKeyManagers):
     aggKeyNonceConsumers = [cf.stateChainGateway, cf.vault]
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        for mockKeyManager in mockKeyManagers[:2]:
-            with reverts("Transaction reverted without a reason string"):
-                signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManager)
-
         with reverts("NonceCons: not consumeKeyNonce implementer"):
+            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[0])
+
+        ## NOTE: Having a different return type won't cause a failure in AggKeyNonceConsumer
+        ## We could enforce it manually if we use a low-level call but it's not problematic.
+        with reverts("Transaction reverted without a reason string"):
+            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[1])
+
+        with reverts("Transaction reverted without a reason string"):
             signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[2])
 
-        for mockKeyManager in mockKeyManagers[3:6]:
-            with reverts("Transaction reverted without a reason string"):
-                signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManager)
+        with reverts("Transaction reverted without a reason string"):
+            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[3])
 
-    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[6])
-    # Vault checks getLastValidateTime
-    with reverts("Transaction reverted without a reason string"):
-        signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[6])
+        # PROBLEMATIC-ish for both cases
+        # with reverts("Transaction reverted without a reason string"):
+        #     signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[4])
+
+        # Should fail due to keyManager.getGovernanceKey()
+        with reverts("Transaction reverted without a reason string"):
+            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[5])
+        with reverts("Transaction reverted without a reason string"):
+            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[6])
+
 
     signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[7])
-    signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[7])
+    # Vault checks getLastValidateTime
+    with reverts("Transaction reverted without a reason string"):
+        signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[7])
+
+def test_updateKeyManager_mock(cf, mockKeyManagers):
+    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[8])
+    signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[8])

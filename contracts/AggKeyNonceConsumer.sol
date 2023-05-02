@@ -51,19 +51,80 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         // If an attacker controls the aggKey we are screwed anyway.
         // Just as a note, we don't care about gas at all in this function.
 
-        // This contract will "check" the consumeKeyNonce while the child contract inheriting
-        // this should add their own checks in _doSafeKeyManagerUpdateCheck(). That is any
-        // function call that performs to the IKeyManager.
+        // This contract will check that consumeKeyNonce is implemented while the child contract
+        // inheriting this should add their own checks in _doSafeKeyManagerUpdateCheck(). That is
+        // any function call that performs to the IKeyManager.
 
-        // To check the implementation of consumeKeyNonce we can't really just call it, so
-        // we follow a similar approach to the standards in ERC721, ERC1155... but returning
-        // consumeKeyNonce.selector, not supportsConsumeKeyNonce.selector as we require the
-        // specific consumeKeyNonce function.
-        // This also checks that the keyManager is not an EOA.
-        require(
-            keyManager.supportsConsumeKeyNonce() == IKeyManager.consumeKeyNonce.selector,
-            "NonceCons: not consumeKeyNonce implementer"
+        // OPTION 1:
+        ///////////////////////////////////////////////////////////////////////////////////
+        // require(
+        //     keyManager.supportsConsumeKeyNonce() == IKeyManager.consumeKeyNonce.selector,
+        //     "NonceCons: not consumeKeyNonce implementer"
+        // );
+
+        // // Then add this to the KeyManager:
+        // function supportsConsumeKeyNonce() external pure override returns (bytes4) {
+        //     return this.consumeKeyNonce.selector;
+        // }
+        ///////////////////////////////////////////////////////////////////////////////////
+
+        // OPTION 2:
+
+        // Revert without a reason string to match the try-catch behaviour
+        require(address(keyManager).code.length > 0);
+        // Making a low level call with zero values expecting a revert with some return data. These
+        // arbitrary values should never pass signature verification so it should always revert.
+        (bool success, bytes memory returndata) = address(keyManager).call(
+            abi.encodeWithSelector(IKeyManager.consumeKeyNonce.selector, SigData(0, 0, address(0)), bytes32(0))
         );
+
+        // The call should fail (revert) with a string. Otherwise it will mean that it has not found the function.
+        // That is assuming that all the reverts in the keyManager are done with a string.
+        // In case of a EOA, it will succeed, so we don'e even need to check that.
+        // This does not check that the return value type is correct (no return ) but we don't need that.
+        // We allow it to succeed
+        if (!success) {
+            require(returndata.length > 0, "NonceCons: not consumeKeyNonce implementer");
+        }
+        // In the success case we could check that returndata.length == 0 to enforce the return type (nothing)
+        // which we can't do in try-catch. But it doesn't seem necessary
+
+        ///////////////////////////////////////////////////////////////////////////////////
+
+        // OPTION 3:
+
+        // This should not succeed. Only issue with this approach is that if consumeKeyNonce returns a value
+        // instead of nothing it will not catch it, as our interface definition doesn't have any type.
+        // This shouldn't be a problem but I guess it could be a problem if we want to upgrade to a keyManager
+        // that instead of reverting it returns a bool. However, in that case this will pass and we should then
+        // be upgrading the AggKeyNonceConsumer properly to address that. So it is most likely fine.
+        // Another difference with the lowLevelCall is that we are not enforcing it to fail here, as
+        // it's not really necessary. In the LowLeveCall we enforce it as it succeeds on EOAs, but we could
+        // technically check it separately.
+
+        // This will fail with no message if the keymanager is not a contract (it's not catched), which is fine.
+        try keyManager.consumeKeyNonce(SigData(0, 0, address(0)), bytes32(0)) {
+            // No need to enforce that it fails.
+        } catch (bytes memory reason) {
+            // We allow/expect either a reverts string reason or a custom Error.
+            if (reason.length == 0) {
+                revert("NonceCons: not consumeKeyNonce implementer");
+            }
+        }
+
+        // NOTE: The only limitation of these two approaches is that the KeyManager shall never revert with no data
+        // (no string on require or no custom Error) as this will be confused with not having the function
+        // implemented. I don't think this is really a problem as we will be testing this upon upgrade and it
+        // will just fail to upgrade in that case, not a big issue.
+        // The other option of implementing `supportsConsumeKeyNonce` doesn't ensure that consumeKeyNonce is
+        // actually implemented either, it's more like a note for the developer. So it's a weaker check.
+
+        ///////////////////////////////////////////////////////////////////////////////////
+
+        // for all options continue here:
+
+        // For view functions we just call them and they will revert if they don't exist or if the return type
+        // is not the expected one.
         _doSafeKeyManagerUpdateCheck(keyManager);
 
         _keyManager = keyManager;

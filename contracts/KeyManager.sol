@@ -188,15 +188,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice Returns the function selector for `consumeKeyNonce()` to signal that this contract
-     *         implements the `consumeKeyNonce()` function to verify signatures.
-     * @return The function selector for `consumeKeyNonce()`
-     */
-    function supportsConsumeKeyNonce() external pure override returns (bytes4) {
-        return this.consumeKeyNonce.selector;
-    }
-
-    /**
      * @notice  Get the current aggregate key
      * @return  The Key struct for the aggregate key
      */

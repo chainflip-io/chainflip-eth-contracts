@@ -53,6 +53,4 @@ interface IKeyManager is IShared {
     function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
 
     function getLastValidateTime() external view returns (uint256);
-
-    function supportsConsumeKeyNonce() external pure returns (bytes4);
 }
