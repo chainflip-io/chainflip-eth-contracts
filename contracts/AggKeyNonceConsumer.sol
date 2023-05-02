@@ -49,20 +49,22 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         // Therefore, we aim to check that all the interfaces needed are implemented.
         // This is just to avoid that updating to a wrong address becomes a catastrophic mistake.
         // If an attacker controls the aggKey we are screwed anyway.
+        // Just as a note, we don't care about gas at all in this function.
 
         // This contract will "check" the consumeKeyNonce while the child contract inheriting
-        // this should add their own checks in _checkKeyManager(). That is any function call
+        // this should add their own checks in _doSafeKeyManagerUpdateCheck(). That is any function call
         // that performs to the IKeyManager.
 
         // To check the implementation of consumeKeyNonce we can't really just call it, so
         // we follow a similar approach to the standards in ERC721, ERC1155... but returning
-        // consumeKeyNonce.selector, not onKeyManagerUpdated.selector as we require the
+        // consumeKeyNonce.selector, not supportsConsumeKeyNonce.selector as we require the
         // specific consumeKeyNonce function.
+        // This also checks that the keyManager is not an EOA.
         require(
-            keyManager.onKeyManagerUpdated() == IKeyManager.consumeKeyNonce.selector,
+            keyManager.supportsConsumeKeyNonce() == IKeyManager.consumeKeyNonce.selector,
             "NonceCons: not consumeKeyNonce implementer"
         );
-        _checkKeyManager(keyManager);
+        _doSafeKeyManagerUpdateCheck(keyManager);
 
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
@@ -72,7 +74,7 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     //         function that this child's contract needs to call from the new keyManager to
     //         check that it's implemented. This is to ensure that the new KeyManager is
     //         compatible with this contract and prevents bricking it.
-    function _checkKeyManager(IKeyManager keyManager) internal view virtual;
+    function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager) internal view virtual;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

@@ -19,13 +19,13 @@ contract KeyManagerMock1 is IShared {
 
 contract KeyManagerMock2 is KeyManagerMock1 {
     // Wrong selector
-    function onKeyManagerUpdated() public pure returns (bytes4) {
-        return this.onKeyManagerUpdated.selector;
+    function supportsConsumeKeyNonce() public pure returns (bytes4) {
+        return this.supportsConsumeKeyNonce.selector;
     }
 }
 
 contract KeyManagerMock3 is KeyManagerMock1 {
-    function onKeyManagerUpdated() public pure returns (bytes4) {
+    function supportsConsumeKeyNonce() public pure returns (bytes4) {
         return this.consumeKeyNonce.selector;
     }
 }

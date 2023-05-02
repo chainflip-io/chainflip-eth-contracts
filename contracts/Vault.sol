@@ -83,7 +83,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /// @dev   Ensure that a new keyManager has the getGovernanceKey(), getCommunityKey()
     ///        and getLastValidateTime() functions implemented. These are the functions
     ///        required for this contract to function.
-    function _checkKeyManager(IKeyManager keyManager) internal view override {
+    function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager) internal view override {
         keyManager.getGovernanceKey();
         keyManager.getCommunityKey();
         keyManager.getLastValidateTime();

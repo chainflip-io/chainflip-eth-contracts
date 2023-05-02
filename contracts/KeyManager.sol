@@ -181,19 +181,20 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         emit GovernanceAction(message);
     }
 
-    /**
-     * @notice Returns the function selector for `consumeKeyNonce()` to signal that this contract
-     *         implements the `consumeKeyNonce()` function to verify signatures.
-     */
-    function onKeyManagerUpdated() external pure override returns (bytes4) {
-        return this.consumeKeyNonce.selector;
-    }
-
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Returns the function selector for `consumeKeyNonce()` to signal that this contract
+     *         implements the `consumeKeyNonce()` function to verify signatures.
+     * @return The function selector for `consumeKeyNonce()`
+     */
+    function supportsConsumeKeyNonce() external pure override returns (bytes4) {
+        return this.consumeKeyNonce.selector;
+    }
 
     /**
      * @notice  Get the current aggregate key
