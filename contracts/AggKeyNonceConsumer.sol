@@ -52,8 +52,8 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         // Just as a note, we don't care about gas at all in this function.
 
         // This contract will "check" the consumeKeyNonce while the child contract inheriting
-        // this should add their own checks in _doSafeKeyManagerUpdateCheck(). That is any function call
-        // that performs to the IKeyManager.
+        // this should add their own checks in _doSafeKeyManagerUpdateCheck(). That is any
+        // function call that performs to the IKeyManager.
 
         // To check the implementation of consumeKeyNonce we can't really just call it, so
         // we follow a similar approach to the standards in ERC721, ERC1155... but returning
