@@ -64,11 +64,11 @@ def test_updateKeyManager_rev_wrongKeyManager(cf, mockKeyManagers):
         with reverts("Transaction reverted without a reason string"):
             signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManagers[6])
 
-
     signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[7])
     # Vault checks getLastValidateTime
     with reverts("Transaction reverted without a reason string"):
         signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[7])
+
 
 def test_updateKeyManager_mock(cf, mockKeyManagers):
     signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[8])
