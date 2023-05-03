@@ -222,7 +222,9 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         nzAddr(newIssuer)
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {
-        // OPTION 1: Issuer must always be a contract
+        // OPTION 1: Issuer must always be a contract. The control of the flip supply should always be a
+        // contract imo, even if we were to take control (emergency) we would do it with a multisig,
+        // never an EOA.
         require(address(newIssuer).code.length > 0);
 
         // OPTION 2: check that the new issuer has a reference to the _FLIP contract. This is a
