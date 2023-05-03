@@ -222,6 +222,20 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         nzAddr(newIssuer)
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {
+        // OPTION 1: Issuer must always be a contract
+        require(address(newIssuer).code.length > 0);
+
+        // OPTION 2: check that the new issuer has a reference to the _FLIP contract. This is a
+        // good check so it's not just any contract but it doesn't ensure that it has a pointer to the
+        // FLIP contract.
+        // That however, requires the new contract to implement the getFLIP function as is. I'm not
+        // a fan of putting requirements on future contracts but it's a small one to try to
+        // prevent bricking the mint/burn mechanism. If it doesn't have it, it will just fail
+        // to upgrade, nothing bad will happen. For instance, if we were to mistakenly pass
+        //the Vault or the KeyManager.
+        // (this will indirectly also check that the newIssuer is a contract)
+        require(IStateChainGateway(newIssuer).getFLIP() == _FLIP);
+
         _FLIP.updateIssuer(newIssuer);
     }
 
