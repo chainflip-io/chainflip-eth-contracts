@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/IKeyManager.sol";
+import "./interfaces/IFlipIssuer.sol";
 import "./interfaces/IFLIP.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
@@ -19,7 +20,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           valid aggragate signature can be submitted to the contract which
  *           updates the total supply by minting or burning the necessary FLIP.
  */
-contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
+contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
     // solhint-disable-next-line var-name-mixedcase
     IFLIP private _FLIP;
@@ -64,9 +65,8 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
 
     /**
      * @notice  Get the FLIP token address
-     * @dev     This function and it's return value will be called when updating the FLIP issuer.
-     *          Do not remove nor modify this function when updating the StateChainGatway in
-     *          future versions of the contract.
+     * @dev     This function and it's return value will be checked when updating the FLIP issuer.
+     *          Do not remove nor modify this function in future versions of this contract.
      * @return  The address of FLIP
      */
     function getFLIP() external view override returns (IFLIP) {
@@ -235,7 +235,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {
         // Require a reference to the FLIP contract
-        require(IStateChainGateway(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
+        require(IFlipIssuer(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
 
         _FLIP.updateIssuer(newIssuer);
     }
