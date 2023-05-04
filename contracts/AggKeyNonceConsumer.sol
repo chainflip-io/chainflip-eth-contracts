@@ -30,21 +30,24 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
+     * @param omitValueChecks We want to allow for an option to skip the extra checks
+     * in some special cases - mainly to avoid potentially not being able to upgrade.
      */
     function updateKeyManager(
         SigData calldata sigData,
-        IKeyManager keyManager
+        IKeyManager keyManager,
+        bool omitValueChecks
     )
         external
         override
         nzAddr(address(keyManager))
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager)))
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager, omitValueChecks)))
     {
         // Check that the new KeyManager is a contract
         require(address(keyManager).code.length > 0);
 
         // Allow the child to check that the new KeyManager is compatible
-        _doSafeKeyManagerUpdateCheck(keyManager);
+        _doSafeKeyManagerUpdateCheck(keyManager, omitValueChecks);
 
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
@@ -54,7 +57,7 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     //         function that this child's contract needs to call from the new keyManager to
     //         check that it's implemented. This is to ensure that the new KeyManager is
     //         compatible with this contract and prevents it from bricking.
-    function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager) internal view virtual;
+    function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager, bool omitValueChecks) internal view virtual;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

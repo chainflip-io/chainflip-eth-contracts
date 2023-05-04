@@ -21,7 +21,7 @@ interface IAggKeyNonceConsumer is IShared {
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
      */
-    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager) external;
+    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager, bool omitValueChecks) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

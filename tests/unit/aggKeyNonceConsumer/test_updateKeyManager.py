@@ -23,7 +23,7 @@ def test_updateKeyManager(cf, KeyManager):
     )
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        tx = signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
+        tx = signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager, True)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
         assert tx.events["UpdatedKeyManager"][0].values()[0] == newKeyManager
 
@@ -33,7 +33,7 @@ def test_updateKeyManager_rev_eoa(cf):
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         with reverts("Transaction reverted without a reason string"):
-            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, cf.BOB)
+            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, cf.BOB, True)
 
 
 def test_updateKeyManager_rev_wrongKeyManager(cf, mockKeyManagers):
@@ -42,26 +42,26 @@ def test_updateKeyManager_rev_wrongKeyManager(cf, mockKeyManagers):
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         for mockKeyManager in mockKeyManagers[:7]:
             with reverts("Transaction reverted without a reason string"):
-                signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManager)
+                signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, mockKeyManager, True)
 
 
 # Separating this from the previous one because once one passes the rest will fail
 def test_updateKeyManager_0(cf, mockKeyManagers):
-    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[8])
+    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[8], True)
     # Vault checks getLastValidateTime
     with reverts("Transaction reverted without a reason string"):
-        signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[8])
+        signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[8], True)
 
 
 def test_updateKeyManager_1(cf, mockKeyManagers):
-    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[9])
-    signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[9])
+    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[9], True)
+    signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[9], True)
 
 
 def test_updateKeyManager_error_notCatastrophic(cf, mockKeyManagers):
     # Insert a keyManager that has all the functions except consumeKeyNonce
-    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[10])
-    signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[10])
+    signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, mockKeyManagers[10], True)
+    signed_call_cf(cf, cf.vault.updateKeyManager, mockKeyManagers[10], True)
 
     # Fund both the Vault and the StateChainGateway with some funds
     cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT * 10)
