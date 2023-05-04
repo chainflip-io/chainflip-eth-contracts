@@ -58,16 +58,40 @@ contract KeyManagerMock6 is KeyManagerMock5 {
     function getCommunityKey() external view {}
 }
 
+contract KeyManagerMock7 {
+    fallback() external payable {}
+}
+
 // Fails for the Vault due to missing getLastValidateTime()
-contract KeyManagerMock7 is KeyManagerMock5 {
+contract KeyManagerMock8 is KeyManagerMock5 {
     function getCommunityKey() external view returns (address) {
         return address(this);
     }
 }
 
 // Success
-contract KeyManagerMock8 is KeyManagerMock7 {
+contract KeyManagerMock9 is KeyManagerMock8 {
     function getLastValidateTime() external view returns (uint256) {
         return block.timestamp;
+    }
+}
+
+// "Problematic" - consumeKeyNonce() is not implemented but it doesn't
+// fail. However, we have avoided the catastrophic error of having the
+// funds stuck.
+contract KeyManagerMock10 is IShared {
+    function getGovernanceKey() external view returns (address) {
+        // return address(this);
+        return 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    }
+
+    function getCommunityKey() external view returns (address) {
+        // return address(this);
+        return 0x976EA74026E726554dB657fA54763abd0C3a0aa9;
+    }
+
+    function getLastValidateTime() external view returns (uint256) {
+        // return block.timestamp;
+        return 0;
     }
 }

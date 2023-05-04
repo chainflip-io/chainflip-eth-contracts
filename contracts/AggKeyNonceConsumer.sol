@@ -40,55 +40,10 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         nzAddr(address(keyManager))
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager)))
     {
-        // OPTION 1:
-        ///////////////////////////////////////////////////////////////////////////////////
-        // require(
-        //     keyManager.supportsConsumeKeyNonce() == IKeyManager.consumeKeyNonce.selector,
-        //     "NonceCons: not consumeKeyNonce implementer"
-        // );
-
-        // // Then add this to the KeyManager:
-        // function supportsConsumeKeyNonce() external pure override returns (bytes4) {
-        //     return this.consumeKeyNonce.selector;
-        // }
-        ///////////////////////////////////////////////////////////////////////////////////
-
-        // OPTION 2:
-
-        // Check that it's a contract - revert without a reason string to match the try-catch behaviour of option 2
+        // Check that the new KeyManager is a contract
         require(address(keyManager).code.length > 0);
 
-        // Making a low level call with arbitrary values.
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = address(keyManager).call(
-            abi.encodeWithSelector(IKeyManager.consumeKeyNonce.selector, SigData(0, 0, address(0)), bytes32(0))
-        );
-
-        // No need to enforce that it fails (tbd).
-        // If it fails (as it should), we check that there is a revert reason (string/error). Otherwise we
-        // assume the function doesn't exist.
-        if (!success) {
-            require(returndata.length > 0, "NonceCons: not consumeKeyNonce implementer");
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////
-
-        // OPTION 3:
-
-        // This will fail with no message if the keymanager is not a contract - it's not catched, which is fine.
-        try keyManager.consumeKeyNonce(SigData(0, 0, address(0)), bytes32(0)) {
-            // No need to enforce that it fails (tbd)
-        } catch (bytes memory reason) {
-            // We allow/expect either a reverts string reason or a custom Error.
-            require(reason.length > 0, "NonceCons: not consumeKeyNonce implementer");
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////
-
-        // for any options continue here:
-
-        // For view functions we just call them and they will revert if they don't exist or if the return type
-        // is not the expected one.
+        // Allow the child to check that the new KeyManager is compatible
         _doSafeKeyManagerUpdateCheck(keyManager);
 
         _keyManager = keyManager;
@@ -98,7 +53,7 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     /// @dev   This will be called when upgrading to a new KeyManager. This should check every
     //         function that this child's contract needs to call from the new keyManager to
     //         check that it's implemented. This is to ensure that the new KeyManager is
-    //         compatible with this contract and prevents bricking it.
+    //         compatible with this contract and prevents it from bricking.
     function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager) internal view virtual;
 
     //////////////////////////////////////////////////////////////
