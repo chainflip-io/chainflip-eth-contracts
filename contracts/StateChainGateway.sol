@@ -62,6 +62,17 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         return getKeyManager().getCommunityKey();
     }
 
+    /**
+     * @notice  Get the FLIP token address
+     * @dev     This function and it's return value will be called when updating the FLIP issuer.
+     *          Do not remove nor modify this function when updating the StateChainGatway in
+     *          future versions of the contract.
+     * @return  The address of FLIP
+     */
+    function getFLIP() external view override returns (IFLIP) {
+        return _FLIP;
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
@@ -208,6 +219,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
      *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
      *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
+     * @dev     The new issuer must be a contract and must have a reference to the FLIP contract.
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
@@ -222,21 +234,8 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         nzAddr(newIssuer)
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {
-        // OPTION 1: Issuer must always be a contract. The control of the flip supply should always be a
-        // contract imo, even if we were to take control (emergency) we would do it with a multisig,
-        // never an EOA.
-        require(address(newIssuer).code.length > 0);
-
-        // OPTION 2: check that the new issuer has a reference to the _FLIP contract. This is a
-        // good check so it's not just any contract but it doesn't ensure that it has a pointer to the
-        // FLIP contract.
-        // That however, requires the new contract to implement the getFLIP function as is. I'm not
-        // a fan of putting requirements on future contracts but it's a small one to try to
-        // prevent bricking the mint/burn mechanism. If it doesn't have it, it will just fail
-        // to upgrade, nothing bad will happen. For instance, if we were to mistakenly pass
-        //the Vault or the KeyManager.
-        // (this will indirectly also check that the newIssuer is a contract)
-        require(IStateChainGateway(newIssuer).getFLIP() == _FLIP);
+        // Require a reference to the FLIP contract
+        require(IStateChainGateway(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
 
         _FLIP.updateIssuer(newIssuer);
     }
@@ -269,14 +268,6 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the FLIP token address
-     * @return  The address of FLIP
-     */
-    function getFLIP() external view override returns (IFLIP) {
-        return _FLIP;
-    }
 
     /**
      * @notice  Get the minimum amount of funds that's required for funding

@@ -119,6 +119,7 @@ REV_MSG_EXPIRY_TOO_SOON = "Gateway: expiry time too soon"
 REV_MSG_NOT_ON_TIME = "Gateway: early or already execd"
 REV_MSG_FLIP_ADDRESS = "Gateway: Flip address already set"
 REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "Gateway: old FLIP supply update"
+REV_MSG_NOT_FLIP = "Gateway: wrong FLIP ref"
 
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 14 * 24 * 60 * 60
