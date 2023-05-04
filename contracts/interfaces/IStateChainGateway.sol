@@ -3,11 +3,12 @@ pragma solidity ^0.8.0;
 import "./IFLIP.sol";
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
+import "./IFlipIssuer.sol";
 
 /**
  * @title    StateChainGateway interface
  */
-interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
+interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKeyNonceConsumer {
     event Funded(bytes32 indexed nodeID, uint256 amount, address funder);
     event RedemptionRegistered(
         bytes32 indexed nodeID,
@@ -117,12 +118,6 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the FLIP token address
-     * @return  The address of FLIP
-     */
-    function getFLIP() external view returns (IFLIP);
 
     /**
      * @notice  Get the minimum amount of funds that's required for funding

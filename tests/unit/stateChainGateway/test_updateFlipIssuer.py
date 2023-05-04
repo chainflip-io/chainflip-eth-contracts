@@ -16,6 +16,60 @@ def test_updateIssuer_rev_nzAddr(cf):
         )
 
 
+def test_updateIssuer_rev_eoa(cf):
+    with reverts("Transaction reverted without a reason string"):
+        signed_call_cf(
+            cf,
+            cf.stateChainGateway.updateFlipIssuer,
+            cf.ALICE,
+            sender=cf.BOB,
+        )
+
+
+def test_updateIssuer_rev_nonIssuer(cf):
+    with reverts("Transaction reverted without a reason string"):
+        signed_call_cf(
+            cf,
+            cf.stateChainGateway.updateFlipIssuer,
+            cf.vault.address,
+            sender=cf.BOB,
+        )
+
+
+def test_updateIssuer_rev_notFLIP(
+    cf, KeyManager, StateChainGateway, DeployerStateChainGateway, FLIP
+):
+    # Deploy a mock FLIP
+    flip_mock = cf.deployer.deploy(
+        FLIP,
+        INIT_SUPPLY,
+        cf.numGenesisValidators,
+        cf.genesisStake,
+        cf.deployer,
+        cf.deployer,
+        cf.deployer,
+    )
+
+    (_, newStateChainGateway) = deploy_new_stateChainGateway(
+        cf.deployer,
+        KeyManager,
+        StateChainGateway,
+        FLIP,
+        DeployerStateChainGateway,
+        cf.keyManager.address,
+        flip_mock.address,
+        MIN_FUNDING,
+    )
+
+    with reverts(REV_MSG_NOT_FLIP):
+        signed_call_cf(
+            cf,
+            cf.stateChainGateway.updateFlipIssuer,
+            newStateChainGateway,
+            sender=cf.BOB,
+        )
+
+
 def test_updateIssuer(
     cf,
     KeyManager,
