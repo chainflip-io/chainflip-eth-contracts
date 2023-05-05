@@ -97,8 +97,9 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
+     * @param omitChecks  Allow the omission of the extra safeguards in some special cases.
      */
-    function updateFlipIssuer(SigData calldata sigData, address newIssuer) external;
+    function updateFlipIssuer(SigData calldata sigData, address newIssuer, bool omitChecks) external;
 
     /**
      * @notice      Set the minimum amount of funds needed for `fundStateChainAccount` to be able

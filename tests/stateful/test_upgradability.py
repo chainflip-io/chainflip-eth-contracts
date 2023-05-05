@@ -239,6 +239,7 @@ def test_upgradability(
                 self.km,
                 self.scg.updateFlipIssuer,
                 newStateChainGateway.address,
+                False,
                 sender=st_sender,
             )
 

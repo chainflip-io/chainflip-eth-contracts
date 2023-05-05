@@ -219,23 +219,29 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
      * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
      *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
      *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
-     * @dev     The new issuer must be a contract and must have a reference to the FLIP contract.
+     * @dev     The new issuer must be a contract and, in a standard upgrade, it must have the reference FLIP address.
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
+     * @param omitChecks  Allow the omission of the extra safeguards in some special cases.
      */
     function updateFlipIssuer(
         SigData calldata sigData,
-        address newIssuer
+        address newIssuer,
+        bool omitChecks
     )
         external
         override
         onlyNotSuspended
         nzAddr(newIssuer)
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer, omitChecks)))
     {
-        // Require a reference to the FLIP contract
-        require(IFlipIssuer(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
+        if (!omitChecks) {
+            require(IFlipIssuer(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
+        } else {
+            // Never allow the transfer to an EOA
+            require(newIssuer.code.length > 0);
+        }
 
         _FLIP.updateIssuer(newIssuer);
     }
