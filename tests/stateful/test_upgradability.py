@@ -92,12 +92,12 @@ def test_upgradability(
 
             for aggKeyNonceConsumer in aggKeyNonceConsumers:
                 assert aggKeyNonceConsumer.getKeyManager() == self.km
-
+                # Gov key is different so omiting the check
                 signed_call_km(
                     self.km,
                     aggKeyNonceConsumer.updateKeyManager,
                     newKeyManager,
-                    False,
+                    True,
                     sender=st_sender,
                 )
 
