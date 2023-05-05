@@ -243,6 +243,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
      *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
      *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
      * @dev     The new issuer must be a contract and, in a standard upgrade, it must have the reference FLIP address.
+     *          In a special case where the check is omitted, the new issuer must be a contract, never an EOA.
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
@@ -262,7 +263,6 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         if (!omitChecks) {
             require(IFlipIssuer(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
         } else {
-            // Never allow the transfer to an EOA
             require(newIssuer.code.length > 0);
         }
 
