@@ -234,22 +234,31 @@ def mockKeyManagers(
     KeyManagerMock3,
     KeyManagerMock4,
     KeyManagerMock5,
-    KeyManagerMock6,
-    KeyManagerMock7,
-    KeyManagerMock8,
-    KeyManagerMock9,
-    KeyManagerMock10,
 ):
     km_0 = cf.SAFEKEEPER.deploy(KeyManagerMock0)
     km_1 = cf.SAFEKEEPER.deploy(KeyManagerMock1)
-    km_2 = cf.SAFEKEEPER.deploy(KeyManagerMock2)
-    km_3 = cf.SAFEKEEPER.deploy(KeyManagerMock3)
-    km_4 = cf.SAFEKEEPER.deploy(KeyManagerMock4)
-    km_5 = cf.SAFEKEEPER.deploy(KeyManagerMock5)
-    km_6 = cf.SAFEKEEPER.deploy(KeyManagerMock6)
-    km_7 = cf.SAFEKEEPER.deploy(KeyManagerMock7)
-    km_8 = cf.SAFEKEEPER.deploy(KeyManagerMock8)
-    km_9 = cf.SAFEKEEPER.deploy(KeyManagerMock9)
-    km_10 = cf.SAFEKEEPER.deploy(KeyManagerMock10)
+    km_2 = cf.SAFEKEEPER.deploy(KeyManagerMock2, cf.BOB)
+    km_3 = cf.SAFEKEEPER.deploy(KeyManagerMock3, cf.BOB)
+    km_4 = cf.SAFEKEEPER.deploy(KeyManagerMock4, cf.BOB, cf.DENICE)
+    km_5 = cf.SAFEKEEPER.deploy(KeyManagerMock5, cf.BOB, cf.DENICE)
 
-    return (km_0, km_1, km_2, km_3, km_4, km_5, km_6, km_7, km_8, km_9, km_10)
+    kmMocks_arbitrary_addresses = [km_0, km_1, km_2, km_3, km_4, km_5]
+
+    km_0 = cf.SAFEKEEPER.deploy(KeyManagerMock0)
+    km_1 = cf.SAFEKEEPER.deploy(KeyManagerMock1)
+    km_2 = cf.SAFEKEEPER.deploy(KeyManagerMock2, cf.keyManager.getGovernanceKey())
+    km_3 = cf.SAFEKEEPER.deploy(KeyManagerMock3, cf.keyManager.getGovernanceKey())
+    km_4 = cf.SAFEKEEPER.deploy(
+        KeyManagerMock4,
+        cf.keyManager.getGovernanceKey(),
+        cf.keyManager.getCommunityKey(),
+    )
+    km_5 = cf.SAFEKEEPER.deploy(
+        KeyManagerMock5,
+        cf.keyManager.getGovernanceKey(),
+        cf.keyManager.getCommunityKey(),
+    )
+
+    kmMocks_valid_addresses = [km_0, km_1, km_2, km_3, km_4, km_5]
+
+    return kmMocks_arbitrary_addresses, kmMocks_valid_addresses

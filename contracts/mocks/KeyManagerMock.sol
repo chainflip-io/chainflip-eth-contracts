@@ -1,7 +1,5 @@
 pragma solidity ^0.8.0;
 
-import "../abstract/Shared.sol";
-
 /**
  * @title    Mock KeyManager contracts
  * @notice   This is to mock different KeyManagers with different flaws to check that
@@ -13,85 +11,53 @@ contract KeyManagerMock0 {
 
 }
 
-// This should fail because of the wrong return type
-contract KeyManagerMock1 is IShared {
-    function consumeKeyNonce(SigData calldata, bytes32) external pure returns (bytes4) {
-        return this.consumeKeyNonce.selector;
-    }
-}
-
-// Fails due to missing supportsConsumeKeyNonce()
-contract KeyManagerMock2 is IShared {
-    function consumeKeyNonce(SigData calldata, bytes32) external pure {
-        revert("Mock revert reason");
-    }
-}
-
-// Check that reverting with an error has the same outcome as with a revert("")
-contract KeyManagerMock3 is IShared {
-    error DummyError();
-
-    function consumeKeyNonce(SigData calldata, bytes32) external pure {
-        revert DummyError();
-    }
-}
-
-// Check that reverting with no data is problematic as it will fail the returndata.length > 0
-// instead of failing due to missing getCommunityKey(). Then we can't tell if it has failed
-// because the function doesn't exist or because it reverted with no data.
-contract KeyManagerMock4 is IShared {
-    function consumeKeyNonce(SigData calldata, bytes32) external pure {
-        revert();
-    }
-}
-
-// Fails due to missing getCommunityKey()
-contract KeyManagerMock5 is KeyManagerMock2 {
-    function getGovernanceKey() external view returns (address) {
-        return address(this);
-    }
-}
-
-// Fails due to having wrong return type
-contract KeyManagerMock6 is KeyManagerMock5 {
-    // Missing return value
-    function getCommunityKey() external view {}
-}
-
-contract KeyManagerMock7 {
+contract KeyManagerMock1 {
     fallback() external payable {}
 }
 
-// Fails for the Vault due to missing getLastValidateTime()
-contract KeyManagerMock8 is KeyManagerMock5 {
-    function getCommunityKey() external view returns (address) {
-        return address(this);
-    }
-}
+contract KeyManagerMock2 {
+    address private governanceKey;
 
-// Success
-contract KeyManagerMock9 is KeyManagerMock8 {
-    function getLastValidateTime() external view returns (uint256) {
-        return block.timestamp;
+    constructor(address _governanceKey) {
+        governanceKey = _governanceKey;
     }
-}
 
-// "Problematic" - consumeKeyNonce() is not implemented but it doesn't
-// fail. However, we have avoided the catastrophic error of having the
-// funds stuck.
-contract KeyManagerMock10 is IShared {
     function getGovernanceKey() external view returns (address) {
-        // return address(this);
-        return 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+        return governanceKey;
+    }
+}
+
+// Not returning anything will fail the check. It's true that if different value
+// than address is returned but can be casted to an addresss it might pass, but
+// that's as good as we can get.
+contract KeyManagerMock3 is KeyManagerMock2 {
+    constructor(address _governanceKey) KeyManagerMock2(_governanceKey) {}
+
+    function getCommunityKey() external view {}
+}
+
+// Fails for the Vault due to missing getLastValidateTime()
+contract KeyManagerMock4 is KeyManagerMock2 {
+    address private communityKey;
+
+    constructor(address _governanceKey, address _communityKey) KeyManagerMock2(_governanceKey) {
+        communityKey = _communityKey;
     }
 
     function getCommunityKey() external view returns (address) {
-        // return address(this);
-        return 0x976EA74026E726554dB657fA54763abd0C3a0aa9;
+        return communityKey;
+    }
+}
+
+// Success if no aggKey needed. We will use a real KeyManager for testing the aggKey check.
+contract KeyManagerMock5 is KeyManagerMock4 {
+    uint256 private lastValidateTime;
+
+    constructor(address _governanceKey, address _communityKey) KeyManagerMock4(_governanceKey, _communityKey) {
+        lastValidateTime = block.timestamp + 1;
     }
 
     function getLastValidateTime() external view returns (uint256) {
-        // return block.timestamp;
-        return 0;
+        return lastValidateTime;
     }
 }

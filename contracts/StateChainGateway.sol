@@ -65,19 +65,23 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     /// @dev   Ensure that a new keyManager has the getGovernanceKey() and getCommunityKey()
     ///        functions implemented. These are functions required for this contract to
     ///        to at least be able to use the emergency mechanism.
-    function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager, bool omitValueChecks) internal view override {
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
         address newGovKey = keyManager.getGovernanceKey();
         address newCommKey = keyManager.getCommunityKey();
 
-        // Ensure that the keys have not changed
-        if (!omitValueChecks) {
-            require(newGovKey == _getGovernor());
-            require(newCommKey == _getCommunityKey());
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
 
             Key memory newAggKey = keyManager.getAggregateKey();
             Key memory currentAggKey = getKeyManager().getAggregateKey();
-            require(newAggKey.pubKeyX == currentAggKey.pubKeyX);
-            require(newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity);
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
         }
     }
 

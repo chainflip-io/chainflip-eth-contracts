@@ -100,8 +100,8 @@ contract VaultEchidna is IShared {
 
     // Expose AggKeyNonceConsumer functions to Echidna
 
-    function updateKeyManagerVault(SigData calldata sigData, IKeyManager keyManager) external virtual {
-        v.updateKeyManager(sigData, keyManager);
+    function updateKeyManagerVault(SigData calldata sigData, IKeyManager keyManager, bool omitChecks) external virtual {
+        v.updateKeyManager(sigData, keyManager, omitChecks);
     }
 
     // Expose GovernanceCommunityGuarded functions to Echidna

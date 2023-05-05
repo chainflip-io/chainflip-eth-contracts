@@ -30,24 +30,23 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
-     * @param omitValueChecks We want to allow for an option to skip the extra checks
-     * in some special cases - mainly to avoid potentially not being able to upgrade.
+     * @param omitChecks Allow the omission of the extra safeguards in some cases
      */
     function updateKeyManager(
         SigData calldata sigData,
         IKeyManager keyManager,
-        bool omitValueChecks
+        bool omitChecks
     )
         external
         override
         nzAddr(address(keyManager))
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager, omitValueChecks)))
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager, omitChecks)))
     {
         // Check that the new KeyManager is a contract
         require(address(keyManager).code.length > 0);
 
         // Allow the child to check that the new KeyManager is compatible
-        _doSafeKeyManagerUpdateCheck(keyManager, omitValueChecks);
+        _checkUpdateKeyManager(keyManager, omitChecks);
 
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
@@ -57,7 +56,7 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     //         function that this child's contract needs to call from the new keyManager to
     //         check that it's implemented. This is to ensure that the new KeyManager is
     //         compatible with this contract and prevents it from bricking.
-    function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager, bool omitValueChecks) internal view virtual;
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view virtual;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

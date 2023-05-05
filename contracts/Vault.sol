@@ -80,23 +80,30 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         return getKeyManager().getCommunityKey();
     }
 
-    /// @dev   Ensure that a new keyManager has the getGovernanceKey() and getCommunityKey()
-    ///        functions implemented. These are functions required for this contract to
-    ///        to at least be able to use the emergency mechanism.
-    function _doSafeKeyManagerUpdateCheck(IKeyManager keyManager, bool omitValueChecks) internal view override {
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey(), getCommunityKey()
+    ///        and getLastValidateTime() are implemented. These are functions required for
+    ///        this contract to at least be able to use the emergency mechanism.
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
         address newGovKey = keyManager.getGovernanceKey();
         address newCommKey = keyManager.getCommunityKey();
-        keyManager.getLastValidateTime();
+        uint256 lastValidateTime = keyManager.getLastValidateTime();
 
-        // Ensure that the keys have not changed
-        if (!omitValueChecks) {
-            require(newGovKey == _getGovernor());
-            require(newCommKey == _getCommunityKey());
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
 
             Key memory newAggKey = keyManager.getAggregateKey();
             Key memory currentAggKey = getKeyManager().getAggregateKey();
-            require(newAggKey.pubKeyX == currentAggKey.pubKeyX);
-            require(newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity);
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+
+            // Ensure that the last validate time is in the past
+            require(lastValidateTime <= block.timestamp);
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
         }
     }
 
