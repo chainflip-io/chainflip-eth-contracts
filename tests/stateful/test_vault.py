@@ -768,8 +768,8 @@ def test_vault(
                 )
 
         # Sleep AGG_KEY_EMERGENCY_TIMEOUT
-        def rule_sleep_14_days(self):
-            print("                    rule_sleep_14_days")
+        def rule_sleep_3_days(self):
+            print("                    rule_sleep_3_days")
             chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
 
         # Suspends the State Chain Gateway if st_sender matches the governor address. It has
