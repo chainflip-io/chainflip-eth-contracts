@@ -88,6 +88,33 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         return getKeyManager().getCommunityKey();
     }
 
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey(), getCommunityKey()
+    ///        and getLastValidateTime() are implemented. These are functions required for
+    ///        this contract to at least be able to use the emergency mechanism.
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
+        address newGovKey = keyManager.getGovernanceKey();
+        address newCommKey = keyManager.getCommunityKey();
+        uint256 lastValidateTime = keyManager.getLastValidateTime();
+
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
+
+            Key memory newAggKey = keyManager.getAggregateKey();
+            Key memory currentAggKey = getKeyManager().getAggregateKey();
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+
+            // Ensure that the last validate time is not in the future
+            require(lastValidateTime <= block.timestamp);
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
+        }
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Transfer and Fetch                      //

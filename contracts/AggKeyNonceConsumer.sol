@@ -11,7 +11,7 @@ import "./abstract/Shared.sol";
  *           signature validated by the current KeyManager contract. This shall
  *           be done if the KeyManager contract is updated.
  */
-contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
+abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
@@ -30,19 +30,32 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
+     * @param omitChecks Allow the omission of the extra checks in a special case
      */
     function updateKeyManager(
         SigData calldata sigData,
-        IKeyManager keyManager
+        IKeyManager keyManager,
+        bool omitChecks
     )
         external
         override
         nzAddr(address(keyManager))
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager)))
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager, omitChecks)))
     {
+        // Check that the new KeyManager is a contract
+        require(address(keyManager).code.length > 0);
+
+        // Allow the child to check compatibility with the new KeyManager
+        _checkUpdateKeyManager(keyManager, omitChecks);
+
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
     }
+
+    /// @dev   This will be called when upgrading to a new KeyManager. This allows the child's contract
+    ///        to check its compatibility with the new KeyManager. This is to prevent the contract from
+    //         getting bricked. There is no good way to enforce the implementation of consumeKeyNonce().
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view virtual;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

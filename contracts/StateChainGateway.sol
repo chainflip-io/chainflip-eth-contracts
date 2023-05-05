@@ -73,6 +73,29 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         return _FLIP;
     }
 
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey() and getCommunityKey()
+    ///        functions implemented. These are functions required for this contract to
+    ///        to at least be able to use the emergency mechanism.
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
+        address newGovKey = keyManager.getGovernanceKey();
+        address newCommKey = keyManager.getCommunityKey();
+
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
+
+            Key memory newAggKey = keyManager.getAggregateKey();
+            Key memory currentAggKey = getKeyManager().getAggregateKey();
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
+        }
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  State-changing functions                //
