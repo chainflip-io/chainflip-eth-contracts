@@ -19,7 +19,7 @@ import "./GovernanceCommunityGuarded.sol";
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
-    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
+    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
     uint256 private constant _GAS_TO_FORWARD = 3500;
 
     event TransferNativeFailed(address payable indexed recipient, uint256 amount);
