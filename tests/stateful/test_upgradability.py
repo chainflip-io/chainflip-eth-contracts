@@ -97,6 +97,7 @@ def test_upgradability(
                     self.km,
                     aggKeyNonceConsumer.updateKeyManager,
                     newKeyManager,
+                    False,
                     sender=st_sender,
                 )
 

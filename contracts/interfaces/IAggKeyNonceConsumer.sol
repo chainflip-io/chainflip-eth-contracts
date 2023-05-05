@@ -20,8 +20,9 @@ interface IAggKeyNonceConsumer is IShared {
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
+     * @param omitChecks Allow the omission of the extra checks in a special case
      */
-    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager) external;
+    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager, bool omitChecks) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

@@ -223,3 +223,42 @@ def multicall(cf, SquidMulticall):
 @pytest.fixture(scope="module")
 def mockUSDT(cf, MockUSDT):
     return cf.SAFEKEEPER.deploy(MockUSDT, "Tether USD", "USDT", INIT_USDC_SUPPLY)
+
+
+@pytest.fixture(scope="module")
+def mockKeyManagers(
+    cf,
+    KeyManagerMock0,
+    KeyManagerMock1,
+    KeyManagerMock2,
+    KeyManagerMock3,
+    KeyManagerMock4,
+    KeyManagerMock5,
+):
+    km_0 = cf.SAFEKEEPER.deploy(KeyManagerMock0)
+    km_1 = cf.SAFEKEEPER.deploy(KeyManagerMock1)
+    km_2 = cf.SAFEKEEPER.deploy(KeyManagerMock2, cf.BOB)
+    km_3 = cf.SAFEKEEPER.deploy(KeyManagerMock3, cf.BOB)
+    km_4 = cf.SAFEKEEPER.deploy(KeyManagerMock4, cf.BOB, cf.DENICE)
+    km_5 = cf.SAFEKEEPER.deploy(KeyManagerMock5, cf.BOB, cf.DENICE)
+
+    kmMocks_arbitrary_addresses = [km_0, km_1, km_2, km_3, km_4, km_5]
+
+    km_0 = cf.SAFEKEEPER.deploy(KeyManagerMock0)
+    km_1 = cf.SAFEKEEPER.deploy(KeyManagerMock1)
+    km_2 = cf.SAFEKEEPER.deploy(KeyManagerMock2, cf.keyManager.getGovernanceKey())
+    km_3 = cf.SAFEKEEPER.deploy(KeyManagerMock3, cf.keyManager.getGovernanceKey())
+    km_4 = cf.SAFEKEEPER.deploy(
+        KeyManagerMock4,
+        cf.keyManager.getGovernanceKey(),
+        cf.keyManager.getCommunityKey(),
+    )
+    km_5 = cf.SAFEKEEPER.deploy(
+        KeyManagerMock5,
+        cf.keyManager.getGovernanceKey(),
+        cf.keyManager.getCommunityKey(),
+    )
+
+    kmMocks_valid_addresses = [km_0, km_1, km_2, km_3, km_4, km_5]
+
+    return kmMocks_arbitrary_addresses, kmMocks_valid_addresses
