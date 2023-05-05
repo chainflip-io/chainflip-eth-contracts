@@ -107,7 +107,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
             );
 
-            // Ensure that the last validate time is in the past
+            // Ensure that the last validate time is not in the future
             require(lastValidateTime <= block.timestamp);
         } else {
             // Check that the addresses have been initialized

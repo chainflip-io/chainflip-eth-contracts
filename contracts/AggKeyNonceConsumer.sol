@@ -30,7 +30,7 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
-     * @param omitChecks Allow the omission of the extra safeguards in some cases
+     * @param omitChecks Allow the omission of the extra checks in a special case
      */
     function updateKeyManager(
         SigData calldata sigData,
@@ -45,17 +45,16 @@ abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
         // Check that the new KeyManager is a contract
         require(address(keyManager).code.length > 0);
 
-        // Allow the child to check that the new KeyManager is compatible
+        // Allow the child to check compatibility with the new KeyManager
         _checkUpdateKeyManager(keyManager, omitChecks);
 
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
     }
 
-    /// @dev   This will be called when upgrading to a new KeyManager. This should check every
-    //         function that this child's contract needs to call from the new keyManager to
-    //         check that it's implemented. This is to ensure that the new KeyManager is
-    //         compatible with this contract and prevents it from bricking.
+    /// @dev   This will be called when upgrading to a new KeyManager. This allows the child's contract
+    ///        to check its compatibility with the new KeyManager. This is to prevent the contract from
+    //         getting bricked. There is no good way to enforce the implementation of consumeKeyNonce().
     function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view virtual;
 
     //////////////////////////////////////////////////////////////
