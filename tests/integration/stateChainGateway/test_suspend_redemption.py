@@ -72,6 +72,10 @@ def test_suspend_govWithdraw_executeRedemption(cf, redemptionRegistered):
         maxValidAmount,
     ]
 
+    # Check that the isser can also be updated
+    tx = cf.stateChainGateway.govUpdateFlipIssuer({"from": cf.GOVERNOR})
+    assert cf.flip.issuer() == cf.GOVERNOR
+
     # Sanity check that we're still suspended
     with reverts(REV_MSG_GOV_SUSPENDED):
         cf.stateChainGateway.executeRedemption(JUNK_HEX, {"from": cf.ALICE})

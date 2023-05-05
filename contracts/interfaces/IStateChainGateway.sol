@@ -114,6 +114,13 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
      */
     function govWithdraw() external;
 
+    /**
+     * @notice Update the FLIP Issuer address with the governance address in case of emergency.
+     *         This needs to be approved by the Community, it is a last resort. Used to rectify
+     *         an emergency.
+     */
+    function govUpdateFlipIssuer() external;
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                  Non-state-changing functions            //

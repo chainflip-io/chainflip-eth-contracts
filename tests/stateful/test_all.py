@@ -2540,7 +2540,7 @@ def test_all(
                         self.scg.govWithdraw({"from": st_sender})
 
                 if self.scg_suspended:
-                    print("                    rule_govWithdrawal", st_sender)
+                    print("                    rule_scg_govWithdrawal", st_sender)
                     self.scg.govWithdraw({"from": self.governor})
                     # Governor has all the FLIP - do the checking and return the tokens for the invariant check
                     assert (
@@ -2551,14 +2551,12 @@ def test_all(
                     self.f.transfer(
                         self.scg, self.flipBals[self.scg], {"from": self.governor}
                     )
-                else:
-                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
-                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.scg.govWithdraw({"from": self.governor})
-            else:
-                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
-                with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.scg.govWithdraw({"from": self.governor})
+
+                    self.scg.govUpdateFlipIssuer({"from": self.governor})
+                    assert self.f.issuer() == self.governor
+
+                    # Return issuer rights to the State Chain Gateway
+                    self.f.updateIssuer(self.scg.address, {"from": self.governor})
 
         # Governance attemps to withdraw all tokens from the Vault in case of emergency
         def rule_v_govWithdrawal(self, st_sender):
@@ -2574,14 +2572,14 @@ def test_all(
                         getChainTime() - self.km.getLastValidateTime()
                         < AGG_KEY_EMERGENCY_TIMEOUT
                     ):
-                        print("        REV_MSG_VAULT_DELAY _govWithdrawal")
+                        print("        REV_MSG_VAULT_DELAY v_govWithdrawal")
                         with reverts(REV_MSG_VAULT_DELAY):
                             self.v.govWithdraw(
                                 tokenstoWithdraw, {"from": self.governor}
                             )
                     else:
                         # tokenstoWithdraw contains tokenA and tokenB
-                        print("                    rule_govWithdrawal", st_sender)
+                        print("                    rule_v_govWithdrawal", st_sender)
                         self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
                         # Governor has all the tokens - do the checking and return the tokens for the invariant check
                         assert (
@@ -2600,15 +2598,6 @@ def test_all(
                         tokenstoWithdraw[1].transfer(
                             self.v, self.tokenBBals[self.v], {"from": self.governor}
                         )
-
-                else:
-                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
-                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
-            else:
-                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
-                with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Transfer native to the stateChainGateway to check govWithdrawalNative. Using st_funder to make sure it is a key in the nativeBals dict
         def _transfer_native_scg(self, st_funder, st_native_amount):
