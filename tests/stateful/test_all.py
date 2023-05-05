@@ -2131,6 +2131,7 @@ def test_all(
                         self.km,
                         aggKeyNonceConsumers[0].updateKeyManager,
                         newKeyManager,
+                        False,
                         signer=signer,
                         sender=st_sender,
                     )
@@ -2147,6 +2148,7 @@ def test_all(
                         self.km,
                         aggKeyNonceConsumer.updateKeyManager,
                         newKeyManager,
+                        False,
                         signer=signer,
                         sender=st_sender,
                     )
