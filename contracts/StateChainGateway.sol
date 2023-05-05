@@ -287,10 +287,15 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         uint256 amount = _FLIP.balanceOf(address(this));
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = getKeyManager().getGovernanceKey();
+        address recipient = _getGovernor();
         _FLIP.transfer(recipient, amount);
         emit GovernanceWithdrawal(recipient, amount);
     }
+
+    // function govWithdraw() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
+    //     address recipient = _getGovernor();
+    //     _FLIP.updateIssuer(recipient);
+    // }
 
     //////////////////////////////////////////////////////////////
     //                                                          //
