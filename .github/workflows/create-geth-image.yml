@@ -101,7 +101,7 @@ jobs:
       - name: Deploy contracts
         env:
           SEED: "test test test test test test test test test test test junk"
-          AGG_KEY: "031d4388924757cc8eaecf1156204132effcbb3b6185c3a6deb65c773bf6489c74"
+          AGG_KEY: "0305e8bc264a9024df96ecdfece4572a155f3a4bd4906e3014152e80da4606c038"
           GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
           COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
           GENESIS_STAKE: "1000000000000000000000"

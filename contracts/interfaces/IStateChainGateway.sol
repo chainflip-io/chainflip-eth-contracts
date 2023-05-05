@@ -3,11 +3,12 @@ pragma solidity ^0.8.0;
 import "./IFLIP.sol";
 import "./IAggKeyNonceConsumer.sol";
 import "./IGovernanceCommunityGuarded.sol";
+import "./IFlipIssuer.sol";
 
 /**
  * @title    StateChainGateway interface
  */
-interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
+interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKeyNonceConsumer {
     event Funded(bytes32 indexed nodeID, uint256 amount, address funder);
     event RedemptionRegistered(
         bytes32 indexed nodeID,
@@ -90,6 +91,16 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
     function updateFlipSupply(SigData calldata sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber) external;
 
     /**
+     * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
+     *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
+     *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
+     * @param sigData     Struct containing the signature data over the message
+     *                    to verify, signed by the aggregate key.
+     * @param newIssuer   New contract that will issue FLIP tokens.
+     */
+    function updateFlipIssuer(SigData calldata sigData, address newIssuer) external;
+
+    /**
      * @notice      Set the minimum amount of funds needed for `fundStateChainAccount` to be able
      *              to be called. Used to prevent spamming of funding.
      * @param newMinFunding   The new minimum funding amount
@@ -107,12 +118,6 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IAggKeyNonceConsume
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the FLIP token address
-     * @return  The address of FLIP
-     */
-    function getFLIP() external view returns (IFLIP);
 
     /**
      * @notice  Get the minimum amount of funds that's required for funding

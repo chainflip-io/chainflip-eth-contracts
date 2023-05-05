@@ -94,8 +94,11 @@ abstract contract CFReceiver is ICFReceiver {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev Update Chainflip's Vault address
-    function updateCfVault(address _cfVault) external override onlyOwner {
+    /**
+     * @notice           Update Chanflip's Vault address.
+     * @param _cfVault    New Chainflip's Vault address.
+     */
+    function updateCfVault(address _cfVault) external onlyOwner {
         cfVault = _cfVault;
     }
 

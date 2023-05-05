@@ -285,7 +285,7 @@ def test_all(
         st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
-        st_refundAddress = strategy("bytes")
+        st_cfParameters = strategy("bytes")
         st_gasAmount = strategy("uint")
 
         # KeyManager
@@ -1033,9 +1033,15 @@ def test_all(
 
         # Swap Native
         def rule_xSwapNative(
-            self, st_sender, st_dstToken, st_dstAddress, st_native_amount, st_dstChain
+            self,
+            st_sender,
+            st_dstToken,
+            st_dstAddress,
+            st_native_amount,
+            st_dstChain,
+            st_cfParameters,
         ):
-            args = (st_dstChain, st_dstAddress, st_dstToken)
+            args = (st_dstChain, st_dstAddress, st_dstToken, st_cfParameters)
             toLog = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -1068,6 +1074,7 @@ def test_all(
                             st_dstToken,
                             st_native_amount,
                             st_sender,
+                            hexStr(st_cfParameters),
                         ]
 
         # Swap Token
@@ -1079,6 +1086,7 @@ def test_all(
             st_token_amount,
             st_token,
             st_dstChain,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1086,6 +1094,7 @@ def test_all(
                 st_dstToken,
                 st_token,
                 st_token_amount,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1143,6 +1152,7 @@ def test_all(
                             st_token,
                             st_token_amount,
                             st_sender,
+                            hexStr(st_cfParameters),
                         ]
 
         def rule_xCallNative(
@@ -1154,7 +1164,7 @@ def test_all(
             st_dstChain,
             st_message,
             st_gasAmount,
-            st_refundAddress,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1162,7 +1172,7 @@ def test_all(
                 st_dstToken,
                 st_message,
                 st_gasAmount,
-                st_refundAddress,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1200,7 +1210,7 @@ def test_all(
                             st_sender,
                             hexStr(st_message),
                             st_gasAmount,
-                            hexStr(st_refundAddress),
+                            hexStr(st_cfParameters),
                         ]
 
         def rule_xCallToken(
@@ -1213,7 +1223,7 @@ def test_all(
             st_dstChain,
             st_message,
             st_gasAmount,
-            st_refundAddress,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1223,7 +1233,7 @@ def test_all(
                 st_gasAmount,
                 st_token,
                 st_token_amount,
-                st_refundAddress,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1283,7 +1293,7 @@ def test_all(
                             st_sender,
                             hexStr(st_message),
                             st_gasAmount,
-                            hexStr(st_refundAddress),
+                            hexStr(st_cfParameters),
                         ]
 
         # addGasNative

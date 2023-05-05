@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/IKeyManager.sol";
+import "./interfaces/IFlipIssuer.sol";
 import "./interfaces/IFLIP.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
@@ -19,7 +20,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           valid aggragate signature can be submitted to the contract which
  *           updates the total supply by minting or burning the necessary FLIP.
  */
-contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
+contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
     // solhint-disable-next-line var-name-mixedcase
     IFLIP private _FLIP;
@@ -60,6 +61,16 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
         return getKeyManager().getCommunityKey();
+    }
+
+    /**
+     * @notice  Get the FLIP token address
+     * @dev     This function and it's return value will be checked when updating the FLIP issuer.
+     *          Do not remove nor modify this function in future versions of this contract.
+     * @return  The address of FLIP
+     */
+    function getFLIP() external view override returns (IFLIP) {
+        return _FLIP;
     }
 
     /// @dev   Ensure that a new keyManager has the getGovernanceKey() and getCommunityKey()
@@ -231,6 +242,7 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
      *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
      *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
+     * @dev     The new issuer must be a contract and must have a reference to the FLIP contract.
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
@@ -240,10 +252,14 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
         address newIssuer
     )
         external
+        override
         onlyNotSuspended
         nzAddr(newIssuer)
         consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
     {
+        // Require a reference to the FLIP contract
+        require(IFlipIssuer(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
+
         _FLIP.updateIssuer(newIssuer);
     }
 
@@ -275,14 +291,6 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the FLIP token address
-     * @return  The address of FLIP
-     */
-    function getFLIP() external view override returns (IFLIP) {
-        return _FLIP;
-    }
 
     /**
      * @notice  Get the minimum amount of funds that's required for funding

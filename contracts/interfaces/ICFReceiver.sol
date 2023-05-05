@@ -31,10 +31,4 @@ interface ICFReceiver {
      * @param message       The message sent on the source chain. This is a general purpose message.
      */
     function cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) external;
-
-    /**
-     * @notice           Update Chanflip's Vault address.
-     * @param cfVault    New Chainflip's Vault address.
-     */
-    function updateCfVault(address cfVault) external;
 }

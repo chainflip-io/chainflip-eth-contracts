@@ -243,15 +243,15 @@ def all_flip_events():
 
 def all_vault_events():
     print(
-        f"\n💰 Alice swaps {TEST_AMNT} ETH with dstToken 1, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
+        f"\n💰 Alice swaps {TEST_AMNT} ETH with dstToken 1, destination address {JUNK_HEX}, dstChain {JUNK_INT}, cfParameters {JUNK_HEX}\n"
     )
     tx = cf.vault.xSwapNative(
-        JUNK_INT, JUNK_HEX, 1, {"amount": TEST_AMNT, "from": ALICE}
+        JUNK_INT, JUNK_HEX, 1, JUNK_HEX, {"amount": TEST_AMNT, "from": ALICE}
     )
     assert "SwapNative" in tx.events
 
     print(
-        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} dstToken 1, destination address {JUNK_HEX} and dstChain {JUNK_INT}\n"
+        f"\n💰 Alice swaps {TEST_AMNT} IngressToken {cf.flip} dstToken 1, destination address {JUNK_HEX} and dstChain {JUNK_INT}, cfParameters {JUNK_HEX}\n"
     )
     cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
     tx = cf.vault.xSwapToken(
@@ -260,12 +260,13 @@ def all_vault_events():
         1,
         cf.flip,
         TEST_AMNT,
+        JUNK_HEX,
         {"from": ALICE},
     )
     assert "SwapToken" in tx.events
 
     print(
-        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, dstToken 3 and refund Address {JUNK_HEX}\n"
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, dstToken 3 and cfParameters {JUNK_HEX}\n"
     )
     tx = cf.vault.xCallNative(
         JUNK_INT,
@@ -279,7 +280,7 @@ def all_vault_events():
     assert "XCallNative" in tx.events
 
     print(
-        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, IngressToken {cf.flip}, dstToken 3 and refund Address {JUNK_HEX}\n"
+        f"\n💰 Alice xCalls with message {JUNK_HEX} to destination address {JUNK_HEX}, dstChain {JUNK_INT}, swaps {TEST_AMNT}, IngressToken {cf.flip}, dstToken 3 and cfParameters {JUNK_HEX}\n"
     )
     cf.flip.approve(cf.vault, TEST_AMNT, {"from": ALICE})
     tx = cf.vault.xCallToken(
