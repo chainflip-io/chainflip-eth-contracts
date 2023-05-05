@@ -2370,6 +2370,7 @@ def test_all(
                     self.km,
                     self.scg.updateFlipIssuer,
                     newStateChainGateway.address,
+                    False,
                     signer=signer,
                     sender=st_sender,
                 )

@@ -672,7 +672,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Check that no nonce has been consumed in the last 14 days - emergency
+    /// @dev    Check that no nonce has been consumed in the last 3 days - emergency
     modifier timeoutEmergency() {
         require(
             block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
