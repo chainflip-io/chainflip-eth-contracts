@@ -194,8 +194,11 @@ def _emergency_withdrawal_gateway(cf, govKey, communityKey):
     assert cf.flip.balanceOf(cf.stateChainGateway) == 0
     assert cf.flip.balanceOf(govKey) == iniBals_gov + amount_to_recover
 
-    # Ensure that we can also update the flip issuer
-    cf.stateChainGateway.govUpdateFlipIssuer({"from": govKey})
+    assert cf.flip.getIssuer() == govKey
+
+    # Ensure that we can also update the flip issuer althouth its already the govKey
+    with reverts(REV_MSG_FLIP_ISSUER):
+        cf.stateChainGateway.govUpdateFlipIssuer({"from": govKey})
 
 
 def _emergency_withdrawals(cf, govKey, communityKey):

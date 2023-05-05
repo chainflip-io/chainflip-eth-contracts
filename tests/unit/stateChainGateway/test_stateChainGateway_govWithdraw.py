@@ -43,3 +43,15 @@ def test_govWithdraw(cf, fundedMin):
         cf.GOVERNOR,
         stateChainGatewayFlipBalance,
     ]
+    assert cf.flip.getIssuer() == cf.GOVERNOR
+
+
+def test_govWithdraw_update_govwithdraw(cf, fundedMin):
+    test_fund_min(cf, fundedMin)
+    cf.stateChainGateway.suspend({"from": cf.GOVERNOR})
+    cf.stateChainGateway.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
+
+    # If we mistakenly or purposely update do govUpdateFlipIssuer before govWithdraw
+    cf.stateChainGateway.govUpdateFlipIssuer({"from": cf.GOVERNOR})
+
+    cf.stateChainGateway.govWithdraw({"from": cf.GOVERNOR})

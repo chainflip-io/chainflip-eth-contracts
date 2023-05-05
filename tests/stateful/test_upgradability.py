@@ -234,7 +234,7 @@ def test_upgradability(
             assert self.f.balanceOf(newStateChainGateway) == self.totalFlipFunded
             assert self.f.balanceOf(self.scg) == 0
 
-            assert self.f.issuer() == self.scg
+            assert self.f.getIssuer() == self.scg
 
             signed_call_km(
                 self.km,
@@ -248,7 +248,7 @@ def test_upgradability(
             self.scg_communityKey = self.scg_communityKey
             self.scg_guard = False
             self.scg_suspended = False
-            assert self.f.issuer() == self.scg
+            assert self.f.getIssuer() == self.scg
 
         # Check that all the funds (NATIVE and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):

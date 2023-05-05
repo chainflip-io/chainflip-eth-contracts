@@ -431,7 +431,10 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
                 if self.suspended:
                     flipBalsSm = self.f.balanceOf(self.scg)
                     flipBalsGov = self.f.balanceOf(self.governor)
-                    print("                    rule_governance", st_sender)
+                    print("                    rule_govWithdrawal", st_sender)
+                    # Do a govUpdateFlipIssuer before the withdrawal just as test
+                    self.scg.govUpdateFlipIssuer({"from": self.governor})
+
                     self.scg.govWithdraw({"from": self.governor})
                     # Governor has all the FLIP - do the checking and return the tokens for the invariant check
                     assert self.f.balanceOf(self.governor) == flipBalsGov + flipBalsSm
@@ -439,7 +442,7 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
                     self.f.transfer(self.scg, flipBalsSm, {"from": self.governor})
 
                     self.scg.govUpdateFlipIssuer({"from": self.governor})
-                    assert self.f.issuer() == self.governor
+                    assert self.f.getIssuer() == self.governor
 
                     # Return issuer rights to the State Chain Gateway
                     self.f.updateIssuer(self.scg.address, {"from": self.governor})

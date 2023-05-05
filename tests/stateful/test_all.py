@@ -2541,6 +2541,10 @@ def test_all(
 
                 if self.scg_suspended:
                     print("                    rule_scg_govWithdrawal", st_sender)
+
+                    # Do a govUpdateFlipIssuer before the withdrawal just as test
+                    self.scg.govUpdateFlipIssuer({"from": self.governor})
+
                     self.scg.govWithdraw({"from": self.governor})
                     # Governor has all the FLIP - do the checking and return the tokens for the invariant check
                     assert (
@@ -2552,8 +2556,7 @@ def test_all(
                         self.scg, self.flipBals[self.scg], {"from": self.governor}
                     )
 
-                    self.scg.govUpdateFlipIssuer({"from": self.governor})
-                    assert self.f.issuer() == self.governor
+                    assert self.f.getIssuer() == self.governor
 
                     # Return issuer rights to the State Chain Gateway
                     self.f.updateIssuer(self.scg.address, {"from": self.governor})

@@ -9,7 +9,7 @@ import "./abstract/Shared.sol";
  * @notice   The FLIP utility token which is used in the StateChain.
  */
 contract FLIP is ERC20, IFLIP, Shared {
-    address public issuer;
+    address private issuer;
 
     constructor(
         uint256 flipTotalSupply,
@@ -75,11 +75,22 @@ contract FLIP is ERC20, IFLIP, Shared {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev Get the issuer address.
+    function getIssuer() external view override returns (address) {
+        return issuer;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
     //                        Modifiers                         //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Check that the caller is the token Issuer.
+    /// @dev    Check that the caller is the token issuer.
     modifier onlyIssuer() {
         require(msg.sender == issuer, "FLIP: not issuer");
         _;

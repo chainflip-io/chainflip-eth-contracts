@@ -5,7 +5,7 @@ from test_fund import test_fund_min
 
 def test_govUpdateFlipIssuer(cf):
     # Test that governance can update the FLIP issuer
-    assert cf.flip.issuer() == cf.stateChainGateway
+    assert cf.flip.getIssuer() == cf.stateChainGateway
 
     with reverts(REV_MSG_GOV_GOVERNOR):
         cf.stateChainGateway.govUpdateFlipIssuer({"from": cf.ALICE})
@@ -24,9 +24,9 @@ def test_govUpdateFlipIssuer(cf):
     with reverts(REV_MSG_GOV_GOVERNOR):
         cf.stateChainGateway.govUpdateFlipIssuer({"from": cf.ALICE})
 
-    assert cf.flip.issuer() == cf.stateChainGateway
+    assert cf.flip.getIssuer() == cf.stateChainGateway
     tx = cf.stateChainGateway.govUpdateFlipIssuer({"from": cf.GOVERNOR})
-    assert cf.flip.issuer() == cf.GOVERNOR
+    assert cf.flip.getIssuer() == cf.GOVERNOR
 
     assert tx.events["IssuerUpdated"][0].values() == [
         cf.stateChainGateway,
@@ -35,3 +35,7 @@ def test_govUpdateFlipIssuer(cf):
 
     # Ensure that the governance address can now issue new FLIP
     cf.flip.mint(cf.stateChainGateway, 100, {"from": cf.GOVERNOR})
+
+    # Ensure that the cf.stateChainGateway cannot update the issuer
+    with reverts(REV_MSG_FLIP_ISSUER):
+        cf.stateChainGateway.govUpdateFlipIssuer({"from": cf.GOVERNOR})

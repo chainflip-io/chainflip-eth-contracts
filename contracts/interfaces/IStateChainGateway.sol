@@ -111,6 +111,7 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
     /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
+     *         The governance address is also updated as the issuer of FLIP.
      */
     function govWithdraw() external;
 
