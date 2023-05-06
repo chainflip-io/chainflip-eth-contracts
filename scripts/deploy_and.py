@@ -144,7 +144,11 @@ def all_stateChainGateway_events():
     print(f"\n🔑 Update the keyManager address in State Chain Gateway🔑\n")
 
     tx = signed_call_cf(
-        cf, cf.stateChainGateway.updateKeyManager, cf.keyManager.address, False, sender=ALICE
+        cf,
+        cf.stateChainGateway.updateKeyManager,
+        cf.keyManager.address,
+        False,
+        sender=ALICE,
     )
     assert "UpdatedKeyManager" in tx.events
 
@@ -237,7 +241,7 @@ def all_flip_events():
         AGG_SIGNER_1,
         DENICE,
         cf.stateChainGateway.address,
-        False
+        False,
     )
     assert "IssuerUpdated" in tx.events
 
@@ -359,6 +363,11 @@ def all_vault_events():
     print(f"\n🔑 Update the keyManager address in the Vault🔑\n")
 
     tx = signed_call(
-        cf.keyManager, cf.vault.updateKeyManager, AGG_SIGNER_1, ALICE, cf.keyManager.address, False
+        cf.keyManager,
+        cf.vault.updateKeyManager,
+        AGG_SIGNER_1,
+        ALICE,
+        cf.keyManager.address,
+        False,
     )
     assert "UpdatedKeyManager" in tx.events
