@@ -19,4 +19,12 @@ interface IFLIP is IERC20 {
     function burn(address account, uint amount) external;
 
     function updateIssuer(address newIssuer) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function getIssuer() external view returns (address);
 }

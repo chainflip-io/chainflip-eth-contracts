@@ -30,19 +30,22 @@ def test_upgrade_keyManager(cf, KeyManager):
 
     aggKeyNonceConsumers = [cf.vault, cf.stateChainGateway]
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
-        signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager)
+        signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, newKeyManager, False)
         assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
     for aggKeyNonceConsumer in aggKeyNonceConsumers:
         # Check that messages signed with old keyManager's address revert in the new one
         with reverts(REV_MSG_SIG):
-            signed_call_cf(cf, aggKeyNonceConsumer.updateKeyManager, NON_ZERO_ADDR)
+            signed_call_cf(
+                cf, aggKeyNonceConsumer.updateKeyManager, NON_ZERO_ADDR, False
+            )
 
         # Try one validation per contract to check that they can validate
         signed_call_cf(
             cf,
             aggKeyNonceConsumer.updateKeyManager,
             aggKeyNonceConsumer.getKeyManager(),
+            False,
             keyManager=newKeyManager,
         )
 
@@ -232,6 +235,7 @@ def test_upgrade_StateChainGateway(
         cf,
         cf.stateChainGateway.updateFlipIssuer,
         newStateChainGateway.address,
+        False,
         sender=cf.BOB,
     )
-    assert cf.flip.issuer() == newStateChainGateway.address
+    assert cf.flip.getIssuer() == newStateChainGateway.address

@@ -19,20 +19,28 @@ import "./GovernanceCommunityGuarded.sol";
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
-    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
+    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
     uint256 private constant _GAS_TO_FORWARD = 3500;
 
     event TransferNativeFailed(address payable indexed recipient, uint256 amount);
     event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
 
-    event SwapNative(uint32 dstChain, bytes dstAddress, uint32 dstToken, uint256 amount, address indexed sender);
+    event SwapNative(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        uint256 amount,
+        address indexed sender,
+        bytes cfParameters
+    );
     event SwapToken(
         uint32 dstChain,
         bytes dstAddress,
         uint32 dstToken,
         address srcToken,
         uint256 amount,
-        address indexed sender
+        address indexed sender,
+        bytes cfParameters
     );
 
     /// @dev dstAddress is not indexed because indexing a dynamic type (bytes) for it to be filtered,
@@ -47,7 +55,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address indexed sender,
         bytes message,
         uint256 gasAmount,
-        bytes refundAddress
+        bytes cfParameters
     );
     event XCallToken(
         uint32 dstChain,
@@ -58,7 +66,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address indexed sender,
         bytes message,
         uint256 gasAmount,
-        bytes refundAddress
+        bytes cfParameters
     );
 
     event AddGasNative(bytes32 swapID, uint256 amount);
@@ -78,6 +86,33 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
         return getKeyManager().getCommunityKey();
+    }
+
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey(), getCommunityKey()
+    ///        and getLastValidateTime() are implemented. These are functions required for
+    ///        this contract to at least be able to use the emergency mechanism.
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
+        address newGovKey = keyManager.getGovernanceKey();
+        address newCommKey = keyManager.getCommunityKey();
+        uint256 lastValidateTime = keyManager.getLastValidateTime();
+
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
+
+            Key memory newAggKey = keyManager.getAggregateKey();
+            Key memory currentAggKey = getKeyManager().getAggregateKey();
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+
+            // Ensure that the last validate time is not in the future
+            require(lastValidateTime <= block.timestamp);
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -300,13 +335,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Destination token to be swapped to.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xSwapNative(
         uint32 dstChain,
         bytes memory dstAddress,
-        uint32 dstToken
+        uint32 dstToken,
+        bytes calldata cfParameters
     ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit SwapNative(dstChain, dstAddress, dstToken, msg.value, msg.sender);
+        emit SwapNative(dstChain, dstAddress, dstToken, msg.value, msg.sender, cfParameters);
     }
 
     /**
@@ -320,16 +357,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param dstToken      Uint containing the specifics of the swap to be performed according to Chainflip's nomenclature.
      * @param srcToken      Address of the source token to swap.
      * @param amount        Amount of tokens to swap.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xSwapToken(
         uint32 dstChain,
         bytes memory dstAddress,
         uint32 dstToken,
         IERC20 srcToken,
-        uint256 amount
+        uint256 amount,
+        bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit SwapToken(dstChain, dstAddress, dstToken, address(srcToken), amount, msg.sender);
+        emit SwapToken(dstChain, dstAddress, dstToken, address(srcToken), amount, msg.sender, cfParameters);
     }
 
     //////////////////////////////////////////////////////////////
@@ -352,8 +391,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param gasAmount  The amount of native gas to be used on the destination chain's call.
-     * @param refundAddress Address for any future refunds to the user.
+     * @param gasAmount     The amount to be used for gas in the egress chain.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xCallNative(
         uint32 dstChain,
@@ -361,9 +400,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint32 dstToken,
         bytes calldata message,
         uint256 gasAmount,
-        bytes calldata refundAddress
+        bytes calldata cfParameters
     ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit XCallNative(dstChain, dstAddress, dstToken, msg.value, msg.sender, message, gasAmount, refundAddress);
+        emit XCallNative(dstChain, dstAddress, dstToken, msg.value, msg.sender, message, gasAmount, cfParameters);
     }
 
     /**
@@ -382,11 +421,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param gasAmount  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
-     *                      source token.
+     * @param gasAmount     The amount to be used for gas in the egress chain.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
-     * @param refundAddress Address for any future refunds to the user.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xCallToken(
         uint32 dstChain,
@@ -396,7 +434,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 gasAmount,
         IERC20 srcToken,
         uint256 amount,
-        bytes calldata refundAddress
+        bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
         emit XCallToken(
@@ -408,7 +446,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             msg.sender,
             message,
             gasAmount,
-            refundAddress
+            cfParameters
         );
     }
 
@@ -634,7 +672,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Check that no nonce has been consumed in the last 14 days - emergency
+    /// @dev    Check that no nonce has been consumed in the last 3 days - emergency
     modifier timeoutEmergency() {
         require(
             block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,

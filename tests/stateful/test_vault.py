@@ -168,7 +168,7 @@ def test_vault(
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
         st_gasAmount = strategy("uint")
-        st_refundAddress = strategy("bytes")
+        st_cfParameters = strategy("bytes")
 
         def rule_allBatch(self, st_swapIDs, st_recips, st_native_amounts, st_sender):
 
@@ -768,8 +768,8 @@ def test_vault(
                 )
 
         # Sleep AGG_KEY_EMERGENCY_TIMEOUT
-        def rule_sleep_14_days(self):
-            print("                    rule_sleep_14_days")
+        def rule_sleep_3_days(self):
+            print("                    rule_sleep_3_days")
             chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
 
         # Suspends the State Chain Gateway if st_sender matches the governor address. It has
@@ -883,20 +883,18 @@ def test_vault(
                             token.transfer(
                                 self.v, vaultBals[token], {"from": self.governor}
                             )
-                else:
-                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
-                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
-            else:
-                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
-                with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Swap ETH
         def rule_xSwapNative(
-            self, st_sender, st_dstToken, st_dstAddress, st_native_amount, st_dstChain
+            self,
+            st_sender,
+            st_dstToken,
+            st_dstAddress,
+            st_native_amount,
+            st_dstChain,
+            st_cfParameters,
         ):
-            args = (st_dstChain, st_dstAddress, st_dstToken)
+            args = (st_dstChain, st_dstAddress, st_dstToken, st_cfParameters)
             toLog = (*args, st_sender)
             if self.suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -931,6 +929,7 @@ def test_vault(
                             st_dstToken,
                             st_native_amount,
                             st_sender,
+                            hexStr(st_cfParameters),
                         ]
 
         # Swap Token
@@ -942,6 +941,7 @@ def test_vault(
             st_token_amount,
             st_token,
             st_dstChain,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -949,6 +949,7 @@ def test_vault(
                 st_dstToken,
                 st_token,
                 st_token_amount,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.suspended:
@@ -1006,6 +1007,7 @@ def test_vault(
                             st_token,
                             st_token_amount,
                             st_sender,
+                            hexStr(st_cfParameters),
                         ]
 
         def rule_xCallNative(
@@ -1017,7 +1019,7 @@ def test_vault(
             st_dstChain,
             st_message,
             st_gasAmount,
-            st_refundAddress,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1025,7 +1027,7 @@ def test_vault(
                 st_dstToken,
                 st_message,
                 st_gasAmount,
-                st_refundAddress,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.suspended:
@@ -1063,7 +1065,7 @@ def test_vault(
                             st_sender,
                             hexStr(st_message),
                             st_gasAmount,
-                            hexStr(st_refundAddress),
+                            hexStr(st_cfParameters),
                         ]
 
         def rule_xCallToken(
@@ -1076,7 +1078,7 @@ def test_vault(
             st_dstChain,
             st_message,
             st_gasAmount,
-            st_refundAddress,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1086,7 +1088,7 @@ def test_vault(
                 st_gasAmount,
                 st_token,
                 st_token_amount,
-                st_refundAddress,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.suspended:
@@ -1146,7 +1148,7 @@ def test_vault(
                             st_sender,
                             hexStr(st_message),
                             st_gasAmount,
-                            hexStr(st_refundAddress),
+                            hexStr(st_cfParameters),
                         ]
 
         # addGasNative

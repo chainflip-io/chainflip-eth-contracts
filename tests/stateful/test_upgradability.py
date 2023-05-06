@@ -92,11 +92,12 @@ def test_upgradability(
 
             for aggKeyNonceConsumer in aggKeyNonceConsumers:
                 assert aggKeyNonceConsumer.getKeyManager() == self.km
-
+                # Gov key is different so omiting the check
                 signed_call_km(
                     self.km,
                     aggKeyNonceConsumer.updateKeyManager,
                     newKeyManager,
+                    True,
                     sender=st_sender,
                 )
 
@@ -233,12 +234,13 @@ def test_upgradability(
             assert self.f.balanceOf(newStateChainGateway) == self.totalFlipFunded
             assert self.f.balanceOf(self.scg) == 0
 
-            assert self.f.issuer() == self.scg
+            assert self.f.getIssuer() == self.scg
 
             signed_call_km(
                 self.km,
                 self.scg.updateFlipIssuer,
                 newStateChainGateway.address,
+                False,
                 sender=st_sender,
             )
 
@@ -246,7 +248,7 @@ def test_upgradability(
             self.scg_communityKey = self.scg_communityKey
             self.scg_guard = False
             self.scg_suspended = False
-            assert self.f.issuer() == self.scg
+            assert self.f.getIssuer() == self.scg
 
         # Check that all the funds (NATIVE and FLIP) total amounts have not changed and have been transferred
         def invariant_bals(self):

@@ -41,8 +41,12 @@ contract StateChainGatewayEchidna is IShared {
 
     // Expose AggKeyNonceConsumer functions to Echidna
 
-    function updateKeyManagerStateChainGateway(SigData calldata sigData, IKeyManager keyManager) external virtual {
-        sm.updateKeyManager(sigData, keyManager);
+    function updateKeyManagerStateChainGateway(
+        SigData calldata sigData,
+        IKeyManager keyManager,
+        bool omitChecks
+    ) external virtual {
+        sm.updateKeyManager(sigData, keyManager, omitChecks);
     }
 
     // Expose GovernanceCommunityGuarded functions to Echidna

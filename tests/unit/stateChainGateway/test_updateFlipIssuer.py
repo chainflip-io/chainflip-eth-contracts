@@ -7,13 +7,90 @@ from deploy import deploy_new_stateChainGateway
 
 
 def test_updateIssuer_rev_nzAddr(cf):
-    with reverts(REV_MSG_NZ_ADDR):
+    for omitChecks in [True, False]:
+        with reverts(REV_MSG_NZ_ADDR):
+            signed_call_cf(
+                cf,
+                cf.stateChainGateway.updateFlipIssuer,
+                ZERO_ADDR,
+                omitChecks,
+                sender=cf.BOB,
+            )
+
+
+def test_updateIssuer_rev_eoa(cf):
+    for omitChecks in [True, False]:
+        with reverts("Transaction reverted without a reason string"):
+            signed_call_cf(
+                cf,
+                cf.stateChainGateway.updateFlipIssuer,
+                cf.ALICE,
+                omitChecks,
+                sender=cf.BOB,
+            )
+
+
+# Don't allow an arbitrary contract unless we omit checks
+def test_updateIssuer_arbitrary_contract(cf):
+    with reverts("Transaction reverted without a reason string"):
         signed_call_cf(
             cf,
             cf.stateChainGateway.updateFlipIssuer,
-            ZERO_ADDR,
+            cf.vault.address,
+            False,
             sender=cf.BOB,
         )
+
+    signed_call_cf(
+        cf,
+        cf.stateChainGateway.updateFlipIssuer,
+        cf.vault.address,
+        True,
+        sender=cf.BOB,
+    )
+
+
+def test_updateIssuer_rev_notFLIP(
+    cf, KeyManager, StateChainGateway, DeployerStateChainGateway, FLIP
+):
+    # Deploy a mock FLIP
+    flip_mock = cf.deployer.deploy(
+        FLIP,
+        INIT_SUPPLY,
+        cf.numGenesisValidators,
+        cf.genesisStake,
+        cf.deployer,
+        cf.deployer,
+        cf.deployer,
+    )
+
+    (_, newStateChainGateway) = deploy_new_stateChainGateway(
+        cf.deployer,
+        KeyManager,
+        StateChainGateway,
+        FLIP,
+        DeployerStateChainGateway,
+        cf.keyManager.address,
+        flip_mock.address,
+        MIN_FUNDING,
+    )
+
+    with reverts(REV_MSG_NOT_FLIP):
+        signed_call_cf(
+            cf,
+            cf.stateChainGateway.updateFlipIssuer,
+            newStateChainGateway,
+            False,
+            sender=cf.BOB,
+        )
+
+    signed_call_cf(
+        cf,
+        cf.stateChainGateway.updateFlipIssuer,
+        newStateChainGateway,
+        True,
+        sender=cf.BOB,
+    )
 
 
 def test_updateIssuer(
@@ -39,6 +116,7 @@ def test_updateIssuer(
         cf,
         cf.stateChainGateway.updateFlipIssuer,
         new_stateChainGateway.address,
+        False,
         sender=cf.BOB,
     )
 
@@ -73,5 +151,6 @@ def test_updateIssuer_rev_suspended(cf):
             cf,
             cf.stateChainGateway.updateFlipIssuer,
             NON_ZERO_ADDR,
+            False,
             sender=cf.BOB,
         )

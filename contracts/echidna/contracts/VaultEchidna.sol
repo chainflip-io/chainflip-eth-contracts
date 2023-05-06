@@ -36,8 +36,13 @@ contract VaultEchidna is IShared {
         v.fetchBatch(sigData, fetchParamsArray);
     }
 
-    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint32 dstToken) external payable virtual {
-        v.xSwapNative{value: msg.value}(dstChain, dstAddress, dstToken);
+    function xSwapNative(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint32 dstToken,
+        bytes calldata cfParameters
+    ) external payable virtual {
+        v.xSwapNative{value: msg.value}(dstChain, dstAddress, dstToken, cfParameters);
     }
 
     function xSwapToken(
@@ -45,9 +50,10 @@ contract VaultEchidna is IShared {
         bytes calldata dstAddress,
         uint32 dstToken,
         IERC20 srcToken,
-        uint256 amount
+        uint256 amount,
+        bytes calldata cfParameters
     ) external virtual {
-        v.xSwapToken(dstChain, dstAddress, dstToken, srcToken, amount);
+        v.xSwapToken(dstChain, dstAddress, dstToken, srcToken, amount, cfParameters);
     }
 
     function xCallNative(
@@ -56,9 +62,9 @@ contract VaultEchidna is IShared {
         uint32 dstToken,
         bytes calldata message,
         uint256 dstNativeGas,
-        bytes calldata refundAddress
+        bytes calldata cfParameters
     ) external payable virtual {
-        v.xCallNative{value: msg.value}(dstChain, dstAddress, dstToken, message, dstNativeGas, refundAddress);
+        v.xCallNative{value: msg.value}(dstChain, dstAddress, dstToken, message, dstNativeGas, cfParameters);
     }
 
     function xCallToken(
@@ -69,9 +75,9 @@ contract VaultEchidna is IShared {
         uint256 dstNativeGas,
         IERC20 srcToken,
         uint256 amount,
-        bytes calldata refundAddress
+        bytes calldata cfParameters
     ) external virtual {
-        v.xCallToken(dstChain, dstAddress, dstToken, message, dstNativeGas, srcToken, amount, refundAddress);
+        v.xCallToken(dstChain, dstAddress, dstToken, message, dstNativeGas, srcToken, amount, cfParameters);
     }
 
     function executexSwapAndCall(
@@ -100,8 +106,8 @@ contract VaultEchidna is IShared {
 
     // Expose AggKeyNonceConsumer functions to Echidna
 
-    function updateKeyManagerVault(SigData calldata sigData, IKeyManager keyManager) external virtual {
-        v.updateKeyManager(sigData, keyManager);
+    function updateKeyManagerVault(SigData calldata sigData, IKeyManager keyManager, bool omitChecks) external virtual {
+        v.updateKeyManager(sigData, keyManager, omitChecks);
     }
 
     // Expose GovernanceCommunityGuarded functions to Echidna

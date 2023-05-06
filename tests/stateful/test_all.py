@@ -285,7 +285,7 @@ def test_all(
         st_dstAddress = strategy("bytes")
         st_dstChain = strategy("uint32")
         st_message = strategy("bytes")
-        st_refundAddress = strategy("bytes")
+        st_cfParameters = strategy("bytes")
         st_gasAmount = strategy("uint")
 
         # KeyManager
@@ -1033,9 +1033,15 @@ def test_all(
 
         # Swap Native
         def rule_xSwapNative(
-            self, st_sender, st_dstToken, st_dstAddress, st_native_amount, st_dstChain
+            self,
+            st_sender,
+            st_dstToken,
+            st_dstAddress,
+            st_native_amount,
+            st_dstChain,
+            st_cfParameters,
         ):
-            args = (st_dstChain, st_dstAddress, st_dstToken)
+            args = (st_dstChain, st_dstAddress, st_dstToken, st_cfParameters)
             toLog = (*args, st_sender)
             if self.v_suspended:
                 with reverts(REV_MSG_GOV_SUSPENDED):
@@ -1068,6 +1074,7 @@ def test_all(
                             st_dstToken,
                             st_native_amount,
                             st_sender,
+                            hexStr(st_cfParameters),
                         ]
 
         # Swap Token
@@ -1079,6 +1086,7 @@ def test_all(
             st_token_amount,
             st_token,
             st_dstChain,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1086,6 +1094,7 @@ def test_all(
                 st_dstToken,
                 st_token,
                 st_token_amount,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1143,6 +1152,7 @@ def test_all(
                             st_token,
                             st_token_amount,
                             st_sender,
+                            hexStr(st_cfParameters),
                         ]
 
         def rule_xCallNative(
@@ -1154,7 +1164,7 @@ def test_all(
             st_dstChain,
             st_message,
             st_gasAmount,
-            st_refundAddress,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1162,7 +1172,7 @@ def test_all(
                 st_dstToken,
                 st_message,
                 st_gasAmount,
-                st_refundAddress,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1200,7 +1210,7 @@ def test_all(
                             st_sender,
                             hexStr(st_message),
                             st_gasAmount,
-                            hexStr(st_refundAddress),
+                            hexStr(st_cfParameters),
                         ]
 
         def rule_xCallToken(
@@ -1213,7 +1223,7 @@ def test_all(
             st_dstChain,
             st_message,
             st_gasAmount,
-            st_refundAddress,
+            st_cfParameters,
         ):
             args = (
                 st_dstChain,
@@ -1223,7 +1233,7 @@ def test_all(
                 st_gasAmount,
                 st_token,
                 st_token_amount,
-                st_refundAddress,
+                st_cfParameters,
             )
             toLog = (*args, st_sender)
             if self.v_suspended:
@@ -1283,7 +1293,7 @@ def test_all(
                             st_sender,
                             hexStr(st_message),
                             st_gasAmount,
-                            hexStr(st_refundAddress),
+                            hexStr(st_cfParameters),
                         ]
 
         # addGasNative
@@ -2131,6 +2141,7 @@ def test_all(
                         self.km,
                         aggKeyNonceConsumers[0].updateKeyManager,
                         newKeyManager,
+                        False,
                         signer=signer,
                         sender=st_sender,
                     )
@@ -2147,6 +2158,7 @@ def test_all(
                         self.km,
                         aggKeyNonceConsumer.updateKeyManager,
                         newKeyManager,
+                        False,
                         signer=signer,
                         sender=st_sender,
                     )
@@ -2358,6 +2370,7 @@ def test_all(
                     self.km,
                     self.scg.updateFlipIssuer,
                     newStateChainGateway.address,
+                    False,
                     signer=signer,
                     sender=st_sender,
                 )
@@ -2527,7 +2540,11 @@ def test_all(
                         self.scg.govWithdraw({"from": st_sender})
 
                 if self.scg_suspended:
-                    print("                    rule_govWithdrawal", st_sender)
+                    print("                    rule_scg_govWithdrawal", st_sender)
+
+                    # Do a govUpdateFlipIssuer before the withdrawal just as test
+                    self.scg.govUpdateFlipIssuer({"from": self.governor})
+
                     self.scg.govWithdraw({"from": self.governor})
                     # Governor has all the FLIP - do the checking and return the tokens for the invariant check
                     assert (
@@ -2538,14 +2555,11 @@ def test_all(
                     self.f.transfer(
                         self.scg, self.flipBals[self.scg], {"from": self.governor}
                     )
-                else:
-                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
-                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.scg.govWithdraw({"from": self.governor})
-            else:
-                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
-                with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.scg.govWithdraw({"from": self.governor})
+
+                    assert self.f.getIssuer() == self.governor
+
+                    # Return issuer rights to the State Chain Gateway
+                    self.f.updateIssuer(self.scg.address, {"from": self.governor})
 
         # Governance attemps to withdraw all tokens from the Vault in case of emergency
         def rule_v_govWithdrawal(self, st_sender):
@@ -2561,14 +2575,14 @@ def test_all(
                         getChainTime() - self.km.getLastValidateTime()
                         < AGG_KEY_EMERGENCY_TIMEOUT
                     ):
-                        print("        REV_MSG_VAULT_DELAY _govWithdrawal")
+                        print("        REV_MSG_VAULT_DELAY v_govWithdrawal")
                         with reverts(REV_MSG_VAULT_DELAY):
                             self.v.govWithdraw(
                                 tokenstoWithdraw, {"from": self.governor}
                             )
                     else:
                         # tokenstoWithdraw contains tokenA and tokenB
-                        print("                    rule_govWithdrawal", st_sender)
+                        print("                    rule_v_govWithdrawal", st_sender)
                         self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
                         # Governor has all the tokens - do the checking and return the tokens for the invariant check
                         assert (
@@ -2587,15 +2601,6 @@ def test_all(
                         tokenstoWithdraw[1].transfer(
                             self.v, self.tokenBBals[self.v], {"from": self.governor}
                         )
-
-                else:
-                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
-                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
-            else:
-                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
-                with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Transfer native to the stateChainGateway to check govWithdrawalNative. Using st_funder to make sure it is a key in the nativeBals dict
         def _transfer_native_scg(self, st_funder, st_native_amount):

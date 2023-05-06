@@ -1,23 +1,42 @@
 from consts import *
 from brownie.test import given, strategy
-from brownie import reverts, chain
+from brownie import reverts
 from utils import *
 from shared_tests import *
 
+# NOTE: We want to test updateIssuer in isolation from the rest of the contracts
+# so we will deploy the FLIP contract separately and set an EOA as the issuer.
 
-def update_issuer(cf, new_issuer):
-    signed_call_cf(cf, cf.stateChainGateway.updateFlipIssuer, new_issuer)
+
+def deploy_flip(cf, FLIP, issuer):
+    return FLIP.deploy(
+        INIT_SUPPLY,
+        cf.numGenesisValidators,
+        cf.genesisStake,
+        cf.ALICE,
+        cf.BOB,
+        issuer,
+        {"from": cf.CHARLIE},
+    )
 
 
 @given(st_issuer=strategy("address"))
-def test_updateIssuer(cf, st_issuer):
-    assert cf.flip.issuer() == cf.stateChainGateway.address
-    update_issuer(cf, st_issuer)
-    assert cf.flip.issuer() == st_issuer
+def test_updateIssuer(cf, st_issuer, FLIP):
+    flip = deploy_flip(cf, FLIP, cf.ALICE)
+    assert flip.getIssuer() == cf.ALICE
+    flip.updateIssuer(st_issuer, {"from": cf.ALICE})
+    assert cf.flip.getIssuer() == st_issuer
+
+
+def test_updateIssuer(cf, FLIP):
+    flip = deploy_flip(cf, FLIP, cf.BOB)
+    assert flip.getIssuer() == cf.BOB
+    flip.updateIssuer(cf.stateChainGateway.address, {"from": cf.BOB})
+    assert cf.flip.getIssuer() == cf.stateChainGateway.address
 
 
 @given(st_sender=strategy("address"))
 def test_revIssuer(cf, st_sender):
-    assert cf.flip.issuer() == cf.stateChainGateway.address
+    assert cf.flip.getIssuer() == cf.stateChainGateway.address
     with reverts(REV_MSG_FLIP_ISSUER):
         cf.flip.updateIssuer(NON_ZERO_ADDR, {"from": st_sender})

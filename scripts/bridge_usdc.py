@@ -17,6 +17,7 @@ from brownie import (
 )
 from deploy import deploy_Chainflip_contracts
 from brownie.convert import to_bytes
+from shared_tests import *
 
 import requests
 import time
@@ -239,7 +240,8 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         # assert usdc.balanceOf(vault.address) >= tokens_to_transfer
 
         # Doing it through the Vault means we need to encode the calldata
-        syncNonce(KeyManager.at(keyManager_address))
+        keyManager = KeyManager.at(keyManager_address)
+        syncNonce(keyManager)
 
         call0 = [
             0,
@@ -253,13 +255,13 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
         calls = [call0, call1]
 
         args = [usdc, tokens_to_transfer, squid_multicall, calls]
-        callDataNoSig = vault.executeActions.encode_input(
-            agg_null_sig(keyManager_address, chain.id), *args
-        )
-        tx = vault.executeActions(
-            AGG_SIGNER_1.getSigData(callDataNoSig, keyManager_address),
+
+        tx = signed_call(
+            keyManager,
+            vault.executeActions,
+            AGG_SIGNER_1,
+            DEPLOYER,
             *args,
-            {"from": DEPLOYER},
         )
 
         ## If done through Squid, the depositor of the USDC becomes the Multicall
@@ -300,6 +302,7 @@ def bridge_usdc(fuji_to_goerli, depositor, mint_recipient_address):
     messageHash = web3.solidityKeccak(["bytes"], [message]).hex()
     mint_recipient = tx.events["DepositForBurn"]["mintRecipient"]
     destination_caller = tx.events["DepositForBurn"]["destinationCaller"]
+    tx.info()
 
     print("Message: ", message)
     print("Message hash: ", messageHash)
@@ -347,7 +350,8 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
                 {"from": DEPLOYER, "required_confs": 1},
             )
         # Doing it through the Vault means we need to encode the calldata
-        syncNonce(KeyManager.at(keyManager_address))
+        keyManager = KeyManager.at(keyManager_address)
+        syncNonce(keyManager)
 
         call0 = [
             0,
@@ -361,13 +365,13 @@ def bridge_aUsdc(fuji_to_goerli, depositor, mint_recipient_address):
         calls = [call0, call1]
 
         args = [aUsdc, tokens_to_transfer, squid_multicall, calls]
-        callDataNoSig = vault.executeActions.encode_input(
-            agg_null_sig(keyManager_address, chain.id), *args
-        )
-        tx = vault.executeActions(
-            AGG_SIGNER_1.getSigData(callDataNoSig, keyManager_address),
+
+        tx = signed_call(
+            keyManager,
+            vault.executeActions,
+            AGG_SIGNER_1,
+            DEPLOYER,
             *args,
-            {"from": DEPLOYER},
         )
 
         ## If done through Squid, the depositor of the USDC becomes the Multicall
@@ -457,7 +461,8 @@ def get_and_submit_attestation(
         vault = Vault.at(depositor)
         keyManager_address = vault.getKeyManager()
 
-        syncNonce(KeyManager.at(keyManager_address))
+        keyManager = KeyManager.at(keyManager_address)
+        syncNonce(keyManager)
 
         # Doing it through the Vault means we need to encode the calldata
 
@@ -475,17 +480,12 @@ def get_and_submit_attestation(
 
         args = ["0x0000000000000000000000000000000000000000", 0, squid_multicall, calls]
 
-        callDataNoSig = vault.executeActions.encode_input(
-            agg_null_sig(keyManager_address, chain.id), *args
-        )
-        # Get the latest used nonce, as this is not synched
-        tx = vault.executeActions(
-            AGG_SIGNER_1.getSigData(
-                callDataNoSig,
-                keyManager_address,
-            ),
+        tx = signed_call(
+            keyManager,
+            vault.executeActions,
+            AGG_SIGNER_1,
+            DEPLOYER,
             *args,
-            {"from": DEPLOYER},
         )
 
         ## If done through Squid, the depositor of the USDC becomes the Multicall

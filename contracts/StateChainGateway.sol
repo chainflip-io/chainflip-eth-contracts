@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/IKeyManager.sol";
+import "./interfaces/IFlipIssuer.sol";
 import "./interfaces/IFLIP.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
@@ -19,7 +20,7 @@ import "./GovernanceCommunityGuarded.sol";
  *           valid aggragate signature can be submitted to the contract which
  *           updates the total supply by minting or burning the necessary FLIP.
  */
-contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
+contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
     // solhint-disable-next-line var-name-mixedcase
     IFLIP private _FLIP;
@@ -60,6 +61,39 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
         return getKeyManager().getCommunityKey();
+    }
+
+    /**
+     * @notice  Get the FLIP token address
+     * @dev     This function and it's return value will be checked when updating the FLIP issuer.
+     *          Do not remove nor modify this function in future versions of this contract.
+     * @return  The address of FLIP
+     */
+    function getFLIP() external view override returns (IFLIP) {
+        return _FLIP;
+    }
+
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey() and getCommunityKey()
+    ///        functions implemented. These are functions required for this contract to
+    ///        to at least be able to use the emergency mechanism.
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
+        address newGovKey = keyManager.getGovernanceKey();
+        address newCommKey = keyManager.getCommunityKey();
+
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
+
+            Key memory newAggKey = keyManager.getAggregateKey();
+            Key memory currentAggKey = getKeyManager().getAggregateKey();
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -208,19 +242,30 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
      * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
      *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
      *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
+     * @dev     The new issuer must be a contract and, in a standard upgrade, it must have the reference FLIP address.
+     *          In a special case where the check is omitted, the new issuer must be a contract, never an EOA.
      * @param sigData     Struct containing the signature data over the message
      *                    to verify, signed by the aggregate key.
      * @param newIssuer   New contract that will issue FLIP tokens.
+     * @param omitChecks Allow the omission of the extra checks in a special case
      */
     function updateFlipIssuer(
         SigData calldata sigData,
-        address newIssuer
+        address newIssuer,
+        bool omitChecks
     )
         external
+        override
         onlyNotSuspended
         nzAddr(newIssuer)
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer, omitChecks)))
     {
+        if (!omitChecks) {
+            require(IFlipIssuer(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
+        } else {
+            require(newIssuer.code.length > 0);
+        }
+
         _FLIP.updateIssuer(newIssuer);
     }
 
@@ -237,14 +282,31 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     /**
      * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
      *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
+     *         Transfer the issuance to the governance address if this contract is the issuer.
      */
     function govWithdraw() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
-        uint256 amount = _FLIP.balanceOf(address(this));
+        IFLIP flip = _FLIP;
+        uint256 amount = flip.balanceOf(address(this));
 
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = getKeyManager().getGovernanceKey();
-        _FLIP.transfer(recipient, amount);
-        emit GovernanceWithdrawal(recipient, amount);
+        address governor = getKeyManager().getGovernanceKey();
+        flip.transfer(governor, amount);
+        emit GovernanceWithdrawal(governor, amount);
+
+        // Check issuer to ensure this doesn't revert
+        if (flip.getIssuer() == address(this)) {
+            flip.updateIssuer(governor);
+        }
+    }
+
+    /**
+     * @notice Update the FLIP Issuer address with the governance address in case of emergency.
+     *         This needs to be approved by the Community, it is a last resort. Used to rectify
+     *         an emergency.
+     */
+    function govUpdateFlipIssuer() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
+        address governor = getKeyManager().getGovernanceKey();
+        _FLIP.updateIssuer(governor);
     }
 
     //////////////////////////////////////////////////////////////
@@ -252,14 +314,6 @@ contract StateChainGateway is IStateChainGateway, AggKeyNonceConsumer, Governanc
     //                  Non-state-changing functions            //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the FLIP token address
-     * @return  The address of FLIP
-     */
-    function getFLIP() external view override returns (IFLIP) {
-        return _FLIP;
-    }
 
     /**
      * @notice  Get the minimum amount of funds that's required for funding
