@@ -293,6 +293,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         flip.transfer(governor, amount);
         emit GovernanceWithdrawal(governor, amount);
 
+        // Check issuer to ensure this doesn't revert
         if (flip.getIssuer() == address(this)) {
             flip.updateIssuer(governor);
         }
