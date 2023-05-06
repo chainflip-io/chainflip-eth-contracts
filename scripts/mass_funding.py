@@ -42,7 +42,7 @@ def main():
             to_fund,
             {"from": funder, "required_confs": 0, "gas_limit": 1000000},
         )
-        print(f"Staking {to_fund / E_18} FLIP to node {node_id} in tx {tx.txid}")
+        print(f"Funding {to_fund / E_18} FLIP to node {node_id} in tx {tx.txid}")
 
 
 def cleanHexStr(thing):

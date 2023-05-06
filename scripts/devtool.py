@@ -157,7 +157,12 @@ commands = {
     # Transactions to Key Manager
     # TODO: Add xSwapNative, xSwapToken, xCallNative, xCallToken
     # View the state of the contracts
-    "viewMinStake": (lambda: viewMinStake(), "Display the minimum stake", [], False),
+    "viewMinFunding": (
+        lambda: viewMinFunding(),
+        "Display the minimum funding",
+        [],
+        False,
+    ),
     "viewAggKey": (lambda: viewAggKey(), "Display the Aggregate key", [], False),
     "viewGovKey": (lambda: viewGovKey(), "Display the governance address", [], False),
     "viewCommKey": (lambda: viewCommKey(), "Display the community address", [], False),
@@ -395,7 +400,7 @@ def fund(amount, node_id):
         amountInWei,
         {"from": userAddress, "required_confs": 1, "gas_limit": 1000000},
     )
-    print(f"Staking {amount} FLIP to node {node_id} in tx {tx.txid}")
+    print(f"Funding {amount} FLIP to node {node_id} in tx {tx.txid}")
     tx.info()
 
 
@@ -440,9 +445,9 @@ def viewPendRedemption(nodeId):
         )
 
 
-def viewMinStake():
-    minStake = stateChainGateway.getMinimumFunding()
-    print(f"Min stake: {minStake / 10 ** (flip.decimals())} FLIP ")
+def viewMinFunding():
+    minFunding = stateChainGateway.getMinimumFunding()
+    print(f"Min funding: {minFunding / 10 ** (flip.decimals())} FLIP ")
 
 
 def viewAggKey():
@@ -485,7 +490,7 @@ def printUserReadableTime(timestamp):
 
 
 def viewAll():
-    viewMinStake()
+    viewMinFund()
     viewAggKey()
     viewGovKey()
     viewCommKey()
