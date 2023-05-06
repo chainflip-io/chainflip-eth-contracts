@@ -57,6 +57,7 @@ def main():
 # 5. If we have registered a redemption, wait for REDEMPTION_DELAY and execute it via
 #    execute_redemption. This will move all the FLIP to the new StateChainGateway.
 
+# 6. Update the flip issuer to the new StateChainGateway via aggKey.
 
 # NOTE: This will fail if two days haven't passed since deployment or since
 # last time a signature was verified. It will also fail if the DEPLOYER is not
@@ -123,5 +124,43 @@ def execute_redemption():
     # This can fail if the redemption is not registered or if the REDEMPTION_DELAY time has not passed
     tx = StateChainGateway.at(SC_GATEWAY_ADDRESS).executeRedemption(
         JUNK_HEX, {"from": DEPLOYER, "required_confs": 1}
+    )
+    tx.info()
+
+
+def update_issuer():
+    SC_GATEWAY_ADDRESS = os.environ["SC_GATEWAY_ADDRESS"]
+    NEW_SC_GATEWAY_ADDRESS = os.environ["NEW_SC_GATEWAY_ADDRESS"]
+    FLIP_ADDRESS = os.environ["FLIP_ADDRESS"]
+    KEY_MANAGER_ADDRESS = os.environ["KEY_MANAGER_ADDRESS"]
+
+    keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
+    stateChainGateway = StateChainGateway.at(SC_GATEWAY_ADDRESS)
+    newStateChainGateway = StateChainGateway.at(NEW_SC_GATEWAY_ADDRESS)
+
+    flip = FLIP.at(FLIP_ADDRESS)
+
+    assert flip.getIssuer() == SC_GATEWAY_ADDRESS, "Issuer is not the StateChainGateway"
+    print(
+        f"Update the issuer from old StateChainGateway {SC_GATEWAY_ADDRESS} to the new StateChainGateway {NEW_SC_GATEWAY_ADDRESS}"
+    )
+    user_input = input("Continue? (y/[N])")
+    if user_input not in ["y", "Y", "yes", "Yes", "YES"]:
+        sys.exit("Canceled by the user")
+
+    syncNonce(keyManager)
+
+    # Not omiting checks - check that the new contract has a reference to FLIP
+    tx = signed_call(
+        keyManager,
+        stateChainGateway.updateFlipIssuer,
+        AGG_SIGNER_1,
+        DEPLOYER,
+        newStateChainGateway,
+        False,
+    )
+    assert (
+        flip.getIssuer() == NEW_SC_GATEWAY_ADDRESS,
+        "Issuer is not the StateChainGateway",
     )
     tx.info()
