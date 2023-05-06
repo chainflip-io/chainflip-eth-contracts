@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.17;
 
 interface IMulticall {
     enum CallType {
@@ -15,6 +15,9 @@ interface IMulticall {
         bytes callData;
         bytes payload;
     }
+
+    error AlreadyRunning();
+    error CallFailed(uint256 callPosition, bytes reason);
 
     function run(Call[] calldata calls) external payable;
 }

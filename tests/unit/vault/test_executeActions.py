@@ -288,36 +288,17 @@ def test_executeActions_bridge_token(
         assert token.balanceOf(cf.ALICE.address) == ini_bals_alice
 
 
-## TODO: Try interactions with Axelar/CCTP (Goerli?) in intergration tests. Only to be run when
-##       running a Goerli fork. This is already done as script in bridge_usdc.py but having some
-##       tests would be nice.
+@given(
+    st_sender=strategy("address"),
+)
+def test_multicallRun_rev_notVault(
+    st_sender,
+    multicall,
+):
+    with reverts("Multicall: not Chainflip Vault"):
+        multicall.run([], {"from": st_sender})
 
-# NOTE: Brownie is dumb and it can't make a bytes with zero length via strategy.
-#       Even with min_size=0 and max_size=0 it will always generate a bytes of length 1.
-#       So we have to manually generate the bytes with length 0 using b''.
-#       However, doing that breaks the signature verification because Brownie has a bug
-#       when encoding dynamic types with length zero.
-# def test_executeActions_no_bytes(cf):
-#     signed_call_cf(
-#         cf,
-#         cf.vault.executeActions,
-#         [[cf.stateChainGateway, 0, b'']],
-#     )
-
-## TODO: TO update
-# Workaround: manual signed call with an empty array to get around Brownie bugs/limitations
-# def test_bytesZeroLength(cf):
-#     args = [[cf.stateChainGateway, 0, b""]]
-#     callDataNoSig = cf.vault.executeActions.encode_input(
-#         agg_null_sig(cf.keyManager.address, chain.id), args
-#     )
-#     # Remove the last 32 bytes which are incorrect (length array == 0, therefore no value needs to follow it)
-#     callDataNoSigModif = callDataNoSig[0 : len(callDataNoSig) - 32 * 2]
-
-#     # If we end up removing the check for the calldata length, this call would not fail and instead transfer the
-#     # native tokens to the stateChainGateway. This way we check the call has really zero calldata.
-#     with reverts("Vault: must call contract/function"):
-#         cf.vault.executeActions(
-#             AGG_SIGNER_1.getSigData(callDataNoSigModif, cf.keyManager.address),
-#             args,
-#         )
+    with reverts("Multicall: not Chainflip Vault"):
+        multicall.run(
+            [[0, ZERO_ADDR, JUNK_INT, JUNK_HEX, JUNK_HEX]], {"from": st_sender}
+        )
