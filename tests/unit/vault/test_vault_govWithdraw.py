@@ -62,12 +62,18 @@ def test_govWithdraw(
     cf.vault.suspend({"from": cf.GOVERNOR})
 
     chain.sleep(st_sleepTime)
-    if getChainTime() - cf.keyManager.getLastValidateTime() < AGG_KEY_EMERGENCY_TIMEOUT:
-        # Add a sleep to ensure that it will revert (brownie is inconsistent with chain time)
-        chain.sleep(3)
+    # Adding a time buffer because brownie is sometimes inconsistent with chain time in some cases
+    time_buffer = 3
+    if (
+        getChainTime() - cf.keyManager.getLastValidateTime()
+        < AGG_KEY_EMERGENCY_TIMEOUT - time_buffer
+    ):
+
         with reverts(REV_MSG_VAULT_DELAY):
             cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
     else:
+        chain.sleep(time_buffer * 2)
+
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
 
         # Ensure that the Vault is empty and all funds have been transferred to the governor (and none to the Community Key)

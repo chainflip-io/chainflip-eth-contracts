@@ -238,4 +238,4 @@ def test_upgrade_StateChainGateway(
         False,
         sender=cf.BOB,
     )
-    assert cf.flip.issuer() == newStateChainGateway.address
+    assert cf.flip.getIssuer() == newStateChainGateway.address

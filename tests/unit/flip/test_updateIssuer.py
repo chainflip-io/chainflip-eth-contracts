@@ -23,20 +23,20 @@ def deploy_flip(cf, FLIP, issuer):
 @given(st_issuer=strategy("address"))
 def test_updateIssuer(cf, st_issuer, FLIP):
     flip = deploy_flip(cf, FLIP, cf.ALICE)
-    assert flip.issuer() == cf.ALICE
+    assert flip.getIssuer() == cf.ALICE
     flip.updateIssuer(st_issuer, {"from": cf.ALICE})
-    assert cf.flip.issuer() == st_issuer
+    assert cf.flip.getIssuer() == st_issuer
 
 
 def test_updateIssuer(cf, FLIP):
     flip = deploy_flip(cf, FLIP, cf.BOB)
-    assert flip.issuer() == cf.BOB
+    assert flip.getIssuer() == cf.BOB
     flip.updateIssuer(cf.stateChainGateway.address, {"from": cf.BOB})
-    assert cf.flip.issuer() == cf.stateChainGateway.address
+    assert cf.flip.getIssuer() == cf.stateChainGateway.address
 
 
 @given(st_sender=strategy("address"))
 def test_revIssuer(cf, st_sender):
-    assert cf.flip.issuer() == cf.stateChainGateway.address
+    assert cf.flip.getIssuer() == cf.stateChainGateway.address
     with reverts(REV_MSG_FLIP_ISSUER):
         cf.flip.updateIssuer(NON_ZERO_ADDR, {"from": st_sender})

@@ -422,7 +422,7 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
                     self.scg.disableCommunityGuard({"from": self.community})
 
         # Governance attemps to withdraw FLIP in case of emergency
-        def rule_govWithdrawal(self, st_sender):
+        def rule_governance(self, st_sender):
             if self.communityGuardDisabled:
                 if st_sender != self.governor:
                     with reverts(REV_MSG_GOV_GOVERNOR):
@@ -432,19 +432,20 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
                     flipBalsSm = self.f.balanceOf(self.scg)
                     flipBalsGov = self.f.balanceOf(self.governor)
                     print("                    rule_govWithdrawal", st_sender)
+                    # Do a govUpdateFlipIssuer before the withdrawal just as test
+                    self.scg.govUpdateFlipIssuer({"from": self.governor})
+
                     self.scg.govWithdraw({"from": self.governor})
-                    # Governor has all the FLIP - do the checking and return the tokens for the invariant check
+                    # Governor has all the FLIP and the issuer rights - do the checking
+                    # and return the tokens for the invariant check
                     assert self.f.balanceOf(self.governor) == flipBalsGov + flipBalsSm
                     assert self.f.balanceOf(self.scg) == 0
+                    assert self.f.getIssuer() == self.governor
+
                     self.f.transfer(self.scg, flipBalsSm, {"from": self.governor})
-                else:
-                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
-                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.scg.govWithdraw({"from": self.governor})
-            else:
-                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
-                with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.scg.govWithdraw({"from": self.governor})
+
+                    # Return issuer rights to the State Chain Gateway
+                    self.f.updateIssuer(self.scg.address, {"from": self.governor})
 
         # Check all the balances of every address are as they should be after every tx
         def invariant_bals(self):

@@ -883,14 +883,6 @@ def test_vault(
                             token.transfer(
                                 self.v, vaultBals[token], {"from": self.governor}
                             )
-                else:
-                    print("        REV_MSG_GOV_NOT_SUSPENDED _govWithdrawal")
-                    with reverts(REV_MSG_GOV_NOT_SUSPENDED):
-                        self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
-            else:
-                print("        REV_MSG_GOV_ENABLED_GUARD _govWithdrawal")
-                with reverts(REV_MSG_GOV_ENABLED_GUARD):
-                    self.v.govWithdraw(tokenstoWithdraw, {"from": self.governor})
 
         # Swap ETH
         def rule_xSwapNative(

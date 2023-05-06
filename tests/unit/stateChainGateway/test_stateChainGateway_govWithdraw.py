@@ -1,6 +1,7 @@
 from consts import *
 from brownie import reverts
 from test_fund import test_fund_min
+from shared_tests import *
 
 
 def test_govWithdraw(cf, fundedMin):
@@ -43,3 +44,37 @@ def test_govWithdraw(cf, fundedMin):
         cf.GOVERNOR,
         stateChainGatewayFlipBalance,
     ]
+    assert cf.flip.getIssuer() == cf.GOVERNOR
+
+
+def test_govWithdraw_update_govwithdraw(cf, fundedMin):
+    test_fund_min(cf, fundedMin)
+    cf.stateChainGateway.suspend({"from": cf.GOVERNOR})
+    cf.stateChainGateway.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
+
+    # If we mistakenly or purposely update do govUpdateFlipIssuer before govWithdraw
+    cf.stateChainGateway.govUpdateFlipIssuer({"from": cf.GOVERNOR})
+
+    cf.stateChainGateway.govWithdraw({"from": cf.GOVERNOR})
+
+
+# Transfer the FLIP issuance powers (mimic new SCGateway or multisig) via aggKey, and
+# then check that governance can still emergency withdraw
+def test_govWithdraw_upgrade_govwithdraw(cf, fundedMin):
+    test_fund_min(cf, fundedMin)
+
+    # Using an arbitrary contract as th enew issuer
+    signed_call_cf(
+        cf,
+        cf.stateChainGateway.updateFlipIssuer,
+        cf.vault.address,
+        True,
+        sender=cf.BOB,
+    )
+
+    cf.stateChainGateway.suspend({"from": cf.GOVERNOR})
+    cf.stateChainGateway.disableCommunityGuard({"from": cf.COMMUNITY_KEY})
+
+    assert cf.flip.getIssuer() == cf.vault.address
+    # This shouldn't revert even if the issuer is not the governor
+    cf.stateChainGateway.govWithdraw({"from": cf.GOVERNOR})
