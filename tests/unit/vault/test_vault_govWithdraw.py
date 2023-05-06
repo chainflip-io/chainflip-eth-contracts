@@ -8,9 +8,10 @@ from brownie.test import given, strategy
     st_nativeAmount=strategy("uint", max_value=INIT_NATIVE_BAL, min_value=TEST_AMNT),
     st_tokenAmount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
     st_token2Amount=strategy("uint", max_value=INIT_TOKEN_SUPPLY),
+    st_sleepTime=strategy("uint256", max_value=MONTH * 2),
 )
 def test_govWithdraw(
-    cf, token, token2, st_nativeAmount, st_tokenAmount, st_token2Amount
+    cf, token, token2, st_nativeAmount, st_tokenAmount, st_token2Amount, st_sleepTime
 ):
 
     # Fund Vault contract. Using non-deployer to transfer native because the deployer
@@ -60,11 +61,7 @@ def test_govWithdraw(
 
     cf.vault.suspend({"from": cf.GOVERNOR})
 
-    chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT / 2)
-
-    with reverts(REV_MSG_VAULT_DELAY):
-        cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})
-
+    chain.sleep(st_sleepTime)
     # Adding a time buffer because brownie is sometimes inconsistent with chain time in some cases
     time_buffer = 10
     if (
