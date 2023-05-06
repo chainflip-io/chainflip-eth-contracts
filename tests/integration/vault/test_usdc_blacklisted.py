@@ -68,14 +68,13 @@ def test_transfer_blacklist_allbatch_usdc(cf, mockUsdc, token, utils):
     ## Blacklist user
     mockUsdc.blacklist(cf.ALICE, {"from": cf.SAFEKEEPER})
 
-    deployFetchParams = []
     fetchParamsArray = []
     transferParams = [
         [token, cf.ALICE, TEST_AMNT],
         [mockUsdc.address, cf.ALICE, TEST_AMNT_USDC],
     ]
 
-    args = [deployFetchParams, fetchParamsArray, transferParams]
+    args = [fetchParamsArray, transferParams]
     tx = signed_call_cf(cf, cf.vault.allBatch, *args)
 
     assert tx.events["TransferTokenFailed"]["recipient"] == cf.ALICE

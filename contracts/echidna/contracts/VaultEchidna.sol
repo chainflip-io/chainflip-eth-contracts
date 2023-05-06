@@ -10,11 +10,10 @@ contract VaultEchidna is IShared {
 
     function allBatch(
         SigData calldata sigData,
-        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external virtual {
-        v.allBatch(sigData, deployFetchParamsArray, fetchParamsArray, transferParamsArray);
+        v.allBatch(sigData, fetchParamsArray, transferParamsArray);
     }
 
     function transfer(SigData calldata sigData, TransferParams calldata transferParams) external virtual {

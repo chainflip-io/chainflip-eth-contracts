@@ -337,8 +337,11 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
         [cf.ALICE, cf.BOB, cf.BOB],
         [amountNativeAlice, amountNativeBob, amountTokenBob],
     )
-    args = (deployFetchParams, [], transferParams)
+    signed_call_cf(
+        cf, cf.vault.deployAndFetchBatch, deployFetchParams, sender=cf.CHARLIE
+    )
 
+    args = ([], transferParams)
     signed_call_cf(cf, cf.vault.allBatch, *args, sender=cf.CHARLIE)
 
     # Native bals

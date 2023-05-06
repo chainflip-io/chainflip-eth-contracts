@@ -90,11 +90,20 @@ def test_setAggKeyWithAggKey_allBatch(
     transferParams = craftTransferParamsArray(
         tranTokens, st_tranRecipients, st_tranAmounts
     )
-    args = (deployFetchParams, [], transferParams)
+    args = ([], transferParams)
 
     # Check allBatch fails with the old agg key
     with reverts(REV_MSG_SIG):
         signed_call_cf(cf, cf.vault.allBatch, *args, sender=st_sender)
+
+    # DeployAndFetch from deposit addresses
+    signed_call_cf(
+        cf,
+        cf.vault.deployAndFetchBatch,
+        deployFetchParams,
+        sender=st_sender,
+        signer=AGG_SIGNER_2,
+    )
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll fail gracefully
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):

@@ -133,27 +133,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          Transfers are executed last to ensure that all fetching has been completed first.
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
-     * @param deployFetchParamsArray    The array of deploy and fetch parameters
      * @param fetchParamsArray    The array of fetch parameters
      * @param transferParamsArray The array of transfer parameters
      */
     function allBatch(
         SigData calldata sigData,
-        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     )
         external
         override
         onlyNotSuspended
-        consumesKeyNonce(
-            sigData,
-            keccak256(abi.encode(this.allBatch.selector, deployFetchParamsArray, fetchParamsArray, transferParamsArray))
-        )
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.allBatch.selector, fetchParamsArray, transferParamsArray)))
     {
-        // Fetch by deploying new deposits
-        _deployAndFetchBatch(deployFetchParamsArray);
-
         // Fetch from already deployed deposits
         _fetchBatch(fetchParamsArray);
 
@@ -273,10 +265,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         onlyNotSuspended
         consumesKeyNonce(sigData, keccak256(abi.encode(this.deployAndFetchBatch.selector, deployFetchParamsArray)))
     {
-        _deployAndFetchBatch(deployFetchParamsArray);
-    }
-
-    function _deployAndFetchBatch(DeployFetchParams[] calldata deployFetchParamsArray) private {
         // Deploy deposit contracts
         uint256 length = deployFetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {

@@ -111,11 +111,10 @@ contract TestEchidna is DeployerEchidna {
 
     function allBatch_revert(
         SigData calldata sigData,
-        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external {
-        try vault.allBatch(sigData, deployFetchParamsArray, fetchParamsArray, transferParamsArray) {
+        try vault.allBatch(sigData, fetchParamsArray, transferParamsArray) {
             assert(false);
         } catch {
             assert(true);

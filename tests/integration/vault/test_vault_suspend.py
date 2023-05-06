@@ -19,7 +19,7 @@ def test_vault_suspend(cf, st_receiver, st_amount, token):
 
     # allBatch
     with reverts(REV_MSG_GOV_SUSPENDED):
-        args = (deployFetchParamsArray, fetchParamsArray, transferParamsArray)
+        args = (fetchParamsArray, transferParamsArray)
         signed_call_cf(cf, cf.vault.allBatch, *args)
 
     # transfer

@@ -91,7 +91,12 @@ def test_allBatch(
     transferParams = craftTransferParamsArray(
         tranTokens, st_tranRecipients, st_tranAmounts
     )
-    args = (deployFetchParams, fetchParamsArray, transferParams)
+    args = (fetchParamsArray, transferParams)
+
+    # DeployAndFetch from deposit addresses
+    signed_call_cf(
+        cf, cf.vault.deployAndFetchBatch, deployFetchParams, sender=st_sender
+    )
 
     # If it tries to transfer an amount of tokens out the vault that is more than it fetched, it'll fail gracefully
     if any([tranTotals[tok] > fetchTotals[tok] for tok in tokensList[1:]]):
@@ -133,10 +138,9 @@ def test_allBatch(
 
 
 def test_allBatch_rev_sig(cf):
-    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
     fetchParamsArray = [[NON_ZERO_ADDR, NATIVE_ADDR]]
     transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-    args = (deployFetchParams, fetchParamsArray, transferParams)
+    args = (fetchParamsArray, transferParams)
 
     sigData = AGG_SIGNER_1.getSigDataWithNonces(
         cf.keyManager, cf.vault.allBatch, nonces, *args
@@ -159,10 +163,9 @@ def test_allBatch_rev_sig(cf):
 
 
 def test_allBatch_rev_deploy(cf):
-    deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR], [JUNK_HEX_PAD, NATIVE_ADDR]]
     fetchParamsArray = [[NON_ZERO_ADDR, NATIVE_ADDR]]
     transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-    args = (deployFetchParams, fetchParamsArray, transferParams)
+    args = (fetchParamsArray, transferParams)
 
     with reverts():
         signed_call_cf(cf, cf.vault.allBatch, *args)
@@ -170,6 +173,8 @@ def test_allBatch_rev_deploy(cf):
 
 def test_allBatch_rev_fetch(cf, Deposit):
     deployFetchParams = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    signed_call_cf(cf, cf.vault.deployAndFetchBatch, deployFetchParams)
+
     # Use a non-used salt to get a different address
     depositAddr = getCreate2Addr(
         cf.vault.address,
@@ -179,7 +184,7 @@ def test_allBatch_rev_fetch(cf, Deposit):
     )
     fetchParamsArray = [[depositAddr, NON_ZERO_ADDR]]
     transferParams = [[NATIVE_ADDR, cf.ALICE, TEST_AMNT]]
-    args = (deployFetchParams, fetchParamsArray, transferParams)
+    args = (fetchParamsArray, transferParams)
 
     with reverts():
         signed_call_cf(cf, cf.vault.allBatch, *args)

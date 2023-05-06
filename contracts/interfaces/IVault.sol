@@ -11,7 +11,6 @@ import "./IMulticall.sol";
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function allBatch(
         SigData calldata sigData,
-        DeployFetchParams[] calldata deployFetchParamsArray,
         FetchParams[] calldata fetchParamsArray,
         TransferParams[] calldata transferParamsArray
     ) external;
