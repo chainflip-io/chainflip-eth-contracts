@@ -1,12 +1,8 @@
 # Chainflip Ethereum Contracts
 
-This repository contains the set of Ethereum smart contracts used in the Chainflip protocol. It also contains tests and deployment scripts.
+This repository contains the Ethereum smart contracts which are used to handle deposits and withdrawals based on signatures submitted via the vault nodes.
 
-## Overview
-
-Chainflip is a cross-chain decentralised exchange, coordinated through its own blockchain, referred to as the Chainflip State Chain. The State Chain is a proof of stake application-specfic blockchain that requires the FLIP token to be staked.
-
-The State Chain Gatway contract holds the FLIP funds that are being used to stake to the State Chain. The Vault contract holds the funds used for the exchange functionality of the protocol. The State Chain nodes have control over the funds held in these contracts via a threshold signature scheme. The KeyManager is the contract storing all the necessary keys and performing signature verification.
+Additional information can be found in the [Ethereum Research](https://github.com/chainflip-io/ethereum-research) repository.
 
 ## Dependencies
 
@@ -28,11 +24,11 @@ brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
 pre-commit install
 ```
 
-Then, create a `.env` file using `.env.example` as a reference or manually set each of the environment variables. To deploy on a live network a SEED and an RPC endpoint is needed.
+Then, create a `.env` file using `.env.example` as a reference. ~~You will need an infura key to run the tests~~, and a seed to run the deploy script on a live network.
 
 ### Running Tests
 
-We use the `hardhat` EVM for testing.
+We use the `hardhat` EVM for testing, since we use EIP1559 opcodes.
 
 ```bash
 # Run without the stateful tests, because they take hours
@@ -42,38 +38,45 @@ brownie test --network hardhat --stateful false
 Run tests with additional features:
 
 ```bash
-brownie test <test-name> -s --network hardhat --stateful <bool> --coverage --gas --hypothesis-seed <seed_number>
+brownie test <test-name> -s --network hardhat --stateful <BOOL> --coverage --gas --hypothesis-seed <SEED>
 ```
 
 Flags:
 
 - `<test-name>` - Run a specific test. If no test-name is provided all tests are run.
 - `-s`- Runs with the `print` outputs in tests.
-- `--stateful <bool>` - Runs (or not) stateful tests. Stateful tests might take several hours so it is recommended to set it to false.
+- `--stateful <BOOL>` - Runs (or not) stateful tests. Stateful tests might take several hours so it is recommended to set it to false.
 - `--gas` - generates a gas profile report
 - `--coverage` - generates and updates the test coverage report under reports/coverage.json
-- `--hypothesis-seed <seed_number>` - Inputs a seed (int) to the hypothesis strategies. Useful to deterministically reproduce tests failures and for accurate gas comparisons when doing gas optimizations.
+- `--hypothesis-seed <SEED>` - Inputs a seed (int) to the hypothesis strategies. Useful to deterministically reproduce tests failures and for accurate gas comparisons when doing gas optimizations.
 
 ### Static Analysis
 
-Slither is used for static analysis. In the event of the command below failing, try removing the `build/` directory and run it again.
-
-Inside the poetry shell:
+Slither is used for static analysis. Inside the poetry shell:
 
 ```bash
 slither .
 ```
 
+In the event of the command failing, try removing the `build/` directory and run it again.
+
 ### Linter
 
 We use solhint and prettier for the solidity code and black for the python code. A general check is performed also in CI.
 
-To run the lint check or to format the code, run the following inside the poetry shell:
+To locally do a general check on both solidity and python code: (please ensure you have poetry installed)
 
 ```bash
 yarn lint
+```
+
+Format the solidity and python code:
+
+```bash
 yarn format
 ```
+
+To format them separately run `yarn format-sol` or `yarn format-py`
 
 ## Fuzzing
 
@@ -147,14 +150,16 @@ export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
 export SEED="<your seed phrase>"
 # Set an aggregate key, a governance address and a community address that you would like to use
 export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
-export GOV_KEY=<gov address, hex format, with leading 0x>
+export GOV_KEY=<gov address with leading parity byte, hex format, with leading 0x>
 export COMM_KEY=<comm address, hex format, with leading 0x>
 # Set genesis parameters
 export GENESIS_STAKE=<the stake each node should have at genesis> (default = 500000000000000000000000)
 export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
 
-# deploy the contracts to goerli.
-brownie run deploy_contracts --network goerli
+# deploy the contracts to rinkeby.
+brownie run deploy_contracts --network rinkeby
+# default configuratin uses Infura. To use Alchemy instead
+brownie run deploy_contracts --network rinkeby-alchemy
 ```
 
 ## Useful commands
