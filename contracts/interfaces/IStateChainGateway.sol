@@ -19,7 +19,7 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
     );
     event RedemptionExecuted(bytes32 indexed nodeID, uint256 amount);
     event RedemptionExpired(bytes32 indexed nodeID, uint256 amount);
-    event MinFundingChanged(uint256 oldMinStake, uint256 newMinFunding);
+    event MinFundingChanged(uint256 oldMinFunding, uint256 newMinFunding);
     event GovernanceWithdrawal(address to, uint256 amount);
     event FLIPSet(address flip);
     event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
