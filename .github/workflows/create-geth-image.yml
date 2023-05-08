@@ -104,7 +104,7 @@ jobs:
       - name: Deploy contracts
         env:
           SEED: test test test test test test test test test test test junk
-        run: source ci/docker/geth/${{ matrix.suffix }}.env && poetry run brownie run deploy_contracts --network docker
+        run: export $(cat ci/docker/geth/${{ matrix.suffix }}.env | xargs) && poetry run brownie run deploy_contracts --network docker
 
       - name: Commit and push new geth image
         run: |
