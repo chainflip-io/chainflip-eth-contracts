@@ -1,8 +1,8 @@
 name: Create Geth Image
 on:
   push:
-    tags:
-      - '*'
+#    tags:
+#      - '*'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -102,7 +102,7 @@ jobs:
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
 
       - name: Deploy contracts
-        run: source .github/workflow/${{ matrix.suffix }}.env && poetry run brownie run deploy_contracts --network docker
+        run: source ci/docker/geth/${{ matrix.suffix }}.env && poetry run brownie run deploy_contracts --network docker
 
       - name: Commit and push new geth image
         run: |
