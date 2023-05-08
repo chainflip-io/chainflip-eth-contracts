@@ -102,6 +102,8 @@ jobs:
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
 
       - name: Deploy contracts
+        env:
+          SEED: test test test test test test test test test test test junk
         run: source ci/docker/geth/${{ matrix.suffix }}.env && poetry run brownie run deploy_contracts --network docker
 
       - name: Commit and push new geth image
