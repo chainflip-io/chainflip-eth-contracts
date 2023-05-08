@@ -275,7 +275,7 @@ def test_vault(
                 tranTokens, st_recips, st_native_amounts
             )
 
-            args = (deployFetchParamsArray, fetchParamsArray, transferParams)
+            args = (fetchParamsArray, transferParams)
             toLog = (*args, fetchTokens, st_sender)
 
             if self.suspended:
@@ -284,6 +284,12 @@ def test_vault(
                     signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
 
             else:
+                signed_call_km(
+                    self.km,
+                    self.v.deployAndFetchBatch,
+                    deployFetchParamsArray,
+                    sender=st_sender,
+                )
 
                 tx = signed_call_km(self.km, self.v.allBatch, *args, sender=st_sender)
 

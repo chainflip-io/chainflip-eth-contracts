@@ -421,7 +421,7 @@ def test_all(
                 tranTokens, st_recips, st_native_amounts
             )
 
-            args = (deployFetchParamsArray, fetchParamsArray, transferParams)
+            args = (fetchParamsArray, transferParams)
             toLog = (*args, fetchTokens, st_sender)
 
             signer = self._get_key_prob(AGG)
@@ -441,6 +441,14 @@ def test_all(
                     )
 
             else:
+                signed_call_km(
+                    self.km,
+                    self.v.deployAndFetchBatch,
+                    deployFetchParamsArray,
+                    signer=signer,
+                    sender=st_sender,
+                )
+
                 tx = signed_call_km(
                     self.km, self.v.allBatch, *args, signer=signer, sender=st_sender
                 )

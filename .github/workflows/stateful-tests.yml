@@ -1,27 +1,14 @@
 name: Stateful Tests
-on:
-  push:
-    branches:
-      - master
+on: push
 
 jobs:
   lint:
     uses: ./.github/workflows/.lint.yml
 
-  stateful-tests:
+  stateful-tests-all:
     needs: lint
     runs-on: [self-hosted, linux, x64, ephemeral]
     timeout-minutes: 3600
-    strategy:
-      matrix:
-        test:
-          [
-            test_all.py,
-            test_keyManager.py,
-            test_vault.py,
-            test_stateChainGateway.py,
-            test_upgradability.py,
-          ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -48,4 +35,36 @@ jobs:
       # data generation that behaved differently between runs
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test tests/stateful/${{ matrix.test }} --network hardhat --stateful true
+      - run: poetry run brownie test tests/stateful/test_all.py --network hardhat --stateful true
+
+  stateful-tests-vault:
+    needs: lint
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    timeout-minutes: 3600
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Python virtualenv
+        run: pip install virtualenv
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - run: npm install
+      - run: npm install --global ganache-cli
+      - run: pip3 install eth-brownie
+      - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+      - run: poetry install
+      - run: sudo snap install solc --edge
+      # Spinning hardhat node externally because there's some intermittent nasty bug when the node is shut down at
+      # the end of some stateful test causing the tests to fail - it is confusingly logged as a Flaky inconsistent
+      # data generation that behaved differently between runs
+      - run: npx hardhat node &
+      - run: sleep 2
+      - run: poetry run brownie test tests/stateful/test_vault.py --network hardhat --stateful true
