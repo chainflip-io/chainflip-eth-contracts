@@ -1,8 +1,8 @@
 name: Create Geth Image
 on:
   push:
-#    tags:
-#      - '*'
+    tags:
+      - '*'
 jobs:
   build:
     runs-on: ubuntu-latest
