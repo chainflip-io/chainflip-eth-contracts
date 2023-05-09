@@ -122,7 +122,7 @@ def deploy_new_stateChainGateway(
 
     # New upgraded contract
     stateChainGateway = StateChainGateway.at(
-        deployerStateChainGateway.scGatewayReference()
+        deployerStateChainGateway.stateChainGateway()
     )
 
     return (deployerStateChainGateway, stateChainGateway)
