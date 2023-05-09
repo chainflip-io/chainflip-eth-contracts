@@ -23,7 +23,7 @@ abstract contract SchnorrSECP256K1 {
 
       @dev First PKx must be less than HALF_Q. Then follow these instructions
            (see evm/test/schnorr_test.js, for an example of carrying them out):
-      @dev 1. Hash the target message to a uint256, called msgHash here, using
+      @dev 1. Hash the target message to a bytes32, called msgHash here, using
               keccak256
 
       @dev 2. Pick k uniformly and cryptographically securely randomly from
@@ -98,7 +98,7 @@ abstract contract SchnorrSECP256K1 {
       @return True if passed a valid signature, false otherwise. */
 
     function verifySignature(
-        uint256 msgHash,
+        bytes32 msgHash,
         uint256 signature,
         uint256 signingPubKeyX,
         uint8 pubKeyYParity,

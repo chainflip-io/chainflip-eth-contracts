@@ -15,7 +15,7 @@ contract SchnorrSECP256K1Test is SchnorrSECP256K1 {
      *           so that it's public and callable directly
      */
     function testVerifySignature(
-        uint256 msgHash,
+        bytes32 msgHash,
         uint256 signature,
         uint256 signingPubKeyX,
         uint8 pubKeyYParity,
