@@ -35,11 +35,11 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: sudo snap install solc --edge
 
-      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.1.1/echidna-2.1.1-Ubuntu-22.04.tar.gz -o echidna-2.1.1-Ubuntu-22.04.tar.gz
-      - run: tar -xvf echidna-2.1.1-Ubuntu-22.04.tar.gz
+      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.4/echidna-test-2.0.4-Ubuntu-18.04.tar.gz -o echidna-test-2.0.4-Ubuntu-18.04.tar.gz
+      - run: tar -xvf echidna-test-2.0.4-Ubuntu-18.04.tar.gz
 
       # Running actual fuzzing tests
-      - run: poetry run ./echidna contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
 
   fuzzer-tests-1:
     name: Fuzzer
@@ -71,11 +71,11 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: sudo snap install solc --edge
 
-      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.1.1/echidna-2.1.1-Ubuntu-22.04.tar.gz -o echidna-2.1.1-Ubuntu-22.04.tar.gz
-      - run: tar -xvf echidna-2.1.1-Ubuntu-22.04.tar.gz
+      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.4/echidna-test-2.0.4-Ubuntu-18.04.tar.gz -o echidna-test-2.0.4-Ubuntu-18.04.tar.gz
+      - run: tar -xvf echidna-test-2.0.4-Ubuntu-18.04.tar.gz
 
       # Running actual fuzzing tests
-      - run: poetry run ./echidna contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-property.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-property.config.yml
 
   fuzzer-tests-2:
     name: Fuzzer
@@ -107,11 +107,11 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: sudo snap install solc --edge
 
-      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.1.1/echidna-2.1.1-Ubuntu-22.04.tar.gz -o echidna-2.1.1-Ubuntu-22.04.tar.gz
-      - run: tar -xvf echidna-2.1.1-Ubuntu-22.04.tar.gz
+      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.4/echidna-test-2.0.4-Ubuntu-18.04.tar.gz -o echidna-test-2.0.4-Ubuntu-18.04.tar.gz
+      - run: tar -xvf echidna-test-2.0.4-Ubuntu-18.04.tar.gz
 
       # Running actual fuzzing tests
-      - run: poetry run ./echidna contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-assertion.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-assertion.config.yml
 
   fuzzer-tests-3:
     name: Fuzzer
@@ -143,8 +143,8 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: sudo snap install solc --edge
 
-      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.1.1/echidna-2.1.1-Ubuntu-22.04.tar.gz -o echidna-2.1.1-Ubuntu-22.04.tar.gz
-      - run: tar -xvf echidna-2.1.1-Ubuntu-22.04.tar.gz
+      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.4/echidna-test-2.0.4-Ubuntu-18.04.tar.gz -o echidna-test-2.0.4-Ubuntu-18.04.tar.gz
+      - run: tar -xvf echidna-test-2.0.4-Ubuntu-18.04.tar.gz
 
       # Running actual fuzzing tests
-      - run: poetry run ./echidna contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-property.config.yml
+      - run: poetry run ./echidna-test contracts/echidna/tests/TestEchidnaGovComm.sol --contract TestEchidnaGovComm --config contracts/echidna/tests/echidna-property.config.yml
