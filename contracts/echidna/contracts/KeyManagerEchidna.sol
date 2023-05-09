@@ -37,9 +37,8 @@ contract KeyManagerEchidna is IShared {
     }
 
     // Comparing with abi.encodePacked as that is what SchnorrSECP256K1 uses the msgHash for
-    function encodingBytes_verifySig(
+    function encodingBytesVerifySig(
         bytes32 msgHash,
-        uint256 signature,
         uint256 signingPubKeyX,
         uint8 pubKeyYParity,
         address nonceTimesGeneratorAddress
