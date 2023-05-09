@@ -145,10 +145,11 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
             st_sender,
             st_expiry_time_diff,
         ):
+            st_redeemAddress = st_funder
             args = (
                 st_nodeID,
                 st_amount,
-                st_funder,
+                st_redeemAddress,
                 getChainTime() + st_expiry_time_diff,
             )
             toLog = (*args, st_signer_agg, st_sender)
@@ -231,7 +232,7 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
 
                 self.pendingRedemptions[st_nodeID] = (
                     st_amount,
-                    st_funder,
+                    st_redeemAddress,
                     tx.timestamp + REDEMPTION_DELAY,
                     args[3],
                 )

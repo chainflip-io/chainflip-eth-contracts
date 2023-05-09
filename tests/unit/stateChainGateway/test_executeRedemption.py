@@ -33,7 +33,7 @@ def test_executeRedemption_rand(
         st_nodeID = web3.toHex(st_nodeID)
         assert cf.stateChainGateway.getPendingRedemption(st_nodeID) == NULL_CLAIM
         scgStartBal = cf.flip.balanceOf(cf.stateChainGateway)
-        st_funderStartBal = cf.flip.balanceOf(st_funder)
+        st_redeemAddress = cf.flip.balanceOf(st_funder)
 
         expiryTime = getChainTime() + st_expiryTimeDiff + 5
         args = (st_nodeID, st_amount, st_funder, expiryTime)
@@ -71,7 +71,7 @@ def test_executeRedemption_rand(
                 cf.flip.balanceOf(cf.stateChainGateway) == maxValidst_amount - st_amount
             )
             assert tx.events["RedemptionExecuted"][0].values() == [st_nodeID, st_amount]
-            assert cf.flip.balanceOf(st_funder) == st_funderStartBal + st_amount
+            assert cf.flip.balanceOf(st_funder) == st_redeemAddress + st_amount
             # Check things that shouldn't have changed
             assert cf.stateChainGateway.getMinimumFunding() == MIN_FUNDING
 

@@ -38,8 +38,8 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
     // Defined in IStateChainGateway, just here for convenience
     // struct Redemption {
     //     uint amount;
-    //     address funder;
-    //     // 48 so that 160 (from funder) + 48 + 48 is 256 they can all be packed
+    //     address redeemAddress;
+    //     // 48 so that 160 (from redeemAddress) + 48 + 48 is 256 they can all be packed
     //     // into a single 256 bit slot
     //     uint48 startTime;
     //     uint48 expiryTime;
@@ -120,7 +120,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
      * @notice          Add FLIP funds to a StateChain account identified with a nodeID
      * @dev             Requires the funder to have called `approve` in FLIP
      * @param amount    The amount of FLIP tokens
-     * @param nodeID    The nodeID of the funder
+     * @param nodeID    The nodeID of the account to fund
      */
     function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override nzBytes32(nodeID) {
         IFLIP flip = _FLIP;
@@ -137,16 +137,16 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
      *          amount redeemable = stake + rewards - penalties.
      * @param sigData   Struct containing the signature data over the message
      *                  to verify, signed by the aggregate key.
-     * @param nodeID    The nodeID of the funder
+     * @param nodeID    The nodeID of the account redeeming the FLIP
      * @param amount    The amount of funds to be locked up
-     * @param funder    The funder who is sending the FLIP
+     * @param redeemAddress    The redeemAddress who will receive the FLIP
      * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
      */
     function registerRedemption(
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
-        address funder,
+        address redeemAddress,
         uint48 expiryTime
     )
         external
@@ -154,10 +154,10 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         onlyNotSuspended
         nzBytes32(nodeID)
         nzUint(amount)
-        nzAddr(funder)
+        nzAddr(redeemAddress)
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.registerRedemption.selector, nodeID, amount, funder, expiryTime))
+            keccak256(abi.encode(this.registerRedemption.selector, nodeID, amount, redeemAddress, expiryTime))
         )
     {
         require(
@@ -169,8 +169,8 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         uint48 startTime = uint48(block.timestamp) + REDEMPTION_DELAY;
         require(expiryTime > startTime, "Gateway: expiry time too soon");
 
-        _pendingRedemptions[nodeID] = Redemption(amount, funder, startTime, expiryTime);
-        emit RedemptionRegistered(nodeID, amount, funder, startTime, expiryTime);
+        _pendingRedemptions[nodeID] = Redemption(amount, redeemAddress, startTime, expiryTime);
+        emit RedemptionRegistered(nodeID, amount, redeemAddress, startTime, expiryTime);
     }
 
     /**
