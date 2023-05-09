@@ -7,6 +7,7 @@ import "./interfaces/ISCGatewayReference.sol";
  * @dev A contract that holds a reference to the StateChainGateway contract. This is for the
  *      tokenVesting contracts so the governor don't have to update dozens of references making
  *      calls from a multisig in case of the StateChainGateway contract being upgraded.
+ *      The governor address will be the same as the revoker address in the TokenVesting contract.
  */
 contract SCGatewayReference is ISCGatewayReference {
     address public governor;
@@ -14,7 +15,7 @@ contract SCGatewayReference is ISCGatewayReference {
     IStateChainGateway private stateChainGateway;
 
     constructor(address _governor, IStateChainGateway _stateChainGateway) {
-        governor = governor;
+        governor = _governor;
         stateChainGateway = _stateChainGateway;
     }
 

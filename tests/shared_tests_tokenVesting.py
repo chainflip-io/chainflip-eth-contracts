@@ -39,7 +39,7 @@ def check_state(
     assert tv.end() == end
     assert tv.canStake() == canStake
     assert tv.scGatewayReference() == scGatewayReference
-    assert scGatewayReference.getStateChainGateway()== stateChainGateway
+    assert scGatewayReference.getStateChainGateway() == stateChainGateway
 
     assert tv.revoked(cf.flip) == revoked
 

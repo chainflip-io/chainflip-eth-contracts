@@ -39,7 +39,7 @@ def test_release(addrs, cf, tokenVestingStaking, scGatewayReference, st_sleepTim
             True,
             cf.stateChainGateway,
             0,
-            scGatewayReference
+            scGatewayReference,
         )
 
 
@@ -66,11 +66,13 @@ def test_release_all(addrs, cf, tokenVestingStaking, scGatewayReference):
         True,
         cf.stateChainGateway,
         0,
-        scGatewayReference
+        scGatewayReference,
     )
 
 
-def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths,scGatewayReference):
+def test_consecutive_releases_after_cliff(
+    addrs, cf, tokenVestingStaking, maths, scGatewayReference
+):
     tv, cliff, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -118,7 +120,7 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths,
                 True,
                 cf.stateChainGateway,
                 0,
-                scGatewayReference
+                scGatewayReference,
             )
             accomulatedReleases += newlyReleased
 
@@ -129,7 +131,9 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths,
     release_revert(tv, cf, addrs.INVESTOR)
 
 
-def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths, scGatewayReference):
+def test_release_staking_rewards_after_end(
+    addrs, cf, tokenVestingStaking, maths, scGatewayReference
+):
     tv, cliff, end, total = tokenVestingStaking
 
     test_release_all(addrs, cf, tokenVestingStaking, scGatewayReference)
@@ -155,13 +159,15 @@ def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths
         True,
         cf.stateChainGateway,
         0,
-        scGatewayReference
+        scGatewayReference,
     )
 
 
 # Test that the assert(!canStake) is not reached => cliff == end == start + QUARTER_YEAR + YEAR
 @given(st_sleepTime=strategy("uint256", min_value=QUARTER_YEAR, max_value=YEAR * 2))
-def test_release_around_cliff(addrs, cf, tokenVestingStaking, scGatewayReference, st_sleepTime):
+def test_release_around_cliff(
+    addrs, cf, tokenVestingStaking, scGatewayReference, st_sleepTime
+):
     tv, cliff, end, total = tokenVestingStaking
 
     chain.sleep(st_sleepTime)
@@ -182,7 +188,7 @@ def test_release_around_cliff(addrs, cf, tokenVestingStaking, scGatewayReference
             True,
             cf.stateChainGateway,
             0,
-            scGatewayReference
+            scGatewayReference,
         )
     else:
         release_revert(tv, cf, addrs.INVESTOR)

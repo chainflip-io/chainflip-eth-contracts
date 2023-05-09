@@ -44,7 +44,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, scGatewayReference, st_sleepTime
         True,
         cf.stateChainGateway,
         True,
-        scGatewayReference
+        scGatewayReference,
     )
     assert tv.released(cf.flip) == 0
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
