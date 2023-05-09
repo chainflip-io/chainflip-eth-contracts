@@ -10,3 +10,4 @@ node_modules/
 crytic-export/
 echidna-test
 cache/
+.artefacts
