@@ -21,10 +21,10 @@ contract StateChainGatewayEchidna is IShared {
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
-        address funder,
+        address redeemAddress,
         uint48 expiryTime
     ) external virtual {
-        sm.registerRedemption(sigData, nodeID, amount, funder, expiryTime);
+        sm.registerRedemption(sigData, nodeID, amount, redeemAddress, expiryTime);
     }
 
     function executeRedemption(bytes32 nodeID) external virtual {
