@@ -78,9 +78,10 @@ def main():
     }
 
     # Deploy USDC mimic token only on private EVM network
-    cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
-    print(f"USDC: {cf.mockUSDC.address}")
-    addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
+    if chain.id == 10997:
+        cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
+        print(f"USDC: {cf.mockUSDC.address}")
+        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
