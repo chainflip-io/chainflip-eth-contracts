@@ -8,7 +8,7 @@ cliff = start + int(YEAR / 2)
 end = start + YEAR
 
 
-def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
+def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayReference):
 
     with reverts(REV_MSG_INVALID_CLIFF):
         addrs.DEPLOYER.deploy(
@@ -28,7 +28,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         cliff,
         end,
         NON_STAKABLE,
-        cf.stateChainGateway,
+        scGatewayReference,
     )
     check_state(
         tv,
@@ -41,6 +41,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         False,
         cf.stateChainGateway,
         0,
+        scGatewayReference
     )
 
     valid_staking_cliff = end
@@ -52,7 +53,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         valid_staking_cliff,
         end,
         STAKABLE,
-        cf.stateChainGateway,
+        scGatewayReference,
     )
     check_state(
         tv,
@@ -65,6 +66,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         True,
         cf.stateChainGateway,
         0,
+        scGatewayReference
     )
 
 
@@ -121,7 +123,7 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, cf):
 
 
 def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVesting):
-    with reverts(REV_MSG_INVALID_STAKEMANAGER):
+    with reverts(REV_MSG_INVALID_SCGREF):
         addrs.DEPLOYER.deploy(
             TokenVesting,
             addrs.INVESTOR,
@@ -131,3 +133,38 @@ def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVesting):
             STAKABLE,
             ZERO_ADDR,
         )
+
+
+def test_tokenVesting_constructor_rev_eoa(addrs, TokenVesting):
+
+    tv = addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        addrs.REVOKER,
+        end,
+        end,
+        STAKABLE,
+        NON_ZERO_ADDR,
+    )
+    # Reference contract is an eoa
+    with reverts('Transaction reverted without a reason string'):
+        tv.fundStateChainAccount(JUNK_INT, 1, {"from": addrs.INVESTOR})
+
+def test_tokenVesting_constructor_rev_ref_eoa(addrs, TokenVesting, SCGatewayReference):
+
+    scGatewayReference =  addrs.DEPLOYER.deploy(
+        SCGatewayReference,
+        addrs.DEPLOYER, NON_ZERO_ADDR)
+
+    tv = addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        addrs.REVOKER,
+        end,
+        end,
+        STAKABLE,
+        scGatewayReference,
+    )
+    # Reference contract that points to an eoa
+    with reverts('Transaction reverted without a reason string'):
+        tv.fundStateChainAccount(JUNK_INT, 1, {"from": addrs.INVESTOR})

@@ -29,6 +29,7 @@ def check_state(
     canStake,
     stateChainGateway,
     revoked,
+    scGatewayReference,
 ):
     assert tv.beneficiary() == beneficiary
     assert tv.revoker() == revoker
@@ -37,7 +38,9 @@ def check_state(
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == canStake
-    assert tv.stateChainGateway() == stateChainGateway
+    assert tv.scGatewayReference() == scGatewayReference
+    assert scGatewayReference.getStateChainGateway()== stateChainGateway
+
     assert tv.revoked(cf.flip) == revoked
 
 

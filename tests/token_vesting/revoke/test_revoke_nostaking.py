@@ -8,7 +8,7 @@ import pytest
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
+def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime, scGatewayReference):
     tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -49,6 +49,7 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
         False,
         cf.stateChainGateway,
         True,
+        scGatewayReference
     )
     assert tv.released(cf.flip) == 0
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0

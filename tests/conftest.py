@@ -118,9 +118,15 @@ def addrs(a):
 def maths(addrs, MockMaths):
     return addrs.DEPLOYER.deploy(MockMaths)
 
+@pytest.fixture(scope="module")
+def scGatewayReference(cf, addrs, SCGatewayReference):
+    return addrs.DEPLOYER.deploy(
+        SCGatewayReference,
+        addrs.DEPLOYER, cf.stateChainGateway)
+
 
 @pytest.fixture(scope="module")
-def tokenVestingNoStaking(addrs, cf, TokenVesting):
+def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayReference):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
@@ -135,7 +141,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         NON_STAKABLE,
-        cf.stateChainGateway,
+        scGatewayReference,
     )
 
     total = MAX_TEST_FUND
@@ -146,7 +152,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
 
 
 @pytest.fixture(scope="module")
-def tokenVestingStaking(addrs, cf, TokenVesting):
+def tokenVestingStaking(addrs, cf, TokenVesting,scGatewayReference):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
@@ -161,7 +167,7 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         STAKABLE,
-        cf.stateChainGateway,
+        scGatewayReference,
     )
 
     total = MAX_TEST_FUND

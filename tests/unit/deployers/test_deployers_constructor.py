@@ -55,7 +55,7 @@ def test_deployer_constructor(
     vault = Vault.at(deployerContract.vault())
     flip = FLIP.at(deployerContract.flip())
     keyManager = KeyManager.at(deployerContract.keyManager())
-    stateChainGateway = StateChainGateway.at(deployerContract.stateChainGateway())
+    stateChainGateway = StateChainGateway.at(deployerContract.scGatewayReference())
 
     check_contracts_state(
         st_pubKeyX,
@@ -124,7 +124,7 @@ def test_upgrader_constructor(
     vault = Vault.at(deployerContract.vault())
     flip = FLIP.at(deployerContract.flip())
     keyManager = KeyManager.at(deployerContract.keyManager())
-    stateChainGateway = StateChainGateway.at(deployerContract.stateChainGateway())
+    stateChainGateway = StateChainGateway.at(deployerContract.scGatewayReference())
 
     new_vault = deploy_new_vault(addrs.DEPLOYER, Vault, KeyManager, keyManager.address)
 
@@ -142,7 +142,7 @@ def test_upgrader_constructor(
     assert deployerStateChainGateway.keyManager() == keyManager.address
     assert deployerStateChainGateway.flip() == flip.address
     assert (
-        deployerStateChainGateway.stateChainGateway() == new_stateChainGateway.address
+        deployerStateChainGateway.scGatewayReference() == new_stateChainGateway.address
     )
 
     # Check the old contracts have remained untouched

@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IStateChainGateway.sol";
+import "./interfaces/ISCGatewayReference.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -34,8 +35,8 @@ contract TokenVesting is ReentrancyGuard {
 
     // If false, staking is not allowed
     bool public immutable canStake;
-    // The staking contract to stake to if `canStake`
-    IStateChainGateway public immutable stateChainGateway;
+    // The contract that holds the reference to the staking contract if `canStake`
+    ISCGatewayReference public immutable scGatewayReference;
 
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
@@ -55,7 +56,7 @@ contract TokenVesting is ReentrancyGuard {
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
-     * @param stateChainGateway_ the contract to stake to if canStake
+     * @param scGatewayReference_ the contract holding the reference to the contract to stake to if canStake
      */
     constructor(
         address beneficiary_,
@@ -63,12 +64,12 @@ contract TokenVesting is ReentrancyGuard {
         uint256 cliff_,
         uint256 end_,
         bool canStake_,
-        IStateChainGateway stateChainGateway_
+        ISCGatewayReference scGatewayReference_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
-        require(address(stateChainGateway_) != address(0), "Vesting: stateChainGateway_ is the zero address");
+        require(address(scGatewayReference_) != address(0), "Vesting: scGatewayRef_ is the zero address");
         if (canStake_) require(cliff_ == end_, "Vesting: invalid staking contract cliff");
 
         beneficiary = beneficiary_;
@@ -76,7 +77,7 @@ contract TokenVesting is ReentrancyGuard {
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
-        stateChainGateway = stateChainGateway_;
+        scGatewayReference = scGatewayReference_;
     }
 
     /**
@@ -87,6 +88,7 @@ contract TokenVesting is ReentrancyGuard {
      */
     function fundStateChainAccount(bytes32 nodeID, uint256 amount) external onlyBeneficiary {
         require(canStake, "Vesting: cannot stake");
+        IStateChainGateway stateChainGateway = scGatewayReference.getStateChainGateway();
 
         IERC20 flip = stateChainGateway.getFLIP();
         require(!revoked[flip], "Vesting: FLIP revoked");
