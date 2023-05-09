@@ -70,6 +70,19 @@ def main():
         os.environ,
     )
 
+    addressDump = {
+        "KEY_MANAGER_ADDRESS": cf.keyManager.address,
+        "SC_GATEWAY_ADDRESS": cf.stateChainGateway.address,
+        "VAULT_ADDRESS": cf.vault.address,
+        "FLIP_ADDRESS": cf.flip.address,
+    }
+
+    # Deploy USDC mimic token only on private EVM network
+    if chain.id == 10997:
+        cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
+        print(f"USDC: {cf.mockUSDC.address}")
+        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
+
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
     print(f"  Deployer: {cf.deployer}")
@@ -88,19 +101,6 @@ def main():
     print(f"  Vault: {cf.vault.address}")
 
     print("\n😎😎 Deployment success! 😎😎")
-
-    addressDump = {
-        "KEY_MANAGER_ADDRESS": cf.keyManager.address,
-        "SC_GATEWAY_ADDRESS": cf.stateChainGateway.address,
-        "VAULT_ADDRESS": cf.vault.address,
-        "FLIP_ADDRESS": cf.flip.address,
-    }
-
-    # Deploy USDC mimic token only on private EVM network
-    if chain.id == 10997:
-        cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
-        print(f"USDC: {cf.mockUSDC.address}")
-        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
     if DEPLOY_ARTEFACT_ID:
         json_content = json.dumps(addressDump)
