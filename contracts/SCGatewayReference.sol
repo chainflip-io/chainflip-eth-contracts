@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/ISCGatewayReference.sol";
+import "./abstract/Shared.sol";
 
 /**
  * @title StateChainGatewayReference
@@ -9,23 +10,28 @@ import "./interfaces/ISCGatewayReference.sol";
  *      calls from a multisig in case of the StateChainGateway contract being upgraded.
  *      The governor address will be the same as the revoker address in the TokenVesting contract.
  */
-contract SCGatewayReference is ISCGatewayReference {
+contract SCGatewayReference is ISCGatewayReference, Shared {
     address public governor;
 
     IStateChainGateway private stateChainGateway;
 
-    constructor(address _governor, IStateChainGateway _stateChainGateway) {
+    constructor(
+        address _governor,
+        IStateChainGateway _stateChainGateway
+    ) nzAddr(_governor) nzAddr(address(_stateChainGateway)) {
         governor = _governor;
         stateChainGateway = _stateChainGateway;
     }
 
     /// @dev    Update the reference to the StateChainGateway contract
-    function updateStateChainGateway(IStateChainGateway _stateChainGateway) external override onlyGovernor {
+    function updateStateChainGateway(
+        IStateChainGateway _stateChainGateway
+    ) external override onlyGovernor nzAddr(address(_stateChainGateway)) {
         stateChainGateway = _stateChainGateway;
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
-    function updateGovernor(address _governor) external override onlyGovernor {
+    function updateGovernor(address _governor) external override onlyGovernor nzAddr(_governor) {
         governor = _governor;
     }
 
