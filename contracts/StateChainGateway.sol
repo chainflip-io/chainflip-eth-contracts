@@ -194,7 +194,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
             emit RedemptionExecuted(nodeID, redemption.amount);
 
             // Send the tokens
-            _FLIP.transfer(redemption.funder, redemption.amount);
+            _FLIP.transfer(redemption.redeemAddress, redemption.amount);
         } else {
             emit RedemptionExpired(nodeID, redemption.amount);
         }
