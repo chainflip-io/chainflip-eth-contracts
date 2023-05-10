@@ -615,6 +615,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         address token,
         uint256 amount,
         address payable multicallAddr,
+        uint256 gasMulticall,
         IMulticall.Call[] calldata calls
     )
         external
@@ -622,7 +623,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, calls))
+            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, calls, gasMulticall))
         )
     {
         // Fund and run multicall
@@ -635,11 +636,20 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 IERC20(token).approve(multicallAddr, amount);
             }
         }
-        // Problem could be if frontrun us with less gas which could cause the run call to revert
-        // but would leave 1/64 gas to run the catch logic. That would not cause any big problem
-        // but it would consume the nonce, which would be annoying (grief attack, no real benefit
-        // for the attacker)
-        try IMulticall(multicallAddr).run{value: valueToSend}(calls, token, amount) {} catch {
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = multicallAddr.call{gas: gasMulticall, value: valueToSend}(
+            abi.encodeWithSelector(IMulticall.run.selector, calls, token, amount)
+        );
+
+        if (!success) {
+            // Validate that the relayer has sent enough gas for the call.
+            // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
+
+            // Code inspired from OpenZeppelin's MinimalForwarder. No need to revert with an invalid opcode to consume all gas.
+            // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/18691d1a6f56dd906c175072a97dc5ed93ab968c/contracts/metatx/MinimalForwarder.sol#L60
+            require(gasleft() > gasMulticall / 63, "Vault: gasMulticall too low");
+
             if (amount > 0 && token != _NATIVE_ADDR) {
                 IERC20(token).approve(multicallAddr, 0);
             }
