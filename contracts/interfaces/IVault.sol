@@ -30,10 +30,10 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         bytes cfParameters
     );
 
-    /// @dev dstAddress is not indexed because indexing a dynamic type (bytes) for it to be filtered,
+    /// @dev bytes parameters is not indexed because indexing a dynamic type for it to be filtered
     ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
     ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
-    ///      version in the event.
+    ///      version in the event. That is unnecessary.
     event XCallNative(
         uint32 dstChain,
         bytes dstAddress,
