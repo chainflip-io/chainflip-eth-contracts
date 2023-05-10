@@ -72,6 +72,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
 
+    event ExecuteActionsFailed(address indexed token, uint256 amount, address multicallAddr);
+
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -630,11 +632,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             if (token == _NATIVE_ADDR) {
                 valueToSend = amount;
             } else {
-                IERC20(token).safeTransfer(multicallAddr, amount);
+                IERC20(token).approve(multicallAddr, amount);
             }
         }
-
-        IMulticall(multicallAddr).run{value: valueToSend}(calls);
+        // Problem could be if frontrun us with less gas which could cause the run call to revert
+        // but would leave 1/64 gas to run the catch logic. That would not cause any big problem
+        // but it would consume the nonce, which would be annoying (grief attack, no real benefit
+        // for the attacker)
+        try IMulticall(multicallAddr).run{value: valueToSend}(calls, token, amount) {} catch {
+            if (amount > 0 && token != _NATIVE_ADDR) {
+                IERC20(token).approve(multicallAddr, 0);
+            }
+            emit ExecuteActionsFailed(token, amount, multicallAddr);
+        }
     }
 
     //////////////////////////////////////////////////////////////

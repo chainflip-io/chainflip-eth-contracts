@@ -5,6 +5,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 import "./interfaces/IMulticall.sol";
+import "./abstract/Shared.sol";
 
 /**
  * @title    Multicall
@@ -14,9 +15,10 @@ import "./interfaces/IMulticall.sol";
  *           this contract will also need to be redeployed. This is to prevent any changes of
  *           behaviour in this contract while the Vault is making calls to it.
  *           This contract is based on the SquidMulticall contract from the SquidRouter protocol
- *           with an added layer of access control.
+ *           with an added layer of access control. There is also an extra _safeTransferFrom()
+ *           since this contract will get the tokens approved by the Vault instead of transferred.
  */
-contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver {
+contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver, Shared {
     bytes4 public constant ERC165_INTERFACE_ID = 0x01ffc9a7;
     bytes4 public constant ERC721_TOKENRECEIVER_INTERFACE_ID = 0x150b7a02;
     bytes4 public constant ERC1155_TOKENRECEIVER_INTERFACE_ID = 0x4e2312e0;
@@ -31,10 +33,21 @@ contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver {
         cfVault = _cfVault;
     }
 
-    function run(Call[] calldata calls) external payable override onlyCfVault {
+    // If we go for the approve try-catch method
+    function run(Call[] calldata calls, address token, uint256 amount) external payable override onlyCfVault {
         // Prevents reentrancy
         if (isRunning) revert AlreadyRunning();
         isRunning = true;
+
+        // NOTE: Another option is to just to a transferFrom as the first call if it's a token, but we will be
+        // doing transferFrom instead of safeTransferFrom, which is what we should do
+        if (amount > 0) {
+            if (token != _NATIVE_ADDR) {
+                _safeTransferFrom(token, msg.sender, amount);
+            } else {
+                assert(msg.value == amount);
+            }
+        }
 
         for (uint256 i = 0; i < calls.length; i++) {
             Call memory call = calls[i];

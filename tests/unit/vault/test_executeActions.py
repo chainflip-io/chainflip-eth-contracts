@@ -9,9 +9,11 @@ from brownie.convert import to_bytes
     st_sender=strategy("address"),
     st_multicall=strategy("address"),
 )
-def test_executeActions_rev_erc20_max(cf, st_sender, st_multicall):
+def test_executeActions_rev_eoa(cf, st_sender, st_multicall):
 
-    with reverts(REV_MSG_ERC20_EXCEED_BAL):
+    # This won't revert with REV_MSG_ERC20_EXCEED_BAL as we are approving
+    # now instead of transferring
+    with reverts("Transaction reverted without a reason string"):
         signed_call_cf(
             cf,
             cf.vault.executeActions,
@@ -21,6 +23,36 @@ def test_executeActions_rev_erc20_max(cf, st_sender, st_multicall):
             [[0, ZERO_ADDR, 0, JUNK_HEX, JUNK_HEX]],
             sender=st_sender,
         )
+
+
+@given(
+    st_sender=strategy("address"),
+)
+def test_executeActions_rev_erc20_max(cf, st_sender, multicall):
+
+    cf.flip.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
+
+    assert cf.flip.balanceOf(cf.vault) == TEST_AMNT
+
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        cf.flip,
+        2**256 - 1,
+        multicall,
+        [[0, ZERO_ADDR, 0, JUNK_HEX, JUNK_HEX]],
+        sender=st_sender,
+    )
+
+    # It should revert when doing the safeTransferFrom
+    assert tx.events["ExecuteActionsFailed"][0].values() == [
+        cf.flip,
+        2**256 - 1,
+        multicall,
+    ]
+    assert cf.flip.allowance(cf.vault, multicall) == 0
+
+    assert cf.flip.balanceOf(cf.vault) == TEST_AMNT
 
 
 @given(
