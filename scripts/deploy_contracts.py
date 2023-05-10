@@ -70,18 +70,17 @@ def main():
         os.environ,
     )
 
+    # Deploy USDC mimic token only on local/devnets networks
+    localnet_chainId = 10997
+    if chain.id == localnet_chainId:
+        cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
+
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
         "SC_GATEWAY_ADDRESS": cf.stateChainGateway.address,
         "VAULT_ADDRESS": cf.vault.address,
         "FLIP_ADDRESS": cf.flip.address,
     }
-
-    # Deploy USDC mimic token only on private EVM network
-    localnet_chainId = 10997
-    if chain.id == localnet_chainId:
-        cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
-        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
@@ -101,6 +100,7 @@ def main():
     print(f"  Vault: {cf.vault.address}")
     if chain.id == localnet_chainId:
         print(f"  USDC: {cf.mockUSDC.address}")
+        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
     print("\n😎😎 Deployment success! 😎😎")
 
