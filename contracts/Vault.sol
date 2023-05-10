@@ -22,56 +22,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
     uint256 private constant _GAS_TO_FORWARD = 3500;
 
-    event TransferNativeFailed(address payable indexed recipient, uint256 amount);
-    event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
-
-    event SwapNative(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        uint256 amount,
-        address indexed sender,
-        bytes cfParameters
-    );
-    event SwapToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender,
-        bytes cfParameters
-    );
-
-    /// @dev dstAddress is not indexed because indexing a dynamic type (bytes) for it to be filtered,
-    ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
-    ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
-    ///      version in the event.
-    event XCallNative(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 gasAmount,
-        bytes cfParameters
-    );
-    event XCallToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 gasAmount,
-        bytes cfParameters
-    );
-
-    event AddGasNative(bytes32 swapID, uint256 amount);
-    event AddGasToken(bytes32 swapID, uint256 amount, address token);
-
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
