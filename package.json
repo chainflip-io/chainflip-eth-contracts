@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "docgen": "npx solidity-docgen --solc-module solc-0.8 --templates=./docgen/ && npx markdownlint docs/ --config docgen/.markdownlint.json --fix",
+    "docgen": "npx solidity-docgen --solc-module solc --templates=./docgen/ && npx markdownlint docs/ --config docgen/.markdownlint.json --fix",
     "lint": "npx solhint -w 0 'contracts/**/*.sol' && black . --check",
     "format-sol": "npx prettier --write 'contracts/**/*.sol'",
     "format-py": "black .",
@@ -17,6 +17,6 @@
     "solc": "0.8.20",
     "solhint": "3.4.1",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-docgen": "0.6.0-beta.35"
+    "solidity-docgen": "0.5.17"
   }
 }
