@@ -33,16 +33,13 @@ contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver, Shared {
         cfVault = _cfVault;
     }
 
-    // If we go for the approve try-catch method
     function run(Call[] calldata calls, address token, uint256 amount) external payable override onlyCfVault {
         // Prevents reentrancy
         if (isRunning) revert AlreadyRunning();
         isRunning = true;
 
-        if (amount > 0) {
-            if (token != _NATIVE_ADDR) {
-                _safeTransferFrom(token, msg.sender, amount);
-            }
+        if (amount > 0 && token != _NATIVE_ADDR) {
+            _safeTransferFrom(token, msg.sender, amount);
         }
 
         for (uint256 i = 0; i < calls.length; i++) {
