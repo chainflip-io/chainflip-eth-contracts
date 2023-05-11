@@ -4,7 +4,7 @@ networks:
 
 # Require OpenZeppelin Contracts
 dependencies:
-  - OpenZeppelin/openzeppelin-contracts@4.0.0
+  - OpenZeppelin/openzeppelin-contracts@4.8.3
 
 compiler:
   evm_version: "london"
