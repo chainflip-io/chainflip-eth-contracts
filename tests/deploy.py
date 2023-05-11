@@ -55,9 +55,15 @@ def deploy_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
+    # Deploying in live networks sometimes throws an error when getting the address of the deployed contract.
+    # I suspect that the RPC nodes might not have processed the transaction. Increasing the required confirmations
+    # to more than one is a problem in local networks with hardhat's automining enabled, as it will brick
+    # the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
+    # nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
+    required_confs = 1 if (chain.id == 31337 or chain.id == 10997) else 4
+
     # Deploy contracts via cf.deployerContract. Minting genesis validator FLIP to the State Chain Gateway.
-    # The rest of genesis FLIP will be minted to the governance address for safekeeping. Adding
-    # required confirmations to avoid errors when checking contracts.address
+    # The rest of genesis FLIP will be minted to the governance address for safekeeping.
     cf.deployerContract = DeployerContract.deploy(
         aggKey,
         cf.gov,
@@ -66,7 +72,7 @@ def deploy_Chainflip_contracts(
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
-        {"from": deployer, "required_confs": 1},
+        {"from": deployer, "required_confs": required_confs},
     )
 
     cf.vault = Vault.at(cf.deployerContract.vault())

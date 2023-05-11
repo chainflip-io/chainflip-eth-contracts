@@ -13,21 +13,21 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
     event RedemptionRegistered(
         bytes32 indexed nodeID,
         uint256 amount,
-        address indexed funder,
+        address indexed redeemAddress,
         uint48 startTime,
         uint48 expiryTime
     );
     event RedemptionExecuted(bytes32 indexed nodeID, uint256 amount);
     event RedemptionExpired(bytes32 indexed nodeID, uint256 amount);
-    event MinFundingChanged(uint256 oldMinStake, uint256 newMinFunding);
+    event MinFundingChanged(uint256 oldMinFunding, uint256 newMinFunding);
     event GovernanceWithdrawal(address to, uint256 amount);
     event FLIPSet(address flip);
     event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
 
     struct Redemption {
         uint256 amount;
-        address funder;
-        // 48 so that 160 (from funder) + 48 + 48 is 256 they can all be packed
+        address redeemAddress;
+        // 48 so that 160 (from redeemAddress) + 48 + 48 is 256 they can all be packed
         // into a single 256 bit slot
         uint48 startTime;
         uint48 expiryTime;
@@ -47,7 +47,7 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
      * @notice          Add FLIP funds to a StateChain account identified with a nodeID
      * @dev             Requires the funder to have called `approve` in FLIP
      * @param amount    The amount of FLIP tokens
-     * @param nodeID    The nodeID of the funder
+     * @param nodeID    The nodeID of the account to fund
      */
     function fundStateChainAccount(bytes32 nodeID, uint256 amount) external;
 
@@ -57,16 +57,16 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
      *          amount redeemable = stake + rewards - penalties.
      * @param sigData   Struct containing the signature data over the message
      *                  to verify, signed by the aggregate key.
-     * @param nodeID    The nodeID of the funder
+     * @param nodeID    The nodeID of the account redeeming the FLIP
      * @param amount    The amount of funds to be locked up
-     * @param funder    The funder who is sending the FLIP
+     * @param redeemAddress    The redeemAddress who will receive the FLIP
      * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
      */
     function registerRedemption(
         SigData calldata sigData,
         bytes32 nodeID,
         uint256 amount,
-        address funder,
+        address redeemAddress,
         uint48 expiryTime
     ) external;
 
@@ -75,7 +75,7 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
      *          redemption before 48h have passed after registering it, or after the specified
      *          expiry time
      * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
-     * @param nodeID    The nodeID of the funder
+     * @param nodeID    The nodeID of the account redeeming the FLIP
      */
     function executeRedemption(bytes32 nodeID) external;
 

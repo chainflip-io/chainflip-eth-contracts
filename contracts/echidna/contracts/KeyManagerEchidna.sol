@@ -35,4 +35,21 @@ contract KeyManagerEchidna is IShared {
     function govAction(bytes32 message) external virtual {
         km.govAction(message);
     }
+
+    // Comparing with abi.encodePacked as that is what SchnorrSECP256K1 uses the msgHash for
+    function encodingBytesVerifySig(
+        bytes32 msgHash,
+        uint256 signingPubKeyX,
+        uint8 pubKeyYParity,
+        address nonceTimesGeneratorAddress
+    ) external virtual {
+        assert(
+            uint256(keccak256(abi.encodePacked(signingPubKeyX, pubKeyYParity, msgHash, nonceTimesGeneratorAddress))) ==
+                uint256(
+                    keccak256(
+                        abi.encodePacked(signingPubKeyX, pubKeyYParity, uint256(msgHash), nonceTimesGeneratorAddress)
+                    )
+                )
+        );
+    }
 }

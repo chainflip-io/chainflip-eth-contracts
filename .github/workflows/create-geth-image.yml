@@ -44,6 +44,9 @@ jobs:
           cache-to: type=gha,mode=max
   create:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suffix: ["1-node", "3-node"]
     needs:
       - build
     services:
@@ -100,18 +103,20 @@ jobs:
 
       - name: Deploy contracts
         env:
-          SEED: "test test test test test test test test test test test junk"
-          AGG_KEY: "0305e8bc264a9024df96ecdfece4572a155f3a4bd4906e3014152e80da4606c038"
-          GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
-          COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
-          GENESIS_STAKE: "1000000000000000000000"
-          NUM_GENESIS_VALIDATORS: "1"
-          DEPLOYER_ACCOUNT_INDEX: "0"
-          DEPLOY_ARTEFACT_ID: "docker"
-        run: poetry run brownie run deploy_contracts --network docker
+          SEED: test test test test test test test test test test test junk
+        run: export $(cat ci/docker/geth/${{ matrix.suffix }}.env | xargs) && poetry run brownie run deploy_contracts --network docker
 
       - name: Commit and push new geth image
         run: |
           CONTAINER=$(docker ps --format '{{.Names}}' | grep geth)
-          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}
-          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}
+          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}
+      - name: Summary
+        run: |
+          CONTRACTS=$(jq . .scripts/.artefacts/docker.json)
+          echo "## Deployed Contracts for \`${{ matrix.suffix }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}\`"

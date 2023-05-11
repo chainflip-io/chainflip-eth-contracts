@@ -63,7 +63,7 @@ def test_govWithdraw(
 
     chain.sleep(st_sleepTime)
     # Adding a time buffer because brownie is sometimes inconsistent with chain time in some cases
-    time_buffer = 3
+    time_buffer = 10
     if (
         getChainTime() - cf.keyManager.getLastValidateTime()
         < AGG_KEY_EMERGENCY_TIMEOUT - time_buffer

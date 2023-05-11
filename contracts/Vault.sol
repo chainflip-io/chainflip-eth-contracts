@@ -12,8 +12,8 @@ import "./GovernanceCommunityGuarded.sol";
 
 /**
  * @title    Vault contract
- * @notice   The vault for holding and transferring native/tokens and deploying contracts for fetching
- *           individual deposits. It also allows users to do cross-chain swaps and(or) calls by
+ * @notice   The vault for holding and transferring native or ERC20 tokens and deploying contracts for
+ *           fetching individual deposits. It also allows users to do cross-chain swaps and(or) calls by
  *           making a function call directly to this contract.
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
@@ -21,63 +21,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
     uint256 private constant _GAS_TO_FORWARD = 3500;
-
-    event TransferNativeFailed(address payable indexed recipient, uint256 amount);
-    event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
-
-    event SwapNative(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        uint256 amount,
-        address indexed sender,
-        bytes cfParameters
-    );
-    event SwapToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender,
-        bytes cfParameters
-    );
-
-    /// @dev dstAddress is not indexed because indexing a dynamic type (bytes) for it to be filtered,
-    ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
-    ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
-    ///      version in the event.
-    event XCallNative(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 gasAmount,
-        bytes cfParameters
-    );
-    event XCallToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 gasAmount,
-        bytes cfParameters
-    );
-
-    event AddGasNative(bytes32 swapID, uint256 amount);
-    event AddGasToken(bytes32 swapID, uint256 amount, address token);
-
-    event ExecuteActionsFailed(
-        address payable indexed multicallAddress,
-        uint256 amount,
-        address indexed token,
-        bytes reason
-    );
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -334,11 +277,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Swaps native token for a token in another chain. The egress token will be transferred to the specified 
+     * @notice  Swaps native token for a token in another chain. The egress token will be transferred to the specified
      *          destination address on the destination chain.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.  It isn't preventing spamming.
-
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Destination token to be swapped to.
@@ -354,11 +296,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Swaps ERC20 token for a token in another chain. The desired token will be transferred to the specified 
-     *          destination address on the destination chain. The provided ERC20 token must be supported by the Chainflip Protocol. 
+     * @notice  Swaps ERC20 token for a token in another chain. The desired token will be transferred to the specified
+     *          destination address on the destination chain. The provided ERC20 token must be supported by the Chainflip Protocol.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.
-
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Uint containing the specifics of the swap to be performed according to Chainflip's nomenclature.
@@ -421,7 +362,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          The message parameter is transmitted to the destination chain as part of the cross-chain call.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.
-     *
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Uint containing the specifics of the swap to be performed, if any, as part of the xCall. The string
@@ -495,7 +435,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers ETH or a token from this vault to a recipient and makes a function call
+     * @notice  Transfers native or a token from this vault to a recipient and makes a function call
      *          completing a cross-chain swap and call. The ICFReceiver interface is expected on
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap.
@@ -604,17 +544,17 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfer funds and pass calldata to be executed on another multicall contract.
-     * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
-     *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
-     * @dev     Calls are not reverted upon Multicall.Run failure so the nonce gets consumed. The 
+     * @notice  Transfer funds and pass calldata to be executed on a Multicall contract.
+     * @dev     For safety purposes it's preferred to execute calldata externally with
+     *          a limited amount of funds instead of executing arbitrary calldata here.
+     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
      *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
+     * @param sigData         Struct containing the signature data over the message
+     *                        to verify, signed by the aggregate key.
      * @param transferParams  The transfer parameters inluding the token and amount to be transferred
-     *                  and the multicall contract address.
-     * @param calls     Array of actions to be executed.
-     * @param gasMulticall Gas that must be forwarded to the multicall.
+     *                        and the multicall contract address.
+     * @param calls           Array of actions to be executed.
+     * @param gasMulticall    Gas that must be forwarded to the multicall.
 
      */
     function executeActions(

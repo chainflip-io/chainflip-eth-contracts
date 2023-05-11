@@ -54,7 +54,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         Key memory key = _aggKey;
 
         require(
-            verifySignature(uint256(msgHash), sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddress),
+            verifySignature(msgHash, sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddress),
             "KeyManager: Sig invalid"
         );
         require(!_isNonceUsedByAggKey[sigData.nonce], "KeyManager: nonce already used");
