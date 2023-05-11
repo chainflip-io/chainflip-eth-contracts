@@ -132,11 +132,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        uint256 gasMulticall,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     ) external;
 
     //////////////////////////////////////////////////////////////

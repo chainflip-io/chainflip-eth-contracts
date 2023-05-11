@@ -72,7 +72,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
 
-    event ExecuteActionsFailed(address indexed token, uint256 amount, address multicallAddr);
+    event ExecuteActionsFailed(
+        address payable indexed multicallAddress,
+        uint256 amount,
+        address indexed token,
+        bytes reason
+    );
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -606,54 +611,62 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
      * @param sigData   Struct containing the signature data over the message
      *                  to verify, signed by the aggregate key.
-     * @param token     Address of the source token to swap.
-     * @param amount    Amount of the source token to send.
-     * @param multicallAddr Address of the Multicall contract to call.
+     * @param transferParams  The transfer parameters inluding the token and amount to be transferred
+     *                  and the multicall contract address.
      * @param calls     Array of actions to be executed.
+     * @param gasMulticall Gas that must be forwarded to the multicall.
 
      */
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        uint256 gasMulticall,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     )
         external
         override
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, gasMulticall, calls))
+            keccak256(abi.encode(this.executeActions.selector, transferParams, calls, gasMulticall))
         )
     {
         // Fund and run multicall
         uint256 valueToSend;
 
-        if (amount > 0) {
-            if (token == _NATIVE_ADDR) {
-                valueToSend = amount;
+        if (transferParams.amount > 0) {
+            if (transferParams.token == _NATIVE_ADDR) {
+                valueToSend = transferParams.amount;
             } else {
-                IERC20(token).approve(multicallAddr, amount);
+                IERC20(transferParams.token).approve(transferParams.recipient, transferParams.amount);
             }
         }
 
-        (bool success, ) = multicallAddr.call{gas: gasMulticall, value: valueToSend}(
-            abi.encodeWithSelector(IMulticall.run.selector, calls, token, amount)
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory reason) = transferParams.recipient.call{gas: gasMulticall, value: valueToSend}(
+            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
         );
 
         if (!success) {
-            // Validate that enough gas has been sent for the call
+            // Validate that the relayer has sent enough gas for the call.
             // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
-            require(gasleft() > gasMulticall / 63, "Vault: gasMulticall too low");
+            if (gasleft() <= gasMulticall / 63) {
+                // Emulate an out of gas exception by explicitly trigger invalid opcode to consume all gas and
+                // bubble-up the effects, since neither revert or assert consume all gas since Solidity 0.8.0.
 
-            if (amount > 0 && token != _NATIVE_ADDR) {
-                IERC20(token).approve(multicallAddr, 0);
+                // solhint-disable no-inline-assembly
+                /// @solidity memory-safe-assembly
+                assembly {
+                    invalid()
+                }
+                // solhint-enable no-inline-assembly
             }
-            emit ExecuteActionsFailed(token, amount, multicallAddr);
+            if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
+                IERC20(transferParams.token).approve(transferParams.recipient, 0);
+            }
+            emit ExecuteActionsFailed(transferParams.recipient, transferParams.amount, transferParams.token, reason);
         } else {
-            require(multicallAddr.code.length > 0);
+            require(transferParams.recipient.code.length > 0);
         }
     }
 

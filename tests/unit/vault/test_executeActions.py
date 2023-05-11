@@ -17,11 +17,9 @@ def test_executeActions_rev_eoa(cf, st_sender, st_multicall):
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            cf.flip,
-            2**256 - 1,
-            st_multicall,
-            100000,
+            [cf.flip, st_multicall, 2**256 - 1],
             [[0, ZERO_ADDR, 0, JUNK_HEX, JUNK_HEX]],
+            100000,
             sender=st_sender,
         )
 
@@ -38,19 +36,18 @@ def test_executeActions_rev_erc20_max(cf, st_sender, multicall):
     tx = signed_call_cf(
         cf,
         cf.vault.executeActions,
-        cf.flip,
-        2**256 - 1,
-        multicall,
-        100000,
+        [cf.flip, multicall, 2**256 - 1],
         [[0, ZERO_ADDR, 0, JUNK_HEX, JUNK_HEX]],
+        100000,
         sender=st_sender,
     )
 
-    # It should revert when doing the safeTransferFrom
-    assert tx.events["ExecuteActionsFailed"][0].values() == [
-        cf.flip,
-        2**256 - 1,
+    # It should revert when doing the safeTransferFrom. Not asserting
+    # the revert message as it's not important for now.
+    assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
         multicall,
+        2**256 - 1,
+        cf.flip.address,
     ]
     assert cf.flip.allowance(cf.vault, multicall) == 0
 
@@ -78,7 +75,7 @@ def test_executeActions_rev_erc20(
         cf.flip.transfer.encode_input(st_recipient, st_amount),
         0,
     ]
-    args = [cf.flip, st_amount, multicall, 100000, [call]]
+    args = [[cf.flip, multicall, st_amount], [call], 100000]
 
     tx = signed_call_cf(
         cf,
@@ -88,7 +85,11 @@ def test_executeActions_rev_erc20(
     )
 
     if st_amount > st_ini_amount:
-        assert "ExecuteActionsFailed" in tx.events
+        assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+            multicall,
+            st_amount,
+            cf.flip.address,
+        ]
     else:
         assert "ExecuteActionsFailed" not in tx.events
 
@@ -125,7 +126,7 @@ def test_executeActions_rev_cfReceive(
         ),
         0,
     ]
-    args = [ZERO_ADDR, 0, multicall, 100000, [call]]
+    args = [[ZERO_ADDR, multicall, 0], [call], 100000]
 
     tx = signed_call_cf(
         cf,
@@ -133,7 +134,11 @@ def test_executeActions_rev_cfReceive(
         *args,
         sender=st_sender,
     )
-    assert "ExecuteActionsFailed" in tx.events
+    assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+        multicall,
+        0,
+        ZERO_ADDR,
+    ]
 
     ## Ensure we can't call a cfReceive or cfReceivexCall function via Multicall
     call = [
@@ -145,7 +150,7 @@ def test_executeActions_rev_cfReceive(
         ),
         0,
     ]
-    args = [ZERO_ADDR, 0, multicall, 100000, [call]]
+    args = [[ZERO_ADDR, multicall, 0], [call], 100000]
 
     tx = signed_call_cf(
         cf,
@@ -153,7 +158,11 @@ def test_executeActions_rev_cfReceive(
         *args,
         sender=st_sender,
     )
-    assert "ExecuteActionsFailed" in tx.events
+    assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+        multicall,
+        0,
+        ZERO_ADDR,
+    ]
 
 
 @given(
@@ -176,7 +185,7 @@ def test_executeActions_rev_length_eoa(
         st_data,
         st_data,
     ]
-    args = [ZERO_ADDR, 0, st_receiver, st_gas, [call]]
+    args = [[ZERO_ADDR, st_receiver, 0], [call], st_gas]
 
     ## It will revert because it's calling an EOA.
     with reverts("Transaction reverted without a reason string"):
@@ -226,7 +235,7 @@ def test_executeActions_rev_nativeBals(
         st_bytes,
     ]
 
-    args = [NATIVE_ADDR, st_native_transfer, multicall, 100000, [call]]
+    args = [[NATIVE_ADDR, multicall, st_native_transfer], [call], 100000]
 
     tx = signed_call_cf(
         cf,
@@ -246,7 +255,11 @@ def test_executeActions_rev_nativeBals(
             == ini_bals_alice + st_native_transfer
         )
     else:
-        assert "ExecuteActionsFailed" in tx.events
+        assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+            multicall,
+            st_native_transfer,
+            NATIVE_ADDR,
+        ]
 
         assert web3.eth.get_balance(multicall.address) == ini_bals_multicall
         assert web3.eth.get_balance(cf.vault.address) == ini_bals_vault
@@ -281,7 +294,7 @@ def test_executeActions_bridge_token(
         st_bytes,
     ]
 
-    args = [token, st_token_transfer, multicall, 1000000, [call]]
+    args = [[token, multicall, st_token_transfer], [call], 1000000]
 
     tx = signed_call_cf(
         cf,
@@ -297,11 +310,16 @@ def test_executeActions_bridge_token(
         assert token.balanceOf(multicall.address) == 0
         assert token.balanceOf(cf.ALICE.address) == ini_bals_alice + st_token_transfer
     else:
-        assert "ExecuteActionsFailed" in tx.events
-
+        assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+            multicall,
+            st_token_transfer,
+            token.address,
+        ]
         assert token.balanceOf(multicall.address) == ini_bals_multicall
         assert token.balanceOf(cf.vault.address) == ini_bals_vault
         assert token.balanceOf(cf.ALICE.address) == ini_bals_alice
+
+        assert token.allowance(cf.vault.address, multicall.address) == 0
 
 
 @given(
@@ -320,7 +338,7 @@ def test_multicallRun_safeTransferFrom(cf, multicall, st_amount):
         0,
     ]
 
-    args = [cf.flip.address, st_amount, multicall, 1000000, [call]]
+    args = [[cf.flip.address, multicall, st_amount], [call], 1000000]
 
     assert cf.flip.balanceOf(multicall) == 0
 
@@ -348,7 +366,7 @@ def test_multicallRun_native(cf, multicall, st_amount):
         0,
     ]
 
-    args = [NATIVE_ADDR, st_amount, multicall, 1000000, [call]]
+    args = [[NATIVE_ADDR, multicall, st_amount], [call], 1000000]
 
     assert web3.eth.get_balance(multicall.address) == 0
 
@@ -395,7 +413,7 @@ def test_executeActions_revgas(cf, multicall):
     # Gas that should be sent to the Multicall for safeTransferFrom + transfer
     # Number used just for a unit test
     multicall_gas = 70000
-    args = [cf.flip.address, TEST_AMNT, multicall, multicall_gas, [call]]
+    args = [[cf.flip.address, multicall, TEST_AMNT], [call], multicall_gas]
 
     sigData = AGG_SIGNER_1.getSigDataWithNonces(
         cf.keyManager, cf.vault.executeActions, nonces, *args
@@ -404,7 +422,10 @@ def test_executeActions_revgas(cf, multicall):
     # but leaves enough gas to trigger "Vault: gasMulticall too low".
     # Succesfull tx is ~138k
     gas_limit = 130000
-    with reverts("Vault: gasMulticall too low"):
+
+    # Reverted with empty revert string is to catch the invalid opcode
+    # That is different to the "Transaction reverted without a reason string"
+    with reverts(""):
         cf.vault.executeActions(
             sigData,
             *args,
