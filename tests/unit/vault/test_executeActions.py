@@ -295,7 +295,7 @@ def test_executeActions_bridge_token(
         st_bytes,
     ]
 
-    args = [token, st_token_transfer, multicall, [call]]
+    args = [token, st_token_transfer, multicall, 1000000, [call]]
 
     if st_token_vault >= st_token_transfer:
         signed_call_cf(
@@ -334,3 +334,82 @@ def test_multicallRun_rev_notVault(
         multicall.run(
             [[0, ZERO_ADDR, JUNK_INT, JUNK_HEX, JUNK_HEX]], {"from": st_sender}
         )
+
+
+@given(
+    st_gas=strategy("uint256", max_value=1000000),
+)
+def test_executeActions_revgas(cf, multicall, token, st_gas):
+
+    st_token_amount = TEST_AMNT + 1
+    st_sender = cf.BOB
+    st_bytes = JUNK_HEX
+
+    # Assert initial token balances are zero
+    assert token.balanceOf(cf.vault.address) == 0
+    assert token.balanceOf(multicall.address) == 0
+
+    token.transfer(cf.vault.address, st_token_amount)
+
+    ini_bals_multicall = 0
+    ini_bals_vault = token.balanceOf(cf.vault.address)
+    ini_bals_alice = token.balanceOf(cf.ALICE.address)
+
+    call = [
+        0,
+        token,
+        0,
+        token.transfer.encode_input(cf.ALICE, st_token_amount),
+        st_bytes,
+    ]
+
+    # gas expected - estimation ballpark from tests
+    # multicall_gas_needed = 95989
+
+    ## Current estimation is ~248k with "run" looping over i=10
+    multicall_gas_needed = 300000
+
+    # TODO: Update Multicall with the real logic and estimate how much gas
+    # should be forwarded.
+    # The "chatc" with this approach is that if the multicall_gas_needed is too
+    # low then the tx can succeed triggering ExecuteActionsFailed, but that at
+    # least is under our control. And if the relayer wants they can increase
+    # the gas limit causing it to pass succesfully. So basically if we set the
+    # multicall_gas_needed too low, the risk is that they frontrun us consuming
+    # the nonce, but that's it. THIS SEEMS LIKE THE RIGHT APPROACH! WE JUST NEED
+    # TO GET GOOD TESTING WITH REAL ESTIMATIONS.
+
+    # TODO: We need to check if the [calls] here pass, because I believe the logic fails.
+
+    args = [token, st_token_amount, multicall, multicall_gas_needed, [call]]
+
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.vault.executeActions, nonces, *args
+    )
+
+    print("gas limit: ", st_gas)
+
+    try:
+        tx = cf.vault.executeActions(
+            sigData,
+            *args,
+            {"from": cf.DENICE, "gas_limit": st_gas},
+        )
+
+    except Exception as e:
+        revert_reason = str(e).split("\n", 1)[0]
+        print(f"An error occurred: {e}")
+        # Manually check for all potential revert reasons due to out of gas
+        assert (
+            "revert: Vault: gasMulticall too low" in revert_reason
+            or "Transaction requires at least" in revert_reason
+            or "call to precompile 1 failed" in revert_reason
+            or "Transaction ran out of gas" in revert_reason
+            or "Transaction reverted without a reason string" in revert_reason
+        )
+        tx = None
+
+    if tx != None:
+        print(tx.events)
+        print(tx.info())
+        assert "ExecuteActionsFailed" not in tx.events

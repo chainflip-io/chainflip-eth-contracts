@@ -623,25 +623,41 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, calls, gasMulticall))
+            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, gasMulticall, calls))
         )
     {
         // Fund and run multicall
         uint256 valueToSend;
 
-        if (amount > 0) {
-            if (token == _NATIVE_ADDR) {
-                valueToSend = amount;
-            } else {
-                IERC20(token).approve(multicallAddr, amount);
-            }
-        }
+        // if (amount > 0) {
+        //     if (token == _NATIVE_ADDR) {
+        //         valueToSend = amount;
+        //     } else {
+        //         IERC20(token).approve(multicallAddr, amount);
+        //     }
+        // }
+
+        // The only problem with this method is that we will have to sign over the gas amount, so we would have
+        // to resign if that is not enough. However this prevents all the attacks. The only scenario where this
+        // is a problem is if the external call from Multicall to another contract spends a lot of gas, but we
+        // should not be interacting with protocols in the wild here, should be reliable. Therefore we can
+        // just hardcode a value in the statechain to be used as the gas amount. No need to make estimations.
+
+        // TODO: We shouldnt need a check if it's a contract but we should do it anyway
 
         // solhint-disable-next-line avoid-low-level-calls
+        // (bool success, ) = multicallAddr.call{gas: gasMulticall, value: valueToSend}(
+        //     abi.encodeWithSelector(IMulticall.run.selector, calls, token, amount)
+        // );
+
+        // If it's true that a low level call forwards all the gas, we don't need all this, as someone making
+        // the lowlevel call fail due to gas won't leave any gas left for the rest of the execution causing a
+        // revert of all the transaction. However, if 63/64 is kept, then we need extra protection.
         (bool success, ) = multicallAddr.call{gas: gasMulticall, value: valueToSend}(
             abi.encodeWithSelector(IMulticall.run.selector, calls, token, amount)
         );
 
+        // if success we are good to go! Multicall will always revert if something goes wrong.
         if (!success) {
             // Validate that the relayer has sent enough gas for the call.
             // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
