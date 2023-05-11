@@ -26,9 +26,6 @@ contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver, Shared {
     bool private isRunning;
     /// @dev    Chainflip's Vault address
     address public immutable cfVault;
-    uint256[] list;
-
-    event MultiCallNotReverted();
 
     error TransferFailed();
 
@@ -38,44 +35,37 @@ contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver, Shared {
 
     // If we go for the approve try-catch method
     function run(Call[] calldata calls, address token, uint256 amount) external payable override onlyCfVault {
-        // Dummy logic to spend some gas (not all)
-        for (uint i = 0; i < 10; i++) {
-            list.push(i);
+        // Prevents reentrancy
+        if (isRunning) revert AlreadyRunning();
+        isRunning = true;
+
+        if (amount > 0) {
+            if (token != _NATIVE_ADDR) {
+                _safeTransferFrom(token, msg.sender, amount);
+            }
         }
-        for (uint i = 0; i < 10; i++) {
-            list.pop();
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            Call memory call = calls[i];
+
+            if (call.callType == CallType.FullTokenBalance) {
+                (address token, uint256 amountParameterPosition) = abi.decode(call.payload, (address, uint256));
+                uint256 amount = IERC20(token).balanceOf(address(this));
+                _setCallDataParameter(call.callData, amountParameterPosition, amount);
+            } else if (call.callType == CallType.FullNativeBalance) {
+                call.value = address(this).balance;
+            } else if (call.callType == CallType.CollectTokenBalance) {
+                address token = abi.decode(call.payload, (address));
+                _safeTransferFrom(token, msg.sender, IERC20(token).balanceOf(msg.sender));
+                continue;
+            }
+
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, bytes memory data) = call.target.call{value: call.value}(call.callData);
+            if (!success) revert CallFailed(i, data);
         }
-        emit MultiCallNotReverted();
-        // // Prevents reentrancy
-        // if (isRunning) revert AlreadyRunning();
-        // isRunning = true;
-        // // NOTE: Another option is to just to a transferFrom as the first call if it's a token, but we will be
-        // // doing transferFrom instead of safeTransferFrom, which is what we should do
-        // if (amount > 0) {
-        //     if (token != _NATIVE_ADDR) {
-        //         _safeTransferFrom(token, msg.sender, amount);
-        //     } else {
-        //         assert(msg.value == amount);
-        //     }
-        // }
-        // for (uint256 i = 0; i < calls.length; i++) {
-        //     Call memory call = calls[i];
-        //     if (call.callType == CallType.FullTokenBalance) {
-        //         (address token, uint256 amountParameterPosition) = abi.decode(call.payload, (address, uint256));
-        //         uint256 amount = IERC20(token).balanceOf(address(this));
-        //         _setCallDataParameter(call.callData, amountParameterPosition, amount);
-        //     } else if (call.callType == CallType.FullNativeBalance) {
-        //         call.value = address(this).balance;
-        //     } else if (call.callType == CallType.CollectTokenBalance) {
-        //         address token = abi.decode(call.payload, (address));
-        //         _safeTransferFrom(token, msg.sender, IERC20(token).balanceOf(msg.sender));
-        //         continue;
-        //     }
-        //     // solhint-disable-next-line avoid-low-level-calls
-        //     (bool success, bytes memory data) = call.target.call{value: call.value}(call.callData);
-        //     if (!success) revert CallFailed(i, data);
-        // }
-        // isRunning = false;
+
+        isRunning = false;
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

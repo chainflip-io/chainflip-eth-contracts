@@ -602,6 +602,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @notice  Transfer funds and pass calldata to be executed on another multicall contract.
      * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
      *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
+     * @dev     Calls are not reverted upon Multicall.Run failure so the nonce gets consumed. The 
+     *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
      * @param sigData   Struct containing the signature data over the message
      *                  to verify, signed by the aggregate key.
      * @param token     Address of the source token to swap.
@@ -629,47 +631,29 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Fund and run multicall
         uint256 valueToSend;
 
-        // if (amount > 0) {
-        //     if (token == _NATIVE_ADDR) {
-        //         valueToSend = amount;
-        //     } else {
-        //         IERC20(token).approve(multicallAddr, amount);
-        //     }
-        // }
+        if (amount > 0) {
+            if (token == _NATIVE_ADDR) {
+                valueToSend = amount;
+            } else {
+                IERC20(token).approve(multicallAddr, amount);
+            }
+        }
 
-        // The only problem with this method is that we will have to sign over the gas amount, so we would have
-        // to resign if that is not enough. However this prevents all the attacks. The only scenario where this
-        // is a problem is if the external call from Multicall to another contract spends a lot of gas, but we
-        // should not be interacting with protocols in the wild here, should be reliable. Therefore we can
-        // just hardcode a value in the statechain to be used as the gas amount. No need to make estimations.
-
-        // TODO: We shouldnt need a check if it's a contract but we should do it anyway
-
-        // solhint-disable-next-line avoid-low-level-calls
-        // (bool success, ) = multicallAddr.call{gas: gasMulticall, value: valueToSend}(
-        //     abi.encodeWithSelector(IMulticall.run.selector, calls, token, amount)
-        // );
-
-        // If it's true that a low level call forwards all the gas, we don't need all this, as someone making
-        // the lowlevel call fail due to gas won't leave any gas left for the rest of the execution causing a
-        // revert of all the transaction. However, if 63/64 is kept, then we need extra protection.
         (bool success, ) = multicallAddr.call{gas: gasMulticall, value: valueToSend}(
             abi.encodeWithSelector(IMulticall.run.selector, calls, token, amount)
         );
 
-        // if success we are good to go! Multicall will always revert if something goes wrong.
         if (!success) {
-            // Validate that the relayer has sent enough gas for the call.
+            // Validate that enough gas has been sent for the call
             // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
-
-            // Code inspired from OpenZeppelin's MinimalForwarder. No need to revert with an invalid opcode to consume all gas.
-            // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/18691d1a6f56dd906c175072a97dc5ed93ab968c/contracts/metatx/MinimalForwarder.sol#L60
             require(gasleft() > gasMulticall / 63, "Vault: gasMulticall too low");
 
             if (amount > 0 && token != _NATIVE_ADDR) {
                 IERC20(token).approve(multicallAddr, 0);
             }
             emit ExecuteActionsFailed(token, amount, multicallAddr);
+        } else {
+            require(multicallAddr.code.length > 0);
         }
     }
 
