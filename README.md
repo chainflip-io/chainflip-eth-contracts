@@ -24,7 +24,7 @@ cd chainflip-eth-contracts
 yarn
 poetry shell
 poetry install
-brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
 pre-commit install
 ```
 
