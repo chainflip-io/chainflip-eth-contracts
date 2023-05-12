@@ -29,7 +29,7 @@ contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver, Shared {
 
     error TransferFailed();
 
-    constructor(address _cfVault) {
+    constructor(address _cfVault) nzAddr(_cfVault) {
         cfVault = _cfVault;
     }
 
