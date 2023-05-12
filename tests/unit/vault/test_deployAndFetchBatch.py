@@ -78,3 +78,24 @@ def test_deployAndFetchBatch_rev_deployed(cf, token):
         signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, tok]])
         with reverts():
             signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, tok]])
+
+
+# This is a test to catch when the Deposit bytecode changes
+def test_getCreate2Addr(Deposit):
+    vault_address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+    flip_address = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+
+    depositAddr = getCreate2Addr(
+        vault_address,
+        cleanHexStrPad(web3.toHex(420696969)),
+        Deposit,
+        cleanHexStrPad(NATIVE_ADDR),
+    )
+
+    assert depositAddr == "0x8e4f261Ec4e75B0a5B980fCB09a573BabbaD46d9"
+
+    depositAddr = getCreate2Addr(
+        vault_address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(flip_address)
+    )
+
+    assert depositAddr == "0x32b0685C0B3604113E3390dC7c0d3d100BF8d255"
