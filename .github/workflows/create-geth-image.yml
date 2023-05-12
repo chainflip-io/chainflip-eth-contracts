@@ -1,8 +1,7 @@
 name: Create Geth Image
 on:
   push:
-    tags:
-      - '*'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -109,8 +108,8 @@ jobs:
       - name: Commit and push new geth image
         run: |
           CONTAINER=$(docker ps --format '{{.Names}}' | grep geth)
-          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}
-          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}
+          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:perseverance-rc10-${{ matrix.suffix }}
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:perseverance-rc10-${{ matrix.suffix }}
       - name: Summary
         run: |
           CONTRACTS=$(jq . .scripts/.artefacts/docker.json)
@@ -119,4 +118,4 @@ jobs:
           echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}\`"
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:perseverance-rc10-${{ matrix.suffix }}\`"
