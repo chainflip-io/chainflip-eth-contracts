@@ -112,5 +112,5 @@ def main():
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-        with open(f"{dir_path}/{DEPLOY_ARTEFACT_ID}.json", "wb") as output_file:
+        with open(f"{dir_path}/{DEPLOY_ARTEFACT_ID}.json", "w") as output_file:
             json.dump(json_content, output_file, indent=2)
