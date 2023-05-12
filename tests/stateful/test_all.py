@@ -1871,10 +1871,11 @@ def test_all(
         def rule_registerRedemption(
             self, st_nodeID, st_funder, st_amount, st_sender, st_expiry_time_diff
         ):
+            st_redeemAddress = st_funder
             args = (
                 st_nodeID,
                 st_amount,
-                st_funder,
+                st_redeemAddress,
                 getChainTime() + st_expiry_time_diff,
             )
             signer = self._get_key_prob(AGG)
@@ -1951,7 +1952,7 @@ def test_all(
                 )
                 self.pendingRedemptions[st_nodeID] = (
                     st_amount,
-                    st_funder,
+                    st_redeemAddress,
                     tx.timestamp + REDEMPTION_DELAY,
                     args[3],
                 )
