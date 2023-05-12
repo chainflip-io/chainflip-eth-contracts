@@ -2,7 +2,7 @@ name: Create Geth Image
 on:
   push:
     tags:
-      - "*"
+      - '*'
 jobs:
   build:
     runs-on: ubuntu-latest
