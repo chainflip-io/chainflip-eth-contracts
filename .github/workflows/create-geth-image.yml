@@ -114,6 +114,7 @@ jobs:
       - name: Summary
         run: |
           mkdir -p .scripts/.artefacts
+          touch .scripts/.artefacts/docker.json
           CONTRACTS=$(jq . .scripts/.artefacts/docker.json)
           echo "## Deployed Contracts for \`${{ matrix.suffix }}\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
