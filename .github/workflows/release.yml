@@ -48,7 +48,8 @@ jobs:
             echo $contract
             cat build/contracts/$contract | jq .abi > ./$contract
           done <<< $CONTRACT_ARTIFACTS
-          zip abis.zip *.json
+          cat ./build/contracts/Deposit.json | jq .bytecode > Deposit_bytecode.json
+          zip abis.zip $(find . -name "*.json" ! -name "package*.json")
 
       - name: Store contract abis as Artefact
         uses: actions/upload-artifact@v2
