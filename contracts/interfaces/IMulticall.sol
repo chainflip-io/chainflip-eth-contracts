@@ -16,5 +16,8 @@ interface IMulticall {
         bytes payload;
     }
 
-    function run(Call[] calldata calls) external payable;
+    error AlreadyRunning();
+    error CallFailed(uint256 callPosition, bytes reason);
+
+    function run(Call[] calldata calls, address token, uint256 amount) external payable;
 }
