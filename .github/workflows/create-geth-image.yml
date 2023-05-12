@@ -2,7 +2,7 @@ name: Create Geth Image
 on:
   push:
     tags:
-      - '*'
+      - "*"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -113,7 +113,7 @@ jobs:
           docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}
       - name: Summary
         run: |
-          touch .scripts/.artefacts/docker.json
+          mkdir -p .scripts/.artefacts
           CONTRACTS=$(jq . .scripts/.artefacts/docker.json)
           echo "## Deployed Contracts for \`${{ matrix.suffix }}\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
