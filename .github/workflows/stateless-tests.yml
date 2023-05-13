@@ -32,6 +32,7 @@ jobs:
       - run: sudo snap install solc --edge
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test --network hardhat --stateful false
 
       - run: cat ./build/contracts/Deposit.json | jq .bytecode | echo
+
+      - run: poetry run brownie test --network hardhat --stateful false
