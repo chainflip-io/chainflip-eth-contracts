@@ -30,9 +30,6 @@ jobs:
       - run: poetry install
       # - run: poetry run brownie pm intall OpenZeppelin/openzeppelin-contracts@4.0.0
       # - run: sudo snap install solc --edge
-      - run: npx hardhat node &
-      - run: sleep 2
-
       - run: poetry run brownie compile
       - run: echo "$(cat ./build/contracts/Deposit.json | jq .bytecode)"
       - run: echo "$(cat ./build/contracts/Deposit.json | jq .bytecode)" | sha256sum
