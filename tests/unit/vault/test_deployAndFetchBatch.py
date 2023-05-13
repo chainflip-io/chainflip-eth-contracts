@@ -94,10 +94,14 @@ def test_getCreate2Addr(Deposit):
 
     # Result in ci: "0x8299881bD67E17d9c290FFC5C3F5d60F87e5D265"
     # Result locally: "0x8e4f261Ec4e75B0a5B980fCB09a573BabbaD46d9"
-    assert depositAddr == "0x8e4f261Ec4e75B0a5B980fCB09a573BabbaD46d9"
+    # Result locally w 1600 runs opt: "0xEdf07a740a5D2d06b73f36fd5cc155d4240EaEEA"
+
+    assert depositAddr == "0xEdf07a740a5D2d06b73f36fd5cc155d4240EaEEA"
 
     depositAddr = getCreate2Addr(
         vault_address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(flip_address)
     )
-
-    assert depositAddr == "0x32b0685C0B3604113E3390dC7c0d3d100BF8d255"
+    
+    # Result locally: "0x32b0685C0B3604113E3390dC7c0d3d100BF8d255"
+    # Result locally w 1600 runs opt: "0x334AE5875C2ce967d82611cc0bfEDdf5316f2477"
+    assert depositAddr == "0x334AE5875C2ce967d82611cc0bfEDdf5316f2477"
