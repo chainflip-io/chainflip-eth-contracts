@@ -34,7 +34,7 @@ jobs:
       - run: sleep 2
 
       - run: poetry run brownie compile
-      - run: ls build/contracts/
       - run: echo "$(cat ./build/contracts/Deposit.json | jq .bytecode)"
+      - run: echo "$(cat ./build/contracts/Deposit.json | jq .bytecode)" | sha256sum
 
       - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat --stateful false
