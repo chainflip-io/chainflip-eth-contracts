@@ -33,6 +33,8 @@ jobs:
       - run: npx hardhat node &
       - run: sleep 2
 
+      - run: poetry run brownie compile
+      - run: ls build/contracts/
       - run: echo "$(cat ./build/contracts/Deposit.json | jq .bytecode)"
 
       - run: poetry run brownie test --network hardhat --stateful false
