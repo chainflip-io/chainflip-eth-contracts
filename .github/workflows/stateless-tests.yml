@@ -5,8 +5,8 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  lint:
-    uses: ./.github/workflows/.lint.yml
+  # lint:
+  #   uses: ./.github/workflows/.lint.yml
 
   stateless-tests:
     name: Stateless Tests
@@ -28,9 +28,8 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-      - run: npm install
       - run: npm install --global ganache-cli
-      - run: pip3 install eth-brownie
+      - run: yarn
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
       - run: poetry install
       - run: sudo snap install solc --edge

@@ -92,6 +92,8 @@ def test_getCreate2Addr(Deposit):
         cleanHexStrPad(NATIVE_ADDR),
     )
 
+    # Result in ci: "0x8299881bD67E17d9c290FFC5C3F5d60F87e5D265"
+    # Result locally: "0x8e4f261Ec4e75B0a5B980fCB09a573BabbaD46d9"
     assert depositAddr == "0x8e4f261Ec4e75B0a5B980fCB09a573BabbaD46d9"
 
     depositAddr = getCreate2Addr(
