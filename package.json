@@ -14,7 +14,7 @@
     "markdownlint-cli": "0.28.1",
     "prettier": "2.5.1",
     "prettier-plugin-solidity": "1.1.2",
-    "solc": "0.8.19",
+    "solc": "0.8.20",
     "solhint": "3.3.7",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-docgen": "0.5.11"

@@ -97,7 +97,7 @@ def test_getCreate2Addr(Deposit):
     # Result locally w 1600 runs opt: "0xEdf07a740a5D2d06b73f36fd5cc155d4240EaEEA"
 
     # Result locally reinstall with 0.8.20: "0xd5955a922a4c4C730B751A4d18dc3cbB5daC025e"
-    assert depositAddr == "0xd5955a922a4c4C730B751A4d18dc3cbB5daC025e"
+    assert depositAddr == "0x0980B0023A6c10F651C09AeD47A6c2Bd1589C970"
 
     depositAddr = getCreate2Addr(
         vault_address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(flip_address)
@@ -107,4 +107,4 @@ def test_getCreate2Addr(Deposit):
     # Result locally w 1600 runs opt: "0x334AE5875C2ce967d82611cc0bfEDdf5316f2477"
 
     # Result locally reinstall with 0.8.20: "0x504bbC0A89e2CD31Df67E5ca0c9B4e6940c726Db"
-    assert depositAddr == "0x504bbC0A89e2CD31Df67E5ca0c9B4e6940c726Db"
+    assert depositAddr == "0x353d12402f78589b768CE44b91a59778157F12A2"
