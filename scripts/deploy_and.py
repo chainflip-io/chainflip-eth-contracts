@@ -360,6 +360,12 @@ def all_vault_events():
     tx = cf.vault.resume({"from": GOVERNOR})
     assert "Suspended" in tx.events
 
+    print(f"\n❌ Failed ExecuteActions to address {cf.keyManager}\n")
+    args = [[cf.flip, cf.keyManager, 0], [[0, ALICE, 0, 0, 0]], 100000]
+
+    tx = signed_call(cf.keyManager, cf.vault.executeActions, AGG_SIGNER_1, ALICE, *args)
+    assert "ExecuteActionsFailed" in tx.events
+
     print(f"\n🔑 Update the keyManager address in the Vault🔑\n")
 
     tx = signed_call(
