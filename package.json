@@ -17,6 +17,6 @@
     "solc": "0.8.20",
     "solhint": "3.4.1",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-docgen": "0.5.17"
+    "solidity-docgen": "0.5.16"
   }
 }
