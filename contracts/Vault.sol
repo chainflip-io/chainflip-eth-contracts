@@ -547,41 +547,67 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @notice  Transfer funds and pass calldata to be executed on a Multicall contract.
      * @dev     For safety purposes it's preferred to execute calldata externally with
      *          a limited amount of funds instead of executing arbitrary calldata here.
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
-     * @param token     Address of the source token to swap.
-     * @param amount    Amount of the source token to send.
-     * @param multicallAddr Address of the Multicall contract to call.
-     * @param calls     Array of actions to be executed.
+     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
+     *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
+     * @param sigData         Struct containing the signature data over the message
+     *                        to verify, signed by the aggregate key.
+     * @param transferParams  The transfer parameters inluding the token and amount to be transferred
+     *                        and the multicall contract address.
+     * @param calls           Array of actions to be executed.
+     * @param gasMulticall    Gas that must be forwarded to the multicall.
 
      */
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     )
         external
         override
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, calls))
+            keccak256(abi.encode(this.executeActions.selector, transferParams, calls, gasMulticall))
         )
     {
         // Fund and run multicall
         uint256 valueToSend;
 
-        if (amount > 0) {
-            if (token == _NATIVE_ADDR) {
-                valueToSend = amount;
+        if (transferParams.amount > 0) {
+            if (transferParams.token == _NATIVE_ADDR) {
+                valueToSend = transferParams.amount;
             } else {
-                IERC20(token).safeTransfer(multicallAddr, amount);
+                IERC20(transferParams.token).approve(transferParams.recipient, transferParams.amount);
             }
         }
 
-        IMulticall(multicallAddr).run{value: valueToSend}(calls);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory reason) = transferParams.recipient.call{gas: gasMulticall, value: valueToSend}(
+            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
+        );
+
+        if (!success) {
+            // Validate that the relayer has sent enough gas for the call.
+            // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
+            if (gasleft() <= gasMulticall / 63) {
+                // Emulate an out of gas exception by explicitly trigger invalid opcode to consume all gas and
+                // bubble-up the effects, since neither revert or assert consume all gas since Solidity 0.8.0.
+
+                // solhint-disable no-inline-assembly
+                /// @solidity memory-safe-assembly
+                assembly {
+                    invalid()
+                }
+                // solhint-enable no-inline-assembly
+            }
+            if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
+                IERC20(transferParams.token).approve(transferParams.recipient, 0);
+            }
+            emit ExecuteActionsFailed(transferParams.recipient, transferParams.amount, transferParams.token, reason);
+        } else {
+            require(transferParams.recipient.code.length > 0);
+        }
     }
 
     //////////////////////////////////////////////////////////////

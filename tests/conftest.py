@@ -216,8 +216,8 @@ def utils(cf, Utils):
 
 
 @pytest.fixture(scope="module")
-def multicall(cf, SquidMulticall):
-    return cf.SAFEKEEPER.deploy(SquidMulticall)
+def multicall(cf, Multicall):
+    return cf.SAFEKEEPER.deploy(Multicall, cf.vault)
 
 
 @pytest.fixture(scope="module")

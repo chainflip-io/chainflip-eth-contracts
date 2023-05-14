@@ -9,18 +9,49 @@ from brownie.convert import to_bytes
     st_sender=strategy("address"),
     st_multicall=strategy("address"),
 )
-def test_executeActions_rev_erc20_max(cf, st_sender, st_multicall):
+def test_executeActions_rev_eoa(cf, st_sender, st_multicall):
 
-    with reverts(REV_MSG_ERC20_EXCEED_BAL):
+    # This won't revert with REV_MSG_ERC20_EXCEED_BAL as we are approving
+    # now instead of transferring. It will fail the eoa check.
+    with reverts("Transaction reverted without a reason string"):
         signed_call_cf(
             cf,
             cf.vault.executeActions,
-            cf.flip,
-            2**256 - 1,
-            st_multicall,
+            [cf.flip, st_multicall, 2**256 - 1],
             [[0, ZERO_ADDR, 0, JUNK_HEX, JUNK_HEX]],
+            100000,
             sender=st_sender,
         )
+
+
+@given(
+    st_sender=strategy("address"),
+)
+def test_executeActions_rev_erc20_max(cf, st_sender, multicall):
+
+    cf.flip.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
+
+    assert cf.flip.balanceOf(cf.vault) == TEST_AMNT
+
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        [cf.flip, multicall, 2**256 - 1],
+        [[0, ZERO_ADDR, 0, JUNK_HEX, JUNK_HEX]],
+        100000,
+        sender=st_sender,
+    )
+
+    # It should revert when doing the safeTransferFrom. Not asserting
+    # the revert message as it's not important for now.
+    assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+        multicall,
+        2**256 - 1,
+        cf.flip.address,
+    ]
+    assert cf.flip.allowance(cf.vault, multicall) == 0
+
+    assert cf.flip.balanceOf(cf.vault) == TEST_AMNT
 
 
 @given(
@@ -44,23 +75,24 @@ def test_executeActions_rev_erc20(
         cf.flip.transfer.encode_input(st_recipient, st_amount),
         0,
     ]
-    args = [cf.flip, st_amount, multicall, [call]]
+    args = [[cf.flip, multicall, st_amount], [call], 100000]
+
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        *args,
+        sender=st_sender,
+    )
 
     if st_amount > st_ini_amount:
-        with reverts(REV_MSG_ERC20_EXCEED_BAL):
-            signed_call_cf(
-                cf,
-                cf.vault.executeActions,
-                *args,
-                sender=st_sender,
-            )
+        assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+            multicall,
+            st_amount,
+            cf.flip.address,
+        ]
     else:
-        signed_call_cf(
-            cf,
-            cf.vault.executeActions,
-            *args,
-            sender=st_sender,
-        )
+        assert "ExecuteActionsFailed" not in tx.events
+
         assert cf.flip.balanceOf(cf.vault) == st_ini_amount - st_amount
         assert cf.flip.balanceOf(st_recipient) == iniBal_recipient + st_amount
 
@@ -94,23 +126,19 @@ def test_executeActions_rev_cfReceive(
         ),
         0,
     ]
-    args = [ZERO_ADDR, 0, multicall, [call]]
+    args = [[ZERO_ADDR, multicall, 0], [call], 100000]
 
-    ## It will revert with error CallFailed(uint256,bytes). Workaround since brownie
-    ## doesn't support custom errors for now. It will be the same reason for both.
-    bytes_revert_not_vault = (
-        "typed error: "
-        + web3.keccak(text="CallFailed(uint256,bytes)")[:4].hex()
-        + "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008408c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000027434652656365697665723a2063616c6c6572206e6f7420436861696e666c69702073656e6465720000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        *args,
+        sender=st_sender,
     )
-
-    with reverts(bytes_revert_not_vault):
-        signed_call_cf(
-            cf,
-            cf.vault.executeActions,
-            *args,
-            sender=st_sender,
-        )
+    assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+        multicall,
+        0,
+        ZERO_ADDR,
+    ]
 
     ## Ensure we can't call a cfReceive or cfReceivexCall function via Multicall
     call = [
@@ -122,17 +150,19 @@ def test_executeActions_rev_cfReceive(
         ),
         0,
     ]
-    args = [ZERO_ADDR, 0, multicall, [call]]
+    args = [[ZERO_ADDR, multicall, 0], [call], 100000]
 
-    ## It will revert with error CallFailed(uint256,bytes). Workaround since brownie
-    ## doesn't support custom errors for now.
-    with reverts(bytes_revert_not_vault):
-        signed_call_cf(
-            cf,
-            cf.vault.executeActions,
-            *args,
-            sender=st_sender,
-        )
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        *args,
+        sender=st_sender,
+    )
+    assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+        multicall,
+        0,
+        ZERO_ADDR,
+    ]
 
 
 @given(
@@ -141,9 +171,10 @@ def test_executeActions_rev_cfReceive(
     st_amount=strategy("uint256"),
     st_enum=strategy("uint256", max_value=3),
     st_sender=strategy("address"),
+    st_gas=strategy("uint256"),
 )
 def test_executeActions_rev_length_eoa(
-    cf, st_data, st_receiver, st_amount, st_enum, st_sender
+    cf, st_data, st_receiver, st_amount, st_enum, st_sender, st_gas
 ):
 
     ## Ensure we can't call a cfReceive or cfReceivexCall function via Multicall
@@ -154,7 +185,7 @@ def test_executeActions_rev_length_eoa(
         st_data,
         st_data,
     ]
-    args = [ZERO_ADDR, 0, st_receiver, [call]]
+    args = [[ZERO_ADDR, st_receiver, 0], [call], st_gas]
 
     ## It will revert because it's calling an EOA.
     with reverts("Transaction reverted without a reason string"):
@@ -204,15 +235,16 @@ def test_executeActions_rev_nativeBals(
         st_bytes,
     ]
 
-    args = [NATIVE_ADDR, st_native_transfer, multicall, [call]]
+    args = [[NATIVE_ADDR, multicall, st_native_transfer], [call], 100000]
 
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        *args,
+        sender=st_sender,
+    )
     if st_native_vault >= st_native_transfer:
-        signed_call_cf(
-            cf,
-            cf.vault.executeActions,
-            *args,
-            sender=st_sender,
-        )
+        assert "ExecuteActionsFailed" not in tx.events
         assert (
             web3.eth.get_balance(cf.vault.address)
             == ini_bals_vault - st_native_transfer
@@ -223,13 +255,12 @@ def test_executeActions_rev_nativeBals(
             == ini_bals_alice + st_native_transfer
         )
     else:
-        with reverts("Transaction reverted without a reason string"):
-            signed_call_cf(
-                cf,
-                cf.vault.executeActions,
-                *args,
-                sender=st_sender,
-            )
+        assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+            multicall,
+            st_native_transfer,
+            NATIVE_ADDR,
+        ]
+
         assert web3.eth.get_balance(multicall.address) == ini_bals_multicall
         assert web3.eth.get_balance(cf.vault.address) == ini_bals_vault
         assert web3.eth.get_balance(cf.ALICE.address) == ini_bals_alice
@@ -263,61 +294,231 @@ def test_executeActions_bridge_token(
         st_bytes,
     ]
 
-    args = [token, st_token_transfer, multicall, [call]]
+    args = [[token, multicall, st_token_transfer], [call], 1000000]
+
+    tx = signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        *args,
+        sender=st_sender,
+    )
 
     if st_token_vault >= st_token_transfer:
-        signed_call_cf(
-            cf,
-            cf.vault.executeActions,
-            *args,
-            sender=st_sender,
-        )
+        assert "ExecuteActionsFailed" not in tx.events
+
         assert token.balanceOf(cf.vault.address) == ini_bals_vault - st_token_transfer
         assert token.balanceOf(multicall.address) == 0
         assert token.balanceOf(cf.ALICE.address) == ini_bals_alice + st_token_transfer
     else:
-        with reverts(REV_MSG_ERC20_EXCEED_BAL):
-            signed_call_cf(
-                cf,
-                cf.vault.executeActions,
-                *args,
-                sender=st_sender,
-            )
+        assert tx.events["ExecuteActionsFailed"][0].values()[:-1] == [
+            multicall,
+            st_token_transfer,
+            token.address,
+        ]
         assert token.balanceOf(multicall.address) == ini_bals_multicall
         assert token.balanceOf(cf.vault.address) == ini_bals_vault
         assert token.balanceOf(cf.ALICE.address) == ini_bals_alice
 
+        assert token.allowance(cf.vault.address, multicall.address) == 0
 
-## TODO: Try interactions with Axelar/CCTP (Goerli?) in intergration tests. Only to be run when
-##       running a Goerli fork. This is already done as script in bridge_usdc.py but having some
-##       tests would be nice.
 
-# NOTE: Brownie is dumb and it can't make a bytes with zero length via strategy.
-#       Even with min_size=0 and max_size=0 it will always generate a bytes of length 1.
-#       So we have to manually generate the bytes with length 0 using b''.
-#       However, doing that breaks the signature verification because Brownie has a bug
-#       when encoding dynamic types with length zero.
-# def test_executeActions_no_bytes(cf):
-#     signed_call_cf(
-#         cf,
-#         cf.vault.executeActions,
-#         [[cf.stateChainGateway, 0, b'']],
-#     )
+@given(
+    st_amount=strategy("uint256", min_value=1, max_value=TEST_AMNT),
+)
+def test_multicallRun_safeTransferFrom(cf, multicall, st_amount):
 
-## TODO: TO update
-# Workaround: manual signed call with an empty array to get around Brownie bugs/limitations
-# def test_bytesZeroLength(cf):
-#     args = [[cf.stateChainGateway, 0, b""]]
-#     callDataNoSig = cf.vault.executeActions.encode_input(
-#         agg_null_sig(cf.keyManager.address, chain.id), args
-#     )
-#     # Remove the last 32 bytes which are incorrect (length array == 0, therefore no value needs to follow it)
-#     callDataNoSigModif = callDataNoSig[0 : len(callDataNoSig) - 32 * 2]
+    cf.flip.transfer(cf.vault.address, st_amount, {"from": cf.SAFEKEEPER})
 
-#     # If we end up removing the check for the calldata length, this call would not fail and instead transfer the
-#     # native tokens to the stateChainGateway. This way we check the call has really zero calldata.
-#     with reverts("Vault: must call contract/function"):
-#         cf.vault.executeActions(
-#             AGG_SIGNER_1.getSigData(callDataNoSigModif, cf.keyManager.address),
-#             args,
+    # Dummy call because brownie struggles to encode an empty array
+    call = [
+        0,
+        cf.flip,
+        0,
+        cf.flip.transfer.encode_input(cf.ALICE, 0),
+        0,
+    ]
+
+    args = [[cf.flip.address, multicall, st_amount], [call], 1000000]
+
+    assert cf.flip.balanceOf(multicall) == 0
+
+    signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        *args,
+    )
+
+    assert cf.flip.balanceOf(multicall) == st_amount
+
+
+@given(
+    st_amount=strategy("uint256", min_value=1, max_value=TEST_AMNT),
+)
+def test_multicallRun_native(cf, multicall, st_amount):
+    cf.SAFEKEEPER.transfer(cf.vault.address, st_amount)
+
+    # Dummy call because brownie struggles to encode an empty array
+    call = [
+        0,
+        cf.flip,
+        0,
+        cf.flip.transfer.encode_input(cf.ALICE, 0),
+        0,
+    ]
+
+    args = [[NATIVE_ADDR, multicall, st_amount], [call], 1000000]
+
+    assert web3.eth.get_balance(multicall.address) == 0
+
+    signed_call_cf(
+        cf,
+        cf.vault.executeActions,
+        *args,
+    )
+    assert web3.eth.get_balance(multicall.address) == st_amount
+
+
+@given(
+    st_sender=strategy("address"),
+)
+def test_multicallRun_rev_notVault(
+    st_sender,
+    multicall,
+):
+    with reverts("Multicall: not Chainflip Vault"):
+        multicall.run([], st_sender, JUNK_INT, {"from": st_sender})
+
+    with reverts("Multicall: not Chainflip Vault"):
+        multicall.run(
+            [[0, ZERO_ADDR, JUNK_INT, JUNK_HEX, JUNK_HEX]],
+            st_sender,
+            JUNK_INT,
+            {"from": st_sender},
+        )
+
+
+# Basic unit test for "Vault: gasMulticall too low"
+def test_executeActions_revgas(cf, multicall):
+
+    cf.flip.transfer(cf.vault.address, TEST_AMNT, {"from": cf.SAFEKEEPER})
+
+    # Dummy call because brownie struggles to encode an empty array
+    call = [
+        0,
+        cf.flip,
+        0,
+        cf.flip.transfer.encode_input(cf.ALICE, 1),
+        0,
+    ]
+    # Gas that should be sent to the Multicall for safeTransferFrom + transfer
+    # Number used just for a unit test
+    multicall_gas = 70000
+    args = [[cf.flip.address, multicall, TEST_AMNT], [call], multicall_gas]
+
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.vault.executeActions, nonces, *args
+    )
+    # Gas limit that doesn't allow the Multicall to execute the actions
+    # but leaves enough gas to trigger "Vault: gasMulticall too low".
+    # Succesfull tx is ~138k
+    gas_limit = 130000
+
+    # Reverted with empty revert string is to catch the invalid opcode
+    # That is different to the "Transaction reverted without a reason string"
+    with reverts(""):
+        cf.vault.executeActions(
+            sigData,
+            *args,
+            {"from": cf.DENICE, "gas_limit": gas_limit},
+        )
+
+
+# TODO: Add tests for insufficient gas griefing attack. We most likely need to do
+# that with fuzzing as python hypothesis struggles - we get a lot of flaky errors.
+
+# @given(
+#     st_gas=strategy("uint256", min_value=0, max_value=2000000),
+# )
+# def test_executeActions_revgas(cf, multicall, token, st_gas):
+
+#     st_token_amount = TEST_AMNT
+#     st_sender = cf.BOB
+#     st_bytes = JUNK_HEX
+
+#     # Assert initial token balances are zero
+#     assert token.balanceOf(cf.vault.address) == 0
+#     assert token.balanceOf(multicall.address) == 0
+
+#     token.transfer(cf.vault.address, st_token_amount)
+
+#     ini_bals_multicall = 0
+#     ini_bals_vault = token.balanceOf(cf.vault.address)
+#     ini_bals_alice = token.balanceOf(cf.ALICE.address)
+
+#     call = [
+#         0,
+#         token,
+#         0,
+#         token.transfer.encode_input(cf.ALICE, st_token_amount),
+#         st_bytes,
+#     ]
+
+#     # Working scenario - executeActions avg (confirmed):  1249009
+#     # Working scenario - Mulitcall.Run avg (confirmed):  860480 (might include 21k minimum)
+#     print("gas limit: ", st_gas)
+#     multicall_gas_needed = 1000000  # Rounded up
+
+#     # Make the multicall spend a lot of gas so 1/64th can still run some logic
+#     calls = []
+#     for i in range(100):
+#         calls.append(
+#             [
+#                 0,
+#                 token,
+#                 0,
+#                 token.transfer.encode_input(cf.ALICE, i),
+#                 JUNK_HEX,
+#             ]
 #         )
+
+#     args = [token, st_token_amount, multicall, multicall_gas_needed, calls]
+
+#     sigData = AGG_SIGNER_1.getSigDataWithNonces(
+#         cf.keyManager, cf.vault.executeActions, nonces, *args
+#     )
+
+#     # tx = cf.vault.executeActions(
+#     #     sigData,
+#     #     *args,
+#     #     {"from": cf.DENICE, "gas_limit": st_gas},
+#     #     # {"from": cf.DENICE},
+#     # )
+
+#     # print("tx.events: ", tx.events)
+#     # assert "ExecuteActionsFailed" not in tx.events
+
+#     try:
+#         tx = cf.vault.executeActions(
+#             sigData,
+#             *args,
+#             {"from": cf.DENICE, "gas_limit": st_gas},
+#             # {"from": cf.DENICE},
+#         )
+
+#     except Exception as e:
+#         revert_reason = str(e).split("\n", 1)[0]
+#         print(f"An error occurred: {e}")
+#         # Manually check for all potential revert reasons due to out of gas
+#         assert (
+#             "revert: Vault: gasMulticall too low" in revert_reason
+#             or "Transaction requires at least" in revert_reason
+#             or "call to precompile 1 failed" in revert_reason
+#             or "Transaction ran out of gas" in revert_reason
+#             or "Transaction reverted without a reason string" in revert_reason
+#         )
+#         tx = None
+
+#     if tx != None:
+#         print(tx.events)
+#         print(tx.info())
+#         assert "ExecuteActionsFailed" not in tx.events
