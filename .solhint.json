@@ -1,15 +1,11 @@
 {
   "extends": "solhint:recommended",
-  "plugins": [
-    "prettier"
-  ],
+  "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": "error",
     "avoid-suicide": "error",
     "avoid-sha3": "warn",
-    "compiler-version": [
-      "off"
-    ],
+    "compiler-version": ["off"],
     "func-visibility": [
       "warn",
       {
@@ -18,6 +14,7 @@
     ],
     "not-rely-on-time": "off",
     "no-empty-blocks": "off",
-    "reason-string": "off"
+    "reason-string": "off",
+    "no-global-import": "off"
   }
 }

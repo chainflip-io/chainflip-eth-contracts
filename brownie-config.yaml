@@ -4,7 +4,7 @@ networks:
 
 # Require OpenZeppelin Contracts
 dependencies:
-  - OpenZeppelin/openzeppelin-contracts@4.0.0
+  - OpenZeppelin/openzeppelin-contracts@4.8.3
 
 compiler:
   evm_version: "london"
@@ -12,10 +12,10 @@ compiler:
     optimizer:
       enabled: true
       runs: 800
-    version: 0.8.19
+    version: 0.8.20
     # Path remapping to support OpenZeppelin imports with NPM-style path
     remappings:
-      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
+      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.8.3"
 
 hypothesis:
   max_examples: 50
