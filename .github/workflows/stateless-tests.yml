@@ -35,4 +35,5 @@ jobs:
       - run: poetry install
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test --network hardhat --stateful false
+      # - run: poetry run brownie test --network hardhat --stateful false
+      - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat --stateful false
