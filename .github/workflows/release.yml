@@ -31,15 +31,16 @@ jobs:
           path: ~/.cache/pypoetry
           key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
 
-      - run: npm install
-
       - run: npm install --global ganache-cli
+      - run: npm install --global yarn
 
-      - run: pip3 install eth-brownie
+      - run: yarn
 
       - run: poetry install
 
       - run: poetry run brownie compile
+
+      - run: cat ./build/contracts/Deposit.json | jq .bytecode
 
       - name: Zip ABIs
         run: |
