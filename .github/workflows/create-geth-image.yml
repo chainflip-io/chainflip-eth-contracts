@@ -143,7 +143,7 @@ jobs:
         run: echo ${{ inputs.agg_key }} > agg_key
 
       - name: Save artifacts
-        uses: actions/upload-artifacts@v3
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
           path: |
