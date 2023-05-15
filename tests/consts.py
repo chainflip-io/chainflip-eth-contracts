@@ -98,6 +98,7 @@ INIT_SUPPLY = 9 * 10**7 * E_18
 REV_MSG_FLIP_ISSUER = "FLIP: not issuer"
 
 REV_MSG_ERC20_EXCEED_BAL = "ERC20: transfer amount exceeds balance"
+REV_MSG_ERC20_INSUF_ALLOW = "ERC20: insufficient allowance"
 REV_MSG_INTEGER_OVERFLOW = "Integer overflow"
 REV_MSG_BURN_BALANCE = "ERC20: burn amount exceeds balance"
 
