@@ -1,8 +1,10 @@
 name: Create Geth Image
 on:
-  push:
-    tags:
-      - "*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Which tag should we deploy against?
+        required: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -62,6 +64,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
@@ -109,8 +113,8 @@ jobs:
       - name: Commit and push new geth image
         run: |
           CONTAINER=$(docker ps --format '{{.Names}}' | grep geth)
-          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}
-          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}
+          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ matrix.suffix }}
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ matrix.suffix }}
       - name: Summary
         run: |
           mkdir -p .scripts/.artefacts
@@ -121,4 +125,4 @@ jobs:
           echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ github.ref_name }}-${{ matrix.suffix }}\`"
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ matrix.suffix }}\`"
