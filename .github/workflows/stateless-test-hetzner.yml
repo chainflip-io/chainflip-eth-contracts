@@ -11,7 +11,7 @@ jobs:
   stateless-tests:
     name: Stateless Tests
     needs: lint
-    runs-on: [hezner]
+    runs-on: [hetzner]
     timeout-minutes: 360
     steps:
       - name: Checkout
