@@ -2,7 +2,7 @@ name: Stateless Tests - Hetzner
 on: push
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.ref }}-hetzner
   cancel-in-progress: true
 jobs:
   lint:
