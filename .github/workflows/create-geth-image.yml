@@ -81,7 +81,7 @@ jobs:
 
       - name: Fetch agg_key
         run: |
-          echo "AGG_KEY=$(jq .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
+          echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
