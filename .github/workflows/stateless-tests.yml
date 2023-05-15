@@ -33,7 +33,6 @@ jobs:
       - run: pip3 install eth-brownie
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
       - run: poetry install
-      - run: sudo snap install solc --edge
       - run: npx hardhat node &
       - run: sleep 2
       - run: poetry run brownie test --network hardhat --stateful false

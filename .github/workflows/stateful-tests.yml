@@ -42,7 +42,6 @@ jobs:
       - run: pip3 install eth-brownie
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
       - run: poetry install
-      - run: sudo snap install solc --edge
       # Spinning hardhat node externally because there's some intermittent nasty bug when the node is shut down at
       # the end of some stateful test causing the tests to fail - it is confusingly logged as a Flaky inconsistent
       # data generation that behaved differently between runs
