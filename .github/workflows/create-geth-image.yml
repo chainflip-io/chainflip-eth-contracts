@@ -142,7 +142,7 @@ jobs:
         run: |
           CONTRACTS=$(jq . ./scripts/.artefacts/docker.json)
           echo "## Deployed Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
-          echo "\`agg_key\` = \`${{ inputs.agg_key }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -158,4 +158,4 @@ jobs:
           name: ${{ env.IMAGE_TAG }}
           path: |
             agg_key
-            ./scripts/.artfacts/docker.json
+            ./scripts/.artefacts/docker.json
