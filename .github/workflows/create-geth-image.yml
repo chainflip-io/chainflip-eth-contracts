@@ -5,6 +5,15 @@ on:
       tag:
         description: Which tag should we deploy against?
         required: true
+      agg_key:
+        description: The aggregate key generated from generate-genesis-keys
+        required: true
+      genesis_validators:
+        description: The aggregate key generated from generate-genesis-keys
+        type: choice
+        options:
+          - "1"
+          - "3"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -46,9 +55,6 @@ jobs:
           cache-to: type=gha,mode=max
   create:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        suffix: ["1-node", "3-node"]
     needs:
       - build
     services:
@@ -108,21 +114,38 @@ jobs:
       - name: Deploy contracts
         env:
           SEED: test test test test test test test test test test test junk
-        run: export $(cat ci/docker/geth/${{ matrix.suffix }}.env | xargs) && poetry run brownie run deploy_contracts --network docker
+          AGG_KEY: ${{ inputs.agg_key }}
+          NUM_GENESIS_VALIDATORS: ${{ inputs.genesis_validators }}
+          GOV_KEY: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+          COMM_KEY: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+          GENESIS_STAKE: 1000000000000000000000
+          DEPLOYER_ACCOUNT_INDEX: 0
+          DEPLOY_ARTEFACT_ID: docker
+        run: poetry run brownie run deploy_contracts --network docker
 
       - name: Commit and push new geth image
         run: |
           CONTAINER=$(docker ps --format '{{.Names}}' | grep geth)
-          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ matrix.suffix }}
-          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ matrix.suffix }}
+          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
       - name: Summary
         run: |
-          mkdir -p .scripts/.artefacts
-          touch .scripts/.artefacts/docker.json
-          CONTRACTS=$(jq . .scripts/.artefacts/docker.json)
-          echo "## Deployed Contracts for \`${{ matrix.suffix }}\`" >> $GITHUB_STEP_SUMMARY
+          CONTRACTS=$(jq . ./scripts/.artefacts/docker.json)
+          echo "## Deployed Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`agg_key\` = \`${{ inputs.agg_key }}\` >> $GITHUB_STEP_SUMMARY`
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ matrix.suffix }}\`"
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ inputs.genesis_validators }}-node\`"
+
+      - name: Save agg key to file
+        run: echo ${{ inputs.agg_key }} > agg_key
+
+      - name: Save artifacts
+        uses: actions/upload-artifacts@v3
+        with:
+          name: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
+          path: |
+            agg_key
+            ./scripts/.artfacts/docker.json
