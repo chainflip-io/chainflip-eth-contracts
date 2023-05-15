@@ -2,7 +2,7 @@ name: Create Geth Image
 on:
   push:
     tags:
-      - '*'
+      - "*"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -89,11 +89,11 @@ jobs:
           path: ~/.cache/pypoetry
           key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
 
-      - name: Install node dependencies
-        run: npm install
+      - name: Install yarn
+        run: npm install --global yarn
 
-      - name: Install brownie
-        run: pip3 install eth-brownie
+      - name: Install node dependencies
+        run: yarn
 
       - name: Install poetry dependencies
         run: poetry install
