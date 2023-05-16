@@ -105,12 +105,10 @@ def main():
     print("\n😎😎 Deployment success! 😎😎")
 
     if DEPLOY_ARTEFACT_ID:
-        json_content = json.dumps(addressDump)
-
         dir_path = os.path.dirname(os.path.abspath(__file__)) + "/.artefacts"
 
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
         with open(f"{dir_path}/{DEPLOY_ARTEFACT_ID}.json", "w") as output_file:
-            json.dump(json_content, output_file, indent=2)
+            json.dump(addressDump, output_file, indent=2)
