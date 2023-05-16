@@ -13,7 +13,7 @@ on:
           - "3"
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -51,7 +51,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
   create:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, ephemeral]
     env:
       IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
     needs:
@@ -90,33 +90,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install Python virtualenv
+        run: pip install virtualenv
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: "16"
 
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-      - name: Cache Packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
+      - run: npm install --global ganache-cli
+      - run: npm install --global yarn
+      - run: yarn
+      - run: poetry install
 
-      - name: Install yarn
-        run: npm install --global yarn
-
-      - name: Install node dependencies
-        run: yarn
-
-      - name: Install poetry dependencies
-        run: poetry install
+      - run: poetry run brownie compile
+      - run: cat ./build/contracts/Deposit.json | jq .bytecode
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
