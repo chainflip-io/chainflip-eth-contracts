@@ -15,10 +15,10 @@
 
 No description
 
-## `swapNativeAndCallViaChainflip(uint32 dstChain, bytes dstAddress, uint16 dstToken, address dexAddress, address dstTokenAddr, address userToken, address userAddress)` (external)
+## `swapNativeAndCallViaChainflip(uint32 dstChain, bytes dstAddress, uint32 dstToken, address dexAddress, address dstTokenAddr, address userToken, address userAddress)` (external)
 
 No description
 
-## `swapTokenAndCallViaChainflip(uint32 dstChain, bytes dstAddress, uint16 dstToken, address dexAddress, address dstTokenAddr, address userToken, address userAddress, address srcToken, uint256 srcAmount)` (external)
+## `swapTokenAndCallViaChainflip(uint32 dstChain, bytes dstAddress, uint32 dstToken, address dexAddress, address dstTokenAddr, address userToken, address userAddress, address srcToken, uint256 srcAmount)` (external)
 
 No description

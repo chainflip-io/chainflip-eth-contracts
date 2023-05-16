@@ -1,9 +1,13 @@
 # `FLIPEchidna`
 
-## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber, address staker)` (external)
+## `mint(address account, uint256 amount)` (external)
 
 No description
 
-## `updateKeyManagerFLIP(struct IShared.SigData sigData, contract IKeyManager keyManager)` (external)
+## `burn(address account, uint256 amount)` (external)
+
+No description
+
+## `updateIssuer(address newIssuer)` (external)
 
 No description
