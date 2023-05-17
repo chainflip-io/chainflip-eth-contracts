@@ -7,39 +7,34 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install Python virtualenv
+        run: pip install virtualenv
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: "14"
-
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
+          node-version: "16"
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-      - name: Cache Packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('./poetry.lock') }}
-
-      - run: npm install
+      - name: Install zip
+        run: |
+          sudo apt update
+          sudo apt install zip
 
       - run: npm install --global ganache-cli
-
-      - run: pip3 install eth-brownie
-
+      - run: npm install --global yarn
+      - run: yarn
       - run: poetry install
 
       - run: poetry run brownie compile
+      - run: cat ./build/contracts/Deposit.json | jq .bytecode
 
       - name: Zip ABIs
         run: |
@@ -48,7 +43,8 @@ jobs:
             echo $contract
             cat build/contracts/$contract | jq .abi > ./$contract
           done <<< $CONTRACT_ARTIFACTS
-          zip abis.zip *.json
+          cat ./build/contracts/Deposit.json | jq .bytecode > Deposit_bytecode.json
+          zip abis.zip $(find . -maxdepth 1 -type f -name "*.json" -not -name "package*.json" -not -path "./.*")
 
       - name: Store contract abis as Artefact
         uses: actions/upload-artifact@v2

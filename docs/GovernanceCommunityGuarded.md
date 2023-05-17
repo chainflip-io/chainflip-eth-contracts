@@ -29,7 +29,7 @@ Ensure that the caller is the governor address. Calls the getGovernor
 
 ## `_getGovernor() → address` (internal)
 
- Get the governor's address. The contracts inheriting this (StakeManager and Vault)
+ Get the governor's address. The contracts inheriting this (StateChainGateway and Vault)
          get the governor's address from the KeyManager through the AggKeyNonceConsumer's
          inheritance. Therefore, the implementation of this function must be left
          to the children. This is not implemented as a virtual onlyGovernor modifier to force
@@ -41,7 +41,7 @@ Returns
 
 ## `_getCommunityKey() → address` (internal)
 
- Get the community's address. The contracts inheriting this (StakeManager and Vault)
+ Get the community's address. The contracts inheriting this (StateChainGateway and Vault)
          get the community's address from the KeyManager through the AggKeyNonceConsumer's
          inheritance. Therefore, the implementation of this function must be left
          to the children. This is not implemented as a virtual onlyCommunityKey modifier to force

@@ -12,7 +12,7 @@ Ensure that the caller is the beneficiary address
 
 Ensure that the caller is the revoker address
 
-## `constructor(address beneficiary_, address revoker_, uint256 cliff_, uint256 end_, bool canStake_, contract IStakeManager stakeManager_)` (public)
+## `constructor(address beneficiary_, address revoker_, uint256 cliff_, uint256 end_, bool canStake_, contract IStateChainGateway stateChainGateway_)` (public)
 
 No description
 
@@ -26,16 +26,16 @@ No description
 
 - `canStake_`: whether the investor is allowed to use vested funds to stake
 
-- `stakeManager_`: the staking contract to stake to if canStake
+- `stateChainGateway_`: the contract to stake to if canStake
 
-## `stake(bytes32 nodeID, uint256 amount)` (external)
+## `fundStateChainAccount(bytes32 nodeID, uint256 amount)` (external)
 
- stakes some tokens for the nodeID and forces the return
-         address of that stake to be this contract.
+ Funds an account in the statechain with some tokens for the nodeID
+         and forces the return address of that to be this contract.
 
-- `nodeID`: the nodeID to stake for.
+- `nodeID`: the nodeID to fund.
 
-- `amount`: the amount to stake out of the current funds in this contract.
+- `amount`: the amount of FLIP out of the current funds in this contract.
 
 ## `release(contract IERC20 token)` (external)
 

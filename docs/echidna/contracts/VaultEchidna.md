@@ -20,19 +20,19 @@ No description
 
 No description
 
-## `xSwapNative(uint32 dstChain, bytes dstAddress, uint16 dstToken)` (external)
+## `xSwapNative(uint32 dstChain, bytes dstAddress, uint32 dstToken, bytes cfParameters)` (external)
 
 No description
 
-## `xSwapToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, contract IERC20 srcToken, uint256 amount)` (external)
+## `xSwapToken(uint32 dstChain, bytes dstAddress, uint32 dstToken, contract IERC20 srcToken, uint256 amount, bytes cfParameters)` (external)
 
 No description
 
-## `xCallNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeGas, bytes refundAddress)` (external)
+## `xCallNative(uint32 dstChain, bytes dstAddress, uint32 dstToken, bytes message, uint256 dstNativeGas, bytes cfParameters)` (external)
 
 No description
 
-## `xCallToken(uint32 dstChain, bytes dstAddress, uint16 dstToken, bytes message, uint256 dstNativeGas, contract IERC20 srcToken, uint256 amount, bytes refundAddress)` (external)
+## `xCallToken(uint32 dstChain, bytes dstAddress, uint32 dstToken, bytes message, uint256 dstNativeGas, contract IERC20 srcToken, uint256 amount, bytes cfParameters)` (external)
 
 No description
 
@@ -48,7 +48,7 @@ No description
 
 No description
 
-## `updateKeyManagerVault(struct IShared.SigData sigData, contract IKeyManager keyManager)` (external)
+## `updateKeyManagerVault(struct IShared.SigData sigData, contract IKeyManager keyManager, bool omitChecks)` (external)
 
 No description
 

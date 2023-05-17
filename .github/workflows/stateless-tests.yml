@@ -23,17 +23,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: "14"
+          node-version: "16"
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-      - run: npm install
       - run: npm install --global ganache-cli
-      - run: pip3 install eth-brownie
-      - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.0.0
+      - run: npm install --global yarn
+      - run: yarn
       - run: poetry install
-      - run: sudo snap install solc --edge
+
+      - run: poetry run brownie compile
+      - run: cat ./build/contracts/Deposit.json | jq .bytecode
+
       - run: npx hardhat node &
       - run: sleep 2
       - run: poetry run brownie test --network hardhat --stateful false

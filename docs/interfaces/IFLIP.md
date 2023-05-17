@@ -1,24 +1,19 @@
 # `IFLIP`
 
-## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber, address staker)` (external)
+## `mint(address account, uint256 amount)` (external)
 
- Compares a given new FLIP supply against the old supply,
-         then mints and burns as appropriate
+No description
 
-- `sigData`:               signature over the abi-encoded function params
+## `burn(address account, uint256 amount)` (external)
 
-- `newTotalSupply`:        new total supply of FLIP
+No description
 
-- `stateChainBlockNumber`: State Chain block number for the new total supply
+## `updateIssuer(address newIssuer)` (external)
 
-- `staker`: Staking contract owner of the tokens to be minted/burnt
+No description
 
-## `getLastSupplyUpdateBlockNumber() → uint256` (external)
+## `getIssuer() → address` (external)
 
- Get the last state chain block number that the supply was updated at
+No description
 
-Returns
-
-- The state chain block number of the last update
-
-## `FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber)`
+## `IssuerUpdated(address oldIssuer, address newIssuer)`

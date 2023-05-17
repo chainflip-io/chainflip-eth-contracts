@@ -2,14 +2,6 @@
 
   The interface for functions KeyManager implements
 
-## `setCanConsumeKeyNonce(address[] addrs)` (external)
-
-No description
-
-## `updateCanConsumeKeyNonce(struct IShared.SigData sigData, address[] currentAddrs, address[] newAddrs)` (external)
-
-No description
-
 ## `consumeKeyNonce(struct IShared.SigData sigData, bytes32 contractMsgHash)` (external)
 
 No description
@@ -38,10 +30,6 @@ No description
 
 No description
 
-## `govWithdrawNative()` (external)
-
-No description
-
 ## `govAction(bytes32 message)` (external)
 
 No description
@@ -66,18 +54,6 @@ No description
 
 No description
 
-## `canConsumeKeyNonce(address addr) → bool` (external)
-
-No description
-
-## `canConsumeKeyNonceSet() → bool` (external)
-
-No description
-
-## `getNumberWhitelistedAddresses() → uint256` (external)
-
-No description
-
 ## `AggKeySetByAggKey(struct IShared.Key oldAggKey, struct IShared.Key newAggKey)`
 
 ## `AggKeySetByGovKey(struct IShared.Key oldAggKey, struct IShared.Key newAggKey)`
@@ -91,9 +67,5 @@ No description
 ## `CommKeySetByCommKey(address oldCommKey, address newCommKey)`
 
 ## `SignatureAccepted(struct IShared.SigData sigData, address signer)`
-
-## `AggKeyNonceConsumersSet(address[] addrs)`
-
-## `AggKeyNonceConsumersUpdated(address[] currentAddrs, address[] newAddrs)`
 
 ## `GovernanceAction(bytes32 message)`

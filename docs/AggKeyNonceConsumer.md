@@ -9,19 +9,24 @@
 
    Calls consumeKeyNonce in _keyManager
 
-## `constructor(contract IKeyManager keyManager)` (public)
+## `constructor(contract IKeyManager keyManager)` (internal)
 
 No description
 
-## `updateKeyManager(struct IShared.SigData sigData, contract IKeyManager keyManager)` (external)
+## `updateKeyManager(struct IShared.SigData sigData, contract IKeyManager keyManager, bool omitChecks)` (external)
 
  Update KeyManager reference. Used if KeyManager contract is updated
 
-- `sigData`:   The keccak256 hash over the msg (uint) (here that's normally
-                 a hash over the calldata to the function with an empty sigData) and
-                 sig over that hash (uint) from the aggregate key
+- `sigData`:    Struct containing the signature data over the message
+                  to verify, signed by the aggregate key.
 
 - `keyManager`: New KeyManager's address
+
+- `omitChecks`: Allow the omission of the extra checks in a special case
+
+## `_checkUpdateKeyManager(contract IKeyManager keyManager, bool omitChecks)` (internal)
+
+No description
 
 ## `getKeyManager() → contract IKeyManager` (public)
 

@@ -59,6 +59,13 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     event AddGasNative(bytes32 swapID, uint256 amount);
     event AddGasToken(bytes32 swapID, uint256 amount, address token);
 
+    event ExecuteActionsFailed(
+        address payable indexed multicallAddress,
+        uint256 amount,
+        address indexed token,
+        bytes reason
+    );
+
     function allBatch(
         SigData calldata sigData,
         FetchParams[] calldata fetchParamsArray,
@@ -181,10 +188,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     ) external;
 
     //////////////////////////////////////////////////////////////

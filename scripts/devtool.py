@@ -490,7 +490,7 @@ def printUserReadableTime(timestamp):
 
 
 def viewAll():
-    viewMinFund()
+    viewMinFunding()
     viewAggKey()
     viewGovKey()
     viewCommKey()

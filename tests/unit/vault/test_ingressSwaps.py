@@ -137,7 +137,7 @@ def test_swapToken_rev_bal(
 
     if st_sender != cf.SAFEKEEPER:
         # xSwapToken
-        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+        with reverts(REV_MSG_ERC20_INSUF_ALLOW):
             cf.vault.xSwapToken(
                 st_dstChain,
                 st_dstAddress,
@@ -149,7 +149,7 @@ def test_swapToken_rev_bal(
             )
 
         # xCallToken
-        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+        with reverts(REV_MSG_ERC20_INSUF_ALLOW):
             cf.vault.xCallToken(
                 st_dstChain,
                 st_dstAddress,

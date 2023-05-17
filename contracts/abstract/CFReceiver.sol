@@ -16,7 +16,6 @@ import "../interfaces/ICFReceiver.sol";
  *           to make a cross-chain call to this contract. If that is not desired, an extra
  *           check on the source address and source chain should be performed.
  */
-
 abstract contract CFReceiver is ICFReceiver {
     /// @dev The address used to indicate whether the funds received are native or a token
     address private constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;

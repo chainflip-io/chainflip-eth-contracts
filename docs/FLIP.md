@@ -1,29 +1,40 @@
 # `FLIP`
 
-  The FLIP utility token which is used to stake in the FLIP system and pay for
-          trap fees with
+  The FLIP utility token which is used in the StateChain.
 
-## `constructor(uint256 flipTotalSupply, uint256 numGenesisValidators, uint256 genesisStake, address receiverGenesisValidatorFlip, address receiverGenesisFlip, contract IKeyManager keyManager)` (public)
+## `onlyIssuer()`
+
+   Check that the caller is the token issuer.
+
+## `constructor(uint256 flipTotalSupply, uint256 numGenesisValidators, uint256 genesisStake, address receiverGenesisValidatorFlip, address receiverGenesisFlip, address genesisIssuer)` (public)
 
 No description
 
-## `updateFlipSupply(struct IShared.SigData sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber, address staker)` (external)
+## `mint(address account, uint256 amount)` (external)
 
- Compares a given new FLIP supply against the old supply,
-         then mints and burns as appropriate
+Mint FLIP tokens to an account. This is controlled via an issuer
+        controlled by the StateChain to adjust the supply of FLIP tokens.
 
-- `sigData`:               signature over the abi-encoded function params
+- `account`:   Account to receive the newly minted tokens
 
-- `newTotalSupply`:        new total supply of FLIP
+- `amount`:    Amount of tokens to mint
 
-- `stateChainBlockNumber`: State Chain block number for the new total supply
+## `burn(address account, uint256 amount)` (external)
 
-- `staker`: Staking contract owner of the tokens to be minted/burnt
+Mint FLIP tokens to an account. This is controlled via an issuer
+        controlled by the StateChain to adjust the supply of FLIP tokens.
 
-## `getLastSupplyUpdateBlockNumber() → uint256` (external)
+- `account`:   Account to burn the tokens from
 
- Get the last state chain block number of the last supply update
+- `amount`:    Amount of tokens to burn
 
-Returns
+## `updateIssuer(address newIssuer)` (external)
 
-- The state chain block number of the last supply update
+Update the issuer address. This is to be controlled via an issuer
+        controlled by the StateChain.
+
+- `newIssuer`:   Account that can mint and burn FLIP tokens.
+
+## `getIssuer() → address` (external)
+
+No description
