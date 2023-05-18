@@ -1,6 +1,14 @@
 testMode: "assertion"
+testLimit: 500000
+shrinkLimit: 1500
 #codeSize Increased codeSize because Echidna fails when deploying all the contracts via DeployerEchidna.sol
 codeSize: 0x60000
+coverage: true
+corpusDir: echidna-corpus/
+allContracts: true
+allowFFI: true
+# Senders: gov, comm, users
+sender: ["0x3421b011C6a5f7c1ED438368565A5A8943063D19", "0x6C377BdD40216c5b997Ab2bf0CFF8c2624F9Dd86", "0x10000", "0x20000", "0x30000"]
 
 cryticArgs: # If we add more dependencies they will need to be added as symlinks here!
   [

@@ -1,0 +1,12 @@
+corpusDir: "echidna-corpus-erc20"
+testMode: assertion
+testLimit: 5000000
+deployer: "0x10000"
+sender: ["0x10000", "0x20000", "0x30000"]
+allContracts: true
+
+cryticArgs:
+  [
+    "--solc-remaps",
+    "@openzeppelin/=node_modules/@openzeppelin/ @crytic/=node_modules/@crytic/",    
+  ]
