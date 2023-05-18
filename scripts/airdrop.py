@@ -179,7 +179,6 @@ def snapshot(
         events.extend(new_events)
 
         if next_block == snapshot_blocknumber:
-            print("Loop completed")
             break
         else:
             # Both from & to_block are inclusive
@@ -189,7 +188,7 @@ def snapshot(
                 next_block = snapshot_blocknumber
 
     # Alternative to avoid the slow getBalance calls which take hourse
-    print("Processing events", len(events))
+    print("Number of events to be processed: ", len(events))
     totalBalance = 0
     holder_dict = {}
     for event in events:
@@ -213,6 +212,18 @@ def snapshot(
             totalBalance -= event.args["value"]
 
     sorted_dict = dict(sorted(holder_dict.items(), key=lambda x: x[1], reverse=True))
+
+    # Verify that at least the most relevant accounts' balances are correct
+    print("Verifying balances of top holders")
+
+    cutoff_amount = 6000 * 10**18
+    for holder, balance in sorted_dict.items():
+        if balance < cutoff_amount:
+            break
+        else:
+            assert balance == oldFlipContract.balanceOf.call(
+                holder, block_identifier=snapshot_blocknumber
+            )
 
     holder_list = list(sorted_dict.keys())
     holder_balances = list(sorted_dict.values())
