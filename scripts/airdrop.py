@@ -7,16 +7,7 @@ import os.path
 
 sys.path.append(os.path.abspath("tests"))
 from consts import ZERO_ADDR, INIT_SUPPLY
-from brownie import (
-    chain,
-    accounts,
-    KeyManager,
-    Vault,
-    StateChainGateway,
-    FLIP,
-    web3,
-)
-from deploy import deploy_Chainflip_contracts
+from brownie import chain, accounts, StateChainGateway, FLIP, web3, network
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 
@@ -32,10 +23,16 @@ oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 # as no event swill have been emitted before the deployment
 oldFlip_deployment_block = 7727329 - 10
 
+# TODO: These addresses are for debugging. To update.
+newFlip = "0xc0a3730FB678748a95dDFf99961F7a6B19F31583"
+newStateChainGateway = "0xD9913A3BA5C48808F854DaB4F19DB0ffE6236722"
+
 userInputConfirm = ["", "y", "Y", "yes", "Yes", "YES"]
 snapshotSuccessMessage = "Snapshot taken and succesfully stored in "
-contractDeploymentSuccessMessage = "New set of contracts deployed succesfully"
 airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
+
+# Set the priority fee for all transactions
+network.priority_fee("1 gwei")
 
 # Set SNAPSHOT_BLOCKNUMBER environment variable if we want to take the snapshot on a particular block
 def main():
@@ -90,36 +87,6 @@ def main():
         snapshot(int(snapshot_blocknumber), goerliOldFlip, oldFlipSnapshotFilename)
     else:
         printAndLog("Skipped old FLIP snapshot - snapshot already taken")
-
-    # If we have deployed some contracts but not all we better redeploy them all - something fishy has happened
-    # If all have been deployed, get their addresses.
-    if contractDeploymentSuccessMessage not in parsedLog:
-        printAndLog("Deployer account: " + str(airdropper))
-        deployContracts = input("Deploy the new contracts? (y)/n : ")
-        if deployContracts not in userInputConfirm:
-            printAndLog("Script stopped by user")
-            return False
-        (
-            newStateChainGateway,
-            newVault,
-            newFlip,
-            newKeyManager,
-        ) = deployNewContracts(airdropper)
-    else:
-        printAndLog(
-            "Skipped deployment of new contracts - contracts already deployed succesfully"
-        )
-
-        # Ensure that contracts have been deployed and addresses are in the log
-        (
-            newStateChainGateway,
-            newVault,
-            newFlip,
-            newKeyManager,
-        ) = getAndCheckDeployedAddresses(parsedLog)
-
-        # Wait for previously sent transactions to complete (from a potential previous run)
-        waitForLogTXsToComplete(parsedLog)
 
     # Skip airdrop if it is logged succesfully. However, call Airdrop if it has failed at any point before the
     # succesful logging so all sent transactions are checked and we do the remaining airdrop transfers (if any)
@@ -289,29 +256,6 @@ def snapshot(
     printAndLog(snapshotSuccessMessage + filename)
 
 
-# Deploy all the new contracts needed. Print all newly deployed contract addresses for user visibility
-# and log them for future runs.
-def deployNewContracts(airdropper):
-    printAndLog("Deploying new contracts")
-
-    cf = deploy_Chainflip_contracts(
-        airdropper, KeyManager, Vault, StateChainGateway, FLIP, os.environ
-    )
-
-    newStateChainGateway = cf.stateChainGateway.address
-    newVault = cf.vault.address
-    newFlip = cf.flip.address
-    newKeyManager = cf.keyManager.address
-
-    logging.info("StateChainGateway address:" + newStateChainGateway)
-    logging.info("Vault address:" + newVault)
-    logging.info("FLIP address:" + newFlip)
-    logging.info("KeyManager address:" + newKeyManager)
-    logging.info(contractDeploymentSuccessMessage)
-
-    return (newStateChainGateway, newVault, newFlip, newKeyManager)
-
-
 # --- Airdrop process ----
 # 1- Craft a list of addresses that should not receive an airdrop or that have already receieved it.
 # To make sure no holder is Airdropped twice we check all the newFLIP airdrop transfer events.
@@ -363,9 +307,12 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway):
         airdropperBalance
         >= oldFliptotalSupply - oldStateChainGatewayBalance - oldFlipDeployerBalance
     )
-    # Assertion for extra check in our particular case - just before we start all the airdrop
-    newFlipToBeMinted = oldFliptotalSupply - INIT_SUPPLY
-    assert newFlipToBeMinted > 0
+
+    # Assertion for extra check in our particular case - just before we start all the
+    # aidrop => oldSupply < newSupply.
+    assert oldFliptotalSupply < INIT_SUPPLY
+
+    # TODO: Make sure we are skipping the right addresses
 
     # Full list of addresses to skip - add already airdropped accounts
     for airdropTx in listAirdropTXs:
@@ -402,6 +349,10 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway):
             # Logging only in debug level
             logging.debug("Skipping receiver:" + str(receiverNewFlip))
             skip_counter += 1
+
+    # TODO: Modify `airdropSuccessMessage` so in case of the below logic failing it doesn't start from the beginning
+    # TODO: Think about this - how will the statechain min/burn tokens? Probably from the SCGateway - I think this is exactly what this
+    # logic is doing.
 
     # OldFLIP supply is most likely different than the new initial flip supply (INIT_SUPPLY). We need to ensure that when minting the
     # supply difference the newStateChainGateway and oldStateChainGateway will end up with the same balance. If new State Chain Gateway has less balance
@@ -675,51 +626,6 @@ def waitForLogTXsToComplete(parsedLog):
             logging.debug(receipt)
 
 
-def getAndCheckDeployedAddresses(parsedLog):
-    # In the log there should never be more than one set of deployments (either all logged succesfully or none)
-    # So we can just use the index of the message string and parse the following lines. Added assertion for safety.
-    index = parsedLog.index(contractDeploymentSuccessMessage)
-    # Parse contract addresses
-    # State Chain Gateway
-    assert (
-        parsedLog[index - 4].split(":")[0] == "StateChainGateway address"
-    ), logging.error(
-        "Something is wrong in the logging of the deployed StateChainGateway address"
-    )
-    newStateChainGateway = parsedLog[index - 4].split(":")[1]
-    assert newStateChainGateway != ZERO_ADDR, logging.error(
-        "Something is wrong with the deployed StateChainGateway's address"
-    )
-    # Vault
-    assert parsedLog[index - 3].split(":")[0] == "Vault address", logging.error(
-        "Something is wrong in the logging of the deployed Vault address"
-    )
-    newVault = parsedLog[index - 3].split(":")[1]
-    assert newVault != ZERO_ADDR, logging.error(
-        "Something is wrong with the deployed Vault's address"
-    )
-
-    # FLIP
-    assert parsedLog[index - 2].split(":")[0] == "FLIP address", logging.error(
-        "Something is wrong in the logging of the deployed FLIP address"
-    )
-    newFlip = parsedLog[index - 2].split(":")[1]
-    assert newFlip != ZERO_ADDR, logging.error(
-        "Something is wrong with the deployed FLIP's address"
-    )
-
-    # Key Manager
-    assert parsedLog[index - 1].split(":")[0] == "KeyManager address", logging.error(
-        "Something is wrong in the logging of the deployed KeyManager address"
-    )
-    newKeyManager = parsedLog[index - 1].split(":")[1]
-    assert newKeyManager != ZERO_ADDR, logging.error(
-        "Something is wrong with the deployed KeyManager's address"
-    )
-
-    return (newStateChainGateway, newVault, newFlip, newKeyManager)
-
-
 def readCSVSnapshotChecksum(snapshot_csv, stateChainGateway, deployer):
     printAndLog("Reading snapshot from file: " + snapshot_csv)
 
@@ -742,6 +648,10 @@ def readCSVSnapshotChecksum(snapshot_csv, stateChainGateway, deployer):
             numberHolders = a.split(":")
             assert int(numberHolders[1]) == len(holderAccounts)
             assert totalSupply == int(b)
+
+    # TODO: This is now failing because we have ordered the amounts by holders. To be updated.
+    # We can even add some extra check (e.g. call getFlip() from the ScGateway) to ensure we are
+    # not doing anything wrong.
 
     # Assumption that we get the events in order, so first two events should be the initial mints
     assert holderAccounts[0] == stateChainGateway, logging.error(
