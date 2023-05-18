@@ -1,13 +1,5 @@
 # `KeyManagerEchidna`
 
-## `setCanConsumeKeyNonce(address[] addrs)` (external)
-
-No description
-
-## `updateCanConsumeKeyNonce(struct IShared.SigData sigData, address[] currentAddrs, address[] newAddrs)` (external)
-
-No description
-
 ## `consumeKeyNonce(struct IShared.SigData sigData, bytes32 contractMsgHash)` (external)
 
 No description
@@ -33,5 +25,9 @@ No description
 No description
 
 ## `govAction(bytes32 message)` (external)
+
+No description
+
+## `encodingBytesVerifySig(bytes32 msgHash, uint256 signingPubKeyX, uint8 pubKeyYParity, address nonceTimesGeneratorAddress)` (external)
 
 No description

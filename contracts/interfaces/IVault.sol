@@ -9,6 +9,63 @@ import "./IMulticall.sol";
  * @notice   The interface for functions Vault implements
  */
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
+    event TransferNativeFailed(address payable indexed recipient, uint256 amount);
+    event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
+
+    event SwapNative(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        uint256 amount,
+        address indexed sender,
+        bytes cfParameters
+    );
+    event SwapToken(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        address srcToken,
+        uint256 amount,
+        address indexed sender,
+        bytes cfParameters
+    );
+
+    /// @dev bytes parameters is not indexed because indexing a dynamic type for it to be filtered
+    ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
+    ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
+    ///      version in the event. That is unnecessary.
+    event XCallNative(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        uint256 amount,
+        address indexed sender,
+        bytes message,
+        uint256 gasAmount,
+        bytes cfParameters
+    );
+    event XCallToken(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        address srcToken,
+        uint256 amount,
+        address indexed sender,
+        bytes message,
+        uint256 gasAmount,
+        bytes cfParameters
+    );
+
+    event AddGasNative(bytes32 swapID, uint256 amount);
+    event AddGasToken(bytes32 swapID, uint256 amount, address token);
+
+    event ExecuteActionsFailed(
+        address payable indexed multicallAddress,
+        uint256 amount,
+        address indexed token,
+        bytes reason
+    );
+
     function allBatch(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,
@@ -132,10 +189,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     ) external;
 
     //////////////////////////////////////////////////////////////

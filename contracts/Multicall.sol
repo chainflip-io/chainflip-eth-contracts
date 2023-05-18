@@ -4,42 +4,43 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
-interface ISquidMulticall {
-    enum CallType {
-        Default,
-        FullTokenBalance,
-        FullNativeBalance,
-        CollectTokenBalance
-    }
+import "./interfaces/IMulticall.sol";
+import "./abstract/Shared.sol";
 
-    struct Call {
-        CallType callType;
-        address target;
-        uint256 value;
-        bytes callData;
-        bytes payload;
-    }
-
-    error AlreadyRunning();
-    error CallFailed(uint256 callPosition, bytes reason);
-
-    function run(Call[] calldata calls) external payable;
-}
-
-// Copying the entire contract since we will use it for testing locally.
-contract SquidMulticall is ISquidMulticall, IERC721Receiver, IERC1155Receiver {
+/**
+ * @title    Multicall
+ * @dev      This contract is called by the Chainflip Vault to execute actions on behalf of the
+ *           the Vault but in a separate contract to minimize risks.
+ *           This contract is immutable and if the Chainflip Vault is upgraded to a new contract
+ *           this contract will also need to be redeployed. This is to prevent any changes of
+ *           behaviour in this contract while the Vault is making calls to it.
+ *           This contract is based on the SquidMulticall contract from the SquidRouter protocol
+ *           with an added layer of access control. There is also an extra _safeTransferFrom()
+ *           since this contract will get the tokens approved by the Vault instead of transferred.
+ */
+contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver, Shared {
     bytes4 public constant ERC165_INTERFACE_ID = 0x01ffc9a7;
     bytes4 public constant ERC721_TOKENRECEIVER_INTERFACE_ID = 0x150b7a02;
     bytes4 public constant ERC1155_TOKENRECEIVER_INTERFACE_ID = 0x4e2312e0;
 
     bool private isRunning;
+    /// @dev    Chainflip's Vault address
+    address public immutable cfVault;
 
     error TransferFailed();
 
-    function run(Call[] calldata calls) external payable {
+    constructor(address _cfVault) nzAddr(_cfVault) {
+        cfVault = _cfVault;
+    }
+
+    function run(Call[] calldata calls, address token, uint256 amount) external payable override onlyCfVault {
         // Prevents reentrancy
         if (isRunning) revert AlreadyRunning();
         isRunning = true;
+
+        if (amount > 0 && token != _NATIVE_ADDR) {
+            _safeTransferFrom(token, msg.sender, amount);
+        }
 
         for (uint256 i = 0; i < calls.length; i++) {
             Call memory call = calls[i];
@@ -108,4 +109,16 @@ contract SquidMulticall is ISquidMulticall, IERC721Receiver, IERC1155Receiver {
 
     // Required to enable ETH reception with .transfer or .send
     receive() external payable {}
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Modifiers                       //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev Check that the sender is the Chainflip's Vault.
+    modifier onlyCfVault() {
+        require(msg.sender == cfVault, "Multicall: not Chainflip Vault");
+        _;
+    }
 }

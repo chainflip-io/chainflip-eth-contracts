@@ -24,15 +24,11 @@ No description
 
 No description
 
-## `echidna_whitelistSet() → bool` (external)
-
-No description
-
 ## `suspendVault()` (external)
 
 No description
 
-## `suspendStakeManager()` (external)
+## `suspendStateChainGateway()` (external)
 
 No description
 
@@ -40,7 +36,7 @@ No description
 
 No description
 
-## `resumeStakeManager()` (external)
+## `resumeStateChainGateway()` (external)
 
 No description
 
@@ -52,19 +48,15 @@ No description
 
 No description
 
-## `enableCommunityGuardStakeManager()` (external)
+## `enableCommunityGuardStateChainGateway()` (external)
 
 No description
 
-## `disableCommunityGuardStakeManager()` (external)
+## `disableCommunityGuardStateChainGateway()` (external)
 
 No description
 
-## `setMinStake(uint256 newMinStake)` (external)
-
-No description
-
-## `checkwhitelistAddrs()` (external)
+## `setMinFunding(uint256 newMinFunding)` (external)
 
 No description
 

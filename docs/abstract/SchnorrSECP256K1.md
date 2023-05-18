@@ -2,7 +2,7 @@
 
 Slightly modified from <https://github.com/smartcontractkit/chainlink/pull/1272/files>
 
-## `verifySignature(uint256 msgHash, uint256 signature, uint256 signingPubKeyX, uint8 pubKeyYParity, address nonceTimesGeneratorAddress) → bool` (internal)
+## `verifySignature(bytes32 msgHash, uint256 signature, uint256 signingPubKeyX, uint8 pubKeyYParity, address nonceTimesGeneratorAddress) → bool` (internal)
 
 /****************************************************************************
       @notice verifySignature returns true iff passed a valid Schnorr signature.
@@ -17,7 +17,7 @@ Slightly modified from <https://github.com/smartcontractkit/chainlink/pull/1272/
 
       @dev First PKx must be less than HALF_Q. Then follow these instructions
            (see evm/test/schnorr_test.js, for an example of carrying them out):
-      @dev 1. Hash the target message to a uint256, called msgHash here, using
+      @dev 1. Hash the target message to a bytes32, called msgHash here, using
               keccak256
 
       @dev 2. Pick k uniformly and cryptographically securely randomly from

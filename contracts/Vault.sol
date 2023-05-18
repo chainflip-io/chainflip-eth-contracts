@@ -22,56 +22,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
     uint256 private constant _GAS_TO_FORWARD = 3500;
 
-    event TransferNativeFailed(address payable indexed recipient, uint256 amount);
-    event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
-
-    event SwapNative(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        uint256 amount,
-        address indexed sender,
-        bytes cfParameters
-    );
-    event SwapToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender,
-        bytes cfParameters
-    );
-
-    /// @dev dstAddress is not indexed because indexing a dynamic type (bytes) for it to be filtered,
-    ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
-    ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
-    ///      version in the event.
-    event XCallNative(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 gasAmount,
-        bytes cfParameters
-    );
-    event XCallToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint32 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 gasAmount,
-        bytes cfParameters
-    );
-
-    event AddGasNative(bytes32 swapID, uint256 amount);
-    event AddGasToken(bytes32 swapID, uint256 amount, address token);
-
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -597,41 +547,67 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @notice  Transfer funds and pass calldata to be executed on a Multicall contract.
      * @dev     For safety purposes it's preferred to execute calldata externally with
      *          a limited amount of funds instead of executing arbitrary calldata here.
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
-     * @param token     Address of the source token to swap.
-     * @param amount    Amount of the source token to send.
-     * @param multicallAddr Address of the Multicall contract to call.
-     * @param calls     Array of actions to be executed.
+     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
+     *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
+     * @param sigData         Struct containing the signature data over the message
+     *                        to verify, signed by the aggregate key.
+     * @param transferParams  The transfer parameters inluding the token and amount to be transferred
+     *                        and the multicall contract address.
+     * @param calls           Array of actions to be executed.
+     * @param gasMulticall    Gas that must be forwarded to the multicall.
 
      */
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     )
         external
         override
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, calls))
+            keccak256(abi.encode(this.executeActions.selector, transferParams, calls, gasMulticall))
         )
     {
         // Fund and run multicall
         uint256 valueToSend;
 
-        if (amount > 0) {
-            if (token == _NATIVE_ADDR) {
-                valueToSend = amount;
+        if (transferParams.amount > 0) {
+            if (transferParams.token == _NATIVE_ADDR) {
+                valueToSend = transferParams.amount;
             } else {
-                IERC20(token).safeTransfer(multicallAddr, amount);
+                IERC20(transferParams.token).approve(transferParams.recipient, transferParams.amount);
             }
         }
 
-        IMulticall(multicallAddr).run{value: valueToSend}(calls);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory reason) = transferParams.recipient.call{gas: gasMulticall, value: valueToSend}(
+            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
+        );
+
+        if (!success) {
+            // Validate that the relayer has sent enough gas for the call.
+            // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
+            if (gasleft() <= gasMulticall / 63) {
+                // Emulate an out of gas exception by explicitly trigger invalid opcode to consume all gas and
+                // bubble-up the effects, since neither revert or assert consume all gas since Solidity 0.8.0.
+
+                // solhint-disable no-inline-assembly
+                /// @solidity memory-safe-assembly
+                assembly {
+                    invalid()
+                }
+                // solhint-enable no-inline-assembly
+            }
+            if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
+                IERC20(transferParams.token).approve(transferParams.recipient, 0);
+            }
+            emit ExecuteActionsFailed(transferParams.recipient, transferParams.amount, transferParams.token, reason);
+        } else {
+            require(transferParams.recipient.code.length > 0);
+        }
     }
 
     //////////////////////////////////////////////////////////////

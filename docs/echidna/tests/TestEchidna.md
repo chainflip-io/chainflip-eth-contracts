@@ -28,15 +28,11 @@ No description
 
 No description
 
-## `echidna_minStake() → bool` (external)
+## `echidna_minFunding() → bool` (external)
 
 No description
 
 ## `echidna_lastValidateTime() → bool` (external)
-
-No description
-
-## `echidna_whitelistSet() → bool` (external)
 
 No description
 
@@ -56,7 +52,7 @@ No description
 
 No description
 
-## `checkwhitelistAddrs()` (external)
+## `executeRedemption_revert(bytes32 nodeID)` (external)
 
 No description
 

@@ -1,4 +1,4 @@
-FROM ethereum/client-go:v1.11.6-amd64
+FROM ethereum/client-go:alltools-v1.11.6-amd64
 
 # Delete default configuration
 RUN rm -rf /root/data /geth/data
@@ -30,13 +30,13 @@ ENTRYPOINT geth \
         --http.corsdomain=* \
         --http.addr=0.0.0.0 \
         --ws.addr=0.0.0.0 \
-        --miner.threads=1 \
         --networkid=10997 \
         --http.port=8545 \
         --http.vhosts=* \
         --ws.origins=* \
         --ws.port=8546 \
         --gcmode=archive \
+        --override.shanghai=1 \
         --nodiscover \
         --http \
         --mine \

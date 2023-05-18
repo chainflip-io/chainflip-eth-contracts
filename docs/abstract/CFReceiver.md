@@ -34,9 +34,9 @@ No description
 
 - `message`:       The message sent on the source chain. This is a general purpose message.
 
-- `token`:         Address of the token received.
+- `token`:         Address of the token received. _NATIVE_ADDR if native.
 
-- `amount`:        Amount of tokens received.
+- `amount`:        Amount of tokens received. This will match msg.value for native tokens.
 
 ## `cfReceivexCall(uint32 srcChain, bytes srcAddress, bytes message)` (external)
 
@@ -58,4 +58,6 @@ No description
 
 ## `updateCfVault(address _cfVault)` (external)
 
-No description
+          Update Chanflip's Vault address.
+
+- `_cfVault`:    New Chainflip's Vault address.
