@@ -24,10 +24,13 @@ from web3._utils.filters import construct_event_filter_params
 logname = "airdrop.log"
 logging.basicConfig(filename=logname, level=logging.INFO)
 
-rinkebyOldStateChainGateway = "0x3A96a2D552356E17F97e98FF55f69fDFb3545892"
-oldFlipDeployer = "0x4D1951e64D3D02A3CBa0D0ef5438f732850ED592"
-rinkebyOldFlip = "0xbFf4044285738049949512Bd46B42056Ce5dD59b"
+goerliOldStateChainGateway = "0xff99F65D0042393079442f68F47C7AE984C3F930"
+oldFlipDeployer = "0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF"
+goerliOldFlip = "0x8e71CEe1679bceFE1D426C7f23EAdE9d68e62650"
 oldFlipSnapshotFilename = "snapshotOldFlip.csv"
+# Adding a buffer of 10 blocks. Setting this instead of zero
+# as no event swill have been emitted before the deployment
+oldFlip_deployment_block = 7727329 - 10
 
 userInputConfirm = ["", "y", "Y", "yes", "Yes", "YES"]
 snapshotSuccessMessage = "Snapshot taken and succesfully stored in "
@@ -67,7 +70,7 @@ def main():
     if (not snapshotSuccessMessage + oldFlipSnapshotFilename in parsedLog) or (
         not os.path.exists(oldFlipSnapshotFilename)
     ):
-        assert chain.id == 4, logging.error("Wrong chain. Should be running in Rinkeby")
+        assert chain.id == 5, logging.error("Wrong chain. Should be running in goerli")
         printAndLog(
             "Old FLIP snapshot not taken previously. Snapshot Blocknumber set to "
             + str(snapshot_blocknumber)
@@ -80,12 +83,12 @@ def main():
                 + str(snapshot_blocknumber)
                 + ". Use it as snapshot block number."
             )
-        printAndLog("Address of token set to " + rinkebyOldFlip)
+        printAndLog("Address of token set to " + goerliOldFlip)
         takeSnapshot = input("Take snapshot? (y)/n : ")
         if takeSnapshot not in userInputConfirm:
             printAndLog("Script stopped by user")
             return False
-        snapshot(int(snapshot_blocknumber), rinkebyOldFlip, oldFlipSnapshotFilename)
+        snapshot(int(snapshot_blocknumber), goerliOldFlip, oldFlipSnapshotFilename)
     else:
         printAndLog("Skipped old FLIP snapshot - snapshot already taken")
 
@@ -147,42 +150,99 @@ def main():
 # csv file. Last line is used as a checksum stating the total number of holders and the total balance
 def snapshot(
     snapshot_blocknumber,
-    rinkebyOldFlip,
+    goerliOldFlip,
     filename,
 ):
-    printAndLog("Taking snapshot of " + rinkebyOldFlip)
-
+    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(goerliOldFlip)
     # It will throw an error if there are more than 10.000 events (free Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
-    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(rinkebyOldFlip)
-    events = list(
-        fetch_events(
-            oldFlipContractObject.events.Transfer,
-            from_block=0,
-            to_block=snapshot_blocknumber,
-        )
-    )
 
-    # Get list of unique addresses that have recieved FLIP
-    receiver_list = []
-    for event in events:
-        toAddress = event.args.to
-        if toAddress not in receiver_list:
-            receiver_list.append(toAddress)
-    holder_balances = []
+    # lets do a fetch every 10000 blocks - in total it's around 1,3M blocks. That's to avoid
+    # the providers 10k limits
+    step = 10000
+    next_block = oldFlip_deployment_block + step
+    from_block = oldFlip_deployment_block
+
+    events = []
+
+    while True:
+        print(
+            "Fetching events from block " + str(from_block) + " to " + str(next_block)
+        )
+        new_events = list(
+            fetch_events(
+                oldFlipContractObject.events.Transfer,
+                from_block=from_block,
+                to_block=next_block,
+            )
+        )
+        events.extend(new_events)
+
+        if next_block == snapshot_blocknumber:
+            print("Loop completed")
+            break
+        else:
+            # Both from & to_block are inclusive
+            from_block = next_block + 1
+            next_block += step
+            if next_block > snapshot_blocknumber:
+                next_block = snapshot_blocknumber
+
+    # Alternative to avoid the slow getBalance calls which take hourse
+    print("Processing events", len(events))
     totalBalance = 0
+    holder_dict = {}
+    for event in events:
+        if event.args["value"] == 0:
+            continue
 
-    # Get balances of receivers and check if they are holders. Balances need to be obtained at
-    # the same snapshot block number
-    holder_list = []
-    for holder in receiver_list:
-        holderBalance = oldFlipContract.balanceOf.call(
-            holder, block_identifier=snapshot_blocknumber
-        )
-        if holderBalance > 0:
-            totalBalance += holderBalance
-            holder_balances.append(holderBalance)
-            holder_list.append(holder)
+        if event.args["from"] != "0x0000000000000000000000000000000000000000":
+            holder_dict[event.args["from"]] -= event.args["value"]
+            assert holder_dict[event.args["from"]] >= 0
+            if holder_dict[event.args["from"]] == 0:
+                del holder_dict[event.args["from"]]
+        else:
+            totalBalance += event.args["value"]
+
+        if event.args["to"] != "0x0000000000000000000000000000000000000000":
+            holder_dict[event.args["to"]] = (
+                holder_dict.get(event.args["to"], 0) + event.args["value"]
+            )
+            assert holder_dict[event.args["to"]] > 0
+        else:
+            totalBalance -= event.args["value"]
+
+    sorted_dict = dict(sorted(holder_dict.items(), key=lambda x: x[1], reverse=True))
+
+    holder_list = list(sorted_dict.keys())
+    holder_balances = list(sorted_dict.values())
+
+    # NOTE: Not using this as the balanceOf call is too slow
+    # print("Processing events")
+    # print("Total events: " + str(len(events)))
+    # # Get list of unique addresses that have recieved FLIP
+    # receiver_list = []
+    # for event in events:
+    #     toAddress = event.args.to
+    #     if toAddress not in receiver_list:
+    #         receiver_list.append(toAddress)
+    # holder_balances = []
+    # totalBalance = 0
+
+    # # Get balances of receivers and check if they are holders. Balances need to be obtained at
+    # # the same snapshot block number
+    # print("Getting balances")
+    # print("Number of unique receivers: " + str(len(receiver_list)))
+    # holder_list = []
+    # for index, holder in enumerate(receiver_list):
+    #     print("Processing holder ",index)
+    #     holderBalance = oldFlipContract.balanceOf.call(
+    #         holder, block_identifier=snapshot_blocknumber
+    #     )
+    #     if holderBalance > 0:
+    #         totalBalance += holderBalance
+    #         holder_balances.append(holderBalance)
+    #         holder_list.append(holder)
 
     # Health check
     assert len(holder_list) == len(holder_balances)
@@ -266,7 +326,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway):
         oldStateChainGatewayBalance,
         oldFlipDeployerBalance,
     ) = readCSVSnapshotChecksum(
-        snapshot_csv, rinkebyOldStateChainGateway, oldFlipDeployer
+        snapshot_csv, goerliOldStateChainGateway, oldFlipDeployer
     )
 
     newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
@@ -277,7 +337,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway):
     skip_receivers_list = [
         str(airdropper),
         newStateChainGateway,
-        rinkebyOldStateChainGateway,
+        goerliOldStateChainGateway,
         oldFlipDeployer,
     ]
 
@@ -316,7 +376,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway):
             assert receiverNewFlip not in [
                 str(airdropper),
                 newStateChainGateway,
-                rinkebyOldStateChainGateway,
+                goerliOldStateChainGateway,
                 oldFlipDeployer,
             ]
 
@@ -412,7 +472,7 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStateChainGateway):
         oldStateChainGatewayBalance,
         oldFlipDeployerBalance,
     ) = readCSVSnapshotChecksum(
-        initalSnapshot, rinkebyOldStateChainGateway, oldFlipDeployer
+        initalSnapshot, goerliOldStateChainGateway, oldFlipDeployer
     )
 
     # Minus two oldFlipHolders - we don't airdrop to neither oldStateChainGateway nor oldFlipDeployer (could be same as airdropper)
