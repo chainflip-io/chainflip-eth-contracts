@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IStateChainGateway.sol";
+import "./interfaces/ITokenVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -10,7 +11,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
  * owner.
  */
-contract TokenVesting is ReentrancyGuard {
+contract TokenVesting is ReentrancyGuard, ITokenVesting {
     // The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and is
     // therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree). Therefore,
     // it is recommended to avoid using short time durations (less than a minute). Typical vesting schemes, with a
@@ -18,15 +19,12 @@ contract TokenVesting is ReentrancyGuard {
 
     using SafeERC20 for IERC20;
 
-    event TokensReleased(IERC20 indexed token, uint256 amount);
-    event TokenVestingRevoked(IERC20 indexed token, uint256 refund);
-
     uint256 public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
 
     // beneficiary of tokens after they are released
-    address public immutable beneficiary;
+    address private beneficiary;
     // the revoker who can cancel the vesting and withdraw any unvested tokens
-    address public immutable revoker;
+    address private revoker;
 
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
     uint256 public immutable cliff;
@@ -79,13 +77,19 @@ contract TokenVesting is ReentrancyGuard {
         stateChainGateway = stateChainGateway_;
     }
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  State-changing functions                //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /**
      * @notice  Funds an account in the statechain with some tokens for the nodeID
      *          and forces the return address of that to be this contract.
      * @param nodeID the nodeID to fund.
      * @param amount the amount of FLIP out of the current funds in this contract.
      */
-    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external onlyBeneficiary {
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary {
         require(canStake, "Vesting: cannot stake");
 
         IERC20 flip = stateChainGateway.getFLIP();
@@ -99,7 +103,7 @@ contract TokenVesting is ReentrancyGuard {
      * @notice Transfers vested tokens to beneficiary.
      * @param token ERC20 token which is being vested.
      */
-    function release(IERC20 token) external nonReentrant onlyBeneficiary {
+    function release(IERC20 token) external override nonReentrant onlyBeneficiary {
         require(!canStake || !revoked[token], "Vesting: staked funds revoked");
 
         uint256 unreleased = _releasableAmount(token);
@@ -119,7 +123,7 @@ contract TokenVesting is ReentrancyGuard {
      *         funds are unstaked and sent back to this contract.
      * @param token ERC20 token which is being vested.
      */
-    function revoke(IERC20 token) external onlyRevoker {
+    function revoke(IERC20 token) external override onlyRevoker {
         require(!revoked[token], "Vesting: token already revoked");
         require(block.timestamp <= end, "Vesting: vesting expired");
 
@@ -143,7 +147,7 @@ contract TokenVesting is ReentrancyGuard {
      *         funds are withdrawn once revoked is called, so no need for this
      * @param token ERC20 token which is being vested.
      */
-    function retrieveRevokedFunds(IERC20 token) external onlyRevoker {
+    function retrieveRevokedFunds(IERC20 token) external override onlyRevoker {
         require(revoked[token], "Vesting: token not revoked");
 
         // Prevent revoker from withdrawing vested funds that belong to the beneficiary
@@ -184,6 +188,45 @@ contract TokenVesting is ReentrancyGuard {
         }
     }
 
+    /// @dev    Allow the beneficiary to be transferred to a new address if needed
+    function updateBeneficiary(address beneficiary_) external override onlyBeneficiary {
+        require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
+        emit BeneficiaryUpdated(beneficiary, beneficiary_);
+        beneficiary = beneficiary_;
+    }
+
+    /// @dev    Allow the revoker to be transferred to a new address if needed
+    function updateRevoker(address revoker_) external override onlyRevoker {
+        require(revoker_ != address(0), "Vesting: revoker_ is the zero address");
+        emit RevokerUpdated(revoker, revoker_);
+        revoker = revoker_;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                Non-state-changing functions              //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @return the beneficiary address
+     */
+    function getBeneficiary() external view override returns (address) {
+        return beneficiary;
+    }
+
+    /**
+     * @return the revoker address
+     */
+    function getRevoker() external view override returns (address) {
+        return revoker;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                      Modifiers                           //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
     /**
      * @dev Ensure that the caller is the beneficiary address
      */

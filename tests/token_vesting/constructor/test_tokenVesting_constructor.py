@@ -68,6 +68,18 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
     )
 
 
+def test_tokenVesting_constructor_noRevoker(addrs, TokenVesting, cf):
+    addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        ZERO_ADDR,
+        end,
+        end,
+        STAKABLE,
+        cf.stateChainGateway,
+    )
+
+
 def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, cf):
     with reverts(REV_MSG_INVALID_BENEFICIARY):
         addrs.DEPLOYER.deploy(
