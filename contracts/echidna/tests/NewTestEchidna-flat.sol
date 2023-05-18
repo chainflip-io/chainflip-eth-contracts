@@ -119,7 +119,6 @@ abstract contract Context {
     }
 
     function _msgData() internal view virtual returns (bytes calldata) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
         return msg.data;
     }
 }
@@ -133,9 +132,15 @@ abstract contract Ownable is Context {
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
     constructor() {
-        address msgSender = _msgSender();
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
+        _transferOwnership(_msgSender());
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
     }
 
     /**
@@ -146,11 +151,10 @@ abstract contract Ownable is Context {
     }
 
     /**
-     * @dev Throws if called by any account other than the owner.
+     * @dev Throws if the sender is not the owner.
      */
-    modifier onlyOwner() {
+    function _checkOwner() internal view virtual {
         require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
     }
 
     /**
@@ -161,8 +165,7 @@ abstract contract Ownable is Context {
      * thereby removing any functionality that is only available to the owner.
      */
     function renounceOwnership() public virtual onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
+        _transferOwnership(address(0));
     }
 
     /**
@@ -171,12 +174,35 @@ abstract contract Ownable is Context {
      */
     function transferOwnership(address newOwner) public virtual onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
-        emit OwnershipTransferred(_owner, newOwner);
+        _transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     */
+    function _transferOwnership(address newOwner) internal virtual {
+        address oldOwner = _owner;
         _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
     }
 }
 
 interface IERC20 {
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
     /**
      * @dev Returns the amount of tokens in existence.
      */
@@ -188,13 +214,13 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 
     /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     * @dev Moves `amount` tokens from the caller's account to `to`.
      *
      * Returns a boolean value indicating whether the operation succeeded.
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -222,7 +248,7 @@ interface IERC20 {
     function approve(address spender, uint256 amount) external returns (bool);
 
     /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * @dev Moves `amount` tokens from `from` to `to` using the
      * allowance mechanism. `amount` is then deducted from the caller's
      * allowance.
      *
@@ -230,24 +256,27 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
-contract ERC20 is Context, IERC20 {
+interface IERC20Metadata is IERC20 {
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() external view returns (string memory);
+
+    /**
+     * @dev Returns the symbol of the token.
+     */
+    function symbol() external view returns (string memory);
+
+    /**
+     * @dev Returns the decimals places of the token.
+     */
+    function decimals() external view returns (uint8);
+}
+
+contract ERC20 is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -260,10 +289,10 @@ contract ERC20 is Context, IERC20 {
     /**
      * @dev Sets the values for {name} and {symbol}.
      *
-     * The defaut value of {decimals} is 18. To select a different value for
+     * The default value of {decimals} is 18. To select a different value for
      * {decimals} you should overload it.
      *
-     * All three of these values are immutable: they can only be set once during
+     * All two of these values are immutable: they can only be set once during
      * construction.
      */
     constructor(string memory name_, string memory symbol_) {
@@ -274,7 +303,7 @@ contract ERC20 is Context, IERC20 {
     /**
      * @dev Returns the name of the token.
      */
-    function name() public view virtual returns (string memory) {
+    function name() public view virtual override returns (string memory) {
         return _name;
     }
 
@@ -282,24 +311,24 @@ contract ERC20 is Context, IERC20 {
      * @dev Returns the symbol of the token, usually a shorter version of the
      * name.
      */
-    function symbol() public view virtual returns (string memory) {
+    function symbol() public view virtual override returns (string memory) {
         return _symbol;
     }
 
     /**
      * @dev Returns the number of decimals used to get its user representation.
      * For example, if `decimals` equals `2`, a balance of `505` tokens should
-     * be displayed to a user as `5,05` (`505 / 10 ** 2`).
+     * be displayed to a user as `5.05` (`505 / 10 ** 2`).
      *
      * Tokens usually opt for a value of 18, imitating the relationship between
      * Ether and Wei. This is the value {ERC20} uses, unless this function is
-     * overloaded;
+     * overridden;
      *
      * NOTE: This information is only used for _display_ purposes: it in
      * no way affects any of the arithmetic of the contract, including
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
-    function decimals() public view virtual returns (uint8) {
+    function decimals() public view virtual override returns (uint8) {
         return 18;
     }
 
@@ -322,11 +351,12 @@ contract ERC20 is Context, IERC20 {
      *
      * Requirements:
      *
-     * - `recipient` cannot be the zero address.
+     * - `to` cannot be the zero address.
      * - the caller must have a balance of at least `amount`.
      */
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
-        _transfer(_msgSender(), recipient, amount);
+    function transfer(address to, uint256 amount) public virtual override returns (bool) {
+        address owner = _msgSender();
+        _transfer(owner, to, amount);
         return true;
     }
 
@@ -340,12 +370,16 @@ contract ERC20 is Context, IERC20 {
     /**
      * @dev See {IERC20-approve}.
      *
+     * NOTE: If `amount` is the maximum `uint256`, the allowance is not updated on
+     * `transferFrom`. This is semantically equivalent to an infinite approval.
+     *
      * Requirements:
      *
      * - `spender` cannot be the zero address.
      */
     function approve(address spender, uint256 amount) public virtual override returns (bool) {
-        _approve(_msgSender(), spender, amount);
+        address owner = _msgSender();
+        _approve(owner, spender, amount);
         return true;
     }
 
@@ -355,20 +389,20 @@ contract ERC20 is Context, IERC20 {
      * Emits an {Approval} event indicating the updated allowance. This is not
      * required by the EIP. See the note at the beginning of {ERC20}.
      *
+     * NOTE: Does not update the allowance if the current allowance
+     * is the maximum `uint256`.
+     *
      * Requirements:
      *
-     * - `sender` and `recipient` cannot be the zero address.
-     * - `sender` must have a balance of at least `amount`.
-     * - the caller must have allowance for ``sender``'s tokens of at least
+     * - `from` and `to` cannot be the zero address.
+     * - `from` must have a balance of at least `amount`.
+     * - the caller must have allowance for ``from``'s tokens of at least
      * `amount`.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
-        _transfer(sender, recipient, amount);
-
-        uint256 currentAllowance = _allowances[sender][_msgSender()];
-        require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
-        _approve(sender, _msgSender(), currentAllowance - amount);
-
+    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
+        address spender = _msgSender();
+        _spendAllowance(from, spender, amount);
+        _transfer(from, to, amount);
         return true;
     }
 
@@ -385,7 +419,8 @@ contract ERC20 is Context, IERC20 {
      * - `spender` cannot be the zero address.
      */
     function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender] + addedValue);
+        address owner = _msgSender();
+        _approve(owner, spender, allowance(owner, spender) + addedValue);
         return true;
     }
 
@@ -404,39 +439,48 @@ contract ERC20 is Context, IERC20 {
      * `subtractedValue`.
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
-        uint256 currentAllowance = _allowances[_msgSender()][spender];
+        address owner = _msgSender();
+        uint256 currentAllowance = allowance(owner, spender);
         require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
-        _approve(_msgSender(), spender, currentAllowance - subtractedValue);
+        unchecked {
+            _approve(owner, spender, currentAllowance - subtractedValue);
+        }
 
         return true;
     }
 
     /**
-     * @dev Moves tokens `amount` from `sender` to `recipient`.
+     * @dev Moves `amount` of tokens from `from` to `to`.
      *
-     * This is internal function is equivalent to {transfer}, and can be used to
+     * This internal function is equivalent to {transfer}, and can be used to
      * e.g. implement automatic token fees, slashing mechanisms, etc.
      *
      * Emits a {Transfer} event.
      *
      * Requirements:
      *
-     * - `sender` cannot be the zero address.
-     * - `recipient` cannot be the zero address.
-     * - `sender` must have a balance of at least `amount`.
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `from` must have a balance of at least `amount`.
      */
-    function _transfer(address sender, address recipient, uint256 amount) internal virtual {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
+    function _transfer(address from, address to, uint256 amount) internal virtual {
+        require(from != address(0), "ERC20: transfer from the zero address");
+        require(to != address(0), "ERC20: transfer to the zero address");
 
-        _beforeTokenTransfer(sender, recipient, amount);
+        _beforeTokenTransfer(from, to, amount);
 
-        uint256 senderBalance = _balances[sender];
-        require(senderBalance >= amount, "ERC20: transfer amount exceeds balance");
-        _balances[sender] = senderBalance - amount;
-        _balances[recipient] += amount;
+        uint256 fromBalance = _balances[from];
+        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        unchecked {
+            _balances[from] = fromBalance - amount;
+            // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
+            // decrementing then incrementing.
+            _balances[to] += amount;
+        }
 
-        emit Transfer(sender, recipient, amount);
+        emit Transfer(from, to, amount);
+
+        _afterTokenTransfer(from, to, amount);
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
@@ -446,7 +490,7 @@ contract ERC20 is Context, IERC20 {
      *
      * Requirements:
      *
-     * - `to` cannot be the zero address.
+     * - `account` cannot be the zero address.
      */
     function _mint(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
@@ -454,8 +498,13 @@ contract ERC20 is Context, IERC20 {
         _beforeTokenTransfer(address(0), account, amount);
 
         _totalSupply += amount;
-        _balances[account] += amount;
+        unchecked {
+            // Overflow not possible: balance + amount is at most totalSupply + amount, which is checked above.
+            _balances[account] += amount;
+        }
         emit Transfer(address(0), account, amount);
+
+        _afterTokenTransfer(address(0), account, amount);
     }
 
     /**
@@ -476,10 +525,15 @@ contract ERC20 is Context, IERC20 {
 
         uint256 accountBalance = _balances[account];
         require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
-        _balances[account] = accountBalance - amount;
-        _totalSupply -= amount;
+        unchecked {
+            _balances[account] = accountBalance - amount;
+            // Overflow not possible: amount <= accountBalance <= totalSupply.
+            _totalSupply -= amount;
+        }
 
         emit Transfer(account, address(0), amount);
+
+        _afterTokenTransfer(account, address(0), amount);
     }
 
     /**
@@ -504,13 +558,31 @@ contract ERC20 is Context, IERC20 {
     }
 
     /**
+     * @dev Updates `owner` s allowance for `spender` based on spent `amount`.
+     *
+     * Does not update the allowance amount in case of infinite allowance.
+     * Revert if not enough allowance is available.
+     *
+     * Might emit an {Approval} event.
+     */
+    function _spendAllowance(address owner, address spender, uint256 amount) internal virtual {
+        uint256 currentAllowance = allowance(owner, spender);
+        if (currentAllowance != type(uint256).max) {
+            require(currentAllowance >= amount, "ERC20: insufficient allowance");
+            unchecked {
+                _approve(owner, spender, currentAllowance - amount);
+            }
+        }
+    }
+
+    /**
      * @dev Hook that is called before any transfer of tokens. This includes
      * minting and burning.
      *
      * Calling conditions:
      *
      * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-     * will be to transferred to `to`.
+     * will be transferred to `to`.
      * - when `from` is zero, `amount` tokens will be minted for `to`.
      * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
      * - `from` and `to` are never both zero.
@@ -518,6 +590,22 @@ contract ERC20 is Context, IERC20 {
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual {}
+
+    /**
+     * @dev Hook that is called after any transfer of tokens. This includes
+     * minting and burning.
+     *
+     * Calling conditions:
+     *
+     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+     * has been transferred to `to`.
+     * - when `from` is zero, `amount` tokens have been minted for `to`.
+     * - when `to` is zero, `amount` of ``from``'s tokens have been burned.
+     * - `from` and `to` are never both zero.
+     *
+     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     */
+    function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual {}
 }
 
 contract MockToken is ERC20, Ownable {
@@ -526,6 +614,544 @@ contract MockToken is ERC20, Ownable {
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
+}
+
+interface IKeyManager is IShared {
+    event AggKeySetByAggKey(Key oldAggKey, Key newAggKey);
+    event AggKeySetByGovKey(Key oldAggKey, Key newAggKey);
+    event GovKeySetByAggKey(address oldGovKey, address newGovKey);
+    event GovKeySetByGovKey(address oldGovKey, address newGovKey);
+    event CommKeySetByAggKey(address oldCommKey, address newCommKey);
+    event CommKeySetByCommKey(address oldCommKey, address newCommKey);
+    event SignatureAccepted(SigData sigData, address signer);
+    event GovernanceAction(bytes32 message);
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  State-changing functions                //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
+
+    function setAggKeyWithAggKey(SigData memory sigData, Key memory newAggKey) external;
+
+    function setAggKeyWithGovKey(Key memory newAggKey) external;
+
+    function setGovKeyWithAggKey(SigData calldata sigData, address newGovKey) external;
+
+    function setGovKeyWithGovKey(address newGovKey) external;
+
+    function setCommKeyWithAggKey(SigData calldata sigData, address newCommKey) external;
+
+    function setCommKeyWithCommKey(address newCommKey) external;
+
+    function govAction(bytes32 message) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function getAggregateKey() external view returns (Key memory);
+
+    function getGovernanceKey() external view returns (address);
+
+    function getCommunityKey() external view returns (address);
+
+    function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
+
+    function getLastValidateTime() external view returns (uint256);
+}
+
+abstract contract Shared is IShared {
+    /// @dev The address used to indicate whether transfer should send native or a token
+    address internal constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal constant _ZERO_ADDR = address(0);
+    bytes32 internal constant _NULL = "";
+    uint256 internal constant _E_18 = 1e18;
+
+    /// @dev    Checks that a uint isn't zero/empty
+    modifier nzUint(uint256 u) {
+        require(u != 0, "Shared: uint input is empty");
+        _;
+    }
+
+    /// @dev    Checks that an address isn't zero/empty
+    modifier nzAddr(address a) {
+        require(a != _ZERO_ADDR, "Shared: address input is empty");
+        _;
+    }
+
+    /// @dev    Checks that a bytes32 isn't zero/empty
+    modifier nzBytes32(bytes32 b) {
+        require(b != _NULL, "Shared: bytes32 input is empty");
+        _;
+    }
+
+    /// @dev    Checks that the pubKeyX is populated
+    modifier nzKey(Key memory key) {
+        require(key.pubKeyX != 0, "Shared: pubKeyX is empty");
+        _;
+    }
+}
+
+abstract contract SchnorrSECP256K1 {
+    // See https://en.bitcoin.it/wiki/Secp256k1 for this constant.
+    // Group order of secp256k1
+    uint256 private constant Q =
+        // solium-disable-next-line indentation
+        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    // solium-disable-next-line zeppelin/no-arithmetic-operations
+    uint256 private constant HALF_Q = (Q >> 1) + 1;
+
+    /** **************************************************************************
+      @notice verifySignature returns true iff passed a valid Schnorr signature.
+
+      @dev See https://en.wikipedia.org/wiki/Schnorr_signature for reference.
+
+      @dev In what follows, let d be your secret key, PK be your public key,
+      PKx be the x ordinate of your public key, and PKyp be the parity bit for
+      the y ordinate (i.e., 0 if PKy is even, 1 if odd.)
+      **************************************************************************
+      @dev TO CREATE A VALID SIGNATURE FOR THIS METHOD
+
+      @dev First PKx must be less than HALF_Q. Then follow these instructions
+           (see evm/test/schnorr_test.js, for an example of carrying them out):
+      @dev 1. Hash the target message to a bytes32, called msgHash here, using
+              keccak256
+
+      @dev 2. Pick k uniformly and cryptographically securely randomly from
+              {0,...,Q-1}. It is critical that k remains confidential, as your
+              private key can be reconstructed from k and the signature.
+
+      @dev 3. Compute k*g in the secp256k1 group, where g is the group
+              generator. (This is the same as computing the public key from the
+              secret key k. But it's OK if k*g's x ordinate is greater than
+              HALF_Q.)
+
+      @dev 4. Compute the ethereum address for k*g. This is the lower 160 bits
+              of the keccak hash of the concatenated affine coordinates of k*g,
+              as 32-byte big-endians. (For instance, you could pass k to
+              ethereumjs-utils's privateToAddress to compute this, though that
+              should be strictly a development convenience, not for handling
+              live secrets, unless you've locked your javascript environment
+              down very carefully.) Call this address
+              nonceTimesGeneratorAddress.
+
+      @dev 5. Compute e=uint256(keccak256(PKx as a 32-byte big-endian
+                                        ‖ PKyp as a single byte
+                                        ‖ msgHash
+                                        ‖ nonceTimesGeneratorAddress))
+              This value e is called "msgChallenge" in verifySignature's source
+              code below. Here "‖" means concatenation of the listed byte
+              arrays.
+
+      @dev 6. Let d be your secret key. Compute s = (k - d * e) % Q. Add Q to
+              it, if it's negative. This is your signature. (d is your secret
+              key.)
+      **************************************************************************
+      @dev TO VERIFY A SIGNATURE
+
+      @dev Given a signature (s, e) of msgHash, constructed as above, compute
+      S=e*PK+s*generator in the secp256k1 group law, and then the ethereum
+      address of S, as described in step 4. Call that
+      nonceTimesGeneratorAddress. Then call the verifySignature method as:
+
+      @dev    verifySignature(PKx, PKyp, s, msgHash,
+                              nonceTimesGeneratorAddress)
+      **************************************************************************
+      @dev This signging scheme deviates slightly from the classical Schnorr
+      signature, in that the address of k*g is used in place of k*g itself,
+      both when calculating e and when verifying sum S as described in the
+      verification paragraph above. This reduces the difficulty of
+      brute-forcing a signature by trying random secp256k1 points in place of
+      k*g in the signature verification process from 256 bits to 160 bits.
+      However, the difficulty of cracking the public key using "baby-step,
+      giant-step" is only 128 bits, so this weakening constitutes no compromise
+      in the security of the signatures or the key.
+
+      @dev The constraint signingPubKeyX < HALF_Q comes from Eq. (281), p. 24
+      of Yellow Paper version 78d7b9a. ecrecover only accepts "s" inputs less
+      than HALF_Q, to protect against a signature- malleability vulnerability in
+      ECDSA. Schnorr does not have this vulnerability, but we must account for
+      ecrecover's defense anyway. And since we are abusing ecrecover by putting
+      signingPubKeyX in ecrecover's "s" argument the constraint applies to
+      signingPubKeyX, even though it represents a value in the base field, and
+      has no natural relationship to the order of the curve's cyclic group.
+      **************************************************************************
+      @param msgHash is a 256-bit hash of the message being signed.
+      @param signature is the actual signature, described as s in the above
+             instructions.
+      @param signingPubKeyX is the x ordinate of the public key. This must be
+             less than HALF_Q.
+      @param pubKeyYParity is 0 if the y ordinate of the public key is even, 1
+             if it's odd.
+      @param nonceTimesGeneratorAddress is the ethereum address of k*g in the
+             above instructions
+      **************************************************************************
+      @return True if passed a valid signature, false otherwise. */
+
+    function verifySignature(
+        bytes32 msgHash,
+        uint256 signature,
+        uint256 signingPubKeyX,
+        uint8 pubKeyYParity,
+        address nonceTimesGeneratorAddress
+    ) internal pure returns (bool) {
+        require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
+        // Avoid signature malleability from multiple representations for ℤ/Qℤ elts
+        require(signature < Q, "Sig must be reduced modulo Q");
+
+        // Forbid trivial inputs, to avoid ecrecover edge cases. The main thing to
+        // avoid is something which causes ecrecover to return 0x0: then trivial
+        // signatures could be constructed with the nonceTimesGeneratorAddress input
+        // set to 0x0.
+        //
+        // solium-disable-next-line indentation
+        require(
+            nonceTimesGeneratorAddress != address(0) && signingPubKeyX > 0 && signature > 0 && msgHash > 0,
+            "No zero inputs allowed"
+        );
+
+        uint256 msgChallenge = uint256(
+            keccak256(abi.encodePacked(signingPubKeyX, pubKeyYParity, msgHash, nonceTimesGeneratorAddress))
+        );
+
+        // Verify msgChallenge * signingPubKey + signature * generator ==
+        //        nonce * generator
+        //
+        // https://ethresear.ch/t/you-can-kinda-abuse-ecrecover-to-do-ecmul-in-secp256k1-today/2384/9
+        // The point corresponding to the address returned by
+        // ecrecover(-s*r,v,r,e*r) is (r⁻¹ mod Q)*(e*r*R-(-s)*r*g)=e*R+s*g, where R
+        // is the (v,r) point. See https://crypto.stackexchange.com/a/18106
+        //
+        // solium-disable-next-line indentation
+        address recoveredAddress = ecrecover(
+            // solium-disable-next-line zeppelin/no-arithmetic-operations
+            bytes32(Q - mulmod(signingPubKeyX, signature, Q)),
+            // https://ethereum.github.io/yellowpaper/paper.pdf p. 24, "The
+            // value 27 represents an even y value and 28 represents an odd
+            // y value."
+            (pubKeyYParity == 0) ? 27 : 28,
+            bytes32(signingPubKeyX),
+            bytes32(mulmod(msgChallenge, signingPubKeyX, Q))
+        );
+        require(recoveredAddress != address(0), "Schnorr: recoveredAddress is 0");
+
+        return nonceTimesGeneratorAddress == recoveredAddress;
+    }
+
+    function verifySigningKeyX(uint256 signingPubKeyX) internal pure {
+        require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
+    }
+}
+
+contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
+    uint256 private constant _AGG_KEY_TIMEOUT = 2 days;
+
+    /// @dev    The current (schnorr) aggregate key.
+    Key private _aggKey;
+    /// @dev    The current governance key.
+    address private _govKey;
+    /// @dev    The current community key.
+    address private _commKey;
+    /// @dev    The last time that a sig was verified (used for a dead man's switch)
+    uint256 private _lastValidateTime;
+    mapping(uint256 => bool) private _isNonceUsedByAggKey;
+
+    constructor(
+        Key memory initialAggKey,
+        address initialGovKey,
+        address initialCommKey
+    ) nzAddr(initialGovKey) nzAddr(initialCommKey) nzKey(initialAggKey) validAggKey(initialAggKey) {
+        _aggKey = initialAggKey;
+        _govKey = initialGovKey;
+        _commKey = initialCommKey;
+        _lastValidateTime = block.timestamp;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  State-changing functions                //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime
+     * @dev     It would be nice to split this up, but these checks
+     *          need to be made atomicly always. This needs to be available
+     *          in this contract and in the Vault etc
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
+     * @param msgHash   The hash of the message being signed. The hash of the function
+     *                  call parameters is concatenated and hashed together with the nonce, the
+     *                  address of the caller, the chainId, and the address of this contract.
+     */
+    function _consumeKeyNonce(SigData calldata sigData, bytes32 msgHash) internal {
+        Key memory key = _aggKey;
+
+        require(
+            verifySignature(msgHash, sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddress),
+            "KeyManager: Sig invalid"
+        );
+        require(!_isNonceUsedByAggKey[sigData.nonce], "KeyManager: nonce already used");
+
+        _lastValidateTime = block.timestamp;
+        _isNonceUsedByAggKey[sigData.nonce] = true;
+
+        // Disable because tx.origin is not being used in the logic
+        // solhint-disable-next-line avoid-tx-origin
+        emit SignatureAccepted(sigData, tx.origin);
+    }
+
+    /**
+     * @notice  Concatenates the contractMsgHash with the nonce, the address of the caller,
+     *          the chainId, and the address of this contract, then hashes that and verifies the
+     *          signature. This is done to prevent replay attacks.
+     * @param sigData           Struct containing the signature data over the message
+     *                          to verify, signed by the aggregate key.
+     * @param contractMsgHash   The hash of the function's call parameters. This will be hashed
+     *                          over other parameters to prevent replay attacks.
+     */
+    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
+        bytes32 msgHash = keccak256(
+            abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
+        );
+        _consumeKeyNonce(sigData, msgHash);
+    }
+
+    /**
+     * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
+     * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
+     *                  the parity of the y component (uint8)
+     */
+    function setAggKeyWithAggKey(
+        SigData calldata sigData,
+        Key calldata newAggKey
+    )
+        external
+        override
+        nzKey(newAggKey)
+        validAggKey(newAggKey)
+        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setAggKeyWithAggKey.selector, newAggKey)))
+    {
+        emit AggKeySetByAggKey(_aggKey, newAggKey);
+        _aggKey = newAggKey;
+    }
+
+    /**
+     * @notice  Set a new aggregate key. Can only be called by the current governance key
+     * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
+     *                  the parity of the y component (uint8)
+     */
+    function setAggKeyWithGovKey(
+        Key calldata newAggKey
+    ) external override nzKey(newAggKey) validAggKey(newAggKey) timeoutEmergency onlyGovernor {
+        emit AggKeySetByGovKey(_aggKey, newAggKey);
+        _aggKey = newAggKey;
+    }
+
+    /**
+     * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
+     * @param newGovKey The new governance key to be set.
+
+     */
+    function setGovKeyWithAggKey(
+        SigData calldata sigData,
+        address newGovKey
+    )
+        external
+        override
+        nzAddr(newGovKey)
+        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setGovKeyWithAggKey.selector, newGovKey)))
+    {
+        emit GovKeySetByAggKey(_govKey, newGovKey);
+        _govKey = newGovKey;
+    }
+
+    /**
+     * @notice  Set a new governance key. Can only be called by current governance key
+     * @param newGovKey    The new governance key to be set.
+     */
+    function setGovKeyWithGovKey(address newGovKey) external override nzAddr(newGovKey) onlyGovernor {
+        emit GovKeySetByGovKey(_govKey, newGovKey);
+        _govKey = newGovKey;
+    }
+
+    /**
+     * @notice  Set a new community key. Requires a signature from the current aggregate key
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
+     * @param newCommKey The new community key to be set.
+
+     */
+    function setCommKeyWithAggKey(
+        SigData calldata sigData,
+        address newCommKey
+    )
+        external
+        override
+        nzAddr(newCommKey)
+        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setCommKeyWithAggKey.selector, newCommKey)))
+    {
+        emit CommKeySetByAggKey(_commKey, newCommKey);
+        _commKey = newCommKey;
+    }
+
+    /**
+     * @notice  Update the Community Key. Can only be called by the current Community Key.
+     * @param newCommKey   New Community key address.
+     */
+    function setCommKeyWithCommKey(address newCommKey) external override onlyCommunityKey nzAddr(newCommKey) {
+        emit CommKeySetByCommKey(_commKey, newCommKey);
+        _commKey = newCommKey;
+    }
+
+    /**
+     * @notice Emit an event containing an action message. Can only be called by the governor.
+     */
+    function govAction(bytes32 message) external override onlyGovernor {
+        emit GovernanceAction(message);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Get the current aggregate key
+     * @return  The Key struct for the aggregate key
+     */
+    function getAggregateKey() external view override returns (Key memory) {
+        return _aggKey;
+    }
+
+    /**
+     * @notice  Get the current governance key
+     * @return  The Key struct for the governance key
+     */
+    function getGovernanceKey() external view override returns (address) {
+        return _getGovernanceKey();
+    }
+
+    /**
+     * @notice  Get the current community key
+     * @return  The Key struct for the community key
+     */
+    function getCommunityKey() external view override returns (address) {
+        return _getCommunityKey();
+    }
+
+    /**
+     * @notice  Get the last time that a function was called which
+     *          required a signature from _aggregateKeyData or _governanceKeyData
+     * @return  The last time consumeKeyNonce was called, in unix time (uint256)
+     */
+    function getLastValidateTime() external view override returns (uint256) {
+        return _lastValidateTime;
+    }
+
+    /**
+     * @notice  Get whether or not the specific keyID has used this nonce before
+     *          since it cannot be used again
+     * @return  Whether the nonce has already been used (bool)
+     */
+    function isNonceUsedByAggKey(uint256 nonce) external view override returns (bool) {
+        return _isNonceUsedByAggKey[nonce];
+    }
+
+    /**
+     * @notice  Get the current governance key
+     * @return  The Key struct for the governance key
+     */
+    function _getGovernanceKey() internal view returns (address) {
+        return _govKey;
+    }
+
+    /**
+     * @notice  Get the current community key
+     * @return  The Key struct for the community key
+     */
+    function _getCommunityKey() internal view returns (address) {
+        return _commKey;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                          Modifiers                       //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev    Check that enough time has passed for setAggKeyWithGovKey. Needs
+    ///         to be done as a modifier so that it can happen before consumeKeyNonce
+    modifier timeoutEmergency() {
+        require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough time");
+        _;
+    }
+
+    /// @dev    Check that an aggregate key is capable of having its signatures
+    ///         verified by the schnorr lib.
+    modifier validAggKey(Key memory key) {
+        verifySigningKeyX(key.pubKeyX);
+        _;
+    }
+
+    /// @dev    Check that the sender is the governance address
+    modifier onlyGovernor() {
+        require(msg.sender == _getGovernanceKey(), "KeyManager: not governor");
+        _;
+    }
+
+    /// @dev    Check that the caller is the Community Key address.
+    modifier onlyCommunityKey() {
+        require(msg.sender == _getCommunityKey(), "KeyManager: not Community Key");
+        _;
+    }
+
+    /// @dev    For functions in this contract that require a signature from the aggregate key
+    //          the msg.sender can't be hashed as anyone can make the call. Instead the
+    //          address of this contract is used as the sender and hashed in the message.
+    modifier consumeKeyNonceKeyManager(SigData calldata sigData, bytes32 contractMsgHash) {
+        bytes32 msgHash = keccak256(
+            abi.encode(contractMsgHash, sigData.nonce, address(this), block.chainid, address(this))
+        );
+        _consumeKeyNonce(sigData, msgHash);
+        _;
+    }
+}
+
+interface IHevm {
+    // Set block.timestamp to newTimestamp
+    function warp(uint256 newTimestamp) external;
+
+    // Set block.number to newNumber
+    function roll(uint256 newNumber) external;
+
+    // Loads a storage slot from an address
+    function load(address where, bytes32 slot) external returns (bytes32);
+
+    // Stores a value to an address' storage slot
+    function store(address where, bytes32 slot, bytes32 value) external;
+
+    // Signs data (privateKey, digest) => (r, v, s)
+    function sign(uint256 privateKey, bytes32 digest) external returns (uint8 r, bytes32 v, bytes32 s);
+
+    // Gets address for a given private key
+    function addr(uint256 privateKey) external returns (address addr);
+
+    // Performs a foreign function call via terminal
+    function ffi(string[] calldata inputs) external returns (bytes memory result);
+
+    // Performs the next smart contract call with specified `msg.sender`
+    function prank(address newSender) external;
 }
 
 interface IGovernanceCommunityGuarded is IShared {
@@ -590,38 +1216,6 @@ interface IGovernanceCommunityGuarded is IShared {
     function getGovernor() external view returns (address);
 }
 
-abstract contract Shared is IShared {
-    /// @dev The address used to indicate whether transfer should send native or a token
-    address internal constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address internal constant _ZERO_ADDR = address(0);
-    bytes32 internal constant _NULL = "";
-    uint256 internal constant _E_18 = 1e18;
-
-    /// @dev    Checks that a uint isn't zero/empty
-    modifier nzUint(uint256 u) {
-        require(u != 0, "Shared: uint input is empty");
-        _;
-    }
-
-    /// @dev    Checks that an address isn't zero/empty
-    modifier nzAddr(address a) {
-        require(a != _ZERO_ADDR, "Shared: address input is empty");
-        _;
-    }
-
-    /// @dev    Checks that a bytes32 isn't zero/empty
-    modifier nzBytes32(bytes32 b) {
-        require(b != _NULL, "Shared: bytes32 input is empty");
-        _;
-    }
-
-    /// @dev    Checks that the pubKeyX is populated
-    modifier nzKey(Key memory key) {
-        require(key.pubKeyX != 0, "Shared: pubKeyX is empty");
-        _;
-    }
-}
-
 abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuarded {
     /// @dev    Community Guard Disabled
     bool private _communityGuardDisabled;
@@ -630,7 +1224,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     bool private _suspended = false;
 
     /**
-     * @notice  Get the governor's address. The contracts inheriting this (StakeManager and Vault)
+     * @notice  Get the governor's address. The contracts inheriting this (StateChainGateway and Vault)
      *          get the governor's address from the KeyManager through the AggKeyNonceConsumer's
      *          inheritance. Therefore, the implementation of this function must be left
      *          to the children. This is not implemented as a virtual onlyGovernor modifier to force
@@ -640,7 +1234,7 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     function _getGovernor() internal view virtual returns (address);
 
     /**
-     * @notice  Get the community's address. The contracts inheriting this (StakeManager and Vault)
+     * @notice  Get the community's address. The contracts inheriting this (StateChainGateway and Vault)
      *          get the community's address from the KeyManager through the AggKeyNonceConsumer's
      *          inheritance. Therefore, the implementation of this function must be left
      *          to the children. This is not implemented as a virtual onlyCommunityKey modifier to force
@@ -770,57 +1364,6 @@ abstract contract GovernanceCommunityGuarded is Shared, IGovernanceCommunityGuar
     }
 }
 
-interface IKeyManager is IShared {
-    event AggKeySetByAggKey(Key oldAggKey, Key newAggKey);
-    event AggKeySetByGovKey(Key oldAggKey, Key newAggKey);
-    event GovKeySetByAggKey(address oldGovKey, address newGovKey);
-    event GovKeySetByGovKey(address oldGovKey, address newGovKey);
-    event CommKeySetByAggKey(address oldCommKey, address newCommKey);
-    event CommKeySetByCommKey(address oldCommKey, address newCommKey);
-    event SignatureAccepted(SigData sigData, address signer);
-    event GovernanceAction(bytes32 message);
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  State-changing functions                //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    function consumeKeyNonce(SigData memory sigData, bytes32 contractMsgHash) external;
-
-    function setAggKeyWithAggKey(SigData memory sigData, Key memory newAggKey) external;
-
-    function setAggKeyWithGovKey(Key memory newAggKey) external;
-
-    function setGovKeyWithAggKey(SigData calldata sigData, address newGovKey) external;
-
-    function setGovKeyWithGovKey(address newGovKey) external;
-
-    function setCommKeyWithAggKey(SigData calldata sigData, address newCommKey) external;
-
-    function setCommKeyWithCommKey(address newCommKey) external;
-
-    function govWithdrawNative() external;
-
-    function govAction(bytes32 message) external;
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  Non-state-changing functions            //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    function getAggregateKey() external view returns (Key memory);
-
-    function getGovernanceKey() external view returns (address);
-
-    function getCommunityKey() external view returns (address);
-
-    function isNonceUsedByAggKey(uint256 nonce) external view returns (bool);
-
-    function getLastValidateTime() external view returns (uint256);
-}
-
 interface IAggKeyNonceConsumer is IShared {
     event UpdatedKeyManager(address keyManager);
 
@@ -834,8 +1377,9 @@ interface IAggKeyNonceConsumer is IShared {
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
+     * @param omitChecks Allow the omission of the extra checks in a special case
      */
-    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager) external;
+    function updateKeyManager(SigData calldata sigData, IKeyManager keyManager, bool omitChecks) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -850,7 +1394,7 @@ interface IAggKeyNonceConsumer is IShared {
     function getKeyManager() external view returns (IKeyManager);
 }
 
-contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
+abstract contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     /// @dev    The KeyManager used to checks sigs used in functions here
     IKeyManager private _keyManager;
 
@@ -869,19 +1413,32 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param keyManager New KeyManager's address
+     * @param omitChecks Allow the omission of the extra checks in a special case
      */
     function updateKeyManager(
         SigData calldata sigData,
-        IKeyManager keyManager
+        IKeyManager keyManager,
+        bool omitChecks
     )
         external
         override
         nzAddr(address(keyManager))
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager)))
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateKeyManager.selector, keyManager, omitChecks)))
     {
+        // Check that the new KeyManager is a contract
+        require(address(keyManager).code.length > 0);
+
+        // Allow the child to check compatibility with the new KeyManager
+        _checkUpdateKeyManager(keyManager, omitChecks);
+
         _keyManager = keyManager;
         emit UpdatedKeyManager(address(keyManager));
     }
+
+    /// @dev   This will be called when upgrading to a new KeyManager. This allows the child's contract
+    ///        to check its compatibility with the new KeyManager. This is to prevent the contract from
+    //         getting bricked. There is no good way to enforce the implementation of consumeKeyNonce().
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view virtual;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -910,6 +1467,505 @@ contract AggKeyNonceConsumer is Shared, IAggKeyNonceConsumer {
     }
 }
 
+interface IFLIP is IERC20 {
+    event IssuerUpdated(address oldIssuer, address newIssuer);
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  State-changing functions                //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function mint(address account, uint amount) external;
+
+    function burn(address account, uint amount) external;
+
+    function updateIssuer(address newIssuer) external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    function getIssuer() external view returns (address);
+}
+
+interface IFlipIssuer {
+    /**
+     * @notice  Get the FLIP token address
+     * @return  The address of FLIP
+     */
+    function getFLIP() external view returns (IFLIP);
+}
+
+interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKeyNonceConsumer {
+    event Funded(bytes32 indexed nodeID, uint256 amount, address funder);
+    event RedemptionRegistered(
+        bytes32 indexed nodeID,
+        uint256 amount,
+        address indexed redeemAddress,
+        uint48 startTime,
+        uint48 expiryTime
+    );
+    event RedemptionExecuted(bytes32 indexed nodeID, uint256 amount);
+    event RedemptionExpired(bytes32 indexed nodeID, uint256 amount);
+    event MinFundingChanged(uint256 oldMinFunding, uint256 newMinFunding);
+    event GovernanceWithdrawal(address to, uint256 amount);
+    event FLIPSet(address flip);
+    event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
+
+    struct Redemption {
+        uint256 amount;
+        address redeemAddress;
+        // 48 so that 160 (from redeemAddress) + 48 + 48 is 256 they can all be packed
+        // into a single 256 bit slot
+        uint48 startTime;
+        uint48 expiryTime;
+    }
+
+    /**
+     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
+     *          because FLIP contract requires this contract's address on deployment for minting.
+     *          First this contract is deployed, then the FLIP contract and finally setFLIP
+     *          should be called. OnlyDeployer modifer for added security since tokens will be
+     *          minted to this contract before calling setFLIP.
+     * @param flip FLIP token address
+     */
+    function setFlip(IFLIP flip) external;
+
+    /**
+     * @notice          Add FLIP funds to a StateChain account identified with a nodeID
+     * @dev             Requires the funder to have called `approve` in FLIP
+     * @param amount    The amount of FLIP tokens
+     * @param nodeID    The nodeID of the account to fund
+     */
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external;
+
+    /**
+     * @notice  Redeem FLIP from the StateChain. The State Chain will determine the amount
+     *          that can be redeemed, but a basic calculation for a validator would be:
+     *          amount redeemable = stake + rewards - penalties.
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
+     * @param nodeID    The nodeID of the account redeeming the FLIP
+     * @param amount    The amount of funds to be locked up
+     * @param redeemAddress    The redeemAddress who will receive the FLIP
+     * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
+     */
+    function registerRedemption(
+        SigData calldata sigData,
+        bytes32 nodeID,
+        uint256 amount,
+        address redeemAddress,
+        uint48 expiryTime
+    ) external;
+
+    /**
+     * @notice  Execute a pending redemption to get back funds. Cannot execute a pending
+     *          redemption before 48h have passed after registering it, or after the specified
+     *          expiry time
+     * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
+     * @param nodeID    The nodeID of the account redeeming the FLIP
+     */
+    function executeRedemption(bytes32 nodeID) external;
+
+    /**
+     * @notice  Compares a given new FLIP supply against the old supply and mints or burns
+     *          FLIP tokens from this contract as appropriate.
+     *          It requires a message signed by the aggregate key.
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
+     * @param newTotalSupply        new total supply of FLIP
+     * @param stateChainBlockNumber State Chain block number for the new total supply
+     */
+    function updateFlipSupply(SigData calldata sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber) external;
+
+    /**
+     * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
+     *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
+     *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
+     * @param sigData     Struct containing the signature data over the message
+     *                    to verify, signed by the aggregate key.
+     * @param newIssuer   New contract that will issue FLIP tokens.
+     * @param omitChecks Allow the omission of the extra checks in a special case
+     */
+    function updateFlipIssuer(SigData calldata sigData, address newIssuer, bool omitChecks) external;
+
+    /**
+     * @notice      Set the minimum amount of funds needed for `fundStateChainAccount` to be able
+     *              to be called. Used to prevent spamming of funding.
+     * @param newMinFunding   The new minimum funding amount
+     */
+    function setMinFunding(uint256 newMinFunding) external;
+
+    /**
+     * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
+     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
+     *         The governance address is also updated as the issuer of FLIP.
+     */
+    function govWithdraw() external;
+
+    /**
+     * @notice Update the FLIP Issuer address with the governance address in case of emergency.
+     *         This needs to be approved by the Community, it is a last resort. Used to rectify
+     *         an emergency.
+     */
+    function govUpdateFlipIssuer() external;
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Get the minimum amount of funds that's required for funding
+     *          an account on the StateChain.
+     * @return  The minimum amount (uint)
+     */
+    function getMinimumFunding() external view returns (uint256);
+
+    /**
+     * @notice  Get the pending redemption for the input nodeID. If there was never
+     *          a pending redemption for this nodeID, or it has already been executed
+     *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
+     * @param nodeID   The nodeID which has a pending redemption
+     * @return         The redemption (Redemption struct)
+     */
+    function getPendingRedemption(bytes32 nodeID) external view returns (Redemption memory);
+
+    /**
+     * @notice  Get the last state chain block number that the supply was updated at
+     * @return  The state chain block number of the last update
+     */
+    function getLastSupplyUpdateBlockNumber() external view returns (uint256);
+}
+
+contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsumer, GovernanceCommunityGuarded {
+    /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
+    // solhint-disable-next-line var-name-mixedcase
+    IFLIP private _FLIP;
+
+    /// @dev    The minimum amount of FLIP needed to fund an account, to prevent spamming
+    uint256 private _minFunding;
+    /// @dev    Holding pending redemptions for the 48h withdrawal delay
+    mapping(bytes32 => Redemption) private _pendingRedemptions;
+    /// @dev   Time after registerRedemption required to wait before call to executeRedemption
+    uint48 public constant REDEMPTION_DELAY = 2 days;
+
+    /// @dev    The last block number in which the State Chain updated the totalSupply
+    uint256 private _lastSupplyUpdateBlockNum = 0;
+
+    // Defined in IStateChainGateway, just here for convenience
+    // struct Redemption {
+    //     uint amount;
+    //     address redeemAddress;
+    //     // 48 so that 160 (from redeemAddress) + 48 + 48 is 256 they can all be packed
+    //     // into a single 256 bit slot
+    //     uint48 startTime;
+    //     uint48 expiryTime;
+    // }
+
+    constructor(IKeyManager keyManager, uint256 minFunding) AggKeyNonceConsumer(keyManager) {
+        _minFunding = minFunding;
+    }
+
+    /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function _getGovernor() internal view override returns (address) {
+        return getKeyManager().getGovernanceKey();
+    }
+
+    /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
+    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
+    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
+    function _getCommunityKey() internal view override returns (address) {
+        return getKeyManager().getCommunityKey();
+    }
+
+    /**
+     * @notice  Get the FLIP token address
+     * @dev     This function and it's return value will be checked when updating the FLIP issuer.
+     *          Do not remove nor modify this function in future versions of this contract.
+     * @return  The address of FLIP
+     */
+    function getFLIP() external view override returns (IFLIP) {
+        return _FLIP;
+    }
+
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey() and getCommunityKey()
+    ///        functions implemented. These are functions required for this contract to
+    ///        to at least be able to use the emergency mechanism.
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
+        address newGovKey = keyManager.getGovernanceKey();
+        address newCommKey = keyManager.getCommunityKey();
+
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
+
+            Key memory newAggKey = keyManager.getAggregateKey();
+            Key memory currentAggKey = getKeyManager().getAggregateKey();
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  State-changing functions                //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
+     *          because FLIP contract requires this contract's address on deployment for minting.
+     *          First this contract is deployed, then the FLIP contract and finally setFLIP
+     *          should be called. Deployed via DeployerContract.sol so it can't be frontrun.
+     *          The FLIP address can only be set once.
+     * @param flip FLIP token address
+     */
+    function setFlip(IFLIP flip) external override nzAddr(address(flip)) {
+        require(address(_FLIP) == address(0), "Gateway: Flip address already set");
+        _FLIP = flip;
+        emit FLIPSet(address(flip));
+    }
+
+    /**
+     * @notice          Add FLIP funds to a StateChain account identified with a nodeID
+     * @dev             Requires the funder to have called `approve` in FLIP
+     * @param amount    The amount of FLIP tokens
+     * @param nodeID    The nodeID of the account to fund
+     */
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override nzBytes32(nodeID) {
+        IFLIP flip = _FLIP;
+        require(address(flip) != address(0), "Gateway: Flip not set");
+        require(amount >= _minFunding, "Gateway: not enough funds");
+        // Assumption of set token allowance by the user
+        flip.transferFrom(msg.sender, address(this), amount);
+        emit Funded(nodeID, amount, msg.sender);
+    }
+
+    /**
+     * @notice  Redeem FLIP from the StateChain. The State Chain will determine the amount
+     *          that can be redeemed, but a basic calculation for a validator would be:
+     *          amount redeemable = stake + rewards - penalties.
+     * @param sigData   Struct containing the signature data over the message
+     *                  to verify, signed by the aggregate key.
+     * @param nodeID    The nodeID of the account redeeming the FLIP
+     * @param amount    The amount of funds to be locked up
+     * @param redeemAddress    The redeemAddress who will receive the FLIP
+     * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
+     */
+    function registerRedemption(
+        SigData calldata sigData,
+        bytes32 nodeID,
+        uint256 amount,
+        address redeemAddress,
+        uint48 expiryTime
+    )
+        external
+        override
+        onlyNotSuspended
+        nzBytes32(nodeID)
+        nzUint(amount)
+        nzAddr(redeemAddress)
+        consumesKeyNonce(
+            sigData,
+            keccak256(abi.encode(this.registerRedemption.selector, nodeID, amount, redeemAddress, expiryTime))
+        )
+    {
+        require(
+            // Must be fresh or have been executed & deleted, or past the expiry
+            block.timestamp > uint256(_pendingRedemptions[nodeID].expiryTime),
+            "Gateway: a pending redemption exists"
+        );
+
+        uint48 startTime = uint48(block.timestamp) + REDEMPTION_DELAY;
+        require(expiryTime > startTime, "Gateway: expiry time too soon");
+
+        _pendingRedemptions[nodeID] = Redemption(amount, redeemAddress, startTime, expiryTime);
+        emit RedemptionRegistered(nodeID, amount, redeemAddress, startTime, expiryTime);
+    }
+
+    /**
+     * @notice  Execute a pending redemption to get back funds. Cannot execute a pending
+     *          redemption before 48h have passed after registering it, or after the specified
+     *          expiry time
+     * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
+     * @param nodeID    The nodeID of the funder
+     */
+    function executeRedemption(bytes32 nodeID) external override onlyNotSuspended {
+        Redemption memory redemption = _pendingRedemptions[nodeID];
+        require(
+            block.timestamp >= redemption.startTime && redemption.expiryTime > 0,
+            "Gateway: early or already execd"
+        );
+
+        // Housekeeping
+        delete _pendingRedemptions[nodeID];
+
+        if (block.timestamp <= redemption.expiryTime) {
+            emit RedemptionExecuted(nodeID, redemption.amount);
+
+            // Send the tokens
+            _FLIP.transfer(redemption.redeemAddress, redemption.amount);
+        } else {
+            emit RedemptionExpired(nodeID, redemption.amount);
+        }
+    }
+
+    /**
+     * @notice  Compares a given new FLIP supply against the old supply and mints or burns
+     *          FLIP tokens from this contract as appropriate.
+     *          It requires a message signed by the aggregate key.
+     * @dev     Hardcoded to only mint and burn FLIP tokens to/from this contract.
+     * @param sigData               Struct containing the signature data over the message
+     *                              to verify, signed by the aggregate key.
+     * @param newTotalSupply        new total supply of FLIP
+     * @param stateChainBlockNumber State Chain block number for the new total supply
+     */
+    function updateFlipSupply(
+        SigData calldata sigData,
+        uint256 newTotalSupply,
+        uint256 stateChainBlockNumber
+    )
+        external
+        override
+        onlyNotSuspended
+        nzUint(newTotalSupply)
+        consumesKeyNonce(
+            sigData,
+            keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber))
+        )
+    {
+        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Gateway: old FLIP supply update");
+        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
+        IFLIP flip = _FLIP;
+        uint256 oldSupply = flip.totalSupply();
+        if (newTotalSupply < oldSupply) {
+            uint256 amount = oldSupply - newTotalSupply;
+            flip.burn(address(this), amount);
+        } else if (newTotalSupply > oldSupply) {
+            uint256 amount = newTotalSupply - oldSupply;
+            flip.mint(address(this), amount);
+        }
+        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
+    }
+
+    /**
+     * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
+     *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
+     *          transferred to it via the redemption process. Finally the right to issue FLIP will be transferred.
+     * @dev     The new issuer must be a contract and, in a standard upgrade, it must have the reference FLIP address.
+     *          In a special case where the check is omitted, the new issuer must be a contract, never an EOA.
+     * @param sigData     Struct containing the signature data over the message
+     *                    to verify, signed by the aggregate key.
+     * @param newIssuer   New contract that will issue FLIP tokens.
+     * @param omitChecks Allow the omission of the extra checks in a special case
+     */
+    function updateFlipIssuer(
+        SigData calldata sigData,
+        address newIssuer,
+        bool omitChecks
+    )
+        external
+        override
+        onlyNotSuspended
+        nzAddr(newIssuer)
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer, omitChecks)))
+    {
+        if (!omitChecks) {
+            require(IFlipIssuer(newIssuer).getFLIP() == _FLIP, "Gateway: wrong FLIP ref");
+        } else {
+            require(newIssuer.code.length > 0);
+        }
+
+        _FLIP.updateIssuer(newIssuer);
+    }
+
+    /**
+     * @notice      Set the minimum amount of funds needed for `fundStateChainAccount` to be able
+     *              to be called. Used to prevent spamming of funding.
+     * @param newMinFunding   The new minimum funding amount
+     */
+    function setMinFunding(uint256 newMinFunding) external override nzUint(newMinFunding) onlyGovernor {
+        emit MinFundingChanged(_minFunding, newMinFunding);
+        _minFunding = newMinFunding;
+    }
+
+    /**
+     * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
+     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
+     *         Transfer the issuance to the governance address if this contract is the issuer.
+     */
+    function govWithdraw() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
+        IFLIP flip = _FLIP;
+        uint256 amount = flip.balanceOf(address(this));
+
+        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
+        address governor = getKeyManager().getGovernanceKey();
+        flip.transfer(governor, amount);
+        emit GovernanceWithdrawal(governor, amount);
+
+        // Check issuer to ensure this doesn't revert
+        if (flip.getIssuer() == address(this)) {
+            flip.updateIssuer(governor);
+        }
+    }
+
+    /**
+     * @notice Update the FLIP Issuer address with the governance address in case of emergency.
+     *         This needs to be approved by the Community, it is a last resort. Used to rectify
+     *         an emergency.
+     */
+    function govUpdateFlipIssuer() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
+        address governor = getKeyManager().getGovernanceKey();
+        _FLIP.updateIssuer(governor);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /**
+     * @notice  Get the minimum amount of funds that's required for funding
+     *          an account on the StateChain.
+     * @return  The minimum amount (uint)
+     */
+    function getMinimumFunding() external view override returns (uint256) {
+        return _minFunding;
+    }
+
+    /**
+     * @notice  Get the pending redemption for the input nodeID. If there was never
+     *          a pending redemption for this nodeID, or it has already been executed
+     *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
+     * @param nodeID   The nodeID which has a pending redemption
+     * @return         The redemption (Redemption struct)
+     */
+    function getPendingRedemption(bytes32 nodeID) external view override returns (Redemption memory) {
+        return _pendingRedemptions[nodeID];
+    }
+
+    /**
+     * @notice  Get the last state chain block number of the last supply update
+     * @return  The state chain block number of the last supply update
+     */
+    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
+        return _lastSupplyUpdateBlockNum;
+    }
+}
+
 interface IMulticall {
     enum CallType {
         Default,
@@ -926,10 +1982,70 @@ interface IMulticall {
         bytes payload;
     }
 
-    function run(Call[] calldata calls) external payable;
+    error AlreadyRunning();
+    error CallFailed(uint256 callPosition, bytes reason);
+
+    function run(Call[] calldata calls, address token, uint256 amount) external payable;
 }
 
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
+    event TransferNativeFailed(address payable indexed recipient, uint256 amount);
+    event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
+
+    event SwapNative(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        uint256 amount,
+        address indexed sender,
+        bytes cfParameters
+    );
+    event SwapToken(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        address srcToken,
+        uint256 amount,
+        address indexed sender,
+        bytes cfParameters
+    );
+
+    /// @dev bytes parameters is not indexed because indexing a dynamic type for it to be filtered
+    ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
+    ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
+    ///      version in the event. That is unnecessary.
+    event XCallNative(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        uint256 amount,
+        address indexed sender,
+        bytes message,
+        uint256 gasAmount,
+        bytes cfParameters
+    );
+    event XCallToken(
+        uint32 dstChain,
+        bytes dstAddress,
+        uint32 dstToken,
+        address srcToken,
+        uint256 amount,
+        address indexed sender,
+        bytes message,
+        uint256 gasAmount,
+        bytes cfParameters
+    );
+
+    event AddGasNative(bytes32 swapID, uint256 amount);
+    event AddGasToken(bytes32 swapID, uint256 amount, address token);
+
+    event ExecuteActionsFailed(
+        address payable indexed multicallAddress,
+        uint256 amount,
+        address indexed token,
+        bytes reason
+    );
+
     function allBatch(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,
@@ -969,12 +2085,18 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function xSwapToken(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         IERC20 srcToken,
-        uint256 amount
+        uint256 amount,
+        bytes calldata cfParameters
     ) external;
 
-    function xSwapNative(uint32 dstChain, bytes calldata dstAddress, uint16 dstToken) external payable;
+    function xSwapNative(
+        uint32 dstChain,
+        bytes calldata dstAddress,
+        uint32 dstToken,
+        bytes calldata cfParameters
+    ) external payable;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -985,21 +2107,21 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     function xCallNative(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
-        bytes calldata refundAddress
+        uint256 gasAmount,
+        bytes calldata cfParameters
     ) external payable;
 
     function xCallToken(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         IERC20 srcToken,
         uint256 amount,
-        bytes calldata refundAddress
+        bytes calldata cfParameters
     ) external;
 
     //////////////////////////////////////////////////////////////
@@ -1047,10 +2169,9 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     ) external;
 
     //////////////////////////////////////////////////////////////
@@ -1060,6 +2181,54 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
 
     function govWithdraw(address[] calldata tokens) external;
+}
+
+interface IERC20Permit {
+    /**
+     * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
+     * given ``owner``'s signed approval.
+     *
+     * IMPORTANT: The same issues {IERC20-approve} has related to transaction
+     * ordering also apply here.
+     *
+     * Emits an {Approval} event.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     * - `deadline` must be a timestamp in the future.
+     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
+     * over the EIP712-formatted function arguments.
+     * - the signature must use ``owner``'s current nonce (see {nonces}).
+     *
+     * For more information on the signature format, see the
+     * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP
+     * section].
+     */
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    /**
+     * @dev Returns the current nonce for `owner`. This value must be
+     * included whenever a signature is generated for {permit}.
+     *
+     * Every successful call to {permit} increases ``owner``'s nonce by one. This
+     * prevents a signature from being used multiple times.
+     */
+    function nonces(address owner) external view returns (uint256);
+
+    /**
+     * @dev Returns the domain separator used in the encoding of the signature for {permit}, as defined by {EIP712}.
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
 library Address {
@@ -1079,18 +2248,22 @@ library Address {
      *  - an address where a contract will be created
      *  - an address where a contract lived, but was destroyed
      * ====
+     *
+     * [IMPORTANT]
+     * ====
+     * You shouldn't rely on `isContract` to protect against flash loan attacks!
+     *
+     * Preventing calls from contracts is highly discouraged. It breaks composability, breaks support for smart wallets
+     * like Gnosis Safe, and does not provide security since it can be circumvented by calling from a contract
+     * constructor.
+     * ====
      */
     function isContract(address account) internal view returns (bool) {
-        // This method relies on extcodesize, which returns 0 for contracts in
-        // construction, since the code is only stored at the end of the
-        // constructor execution.
+        // This method relies on extcodesize/address.code.length, which returns 0
+        // for contracts in construction, since the code is only stored at the end
+        // of the constructor execution.
 
-        uint256 size;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            size := extcodesize(account)
-        }
-        return size > 0;
+        return account.code.length > 0;
     }
 
     /**
@@ -1112,14 +2285,13 @@ library Address {
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
 
-        // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "Address: unable to send value, recipient may have reverted");
     }
 
     /**
      * @dev Performs a Solidity function call using a low level `call`. A
-     * plain`call` is an unsafe replacement for a function call: use this
+     * plain `call` is an unsafe replacement for a function call: use this
      * function instead.
      *
      * If `target` reverts with a revert reason, it is bubbled up by this
@@ -1136,7 +2308,7 @@ library Address {
      * _Available since v3.1._
      */
     function functionCall(address target, bytes memory data) internal returns (bytes memory) {
-        return functionCall(target, data, "Address: low-level call failed");
+        return functionCallWithValue(target, data, 0, "Address: low-level call failed");
     }
 
     /**
@@ -1181,11 +2353,8 @@ library Address {
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
-        require(isContract(target), "Address: call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = target.call{value: value}(data);
-        return _verifyCallResult(success, returndata, errorMessage);
+        return verifyCallResultFromTarget(target, success, returndata, errorMessage);
     }
 
     /**
@@ -1209,11 +2378,8 @@ library Address {
         bytes memory data,
         string memory errorMessage
     ) internal view returns (bytes memory) {
-        require(isContract(target), "Address: static call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = target.staticcall(data);
-        return _verifyCallResult(success, returndata, errorMessage);
+        return verifyCallResultFromTarget(target, success, returndata, errorMessage);
     }
 
     /**
@@ -1237,35 +2403,171 @@ library Address {
         bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
-        require(isContract(target), "Address: delegate call to non-contract");
-
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = target.delegatecall(data);
-        return _verifyCallResult(success, returndata, errorMessage);
+        return verifyCallResultFromTarget(target, success, returndata, errorMessage);
     }
 
-    function _verifyCallResult(
+    /**
+     * @dev Tool to verify that a low level call to smart-contract was successful, and revert (either by bubbling
+     * the revert reason or using the provided one) in case of unsuccessful call or if target was not a contract.
+     *
+     * _Available since v4.8._
+     */
+    function verifyCallResultFromTarget(
+        address target,
         bool success,
         bytes memory returndata,
         string memory errorMessage
-    ) private pure returns (bytes memory) {
+    ) internal view returns (bytes memory) {
+        if (success) {
+            if (returndata.length == 0) {
+                // only check isContract if the call was successful and the return data is empty
+                // otherwise we already know that it was a contract
+                require(isContract(target), "Address: call to non-contract");
+            }
+            return returndata;
+        } else {
+            _revert(returndata, errorMessage);
+        }
+    }
+
+    /**
+     * @dev Tool to verify that a low level call was successful, and revert if it wasn't, either by bubbling the
+     * revert reason or using the provided one.
+     *
+     * _Available since v4.3._
+     */
+    function verifyCallResult(
+        bool success,
+        bytes memory returndata,
+        string memory errorMessage
+    ) internal pure returns (bytes memory) {
         if (success) {
             return returndata;
         } else {
-            // Look for revert reason and bubble it up if present
-            if (returndata.length > 0) {
-                // The easiest way to bubble the revert reason is using memory via assembly
-
-                // solhint-disable-next-line no-inline-assembly
-                assembly {
-                    let returndata_size := mload(returndata)
-                    revert(add(32, returndata), returndata_size)
-                }
-            } else {
-                revert(errorMessage);
-            }
+            _revert(returndata, errorMessage);
         }
     }
+
+    function _revert(bytes memory returndata, string memory errorMessage) private pure {
+        // Look for revert reason and bubble it up if present
+        if (returndata.length > 0) {
+            // The easiest way to bubble the revert reason is using memory via assembly
+            /// @solidity memory-safe-assembly
+            assembly {
+                let returndata_size := mload(returndata)
+                revert(add(32, returndata), returndata_size)
+            }
+        } else {
+            revert(errorMessage);
+        }
+    }
+}
+
+library SafeERC20 {
+    using Address for address;
+
+    function safeTransfer(IERC20 token, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+    }
+
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+    }
+
+    /**
+     * @dev Deprecated. This function has issues similar to the ones found in
+     * {IERC20-approve}, and its usage is discouraged.
+     *
+     * Whenever possible, use {safeIncreaseAllowance} and
+     * {safeDecreaseAllowance} instead.
+     */
+    function safeApprove(IERC20 token, address spender, uint256 value) internal {
+        // safeApprove should only be called when setting an initial allowance,
+        // or when resetting it to zero. To increase and decrease it, use
+        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
+        require(
+            (value == 0) || (token.allowance(address(this), spender) == 0),
+            "SafeERC20: approve from non-zero to non-zero allowance"
+        );
+        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
+    }
+
+    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        uint256 newAllowance = token.allowance(address(this), spender) + value;
+        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+    }
+
+    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        unchecked {
+            uint256 oldAllowance = token.allowance(address(this), spender);
+            require(oldAllowance >= value, "SafeERC20: decreased allowance below zero");
+            uint256 newAllowance = oldAllowance - value;
+            _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+        }
+    }
+
+    function safePermit(
+        IERC20Permit token,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        uint256 nonceBefore = token.nonces(owner);
+        token.permit(owner, spender, value, deadline, v, r, s);
+        uint256 nonceAfter = token.nonces(owner);
+        require(nonceAfter == nonceBefore + 1, "SafeERC20: permit did not succeed");
+    }
+
+    /**
+     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
+     * on the return value: the return value is optional (but if data is returned, it must not be false).
+     * @param token The token targeted by the call.
+     * @param data The call data (encoded using abi.encode or one of its variants).
+     */
+    function _callOptionalReturn(IERC20 token, bytes memory data) private {
+        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
+        // we're implementing it ourselves. We use {Address-functionCall} to perform this call, which verifies that
+        // the target address contains contract code and also asserts for success in the low-level call.
+
+        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
+        if (returndata.length > 0) {
+            // Return data is optional
+            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+        }
+    }
+}
+
+interface ICFReceiver {
+    /**
+     * @notice  Receiver of a cross-chain swap and call made by the Chainflip Protocol.
+
+     * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
+     * @param srcAddress    Bytes containing the source address on the source chain.
+     * @param message       The message sent on the source chain. This is a general purpose message.
+     * @param token         Address of the token received. _NATIVE_ADDR if native.
+     * @param amount        Amount of tokens received. This will match msg.value for native tokens.
+     */
+    function cfReceive(
+        uint32 srcChain,
+        bytes calldata srcAddress,
+        bytes calldata message,
+        address token,
+        uint256 amount
+    ) external payable;
+
+    /**
+     * @notice  Receiver of a cross-chain call made by the Chainflip Protocol.
+
+     * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
+     * @param srcAddress    Bytes containing the source address on the source chain.
+     * @param message       The message sent on the source chain. This is a general purpose message.
+     */
+    function cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) external;
 }
 
 interface IERC20Lite {
@@ -1273,11 +2575,9 @@ interface IERC20Lite {
     /**
      * @dev Moves `amount` tokens from the caller's account to `recipient`.
      *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
      * Emits a {Transfer} event.
      */
-    function transfer(address, uint256) external returns (bool);
+    function transfer(address, uint256) external;
 
     // Taken from OZ:
     /**
@@ -1310,7 +2610,7 @@ contract Deposit {
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);
         } else {
-            // Not checking the return value to avoid reverts for tokens with no return value.
+            // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
             token.transfer(msg.sender, token.balanceOf(address(this)));
         }
     }
@@ -1318,151 +2618,11 @@ contract Deposit {
     receive() external payable {}
 }
 
-interface ICFReceiver {
-    /**
-     * @notice  Receiver of a cross-chain swap and call made by the Chainflip Protocol.
-
-     * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
-     * @param srcAddress    Bytes containing the source address on the source chain.
-     * @param message       The message sent on the source chain. This is a general purpose message.
-     * @param token         Address of the token received.
-     * @param amount        Amount of tokens received.
-     */
-    function cfReceive(
-        uint32 srcChain,
-        bytes calldata srcAddress,
-        bytes calldata message,
-        address token,
-        uint256 amount
-    ) external payable;
-
-    /**
-     * @notice  Receiver of a cross-chain call made by the Chainflip Protocol.
-
-     * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
-     * @param srcAddress    Bytes containing the source address on the source chain.
-     * @param message       The message sent on the source chain. This is a general purpose message.
-     */
-    function cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) external;
-
-    /**
-     * @notice           Update Chanflip's Vault address.
-     * @param cfVault    New Chainflip's Vault address.
-     */
-    function updateCfVault(address cfVault) external;
-}
-
-library SafeERC20 {
-    using Address for address;
-
-    function safeTransfer(IERC20 token, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
-    }
-
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
-    }
-
-    /**
-     * @dev Deprecated. This function has issues similar to the ones found in
-     * {IERC20-approve}, and its usage is discouraged.
-     *
-     * Whenever possible, use {safeIncreaseAllowance} and
-     * {safeDecreaseAllowance} instead.
-     */
-    function safeApprove(IERC20 token, address spender, uint256 value) internal {
-        // safeApprove should only be called when setting an initial allowance,
-        // or when resetting it to zero. To increase and decrease it, use
-        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
-        // solhint-disable-next-line max-line-length
-        require(
-            (value == 0) || (token.allowance(address(this), spender) == 0),
-            "SafeERC20: approve from non-zero to non-zero allowance"
-        );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
-    }
-
-    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender) + value;
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        unchecked {
-            uint256 oldAllowance = token.allowance(address(this), spender);
-            require(oldAllowance >= value, "SafeERC20: decreased allowance below zero");
-            uint256 newAllowance = oldAllowance - value;
-            _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-        }
-    }
-
-    /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its variants).
-     */
-    function _callOptionalReturn(IERC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
-        // the target address contains contract code and also asserts for success in the low-level call.
-
-        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
-        if (returndata.length > 0) {
-            // Return data is optional
-            // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
-        }
-    }
-}
-
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
-    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 14 days;
+    uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
     uint256 private constant _GAS_TO_FORWARD = 3500;
-
-    event TransferNativeFailed(address payable indexed recipient, uint256 amount);
-    event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
-
-    event SwapNative(uint32 dstChain, bytes dstAddress, uint16 dstToken, uint256 amount, address indexed sender);
-    event SwapToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint16 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender
-    );
-
-    /// @dev dstAddress is not indexed because indexing a dynamic type (string) to be able to filter,
-    ///      makes it so we won't be able to decode it unless we specifically search for it. If we want
-    ///      to filter it and decode it then we would need to have both the indexed and the non-indexed
-    ///      version in the event.
-    event XCallNative(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint16 dstToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 dstNativeBudget,
-        bytes refundAddress
-    );
-    event XCallToken(
-        uint32 dstChain,
-        bytes dstAddress,
-        uint16 dstToken,
-        address srcToken,
-        uint256 amount,
-        address indexed sender,
-        bytes message,
-        uint256 dstNativeBudget,
-        bytes refundAddress
-    );
-
-    event AddGasNative(bytes32 swapID, uint256 amount);
-    event AddGasToken(bytes32 swapID, uint256 amount, address token);
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -1478,6 +2638,33 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
     function _getCommunityKey() internal view override returns (address) {
         return getKeyManager().getCommunityKey();
+    }
+
+    /// @dev   Ensure that a new keyManager has the getGovernanceKey(), getCommunityKey()
+    ///        and getLastValidateTime() are implemented. These are functions required for
+    ///        this contract to at least be able to use the emergency mechanism.
+    function _checkUpdateKeyManager(IKeyManager keyManager, bool omitChecks) internal view override {
+        address newGovKey = keyManager.getGovernanceKey();
+        address newCommKey = keyManager.getCommunityKey();
+        uint256 lastValidateTime = keyManager.getLastValidateTime();
+
+        if (!omitChecks) {
+            // Ensure that the keys are the same
+            require(newGovKey == _getGovernor() && newCommKey == _getCommunityKey());
+
+            Key memory newAggKey = keyManager.getAggregateKey();
+            Key memory currentAggKey = getKeyManager().getAggregateKey();
+
+            require(
+                newAggKey.pubKeyX == currentAggKey.pubKeyX && newAggKey.pubKeyYParity == currentAggKey.pubKeyYParity
+            );
+
+            // Ensure that the last validate time is not in the future
+            require(lastValidateTime <= block.timestamp);
+        } else {
+            // Check that the addresses have been initialized
+            require(newGovKey != address(0) && newCommKey != address(0));
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -1611,7 +2798,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             );
 
             // No need to check token.code.length since it comes from a gated call
-            bool transferred = success && (abi.decode(returndata, (bool)) || returndata.length == uint256(0));
+            bool transferred = success && (returndata.length == uint256(0) || abi.decode(returndata, (bool)));
             if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }
@@ -1692,44 +2879,46 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Swaps native token for a token in another chain. The egress token will be transferred to the specified 
+     * @notice  Swaps native token for a token in another chain. The egress token will be transferred to the specified
      *          destination address on the destination chain.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.  It isn't preventing spamming.
-
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Destination token to be swapped to.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xSwapNative(
         uint32 dstChain,
         bytes memory dstAddress,
-        uint16 dstToken
+        uint32 dstToken,
+        bytes calldata cfParameters
     ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit SwapNative(dstChain, dstAddress, dstToken, msg.value, msg.sender);
+        emit SwapNative(dstChain, dstAddress, dstToken, msg.value, msg.sender, cfParameters);
     }
 
     /**
-     * @notice  Swaps ERC20 token for a token in another chain. The desired token will be transferred to the specified 
-     *          destination address on the destination chain. The provided ERC20 token must be supported by the Chainflip Protocol. 
+     * @notice  Swaps ERC20 token for a token in another chain. The desired token will be transferred to the specified
+     *          destination address on the destination chain. The provided ERC20 token must be supported by the Chainflip Protocol.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.
-
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Uint containing the specifics of the swap to be performed according to Chainflip's nomenclature.
      * @param srcToken      Address of the source token to swap.
      * @param amount        Amount of tokens to swap.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xSwapToken(
         uint32 dstChain,
         bytes memory dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         IERC20 srcToken,
-        uint256 amount
+        uint256 amount,
+        bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit SwapToken(dstChain, dstAddress, dstToken, address(srcToken), amount, msg.sender);
+        emit SwapToken(dstChain, dstAddress, dstToken, address(srcToken), amount, msg.sender, cfParameters);
     }
 
     //////////////////////////////////////////////////////////////
@@ -1752,27 +2941,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call.
-     * @param refundAddress Address for any future refunds to the user.
+     * @param gasAmount     The amount to be used for gas in the egress chain.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xCallNative(
         uint32 dstChain,
         bytes calldata dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
-        bytes calldata refundAddress
+        uint256 gasAmount,
+        bytes calldata cfParameters
     ) external payable override onlyNotSuspended nzUint(msg.value) {
-        emit XCallNative(
-            dstChain,
-            dstAddress,
-            dstToken,
-            msg.value,
-            msg.sender,
-            message,
-            dstNativeBudget,
-            refundAddress
-        );
+        emit XCallNative(dstChain, dstAddress, dstToken, msg.value, msg.sender, message, gasAmount, cfParameters);
     }
 
     /**
@@ -1784,28 +2964,26 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          The message parameter is transmitted to the destination chain as part of the cross-chain call.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity indicate that an amount is required.
-     *
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Uint containing the specifics of the swap to be performed, if any, as part of the xCall. The string
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
      * @param message       The message to be sent to the egress chain. This is a general purpose message.
-     * @param dstNativeBudget  The amount of native gas to be used on the destination chain's call. That gas will be paid with the
-     *                      source token.
+     * @param gasAmount     The amount to be used for gas in the egress chain.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
-     * @param refundAddress Address for any future refunds to the user.
+     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
      */
     function xCallToken(
         uint32 dstChain,
         bytes memory dstAddress,
-        uint16 dstToken,
+        uint32 dstToken,
         bytes calldata message,
-        uint256 dstNativeBudget,
+        uint256 gasAmount,
         IERC20 srcToken,
         uint256 amount,
-        bytes calldata refundAddress
+        bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
         srcToken.safeTransferFrom(msg.sender, address(this), amount);
         emit XCallToken(
@@ -1816,8 +2994,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             amount,
             msg.sender,
             message,
-            dstNativeBudget,
-            refundAddress
+            gasAmount,
+            cfParameters
         );
     }
 
@@ -1832,7 +3010,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          Native tokens must be paid to this contract as part of the call.
      * @param swapID    The unique identifier for this swap (bytes32)
      */
-    function addGasNative(bytes32 swapID) external payable override onlyNotSuspended {
+    function addGasNative(bytes32 swapID) external payable override onlyNotSuspended nzUint(msg.value) {
         emit AddGasNative(swapID, msg.value);
     }
 
@@ -1859,7 +3037,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers ETH or a token from this vault to a recipient and makes a function call
+     * @notice  Transfers native or a token from this vault to a recipient and makes a function call
      *          completing a cross-chain swap and call. The ICFReceiver interface is expected on
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap.
@@ -1968,44 +3146,70 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfer funds and pass calldata to be executed on another multicall contract.
-     * @dev     Can be used to make calls to settle funds on an auxiliary chain via another protocol.
-     *          That can be to egress funds or, in case of leveraging USDC CCTP, to mint bridged USDC.
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
-     * @param token     Address of the source token to swap.
-     * @param amount    Amount of the source token to send.
-     * @param multicallAddr Address of the Multicall contract to call.
-     * @param calls     Array of actions to be executed.
+     * @notice  Transfer funds and pass calldata to be executed on a Multicall contract.
+     * @dev     For safety purposes it's preferred to execute calldata externally with
+     *          a limited amount of funds instead of executing arbitrary calldata here.
+     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
+     *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
+     * @param sigData         Struct containing the signature data over the message
+     *                        to verify, signed by the aggregate key.
+     * @param transferParams  The transfer parameters inluding the token and amount to be transferred
+     *                        and the multicall contract address.
+     * @param calls           Array of actions to be executed.
+     * @param gasMulticall    Gas that must be forwarded to the multicall.
 
      */
     function executeActions(
         SigData calldata sigData,
-        address token,
-        uint256 amount,
-        address payable multicallAddr,
-        IMulticall.Call[] calldata calls
+        TransferParams calldata transferParams,
+        IMulticall.Call[] calldata calls,
+        uint256 gasMulticall
     )
         external
         override
         onlyNotSuspended
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.executeActions.selector, token, amount, multicallAddr, calls))
+            keccak256(abi.encode(this.executeActions.selector, transferParams, calls, gasMulticall))
         )
     {
         // Fund and run multicall
         uint256 valueToSend;
 
-        if (amount > 0) {
-            if (token == _NATIVE_ADDR) {
-                valueToSend = amount;
+        if (transferParams.amount > 0) {
+            if (transferParams.token == _NATIVE_ADDR) {
+                valueToSend = transferParams.amount;
             } else {
-                IERC20(token).safeTransfer(multicallAddr, amount);
+                IERC20(transferParams.token).approve(transferParams.recipient, transferParams.amount);
             }
         }
 
-        IMulticall(multicallAddr).run{value: valueToSend}(calls);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory reason) = transferParams.recipient.call{gas: gasMulticall, value: valueToSend}(
+            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
+        );
+
+        if (!success) {
+            // Validate that the relayer has sent enough gas for the call.
+            // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
+            if (gasleft() <= gasMulticall / 63) {
+                // Emulate an out of gas exception by explicitly trigger invalid opcode to consume all gas and
+                // bubble-up the effects, since neither revert or assert consume all gas since Solidity 0.8.0.
+
+                // solhint-disable no-inline-assembly
+                /// @solidity memory-safe-assembly
+                assembly {
+                    invalid()
+                }
+                // solhint-enable no-inline-assembly
+            }
+            if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
+                IERC20(transferParams.token).approve(transferParams.recipient, 0);
+            }
+            emit ExecuteActionsFailed(transferParams.recipient, transferParams.amount, transferParams.token, reason);
+        } else {
+            require(transferParams.recipient.code.length > 0);
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -2043,7 +3247,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Check that no nonce has been consumed in the last 14 days - emergency
+    /// @dev    Check that no nonce has been consumed in the last 3 days - emergency
     modifier timeoutEmergency() {
         require(
             block.timestamp - getKeyManager().getLastValidateTime() >= _AGG_KEY_EMERGENCY_TIMEOUT,
@@ -2062,944 +3266,16 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     receive() external payable {}
 }
 
-interface IHevm {
-    // Set block.timestamp to newTimestamp
-    function warp(uint256 newTimestamp) external;
-
-    // Set block.number to newNumber
-    function roll(uint256 newNumber) external;
-
-    // Loads a storage slot from an address
-    function load(address where, bytes32 slot) external returns (bytes32);
-
-    // Stores a value to an address' storage slot
-    function store(address where, bytes32 slot, bytes32 value) external;
-
-    // Signs data (privateKey, digest) => (r, v, s)
-    function sign(uint256 privateKey, bytes32 digest) external returns (uint8 r, bytes32 v, bytes32 s);
-
-    // Gets address for a given private key
-    function addr(uint256 privateKey) external returns (address addr);
-
-    // Performs a foreign function call via terminal
-    function ffi(string[] calldata inputs) external returns (bytes memory result);
-
-    // Performs the next smart contract call with specified `msg.sender`
-    function prank(address newSender) external;
-}
-
-interface IFLIP is IERC20 {
-    event IssuerUpdated(address oldIssuer, address newIssuer);
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  State-changing functions                //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    function mint(address account, uint amount) external;
-
-    function burn(address account, uint amount) external;
-
-    function updateIssuer(address newIssuer) external;
-}
-
-interface IStakeManager is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
-    event Staked(bytes32 indexed nodeID, uint256 amount, address staker, address indexed returnAddr);
-    event ClaimRegistered(
-        bytes32 indexed nodeID,
-        uint256 amount,
-        address indexed staker,
-        uint48 startTime,
-        uint48 expiryTime
-    );
-    event ClaimExecuted(bytes32 indexed nodeID, uint256 amount);
-    event MinStakeChanged(uint256 oldMinStake, uint256 newMinStake);
-    event GovernanceWithdrawal(address to, uint256 amount);
-    event FLIPSet(address flip);
-    event FlipSupplyUpdated(uint256 oldSupply, uint256 newSupply, uint256 stateChainBlockNumber);
-
-    struct Claim {
-        uint256 amount;
-        address staker;
-        // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
-        // into a single 256 bit slot
-        uint48 startTime;
-        uint48 expiryTime;
-    }
-
-    /**
-     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
-     *          because FLIP contract requires this contract's address on deployment for minting.
-     *          First this contract is deployed, then the FLIP contract and finally setFLIP
-     *          should be called. OnlyDeployer modifer for added security since tokens will be
-     *          minted to this contract before calling setFLIP.
-     * @param flip FLIP token address
-     */
-    function setFlip(IFLIP flip) external;
-
-    /**
-     * @notice          Stake some FLIP and attribute it to a nodeID
-     * @dev             Requires the staker to have called `approve` in FLIP
-     * @param amount    The amount of stake to be locked up
-     * @param nodeID    The nodeID of the staker
-     * @param returnAddr    The address which the staker requires to be used
-     *                      when claiming back FLIP for `nodeID`
-     */
-    function stake(bytes32 nodeID, uint256 amount, address returnAddr) external;
-
-    /**
-     * @notice  Claim back stake. If only losing an auction, the same amount initially staked
-     *          will be sent back. If losing an auction while being a validator,
-     *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-     * @param sigData   Struct containing the signature data over the message to verify,
-     *                  signed by the aggregate key.
-     * @param nodeID    The nodeID of the staker
-     * @param amount    The amount of stake to be locked up
-     * @param staker    The staker who is to be sent FLIP
-     * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
-     */
-    function registerClaim(
-        SigData calldata sigData,
-        bytes32 nodeID,
-        uint256 amount,
-        address staker,
-        uint48 expiryTime
-    ) external;
-
-    /**
-     * @notice  Execute a pending claim to get back stake. If only losing an auction,
-     *          the same amount initially staked will be sent back. If losing an
-     *          auction while being a validator, the amount sent back = stake +
-     *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
-     *          claim before 48h have passed after registering it, or after the specified
-     *          expiry timestamp
-     * @dev     No need for nzUint(nodeID) since that is handled by
-     *          `uint(block.number) <= claim.startTime`
-     * @param nodeID    The nodeID of the staker
-     */
-    function executeClaim(bytes32 nodeID) external;
-
-    /**
-     * @notice  Compares a given new FLIP supply against the old supply and mints or burns
-     *          FLIP tokens from this contract as appropriate.
-     *          It requires a message signed by the aggregate key.
-     * @param sigData    Struct containing the signature data over the message
-     *                   to verify, signed by the aggregate key.
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     */
-    function updateFlipSupply(SigData calldata sigData, uint256 newTotalSupply, uint256 stateChainBlockNumber) external;
-
-    /**
-     * @notice      Set the minimum amount of stake needed for `stake` to be able
-     *              to be called. Used to prevent spamming of stakes.
-     * @param newMinStake   The new minimum stake
-     */
-    function setMinStake(uint256 newMinStake) external;
-
-    /**
-     * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
-     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
-     */
-    function govWithdraw() external;
-
-    /**
-     * @notice Withdraw any native on this contract. The intended execution of this contract doesn't
-     * require any native. This function is just to recover any native that might have been sent to
-     * this contract by accident (or any other reason), since incoming native cannot be stopped.
-     */
-    function govWithdrawNative() external;
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  Non-state-changing functions            //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the FLIP token address
-     * @return  The address of FLIP
-     */
-    function getFLIP() external view returns (IFLIP);
-
-    /**
-     * @notice  Get the minimum amount of stake that's required for a bid
-     *          attempt in the auction to be valid - used to prevent sybil attacks
-     * @return  The minimum stake (uint)
-     */
-    function getMinimumStake() external view returns (uint256);
-
-    /**
-     * @notice  Get the pending claim for the input nodeID. If there was never
-     *          a pending claim for this nodeID, or it has already been executed
-     *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
-     * @param nodeID    The nodeID which is has a pending claim
-     * @return  The claim (Claim)
-     */
-    function getPendingClaim(bytes32 nodeID) external view returns (Claim memory);
-
-    /**
-     * @notice  Get the last state chain block number that the supply was updated at
-     * @return  The state chain block number of the last update
-     */
-    function getLastSupplyUpdateBlockNumber() external view returns (uint256);
-}
-
-contract StakeManager is IStakeManager, AggKeyNonceConsumer, GovernanceCommunityGuarded {
-    /// @dev    The FLIP token address. To be set only once after deployment via setFlip.
-    // Disable because tokens are usually in caps
-    // solhint-disable-next-line var-name-mixedcase
-    IFLIP private _FLIP;
-
-    /// @dev    The minimum amount of FLIP needed to stake, to prevent spamming
-    uint256 private _minStake;
-    /// @dev    Holding pending claims for the 48h withdrawal delay
-    mapping(bytes32 => Claim) private _pendingClaims;
-    /// @dev   Time after registerClaim required to wait before call to executeClaim
-    uint48 public constant CLAIM_DELAY = 2 days;
-
-    /// @dev    The last block number in which the State Chain updated the totalSupply
-    uint256 private _lastSupplyUpdateBlockNum = 0;
-
-    // Defined in IStakeManager, just here for convenience
-    // struct Claim {
-    //     uint amount;
-    //     address staker;
-    //     // 48 so that 160 (from staker) + 48 + 48 is 256 they can all be packed
-    //     // into a single 256 bit slot
-    //     uint48 startTime;
-    //     uint48 expiryTime;
-    // }
-
-    constructor(IKeyManager keyManager, uint256 minStake) AggKeyNonceConsumer(keyManager) {
-        _minStake = minStake;
-    }
-
-    /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
-    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
-    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
-    function _getGovernor() internal view override returns (address) {
-        return getKeyManager().getGovernanceKey();
-    }
-
-    /// @dev   Get the community key from the KeyManager. This is called by the isCommunityKey
-    ///        modifier in the GovernanceCommunityGuarded. This logic can't be moved to the
-    ///        GovernanceCommunityGuarded since it requires a reference to the KeyManager.
-    function _getCommunityKey() internal view override returns (address) {
-        return getKeyManager().getCommunityKey();
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  State-changing functions                //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Sets the FLIP address after initialization. We can't do this in the constructor
-     *          because FLIP contract requires this contract's address on deployment for minting.
-     *          First this contract is deployed, then the FLIP contract and finally setFLIP
-     *          should be called. Deployed via Deploy.sol so it can't be frontrun. The FLIP
-     *          address can only be set once.
-     * @param flip FLIP token address
-     */
-    function setFlip(IFLIP flip) external override nzAddr(address(flip)) {
-        require(address(_FLIP) == address(0), "Staking: Flip address already set");
-        _FLIP = flip;
-        emit FLIPSet(address(flip));
-    }
-
-    /**
-     * @notice          Stake some FLIP and attribute it to a nodeID
-     * @dev             Requires the staker to have called `approve` in FLIP
-     * @param amount    The amount of stake to be locked up
-     * @param nodeID    The nodeID of the staker
-     * @param returnAddr    The address which the staker requires to be used
-     *                      when claiming back FLIP for `nodeID`
-     */
-    function stake(
-        bytes32 nodeID,
-        uint256 amount,
-        address returnAddr
-    ) external override nzBytes32(nodeID) nzAddr(returnAddr) {
-        IFLIP flip = _FLIP;
-        require(address(flip) != address(0), "Staking: Flip not set");
-        require(amount >= _minStake, "Staking: stake too small");
-        // Assumption of set token allowance by the user
-        flip.transferFrom(msg.sender, address(this), amount);
-        emit Staked(nodeID, amount, msg.sender, returnAddr);
-    }
-
-    /**
-     * @notice  Claim back stake. If only losing an auction, the same amount initially staked
-     *          will be sent back. If losing an auction while being a validator,
-     *          the amount sent back = stake + rewards - penalties, as determined by the State Chain
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
-     * @param nodeID    The nodeID of the staker
-     * @param amount    The amount of stake to be locked up
-     * @param staker    The staker who is to be sent FLIP
-     * @param expiryTime   The last valid timestamp that can execute this claim (uint48)
-     */
-    function registerClaim(
-        SigData calldata sigData,
-        bytes32 nodeID,
-        uint256 amount,
-        address staker,
-        uint48 expiryTime
-    )
-        external
-        override
-        onlyNotSuspended
-        nzBytes32(nodeID)
-        nzUint(amount)
-        nzAddr(staker)
-        consumesKeyNonce(
-            sigData,
-            keccak256(abi.encode(this.registerClaim.selector, nodeID, amount, staker, expiryTime))
-        )
-    {
-        require(
-            // Must be fresh or have been executed & deleted, or past the expiry
-            block.timestamp > uint256(_pendingClaims[nodeID].expiryTime),
-            "Staking: a pending claim exists"
-        );
-
-        uint48 startTime = uint48(block.timestamp) + CLAIM_DELAY;
-        require(expiryTime > startTime, "Staking: expiry time too soon");
-
-        _pendingClaims[nodeID] = Claim(amount, staker, startTime, expiryTime);
-        emit ClaimRegistered(nodeID, amount, staker, startTime, expiryTime);
-    }
-
-    /**
-     * @notice  Execute a pending claim to get back stake. If only losing an auction,
-     *          the same amount initially staked will be sent back. If losing an
-     *          auction while being a validator, the amount sent back = stake +
-     *          rewards - penalties, as determined by the State Chain. Cannot execute a pending
-     *          claim before 48h have passed after registering it, or after the specified
-     *          expiry time
-     * @dev     No need for nzUint(nodeID) since that is handled by
-     *          `uint(block.number) <= claim.startTime`
-     * @param nodeID    The nodeID of the staker
-     */
-    function executeClaim(bytes32 nodeID) external override onlyNotSuspended {
-        Claim memory claim = _pendingClaims[nodeID];
-        require(
-            block.timestamp >= claim.startTime && block.timestamp <= claim.expiryTime,
-            "Staking: early, late, or execd"
-        );
-
-        // Housekeeping
-        delete _pendingClaims[nodeID];
-        emit ClaimExecuted(nodeID, claim.amount);
-
-        // Send the tokens
-        _FLIP.transfer(claim.staker, claim.amount);
-    }
-
-    /**
-     * @notice  Compares a given new FLIP supply against the old supply and mints or burns
-     *          FLIP tokens from this contract as appropriate.
-     *          It requires a message signed by the aggregate key.
-     * @dev     Hardcoded to only mint and burn FLIP tokens to/from this contract.
-     * @param sigData               Struct containing the signature data over the message
-     *                              to verify, signed by the aggregate key.
-     * @param newTotalSupply        new total supply of FLIP
-     * @param stateChainBlockNumber State Chain block number for the new total supply
-     */
-    function updateFlipSupply(
-        SigData calldata sigData,
-        uint256 newTotalSupply,
-        uint256 stateChainBlockNumber
-    )
-        external
-        override
-        nzUint(newTotalSupply)
-        consumesKeyNonce(
-            sigData,
-            keccak256(abi.encode(this.updateFlipSupply.selector, newTotalSupply, stateChainBlockNumber))
-        )
-    {
-        require(stateChainBlockNumber > _lastSupplyUpdateBlockNum, "Staking: old FLIP supply update");
-        _lastSupplyUpdateBlockNum = stateChainBlockNumber;
-        IFLIP flip = _FLIP;
-        uint256 oldSupply = flip.totalSupply();
-        if (newTotalSupply < oldSupply) {
-            uint256 amount = oldSupply - newTotalSupply;
-            flip.burn(address(this), amount);
-        } else if (newTotalSupply > oldSupply) {
-            uint256 amount = newTotalSupply - oldSupply;
-            flip.mint(address(this), amount);
-        }
-        emit FlipSupplyUpdated(oldSupply, newTotalSupply, stateChainBlockNumber);
-    }
-
-    /**
-     * @notice  Updates the address that is allowed to issue FLIP tokens. This will be used when this
-     *          contract needs an upgrade. A new contract will be deployed and all the FLIP will be
-     *          transferred to it via the claim process. Finally the right to issue FLIP will be transferred.
-     * @param sigData     Struct containing the signature data over the message
-     *                    to verify, signed by the aggregate key.
-     * @param newIssuer   New contract that will issue FLIP tokens.
-     */
-    function updateFlipIssuer(
-        SigData calldata sigData,
-        address newIssuer
-    )
-        external
-        nzAddr(newIssuer)
-        consumesKeyNonce(sigData, keccak256(abi.encode(this.updateFlipIssuer.selector, newIssuer)))
-    {
-        _FLIP.updateIssuer(newIssuer);
-    }
-
-    /**
-     * @notice      Set the minimum amount of stake needed for `stake` to be able
-     *              to be called. Used to prevent spamming of stakes.
-     * @param newMinStake   The new minimum stake
-     */
-    function setMinStake(uint256 newMinStake) external override nzUint(newMinStake) onlyGovernor {
-        emit MinStakeChanged(_minStake, newMinStake);
-        _minStake = newMinStake;
-    }
-
-    /**
-     * @notice Withdraw all FLIP to governance address in case of emergency. This withdrawal needs
-     *         to be approved by the Community, it is a last resort. Used to rectify an emergency.
-     */
-    function govWithdraw() external override onlyGovernor onlyCommunityGuardDisabled onlySuspended {
-        uint256 amount = _FLIP.balanceOf(address(this));
-
-        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = getKeyManager().getGovernanceKey();
-        _FLIP.transfer(recipient, amount);
-        emit GovernanceWithdrawal(recipient, amount);
-    }
-
-    /**
-     * @notice Withdraw any native tokens on this contract. The intended execution of this contract doesn't
-     * require any native tokens. This function is just to recover any native tokens that might have been sent to
-     * this contract by accident (or any other reason).
-     */
-    function govWithdrawNative() external override onlyGovernor {
-        uint256 amount = address(this).balance;
-
-        // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
-        address recipient = getKeyManager().getGovernanceKey();
-        payable(recipient).transfer(amount);
-        emit GovernanceWithdrawal(recipient, amount);
-    }
-
-    /**
-     *  @notice Allows this contract to receive native tokens
-     */
-    receive() external payable {}
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  Non-state-changing functions            //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the FLIP token address
-     * @return  The address of FLIP
-     */
-    function getFLIP() external view override returns (IFLIP) {
-        return _FLIP;
-    }
-
-    /**
-     * @notice  Get the minimum amount of stake that's required for a bid
-     *          attempt in the auction to be valid - used to prevent sybil attacks
-     * @return  The minimum stake (uint)
-     */
-    function getMinimumStake() external view override returns (uint256) {
-        return _minStake;
-    }
-
-    /**
-     * @notice  Get the pending claim for the input nodeID. If there was never
-     *          a pending claim for this nodeID, or it has already been executed
-     *          (and therefore deleted), it'll return (0, 0x00..., 0, 0)
-     * @return  The claim (Claim)
-     */
-    function getPendingClaim(bytes32 nodeID) external view override returns (Claim memory) {
-        return _pendingClaims[nodeID];
-    }
-
-    /**
-     * @notice  Get the last state chain block number of the last supply update
-     * @return  The state chain block number of the last supply update
-     */
-    function getLastSupplyUpdateBlockNumber() external view override returns (uint256) {
-        return _lastSupplyUpdateBlockNum;
-    }
-}
-
-abstract contract SchnorrSECP256K1 {
-    // See https://en.bitcoin.it/wiki/Secp256k1 for this constant.
-    // Group order of secp256k1
-    uint256 private constant Q =
-        // solium-disable-next-line indentation
-        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
-    // solium-disable-next-line zeppelin/no-arithmetic-operations
-    uint256 private constant HALF_Q = (Q >> 1) + 1;
-
-    /** **************************************************************************
-      @notice verifySignature returns true iff passed a valid Schnorr signature.
-
-      @dev See https://en.wikipedia.org/wiki/Schnorr_signature for reference.
-
-      @dev In what follows, let d be your secret key, PK be your public key,
-      PKx be the x ordinate of your public key, and PKyp be the parity bit for
-      the y ordinate (i.e., 0 if PKy is even, 1 if odd.)
-      **************************************************************************
-      @dev TO CREATE A VALID SIGNATURE FOR THIS METHOD
-
-      @dev First PKx must be less than HALF_Q. Then follow these instructions
-           (see evm/test/schnorr_test.js, for an example of carrying them out):
-      @dev 1. Hash the target message to a uint256, called msgHash here, using
-              keccak256
-
-      @dev 2. Pick k uniformly and cryptographically securely randomly from
-              {0,...,Q-1}. It is critical that k remains confidential, as your
-              private key can be reconstructed from k and the signature.
-
-      @dev 3. Compute k*g in the secp256k1 group, where g is the group
-              generator. (This is the same as computing the public key from the
-              secret key k. But it's OK if k*g's x ordinate is greater than
-              HALF_Q.)
-
-      @dev 4. Compute the ethereum address for k*g. This is the lower 160 bits
-              of the keccak hash of the concatenated affine coordinates of k*g,
-              as 32-byte big-endians. (For instance, you could pass k to
-              ethereumjs-utils's privateToAddress to compute this, though that
-              should be strictly a development convenience, not for handling
-              live secrets, unless you've locked your javascript environment
-              down very carefully.) Call this address
-              nonceTimesGeneratorAddress.
-
-      @dev 5. Compute e=uint256(keccak256(PKx as a 32-byte big-endian
-                                        ‖ PKyp as a single byte
-                                        ‖ msgHash
-                                        ‖ nonceTimesGeneratorAddress))
-              This value e is called "msgChallenge" in verifySignature's source
-              code below. Here "‖" means concatenation of the listed byte
-              arrays.
-
-      @dev 6. Let d be your secret key. Compute s = (k - d * e) % Q. Add Q to
-              it, if it's negative. This is your signature. (d is your secret
-              key.)
-      **************************************************************************
-      @dev TO VERIFY A SIGNATURE
-
-      @dev Given a signature (s, e) of msgHash, constructed as above, compute
-      S=e*PK+s*generator in the secp256k1 group law, and then the ethereum
-      address of S, as described in step 4. Call that
-      nonceTimesGeneratorAddress. Then call the verifySignature method as:
-
-      @dev    verifySignature(PKx, PKyp, s, msgHash,
-                              nonceTimesGeneratorAddress)
-      **************************************************************************
-      @dev This signging scheme deviates slightly from the classical Schnorr
-      signature, in that the address of k*g is used in place of k*g itself,
-      both when calculating e and when verifying sum S as described in the
-      verification paragraph above. This reduces the difficulty of
-      brute-forcing a signature by trying random secp256k1 points in place of
-      k*g in the signature verification process from 256 bits to 160 bits.
-      However, the difficulty of cracking the public key using "baby-step,
-      giant-step" is only 128 bits, so this weakening constitutes no compromise
-      in the security of the signatures or the key.
-
-      @dev The constraint signingPubKeyX < HALF_Q comes from Eq. (281), p. 24
-      of Yellow Paper version 78d7b9a. ecrecover only accepts "s" inputs less
-      than HALF_Q, to protect against a signature- malleability vulnerability in
-      ECDSA. Schnorr does not have this vulnerability, but we must account for
-      ecrecover's defense anyway. And since we are abusing ecrecover by putting
-      signingPubKeyX in ecrecover's "s" argument the constraint applies to
-      signingPubKeyX, even though it represents a value in the base field, and
-      has no natural relationship to the order of the curve's cyclic group.
-      **************************************************************************
-      @param msgHash is a 256-bit hash of the message being signed.
-      @param signature is the actual signature, described as s in the above
-             instructions.
-      @param signingPubKeyX is the x ordinate of the public key. This must be
-             less than HALF_Q.
-      @param pubKeyYParity is 0 if the y ordinate of the public key is even, 1
-             if it's odd.
-      @param nonceTimesGeneratorAddress is the ethereum address of k*g in the
-             above instructions
-      **************************************************************************
-      @return True if passed a valid signature, false otherwise. */
-
-    function verifySignature(
-        uint256 msgHash,
-        uint256 signature,
-        uint256 signingPubKeyX,
-        uint8 pubKeyYParity,
-        address nonceTimesGeneratorAddress
-    ) internal pure returns (bool) {
-        require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
-        // Avoid signature malleability from multiple representations for ℤ/Qℤ elts
-        require(signature < Q, "Sig must be reduced modulo Q");
-
-        // Forbid trivial inputs, to avoid ecrecover edge cases. The main thing to
-        // avoid is something which causes ecrecover to return 0x0: then trivial
-        // signatures could be constructed with the nonceTimesGeneratorAddress input
-        // set to 0x0.
-        //
-        // solium-disable-next-line indentation
-        require(
-            nonceTimesGeneratorAddress != address(0) && signingPubKeyX > 0 && signature > 0 && msgHash > 0,
-            "No zero inputs allowed"
-        );
-
-        uint256 msgChallenge = uint256(
-            keccak256(abi.encodePacked(signingPubKeyX, pubKeyYParity, msgHash, nonceTimesGeneratorAddress))
-        );
-
-        // Verify msgChallenge * signingPubKey + signature * generator ==
-        //        nonce * generator
-        //
-        // https://ethresear.ch/t/you-can-kinda-abuse-ecrecover-to-do-ecmul-in-secp256k1-today/2384/9
-        // The point corresponding to the address returned by
-        // ecrecover(-s*r,v,r,e*r) is (r⁻¹ mod Q)*(e*r*R-(-s)*r*g)=e*R+s*g, where R
-        // is the (v,r) point. See https://crypto.stackexchange.com/a/18106
-        //
-        // solium-disable-next-line indentation
-        address recoveredAddress = ecrecover(
-            // solium-disable-next-line zeppelin/no-arithmetic-operations
-            bytes32(Q - mulmod(signingPubKeyX, signature, Q)),
-            // https://ethereum.github.io/yellowpaper/paper.pdf p. 24, "The
-            // value 27 represents an even y value and 28 represents an odd
-            // y value."
-            (pubKeyYParity == 0) ? 27 : 28,
-            bytes32(signingPubKeyX),
-            bytes32(mulmod(msgChallenge, signingPubKeyX, Q))
-        );
-        require(recoveredAddress != address(0), "Schnorr: recoveredAddress is 0");
-
-        return nonceTimesGeneratorAddress == recoveredAddress;
-    }
-
-    function verifySigningKeyX(uint256 signingPubKeyX) internal pure {
-        require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
-    }
-}
-
-contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
-    uint256 private constant _AGG_KEY_TIMEOUT = 2 days;
-
-    /// @dev    The current (schnorr) aggregate key.
-    Key private _aggKey;
-    /// @dev    The current governance key.
-    address private _govKey;
-    /// @dev    The current community key.
-    address private _commKey;
-    /// @dev    The last time that a sig was verified (used for a dead man's switch)
-    uint256 private _lastValidateTime;
-    mapping(uint256 => bool) private _isNonceUsedByAggKey;
-    event logmsgaddr(string, address);
-
-    constructor(
-        Key memory initialAggKey,
-        address initialGovKey,
-        address initialCommKey
-    ) nzAddr(initialGovKey) nzAddr(initialCommKey) nzKey(initialAggKey) validAggKey(initialAggKey) {
-        _aggKey = initialAggKey;
-        _govKey = initialGovKey;
-        _commKey = initialCommKey;
-        _lastValidateTime = block.timestamp;
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  State-changing functions                //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Checks the validity of a signature and msgHash, then updates _lastValidateTime
-     * @dev     It would be nice to split this up, but these checks
-     *          need to be made atomicly always. This needs to be available
-     *          in this contract and in the Vault etc
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
-     * @param msgHash   The hash of the message being signed. The hash of the function
-     *                  call parameters is concatenated and hashed together with the nonce, the
-     *                  address of the caller, the chainId, and the address of this contract.
-     */
-    function _consumeKeyNonce(SigData calldata sigData, bytes32 msgHash) internal {
-        Key memory key = _aggKey;
-
-        require(
-            verifySignature(uint256(msgHash), sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddress),
-            "KeyManager: Sig invalid"
-        );
-        require(!_isNonceUsedByAggKey[sigData.nonce], "KeyManager: nonce already used");
-
-        _lastValidateTime = block.timestamp;
-        _isNonceUsedByAggKey[sigData.nonce] = true;
-
-        // Disable because tx.origin is not being used in the logic
-        // solhint-disable-next-line avoid-tx-origin
-        emit SignatureAccepted(sigData, tx.origin);
-    }
-
-    /**
-     * @notice  Concatenates the contractMsgHash with the nonce, the address of the caller,
-     *          the chainId, and the address of this contract, then hashes that and verifies the
-     *          signature. This is done to prevent replay attacks.
-     * @param sigData           Struct containing the signature data over the message
-     *                          to verify, signed by the aggregate key.
-     * @param contractMsgHash   The hash of the function's call parameters. This will be hashed
-     *                          over other parameters to prevent replay attacks.
-     */
-    function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
-        emit logmsgaddr("msg sender in consumekeynonce", msg.sender);
-        bytes32 msgHash = keccak256(
-            abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
-        );
-        _consumeKeyNonce(sigData, msgHash);
-    }
-
-    /**
-     * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
-     * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
-     *                  the parity of the y component (uint8)
-     */
-    function setAggKeyWithAggKey(
-        SigData calldata sigData,
-        Key calldata newAggKey
-    )
-        external
-        override
-        nzKey(newAggKey)
-        validAggKey(newAggKey)
-        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setAggKeyWithAggKey.selector, newAggKey)))
-    {
-        emit AggKeySetByAggKey(_aggKey, newAggKey);
-        _aggKey = newAggKey;
-    }
-
-    /**
-     * @notice  Set a new aggregate key. Can only be called by the current governance key
-     * @param newAggKey The new aggregate key to be set. The x component of the pubkey (uint256),
-     *                  the parity of the y component (uint8)
-     */
-    function setAggKeyWithGovKey(
-        Key calldata newAggKey
-    ) external override nzKey(newAggKey) validAggKey(newAggKey) timeoutEmergency onlyGovernor {
-        emit AggKeySetByGovKey(_aggKey, newAggKey);
-        _aggKey = newAggKey;
-    }
-
-    /**
-     * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
-     * @param sigData   Struct containing the signature data over the message
-     *                  to verify, signed by the aggregate key.
-     * @param newGovKey The new governance key to be set.
-
-     */
-    function setGovKeyWithAggKey(
-        SigData calldata sigData,
-        address newGovKey
-    )
-        external
-        override
-        nzAddr(newGovKey)
-        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setGovKeyWithAggKey.selector, newGovKey)))
-    {
-        emit GovKeySetByAggKey(_govKey, newGovKey);
-        _govKey = newGovKey;
-    }
-
-    /**
-     * @notice  Set a new governance key. Can only be called by current governance key
-     * @param newGovKey    The new governance key to be set.
-     */
-    function setGovKeyWithGovKey(address newGovKey) external override nzAddr(newGovKey) onlyGovernor {
-        emit GovKeySetByGovKey(_govKey, newGovKey);
-        _govKey = newGovKey;
-    }
-
-    /**
-     * @notice  Set a new community key. Requires a signature from the current aggregate key
-     * @param sigData    Struct containing the signature data over the message
-     *                   to verify, signed by the aggregate key.
-     * @param newCommKey The new community key to be set.
-
-     */
-    function setCommKeyWithAggKey(
-        SigData calldata sigData,
-        address newCommKey
-    )
-        external
-        override
-        nzAddr(newCommKey)
-        consumeKeyNonceKeyManager(sigData, keccak256(abi.encode(this.setCommKeyWithAggKey.selector, newCommKey)))
-    {
-        emit CommKeySetByAggKey(_commKey, newCommKey);
-        _commKey = newCommKey;
-    }
-
-    /**
-     * @notice  Update the Community Key. Can only be called by the current Community Key.
-     * @param newCommKey   New Community key address.
-     */
-    function setCommKeyWithCommKey(address newCommKey) external override onlyCommunityKey nzAddr(newCommKey) {
-        emit CommKeySetByCommKey(_commKey, newCommKey);
-        _commKey = newCommKey;
-    }
-
-    /**
-     * @notice Withdraw any native tokens on this contract. The intended execution of this contract doesn't
-     * require any native tokens. This function is just to recover any tokens that might have been sent to
-     * this contract by accident (or any other reason).
-     */
-    function govWithdrawNative() external override onlyGovernor {
-        uint256 amount = address(this).balance;
-
-        // Could use msg.sender but hardcoding the get call just for extra safety
-        address recipient = _getGovernanceKey();
-        payable(recipient).transfer(amount);
-    }
-
-    /**
-     * @notice Emit an event containing an action message. Can only be called by the governor.
-     */
-    function govAction(bytes32 message) external override onlyGovernor {
-        emit GovernanceAction(message);
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                  Non-state-changing functions            //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /**
-     * @notice  Get the current aggregate key
-     * @return  The Key struct for the aggregate key
-     */
-    function getAggregateKey() external view override returns (Key memory) {
-        return _aggKey;
-    }
-
-    /**
-     * @notice  Get the current governance key
-     * @return  The Key struct for the governance key
-     */
-    function getGovernanceKey() external view override returns (address) {
-        return _getGovernanceKey();
-    }
-
-    /**
-     * @notice  Get the current community key
-     * @return  The Key struct for the community key
-     */
-    function getCommunityKey() external view override returns (address) {
-        return _getCommunityKey();
-    }
-
-    /**
-     * @notice  Get the last time that a function was called which
-     *          required a signature from _aggregateKeyData or _governanceKeyData
-     * @return  The last time consumeKeyNonce was called, in unix time (uint256)
-     */
-    function getLastValidateTime() external view override returns (uint256) {
-        return _lastValidateTime;
-    }
-
-    /**
-     * @notice  Get whether or not the specific keyID has used this nonce before
-     *          since it cannot be used again
-     * @return  Whether the nonce has already been used (bool)
-     */
-    function isNonceUsedByAggKey(uint256 nonce) external view override returns (bool) {
-        return _isNonceUsedByAggKey[nonce];
-    }
-
-    /**
-     *  @notice Allows this contract to receive native
-     */
-    receive() external payable {}
-
-    /**
-     * @notice  Get the current governance key
-     * @return  The Key struct for the governance key
-     */
-    function _getGovernanceKey() internal view returns (address) {
-        return _govKey;
-    }
-
-    /**
-     * @notice  Get the current community key
-     * @return  The Key struct for the community key
-     */
-    function _getCommunityKey() internal view returns (address) {
-        return _commKey;
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                                                          //
-    //                          Modifiers                       //
-    //                                                          //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev    Check that enough time has passed for setAggKeyWithGovKey. Needs
-    ///         to be done as a modifier so that it can happen before consumeKeyNonce
-    modifier timeoutEmergency() {
-        require(block.timestamp - _lastValidateTime >= _AGG_KEY_TIMEOUT, "KeyManager: not enough time");
-        _;
-    }
-
-    /// @dev    Check that an aggregate key is capable of having its signatures
-    ///         verified by the schnorr lib.
-    modifier validAggKey(Key memory key) {
-        verifySigningKeyX(key.pubKeyX);
-        _;
-    }
-
-    /// @dev    Check that the sender is the governance address
-    modifier onlyGovernor() {
-        require(msg.sender == _getGovernanceKey(), "KeyManager: not governor");
-        _;
-    }
-
-    /// @dev    Check that the caller is the Community Key address.
-    modifier onlyCommunityKey() {
-        require(msg.sender == _getCommunityKey(), "KeyManager: not Community Key");
-        _;
-    }
-
-    /// @dev    For functions in this contract that require a signature from the aggregate key
-    //          the msg.sender can't be hashed as anyone can make the call. Instead the
-    //          address of this contract is used as the sender and hashed in the message.
-    modifier consumeKeyNonceKeyManager(SigData calldata sigData, bytes32 contractMsgHash) {
-        bytes32 msgHash = keccak256(
-            abi.encode(contractMsgHash, sigData.nonce, address(this), block.chainid, address(this))
-        );
-        _consumeKeyNonce(sigData, msgHash);
-        _;
-    }
-}
-
 contract FLIP is ERC20, IFLIP, Shared {
-    address public issuer;
+    address private issuer;
 
     constructor(
         uint256 flipTotalSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake,
-        address receiverGenesisValidatorFlip, // Stake Manager
+        address receiverGenesisValidatorFlip, // StateChainGateway
         address receiverGenesisFlip,
-        address genesisIssuer // Stake Manager
+        address genesisIssuer //StateChainGateway
     )
         ERC20("Chainflip", "FLIP")
         nzAddr(receiverGenesisValidatorFlip)
@@ -3046,7 +3322,8 @@ contract FLIP is ERC20, IFLIP, Shared {
     }
 
     /**
-     * @notice Update the issuer address. This is to be controlled by the StateChain.
+     * @notice Update the issuer address. This is to be controlled via an issuer
+     *         controlled by the StateChain.
      * @param newIssuer   Account that can mint and burn FLIP tokens.
      */
     function updateIssuer(address newIssuer) external override nzAddr(issuer) onlyIssuer {
@@ -3056,13 +3333,24 @@ contract FLIP is ERC20, IFLIP, Shared {
 
     //////////////////////////////////////////////////////////////
     //                                                          //
+    //                  Non-state-changing functions            //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev Get the issuer address.
+    function getIssuer() external view override returns (address) {
+        return issuer;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
     //                        Modifiers                         //
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Check that the caller is the token Issuer.
+    /// @dev    Check that the caller is the token issuer.
     modifier onlyIssuer() {
-        require(msg.sender == issuer, "FLIP: only issuer");
+        require(msg.sender == issuer, "FLIP: not issuer");
         _;
     }
 }
@@ -3070,41 +3358,45 @@ contract FLIP is ERC20, IFLIP, Shared {
 contract DeployerContract is IShared {
     Vault public immutable vault;
     KeyManager public immutable keyManager;
-    StakeManager public immutable stakeManager;
+    StateChainGateway public immutable stateChainGateway;
     FLIP public immutable flip;
 
+    // The underlying contracts will check for non-zero inputs.
     constructor(
         Key memory aggKey,
         address govKey,
         address commKey,
-        uint256 minStake,
+        uint256 minFunding,
         uint256 initSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake
     ) {
         KeyManager _keyManager = new KeyManager(aggKey, govKey, commKey);
         Vault _vault = new Vault(_keyManager);
-        StakeManager _stakeManager = new StakeManager(_keyManager, minStake);
+        StateChainGateway _stateChainGateway = new StateChainGateway(_keyManager, minFunding);
         FLIP _flip = new FLIP(
             initSupply,
             numGenesisValidators,
             genesisStake,
-            address(_stakeManager),
+            address(_stateChainGateway),
             govKey,
-            address(_stakeManager)
+            address(_stateChainGateway)
         );
-        // Set the FLIP address to the StakeManager contract
-        _stakeManager.setFlip(FLIP(address(_flip)));
+        // Set the FLIP address in the StateChainGateway contract
+        _stateChainGateway.setFlip(_flip);
 
         // Storing all addresses for traceability.
         vault = _vault;
         keyManager = _keyManager;
-        stakeManager = _stakeManager;
+        stateChainGateway = _stateChainGateway;
         flip = _flip;
     }
 }
 
 abstract contract CFReceiver is ICFReceiver {
+    /// @dev The address used to indicate whether the funds received are native or a token
+    address private constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /// @dev    Chainflip's Vault address where xSwaps and xCalls will be originated from.
     address public cfVault;
     address public owner;
@@ -3126,8 +3418,8 @@ abstract contract CFReceiver is ICFReceiver {
      * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
      * @param srcAddress    Bytes containing the source address on the source chain.
      * @param message       The message sent on the source chain. This is a general purpose message.
-     * @param token         Address of the token received.
-     * @param amount        Amount of tokens received.
+     * @param token         Address of the token received. _NATIVE_ADDR if native.
+     * @param amount        Amount of tokens received. This will match msg.value for native tokens.
      */
     function cfReceive(
         uint32 srcChain,
@@ -3178,8 +3470,11 @@ abstract contract CFReceiver is ICFReceiver {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev Update Chainflip's Vault address
-    function updateCfVault(address _cfVault) external override onlyOwner {
+    /**
+     * @notice           Update Chanflip's Vault address.
+     * @param _cfVault    New Chainflip's Vault address.
+     */
+    function updateCfVault(address _cfVault) external onlyOwner {
         cfVault = _cfVault;
     }
 
@@ -3205,14 +3500,14 @@ abstract contract CFReceiver is ICFReceiver {
 contract NewTestReceiver is CFReceiver, IMulticall {
     address vault;
     address flip;
-    address stake_manager;
+    address fund_manager;
 
     address[] public callTargets;
     bytes[] public callArguments;
 
-    constructor(address _vault, address _stake_manager, address _flip) CFReceiver(_vault) {
+    constructor(address _vault, address _fund_manager, address _flip) CFReceiver(_vault) {
         vault = _vault;
-        stake_manager = _stake_manager;
+        fund_manager = _fund_manager;
         flip = _flip;
     }
 
@@ -3223,7 +3518,7 @@ contract NewTestReceiver is CFReceiver, IMulticall {
     }
 
     // IMulticall override
-    function run(Call[] calldata calls) external payable {
+    function run(Call[] calldata calls, address token, uint256 amount) external payable {
         _process_call_sequence();
     }
 
@@ -3256,14 +3551,16 @@ contract NewTestReceiver is CFReceiver, IMulticall {
         callArguments.push(abi.encodeWithSelector(ERC20.transfer.selector, to, amount));
     }
 
-    function add_stake_manager_stake(bytes32 id, uint256 amount, address return_addr) public {
-        callTargets.push(stake_manager);
-        callArguments.push(abi.encodeWithSelector(StakeManager.stake.selector, id, amount, return_addr));
+    function add_fund_manager_fund(bytes32 id, uint256 amount, address return_addr) public {
+        callTargets.push(fund_manager);
+        callArguments.push(
+            abi.encodeWithSelector(StateChainGateway.fundStateChainAccount.selector, id, amount, return_addr)
+        );
     }
 
-    function add_stake_manager_execute(bytes32 id) public {
-        callTargets.push(stake_manager);
-        callArguments.push(abi.encodeWithSelector(StakeManager.executeClaim.selector, id));
+    function add_fund_manager_execute(bytes32 id) public {
+        callTargets.push(fund_manager);
+        callArguments.push(abi.encodeWithSelector(StateChainGateway.executeRedemption.selector, id));
     }
 
     function add_vault_xswaptoken(
@@ -3310,13 +3607,13 @@ contract NewTestEchidna is IShared {
     DeployerContract internal dc;
     Vault internal vault;
     KeyManager internal keyManager;
-    StakeManager internal stakeManager;
+    StateChainGateway internal stateChainGateway;
     FLIP internal flip;
     NewTestReceiver internal receiver;
     MockToken[] internal tokens;
     mapping(uint256 => address) internal stakingAddresses;
-    mapping(uint256 => uint256) internal claimedAmounts;
-    mapping(uint256 => bool) internal claimableNodeID;
+    mapping(uint256 => uint256) internal redemptionedAmounts;
+    mapping(uint256 => bool) internal redemptionableNodeID;
 
     // Echidna requires that no parameters are passed to the constructor so we need to set
     // constants for the deployments of the contracts
@@ -3334,7 +3631,7 @@ contract NewTestEchidna is IShared {
         // Local references to contracts
         vault = dc.vault();
         keyManager = dc.keyManager();
-        stakeManager = dc.stakeManager();
+        stateChainGateway = dc.stateChainGateway();
         flip = dc.flip();
 
         // Mock tokens (can be extended to any size)
@@ -3343,7 +3640,7 @@ contract NewTestEchidna is IShared {
 
         // Receiver contract to test vault calls
         hevm.prank(govKey);
-        receiver = new NewTestReceiver(address(vault), address(stakeManager), address(flip));
+        receiver = new NewTestReceiver(address(vault), address(stateChainGateway), address(flip));
     }
 
     // ===============================================================================================
@@ -3400,7 +3697,7 @@ contract NewTestEchidna is IShared {
         flip.transfer(msg.sender, amount);
 
         hevm.prank(msg.sender);
-        flip.approve(address(stakeManager), type(uint256).max);
+        flip.approve(address(stateChainGateway), type(uint256).max);
 
         hevm.prank(msg.sender);
         flip.approve(address(vault), type(uint256).max);
@@ -3445,98 +3742,124 @@ contract NewTestEchidna is IShared {
     }
 
     // ===============================================================================================
-    //                 Wrappers for functions needing signatures in StakeManager
+    //                 Wrappers for functions needing signatures in StateChainGateway
     // ===============================================================================================
 
     // this will need some sanity check on the values (can we interact with the sc from echidna?)
     function test_update_flip_supply(uint256 new_supply, uint256 sc_blocknumber) public {
-        bytes32 message = keccak256(abi.encode(stakeManager.updateFlipSupply.selector, new_supply, sc_blocknumber));
+        bytes32 message = keccak256(
+            abi.encode(stateChainGateway.updateFlipSupply.selector, new_supply, sc_blocknumber)
+        );
 
-        SigData memory sig = sign_message_with_key(message, nonce, aggPK, address(stakeManager), address(keyManager));
+        SigData memory sig = sign_message_with_key(
+            message,
+            nonce,
+            aggPK,
+            address(stateChainGateway),
+            address(keyManager)
+        );
         nonce++;
 
         uint256 flip_supply = flip.totalSupply();
-        uint256 prev_balance = flip.balanceOf(address(stakeManager));
+        uint256 prev_balance = flip.balanceOf(address(stateChainGateway));
         bool increased = new_supply > flip_supply;
 
-        stakeManager.updateFlipSupply(sig, new_supply, sc_blocknumber);
+        stateChainGateway.updateFlipSupply(sig, new_supply, sc_blocknumber);
 
         if (increased) {
             uint256 difference = new_supply - flip_supply;
-            assert(flip.balanceOf(address(stakeManager)) == prev_balance + difference);
+            assert(flip.balanceOf(address(stateChainGateway)) == prev_balance + difference);
         } else {
             uint256 difference = flip_supply - new_supply;
-            assert(flip.balanceOf(address(stakeManager)) == prev_balance - difference);
+            assert(flip.balanceOf(address(stateChainGateway)) == prev_balance - difference);
         }
     }
 
     // does not check that the argument is indeed a key manager
-    function test_update_stakemanager_key_manager(address newkeyman) internal {
-        bytes32 message = keccak256(abi.encode(stakeManager.updateKeyManager.selector, newkeyman));
+    function test_update_stateChainGateway_key_manager(address newkeyman) internal {
+        bytes32 message = keccak256(abi.encode(stateChainGateway.updateKeyManager.selector, newkeyman));
 
-        SigData memory sig = sign_message_with_key(message, nonce, aggPK, address(stakeManager), address(keyManager));
+        SigData memory sig = sign_message_with_key(
+            message,
+            nonce,
+            aggPK,
+            address(stateChainGateway),
+            address(keyManager)
+        );
         nonce++;
 
-        stakeManager.updateKeyManager(sig, IKeyManager(newkeyman));
+        stateChainGateway.updateKeyManager(sig, IKeyManager(newkeyman), false);
 
-        assert(newkeyman == address(stakeManager.getKeyManager()));
+        assert(newkeyman == address(stateChainGateway.getKeyManager()));
     }
 
     // Token staking test
-    function test_stake(uint256 amount) public {
+    function test_fund(uint256 amount) public {
         hevm.prank(msg.sender);
-        stakeManager.stake(bytes32(nodeid), amount, msg.sender);
+        stateChainGateway.fundStateChainAccount(bytes32(nodeid), amount);
         stakingAddresses[nodeid] = msg.sender;
-        claimableNodeID[nodeid] = true;
+        redemptionableNodeID[nodeid] = true;
 
         nodeid++;
     }
 
-    // staker will be msg.sender for now
-    function test_register_claim(uint256 node, uint256 amount, uint48 expiryTime) public {
+    // funder will be msg.sender for now
+    function test_register_redemption(uint256 node, uint256 amount, uint48 expiryTime) public {
         uint256 nodeID = 1 + (node % (nodeid - 1));
-        address staker = msg.sender;
+        address funder = msg.sender;
 
-        require(claimableNodeID[nodeID] == true);
+        require(redemptionableNodeID[nodeID] == true);
 
         bytes32 message = keccak256(
-            abi.encode(stakeManager.registerClaim.selector, nodeID, amount, staker, expiryTime)
+            abi.encode(stateChainGateway.registerRedemption.selector, nodeID, amount, funder, expiryTime)
         );
 
-        SigData memory sig = sign_message_with_key(message, nonce, aggPK, address(stakeManager), address(keyManager));
+        SigData memory sig = sign_message_with_key(
+            message,
+            nonce,
+            aggPK,
+            address(stateChainGateway),
+            address(keyManager)
+        );
         nonce++;
 
-        stakeManager.registerClaim(sig, bytes32(nodeID), amount, staker, expiryTime);
-        StakeManager.Claim memory result = stakeManager.getPendingClaim(bytes32(nodeID));
+        stateChainGateway.registerRedemption(sig, bytes32(nodeID), amount, funder, expiryTime);
+        StateChainGateway.Redemption memory result = stateChainGateway.getPendingRedemption(bytes32(nodeID));
 
-        claimedAmounts[nodeID] = amount;
+        redemptionedAmounts[nodeID] = amount;
 
-        assert(result.staker == stakingAddresses[nodeID]);
+        assert(result.redeemAddress == stakingAddresses[nodeID]);
     }
 
-    function test_execute_claim(uint256 node) public {
+    function test_execute_redemption(uint256 node) public {
         uint256 nodeID = 1 + (node % (nodeid - 1));
         uint256 balance_before = flip.balanceOf(stakingAddresses[nodeID]);
 
-        // Execute the claim
-        stakeManager.executeClaim(bytes32(nodeID));
+        // Execute the redemption
+        stateChainGateway.executeRedemption(bytes32(nodeID));
 
-        // Make sure the claim was fulfilled
-        assert(flip.balanceOf(stakingAddresses[nodeID]) == balance_before + claimedAmounts[nodeID]);
+        // Make sure the redemption was fulfilled
+        assert(flip.balanceOf(stakingAddresses[nodeID]) == balance_before + redemptionedAmounts[nodeID]);
 
-        claimableNodeID[nodeID] = false;
+        redemptionableNodeID[nodeID] = false;
     }
 
     function test_update_flip_issuer(address new_issuer) public {
         require(new_issuer != address(0));
-        bytes32 message = keccak256(abi.encode(stakeManager.updateFlipIssuer.selector, new_issuer));
+        bytes32 message = keccak256(abi.encode(stateChainGateway.updateFlipIssuer.selector, new_issuer));
 
-        SigData memory sig = sign_message_with_key(message, nonce, aggPK, address(stakeManager), address(keyManager));
+        SigData memory sig = sign_message_with_key(
+            message,
+            nonce,
+            aggPK,
+            address(stateChainGateway),
+            address(keyManager)
+        );
         nonce++;
 
-        stakeManager.updateFlipIssuer(sig, new_issuer);
+        stateChainGateway.updateFlipIssuer(sig, new_issuer, false);
 
-        assert(flip.issuer() == new_issuer);
+        assert(flip.getIssuer() == new_issuer);
     }
 
     // ===============================================================================================
@@ -3550,7 +3873,7 @@ contract NewTestEchidna is IShared {
         SigData memory sig = sign_message_with_key(message, nonce, aggPK, address(vault), address(keyManager));
         nonce++;
 
-        vault.updateKeyManager(sig, IKeyManager(newkeyman));
+        vault.updateKeyManager(sig, IKeyManager(newkeyman), false);
 
         assert(newkeyman == address(vault.getKeyManager()));
     }
@@ -3598,17 +3921,20 @@ contract NewTestEchidna is IShared {
         MockToken token_addr = tokens[token % tokens.length];
         address multicall_addr = address(receiver);
 
+        // TODO: Add gas amount to the fuzzing
+        uint256 gasMulticall = 100000;
+
         hevm.prank(address(this));
         token_addr.mint(address(vault), amount);
 
-        bytes32 message = keccak256(
-            abi.encode(vault.executeActions.selector, address(token_addr), amount, multicall_addr, calls)
-        );
+        TransferParams memory t_params = TransferParams(address(token_addr), payable(multicall_addr), amount);
+
+        bytes32 message = keccak256(abi.encode(vault.executeActions.selector, t_params, calls, gasMulticall));
 
         SigData memory sig = sign_message_with_key(message, nonce, aggPK, address(vault), address(keyManager));
         nonce++;
 
-        vault.executeActions(sig, address(token_addr), amount, payable(multicall_addr), calls);
+        vault.executeActions(sig, t_params, calls, gasMulticall);
     }
 
     function test_vault_transfer(TransferParams calldata t_params) public {
@@ -3637,47 +3963,47 @@ contract NewTestEchidna is IShared {
         (KeyManager km, bytes32 pk) = generate_new_keymanager();
 
         test_update_vault_key_manager(address(km));
-        test_update_stakemanager_key_manager(address(km));
+        test_update_stateChainGateway_key_manager(address(km));
 
         aggPK = pk;
         keyManager = km;
     }
 
-    function test_stake_plus_claim(uint256 amount) public {
+    function test_fund_plus_redemption(uint256 amount) public {
         // Get a valid random amount between 10**19 and 10**19 + 10**30 - 1
-        uint256 to_stake = 10 ** 19 + (amount % 10 ** 30);
+        uint256 to_fund = 10 ** 19 + (amount % 10 ** 30);
 
         // Get tokens from governance
         hevm.prank(govKey);
         flip.transfer(msg.sender, amount);
 
         hevm.prank(msg.sender);
-        flip.approve(address(stakeManager), type(uint256).max);
+        flip.approve(address(stateChainGateway), type(uint256).max);
 
         hevm.prank(msg.sender);
         flip.approve(address(vault), type(uint256).max);
 
         hevm.prank(msg.sender);
-        test_stake(to_stake);
+        test_fund(to_fund);
 
         hevm.prank(govKey);
-        test_register_claim(nodeid - 1, to_stake, uint48(block.timestamp + 3 days));
+        test_register_redemption(nodeid - 1, to_fund, uint48(block.timestamp + 3 days));
 
         hevm.warp(block.timestamp + 2 days + 500);
 
         hevm.prank(msg.sender);
-        test_execute_claim(nodeid - 1);
+        test_execute_redemption(nodeid - 1);
     }
 
-    function test_stakemanager_gov_withdrawal() public {
+    function test_stateChainGateway_gov_withdrawal() public {
         hevm.prank(commKey);
-        stakeManager.disableCommunityGuard();
+        stateChainGateway.disableCommunityGuard();
 
         hevm.prank(govKey);
-        stakeManager.suspend();
+        stateChainGateway.suspend();
 
         hevm.prank(govKey);
-        stakeManager.govWithdraw();
+        stateChainGateway.govWithdraw();
     }
 
     function test_vault_gov_withdrawal() public {
@@ -3688,10 +4014,10 @@ contract NewTestEchidna is IShared {
         }
 
         hevm.prank(commKey);
-        stakeManager.disableCommunityGuard();
+        stateChainGateway.disableCommunityGuard();
 
         hevm.prank(govKey);
-        stakeManager.suspend();
+        stateChainGateway.suspend();
 
         hevm.warp(block.timestamp + 14 days + 1);
 
@@ -3703,25 +4029,25 @@ contract NewTestEchidna is IShared {
     //                                    Invariants
     // ===============================================================================================
 
-    // Flip address in StakeManager must not change
+    // Flip address in StateChainGateway must not change
     function test_constant_flip() external {
-        assert(address(stakeManager.getFLIP()) == address(flip));
+        assert(address(stateChainGateway.getFLIP()) == address(flip));
     }
 
     // All keymanager references must be the same
     function test_keymanager_consistency() external {
-        assert(stakeManager.getKeyManager() == vault.getKeyManager());
+        assert(stateChainGateway.getKeyManager() == vault.getKeyManager());
     }
 
     // All govKey references must be the same
     function test_govkey_consistency() external {
-        assert(stakeManager.getGovernor() == vault.getGovernor());
+        assert(stateChainGateway.getGovernor() == vault.getGovernor());
         assert(vault.getGovernor() == keyManager.getGovernanceKey());
     }
 
     // All commKey references must be the same
     function test_commkey_consistency() external {
-        assert(stakeManager.getCommunityKey() == vault.getCommunityKey());
+        assert(stateChainGateway.getCommunityKey() == vault.getCommunityKey());
         assert(vault.getCommunityKey() == keyManager.getCommunityKey());
     }
 }
