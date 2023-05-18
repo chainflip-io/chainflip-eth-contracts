@@ -11,7 +11,7 @@ import "./abstract/Shared.sol";
  *      The governor address will be the same as the revoker address in the TokenVesting contract.
  */
 contract SCGatewayReference is ISCGatewayReference, Shared {
-    address public governor;
+    address private governor;
 
     IStateChainGateway private stateChainGateway;
 
@@ -23,21 +23,40 @@ contract SCGatewayReference is ISCGatewayReference, Shared {
         stateChainGateway = _stateChainGateway;
     }
 
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                  State-changing functions                //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
     /// @dev    Update the reference to the StateChainGateway contract
     function updateStateChainGateway(
         IStateChainGateway _stateChainGateway
     ) external override onlyGovernor nzAddr(address(_stateChainGateway)) {
+        emit StateChainGatewayUpdated(address(stateChainGateway), address(_stateChainGateway));
         stateChainGateway = _stateChainGateway;
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
     function updateGovernor(address _governor) external override onlyGovernor nzAddr(_governor) {
+        emit GovernorUpdated(governor, _governor);
         governor = _governor;
     }
+
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //                Non-state-changing functions              //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev    Getter function for the TokenVesting contract
     function getStateChainGateway() external view override returns (IStateChainGateway) {
         return stateChainGateway;
+    }
+
+    /// @dev    Getter function for the governor address
+    function getGovernor() external view override returns (address) {
+        return governor;
     }
 
     /// @notice Ensure that the caller is the governor address.

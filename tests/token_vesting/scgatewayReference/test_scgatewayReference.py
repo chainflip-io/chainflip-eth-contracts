@@ -14,7 +14,7 @@ def test_reference_constructor(addrs, cf, SCGatewayReference):
     scGatewayReference = addrs.DEPLOYER.deploy(
         SCGatewayReference, addrs.DEPLOYER, NON_ZERO_ADDR
     )
-    assert scGatewayReference.governor() == addrs.DEPLOYER
+    assert scGatewayReference.getGovernor() == addrs.DEPLOYER
     assert scGatewayReference.getStateChainGateway() == NON_ZERO_ADDR
 
 
@@ -25,9 +25,10 @@ def test_reference_updateGovernor(addrs, scGatewayReference):
     with reverts(REV_MSG_NZ_ADDR):
         scGatewayReference.updateGovernor(ZERO_ADDR, {"from": addrs.DEPLOYER})
 
-    assert scGatewayReference.governor() == addrs.DEPLOYER
-    scGatewayReference.updateGovernor(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
-    assert scGatewayReference.governor() == NON_ZERO_ADDR
+    assert scGatewayReference.getGovernor() == addrs.DEPLOYER
+    tx = scGatewayReference.updateGovernor(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
+    assert tx.events["GovernorUpdated"][0].values() == [addrs.DEPLOYER, NON_ZERO_ADDR]
+    assert scGatewayReference.getGovernor() == NON_ZERO_ADDR
 
 
 def test_reference_updateReference(addrs, cf, scGatewayReference):
@@ -40,7 +41,13 @@ def test_reference_updateReference(addrs, cf, scGatewayReference):
         scGatewayReference.updateStateChainGateway(ZERO_ADDR, {"from": addrs.DEPLOYER})
 
     assert scGatewayReference.getStateChainGateway() == cf.stateChainGateway
-    scGatewayReference.updateStateChainGateway(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
+    tx = scGatewayReference.updateStateChainGateway(
+        NON_ZERO_ADDR, {"from": addrs.DEPLOYER}
+    )
+    assert tx.events["StateChainGatewayUpdated"][0].values() == [
+        cf.stateChainGateway,
+        NON_ZERO_ADDR,
+    ]
     assert scGatewayReference.getStateChainGateway() == NON_ZERO_ADDR
 
 
