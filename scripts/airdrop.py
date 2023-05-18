@@ -40,7 +40,6 @@ airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
 # Set SNAPSHOT_BLOCKNUMBER environment variable if we want to take the snapshot on a particular block
 def main():
     AUTONOMY_SEED = os.environ["SEED"]
-    DEPLOY_ARTEFACT_ID = os.environ.get("DEPLOY_ARTEFACT_ID")
     cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
     DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
@@ -303,8 +302,6 @@ def deployNewContracts(airdropper):
     newVault = cf.vault.address
     newFlip = cf.flip.address
     newKeyManager = cf.keyManager.address
-
-    listOfTx = []
 
     logging.info("StateChainGateway address:" + newStateChainGateway)
     logging.info("Vault address:" + newVault)
