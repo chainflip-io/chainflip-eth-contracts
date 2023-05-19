@@ -109,6 +109,9 @@ jobs:
       - run: poetry run brownie compile
       - run: cat ./build/contracts/Deposit.json | jq .bytecode
 
+      # Ensure that the Deposit's bytecode hasn't changed
+      - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat
+
       - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
 
