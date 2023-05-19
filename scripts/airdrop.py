@@ -68,7 +68,9 @@ def main():
     if (not snapshotSuccessMessage + oldFlipSnapshotFilename in parsedLog) or (
         not os.path.exists(oldFlipSnapshotFilename)
     ):
-        assert chain.id == 5 or chain.id == 31337, logging.error("Wrong chain. Should be running in goerli")
+        assert chain.id == 5 or chain.id == 31337, logging.error(
+            "Wrong chain. Should be running in goerli"
+        )
         printAndLog(
             "Old FLIP snapshot not taken previously. Snapshot Blocknumber set to "
             + str(snapshot_blocknumber)
