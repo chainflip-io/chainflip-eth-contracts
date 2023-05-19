@@ -141,7 +141,7 @@ jobs:
           echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Save agg key to file
-        run: echo ${{ inputs.agg_key }} > agg_key
+        run: echo ${{ env.AGG_KEY }} > agg_key
 
       - name: Save artifacts
         uses: actions/upload-artifact@v3
