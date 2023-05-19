@@ -110,7 +110,7 @@ jobs:
       - run: cat ./build/contracts/Deposit.json | jq .bytecode
 
       # Ensure that the Deposit's bytecode hasn't changed
-      - run: npx hardhat node --port 10997
+      - run: npx hardhat node --port 10997 &
       - run: poetry run brownie networks add Ethereum hardhat-modif host=http://localhost:10997 chainid=31337
       - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat-modif
 
