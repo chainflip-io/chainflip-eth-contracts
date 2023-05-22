@@ -13,6 +13,7 @@ from brownie import (
     FLIP,
     MockUSDC,
     DeployerContract,
+    CFReceiverMock,
 )
 from deploy import deploy_Chainflip_contracts, deploy_usdc_contract
 
@@ -35,9 +36,9 @@ def main():
         "GENESIS_STAKE",
         "NUM_GENESIS_VALIDATORS",
     ]
-    for env_var_name in env_var_names:
-        if env_var_name not in os.environ:
-            raise Exception(f"Environment variable {env_var_name} is not set")
+    # for env_var_name in env_var_names:
+    #     if env_var_name not in os.environ:
+    #         raise Exception(f"Environment variable {env_var_name} is not set")
 
     # For live deployment, add a confirmation step to allow the user to verify the parameters.
     if chain.id == 1:
@@ -74,6 +75,7 @@ def main():
     localnet_chainId = 10997
     if chain.id == localnet_chainId:
         cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
+        cf.cfReceiverMock = DEPLOYER.deploy(CFReceiverMock, cf.vault)
 
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
@@ -101,6 +103,8 @@ def main():
     if chain.id == localnet_chainId:
         print(f"  USDC: {cf.mockUSDC.address}")
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
+        print(f"  CfReceiver Mock: {cf.mockUSDC.address}")
+        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiverMock.address
 
     print("\n😎😎 Deployment success! 😎😎")
 
