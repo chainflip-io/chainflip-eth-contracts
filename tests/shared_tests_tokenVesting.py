@@ -27,6 +27,7 @@ def check_state(
     cliff,
     end,
     canStake,
+    beneficiary_transferrable,
     stateChainGateway,
     revoked,
 ):
@@ -37,6 +38,7 @@ def check_state(
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == canStake
+    assert tv.beneficiaryCanBeTransferred() == beneficiary_transferrable
     assert tv.stateChainGateway() == stateChainGateway
     assert tv.revoked(cf.flip) == revoked
 

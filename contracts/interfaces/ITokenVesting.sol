@@ -6,8 +6,8 @@ interface ITokenVesting {
     event TokensReleased(IERC20 indexed token, uint256 amount);
     event TokenVestingRevoked(IERC20 indexed token, uint256 refund);
 
-    event BeneficiaryUpdated(address oldBeneficiary, address newBeneficiary);
-    event RevokerUpdated(address oldRevoker, address newRevoker);
+    event BeneficiaryTransferred(address oldBeneficiary, address newBeneficiary);
+    event RevokerTransferred(address oldRevoker, address newRevoker);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -23,9 +23,9 @@ interface ITokenVesting {
 
     function retrieveRevokedFunds(IERC20 token) external;
 
-    function updateBeneficiary(address beneficiary_) external;
+    function transferBeneficiary(address beneficiary_) external;
 
-    function updateRevoker(address revoker_) external;
+    function transferRevoker(address revoker_) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

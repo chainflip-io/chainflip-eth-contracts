@@ -37,6 +37,7 @@ def test_release(addrs, cf, tokenVestingStaking, maths, st_sleepTime):
             cliff,
             end,
             True,
+            True,
             cf.stateChainGateway,
             0,
         )
@@ -62,6 +63,7 @@ def test_release_all(addrs, cf, tokenVestingStaking, maths):
         True,
         cliff,
         end,
+        True,
         True,
         cf.stateChainGateway,
         0,
@@ -114,6 +116,7 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingStaking, maths)
                 cliff,
                 end,
                 True,
+                True,
                 cf.stateChainGateway,
                 0,
             )
@@ -150,6 +153,7 @@ def test_release_staking_rewards_after_end(addrs, cf, tokenVestingStaking, maths
         cliff,
         end,
         True,
+        True,
         cf.stateChainGateway,
         0,
     )
@@ -175,6 +179,7 @@ def test_release_around_cliff(addrs, cf, tokenVestingStaking, maths, st_sleepTim
             True,
             cliff,
             end,
+            True,
             True,
             cf.stateChainGateway,
             0,

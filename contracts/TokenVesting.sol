@@ -21,8 +21,9 @@ contract TokenVesting is ReentrancyGuard, ITokenVesting {
 
     uint256 public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
 
-    // beneficiary of tokens after they are released
+    // beneficiary of tokens after they are released. It can be transferrable.
     address private beneficiary;
+    bool public immutable beneficiaryCanBeTransferred;
     // the revoker who can cancel the vesting and withdraw any unvested tokens
     address private revoker;
 
@@ -53,6 +54,7 @@ contract TokenVesting is ReentrancyGuard, ITokenVesting {
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
+     * @param beneficiaryCanBeTransferred_ whether the beneficiary address can be transferred
      * @param stateChainGateway_ the contract to stake to if canStake
      */
     constructor(
@@ -61,6 +63,7 @@ contract TokenVesting is ReentrancyGuard, ITokenVesting {
         uint256 cliff_,
         uint256 end_,
         bool canStake_,
+        bool beneficiaryCanBeTransferred_,
         IStateChainGateway stateChainGateway_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
@@ -74,6 +77,7 @@ contract TokenVesting is ReentrancyGuard, ITokenVesting {
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
+        beneficiaryCanBeTransferred = beneficiaryCanBeTransferred_;
         stateChainGateway = stateChainGateway_;
     }
 
@@ -189,16 +193,17 @@ contract TokenVesting is ReentrancyGuard, ITokenVesting {
     }
 
     /// @dev    Allow the beneficiary to be transferred to a new address if needed
-    function updateBeneficiary(address beneficiary_) external override onlyBeneficiary {
+    function transferBeneficiary(address beneficiary_) external override onlyBeneficiary {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
-        emit BeneficiaryUpdated(beneficiary, beneficiary_);
+        require(beneficiaryCanBeTransferred, "Vesting: beneficiary not transferrable");
+        emit BeneficiaryTransferred(beneficiary, beneficiary_);
         beneficiary = beneficiary_;
     }
 
     /// @dev    Allow the revoker to be transferred to a new address if needed
-    function updateRevoker(address revoker_) external override onlyRevoker {
+    function transferRevoker(address revoker_) external override onlyRevoker {
         require(revoker_ != address(0), "Vesting: revoker_ is the zero address");
-        emit RevokerUpdated(revoker, revoker_);
+        emit RevokerTransferred(revoker, revoker_);
         revoker = revoker_;
     }
 

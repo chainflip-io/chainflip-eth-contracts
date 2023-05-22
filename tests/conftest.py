@@ -135,6 +135,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         NON_STAKABLE,
+        BENEF_TRANSF,
         cf.stateChainGateway,
     )
 
@@ -161,6 +162,7 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
         cliff,
         end,
         STAKABLE,
+        BENEF_TRANSF,
         cf.stateChainGateway,
     )
 

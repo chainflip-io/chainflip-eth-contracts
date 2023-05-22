@@ -135,8 +135,8 @@ REV_MSG_GOV_SUSPENDED = "Governance: suspended"
 REV_MSG_GOV_NOT_SUSPENDED = "Governance: not suspended"
 
 # -----Vesting-----
-STAKABLE = True
-NON_STAKABLE = False
+STAKABLE = BENEF_TRANSF = True
+NON_STAKABLE = BENEF_NON_TRANSF = False
 REV_MSG_NO_TOKENS = "Vesting: no tokens are due"
 REV_MSG_NOT_REVOKER = "Vesting: not the revoker"
 REV_MSG_ALREADY_REVOKED = "Vesting: token already revoked"
@@ -146,6 +146,7 @@ REV_MSG_CANNOT_RETRIEVE = "Vesting: not retrievable"
 REV_MSG_FUNDS_REVOKED = "Vesting: staked funds revoked"
 REV_MSG_NOT_REVOKED = "Vesting: token not revoked"
 REV_MSG_NOT_BENEFICIARY = "Vesting: not the beneficiary"
+REV_MSG_BENEF_NOT_TRANSF = "Vesting: beneficiary not transferrable"
 REV_MSG_INVALID_CLIFF = "Vesting: invalid staking contract cliff"
 REV_MSG_INVALID_BENEFICIARY = "Vesting: beneficiary_ is the zero address"
 REV_MSG_CLIFF_AFTER_END = "Vesting: cliff_ after end_"
