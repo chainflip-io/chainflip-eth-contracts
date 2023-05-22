@@ -143,6 +143,19 @@ def deploy_new_keyManager(deployer, KeyManager, aggKey, govKey, communityKey):
     return keyManager
 
 
+def deploy_new_multicall(deployer, Multicall, vault):
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
+    # Deploy a new Multicall
+    multicall = deployer.deploy(
+        Multicall,
+        vault,
+    )
+
+    return multicall
+
+
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, MockUSDC, accounts):
 

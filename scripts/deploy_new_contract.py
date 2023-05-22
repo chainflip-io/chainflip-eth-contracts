@@ -12,8 +12,14 @@ from brownie import (
     StateChainGateway,
     FLIP,
     DeployerStateChainGateway,
+    Multicall,
 )
-from deploy import deploy_new_vault, deploy_new_stateChainGateway, deploy_new_keyManager
+from deploy import (
+    deploy_new_vault,
+    deploy_new_stateChainGateway,
+    deploy_new_keyManager,
+    deploy_new_multicall,
+)
 
 
 AUTONOMY_SEED = os.environ["SEED"]
@@ -24,11 +30,6 @@ DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 print(f"DEPLOYER = {DEPLOYER}")
 
-# Get necessary environment variables and throw if they are not set
-KEY_MANAGER_ADDRESS = os.environ["KEY_MANAGER_ADDRESS"]
-
-keyManager_address = f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}"
-keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
 
 addressDump = {}
 
@@ -41,15 +42,26 @@ def main():
     print()
 
 
+def getKeyManager():
+    # Get necessary environment variables and throw if they are not set
+    KEY_MANAGER_ADDRESS = os.environ["KEY_MANAGER_ADDRESS"]
+    keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
+    addressDump["KEY_MANAGER_ADDRESS"] = keyManager.address
+
+    return keyManager
+
+
 # This will deploy the new Vault. It requires a KeyManager to be deployed.
 def deploy_vault():
-    new_vault = deploy_new_vault(DEPLOYER, Vault, KeyManager, keyManager_address)
-    addressDump["VAULT_ADDRESS"] = new_vault.address
+    keyManager = getKeyManager()
+    new_vault = deploy_new_vault(DEPLOYER, Vault, KeyManager, keyManager.address)
+    addressDump["NEW_VAULT_ADDRESS"] = new_vault.address
     store_artifacts()
 
 
 # This will deploy the new StateChainGateway.  It requires a KeyManager to be deployed.
 def deploy_scGateway():
+    keyManager = getKeyManager()
     FLIP_ADDRESS = os.environ["FLIP_ADDRESS"]
     flip_address = f"0x{cleanHexStr(FLIP_ADDRESS)}"
 
@@ -59,11 +71,11 @@ def deploy_scGateway():
         StateChainGateway,
         FLIP,
         DeployerStateChainGateway,
-        keyManager_address,
+        keyManager.address,
         flip_address,
         MIN_FUNDING,
     )
-    addressDump["SC_GATEWAY_ADDRESS"] = new_stateChainGateway.address
+    addressDump["NEW_SC_GATEWAY_ADDRESS"] = new_stateChainGateway.address
     addressDump["DEPLOYER_SM"] = deployerStateChainGateway.address
     addressDump["FLIP_ADDRESS"] = flip_address
 
@@ -73,6 +85,8 @@ def deploy_scGateway():
 # This will deploy the new KeyManager. For variables that are not passed
 # we will use the values from the existing KeyManager.
 def deploy_keyManager():
+    keyManager = getKeyManager()
+
     aggKey = os.environ.get("AGG_KEY") or keyManager.getAggregateKey()
     govKey = os.environ.get("GOV_KEY") or keyManager.getGovernanceKey()
     communityKey = os.environ.get("COMM_KEY") or keyManager.getCommunityKey()
@@ -80,8 +94,19 @@ def deploy_keyManager():
     new_keyManager = deploy_new_keyManager(
         DEPLOYER, KeyManager, aggKey, govKey, communityKey
     )
-    addressDump["KEY_MANAGER_ADDRESS"] = new_keyManager.address
+    addressDump["NEW_KEY_MANAGER_ADDRESS"] = new_keyManager.address
 
+    store_artifacts()
+
+
+# This will deploy the new Multicall. It requires the Vault address to be deployed.
+def deploy_multicall():
+    VAULT_ADDRESS = os.environ["VAULT_ADDRESS"]
+    vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
+    addressDump["VAULT_ADDRESS"] = vault.address
+
+    new_multicall = deploy_new_multicall(DEPLOYER, Multicall, vault.address)
+    addressDump["NEW_MULTICALL_ADDRESS"] = new_multicall.address
     store_artifacts()
 
 
@@ -90,20 +115,27 @@ def store_artifacts():
     print(f"  ChainID: {chain.id}")
     print(f"  Deployer: {DEPLOYER}")
 
-    print("Legacy contracts still in use\n----------------------------")
-    if not "KEY_MANAGER_ADDRESS" in addressDump:
-        print(f"  KeyManager: {keyManager_address}")
+    print("\nLegacy contracts still in use\n----------------------------")
+    if (
+        "KEY_MANAGER_ADDRESS" in addressDump
+        and not "NEW_KEY_MANAGER_ADDRESS" in addressDump
+    ):
+        print(f"  KeyManager: {addressDump['KEY_MANAGER_ADDRESS']}")
     if "FLIP_ADDRESS" in addressDump:
         print(f"  FLIP: {addressDump['FLIP_ADDRESS']}")
-
-    print("New deployed contract addresses\n----------------------------")
-    if "SC_GATEWAY_ADDRESS" in addressDump:
-        print(f"  DeployerContract: {addressDump['DEPLOYER_SM']}")
-        print(f"  StateChainGateway: {addressDump['SC_GATEWAY_ADDRESS']}")
     if "VAULT_ADDRESS" in addressDump:
         print(f"  Vault: {addressDump['VAULT_ADDRESS']}")
-    if "KEY_MANAGER_ADDRESS" in addressDump:
-        print(f"  KeyManager: {addressDump['KEY_MANAGER_ADDRESS']}")
+
+    print("\nNew deployed contract addresses\n----------------------------")
+    if "NEW_SC_GATEWAY_ADDRESS" in addressDump:
+        print(f"  DeployerContract: {addressDump['DEPLOYER_SM']}")
+        print(f"  StateChainGateway: {addressDump['NEW_SC_GATEWAY_ADDRESS']}")
+    if "NEW_VAULT_ADDRESS" in addressDump:
+        print(f"  Vault: {addressDump['NEW_VAULT_ADDRESS']}")
+    if "NEW_KEY_MANAGER_ADDRESS" in addressDump:
+        print(f"  KeyManager: {addressDump['NEW_KEY_MANAGER_ADDRESS']}")
+    if "NEW_MULTICALL_ADDRESS" in addressDump:
+        print(f"  Multicall: {addressDump['NEW_MULTICALL_ADDRESS']}")
     print("\n😎😎 Deployment success! 😎😎")
 
     if DEPLOY_ARTEFACT_ID:
