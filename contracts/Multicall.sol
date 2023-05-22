@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.17;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -33,13 +35,13 @@ contract Multicall is IMulticall, IERC721Receiver, IERC1155Receiver, Shared {
         cfVault = _cfVault;
     }
 
-    function run(Call[] calldata calls, address token, uint256 amount) external payable override onlyCfVault {
+    function run(Call[] calldata calls, address tokenIn, uint256 amountIn) external payable override onlyCfVault {
         // Prevents reentrancy
         if (isRunning) revert AlreadyRunning();
         isRunning = true;
 
-        if (amount > 0 && token != _NATIVE_ADDR) {
-            _safeTransferFrom(token, msg.sender, amount);
+        if (amountIn > 0 && tokenIn != _NATIVE_ADDR) {
+            _safeTransferFrom(tokenIn, msg.sender, amountIn);
         }
 
         for (uint256 i = 0; i < calls.length; i++) {
