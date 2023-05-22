@@ -23,6 +23,7 @@ INIT_USDC_ACCOUNT = int(10**6 * 10**6)
 TEST_AMNT_USDC = int(10**6)
 
 # Time in seconds
+MINUTE = 60
 HOUR = 60 * 60
 DAY = HOUR * 24
 MONTH = 30 * DAY
