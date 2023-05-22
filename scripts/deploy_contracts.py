@@ -71,7 +71,8 @@ def main():
         os.environ,
     )
 
-    # Deploy USDC mimic token only on local/devnets networks
+    # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
+    # swaps and liquidity provision, CFReceiverMock to test cross-chain messaging.
     localnet_chainId = 10997
     if chain.id == localnet_chainId:
         cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
