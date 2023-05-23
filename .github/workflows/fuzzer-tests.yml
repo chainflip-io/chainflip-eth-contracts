@@ -5,25 +5,22 @@ on:
       - master
 
 jobs:
-  lint:
-    # Skipping it for now because it needs to be updated with the new fuzzing tests
-    if: false
+  # lint:
+  #   # Skipping it for now because it needs to be updated with the new fuzzing tests
+  #   if: false
 
-    uses: ./.github/workflows/.lint.yml
+  #   uses: ./.github/workflows/.lint.yml
 
   fuzzer-tests:
-    # Skipping it for now because it needs to be updated with the new fuzzing tests
-    if: false
-
     name: Fuzzer
-    needs: lint
+    # needs: lint
     # Running on a github runner because for some reason self-hosted fails to run crytic-compile <contract>
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      matrix:
-        contract: [TestEchidna, TestEchidnaGovComm]
-        config: [echidna-assertion, echidna-property]
+    # strategy:
+    #   matrix:
+    #     contract: [TestEchidna, TestEchidnaGovComm]
+    #     config: [echidna-assertion, echidna-property]
 
     steps:
       - name: Checkout
@@ -49,8 +46,11 @@ jobs:
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
       - run: sudo snap install solc --edge
 
-      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
-      - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
+      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.2.0/echidna-2.2.0-Ubuntu-22.04.tar.gz -o echidna-2.2.0-Ubuntu-22.04.tar.gz
+      - run: tar -xvf echidna-2.2.0-Ubuntu-22.04.tar.gz
+
+      - run: echidna contracts/echidna/tests/NewTestEchidna-flat.sol --contract NewTestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
 
       # Running actual fuzzing tests
-      - run: poetry run ./echidna-test contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml
+      # - run: poetry run ./echidna contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml
+      # - run: poetry run ./echidna contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml
