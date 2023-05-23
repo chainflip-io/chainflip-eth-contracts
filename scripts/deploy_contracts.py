@@ -50,6 +50,7 @@ def main():
         print(f"  Community Key: {os.environ['COMM_KEY']}")
         print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
         print(f"  Genesis Stake: {os.environ['GENESIS_STAKE']}")
+        print(f"  Genesis Stake / E_18: {int(os.environ['GENESIS_STAKE'])/E_18}")
         print(f"  Num Genesis Validators: {os.environ['NUM_GENESIS_VALIDATORS']}")
         print(
             f"\nFLIP tokens will be minted to the Safekeeper account {os.environ['GOV_KEY']}"
@@ -87,12 +88,13 @@ def main():
 
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
-    print(f"  Deployer: {cf.deployer}")
+    print(f"  Deployer:   {cf.deployer}")
     print(f"  Safekeeper: {cf.safekeeper}")
-    print(f"  GovKey: {cf.gov}")
+    print(f"  GovKey:     {cf.gov}")
     print(f"  Community Key: {cf.communityKey}")
     print(f"  Aggregate Key: {cf.keyManager.getAggregateKey()}")
     print(f"  Genesis Stake: {cf.genesisStake}")
+    print(f"  Genesis Stake / E_18: {cf.genesisStake/E_18}")
     print(f"  Num Genesis Validators: {cf.numGenesisValidators}" + "\n")
 
     print("Deployed contract addresses\n----------------------------")
