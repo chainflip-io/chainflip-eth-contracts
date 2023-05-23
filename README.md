@@ -28,7 +28,7 @@ brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
 pre-commit install
 ```
 
-Then, create a `.env` file using `.env.example` as a reference or manually set each of the environment variables. To deploy on a live network a SEED and an RPC endpoint is needed.
+Then, set the appropriate environment variables. See `.env.example` as an example. To deploy on a live network a SEED and an RPC endpoint is needed.
 
 ### Running Tests
 
