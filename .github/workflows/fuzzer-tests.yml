@@ -44,7 +44,8 @@ jobs:
 
       - run: sudo apt-get install build-essential procps curl file git
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - run: echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/runner/.bash_profile
+      - run: (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/runner/.bash_profile
+      - run: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
       - run: sudo apt-get install build-essential
       - run: brew install echidna
 
