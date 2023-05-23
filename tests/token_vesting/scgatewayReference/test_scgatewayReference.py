@@ -1,6 +1,5 @@
 from consts import *
 from brownie import reverts, chain
-from brownie.test import given, strategy
 from shared_tests_tokenVesting import *
 
 
@@ -18,16 +17,19 @@ def test_reference_constructor(addrs, cf, SCGatewayReference):
     assert scGatewayReference.getStateChainGateway() == NON_ZERO_ADDR
 
 
-def test_reference_updateGovernor(addrs, scGatewayReference):
+def test_reference_transferGovernor(addrs, scGatewayReference):
     with reverts(REV_MSG_SCGREF_REV_GOV):
-        scGatewayReference.updateGovernor(NON_ZERO_ADDR, {"from": addrs.INVESTOR})
+        scGatewayReference.transferGovernor(NON_ZERO_ADDR, {"from": addrs.INVESTOR})
 
     with reverts(REV_MSG_NZ_ADDR):
-        scGatewayReference.updateGovernor(ZERO_ADDR, {"from": addrs.DEPLOYER})
+        scGatewayReference.transferGovernor(ZERO_ADDR, {"from": addrs.DEPLOYER})
 
     assert scGatewayReference.getGovernor() == addrs.DEPLOYER
-    tx = scGatewayReference.updateGovernor(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
-    assert tx.events["GovernorUpdated"][0].values() == [addrs.DEPLOYER, NON_ZERO_ADDR]
+    tx = scGatewayReference.transferGovernor(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
+    assert tx.events["GovernorTransferred"][0].values() == [
+        addrs.DEPLOYER,
+        NON_ZERO_ADDR,
+    ]
     assert scGatewayReference.getGovernor() == NON_ZERO_ADDR
 
 

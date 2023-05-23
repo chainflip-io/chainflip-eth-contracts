@@ -4,7 +4,7 @@ import "./IStateChainGateway.sol";
 
 interface ISCGatewayReference {
     event StateChainGatewayUpdated(address oldStateChainGateway, address newStateChainGateway);
-    event GovernorUpdated(address oldGovernor, address newGovernor);
+    event GovernorTransferred(address oldGovernor, address newGovernor);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -14,7 +14,7 @@ interface ISCGatewayReference {
 
     function updateStateChainGateway(IStateChainGateway stateChainGateway_) external;
 
-    function updateGovernor(address _governor) external;
+    function transferGovernor(address _governor) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //

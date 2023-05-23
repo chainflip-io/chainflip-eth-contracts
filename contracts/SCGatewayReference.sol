@@ -38,8 +38,8 @@ contract SCGatewayReference is ISCGatewayReference, Shared {
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
-    function updateGovernor(address _governor) external override onlyGovernor nzAddr(_governor) {
-        emit GovernorUpdated(governor, _governor);
+    function transferGovernor(address _governor) external override onlyGovernor nzAddr(_governor) {
+        emit GovernorTransferred(governor, _governor);
         governor = _governor;
     }
 
