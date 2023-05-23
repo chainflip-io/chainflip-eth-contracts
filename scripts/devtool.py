@@ -40,11 +40,11 @@ else:
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
 
-    if network.show_active() == "hardhat":
+    if network.show_active() == "hardhat" and "SEED" not in environ:
         AUTONOMY_SEED = "test test test test test test test test test test test junk"
         DEPLOYER_ACCOUNT_INDEX = 0
     else:
-        # Live network
+        # Live network or hardhat with a seed provided
         AUTONOMY_SEED = environ["SEED"]
         DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
@@ -56,8 +56,6 @@ else:
     for cf_acc in cf_accs:
         walletAddrs[str(seedNumber)] = cf_acc
         seedNumber += 1
-
-    userAddress = accounts[0]
 
 
 # Define a dictionary of available commands and their corresponding functions
