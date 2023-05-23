@@ -41,7 +41,10 @@ jobs:
       - run: pip3 install eth-brownie
       - run: poetry install
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
-      - run: sudo snap install solc --edge
+
+      - run: sudo apt-get install build-essential procps curl file git
+      - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - run: brew install echidna
 
       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.2.0/echidna-2.2.0-Ubuntu-22.04.tar.gz -o echidna-2.2.0-Ubuntu-22.04.tar.gz
       - run: tar -xvf echidna-2.2.0-Ubuntu-22.04.tar.gz
