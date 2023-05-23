@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/ITokenVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title TokenVesting
@@ -11,7 +10,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
  * owner.
  */
-contract TokenVesting is ReentrancyGuard, ITokenVesting {
+contract TokenVesting is ITokenVesting {
     // The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and is
     // therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree). Therefore,
     // it is recommended to avoid using short time durations (less than a minute). Typical vesting schemes, with a
@@ -107,16 +106,16 @@ contract TokenVesting is ReentrancyGuard, ITokenVesting {
      * @notice Transfers vested tokens to beneficiary.
      * @param token ERC20 token which is being vested.
      */
-    function release(IERC20 token) external override nonReentrant onlyBeneficiary {
+    function release(IERC20 token) external override onlyBeneficiary {
         require(!canStake || !revoked[token], "Vesting: staked funds revoked");
 
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "Vesting: no tokens are due");
 
         released[token] += unreleased;
-        token.safeTransfer(beneficiary, unreleased);
-
         emit TokensReleased(token, unreleased);
+
+        token.safeTransfer(beneficiary, unreleased);
     }
 
     /**
