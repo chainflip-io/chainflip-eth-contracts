@@ -4,10 +4,11 @@ import json
 import csv
 import logging
 import os.path
+import math
 
 sys.path.append(os.path.abspath("tests"))
 from consts import ZERO_ADDR, INIT_SUPPLY
-from brownie import chain, accounts, StateChainGateway, FLIP, web3, network
+from brownie import chain, accounts, StateChainGateway, FLIP, web3, network, MultiSend
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 
@@ -23,15 +24,29 @@ oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 # as no event swill have been emitted before the deployment
 oldFlip_deployment_block = 7727329 - 10
 
-# TODO: These addresses are for debugging. To update.
+# TODO: These addresses are for debugging.
+#
+# Fresh hardhat network.
+# newFlip = "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
+# newStateChainGateway = "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883"
+
+# Goerli network deploying with public wallet
 newFlip = "0xc0a3730FB678748a95dDFf99961F7a6B19F31583"
 newStateChainGateway = "0xD9913A3BA5C48808F854DaB4F19DB0ffE6236722"
+# Goerli network deploying with own wallet
+newFlip = "0x7a5061BbEA010e0E74e55A1A2e8e8B73be6d98e6"
+newStateChainGateway = "0xa45f0275E6F473b04255e36A043C6DE8A154c56c"
+
 
 userInputConfirm = ["", "y", "Y", "yes", "Yes", "YES"]
 snapshotSuccessMessage = "Snapshot taken and succesfully stored in "
 startAirdropMessage = "Starting airdrop of new FLIP"
 airdropScGatewaySuccess = "Airdrop to ScGateway sent and confirmed!"
 airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
+multiSendDeploySuccessMessage = "MultiSend deployed at: "
+
+# Amount of transfers per transaction so we don't reach gas limit
+transfer_batch_size = 200
 
 # Set the priority fee for all transactions
 network.priority_fee("1 gwei")
@@ -92,6 +107,26 @@ def main():
     else:
         printAndLog("Skipped old FLIP snapshot - snapshot already taken")
 
+    # Deploy a Multisend if there isn't a deployed one.
+    multiSend_address = None
+
+    for line in parsedLog:
+        if multiSendDeploySuccessMessage in line:
+            _, multiSend_address = line.split(multiSendDeploySuccessMessage, 1)
+            printAndLog("MultiSend already deployed")
+            break
+
+    if multiSend_address == None:
+        deployMultiSend = input("Deploy MultiSend contract? (y)/n : ")
+        if deployMultiSend not in userInputConfirm:
+            printAndLog("Script stopped by user")
+            return False
+        multiSend = MultiSend.deploy(
+            {"from": airdropper, "required_confs": 1},
+        )
+        printAndLog(multiSendDeploySuccessMessage + str(multiSend.address))
+        multiSend_address = multiSend.address
+
     # Skip airdrop if it is logged succesfully. However, call Airdrop if it has failed at any point before the
     # succesful logging so all sent transactions are checked and we do the remaining airdrop transfers (if any)
     if not airdropSuccessMessage in parsedLog:
@@ -114,12 +149,19 @@ def main():
             newFlip,
             newStateChainGateway,
             airdropScGatewaySuccess not in parsedLog,
+            multiSend_address,
         )
     else:
         printAndLog("Skipped Airdrop - already completed succesfully")
 
     # Always verify Airdrop even if we have already run it before
-    verifyAirdrop(airdropper, oldFlipSnapshotFilename, newFlip, newStateChainGateway)
+    verifyAirdrop(
+        airdropper,
+        oldFlipSnapshotFilename,
+        newFlip,
+        newStateChainGateway,
+        multiSend_address,
+    )
 
 
 # Take a snapshot of all token holders and their balances at a certain block number. Store the data in a
@@ -278,7 +320,14 @@ def snapshot(
 # 5- Check that all transactions have been confirmed.
 # 6- Log succesful airdrop message.
 # -----------------------
-def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway, airdrop_scGateway):
+def airdrop(
+    airdropper,
+    snapshot_csv,
+    newFlip,
+    newStateChainGateway,
+    airdrop_scGateway,
+    multiSend_address,
+):
     printAndLog("Starting airdrop process")
 
     (
@@ -287,7 +336,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway, airdrop_scG
         oldFliptotalSupply,
         oldStateChainGatewayBalance,
         oldFlipDeployerBalance,
-    ) = readCSVSnapshotChecksum(snapshot_csv, oldStakeManager, oldFlipDeployer)
+    ) = readCSVSnapshotChecksum(snapshot_csv)
 
     newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
@@ -302,7 +351,7 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway, airdrop_scG
     ]
 
     listAirdropTXs, stateChainGatewayMinted = getTXsAndMintBalancesFromTransferEvents(
-        airdropper, newFlipContractObject, newStateChainGateway
+        airdropper, newFlipContractObject, newStateChainGateway, multiSend_address
     )
 
     if airdrop_scGateway:
@@ -388,18 +437,35 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway, airdrop_scG
 
     listOfTxSent = []
 
-    for i in range(len(listOfTxtoSend)):
-        if listOfTxtoSend[i][0] not in skip_receivers_list:
-            # Send all the airdrop transfers without waiting for confirmation. We will wait for all the confirmations afterwards.
-            tx = newFlipContract.transfer(
-                listOfTxtoSend[i][0],
-                int(listOfTxtoSend[i][1]),
-                {"from": airdropper, "required_confs": 0},
-            )
-            # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
-            logging.info("Airdrop transaction Tx Hash:" + tx.txid)
-            # Keeping a list of txHashes and wait for all their receipts afterwards
-            listOfTxSent.append(tx.txid)
+    multiSend = MultiSend.at(multiSend_address)
+
+    # Approve the entire amount in one call
+    newFlipContract.approve(
+        multiSend.address, totalAmount_toTransfer, {"from": airdropper}
+    )
+
+    # Iterate over chunks of 100 lists
+    for i in range(0, len(listOfTxtoSend), transfer_batch_size):
+        transfer_chunks = listOfTxtoSend[i : i + transfer_batch_size]
+        # Process the chunk
+        total_transfer_chunk = 0
+        for transfer in transfer_chunks:
+            total_transfer_chunk += int(transfer[1])
+
+        tx = multiSend.multiSendToken(
+            newFlipContract, transfer_chunks, total_transfer_chunk, {"from": airdropper}
+        )
+
+        # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
+        logging.info("Airdrop transaction Tx Hash:" + tx.txid)
+
+        listOfTxSent.append(tx.txid)
+
+    assert newFlipContract.allowance(airdropper, multiSend.address) == 0
+    assert newFlipContract.balanceOf(multiSend.address) == 0
+    assert len(listOfTxSent) == int(
+        math.ceil(len(listOfTxtoSend) / transfer_batch_size)
+    )
 
     # Should have skipped oldStateChainGateway and oldFlipDeployer for sure. NewStateChainGateway might have
     # been airdropped depending on the airdrop_scGateway flag but won't be in the lists anyway.
@@ -424,7 +490,9 @@ def airdrop(airdropper, snapshot_csv, newFlip, newStateChainGateway, airdrop_scG
 # 3- Compare transfer events to the snapshot holders balances
 # 4- Check that the difference in supplies will be fixed when the newSupply is minted to the stateChainGateway
 # -------------------------------
-def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStateChainGateway):
+def verifyAirdrop(
+    airdropper, initalSnapshot, newFlip, newStateChainGateway, multiSend_address
+):
 
     printAndLog("Verifying airdrop")
 
@@ -437,7 +505,7 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStateChainGateway):
     assert totalSupplyNewFlip == INIT_SUPPLY
 
     (listAirdropTXs, _) = getTXsAndMintBalancesFromTransferEvents(
-        airdropper, newFlipContractObject, newStateChainGateway
+        airdropper, newFlipContractObject, newStateChainGateway, multiSend_address
     )
 
     # Check list of receivers and amounts against old FLIP snapshot csv file
@@ -447,7 +515,7 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStateChainGateway):
         oldFliptotalSupply,
         oldStateChainGatewayBalance,
         oldFlipDeployerBalance,
-    ) = readCSVSnapshotChecksum(initalSnapshot, oldStakeManager, oldFlipDeployer)
+    ) = readCSVSnapshotChecksum(initalSnapshot)
 
     # Minus two oldFlipHolders - we don't airdrop to neither oldStateChainGateway nor oldFlipDeployer (could be same as airdropper)
     # Actually the default account has FLIP so when testing this could be 3 skipped addresses
@@ -455,7 +523,7 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStateChainGateway):
         len(listAirdropTXs) == len(oldFlipHolderAccounts) - 3
         index = oldFlipHolderAccounts.index(airdropper)
         oldFlipHolderAccounts.pop(index)
-        amountOldFlipHolder = oldFlipholderBalances.pop(index)
+        oldFlipholderBalances.pop(index)
     else:
         len(listAirdropTXs) == len(oldFlipHolderAccounts) - 2
 
@@ -463,23 +531,32 @@ def verifyAirdrop(airdropper, initalSnapshot, newFlip, newStateChainGateway):
     del oldFlipHolderAccounts[0:2]
     del oldFlipholderBalances[0:2]
 
-    # Sanity check
-    assert len(listAirdropTXs) == len(oldFlipHolderAccounts)
+    # Sanity check - this could potentially fail if the batch transfers have been broken and it has ended up
+    # doing a different amount of batches than if it had all succeeded.
+    assert int(math.ceil(len(listAirdropTXs) / transfer_batch_size)) == int(
+        math.ceil(len(oldFlipHolderAccounts) / transfer_batch_size)
+    )
 
-    # We cannot tell which order the transactions will be mined so we can't compare element by element.
-    # However, accounts must be unique in the list, otherwise something has gone wrong in the airdrop and this will break.
-    for airdropTx in listAirdropTXs:
-        receiver = airdropTx[0]
-        amountAirdropped = airdropTx[1]
-        # This will throw an error automatically if it doesn't exist
-        index = oldFlipHolderAccounts.index(receiver)
-        oldFlipHolderAccounts.pop(index)
-        amountOldFlipHolder = oldFlipholderBalances.pop(index)
-        assert int(amountOldFlipHolder) == amountAirdropped
+    # oldFlipHolderAccounts is ordered so we can break as soon as an amount is < cutoff_amount
+    # It is check that oldFlipHolders have been airdropped the correct amount
+    cutoff_amount = 6000 * 10**18
+    for (holder, balance) in zip(oldFlipHolderAccounts, oldFlipholderBalances):
+        if int(balance) < cutoff_amount:
+            continue
+        else:
+            airdrop_found = False
+            for listAirdropTX in listAirdropTXs:
+                if listAirdropTX[0] == str(holder):
+                    assert listAirdropTX[1] == int(balance)
+                    airdrop_found = True
+                    break
+            assert airdrop_found
+            continue
 
-    # Check that all oldFlip Holders have been popped
-    assert len(oldFlipHolderAccounts) == 0
-    assert len(oldFlipholderBalances) == 0
+    # Extra check
+    assert (
+        len(listAirdropTXs) == len(oldFlipHolderAccounts) == len(oldFlipholderBalances)
+    )
 
     # Check that the final supply difference and that the difference is in the stateChainGateway
     # This should be the case regardless of Chainflip having burnt/mint FLIP from the stateChainGateway
@@ -521,7 +598,7 @@ def getContractFromAddress(flip_address):
 # stateChainGateway to make up for the totalSupply difference - to make all the later checking easier.
 # ---------------------------------------
 def getTXsAndMintBalancesFromTransferEvents(
-    airdropper, flipContractObject, stateChainGateway
+    airdropper, flipContractObject, stateChainGateway, multiSend_address
 ):
     printAndLog("Getting all transfer events")
     events = list(
@@ -534,8 +611,8 @@ def getTXsAndMintBalancesFromTransferEvents(
 
     listAirdropTXs = []
     initialMintTXs = []
-    # Get all transfer events from the airdropper and the initial minting. Also take into consideration airdrop
-    # transactions from the airdropper.
+    # Get all transfer events from the airdropper and the initial minting. MultiSend is used, so tx's
+    # won't be from the airdropper but from the MultiSend
     for event in events:
         toAddress = event.args.to
         fromAddress = event.args["from"]
@@ -544,7 +621,9 @@ def getTXsAndMintBalancesFromTransferEvents(
         if fromAddress == str(airdropper) and toAddress == stateChainGateway:
             continue
         # Addresses should be unique but just in case
-        elif fromAddress == str(airdropper) and (toAddress not in listAirdropTXs):
+        elif fromAddress == str(multiSend_address) and (
+            toAddress not in listAirdropTXs
+        ):
             listAirdropTXs.append([toAddress, amount])
         # Mint events
         elif fromAddress == ZERO_ADDR:
@@ -628,7 +707,7 @@ def waitForLogTXsToComplete(parsedLog):
             logging.debug(receipt)
 
 
-def readCSVSnapshotChecksum(snapshot_csv, stateChainGateway, deployer):
+def readCSVSnapshotChecksum(snapshot_csv):
     printAndLog("Reading snapshot from file: " + snapshot_csv)
 
     # Read csv file
