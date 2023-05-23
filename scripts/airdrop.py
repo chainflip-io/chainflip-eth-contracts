@@ -16,6 +16,8 @@ from web3._utils.filters import construct_event_filter_params
 logname = "airdrop.log"
 logging.basicConfig(filename=logname, level=logging.INFO)
 
+
+# -------------------- Airdrop specific parmeters -------------------- #
 oldStakeManager = "0xff99F65D0042393079442f68F47C7AE984C3F930"
 oldFlipDeployer = "0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF"
 goerliOldFlip = "0x8e71CEe1679bceFE1D426C7f23EAdE9d68e62650"
@@ -24,18 +26,10 @@ oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 # as no event swill have been emitted before the deployment
 oldFlip_deployment_block = 7727329 - 10
 
-# TODO: These addresses are for debugging.
-#
-# Fresh hardhat network.
-# newFlip = "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
-# newStateChainGateway = "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883"
-
-# Goerli network deploying with public wallet
-newFlip = "0xc0a3730FB678748a95dDFf99961F7a6B19F31583"
-newStateChainGateway = "0xD9913A3BA5C48808F854DaB4F19DB0ffE6236722"
-# Goerli network deploying with own wallet
-newFlip = "0x7a5061BbEA010e0E74e55A1A2e8e8B73be6d98e6"
-newStateChainGateway = "0xa45f0275E6F473b04255e36A043C6DE8A154c56c"
+# NOTE: These addresses are for a fresh hardhat network. To update.
+newFlip = "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
+newStateChainGateway = "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883"
+# -------------------------------------------------------------------- #
 
 
 userInputConfirm = ["", "y", "Y", "yes", "Yes", "YES"]
