@@ -19,7 +19,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayRefere
             end,
             STAKABLE,
             BENEF_TRANSF,
-           scGatewayReference,
+            scGatewayReference,
         )
 
     tv = addrs.DEPLOYER.deploy(
@@ -88,7 +88,9 @@ def test_tokenVesting_constructor_noRevoker(addrs, TokenVesting, scGatewayRefere
     )
 
 
-def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, scGatewayReference):
+def test_tokenVesting_constructor_rev_beneficiary(
+    addrs, TokenVesting, scGatewayReference
+):
     with reverts(REV_MSG_INVALID_BENEFICIARY):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -116,7 +118,9 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, scGatewayRefere
         )
 
 
-def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, scGatewayReference):
+def test_tokenVesting_constructor_rev_cliff_not_before_end(
+    addrs, TokenVesting, scGatewayReference
+):
     with reverts(REV_MSG_CLIFF_AFTER_END):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -130,7 +134,9 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, 
         )
 
 
-def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, scGatewayReference):
+def test_tokenVesting_constructor_rev_end_before_now(
+    addrs, TokenVesting, scGatewayReference
+):
     with reverts(REV_MSG_INVALID_FINAL_TIME):
         addrs.DEPLOYER.deploy(
             TokenVesting,

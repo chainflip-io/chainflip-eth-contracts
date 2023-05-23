@@ -147,7 +147,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayReference):
         end,
         NON_STAKABLE,
         BENEF_TRANSF,
-        scGatewayReference
+        scGatewayReference,
     )
 
     total = MAX_TEST_FUND
