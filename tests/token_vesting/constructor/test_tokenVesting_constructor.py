@@ -18,6 +18,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
             cliff,
             end,
             STAKABLE,
+            BENEF_TRANSF,
             cf.stateChainGateway,
         )
 
@@ -28,6 +29,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         cliff,
         end,
         NON_STAKABLE,
+        BENEF_TRANSF,
         cf.stateChainGateway,
     )
     check_state(
@@ -39,6 +41,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         cliff,
         end,
         False,
+        True,
         cf.stateChainGateway,
         0,
     )
@@ -52,6 +55,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         valid_staking_cliff,
         end,
         STAKABLE,
+        BENEF_NON_TRANSF,
         cf.stateChainGateway,
     )
     check_state(
@@ -63,8 +67,22 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf):
         valid_staking_cliff,
         end,
         True,
+        False,
         cf.stateChainGateway,
         0,
+    )
+
+
+def test_tokenVesting_constructor_noRevoker(addrs, TokenVesting, cf):
+    addrs.DEPLOYER.deploy(
+        TokenVesting,
+        addrs.INVESTOR,
+        ZERO_ADDR,
+        end,
+        end,
+        STAKABLE,
+        BENEF_TRANSF,
+        cf.stateChainGateway,
     )
 
 
@@ -77,6 +95,7 @@ def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, cf):
             cliff,
             end,
             STAKABLE,
+            BENEF_TRANSF,
             cf.stateChainGateway,
         )
 
@@ -90,6 +109,7 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, cf):
             cliff,
             0,
             STAKABLE,
+            BENEF_NON_TRANSF,
             cf.stateChainGateway,
         )
 
@@ -103,6 +123,7 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(addrs, TokenVesting, 
             cliff,
             cliff - 1,
             STAKABLE,
+            BENEF_TRANSF,
             cf.stateChainGateway,
         )
 
@@ -116,6 +137,7 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVesting, cf):
             cliff - (YEAR * 2),
             end - (YEAR * 2),
             STAKABLE,
+            BENEF_TRANSF,
             cf.stateChainGateway,
         )
 
@@ -129,5 +151,6 @@ def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVesting):
             cliff,
             end,
             STAKABLE,
+            BENEF_NON_TRANSF,
             ZERO_ADDR,
         )

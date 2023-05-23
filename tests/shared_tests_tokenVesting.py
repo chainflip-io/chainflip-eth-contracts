@@ -27,16 +27,18 @@ def check_state(
     cliff,
     end,
     canStake,
+    beneficiary_transferrable,
     stateChainGateway,
     revoked,
 ):
-    assert tv.beneficiary() == beneficiary
-    assert tv.revoker() == revoker
-    tv_revocable = tv.revoker != ZERO_ADDR
+    assert tv.getBeneficiary() == beneficiary
+    assert tv.getRevoker() == revoker
+    tv_revocable = tv.getRevoker() != ZERO_ADDR
     assert tv_revocable == revocable
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == canStake
+    assert tv.beneficiaryCanBeTransferred() == beneficiary_transferrable
     assert tv.stateChainGateway() == stateChainGateway
     assert tv.revoked(cf.flip) == revoked
 

@@ -47,6 +47,7 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
         cliff,
         end,
         False,
+        True,
         cf.stateChainGateway,
         True,
     )
@@ -85,6 +86,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
         cliff,
         end,
         NON_STAKABLE,
+        BENEF_NON_TRANSF,
         cf.stateChainGateway,
     )
 
