@@ -13,6 +13,7 @@ from brownie import (
     FLIP,
     MockUSDC,
     DeployerContract,
+    CFReceiverMock,
 )
 from deploy import deploy_Chainflip_contracts, deploy_usdc_contract
 
@@ -70,10 +71,12 @@ def main():
         os.environ,
     )
 
-    # Deploy USDC mimic token only on local/devnets networks
+    # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
+    # swaps and liquidity provision, CFReceiverMock to test cross-chain messaging.
     localnet_chainId = 10997
     if chain.id == localnet_chainId:
         cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
+        cf.cfReceiverMock = DEPLOYER.deploy(CFReceiverMock, cf.vault)
 
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
@@ -101,6 +104,8 @@ def main():
     if chain.id == localnet_chainId:
         print(f"  USDC: {cf.mockUSDC.address}")
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
+        print(f"  CfReceiver Mock: {cf.mockUSDC.address}")
+        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiverMock.address
 
     print("\n😎😎 Deployment success! 😎😎")
 

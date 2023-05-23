@@ -1,7 +1,6 @@
 import pytest
 from consts import *
-from deploy import deploy_Chainflip_contracts
-from deploy import deploy_Chainflip_contracts
+from deploy import deploy_Chainflip_contracts, deploy_new_multicall
 from brownie import chain
 from brownie.network import priority_fee
 from utils import *
@@ -54,6 +53,11 @@ def cf(a, cfDeploy):
 @pytest.fixture(scope="module")
 def schnorrTest(cf, SchnorrSECP256K1Test):
     return cf.SAFEKEEPER.deploy(SchnorrSECP256K1Test)
+
+
+@pytest.fixture(scope="module")
+def multicall(cf, Multicall):
+    return deploy_new_multicall(cf.SAFEKEEPER, Multicall, cf.vault.address)
 
 
 # Stake the minimum amount
@@ -174,8 +178,6 @@ def tokenVestingStaking(addrs, cf, TokenVesting):
 
 
 # Deploy CFReceiver Mock contracts for testing purposes
-
-
 @pytest.fixture(scope="module")
 def cfReceiverMock(cf, CFReceiverMock):
     return cf.SAFEKEEPER.deploy(CFReceiverMock, cf.vault)
@@ -215,11 +217,6 @@ def mockUsdc(cf, MockUSDC):
 @pytest.fixture(scope="module")
 def utils(cf, Utils):
     return cf.SAFEKEEPER.deploy(Utils)
-
-
-@pytest.fixture(scope="module")
-def multicall(cf, Multicall):
-    return cf.SAFEKEEPER.deploy(Multicall, cf.vault)
 
 
 @pytest.fixture(scope="module")
