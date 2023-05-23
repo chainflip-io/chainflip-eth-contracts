@@ -438,16 +438,19 @@ def airdrop(
         multiSend.address, totalAmount_toTransfer, {"from": airdropper}
     )
 
-    # Iterate over chunks of 100 lists
+    # Iterate over batches of 200 lists
     for i in range(0, len(listOfTxtoSend), transfer_batch_size):
-        transfer_chunks = listOfTxtoSend[i : i + transfer_batch_size]
-        # Process the chunk
-        total_transfer_chunk = 0
-        for transfer in transfer_chunks:
-            total_transfer_chunk += int(transfer[1])
+        transfer_batches = listOfTxtoSend[i : i + transfer_batch_size]
+        # Process the batch
+        total_transfer_batch = 0
+        for transfer in transfer_batches:
+            total_transfer_batch += int(transfer[1])
 
         tx = multiSend.multiSendToken(
-            newFlipContract, transfer_chunks, total_transfer_chunk, {"from": airdropper}
+            newFlipContract,
+            transfer_batches,
+            total_transfer_batch,
+            {"from": airdropper},
         )
 
         # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
