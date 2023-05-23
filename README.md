@@ -150,7 +150,8 @@ export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
 export GOV_KEY=<gov address, hex format, with leading 0x>
 export COMM_KEY=<comm address, hex format, with leading 0x>
 # Set genesis parameters
-export GENESIS_STAKE=<the stake each node should have at genesis> (default = 500000000000000000000000)
+export GENESIS_STAKE=<the stake each node should have at genesis> (default =
+50000000000000000000000)
 export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
 
 # deploy the contracts to goerli.
