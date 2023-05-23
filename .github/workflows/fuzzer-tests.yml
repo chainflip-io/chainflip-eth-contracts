@@ -44,6 +44,8 @@ jobs:
 
       - run: sudo apt-get install build-essential procps curl file git
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - run: echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/runner/.bash_profile
+      - run: sudo apt-get install build-essential
       - run: brew install echidna
 
       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.2.0/echidna-2.2.0-Ubuntu-22.04.tar.gz -o echidna-2.2.0-Ubuntu-22.04.tar.gz
