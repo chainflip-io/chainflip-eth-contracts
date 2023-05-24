@@ -40,6 +40,7 @@ jobs:
       - run: npm install --global yarn
       - run: yarn
       - run: pip3 install crytic-compile
+      - run: sudo add-apt-repository ppa:ethereum/ethereum
       - run: sudo apt-get install solc
 
       # - run: poetry install
