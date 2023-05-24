@@ -39,6 +39,7 @@ jobs:
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
       - run: yarn
+      - run: pip3 install crytic-compile
       # - run: poetry install
       # - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
 
