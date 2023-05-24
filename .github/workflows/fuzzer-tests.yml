@@ -43,9 +43,6 @@ jobs:
       - run: sudo add-apt-repository ppa:ethereum/ethereum
       - run: sudo apt-get install solc
 
-      - run: slither --version
-      - run: crytic-compile --version
-
       # - run: poetry install
       # - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
 
@@ -56,6 +53,9 @@ jobs:
       - run: sudo apt-get install build-essential
       - run: /home/linuxbrew/.linuxbrew/bin/brew help
       - run: /home/linuxbrew/.linuxbrew/bin/brew install echidna
+
+      - run: slither --version
+      - run: crytic-compile --version
 
       - run: /home/linuxbrew/.linuxbrew/bin/echidna contracts/echidna/tests/NewTestEchidna.sol --contract NewTestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
 
