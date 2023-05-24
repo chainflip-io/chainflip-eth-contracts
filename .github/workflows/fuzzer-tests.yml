@@ -26,7 +26,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v3
         with:
-          python-version: "3.7"
+          python-version: "3.10"
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -42,6 +42,7 @@ jobs:
       - run: pip3 install crytic-compile
       - run: sudo add-apt-repository ppa:ethereum/ethereum
       - run: sudo apt-get install solc
+      - run: pip3 install slither-analyzer
 
       # - run: poetry install
       # - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
