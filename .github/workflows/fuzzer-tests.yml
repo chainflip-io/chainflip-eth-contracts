@@ -48,11 +48,10 @@ jobs:
       - run: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
       - run: sudo apt-get install build-essential
       - run: /home/linuxbrew/.linuxbrew/bin/brew help
-      - run: brew help
-      - run: brew install echidna
+      - run: /home/linuxbrew/.linuxbrew/bin/brew help install echidna
 
-      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.2.0/echidna-2.2.0-Ubuntu-22.04.tar.gz -o echidna-2.2.0-Ubuntu-22.04.tar.gz
-      - run: tar -xvf echidna-2.2.0-Ubuntu-22.04.tar.gz
+      # - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.2.0/echidna-2.2.0-Ubuntu-22.04.tar.gz -o echidna-2.2.0-Ubuntu-22.04.tar.gz
+      # - run: tar -xvf echidna-2.2.0-Ubuntu-22.04.tar.gz
 
       - run: echidna contracts/echidna/tests/NewTestEchidna-flat.sol --contract NewTestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
 
