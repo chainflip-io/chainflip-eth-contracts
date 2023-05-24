@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: "14"
+          node-version: "16"
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -47,7 +47,6 @@ jobs:
       - run: (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/runner/.bash_profile
       - run: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
       - run: sudo apt-get install build-essential
-      - run: brew install gcc
       - run: /home/linuxbrew/.linuxbrew/bin/brew help
       - run: brew help
       - run: brew install echidna
