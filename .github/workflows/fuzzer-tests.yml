@@ -44,4 +44,4 @@ jobs:
       - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 
       # Running actual fuzzing tests
-      - run: poetry run ./echidna-test contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml
+      - run: ./echidna-test contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml
