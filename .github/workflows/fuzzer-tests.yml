@@ -63,6 +63,7 @@ jobs:
 
       - run: slither --version
       - run: crytic-compile --version
+      - run: solc-select use 0.8.20
       # - run: solc --version
 
       - run: /home/linuxbrew/.linuxbrew/bin/echidna contracts/echidna/tests/NewTestEchidna.sol --contract NewTestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
