@@ -44,17 +44,19 @@ jobs:
           echo Y | sudo apt-get install software-properties-common
       - run: sudo apt-get update
       - run: sudo add-apt-repository ppa:ethereum/ethereum
-      - run: sudo apt-get install solc
+      - run: |
+          echo Y | sudo apt-get install solc
       - run: pip3 install slither-analyzer
-
       # - run: poetry install
       # - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
 
-      - run: sudo apt-get install build-essential procps curl file git
+      - run: |
+          echo Y | sudo apt-get install build-essential procps curl file git
       - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       - run: (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/runner/.bash_profile
       - run: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-      - run: sudo apt-get install build-essential
+      - run: |
+          echo Y | sudo apt-get install build-essential
       - run: /home/linuxbrew/.linuxbrew/bin/brew help
       - run: /home/linuxbrew/.linuxbrew/bin/brew install echidna
 
