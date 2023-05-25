@@ -11,8 +11,7 @@ jobs:
   fuzzer-tests:
     name: Fuzzer
     # needs: lint
-    # Running on a github runner because for some reason self-hosted fails to run crytic-compile <contract>
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, ephemeral]
     timeout-minutes: 30
     # strategy:
     #   matrix:
@@ -57,6 +56,7 @@ jobs:
 
       - run: slither --version
       - run: crytic-compile --version
+      - run: solc --version
 
       - run: /home/linuxbrew/.linuxbrew/bin/echidna contracts/echidna/tests/NewTestEchidna.sol --contract NewTestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
 
