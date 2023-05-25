@@ -40,9 +40,9 @@ jobs:
       - run: yarn
       - run: pip3 install crytic-compile
 
-      - run: sudo apt-get install software-properties-common
+      - run: |
+          echo Y | sudo apt-get install software-properties-common
       - run: sudo apt-get update
-
       - run: sudo add-apt-repository ppa:ethereum/ethereum
       - run: sudo apt-get install solc
       - run: pip3 install slither-analyzer
