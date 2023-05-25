@@ -384,11 +384,13 @@ def airdrop(
         # Check that the airdropper has the balance to airdrop
         assert newFlipContract.balanceOf(str(airdropper)) >= amountToTransferToScG
 
-        # Adding extra confirmations to ensure that we get the updated balances for the checks
+        # Adding extra confirmations to ensure that we get the updated balances for the checks in live networks
+        required_confs = 1 if (chain.id == 31337) else 3
+
         tx = newFlipContract.transfer(
             newStateChainGateway,
             amountToTransferToScG,
-            {"from": airdropper, "required_confs": 3},
+            {"from": airdropper, "required_confs": required_confs},
         )
         logging.info("Airdrop transaction Tx Hash:" + tx.txid)
 
