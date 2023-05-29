@@ -411,7 +411,7 @@ def test_executeActions_revgas(cf, multicall):
         0,
     ]
     # Gas that should be sent to the Multicall for safeTransferFrom + transfer
-    # Number used just for a unit test
+    # Number used just for a unit test, approximatted via gas test.
     multicall_gas = 70000
     args = [[cf.flip.address, multicall, TEST_AMNT], [call], multicall_gas]
 
@@ -420,105 +420,88 @@ def test_executeActions_revgas(cf, multicall):
     )
     # Gas limit that doesn't allow the Multicall to execute the actions
     # but leaves enough gas to trigger "Vault: gasMulticall too low".
-    # Succesfull tx is ~138k
-    gas_limit = 130000
+    # Succesfull tx according to gas test is ~140k but it doesn't succeed
+    # until gas_limit is not at least 180k. Then from 180k to 190, when adding
+    # the gas check, it reverts with "Vault: gasMulticall too low". After 190k
+    # it will succeed as normal
+    gas_limit = 180000
 
     # Reverted with empty revert string is to catch the invalid opcode
     # That is different to the "Transaction reverted without a reason string"
-    with reverts(""):
+    with reverts(REV_MSG_INSUFFICIENT_GAS):
         cf.vault.executeActions(
             sigData,
             *args,
             {"from": cf.DENICE, "gas_limit": gas_limit},
         )
 
+    gas_limit = 190000
 
-# TODO: Add tests for insufficient gas griefing attack. We most likely need to do
-# that with fuzzing as python hypothesis struggles - we get a lot of flaky errors.
+    tx = cf.vault.executeActions(
+        sigData,
+        *args,
+        {"from": cf.DENICE, "gas_limit": gas_limit},
+    )
+    assert "ExecuteActionsFailed" not in tx.events
 
-# @given(
-#     st_gas=strategy("uint256", min_value=0, max_value=2000000),
-# )
-# def test_executeActions_revgas(cf, multicall, token, st_gas):
 
-#     st_token_amount = TEST_AMNT
-#     st_sender = cf.BOB
-#     st_bytes = JUNK_HEX
+@given(
+    st_gas_limit=strategy("uint256", min_value=80000, max_value=250000),
+)
+def test_executeActions_gas(cf, multicall, st_gas_limit):
+    print("gas limit", st_gas_limit)
+    cf.flip.transfer(cf.vault.address, TEST_AMNT, {"from": cf.SAFEKEEPER})
 
-#     # Assert initial token balances are zero
-#     assert token.balanceOf(cf.vault.address) == 0
-#     assert token.balanceOf(multicall.address) == 0
+    # Dummy call because brownie struggles to encode an empty array
+    call = [
+        0,
+        cf.flip,
+        0,
+        cf.flip.transfer.encode_input(cf.ALICE, 1),
+        0,
+    ]
+    # Gas that should be sent to the Multicall for safeTransferFrom + transfer
+    # Number used just for a unit test, approximatted via gas test.
+    multicall_gas = 70000
+    args = [[cf.flip.address, multicall, TEST_AMNT], [call], multicall_gas]
 
-#     token.transfer(cf.vault.address, st_token_amount)
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.vault.executeActions, nonces, *args
+    )
 
-#     ini_bals_multicall = 0
-#     ini_bals_vault = token.balanceOf(cf.vault.address)
-#     ini_bals_alice = token.balanceOf(cf.ALICE.address)
+    # Exact gas limit that makes the transaction have enough gas to pass the
+    # gas check, execute the actions and succeeed.
+    # cutoff_gas_limit = 181965
+    cutoff_gas_limit = 192129
 
-#     call = [
-#         0,
-#         token,
-#         0,
-#         token.transfer.encode_input(cf.ALICE, st_token_amount),
-#         st_bytes,
-#     ]
+    # On low gas_limit values it will revert with not enough gas error and other
+    # error such as no reason string. Arbitrary 80k under the cutoff gas limit
+    # for those kinds of errors.
+    if st_gas_limit < cutoff_gas_limit - 80000:
+        with reverts():
+            cf.vault.executeActions(
+                sigData,
+                *args,
+                {"from": cf.DENICE, "gas_limit": st_gas_limit},
+            )
+    elif st_gas_limit < cutoff_gas_limit:
+        # Reverted with empty revert string is to catch the invalid opcode
+        # That is different to the "Transaction reverted without a reason string"
+        with reverts(REV_MSG_INSUFFICIENT_GAS):
+            cf.vault.executeActions(
+                sigData,
+                *args,
+                {"from": cf.DENICE, "gas_limit": st_gas_limit},
+            )
+    # If the gas check passes, it should always succeed.
+    else:
+        tx = cf.vault.executeActions(
+            sigData,
+            *args,
+            {"from": cf.DENICE, "gas_limit": st_gas_limit},
+        )
+        assert "ExecuteActionsFailed" not in tx.events
 
-#     # Working scenario - executeActions avg (confirmed):  1249009
-#     # Working scenario - Mulitcall.Run avg (confirmed):  860480 (might include 21k minimum)
-#     print("gas limit: ", st_gas)
-#     multicall_gas_needed = 1000000  # Rounded up
 
-#     # Make the multicall spend a lot of gas so 1/64th can still run some logic
-#     calls = []
-#     for i in range(100):
-#         calls.append(
-#             [
-#                 0,
-#                 token,
-#                 0,
-#                 token.transfer.encode_input(cf.ALICE, i),
-#                 JUNK_HEX,
-#             ]
-#         )
-
-#     args = [token, st_token_amount, multicall, multicall_gas_needed, calls]
-
-#     sigData = AGG_SIGNER_1.getSigDataWithNonces(
-#         cf.keyManager, cf.vault.executeActions, nonces, *args
-#     )
-
-#     # tx = cf.vault.executeActions(
-#     #     sigData,
-#     #     *args,
-#     #     {"from": cf.DENICE, "gas_limit": st_gas},
-#     #     # {"from": cf.DENICE},
-#     # )
-
-#     # print("tx.events: ", tx.events)
-#     # assert "ExecuteActionsFailed" not in tx.events
-
-#     try:
-#         tx = cf.vault.executeActions(
-#             sigData,
-#             *args,
-#             {"from": cf.DENICE, "gas_limit": st_gas},
-#             # {"from": cf.DENICE},
-#         )
-
-#     except Exception as e:
-#         revert_reason = str(e).split("\n", 1)[0]
-#         print(f"An error occurred: {e}")
-#         # Manually check for all potential revert reasons due to out of gas
-#         assert (
-#             "revert: Vault: gasMulticall too low" in revert_reason
-#             or "Transaction requires at least" in revert_reason
-#             or "call to precompile 1 failed" in revert_reason
-#             or "Transaction ran out of gas" in revert_reason
-#             or "Transaction reverted without a reason string" in revert_reason
-#         )
-#         tx = None
-
-#     if tx != None:
-#         print(tx.events)
-#         print(tx.info())
-#         assert "ExecuteActionsFailed" not in tx.events
+# TODO: Try same test as before but with a failing execute actions to assert that if
+# the gas check passes, an "ExecuteActionsFailed" will be emitted.
