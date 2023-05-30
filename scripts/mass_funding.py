@@ -9,6 +9,7 @@ from brownie import accounts, StateChainGateway, FLIP
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
 SC_GATEWAY_ADDRESS = environ["SC_GATEWAY_ADDRESS"]
 AUTONOMY_SEED = environ["SEED"]
+FLIP_AMOUNT = environ.get("FLIP_AMOUNT", int (10 ** 3))
 
 # File should be formatted as a list of NODE_IDs separated by a newline
 NODE_ID_FILE = environ["NODE_ID_FILE"]
@@ -19,7 +20,7 @@ cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 
 node_ids = []
 
-funding_amount = 10**3 * E_18
+funding_amount = FLIP_AMOUNT * E_18
 
 
 def main():
