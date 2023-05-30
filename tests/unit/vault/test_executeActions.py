@@ -171,10 +171,10 @@ def test_executeActions_rev_cfReceive(
     st_amount=strategy("uint256"),
     st_enum=strategy("uint256", max_value=3),
     st_sender=strategy("address"),
-    st_gas=strategy("uint256"),
+    st_gasMulticall=strategy("uint256", min_value=80000, max_value=1000000),
 )
 def test_executeActions_rev_length_eoa(
-    cf, st_data, st_receiver, st_amount, st_enum, st_sender, st_gas
+    cf, st_data, st_receiver, st_amount, st_enum, st_sender, st_gasMulticall
 ):
 
     ## Ensure we can't call a cfReceive or cfReceivexCall function via Multicall
@@ -185,7 +185,7 @@ def test_executeActions_rev_length_eoa(
         st_data,
         st_data,
     ]
-    args = [[ZERO_ADDR, st_receiver, 0], [call], st_gas]
+    args = [[ZERO_ADDR, st_receiver, 0], [call], st_gasMulticall]
 
     ## It will revert because it's calling an EOA.
     with reverts("Transaction reverted without a reason string"):
@@ -421,10 +421,10 @@ def test_executeActions_revgas(cf, multicall):
     # Gas limit that doesn't allow the Multicall to execute the actions
     # but leaves enough gas to trigger "Vault: gasMulticall too low".
     # Succesfull tx according to gas test is ~140k but it doesn't succeed
-    # until gas_limit is not at least 180k. Then from 180k to 190, when adding
-    # the gas check, it reverts with "Vault: gasMulticall too low". After 190k
+    # until gas_limit is not at least 180k. Then from 190k to 200k, when adding
+    # the gas check, it reverts with "Vault: gasMulticall too low". After 200k
     # it will succeed as normal
-    gas_limit = 180000
+    gas_limit = 190000
 
     # Reverted with empty revert string is to catch the invalid opcode
     # That is different to the "Transaction reverted without a reason string"
@@ -435,7 +435,7 @@ def test_executeActions_revgas(cf, multicall):
             {"from": cf.DENICE, "gas_limit": gas_limit},
         )
 
-    gas_limit = 190000
+    gas_limit = 200000
 
     tx = cf.vault.executeActions(
         sigData,
