@@ -22,7 +22,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
-    uint256 private constant _GAS_TO_FORWARD = 3500;
+    uint256 private constant _GAS_TO_FORWARD = 3_500;
+    uint256 private constant _FINALIZE_GAS_BUFFER = 30_000;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -551,6 +552,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          a limited amount of funds instead of executing arbitrary calldata here.
      * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
      *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
+     *          The _GAS_BUFFER is a conservative estimation of the gas required to finalize the call.
      * @param sigData         Struct containing the signature data over the message
      *                        to verify, signed by the aggregate key.
      * @param transferParams  The transfer parameters inluding the token and amount to be transferred
@@ -584,25 +586,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             }
         }
 
+        // Ensure that the amount of gas supplied to the call to the Multicall contract is at least the gas
+        // limit specified. We can do this by enforcing that, we still have gasMulticall + gas buffer available.
+        // The gas buffer is to ensure there is enough gas to finalize the call, including a safety margin.
+        // The 63/64 rule specified in EIP-150 needs to be taken into account.
+        require(gasleft() >= ((gasMulticall + _FINALIZE_GAS_BUFFER) * 64) / 63, "Vault: insufficient gas");
+
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory reason) = transferParams.recipient.call{gas: gasMulticall, value: valueToSend}(
-            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
-        );
+        (bool success, bytes memory reason) = transferParams.recipient.call{
+            gas: gasleft() - _FINALIZE_GAS_BUFFER,
+            value: valueToSend
+        }(abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount));
 
         if (!success) {
-            // Validate that the relayer has sent enough gas for the call.
-            // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
-            if (gasleft() <= gasMulticall / 63) {
-                // Emulate an out of gas exception by explicitly trigger invalid opcode to consume all gas and
-                // bubble-up the effects, since neither revert or assert consume all gas since Solidity 0.8.0.
-
-                // solhint-disable no-inline-assembly
-                /// @solidity memory-safe-assembly
-                assembly {
-                    invalid()
-                }
-                // solhint-enable no-inline-assembly
-            }
             if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
                 IERC20(transferParams.token).approve(transferParams.recipient, 0);
             }
