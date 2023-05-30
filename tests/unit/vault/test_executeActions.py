@@ -4,6 +4,11 @@ from brownie import reverts
 from brownie.test import given, strategy
 from brownie.convert import to_bytes
 
+# Gas needed to execute the !success case => approve token back to zero and emit ExecuteActionsFailed => ~13k
+
+# We double it for safety to 25k. We would also get 1/64 * multicallGas. Optimism has 20k and they only do one
+# write to storage to a hot slot, like us in the approval. Therefore I end up choosing 30k instead of 25k.
+
 
 @given(
     st_sender=strategy("address"),
@@ -420,8 +425,8 @@ def test_executeActions_revgas(cf, multicall):
     )
     # Gas limit that doesn't allow the Multicall to execute the actions but leaves
     # enough gas to trigger "Vault: gasMulticall too low". Succesfull tx according
-    # to gas test is ~140k but it doesn't succeed until gas_limit is not at least 
-    # 180k (without the gas check). Then from 190k to 210k, when adding the gas check, 
+    # to gas test is ~140k but it doesn't succeed until gas_limit is not at least
+    # 180k (without the gas check). Then from 190k to 210k, when adding the gas check,
     # it reverts with "Vault: gasMulticall too low". After 210k it will succeed as normal
     gas_limit = 200000
 
@@ -499,13 +504,3 @@ def test_executeActions_gas(cf, multicall, st_gas_limit):
             {"from": cf.DENICE, "gas_limit": st_gas_limit},
         )
         assert "ExecuteActionsFailed" not in tx.events
-
-
-
-# TODO: Try same test as before but with a failing execute actions to assert that if
-# the gas check passes, an "ExecuteActionsFailed" will be emitted.
-
-# Gas needed to execute the !success case => approve token back to zero and emit ExecuteActionsFailed => ~13k
-
-# We double it for safety to 25k. We would also get 1/64 * multicallGas. Optimism has 20k and they only do one 
-# write to storage to a hot slot, like us in the approval. Therefore I end up choosing 30k instead of 25k.
