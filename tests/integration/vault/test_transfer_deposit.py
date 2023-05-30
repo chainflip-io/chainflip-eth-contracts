@@ -13,9 +13,11 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Depos
 
     assert cf.vault.balance() == 0
 
-    signed_call_cf(
+    tx = signed_call_cf(
         cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, NATIVE_ADDR]], sender=cf.ALICE
     )
+    assert len(tx.events["Fetched"]) == 1
+    assert tx.events["Fetched"][0].values() == [TEST_AMNT]
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
@@ -44,7 +46,8 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Depos
 
     assert token.balanceOf(cf.vault) == 0
 
-    signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, token]])
+    tx = signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, token]])
+    assert "Fetched" not in tx.events
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == TEST_AMNT
@@ -79,9 +82,13 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     deployFetchParamsArray = craftDeployFetchParamsArray(
         swapIDs, [NATIVE_ADDR, NATIVE_ADDR]
     )
-    signed_call_cf(
+    tx = signed_call_cf(
         cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.ALICE
     )
+
+    assert len(tx.events["Fetched"]) == 2
+    assert tx.events["Fetched"][0].values() == [TEST_AMNT]
+    assert tx.events["Fetched"][1].values() == [2 * TEST_AMNT]
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -119,9 +126,11 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     assert token.balanceOf(cf.vault) == 0
 
     deployFetchParamsArray = craftDeployFetchParamsArray(swapIDs, [token, token])
-    signed_call_cf(
+    tx = signed_call_cf(
         cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.ALICE
     )
+
+    assert "Fetched" not in tx.events
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == 3 * TEST_AMNT
@@ -156,9 +165,10 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     assert token.balanceOf(cf.vault) == 0
 
     deployFetchParamsArray = craftDeployFetchParamsArray(swapIDs, [token, token])
-    signed_call_cf(
+    tx = signed_call_cf(
         cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.CHARLIE
     )
+    assert "Fetched" not in tx.events
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == 3 * TEST_AMNT
@@ -220,9 +230,13 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     deployFetchParamsArray = craftDeployFetchParamsArray(
         swapIDs, [NATIVE_ADDR, NATIVE_ADDR]
     )
-    signed_call_cf(
+    tx = signed_call_cf(
         cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.CHARLIE
     )
+
+    assert len(tx.events["Fetched"]) == 2
+    assert tx.events["Fetched"][0].values() == [TEST_AMNT]
+    assert tx.events["Fetched"][1].values() == [2 * TEST_AMNT]
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -263,9 +277,10 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
     assert token.balanceOf(cf.vault) == 0
 
     deployFetchParamsArray = craftDeployFetchParamsArray(swapIDs, [token, token])
-    signed_call_cf(
+    tx = signed_call_cf(
         cf, cf.vault.deployAndFetchBatch, deployFetchParamsArray, sender=cf.CHARLIE
     )
+    assert "Fetched" not in tx.events
 
     assert token.balanceOf(depositAddr) == 0
     assert token.balanceOf(cf.vault) == 3 * TEST_AMNT

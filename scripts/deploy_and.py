@@ -12,6 +12,7 @@ from brownie import (
     StateChainGateway,
     FLIP,
     DeployerContract,
+    Deposit,
     chain,
     network,
 )
@@ -338,6 +339,20 @@ def all_vault_events():
     ]
 
     signed_call(cf.keyManager, cf.vault.transferBatch, AGG_SIGNER_1, ALICE, *args)
+
+    # NOTE: If the network is not restarted the derived_address will change every time this script is run since
+    # all the contracts get redeployed every time.
+    derived_address = getCreate2Addr(
+        cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
+    )
+    print(f"\n💰 Fetched {TEST_AMNT} ETH from Deposit address {derived_address}]\n")
+    ALICE.transfer(derived_address, TEST_AMNT)
+    args = [[JUNK_HEX_PAD, NATIVE_ADDR]]
+    tx = signed_call(
+        cf.keyManager, cf.vault.deployAndFetchBatch, AGG_SIGNER_1, ALICE, args
+    )
+    assert "Fetched" in tx.events
+    assert tx.events["Fetched"][0].values() == [TEST_AMNT]
 
     print(f"\n🔐 Governance suspends execution of redemptions\n")
     tx = cf.vault.suspend({"from": GOVERNOR})
