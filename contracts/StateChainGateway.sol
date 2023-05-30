@@ -32,7 +32,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
     /// @dev    Holding pending redemptions for the 48h withdrawal delay
     mapping(bytes32 => Redemption) private _pendingRedemptions;
     /// @dev   Time after registerRedemption required to wait before call to executeRedemption
-    uint48 public constant REDEMPTION_DELAY = 2 days;
+    uint48 public constant REDEMPTION_DELAY = 2 minutes;
 
     /// @dev    The last block number in which the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
