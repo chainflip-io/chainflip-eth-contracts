@@ -23,7 +23,7 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
     tx = signed_call_cf(cf, cf.vault.deployAndFetchBatch, *deployFetchParams)
 
     if tokens.count(NATIVE_ADDR) > 0:
-        assert len(tx.events["Fetched"]) == tokens.count(NATIVE_ADDR)
+        assert len(tx.events["FetchedNative"]) == tokens.count(NATIVE_ADDR)
 
     for am, id, tok in zip(st_amounts, st_swapIDs, tokens):
         # Deploy a deposit contract, get the address to deposit to and deposit
@@ -49,7 +49,7 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
     tx = signed_call_cf(cf, cf.vault.fetchBatch, *fetchBatchParamsArray)
 
     if tokens.count(NATIVE_ADDR) > 0:
-        assert len(tx.events["Fetched"]) == tokens.count(NATIVE_ADDR)
+        assert len(tx.events["FetchedNative"]) == tokens.count(NATIVE_ADDR)
 
     assert token.balanceOf(cf.vault.address) == tokenTotal
     assert web3.eth.get_balance(cf.vault.address) == nativeTotal

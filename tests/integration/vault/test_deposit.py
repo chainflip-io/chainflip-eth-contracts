@@ -19,8 +19,8 @@ def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken):
     )
 
     if not st_deployToken:
-        assert len(tx.events["Fetched"]) == 1
-        assert tx.events["Fetched"][0].values() == [0]
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]
 
 
 @given(
@@ -43,8 +43,8 @@ def test_deposit_constructor(
         sender=st_sender,
     )
     if not st_deployToken:
-        assert len(tx.events["Fetched"]) == 1
-        assert tx.events["Fetched"][0].values() == [0]
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]
 
 
 @given(
@@ -79,8 +79,8 @@ def test_deposit_fetch(
         sender=st_sender,
     )
     if not st_deployToken:
-        assert len(tx.events["Fetched"]) == 1
-        assert tx.events["Fetched"][0].values() == [0]
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]
 
     # Call fetch function on the deployed Deposit contract - should fail as only the Vault should be able to call it
     with reverts():
@@ -95,5 +95,5 @@ def test_deposit_fetch(
         sender=st_sender,
     )
     if not st_deployToken:
-        assert len(tx.events["Fetched"]) == 1
-        assert tx.events["Fetched"][0].values() == [0]
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]

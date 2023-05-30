@@ -41,7 +41,7 @@ def test_deployAndFetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_toke
     tx = signed_call_cf(cf, cf.vault.deployAndFetchBatch, *deployFetchParams)
 
     if tokens.count(NATIVE_ADDR) > 0:
-        assert len(tx.events["Fetched"]) == tokens.count(NATIVE_ADDR)
+        assert len(tx.events["FetchedNative"]) == tokens.count(NATIVE_ADDR)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert token.balanceOf(cf.vault.address) == tokenTotal

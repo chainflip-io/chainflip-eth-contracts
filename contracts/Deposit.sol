@@ -11,12 +11,12 @@ import "./interfaces/IERC20Lite.sol";
 contract Deposit {
     address payable private immutable vault;
 
-    event Fetched(uint256 amount);
+    event FetchedNative(uint256 amount);
 
     constructor(IERC20Lite token) {
         vault = payable(msg.sender);
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            emit Fetched(address(this).balance);
+            emit FetchedNative(address(this).balance);
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);
@@ -31,7 +31,7 @@ contract Deposit {
 
         // Slightly cheaper to use msg.sender instead of Vault.
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            emit Fetched(address(this).balance);
+            emit FetchedNative(address(this).balance);
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);

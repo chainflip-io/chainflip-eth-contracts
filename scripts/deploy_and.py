@@ -345,14 +345,16 @@ def all_vault_events():
     derived_address = getCreate2Addr(
         cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
     )
-    print(f"\n💰 Fetched {TEST_AMNT} ETH from Deposit address {derived_address}]\n")
+    print(
+        f"\n💰 FetchedNative {TEST_AMNT} ETH from Deposit address {derived_address}]\n"
+    )
     ALICE.transfer(derived_address, TEST_AMNT)
     args = [[JUNK_HEX_PAD, NATIVE_ADDR]]
     tx = signed_call(
         cf.keyManager, cf.vault.deployAndFetchBatch, AGG_SIGNER_1, ALICE, args
     )
-    assert "Fetched" in tx.events
-    assert tx.events["Fetched"][0].values() == [TEST_AMNT]
+    assert "FetchedNative" in tx.events
+    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
 
     print(f"\n🔐 Governance suspends execution of redemptions\n")
     tx = cf.vault.suspend({"from": GOVERNOR})
