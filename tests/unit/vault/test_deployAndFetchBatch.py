@@ -38,7 +38,10 @@ def test_deployAndFetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_toke
     # Fetch the deposit
     deployFetchParams = [craftDeployFetchParamsArray(st_swapIDs, tokens)]
 
-    signed_call_cf(cf, cf.vault.deployAndFetchBatch, *deployFetchParams)
+    tx = signed_call_cf(cf, cf.vault.deployAndFetchBatch, *deployFetchParams)
+
+    if tokens.count(NATIVE_ADDR) > 0:
+        assert len(tx.events["FetchedNative"]) == tokens.count(NATIVE_ADDR)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert token.balanceOf(cf.vault.address) == tokenTotal
@@ -92,9 +95,9 @@ def test_getCreate2Addr(Deposit):
         Deposit,
         cleanHexStrPad(NATIVE_ADDR),
     )
-    assert depositAddr == "0x309403aa87Cd7c70697A6643e561E34b74496133"
+    assert depositAddr == "0xB8E0082EA5AD3C177B615Cb64AD0a944394A8C68"
 
     depositAddr = getCreate2Addr(
         vault_address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(flip_address)
     )
-    assert depositAddr == "0x2d7380194b0debD2686af8EFCF5E4a3D02cf5ec3"
+    assert depositAddr == "0x206796f98E83166FEC30F9d6Ee48F54C0f01D22D"

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "./interfaces/IERC20Lite.sol";
@@ -6,28 +8,29 @@ import "./interfaces/IERC20Lite.sol";
  * @title    Deposit contract
  * @notice   Creates a contract with a known address and withdraws tokens from it.
  *           After deployment, the Vault will call fetch() to withdraw tokens.
- * @dev      The logic is not refactored into a single function because it's cheaper.
+ * @dev      Any change in this contract, including comments, will affect the final
+ *           bytecode and therefore will affect the create2 derived addresses.
+ *           Do NOT modify unless the consequences of doing so are fully understood.
  */
 contract Deposit {
     address payable private immutable vault;
 
+    event FetchedNative(uint256 amount);
+
     constructor(IERC20Lite token) {
         vault = payable(msg.sender);
-        if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = msg.sender.call{value: address(this).balance}("");
-            require(success);
-        } else {
-            // Not checking the return value to avoid reverts for tokens with no return value.
-            token.transfer(msg.sender, token.balanceOf(address(this)));
-        }
+        _fetch(token);
     }
 
     function fetch(IERC20Lite token) external {
         require(msg.sender == vault);
+        _fetch(token);
+    }
 
+    function _fetch(IERC20Lite token) private {
         // Slightly cheaper to use msg.sender instead of Vault.
         if (address(token) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            emit FetchedNative(address(this).balance);
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);
