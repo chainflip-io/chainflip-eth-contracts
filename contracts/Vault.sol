@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
-import "./interfaces/IERC20Lite.sol";
 import "./interfaces/ICFReceiver.sol";
 import "./abstract/Shared.sol";
 import "./Deposit.sol";
@@ -233,7 +232,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Deploy deposit contracts
         uint256 length = deployFetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(deployFetchParamsArray[i].token));
+            new Deposit{salt: deployFetchParamsArray[i].swapID}(deployFetchParamsArray[i].token);
             unchecked {
                 ++i;
             }
@@ -266,7 +265,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
         uint256 length = fetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            Deposit(fetchParamsArray[i].fetchContract).fetch(IERC20Lite(fetchParamsArray[i].token));
+            Deposit(fetchParamsArray[i].fetchContract).fetch(fetchParamsArray[i].token);
             unchecked {
                 ++i;
             }

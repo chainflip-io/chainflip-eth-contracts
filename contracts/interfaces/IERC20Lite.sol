@@ -5,10 +5,12 @@ pragma solidity ^0.8.0;
 /**
  * @title    ERC20 Interface
  * @notice   The interface for functions ERC20Lite implements. This is intended to
- *           be used with DepositNative so that there is as little code that goes into
- *           it as possible to reduce gas costs since it'll be deployed frequently
+ *           be used only in the Deposit contract.
  * @dev      Removed the return bool on the transfer function to avoid reverts on
  *           non-standard ERC20s.
+ * @dev      Any change in this contract, including comments, will affect the final
+ *           bytecode and therefore will affect the create2 derived addresses.
+ *           Do NOT modify unless the consequences of doing so are fully understood.
  */
 interface IERC20Lite {
     // Taken from OZ:
