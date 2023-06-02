@@ -35,7 +35,7 @@ contract TokenVesting is ITokenVesting {
 
     // If false, staking is not allowed
     bool public immutable canStake;
-    // The contract that holds the reference to the staking contract if `canStake`
+    // The contract that holds the reference to the staking contract. Only relevant if `canStake`
     ISCGatewayReference public immutable scGatewayReference;
 
     mapping(IERC20 => uint256) public released;
