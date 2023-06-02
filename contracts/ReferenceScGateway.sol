@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/ISCGatewayReference.sol";
+import "./interfaces/IReferenceScGateway.sol";
 import "./abstract/Shared.sol";
 
 /**
@@ -11,7 +11,7 @@ import "./abstract/Shared.sol";
  *      tokenVesting contracts so the governor doesn't have to update multiple references in case
  *      of the StateChainGateway contract being upgraded.
  */
-contract SCGatewayReference is ISCGatewayReference, Shared {
+contract ReferenceScGateway is IReferenceScGateway, Shared {
     address private governor;
 
     IStateChainGateway private stateChainGateway;

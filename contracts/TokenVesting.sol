@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IStateChainGateway.sol";
-import "./interfaces/ISCGatewayReference.sol";
+import "./interfaces/IReferenceScGateway.sol";
 import "./interfaces/ITokenVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -36,7 +36,7 @@ contract TokenVesting is ITokenVesting {
     // If false, staking is not allowed
     bool public immutable canStake;
     // The contract that holds the reference to the staking contract. Only relevant if `canStake`
-    ISCGatewayReference public immutable scGatewayReference;
+    IReferenceScGateway public immutable scGatewayReference;
 
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
@@ -66,7 +66,7 @@ contract TokenVesting is ITokenVesting {
         uint256 end_,
         bool canStake_,
         bool beneficiaryCanBeTransferred_,
-        ISCGatewayReference scGatewayReference_
+        IReferenceScGateway scGatewayReference_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");

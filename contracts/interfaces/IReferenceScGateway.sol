@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./IStateChainGateway.sol";
 
-interface ISCGatewayReference {
+interface IReferenceScGateway {
     event StateChainGatewayUpdated(address oldStateChainGateway, address newStateChainGateway);
     event GovernorTransferred(address oldGovernor, address newGovernor);
 

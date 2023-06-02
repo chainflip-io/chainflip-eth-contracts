@@ -3,15 +3,15 @@ from brownie import reverts, chain
 from shared_tests_tokenVesting import *
 
 
-def test_reference_constructor(addrs, cf, SCGatewayReference):
+def test_reference_constructor(addrs, cf, ReferenceScGateway):
     with reverts(REV_MSG_NZ_ADDR):
-        addrs.DEPLOYER.deploy(SCGatewayReference, ZERO_ADDR, cf.stateChainGateway)
+        addrs.DEPLOYER.deploy(ReferenceScGateway, ZERO_ADDR, cf.stateChainGateway)
 
     with reverts(REV_MSG_NZ_ADDR):
-        addrs.DEPLOYER.deploy(SCGatewayReference, NON_ZERO_ADDR, ZERO_ADDR)
+        addrs.DEPLOYER.deploy(ReferenceScGateway, NON_ZERO_ADDR, ZERO_ADDR)
 
     scGatewayReference = addrs.DEPLOYER.deploy(
-        SCGatewayReference, addrs.DEPLOYER, NON_ZERO_ADDR
+        ReferenceScGateway, addrs.DEPLOYER, NON_ZERO_ADDR
     )
     assert scGatewayReference.getGovernor() == addrs.DEPLOYER
     assert scGatewayReference.getStateChainGateway() == NON_ZERO_ADDR

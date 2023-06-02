@@ -124,9 +124,9 @@ def maths(addrs, MockMaths):
 
 
 @pytest.fixture(scope="module")
-def scGatewayReference(cf, addrs, SCGatewayReference):
+def scGatewayReference(cf, addrs, ReferenceScGateway):
     return addrs.DEPLOYER.deploy(
-        SCGatewayReference, addrs.DEPLOYER, cf.stateChainGateway
+        ReferenceScGateway, addrs.DEPLOYER, cf.stateChainGateway
     )
 
 
