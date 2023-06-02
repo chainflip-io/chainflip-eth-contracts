@@ -2,16 +2,16 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/IReferenceScGateway.sol";
+import "./interfaces/ISCGatewayReference.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title Reference to State Chain Gateway
+ * @title State Chain Gateway Reference
  * @dev A contract that holds a reference to the StateChainGateway contract. This is for the
  *      tokenVesting contracts so the governor doesn't have to update multiple references in case
  *      of the StateChainGateway contract being upgraded.
  */
-contract ReferenceScGateway is IReferenceScGateway, Shared {
+contract SCGatewayReference is ISCGatewayReference, Shared {
     address private governor;
 
     IStateChainGateway private stateChainGateway;

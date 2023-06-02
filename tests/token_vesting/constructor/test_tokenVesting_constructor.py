@@ -181,10 +181,10 @@ def test_tokenVesting_constructor_rev_eoa(addrs, TokenVesting):
         tv.fundStateChainAccount(JUNK_INT, 1, {"from": addrs.INVESTOR})
 
 
-def test_tokenVesting_constructor_rev_ref_eoa(addrs, TokenVesting, ReferenceScGateway):
+def test_tokenVesting_constructor_rev_ref_eoa(addrs, TokenVesting, SCGatewayReference):
 
     scGatewayReference = addrs.DEPLOYER.deploy(
-        ReferenceScGateway, addrs.DEPLOYER, NON_ZERO_ADDR
+        SCGatewayReference, addrs.DEPLOYER, NON_ZERO_ADDR
     )
 
     tv = addrs.DEPLOYER.deploy(
