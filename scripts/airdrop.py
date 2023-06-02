@@ -7,7 +7,7 @@ import os.path
 import math
 
 sys.path.append(os.path.abspath("tests"))
-from consts import ZERO_ADDR, INIT_SUPPLY
+from consts import ZERO_ADDR, INIT_SUPPLY, E_18
 from brownie import chain, accounts, StateChainGateway, FLIP, web3, network, MultiSend
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
@@ -233,7 +233,7 @@ def snapshot(
         if balance < cutoff_amount:
             break
         else:
-            assert balance == oldFlipContract.balanceOf.call(
+            assert balance == oldFlipContract.balanceOf(
                 holder, block_identifier=snapshot_blocknumber
             )
 
@@ -269,9 +269,7 @@ def snapshot(
 
     # Health check
     assert len(holder_list) == len(holder_balances)
-    totalSupply = oldFlipContract.totalSupply.call(
-        block_identifier=snapshot_blocknumber
-    )
+    totalSupply = oldFlipContract.totalSupply(block_identifier=snapshot_blocknumber)
     assert totalSupply == totalBalance
 
     # Can be checked against Etherscan that the values match
@@ -356,11 +354,9 @@ def airdrop(
 
         # Assertion for extra check in our particular case - just before we start all the aidrop => oldSupply < newSupply.
         assert oldFliptotalSupply < INIT_SUPPLY
-        assert INIT_SUPPLY == newFlipContract.totalSupply.call()
+        assert INIT_SUPPLY == newFlipContract.totalSupply()
 
-        newStateChainGatewayBalance = newFlipContract.balanceOf.call(
-            newStateChainGateway
-        )
+        newStateChainGatewayBalance = newFlipContract.balanceOf(newStateChainGateway)
         # Assert that the balance of the SM has not changed before doing the final airdrop tx. No other TX should have been sent to
         # the StateChain. Technically a user could have sent FLIP there to screw this up, but in practice that won't happen. Also we
         # can just rerun the script if that were to happen.
@@ -377,7 +373,7 @@ def airdrop(
         assert stateChainGatewayBalanceDifference > 0
         assert stateChainGatewayBalanceDifference > supplyDifference
 
-        printAndLog("Do extra transfer from airdropper to StateChainGateway")
+        printAndLog("Doing transfer from airdropper to StateChainGateway")
         # Transfer the difference between the stateChainGateway difference and the newFlipTobeMinted later on by the State chain
         # Also should work if newFlipToBeMinted < 0. We need to transfer that extra amount so the stateChain can burn it later.
         amountToTransferToScG = stateChainGatewayBalanceDifference + supplyDifference
@@ -386,19 +382,29 @@ def airdrop(
         ) - oldStateChainGatewayBalance == supplyDifference
 
         # Check that the airdropper has the balance to airdrop
-        assert newFlipContract.balanceOf.call(str(airdropper)) >= amountToTransferToScG
+        assert newFlipContract.balanceOf(str(airdropper)) >= amountToTransferToScG
+
+        # Adding extra confirmations to ensure that we get the updated balances for the checks in live networks
+        required_confs = 1 if (chain.id == 31337) else 3
 
         tx = newFlipContract.transfer(
             newStateChainGateway,
             amountToTransferToScG,
-            {"from": airdropper, "required_confs": 0},
+            {"from": airdropper, "required_confs": required_confs},
         )
         logging.info("Airdrop transaction Tx Hash:" + tx.txid)
 
         assert (
-            newFlipContract.balanceOf.call(str(newStateChainGateway))
+            newFlipContract.balanceOf(str(newStateChainGateway))
             - oldStateChainGatewayBalance
             == supplyDifference
+        )
+        printAndLog(
+            "Final balance of ScGateway div18:  "
+            + str(newFlipContract.balanceOf(str(newStateChainGateway)) / E_18)
+        )
+        printAndLog(
+            "ScGateway supply difference div18: " + str(supplyDifference / E_18)
         )
         printAndLog(airdropScGatewaySuccess)
 
@@ -427,7 +433,7 @@ def airdrop(
             skip_counter += 1
 
     # Check that the airdropper has the balance to airdrop for the loop airdrop transfer (remaining Txs)
-    assert newFlipContract.balanceOf.call(str(airdropper)) >= totalAmount_toTransfer
+    assert newFlipContract.balanceOf(str(airdropper)) >= totalAmount_toTransfer
 
     listOfTxSent = []
 
@@ -446,13 +452,15 @@ def airdrop(
         for transfer in transfer_batches:
             total_transfer_batch += int(transfer[1])
 
+        # NOTE: This might not work when running a local hardhat fork. There is some error that
+        # the nonce is too low. It's probably a HH bug, it's not a problem in a fresh hardhat
+        # network nor in a live network.
         tx = multiSend.multiSendToken(
             newFlipContract,
             transfer_batches,
             total_transfer_batch,
             {"from": airdropper},
         )
-
         # Logging each individually - if logged at the end of the loop and it breaks before that, then transfers won't be logged
         logging.info("Airdrop transaction Tx Hash:" + tx.txid)
 
@@ -495,7 +503,7 @@ def verifyAirdrop(
 
     newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
 
-    totalSupplyNewFlip = newFlipContract.totalSupply.call(
+    totalSupplyNewFlip = newFlipContract.totalSupply(
         block_identifier=web3.eth.block_number
     )
 
@@ -557,11 +565,9 @@ def verifyAirdrop(
 
     # Check that the final supply difference and that the difference is in the stateChainGateway
     # This should be the case regardless of Chainflip having burnt/mint FLIP from the stateChainGateway
-    supplyDifference = oldFliptotalSupply - newFlipContract.totalSupply.call()
-    assert (
-        supplyDifference
-        == oldStateChainGatewayBalance
-        - newFlipContract.balanceOf.call(newStateChainGateway)
+    supplyDifference = oldFliptotalSupply - newFlipContract.totalSupply()
+    assert supplyDifference == oldStateChainGatewayBalance - newFlipContract.balanceOf(
+        newStateChainGateway
     )
 
     printAndLog("😎  Airdrop verified succesfully! 😎")

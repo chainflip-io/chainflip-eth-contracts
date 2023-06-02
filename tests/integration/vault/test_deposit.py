@@ -11,12 +11,16 @@ from shared_tests import *
     st_deployToken=strategy("bool"),
 )
 def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken):
-    signed_call_cf(
+    tx = signed_call_cf(
         cf,
         cf.vault.deployAndFetchBatch,
         [[st_fetchSwapID, token.address if st_deployToken else NATIVE_ADDR]],
         sender=st_sender,
     )
+
+    if not st_deployToken:
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]
 
 
 @given(
@@ -32,12 +36,15 @@ def test_deposit_constructor(
     with reverts():
         signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[st_fetchSwapID, st_address]])
 
-    signed_call_cf(
+    tx = signed_call_cf(
         cf,
         cf.vault.deployAndFetchBatch,
         [[st_fetchSwapID, token.address if st_deployToken else NATIVE_ADDR]],
         sender=st_sender,
     )
+    if not st_deployToken:
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]
 
 
 @given(
@@ -65,12 +72,15 @@ def test_deposit_fetch(
         if st_deployToken
         else cleanHexStrPad(NATIVE_ADDR),
     )
-    signed_call_cf(
+    tx = signed_call_cf(
         cf,
         cf.vault.deployAndFetchBatch,
         [[st_fetchSwapID, token.address if st_deployToken else NATIVE_ADDR]],
         sender=st_sender,
     )
+    if not st_deployToken:
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]
 
     # Call fetch function on the deployed Deposit contract - should fail as only the Vault should be able to call it
     with reverts():
@@ -78,9 +88,12 @@ def test_deposit_fetch(
             token.address if st_fetchToken else NATIVE_ADDR, {"from": st_sender_2}
         )
 
-    signed_call_cf(
+    tx = signed_call_cf(
         cf,
         cf.vault.fetchBatch,
         [[depositAddr, NATIVE_ADDR], [depositAddr, token.address]],
         sender=st_sender,
     )
+    if not st_deployToken:
+        assert len(tx.events["FetchedNative"]) == 1
+        assert tx.events["FetchedNative"][0].values() == [0]
