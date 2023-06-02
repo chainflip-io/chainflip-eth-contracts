@@ -1,14 +1,15 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "./interfaces/ISCGatewayReference.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title StateChainGatewayReference
+ * @title State Chain Gateway Reference
  * @dev A contract that holds a reference to the StateChainGateway contract. This is for the
- *      tokenVesting contracts so the governor don't have to update dozens of references making
- *      calls from a multisig in case of the StateChainGateway contract being upgraded.
- *      The governor address will be the same as the revoker address in the TokenVesting contract.
+ *      tokenVesting contracts so the governor doesn't have to update multiple references in case
+ *      of the StateChainGateway contract being upgraded.
  */
 contract SCGatewayReference is ISCGatewayReference, Shared {
     address private governor;
@@ -33,14 +34,16 @@ contract SCGatewayReference is ISCGatewayReference, Shared {
     function updateStateChainGateway(
         IStateChainGateway _stateChainGateway
     ) external override onlyGovernor nzAddr(address(_stateChainGateway)) {
-        emit StateChainGatewayUpdated(address(stateChainGateway), address(_stateChainGateway));
+        address oldStateChainGateway = address(stateChainGateway);
         stateChainGateway = _stateChainGateway;
+        emit StateChainGatewayUpdated(oldStateChainGateway, address(_stateChainGateway));
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
     function transferGovernor(address _governor) external override onlyGovernor nzAddr(_governor) {
-        emit GovernorTransferred(governor, _governor);
+        address oldGovernor = governor;
         governor = _governor;
+        emit GovernorTransferred(oldGovernor, _governor);
     }
 
     //////////////////////////////////////////////////////////////

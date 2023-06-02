@@ -21,14 +21,14 @@ def deploy_flip(cf, FLIP, issuer):
 
 
 @given(st_issuer=strategy("address"))
-def test_updateIssuer(cf, st_issuer, FLIP):
+def test_updateIssuer_st(cf, st_issuer, FLIP):
     flip = deploy_flip(cf, FLIP, cf.ALICE)
     assert flip.getIssuer() == cf.ALICE
     flip.updateIssuer(st_issuer, {"from": cf.ALICE})
     assert cf.flip.getIssuer() == st_issuer
 
 
-def test_updateIssuer(cf, FLIP):
+def test_updateIssuer_scg(cf, FLIP):
     flip = deploy_flip(cf, FLIP, cf.BOB)
     assert flip.getIssuer() == cf.BOB
     flip.updateIssuer(cf.stateChainGateway.address, {"from": cf.BOB})
