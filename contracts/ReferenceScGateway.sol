@@ -6,7 +6,7 @@ import "./interfaces/IReferenceScGateway.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title State Chain Gateway Reference
+ * @title Reference to State Chain Gateway
  * @dev A contract that holds a reference to the StateChainGateway contract. This is for the
  *      tokenVesting contracts so the governor doesn't have to update multiple references in case
  *      of the StateChainGateway contract being upgraded.
