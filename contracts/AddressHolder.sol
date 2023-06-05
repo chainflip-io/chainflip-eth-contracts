@@ -8,8 +8,9 @@ import "./abstract/Shared.sol";
 /**
  * @title Address Holder reference
  * @dev A contract that holds a reference to an address. This reference address can only be updated
- *      by the governor. This is used for the TokenVesting contracts so the governor doesn't have
- *      update multiple references in case of the StateChainGateway contract being upgraded.
+ *      by the governor. This can be used when multiple contracts hold a reference to an address that
+ *      may need to be updated. In that case, it is easier to have a single contract that holds the
+ *      reference address.
  */
 contract AddressHolder is IAddressHolder, Shared {
     address private governor;

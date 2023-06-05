@@ -9,16 +9,24 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title TokenVesting
- * @dev A token holder contract that can release its token balance gradually like a
- * typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
- * owner.
+ * @dev A token holder contract that that vests its balance of any ERC20 token to the beneficiary.
+ *      Two vesting contract options:
+ *        Option A: Not stakable. 20% cliff unlocking and 80% linear after that.
+ *                  If revoked send all funds to revoker and allow beneficiary to release remaining funds
+ *        Option B: Stakable. Nothing unlocked until end of contract where everything unlocks at once.
+ *                  All funds can be staked during the vesting period.
+ *                  If revoked send all funds to revoker and block beneficiary releases indefinitely.
+ *
+ *       The reference to the staking contract is hold by the AddressHolder contract to allow for governance to
+ *       update it in case the staking contract needs to be upgraded.
+ *
+ *       The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and
+ *       is therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree).
+ *       Therefore, it is recommended to avoid using short time durations (less than a minute). Typical vesting
+ *       schemes, with a cliff period of a year and a duration of four years, are safe to use.
+ *
  */
 contract TokenVesting is ITokenVesting {
-    // The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and is
-    // therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree). Therefore,
-    // it is recommended to avoid using short time durations (less than a minute). Typical vesting schemes, with a
-    // cliff period of a year and a duration of four years, are safe to use.
-
     using SafeERC20 for IERC20;
 
     uint256 public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
@@ -42,15 +50,6 @@ contract TokenVesting is ITokenVesting {
     mapping(IERC20 => bool) public revoked;
 
     /**
-     * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
-     * beneficiary.
-     * Two vesting contract options:
-     *   Option A: Not stakable. 20% cliff unlocking and 80% linear after that.
-     *             If revoked send all funds to revoker and allow beneficiary to release remaining funds
-     *   Option B: Stakable. Nothing unlocked until end of contract where everything unlocks at once.
-     *             All funds can be staked during the vesting period.
-     *             If revoked send all funds to revoker and block beneficiary releases indefinitely.
-     
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
