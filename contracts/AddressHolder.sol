@@ -61,7 +61,7 @@ contract AddressHolder is IAddressHolder, Shared {
 
     /// @notice Ensure that the caller is the governor address.
     modifier onlyGovernor() {
-        require(msg.sender == governor, "SCGRef: not the governor");
+        require(msg.sender == governor, "AddrHolder: not the governor");
         _;
     }
 }
