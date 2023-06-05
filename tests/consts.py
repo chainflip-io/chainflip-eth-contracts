@@ -153,7 +153,7 @@ REV_MSG_INVALID_CLIFF = "Vesting: invalid staking contract cliff"
 REV_MSG_INVALID_BENEFICIARY = "Vesting: beneficiary_ is the zero address"
 REV_MSG_CLIFF_AFTER_END = "Vesting: cliff_ after end_"
 REV_MSG_INVALID_FINAL_TIME = "Vesting: final time is before current time"
-REV_MSG_INVALID_SCGREF = "Vesting: scGatewayRef_ is the zero address"
+REV_MSG_INVALID_SCGREF = "Vesting: addrHolder is the zero address"
 REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
 REV_MSG_SCGREF_REV_GOV = "AddrHolder: not the governor"
 

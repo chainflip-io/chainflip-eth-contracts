@@ -71,7 +71,7 @@ contract TokenVesting is ITokenVesting {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
-        require(address(addressHolder_) != address(0), "Vesting: scGatewayRef_ is the zero address");
+        require(address(addressHolder_) != address(0), "Vesting: addrHolder is the zero address");
         if (canStake_) require(cliff_ == end_, "Vesting: invalid staking contract cliff");
 
         beneficiary = beneficiary_;
