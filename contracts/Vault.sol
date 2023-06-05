@@ -78,7 +78,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          deposits , then it performs all transfers specified with the rest
      *          of the inputs, the same as transferBatch (where all inputs are again required
      *          to be of equal length - however the lengths of the fetch inputs do not have to
-     *          be equal to lengths of the transfer inputs). Fetches/transfers of native are
+     *          be equal to lengths of the transfer inputs). Fetches/transfers of native tokens are
      *          indicated with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address.
      * @dev     FetchAndDeploy is executed first to handle the edge case , which probably shouldn't
      *          happen anyway, where a deploy and a fetch for the same address are in the same batch.
@@ -120,7 +120,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers native or a token from this vault to a recipient
+     * @notice  Transfers native tokens or a ERC20 token from this vault to a recipient
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param transferParams       The transfer parameters
@@ -141,7 +141,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers native or tokens from this vault to recipients.
+     * @notice  Transfers native tokens or ERC20 tokens from this vault to recipients.
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param transferParamsArray The array of transfer parameters.
@@ -159,7 +159,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers native or tokens from this vault to recipients.
+     * @notice  Transfers native tokens or ERC20 tokens from this vault to recipients.
      * @param transferParamsArray The array of transfer parameters.
      */
     function _transferBatch(TransferParams[] calldata transferParamsArray) private {
@@ -437,8 +437,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers native or a token from this vault to a recipient and makes a function call
-     *          completing a cross-chain swap and call. The ICFReceiver interface is expected on
+     * @notice  Transfers native tokens or an ERC20 token from this vault to a recipient and makes a function
+     *          call completing a cross-chain swap and call. The ICFReceiver interface is expected on
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap.
      * @param sigData    Struct containing the signature data over the message
@@ -626,7 +626,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
         address payable recipient = payable(getKeyManager().getGovernanceKey());
 
-        // Transfer all native and ERC20 Tokens
+        // Transfer all native tokens and ERC20 Tokens
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokens[i] == _NATIVE_ADDR) {
                 _transfer(_NATIVE_ADDR, recipient, address(this).balance);
@@ -657,6 +657,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving native when Deposit.fetch() is called.
+    /// @dev For receiving native tokens from the Deposit contracts
     receive() external payable {}
 }

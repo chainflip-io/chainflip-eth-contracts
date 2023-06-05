@@ -19,7 +19,7 @@ import "../interfaces/ICFReceiver.sol";
  *           check on the source address and source chain should be performed.
  */
 abstract contract CFReceiver is ICFReceiver {
-    /// @dev The address used to indicate whether the funds received are native or a token
+    /// @dev The address used to indicate whether the funds received are native tokens or ERC20 token
     address private constant _NATIVE_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @dev    Chainflip's Vault address where xSwaps and xCalls will be originated from.
@@ -43,7 +43,7 @@ abstract contract CFReceiver is ICFReceiver {
      * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
      * @param srcAddress    Bytes containing the source address on the source chain.
      * @param message       The message sent on the source chain. This is a general purpose message.
-     * @param token         Address of the token received. _NATIVE_ADDR if native.
+     * @param token         Address of the token received. _NATIVE_ADDR if it's native tokens.
      * @param amount        Amount of tokens received. This will match msg.value for native tokens.
      */
     function cfReceive(
