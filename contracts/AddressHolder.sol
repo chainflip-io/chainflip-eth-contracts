@@ -2,26 +2,23 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/ISCGatewayReference.sol";
+import "./interfaces/IAddressHolder.sol";
 import "./abstract/Shared.sol";
 
 /**
- * @title State Chain Gateway Reference
- * @dev A contract that holds a reference to the StateChainGateway contract. This is for the
- *      tokenVesting contracts so the governor doesn't have to update multiple references in case
- *      of the StateChainGateway contract being upgraded.
+ * @title Address Holder reference
+ * @dev A contract that holds a reference to an address. This reference address can only be updated
+ *      by the governor. This is used for the TokenVesting contracts so the governor doesn't have
+ *      update multiple references in case of the StateChainGateway contract being upgraded.
  */
-contract SCGatewayReference is ISCGatewayReference, Shared {
+contract AddressHolder is IAddressHolder, Shared {
     address private governor;
 
-    IStateChainGateway private stateChainGateway;
+    address private referenceAddress;
 
-    constructor(
-        address _governor,
-        IStateChainGateway _stateChainGateway
-    ) nzAddr(_governor) nzAddr(address(_stateChainGateway)) {
+    constructor(address _governor, address _referenceAddress) nzAddr(_governor) nzAddr(_referenceAddress) {
         governor = _governor;
-        stateChainGateway = _stateChainGateway;
+        referenceAddress = _referenceAddress;
     }
 
     //////////////////////////////////////////////////////////////
@@ -30,13 +27,13 @@ contract SCGatewayReference is ISCGatewayReference, Shared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Update the reference to the StateChainGateway contract
-    function updateStateChainGateway(
-        IStateChainGateway _stateChainGateway
-    ) external override onlyGovernor nzAddr(address(_stateChainGateway)) {
-        address oldStateChainGateway = address(stateChainGateway);
-        stateChainGateway = _stateChainGateway;
-        emit StateChainGatewayUpdated(oldStateChainGateway, address(_stateChainGateway));
+    /// @dev    Update the reference address
+    function updateReferenceAddress(
+        address _referenceAddress
+    ) external override onlyGovernor nzAddr(_referenceAddress) {
+        address oldReferenceAddress = referenceAddress;
+        referenceAddress = _referenceAddress;
+        emit ReferenceAddressUpdated(oldReferenceAddress, _referenceAddress);
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
@@ -52,9 +49,9 @@ contract SCGatewayReference is ISCGatewayReference, Shared {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev    Getter function for the TokenVesting contract
-    function getStateChainGateway() external view override returns (IStateChainGateway) {
-        return stateChainGateway;
+    /// @dev    Getter function for the reference address
+    function getReferenceAddress() external view override returns (address) {
+        return referenceAddress;
     }
 
     /// @dev    Getter function for the governor address

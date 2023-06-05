@@ -8,7 +8,7 @@ cliff = start + int(YEAR / 2)
 end = start + YEAR
 
 
-def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayReference):
+def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, addressHolder):
 
     with reverts(REV_MSG_INVALID_CLIFF):
         addrs.DEPLOYER.deploy(
@@ -19,7 +19,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayRefere
             end,
             STAKABLE,
             BENEF_TRANSF,
-            scGatewayReference,
+            addressHolder,
         )
 
     tv = addrs.DEPLOYER.deploy(
@@ -30,7 +30,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayRefere
         end,
         NON_STAKABLE,
         BENEF_TRANSF,
-        scGatewayReference,
+        addressHolder,
     )
     check_state(
         tv,
@@ -44,7 +44,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayRefere
         True,
         cf.stateChainGateway,
         0,
-        scGatewayReference,
+        addressHolder,
     )
 
     valid_staking_cliff = end
@@ -57,7 +57,7 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayRefere
         end,
         STAKABLE,
         BENEF_NON_TRANSF,
-        scGatewayReference,
+        addressHolder,
     )
     check_state(
         tv,
@@ -71,11 +71,11 @@ def test_tokenVesting_constructor_cliff(addrs, TokenVesting, cf, scGatewayRefere
         False,
         cf.stateChainGateway,
         0,
-        scGatewayReference,
+        addressHolder,
     )
 
 
-def test_tokenVesting_constructor_noRevoker(addrs, TokenVesting, scGatewayReference):
+def test_tokenVesting_constructor_noRevoker(addrs, TokenVesting, addressHolder):
     addrs.DEPLOYER.deploy(
         TokenVesting,
         addrs.INVESTOR,
@@ -84,13 +84,11 @@ def test_tokenVesting_constructor_noRevoker(addrs, TokenVesting, scGatewayRefere
         end,
         STAKABLE,
         BENEF_TRANSF,
-        scGatewayReference,
+        addressHolder,
     )
 
 
-def test_tokenVesting_constructor_rev_beneficiary(
-    addrs, TokenVesting, scGatewayReference
-):
+def test_tokenVesting_constructor_rev_beneficiary(addrs, TokenVesting, addressHolder):
     with reverts(REV_MSG_INVALID_BENEFICIARY):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -100,11 +98,11 @@ def test_tokenVesting_constructor_rev_beneficiary(
             end,
             STAKABLE,
             BENEF_TRANSF,
-            scGatewayReference,
+            addressHolder,
         )
 
 
-def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, scGatewayReference):
+def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, addressHolder):
     with reverts(REV_MSG_CLIFF_AFTER_END):
         addrs.DEPLOYER.deploy(
             TokenVesting,
@@ -114,12 +112,12 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVesting, scGatewayRefere
             0,
             STAKABLE,
             BENEF_NON_TRANSF,
-            scGatewayReference,
+            addressHolder,
         )
 
 
 def test_tokenVesting_constructor_rev_cliff_not_before_end(
-    addrs, TokenVesting, scGatewayReference
+    addrs, TokenVesting, addressHolder
 ):
     with reverts(REV_MSG_CLIFF_AFTER_END):
         addrs.DEPLOYER.deploy(
@@ -130,12 +128,12 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(
             cliff - 1,
             STAKABLE,
             BENEF_TRANSF,
-            scGatewayReference,
+            addressHolder,
         )
 
 
 def test_tokenVesting_constructor_rev_end_before_now(
-    addrs, TokenVesting, scGatewayReference
+    addrs, TokenVesting, addressHolder
 ):
     with reverts(REV_MSG_INVALID_FINAL_TIME):
         addrs.DEPLOYER.deploy(
@@ -146,7 +144,7 @@ def test_tokenVesting_constructor_rev_end_before_now(
             end - (YEAR * 2),
             STAKABLE,
             BENEF_TRANSF,
-            scGatewayReference,
+            addressHolder,
         )
 
 
@@ -181,11 +179,9 @@ def test_tokenVesting_constructor_rev_eoa(addrs, TokenVesting):
         tv.fundStateChainAccount(JUNK_INT, 1, {"from": addrs.INVESTOR})
 
 
-def test_tokenVesting_constructor_rev_ref_eoa(addrs, TokenVesting, SCGatewayReference):
+def test_tokenVesting_constructor_rev_ref_eoa(addrs, TokenVesting, AddressHolder):
 
-    scGatewayReference = addrs.DEPLOYER.deploy(
-        SCGatewayReference, addrs.DEPLOYER, NON_ZERO_ADDR
-    )
+    addressHolder = addrs.DEPLOYER.deploy(AddressHolder, addrs.DEPLOYER, NON_ZERO_ADDR)
 
     tv = addrs.DEPLOYER.deploy(
         TokenVesting,
@@ -195,7 +191,7 @@ def test_tokenVesting_constructor_rev_ref_eoa(addrs, TokenVesting, SCGatewayRefe
         end,
         STAKABLE,
         BENEF_TRANSF,
-        scGatewayReference,
+        addressHolder,
     )
     # Reference contract that points to an eoa
     with reverts("Transaction reverted without a reason string"):

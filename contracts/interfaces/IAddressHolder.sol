@@ -2,10 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./IStateChainGateway.sol";
-
-interface ISCGatewayReference {
-    event StateChainGatewayUpdated(address oldStateChainGateway, address newStateChainGateway);
+interface IAddressHolder {
+    event ReferenceAddressUpdated(address oldReferenceAddress, address newReferenceAddress);
     event GovernorTransferred(address oldGovernor, address newGovernor);
 
     //////////////////////////////////////////////////////////////
@@ -14,7 +12,7 @@ interface ISCGatewayReference {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function updateStateChainGateway(IStateChainGateway stateChainGateway_) external;
+    function updateReferenceAddress(address _referenceAddress) external;
 
     function transferGovernor(address _governor) external;
 
@@ -24,7 +22,7 @@ interface ISCGatewayReference {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function getStateChainGateway() external view returns (IStateChainGateway);
+    function getReferenceAddress() external view returns (address);
 
     function getGovernor() external view returns (address);
 }

@@ -30,7 +30,7 @@ def check_state(
     beneficiary_transferrable,
     stateChainGateway,
     revoked,
-    scGatewayReference,
+    addressHolder,
 ):
     assert tv.getBeneficiary() == beneficiary
     assert tv.getRevoker() == revoker
@@ -40,8 +40,8 @@ def check_state(
     assert tv.end() == end
     assert tv.canStake() == canStake
     assert tv.beneficiaryCanBeTransferred() == beneficiary_transferrable
-    assert tv.scGatewayReference() == scGatewayReference
-    assert scGatewayReference.getStateChainGateway() == stateChainGateway
+    assert tv.addressHolder() == addressHolder
+    assert addressHolder.getReferenceAddress() == stateChainGateway
 
     assert tv.revoked(cf.flip) == revoked
 
