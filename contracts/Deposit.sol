@@ -17,6 +17,10 @@ contract Deposit {
 
     event FetchedNative(uint256 amount);
 
+    /**
+     * @notice  Upon deployment it fetches the tokens (native or ERC20) to the Vault.
+     * @param token  The address of the token to fetch
+     */
     constructor(address token) {
         vault = payable(msg.sender);
         // Slightly cheaper to use msg.sender instead of Vault.
@@ -31,12 +35,18 @@ contract Deposit {
         }
     }
 
+    /**
+     * @notice  Allows the Vault to fetch ERC20 tokens from this contract.
+     * @param token  The address of the token to fetch
+     */
     function fetch(address token) external {
         require(msg.sender == vault);
         // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
         IERC20Lite(token).transfer(msg.sender, IERC20Lite(token).balanceOf(address(this)));
     }
 
+    /// @notice Receives native tokens, emits an event and sends them to the Vault. Note that this will
+    // require the sender to forward some more gas than for a simple transfer.
     receive() external payable {
         emit FetchedNative(address(this).balance);
         // solhint-disable-next-line avoid-low-level-calls
