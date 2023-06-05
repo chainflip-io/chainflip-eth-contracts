@@ -261,3 +261,8 @@ def mockKeyManagers(
     kmMocks_valid_addresses = [km_0, km_1, km_2, km_3, km_4, km_5]
 
     return kmMocks_arbitrary_addresses, kmMocks_valid_addresses
+
+
+@pytest.fixture(scope="module")
+def balanceChecker(cf, BalanceChecker):
+    return cf.SAFEKEEPER.deploy(BalanceChecker)
