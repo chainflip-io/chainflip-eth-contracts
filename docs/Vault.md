@@ -30,7 +30,7 @@ No description
          deposits , then it performs all transfers specified with the rest
          of the inputs, the same as transferBatch (where all inputs are again required
          to be of equal length - however the lengths of the fetch inputs do not have to
-         be equal to lengths of the transfer inputs). Fetches/transfers of native are
+         be equal to lengths of the transfer inputs). Fetches/transfers of native tokens are
          indicated with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address.
 
 - `sigData`:    Struct containing the signature data over the message
@@ -44,7 +44,7 @@ No description
 
 ## `transfer(struct IShared.SigData sigData, struct IShared.TransferParams transferParams)` (external)
 
- Transfers native or a token from this vault to a recipient
+ Transfers native tokens or a ERC20 token from this vault to a recipient
 
 - `sigData`:    Struct containing the signature data over the message
                   to verify, signed by the aggregate key.
@@ -53,7 +53,7 @@ No description
 
 ## `transferBatch(struct IShared.SigData sigData, struct IShared.TransferParams[] transferParamsArray)` (external)
 
- Transfers native or tokens from this vault to recipients.
+ Transfers native tokens or ERC20 tokens from this vault to recipients.
 
 - `sigData`:    Struct containing the signature data over the message
                   to verify, signed by the aggregate key.
@@ -177,8 +177,8 @@ No description
 
 ## `executexSwapAndCall(struct IShared.SigData sigData, struct IShared.TransferParams transferParams, uint32 srcChain, bytes srcAddress, bytes message)` (external)
 
- Transfers native or a token from this vault to a recipient and makes a function call
-         completing a cross-chain swap and call. The ICFReceiver interface is expected on
+ Transfers native tokens or an ERC20 token from this vault to a recipient and makes a function
+         call completing a cross-chain swap and call. The ICFReceiver interface is expected on
          the receiver's address. A message is passed to the receiver along with other
          parameters specifying the origin of the swap.
 
