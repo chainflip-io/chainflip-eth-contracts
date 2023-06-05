@@ -19,15 +19,6 @@ contract Deposit {
 
     constructor(address token) {
         vault = payable(msg.sender);
-        _fetch(token);
-    }
-
-    function fetch(address token) external {
-        require(msg.sender == vault);
-        _fetch(token);
-    }
-
-    function _fetch(address token) private {
         // Slightly cheaper to use msg.sender instead of Vault.
         if (token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             emit FetchedNative(address(this).balance);
@@ -40,5 +31,16 @@ contract Deposit {
         }
     }
 
-    receive() external payable {}
+    function fetch(address token) external {
+        require(msg.sender == vault);
+        // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
+        IERC20Lite(token).transfer(msg.sender, IERC20Lite(token).balanceOf(address(this)));
+    }
+
+    receive() external payable {
+        emit FetchedNative(address(this).balance);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = vault.call{value: address(this).balance}("");
+        require(success);
+    }
 }
