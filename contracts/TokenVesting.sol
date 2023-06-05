@@ -11,11 +11,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @title TokenVesting
  * @dev A token holder contract that that vests its balance of any ERC20 token to the beneficiary.
  *      Two vesting contract options:
- *        Option A: Not stakable. 20% cliff unlocking and 80% linear after that.
- *                  If revoked send all funds to revoker and allow beneficiary to release remaining funds
- *        Option B: Stakable. Nothing unlocked until end of contract where everything unlocks at once.
- *                  All funds can be staked during the vesting period.
+ *        Option A: Validator lockup - stakable. Nothing unlocked until end of contract where everything
+ *                  unlocks at once. All funds can be staked during the vesting period.
  *                  If revoked send all funds to revoker and block beneficiary releases indefinitely.
+ *                  Any staked funds at the moment of revocation can be retrieved by the revoker upon unstaking.
+ *        Option B: Linear lockup - not stakable. 20% cliff unlocking and 80% linear after that.
+ *                  If revoked send all funds to revoker and allow beneficiary to release remaining vested funds.
  *
  *       The reference to the staking contract is hold by the AddressHolder contract to allow for governance to
  *       update it in case the staking contract needs to be upgraded.
@@ -33,7 +34,7 @@ contract TokenVesting is ITokenVesting {
 
     // beneficiary of tokens after they are released. It can be transferrable.
     address private beneficiary;
-    bool public immutable beneficiaryCanBeTransferred;
+    bool public immutable transferableBeneficiary;
     // the revoker who can cancel the vesting and withdraw any unvested tokens
     address private revoker;
 
@@ -55,7 +56,7 @@ contract TokenVesting is ITokenVesting {
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
-     * @param beneficiaryCanBeTransferred_ whether the beneficiary address can be transferred
+     * @param transferableBeneficiary_ whether the beneficiary address can be transferred
      * @param addressHolder_ the contract holding the reference to the contract to stake to if canStake
      */
     constructor(
@@ -64,7 +65,7 @@ contract TokenVesting is ITokenVesting {
         uint256 cliff_,
         uint256 end_,
         bool canStake_,
-        bool beneficiaryCanBeTransferred_,
+        bool transferableBeneficiary_,
         IAddressHolder addressHolder_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
@@ -78,7 +79,7 @@ contract TokenVesting is ITokenVesting {
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
-        beneficiaryCanBeTransferred = beneficiaryCanBeTransferred_;
+        transferableBeneficiary = transferableBeneficiary_;
         addressHolder = addressHolder_;
     }
 
@@ -197,7 +198,7 @@ contract TokenVesting is ITokenVesting {
     /// @dev    Allow the beneficiary to be transferred to a new address if needed
     function transferBeneficiary(address beneficiary_) external override onlyBeneficiary {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
-        require(beneficiaryCanBeTransferred, "Vesting: beneficiary not transferrable");
+        require(transferableBeneficiary, "Vesting: beneficiary not transferrable");
         emit BeneficiaryTransferred(beneficiary, beneficiary_);
         beneficiary = beneficiary_;
     }

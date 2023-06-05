@@ -27,7 +27,7 @@ def check_state(
     cliff,
     end,
     canStake,
-    beneficiary_transferrable,
+    transferableBeneficiary,
     stateChainGateway,
     revoked,
     addressHolder,
@@ -39,7 +39,7 @@ def check_state(
     assert tv.cliff() == cliff
     assert tv.end() == end
     assert tv.canStake() == canStake
-    assert tv.beneficiaryCanBeTransferred() == beneficiary_transferrable
+    assert tv.transferableBeneficiary() == transferableBeneficiary
     assert tv.addressHolder() == addressHolder
     assert addressHolder.getReferenceAddress() == stateChainGateway
 
