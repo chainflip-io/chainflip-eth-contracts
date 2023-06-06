@@ -783,23 +783,24 @@ def test_all(
                         sender=st_sender,
                     )
 
+                    tx = signed_call_km(
+                        self.km,
+                        self.v.deployAndFetchBatch,
+                        [[st_swapID, NATIVE_ADDR]],
+                        signer=signer,
+                        sender=st_sender,
+                    )
+
                     depositAddr = getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapID),
                         Deposit,
                         cleanHexStrPad(NATIVE_ADDR),
                     )
+
                     self.deployedDeposits[st_swapID] = depositAddr
 
                     depositBal = self.nativeBals[depositAddr]
-                    tx = signed_call_km(
-                        self.km,
-                        self.v.fetchBatch,
-                        [[depositAddr, NATIVE_ADDR]],
-                        signer=signer,
-                        sender=st_sender,
-                    )
-
                     self.nativeBals[depositAddr] -= depositBal
                     self.nativeBals[self.v] += depositBal
                     self.lastValidateTime = tx.timestamp
@@ -838,7 +839,6 @@ def test_all(
 
                 print("                    rule_fetchDepositNativeBatch", *toLog)
 
-                used_addresses = []
                 non_used_swapIDs = []
                 for st_swapID in st_swapIDs:
                     if st_swapID not in self.deployedDeposits:
