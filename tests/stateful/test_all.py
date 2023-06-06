@@ -776,14 +776,6 @@ def test_all(
                 print("                    rule_fetchDepositNative", *toLog)
 
                 if st_swapID not in self.deployedDeposits:
-                    signed_call_km(
-                        self.km,
-                        self.v.deployAndFetchBatch,
-                        [[st_swapID, NATIVE_ADDR]],
-                        signer=signer,
-                        sender=st_sender,
-                    )
-
                     tx = signed_call_km(
                         self.km,
                         self.v.deployAndFetchBatch,
@@ -798,10 +790,10 @@ def test_all(
                         Deposit,
                         cleanHexStrPad(NATIVE_ADDR),
                     )
-
                     self.deployedDeposits[st_swapID] = depositAddr
 
                     depositBal = self.nativeBals[depositAddr]
+
                     self.nativeBals[depositAddr] -= depositBal
                     self.nativeBals[self.v] += depositBal
                     self.lastValidateTime = tx.timestamp
