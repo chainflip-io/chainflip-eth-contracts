@@ -13,6 +13,7 @@ from brownie import (
     FLIP,
     DeployerContract,
     Deposit,
+    BalanceChecker,
     chain,
     network,
 )
@@ -32,7 +33,13 @@ COMMUNITY_KEY_2 = accounts[7]
 
 
 cf = deploy_Chainflip_contracts(
-    DEPLOYER, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract
+    DEPLOYER,
+    KeyManager,
+    Vault,
+    StateChainGateway,
+    FLIP,
+    DeployerContract,
+    BalanceChecker,
 )
 
 cf.flip.transfer(ALICE, MAX_TEST_FUND, {"from": cf.safekeeper})
