@@ -266,8 +266,9 @@ def test_vault(
             deployFetchParamsArray = []
 
             for swapID, token in zip(st_swapIDs, fetchTokens):
-                if swapID in self.deployedDeposits and token != NATIVE_ADDR:
-                    fetchParamsArray.append([self.deployedDeposits[swapID], token])
+                if swapID in self.deployedDeposits:
+                    if token != NATIVE_ADDR:
+                        fetchParamsArray.append([self.deployedDeposits[swapID], token])
                 else:
                     deployFetchParamsArray.append([swapID, token])
 
