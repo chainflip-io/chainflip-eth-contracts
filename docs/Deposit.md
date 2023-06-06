@@ -3,16 +3,20 @@
   Creates a contract with a known address and withdraws tokens from it.
           After deployment, the Vault will call fetch() to withdraw tokens.
 
-     The logic is not refactored into a single function because it's cheaper.
+     Any change in this contract, including comments, will affect the final
+          bytecode and therefore will affect the create2 derived addresses.
+          Do NOT modify unless the consequences of doing so are fully understood.
 
-## `constructor(contract IERC20Lite token)` (public)
+## `constructor(address token)` (public)
 
 No description
 
-## `fetch(contract IERC20Lite token)` (external)
+## `fetch(address token)` (external)
 
 No description
 
 ## `receive()` (external)
 
 No description
+
+## `FetchedNative(uint256 amount)`

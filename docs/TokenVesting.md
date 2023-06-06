@@ -1,8 +1,21 @@
 # `TokenVesting`
 
-A token holder contract that can release its token balance gradually like a
-typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
-owner.
+A token holder contract that that vests its balance of any ERC20 token to the beneficiary.
+     Two vesting contract options:
+       Option A: Validator lockup - stakable. Nothing unlocked until end of contract where everything
+                 unlocks at once. All funds can be staked during the vesting period.
+                 If revoked send all funds to revoker and block beneficiary releases indefinitely.
+                 Any staked funds at the moment of revocation can be retrieved by the revoker upon unstaking.
+       Option B: Linear lockup - not stakable. 20% cliff unlocking and 80% linear after that.
+                 If revoked send all funds to revoker and allow beneficiary to release remaining vested funds.
+
+      The reference to the staking contract is hold by the AddressHolder contract to allow for governance to
+      update it in case the staking contract needs to be upgraded.
+
+      The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and
+      is therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree).
+      Therefore, it is recommended to avoid using short time durations (less than a minute). Typical vesting
+      schemes, with a cliff period of a year and a duration of four years, are safe to use.
 
 ## `onlyBeneficiary()`
 
@@ -12,7 +25,7 @@ Ensure that the caller is the beneficiary address
 
 Ensure that the caller is the revoker address
 
-## `constructor(address beneficiary_, address revoker_, uint256 cliff_, uint256 end_, bool canStake_, contract IStateChainGateway stateChainGateway_)` (public)
+## `constructor(address beneficiary_, address revoker_, uint256 cliff_, uint256 end_, bool canStake_, bool transferableBeneficiary_, contract IAddressHolder addressHolder_)` (public)
 
 No description
 
@@ -26,7 +39,9 @@ No description
 
 - `canStake_`: whether the investor is allowed to use vested funds to stake
 
-- `stateChainGateway_`: the contract to stake to if canStake
+- `transferableBeneficiary_`: whether the beneficiary address can be transferred
+
+- `addressHolder_`: the contract holding the reference to the contract to stake to if canStake
 
 ## `fundStateChainAccount(bytes32 nodeID, uint256 amount)` (external)
 
@@ -63,6 +78,26 @@ Allows the revoker to retrieve tokens that have been unstaked
 
 - `token`: ERC20 token which is being vested.
 
-## `TokensReleased(contract IERC20 token, uint256 amount)`
+## `transferBeneficiary(address beneficiary_)` (external)
 
-## `TokenVestingRevoked(contract IERC20 token, uint256 refund)`
+No description
+
+## `transferRevoker(address revoker_)` (external)
+
+No description
+
+## `getBeneficiary() → address` (external)
+
+No description
+
+Returns
+
+- the beneficiary address
+
+## `getRevoker() → address` (external)
+
+No description
+
+Returns
+
+- the revoker address

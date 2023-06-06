@@ -3,28 +3,38 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IStateChainGateway.sol";
+import "./interfaces/IAddressHolder.sol";
 import "./interfaces/ITokenVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title TokenVesting
- * @dev A token holder contract that can release its token balance gradually like a
- * typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
- * owner.
+ * @dev A token holder contract that that vests its balance of any ERC20 token to the beneficiary.
+ *      Two vesting contract options:
+ *        Option A: Validator lockup - stakable. Nothing unlocked until end of contract where everything
+ *                  unlocks at once. All funds can be staked during the vesting period.
+ *                  If revoked send all funds to revoker and block beneficiary releases indefinitely.
+ *                  Any staked funds at the moment of revocation can be retrieved by the revoker upon unstaking.
+ *        Option B: Linear lockup - not stakable. 20% cliff unlocking and 80% linear after that.
+ *                  If revoked send all funds to revoker and allow beneficiary to release remaining vested funds.
+ *
+ *       The reference to the staking contract is hold by the AddressHolder contract to allow for governance to
+ *       update it in case the staking contract needs to be upgraded.
+ *
+ *       The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and
+ *       is therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree).
+ *       Therefore, it is recommended to avoid using short time durations (less than a minute). Typical vesting
+ *       schemes, with a cliff period of a year and a duration of four years, are safe to use.
+ *
  */
 contract TokenVesting is ITokenVesting {
-    // The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and is
-    // therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree). Therefore,
-    // it is recommended to avoid using short time durations (less than a minute). Typical vesting schemes, with a
-    // cliff period of a year and a duration of four years, are safe to use.
-
     using SafeERC20 for IERC20;
 
     uint256 public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
 
     // beneficiary of tokens after they are released. It can be transferrable.
     address private beneficiary;
-    bool public immutable beneficiaryCanBeTransferred;
+    bool public immutable transferableBeneficiary;
     // the revoker who can cancel the vesting and withdraw any unvested tokens
     address private revoker;
 
@@ -34,29 +44,20 @@ contract TokenVesting is ITokenVesting {
 
     // If false, staking is not allowed
     bool public immutable canStake;
-    // The staking contract to stake to if `canStake`
-    IStateChainGateway public immutable stateChainGateway;
+    // The contract that holds the reference to the staking contract. Only relevant if `canStake`
+    IAddressHolder public immutable addressHolder;
 
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
 
     /**
-     * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
-     * beneficiary.
-     * Two vesting contract options:
-     *   Option A: Not stakable. 20% cliff unlocking and 80% linear after that.
-     *             If revoked send all funds to revoker and allow beneficiary to release remaining funds
-     *   Option B: Stakable. Nothing unlocked until end of contract where everything unlocks at once.
-     *             All funds can be staked during the vesting period.
-     *             If revoked send all funds to revoker and block beneficiary releases indefinitely.
-     
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
      * @param cliff_ the unix time of the cliff, nothing withdrawable before this
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
-     * @param beneficiaryCanBeTransferred_ whether the beneficiary address can be transferred
-     * @param stateChainGateway_ the contract to stake to if canStake
+     * @param transferableBeneficiary_ whether the beneficiary address can be transferred
+     * @param addressHolder_ the contract holding the reference to the contract to stake to if canStake
      */
     constructor(
         address beneficiary_,
@@ -64,13 +65,13 @@ contract TokenVesting is ITokenVesting {
         uint256 cliff_,
         uint256 end_,
         bool canStake_,
-        bool beneficiaryCanBeTransferred_,
-        IStateChainGateway stateChainGateway_
+        bool transferableBeneficiary_,
+        IAddressHolder addressHolder_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
-        require(address(stateChainGateway_) != address(0), "Vesting: stateChainGateway_ is the zero address");
+        require(address(addressHolder_) != address(0), "Vesting: addrHolder is the zero address");
         if (canStake_) require(cliff_ == end_, "Vesting: invalid staking contract cliff");
 
         beneficiary = beneficiary_;
@@ -78,8 +79,8 @@ contract TokenVesting is ITokenVesting {
         cliff = cliff_;
         end = end_;
         canStake = canStake_;
-        beneficiaryCanBeTransferred = beneficiaryCanBeTransferred_;
-        stateChainGateway = stateChainGateway_;
+        transferableBeneficiary = transferableBeneficiary_;
+        addressHolder = addressHolder_;
     }
 
     //////////////////////////////////////////////////////////////
@@ -96,6 +97,7 @@ contract TokenVesting is ITokenVesting {
      */
     function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary {
         require(canStake, "Vesting: cannot stake");
+        IStateChainGateway stateChainGateway = IStateChainGateway(addressHolder.getReferenceAddress());
 
         IERC20 flip = stateChainGateway.getFLIP();
         require(!revoked[flip], "Vesting: FLIP revoked");
@@ -196,7 +198,7 @@ contract TokenVesting is ITokenVesting {
     /// @dev    Allow the beneficiary to be transferred to a new address if needed
     function transferBeneficiary(address beneficiary_) external override onlyBeneficiary {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
-        require(beneficiaryCanBeTransferred, "Vesting: beneficiary not transferrable");
+        require(transferableBeneficiary, "Vesting: beneficiary not transferrable");
         emit BeneficiaryTransferred(beneficiary, beneficiary_);
         beneficiary = beneficiary_;
     }
