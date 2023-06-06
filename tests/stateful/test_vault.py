@@ -507,24 +507,21 @@ def test_vault(
                     st_swapID,
                     st_native_amount,
                 )
-                depositAddr = getCreate2Addr(
-                    self.v.address,
-                    cleanHexStrPad(st_swapID),
-                    Deposit,
-                    cleanHexStrPad(NATIVE_ADDR),
-                )
-                st_sender.transfer(depositAddr, st_native_amount)
 
-                self.nativeBals[st_sender] -= st_native_amount
-
-                # Even if the swapID is used, it might have been used for a different token
-                if (
-                    st_swapID in self.deployedDeposits
-                    and self.deployedDeposits[st_swapID] == depositAddr
-                ):
+                if st_swapID in self.deployedDeposits:
+                    depositAddr = self.deployedDeposits[st_swapID]
                     self.nativeBals[self.v.address] += st_native_amount
                 else:
+                    depositAddr = getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapID),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
+                    )
                     self.nativeBals[depositAddr] += st_native_amount
+
+                st_sender.transfer(depositAddr, st_native_amount)
+                self.nativeBals[st_sender] -= st_native_amount
 
         # Transfers a token from a user/sender to one of the depositEth create2 addresses.
         # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
