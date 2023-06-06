@@ -30,19 +30,22 @@ def deployAndFetchNative(cf, vault, Deposit, **kwargs):
     return depositAddr
 
 
-def fetchNative(cf, vault, depositAddr, **kwargs):
+def fetchToken(cf, vault, depositAddr, token, **kwargs):
     amount = kwargs.get("amount", TEST_AMNT)
 
-    assert cf.SAFEKEEPER.balance() >= amount
-    cf.SAFEKEEPER.transfer(depositAddr, amount)
+    assert token.balanceOf(cf.SAFEKEEPER) >= amount
+    token.transfer(depositAddr, amount, {"from": cf.SAFEKEEPER})
+    assert token.balanceOf(depositAddr) == amount
 
-    balanceVaultBefore = vault.balance()
+    balanceVaultBefore = token.balanceOf(vault)
 
     # Fetch the deposit
-    signed_call_cf(cf, vault.fetchBatch, [[depositAddr, NATIVE_ADDR]], sender=cf.ALICE)
+    signed_call_cf(
+        cf, vault.fetchBatch, [[depositAddr, token.address]], sender=cf.ALICE
+    )
 
-    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
-    assert vault.balance() == balanceVaultBefore + amount
+    assert token.balanceOf(depositAddr) == 0
+    assert token.balanceOf(vault) == balanceVaultBefore + amount
 
     return depositAddr
 
@@ -272,7 +275,20 @@ def craftDeployFetchParamsArray(swapIDs, tokens):
 
 
 # Assumption that all the parameters are the same length. Craft the FetchParams array.
+# We need to remove the native token address from the list of tokens and deposit addresses
+# since those amounts will have been transferred to the Vault contract upon receiving them.
+# No need to fetch them.
 def craftFetchParamsArray(depositAddresses, tokens):
+
+    # Get indices of items to remove
+    indices_to_remove = [i for i, x in enumerate(tokens) if x == NATIVE_ADDR]
+
+    # Remove items from both lists
+    depositAddresses = [
+        x for i, x in enumerate(depositAddresses) if i not in indices_to_remove
+    ]
+    tokens = [x for i, x in enumerate(tokens) if i not in indices_to_remove]
+
     length = len(tokens)
     args = []
     for index in range(length):

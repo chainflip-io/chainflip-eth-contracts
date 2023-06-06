@@ -45,8 +45,8 @@ contract Deposit {
         IERC20Lite(token).transfer(msg.sender, IERC20Lite(token).balanceOf(address(this)));
     }
 
-    /// @notice Receives native tokens, emits an event and sends them to the Vault. Note that this will
-    // require the sender to forward some more gas than for a simple transfer.
+    /// @notice Receives native tokens, emits an event and sends them to the Vault. Note that this
+    // requires the sender to forward some more gas than for a simple transfer.
     receive() external payable {
         emit FetchedNative(address(this).balance);
         // solhint-disable-next-line avoid-low-level-calls
