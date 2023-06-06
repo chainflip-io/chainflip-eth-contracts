@@ -518,7 +518,7 @@ def test_vault(
                 if st_swapID not in self.deployedDeposits:
                     self.nativeBals[depositAddr] += st_native_amount
                 else:
-                    self.nativeBals[self.vault] += st_native_amount
+                    self.nativeBals[self.v.address] += st_native_amount
 
         # Transfers a token from a user/sender to one of the depositEth create2 addresses.
         # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
