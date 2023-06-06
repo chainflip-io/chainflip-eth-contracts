@@ -702,7 +702,6 @@ def test_all(
                 else:
                     self.nativeBals[self.v] += st_native_amount
 
-
         # Transfers a token from a user/sender to one of the depositEth create2 addresses.
         # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
         # in the same way but with a different tokenAddr
