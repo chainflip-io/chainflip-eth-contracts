@@ -148,7 +148,7 @@ def test_receive(cf, st_sender, token, Deposit, st_amount):
 
 @given(
     st_gasLimit=strategy("uint256", min_value=22000, max_value=40000),
-    st_amount=strategy("uint256", min_value=1),
+    st_amount=strategy("uint256", min_value=1, max_value=TEST_AMNT * 10),
 )
 def test_receive_gas(cf, Deposit, st_gasLimit, st_amount):
     depositAddr = deploy_deposit(cf, cf.ALICE, Deposit)
@@ -169,3 +169,51 @@ def test_receive_gas(cf, Deposit, st_gasLimit, st_amount):
         tx = cf.DENICE.transfer(depositAddr, st_amount, gas_limit=st_gasLimit)
         assert tx.events["FetchedNative"][0].values() == [st_amount]
         tx.info()
+
+
+# Test the correct and expected behaviour if native tokens are forced into the address.
+
+# Before the contract is deployed it should be supported
+def test_deposit_forceEth_before_deployment(cf, Deposit, ForceNativeTokens):
+    depositAddr = getCreate2Addr(
+        cf.vault.address,
+        JUNK_HEX_PAD,
+        Deposit,
+        cleanHexStrPad(NATIVE_ADDR),
+    )
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+
+    ForceNativeTokens.deploy(depositAddr, {"from": cf.SAFEKEEPER, "value": TEST_AMNT})
+
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == TEST_AMNT
+    assert web3.eth.get_balance(cf.vault.address) == 0
+
+    tx = signed_call_cf(
+        cf,
+        cf.vault.deployAndFetchBatch,
+        [[JUNK_HEX_PAD, NATIVE_ADDR]],
+    )
+    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(cf.vault.address) == TEST_AMNT
+
+
+# After deployment it won't be supported
+def test_deposit_forceEth_after_deployment(cf, Deposit, ForceNativeTokens):
+    depositAddr = deploy_deposit(cf, cf.ALICE, Deposit)
+
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
+    assert web3.eth.get_balance(cf.vault.address) == 0
+
+    tx = ForceNativeTokens.deploy(
+        depositAddr, {"from": cf.SAFEKEEPER, "value": TEST_AMNT}
+    )
+    assert "FetchedNative" not in tx.events
+
+    assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == TEST_AMNT
+    assert web3.eth.get_balance(cf.vault.address) == 0
+
+    # These tokkns can be pickup up in the future with a dummy transactiion, even though this
+    # is not really supported.
+    tx = cf.ALICE.transfer(depositAddr, 0)
+    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
