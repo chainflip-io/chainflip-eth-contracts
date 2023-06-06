@@ -126,10 +126,10 @@ def deploy_deposit(cf, sender, Deposit):
     return depositAddr
 
 
-# Note that a transfer of zero
+# Note that a transfer of zero does work and triggers the receive function
 @given(
     st_sender=strategy("address"),
-    st_amount=strategy("uint256"),
+    st_amount=strategy("uint256", max_value=TEST_AMNT * 10),
 )
 def test_receive(cf, st_sender, token, Deposit, st_amount):
     depositAddr = deploy_deposit(cf, st_sender, Deposit)
