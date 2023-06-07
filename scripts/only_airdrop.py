@@ -6,17 +6,13 @@ import logging
 import os.path
 
 sys.path.append(os.path.abspath("tests"))
-from consts import ZERO_ADDR, INIT_SUPPLY, E_18
+from consts import E_18
 from brownie import (
     chain,
     accounts,
-    KeyManager,
-    Vault,
-    StateChainGateway,
     FLIP,
     web3,
 )
-from deploy import deploy_Chainflip_contracts
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 
