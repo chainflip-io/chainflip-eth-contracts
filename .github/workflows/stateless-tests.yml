@@ -2,7 +2,7 @@ name: Stateless Tests
 on: push
 
 concurrency:
-  group: ${{ github.ref }}-${{ github.workflow }}
+  group: ${{ github.ref }}
   cancel-in-progress: true
 jobs:
   lint:
