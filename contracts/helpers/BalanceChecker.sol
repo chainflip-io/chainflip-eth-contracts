@@ -7,6 +7,11 @@ pragma solidity ^0.8.0;
  * @notice   Checks the Native token balances of multiple addresses. This can be used to check
  *           the balances of multiple addresses in a single call instead of issuing a separate
  *           call for each address, which is very innefficient.
+ * @dev      This is a view function so it doesn't spend gas. However, some RPC providers put a
+ *           cap on the amount of gas that the transaction *would* consume to prevent spamming.
+ *           I believe the geth client also has a similar feature. As a rough refernece, a try
+ *           using a free INFURA endpoint succesfully executes around 75k addresses but fails
+ *           when requesting 100k. It's advised to split up such big lists.
  */
 contract BalanceChecker {
     /**
