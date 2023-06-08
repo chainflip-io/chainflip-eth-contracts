@@ -1,24 +1,22 @@
 from consts import *
-from brownie import reverts, chain
+from brownie import chain
 from brownie.test import given, strategy
 from shared_tests_tokenVesting import *
 
 
 def test_release_rev_no_tokens(addrs, cf, tokenVestingStaking):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
     release_revert(tv, cf, addrs.INVESTOR)
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTime):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
     chain.sleep(st_sleepTime)
-
-    assert tv.cliff() == tv.end()
 
     if getChainTime() < end:
         release_revert(tv, cf, addrs.INVESTOR)
@@ -28,24 +26,22 @@ def test_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTi
         # Check release
         check_released(tv, cf, tx, addrs.INVESTOR, total, total)
         # Shouldn't've changed
-        check_state(
+        check_state_staking(
+            cf.stateChainGateway,
+            scGatewayAddrHolder,
             tv,
             cf,
             addrs.INVESTOR,
             addrs.REVOKER,
             True,
-            cliff,
             end,
             True,
-            True,
-            cf.stateChainGateway,
-            0,
-            scGatewayAddrHolder,
+            False,
         )
 
 
 def test_release_all(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
@@ -56,26 +52,24 @@ def test_release_all(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
     # Check release
     check_released(tv, cf, tx, addrs.INVESTOR, total, total)
     # Shouldn't've changed
-    check_state(
+    check_state_staking(
+        cf.stateChainGateway,
+        scGatewayAddrHolder,
         tv,
         cf,
         addrs.INVESTOR,
         addrs.REVOKER,
         True,
-        cliff,
         end,
         True,
-        True,
-        cf.stateChainGateway,
-        0,
-        scGatewayAddrHolder,
+        False,
     )
 
 
 def test_consecutive_releases_after_cliff(
     addrs, cf, tokenVestingStaking, maths, scGatewayAddrHolder
 ):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 
@@ -101,7 +95,7 @@ def test_consecutive_releases_after_cliff(
             tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
 
             totalReleased = (
-                maths.simulateRelease(total, tx.timestamp, end, cliff)
+                maths.simulateRelease(total, tx.timestamp, end, end)
                 if tx.timestamp < end
                 else total
             )
@@ -111,19 +105,17 @@ def test_consecutive_releases_after_cliff(
             check_released(tv, cf, tx, addrs.INVESTOR, totalReleased, newlyReleased)
 
             # Shouldn't've changed
-            check_state(
+            check_state_staking(
+                cf.stateChainGateway,
+                scGatewayAddrHolder,
                 tv,
                 cf,
                 addrs.INVESTOR,
                 addrs.REVOKER,
                 True,
-                cliff,
                 end,
                 True,
-                True,
-                cf.stateChainGateway,
-                0,
-                scGatewayAddrHolder,
+                False,
             )
             accomulatedReleases += newlyReleased
 
@@ -137,7 +129,7 @@ def test_consecutive_releases_after_cliff(
 def test_release_staking_rewards_after_end(
     addrs, cf, tokenVestingStaking, maths, scGatewayAddrHolder
 ):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, end, total = tokenVestingStaking
 
     test_release_all(addrs, cf, tokenVestingStaking, scGatewayAddrHolder)
 
@@ -151,19 +143,17 @@ def test_release_staking_rewards_after_end(
     check_released(tv, cf, tx, addrs.INVESTOR, totalReleased, total)
 
     # Shouldn't've changed
-    check_state(
+    check_state_staking(
+        cf.stateChainGateway,
+        scGatewayAddrHolder,
         tv,
         cf,
         addrs.INVESTOR,
         addrs.REVOKER,
         True,
-        cliff,
         end,
         True,
-        True,
-        cf.stateChainGateway,
-        0,
-        scGatewayAddrHolder,
+        False,
     )
 
 
@@ -172,28 +162,26 @@ def test_release_staking_rewards_after_end(
 def test_release_around_cliff(
     addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTime
 ):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, end, total = tokenVestingStaking
 
     chain.sleep(st_sleepTime)
 
-    if getChainTime() >= cliff & cliff == end:
+    if getChainTime() >= end:
         tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
         # Check release
         check_released(tv, cf, tx, addrs.INVESTOR, total, total)
         # Shouldn't've changed
-        check_state(
+        check_state_staking(
+            cf.stateChainGateway,
+            scGatewayAddrHolder,
             tv,
             cf,
             addrs.INVESTOR,
             addrs.REVOKER,
             True,
-            cliff,
             end,
             True,
-            True,
-            cf.stateChainGateway,
-            0,
-            scGatewayAddrHolder,
+            False,
         )
     else:
         release_revert(tv, cf, addrs.INVESTOR)

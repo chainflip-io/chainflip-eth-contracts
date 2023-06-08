@@ -5,25 +5,11 @@ from brownie.test import given, strategy
 
 @given(
     st_nodeID=strategy("uint", exclude=0),
-    st_amount=strategy("uint256", max_value=MAX_TEST_FUND),
-)
-def test_fund_nonstakable(addrs, tokenVestingNoStaking, st_nodeID, st_amount):
-
-    tv, cliff, end, total = tokenVestingNoStaking
-
-    st_nodeID = web3.toHex(st_nodeID)
-
-    with reverts(REV_MSG_CANNOT_STAKE):
-        tx = tv.fundStateChainAccount(st_nodeID, st_amount, {"from": addrs.INVESTOR})
-
-
-@given(
-    st_nodeID=strategy("uint", exclude=0),
     st_amount=strategy("uint256", max_value=MAX_TEST_FUND * 2),
 )
 def test_fundStateChainAccount(addrs, tokenVestingStaking, st_nodeID, st_amount, cf):
 
-    tv, cliff, end, total = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
     st_nodeID = web3.toHex(st_nodeID)
 
@@ -44,7 +30,7 @@ def test_fundStateChainAccount(addrs, tokenVestingStaking, st_nodeID, st_amount,
 
 
 def test_fund_rev_beneficiary(a, addrs, tokenVestingStaking):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
     for ad in a:
         if ad != addrs.INVESTOR:

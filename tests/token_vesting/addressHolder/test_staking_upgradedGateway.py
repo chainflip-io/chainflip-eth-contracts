@@ -5,7 +5,7 @@ from deploy import deploy_new_stateChainGateway
 
 
 def test_stake_upgrade_failure(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
-    tv, _, _, _ = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
     tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.INVESTOR})
 
@@ -35,7 +35,7 @@ def test_stake_upgrade(
     FLIP,
     DeployerStateChainGateway,
 ):
-    tv, _, _, _ = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
     tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.INVESTOR})
 

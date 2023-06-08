@@ -5,15 +5,13 @@ from shared_tests_tokenVesting import *
 
 
 def test_release_rev_no_tokens(addrs, cf, tokenVestingNoStaking):
-    tv, cliff, end, total = tokenVestingNoStaking
+    tv, _, _, _ = tokenVestingNoStaking
 
     release_revert(tv, cf, addrs.INVESTOR)
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_release(
-    addrs, cf, tokenVestingNoStaking, maths, st_sleepTime, scGatewayAddrHolder
-):
+def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
     tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -33,23 +31,20 @@ def test_release(
         # Check release
         check_released(tv, cf, tx, addrs.INVESTOR, newlyReleased, newlyReleased)
         # Shouldn't've changed
-        check_state(
+        check_state_noStaking(
+            cliff,
             tv,
             cf,
             addrs.INVESTOR,
             addrs.REVOKER,
             True,
-            cliff,
             end,
-            False,
             True,
-            cf.stateChainGateway,
-            0,
-            scGatewayAddrHolder,
+            False,
         )
 
 
-def test_release_all(addrs, cf, tokenVestingNoStaking, scGatewayAddrHolder):
+def test_release_all(addrs, cf, tokenVestingNoStaking):
     tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -61,19 +56,16 @@ def test_release_all(addrs, cf, tokenVestingNoStaking, scGatewayAddrHolder):
     # Check release
     check_released(tv, cf, tx, addrs.INVESTOR, total, total)
     # Shouldn't've changed
-    check_state(
+    check_state_noStaking(
+        cliff,
         tv,
         cf,
         addrs.INVESTOR,
         addrs.REVOKER,
         True,
-        cliff,
         end,
-        False,
         True,
-        cf.stateChainGateway,
-        0,
-        scGatewayAddrHolder,
+        False,
     )
 
 
@@ -112,19 +104,16 @@ def test_consecutive_releases_after_cliff(
         check_released(tv, cf, tx, addrs.INVESTOR, totalReleased, newlyReleased)
 
         # Shouldn't've changed
-        check_state(
+        check_state_noStaking(
+            cliff,
             tv,
             cf,
             addrs.INVESTOR,
             addrs.REVOKER,
             True,
-            cliff,
             end,
-            False,
             True,
-            cf.stateChainGateway,
-            0,
-            scGatewayAddrHolder,
+            False,
         )
 
         previousTimestamp = timestamp

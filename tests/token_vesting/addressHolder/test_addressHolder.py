@@ -52,7 +52,7 @@ def test_reference_updateReference(addrs, cf, scGatewayAddrHolder):
 
 
 def test_reference_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
-    tv, _, _, _ = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
 

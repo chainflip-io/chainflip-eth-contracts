@@ -7,6 +7,16 @@ import "./interfaces/IAddressHolder.sol";
 import "./interfaces/ITokenVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+interface Minter {
+    function mint(address to, uint256 amount) external returns (bool);
+}
+
+interface Burner {
+    function burn(address to, uint256 amount) external returns (uint256);
+
+    function stFlip() external returns (address);
+}
+
 /**
  * @title TokenVesting
  * @dev A token holder contract that that vests its balance of any ERC20 token to the beneficiary.
@@ -47,6 +57,10 @@ contract TokenVesting is ITokenVesting {
     // The contract that holds the reference to the staking contract. Only relevant if `canStake`
     IAddressHolder public immutable scGatewayAddrHolder;
 
+    // Liquidity Staking protocol addresses
+    Minter public immutable minter;
+    Burner public immutable burner;
+
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
 
@@ -66,7 +80,9 @@ contract TokenVesting is ITokenVesting {
         uint256 end_,
         bool canStake_,
         bool transferableBeneficiary_,
-        IAddressHolder scGatewayAddrHolder_
+        IAddressHolder scGatewayAddrHolder_,
+        Minter minter_,
+        Burner burner_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
@@ -81,6 +97,9 @@ contract TokenVesting is ITokenVesting {
         canStake = canStake_;
         transferableBeneficiary = transferableBeneficiary_;
         scGatewayAddrHolder = scGatewayAddrHolder_;
+        // Setting these two zero will basically make it not stakable via LSP
+        minter = minter_;
+        burner = burner_;
     }
 
     //////////////////////////////////////////////////////////////
@@ -104,6 +123,30 @@ contract TokenVesting is ITokenVesting {
 
         flip.approve(address(stateChainGateway), amount);
         stateChainGateway.fundStateChainAccount(nodeID, amount);
+    }
+
+    /**
+     * @notice  Stake via Staking provider by providing FLIP to min stFLIP
+     * @param amount the amount of FLIP out of the current funds in this contract.
+     */
+    function stakeViaStakingProvider(uint256 amount) external onlyBeneficiary {
+        require(canStake, "Vesting: cannot stake");
+
+        IERC20 flip = IStateChainGateway(scGatewayAddrHolder.getReferenceAddress()).getFLIP();
+        require(!revoked[flip], "Vesting: FLIP revoked");
+
+        flip.approve(address(minter), amount);
+        minter.mint(address(this), amount);
+    }
+
+    function unstakeFromStakingProvider(uint256 amount) external onlyBeneficiary {
+        require(canStake, "Vesting: cannot stake");
+
+        IERC20 stFlip = IERC20(burner.stFlip());
+        require(!revoked[stFlip], "Vesting: FLIP revoked");
+
+        stFlip.approve(address(burner), amount);
+        burner.burn(address(this), amount);
     }
 
     /**

@@ -8,9 +8,7 @@ import pytest
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_revoke(
-    addrs, cf, tokenVestingNoStaking, maths, st_sleepTime, scGatewayAddrHolder
-):
+def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
     tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -40,19 +38,16 @@ def test_revoke(
     check_revoked(tv, cf, tx, addrs.REVOKER, revokedAmount, total - revokedAmount)
 
     # Shouldn't've changed
-    check_state(
+    check_state_noStaking(
+        cliff,
         tv,
         cf,
         addrs.INVESTOR,
         addrs.REVOKER,
         True,
-        cliff,
         end,
-        False,
         True,
-        cf.stateChainGateway,
         True,
-        scGatewayAddrHolder,
     )
     assert tv.released(cf.flip) == 0
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -69,7 +64,7 @@ def test_revoke(
 
 
 def test_revoke_rev_revoker(a, addrs, cf, tokenVestingNoStaking):
-    tv, cliff, end, total = tokenVestingNoStaking
+    tv, _, _, _ = tokenVestingNoStaking
 
     for ad in a:
         if ad != addrs.REVOKER:
@@ -77,33 +72,28 @@ def test_revoke_rev_revoker(a, addrs, cf, tokenVestingNoStaking):
                 tv.revoke(cf.flip, {"from": ad})
 
 
-def test_revoke_rev_revokable(addrs, cf, TokenVesting):
+def test_revoke_rev_revokable(addrs, cf, TokenVestingNoStaking):
     start = getChainTime()
     cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
 
     tv = addrs.DEPLOYER.deploy(
-        TokenVesting,
+        TokenVestingNoStaking,
         addrs.INVESTOR,
         ZERO_ADDR,
         cliff,
         end,
-        NON_STAKABLE,
         BENEF_NON_TRANSF,
-        cf.stateChainGateway,
     )
 
     with reverts(REV_MSG_NOT_REVOKER):
         tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
 
-def test_revoke_rev_revoked(a, addrs, cf, tokenVestingNoStaking):
-    tv, cliff, end, total = tokenVestingNoStaking
+def test_revoke_rev_revoked(addrs, cf, tokenVestingNoStaking):
+    tv, _, _, _ = tokenVestingNoStaking
 
     tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
     with reverts(REV_MSG_ALREADY_REVOKED):
         tv.revoke(cf.flip, {"from": addrs.REVOKER})
-
-    with reverts(REV_MSG_CANNOT_RETRIEVE):
-        tv.retrieveRevokedFunds(cf.flip, {"from": addrs.REVOKER})

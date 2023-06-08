@@ -8,7 +8,7 @@ from shared_tests_tokenVesting import *
 def test_transfer_beneficiary(
     addrs, tokenVestingStaking, tokenVestingNoStaking, st_sender
 ):
-    tv_staking, _, _, _ = tokenVestingStaking
+    tv_staking, _, _ = tokenVestingStaking
     tv_noStaking, _, _, _ = tokenVestingNoStaking
 
     for vestingContract in [tv_staking, tv_noStaking]:
@@ -29,29 +29,27 @@ def test_transfer_beneficiary(
 
 
 @given(st_sender=strategy("address"))
-def test_transfer_beneficiary(addrs, cf, TokenVesting, st_sender):
+def test_transfer_beneficiary(
+    addrs, cf, TokenVestingNoStaking, TokenVestingStaking, st_sender
+):
     end = getChainTime() + QUARTER_YEAR + YEAR
 
     tv_staking = addrs.DEPLOYER.deploy(
-        TokenVesting,
+        TokenVestingStaking,
         addrs.INVESTOR,
         addrs.REVOKER,
         end,
-        end,
-        STAKABLE,
         BENEF_NON_TRANSF,
         cf.stateChainGateway,
     )
 
     tv_noStaking = addrs.DEPLOYER.deploy(
-        TokenVesting,
+        TokenVestingNoStaking,
         addrs.INVESTOR,
         addrs.REVOKER,
         getChainTime() + QUARTER_YEAR,
         getChainTime() + QUARTER_YEAR + YEAR,
-        NON_STAKABLE,
         BENEF_NON_TRANSF,
-        cf.stateChainGateway,
     )
 
     for vestingContract in [tv_staking, tv_noStaking]:
