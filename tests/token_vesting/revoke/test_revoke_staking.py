@@ -145,7 +145,9 @@ def test_retrieve_revoked_funds_and_rewards(
 ):
     tv, _, _ = tokenVestingStaking
 
-    cf.flip.approve(cf.stateChainGateway.address, st_amount, {"from": addrs.BENEFICIARY})
+    cf.flip.approve(
+        cf.stateChainGateway.address, st_amount, {"from": addrs.BENEFICIARY}
+    )
     tv.fundStateChainAccount(1, st_amount, {"from": addrs.BENEFICIARY})
     tv.revoke(cf.flip, {"from": addrs.REVOKER})
 

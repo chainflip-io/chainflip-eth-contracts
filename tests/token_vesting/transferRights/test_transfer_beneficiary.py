@@ -60,4 +60,6 @@ def test_transfer_beneficiary(
                 vestingContract.transferBeneficiary(st_sender, {"from": st_sender})
 
             with reverts(REV_MSG_BENEF_NOT_TRANSF):
-                vestingContract.transferBeneficiary(st_sender, {"from": addrs.BENEFICIARY})
+                vestingContract.transferBeneficiary(
+                    st_sender, {"from": addrs.BENEFICIARY}
+                )
