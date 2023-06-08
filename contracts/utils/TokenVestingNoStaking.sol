@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/IStateChainGateway.sol";
-import "./interfaces/IAddressHolder.sol";
-import "./interfaces/ITokenVestingNoStaking.sol";
+import "../interfaces/IStateChainGateway.sol";
+import "../interfaces/IAddressHolder.sol";
+import "../interfaces/ITokenVestingNoStaking.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
