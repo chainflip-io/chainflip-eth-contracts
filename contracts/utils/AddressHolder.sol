@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/IAddressHolder.sol";
-import "./abstract/Shared.sol";
+import "../interfaces/IAddressHolder.sol";
+import "../abstract/Shared.sol";
 
 /**
  * @title Address Holder reference
