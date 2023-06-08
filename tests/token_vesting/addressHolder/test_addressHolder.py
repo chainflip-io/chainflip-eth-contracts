@@ -17,7 +17,7 @@ def test_reference_constructor(addrs, cf, AddressHolder):
 
 def test_reference_transferGovernor(addrs, scGatewayAddrHolder):
     with reverts(REV_MSG_SCGREF_REV_GOV):
-        scGatewayAddrHolder.transferGovernor(NON_ZERO_ADDR, {"from": addrs.INVESTOR})
+        scGatewayAddrHolder.transferGovernor(NON_ZERO_ADDR, {"from": addrs.BENEFICIARY})
 
     with reverts(REV_MSG_NZ_ADDR):
         scGatewayAddrHolder.transferGovernor(ZERO_ADDR, {"from": addrs.DEPLOYER})
@@ -34,7 +34,7 @@ def test_reference_transferGovernor(addrs, scGatewayAddrHolder):
 def test_reference_updateReference(addrs, cf, scGatewayAddrHolder):
     with reverts(REV_MSG_SCGREF_REV_GOV):
         scGatewayAddrHolder.updateReferenceAddress(
-            NON_ZERO_ADDR, {"from": addrs.INVESTOR}
+            NON_ZERO_ADDR, {"from": addrs.BENEFICIARY}
         )
 
     with reverts(REV_MSG_NZ_ADDR):
@@ -54,9 +54,9 @@ def test_reference_updateReference(addrs, cf, scGatewayAddrHolder):
 def test_reference_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
     tv, _, _ = tokenVestingStaking
 
-    assert cf.flip.balanceOf(addrs.INVESTOR) == 0
+    assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
 
-    tv.fundStateChainAccount(JUNK_INT, MAX_TEST_FUND, {"from": addrs.INVESTOR})
+    tv.fundStateChainAccount(JUNK_INT, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
 
     chain.sleep(YEAR + QUARTER_YEAR)
 
@@ -68,13 +68,13 @@ def test_reference_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
 
     assert cf.flip.balanceOf(tv) == MAX_TEST_FUND
 
-    tv.release(cf.flip, {"from": addrs.INVESTOR})
+    tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     assert cf.flip.balanceOf(tv) == 0
-    assert cf.flip.balanceOf(addrs.INVESTOR) == MAX_TEST_FUND
+    assert cf.flip.balanceOf(addrs.BENEFICIARY) == MAX_TEST_FUND
 
     # Assert that staking is no longer possible as the reference is wrong.
     # Let's say staking rewards are accrued
     cf.flip.transfer(tv, JUNK_INT, {"from": addrs.DEPLOYER})
     with reverts("Transaction reverted without a reason string"):
-        tv.fundStateChainAccount(JUNK_INT, JUNK_INT, {"from": addrs.INVESTOR})
+        tv.fundStateChainAccount(JUNK_INT, JUNK_INT, {"from": addrs.BENEFICIARY})

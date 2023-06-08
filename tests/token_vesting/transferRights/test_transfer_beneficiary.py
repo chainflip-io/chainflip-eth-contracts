@@ -12,18 +12,18 @@ def test_transfer_beneficiary(
     tv_noStaking, _, _, _ = tokenVestingNoStaking
 
     for vestingContract in [tv_staking, tv_noStaking]:
-        assert vestingContract.getBeneficiary() == addrs.INVESTOR
+        assert vestingContract.getBeneficiary() == addrs.BENEFICIARY
 
-        if st_sender != addrs.INVESTOR:
+        if st_sender != addrs.BENEFICIARY:
             with reverts(REV_MSG_NOT_BENEFICIARY):
                 vestingContract.transferBeneficiary(st_sender, {"from": st_sender})
 
             tx = vestingContract.transferBeneficiary(
-                st_sender, {"from": addrs.INVESTOR}
+                st_sender, {"from": addrs.BENEFICIARY}
             )
             assert vestingContract.getBeneficiary() == st_sender
             assert tx.events["BeneficiaryTransferred"][0].values() == [
-                addrs.INVESTOR,
+                addrs.BENEFICIARY,
                 st_sender,
             ]
 
@@ -36,7 +36,7 @@ def test_transfer_beneficiary(
 
     tv_staking = addrs.DEPLOYER.deploy(
         TokenVestingStaking,
-        addrs.INVESTOR,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         end,
         BENEF_NON_TRANSF,
@@ -45,7 +45,7 @@ def test_transfer_beneficiary(
 
     tv_noStaking = addrs.DEPLOYER.deploy(
         TokenVestingNoStaking,
-        addrs.INVESTOR,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         getChainTime() + QUARTER_YEAR,
         getChainTime() + QUARTER_YEAR + YEAR,
@@ -53,11 +53,11 @@ def test_transfer_beneficiary(
     )
 
     for vestingContract in [tv_staking, tv_noStaking]:
-        assert vestingContract.getBeneficiary() == addrs.INVESTOR
+        assert vestingContract.getBeneficiary() == addrs.BENEFICIARY
 
-        if st_sender != addrs.INVESTOR:
+        if st_sender != addrs.BENEFICIARY:
             with reverts(REV_MSG_NOT_BENEFICIARY):
                 vestingContract.transferBeneficiary(st_sender, {"from": st_sender})
 
             with reverts(REV_MSG_BENEF_NOT_TRANSF):
-                vestingContract.transferBeneficiary(st_sender, {"from": addrs.INVESTOR})
+                vestingContract.transferBeneficiary(st_sender, {"from": addrs.BENEFICIARY})

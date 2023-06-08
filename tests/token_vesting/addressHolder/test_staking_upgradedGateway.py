@@ -7,7 +7,7 @@ from deploy import deploy_new_stateChainGateway
 def test_stake_upgrade_failure(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
     tv, _, _ = tokenVestingStaking
 
-    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.INVESTOR})
+    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.BENEFICIARY})
 
     assert tx.events["Funded"][0].values() == (JUNK_HEX, MIN_FUNDING, tv)
 
@@ -16,12 +16,12 @@ def test_stake_upgrade_failure(addrs, cf, tokenVestingStaking, scGatewayAddrHold
     scGatewayAddrHolder.updateReferenceAddress(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
 
     with reverts("Transaction reverted without a reason string"):
-        tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.INVESTOR})
+        tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.BENEFICIARY})
 
     scGatewayAddrHolder.updateReferenceAddress(
         cf.stateChainGateway.address, {"from": addrs.DEPLOYER}
     )
-    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.INVESTOR})
+    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.BENEFICIARY})
     assert tx.events["Funded"][0].values() == (JUNK_HEX, MIN_FUNDING, tv)
 
 
@@ -37,7 +37,7 @@ def test_stake_upgrade(
 ):
     tv, _, _ = tokenVestingStaking
 
-    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.INVESTOR})
+    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.BENEFICIARY})
 
     assert tx.events["Funded"][0].values() == (JUNK_HEX, MIN_FUNDING, tv)
 
@@ -58,5 +58,5 @@ def test_stake_upgrade(
         newStateChainGateway.address, {"from": addrs.DEPLOYER}
     )
 
-    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.INVESTOR})
+    tx = tv.fundStateChainAccount(JUNK_HEX, MIN_FUNDING, {"from": addrs.BENEFICIARY})
     assert tx.events["Funded"][0].values() == (JUNK_HEX, MIN_FUNDING, tv)

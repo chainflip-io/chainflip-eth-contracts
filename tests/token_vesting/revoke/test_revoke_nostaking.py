@@ -11,7 +11,7 @@ import pytest
 def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
     tv, cliff, end, total = tokenVestingNoStaking
 
-    assert cf.flip.balanceOf(addrs.INVESTOR) == 0
+    assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
     revokedAmount = 0
 
@@ -42,7 +42,7 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
         cliff,
         tv,
         cf,
-        addrs.INVESTOR,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
         end,
@@ -50,16 +50,16 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
         True,
     )
     assert tv.released(cf.flip) == 0
-    assert cf.flip.balanceOf(addrs.INVESTOR) == 0
+    assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
 
     # Release leftover amount. Adding st_sleepTime to test that we are not following
     # the vesting curve once it's been revoked
     chain.sleep(st_sleepTime)
     if releasable > 0:
-        tx = tv.release(cf.flip, {"from": addrs.INVESTOR})
-        check_released(tv, cf, tx, addrs.INVESTOR, releasable, releasable)
+        tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
+        check_released(tv, cf, tx, addrs.BENEFICIARY, releasable, releasable)
     else:
-        release_revert(tv, cf, addrs.INVESTOR)
+        release_revert(tv, cf, addrs.BENEFICIARY)
     assert cf.flip.balanceOf(tv) == 0
 
 
@@ -79,7 +79,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVestingNoStaking):
 
     tv = addrs.DEPLOYER.deploy(
         TokenVestingNoStaking,
-        addrs.INVESTOR,
+        addrs.BENEFICIARY,
         ZERO_ADDR,
         cliff,
         end,

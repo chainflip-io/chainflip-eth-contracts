@@ -121,7 +121,7 @@ def addrs(a):
     addrs = Context()
     addrs.DEPLOYER = a[0]
     addrs.REVOKER = a[10]
-    addrs.INVESTOR = a[11]
+    addrs.BENEFICIARY = a[11]
 
     return addrs
 
@@ -147,7 +147,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 
     tv = addrs.DEPLOYER.deploy(
         TokenVestingNoStaking,
-        addrs.INVESTOR,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         cliff,
         end,
@@ -171,7 +171,7 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, scGatewayAddrHolder):
 
     tv = addrs.DEPLOYER.deploy(
         TokenVestingStaking,
-        addrs.INVESTOR,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         end,
         BENEF_TRANSF,
