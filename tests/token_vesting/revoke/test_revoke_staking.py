@@ -9,15 +9,15 @@ import pytest
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_revoke(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTime):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, end, total = tokenVestingStaking
 
-    assert cf.flip.balanceOf(addrs.INVESTOR) == 0
+    assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
     revokedAmount = 0
 
     chain.sleep(st_sleepTime)
 
-    if getChainTime() < cliff:
+    if getChainTime() < end:
         tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
         releasable = 0
     elif getChainTime() >= end:
@@ -33,33 +33,31 @@ def test_revoke(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTim
     check_revoked(tv, cf, tx, addrs.REVOKER, revokedAmount, total - revokedAmount)
 
     # Shouldn't've changed
-    check_state(
+    check_state_staking(
+        cf.stateChainGateway,
+        scGatewayAddrHolder,
         tv,
         cf,
-        addrs.INVESTOR,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
-        cliff,
         end,
         True,
         True,
-        cf.stateChainGateway,
-        True,
-        scGatewayAddrHolder,
     )
     assert tv.released(cf.flip) == 0
-    assert cf.flip.balanceOf(addrs.INVESTOR) == 0
+    assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(tv) == 0
 
     # When canStake, no amount is releasable after revoking
     chain.sleep(st_sleepTime)
 
     with reverts(REV_MSG_FUNDS_REVOKED):
-        tv.release(cf.flip, {"from": addrs.INVESTOR})
+        tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
 
 def test_revoke_rev_revoker(a, addrs, cf, tokenVestingStaking):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
     for ad in a:
         if ad != addrs.REVOKER:
@@ -67,18 +65,15 @@ def test_revoke_rev_revoker(a, addrs, cf, tokenVestingStaking):
                 tv.revoke(cf.flip, {"from": ad})
 
 
-def test_revoke_rev_revokable(addrs, cf, TokenVesting):
+def test_revoke_rev_revokable(addrs, cf, TokenVestingStaking):
     start = getChainTime()
     end = start + QUARTER_YEAR + YEAR
-    cliff = end
 
     tv = addrs.DEPLOYER.deploy(
-        TokenVesting,
-        addrs.INVESTOR,
+        TokenVestingStaking,
+        addrs.BENEFICIARY,
         ZERO_ADDR,
-        cliff,
         end,
-        STAKABLE,
         BENEF_NON_TRANSF,
         cf.stateChainGateway,
     )
@@ -88,7 +83,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVesting):
 
 
 def test_revoke_rev_revoked(a, addrs, cf, tokenVestingStaking):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, _, total = tokenVestingStaking
 
     tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
@@ -103,16 +98,16 @@ def test_revoke_rev_revoked(a, addrs, cf, tokenVestingStaking):
 
 
 def test_revoke_staked(addrs, cf, tokenVestingStaking):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, end, total = tokenVestingStaking
     nodeID1 = web3.toHex(1)
 
     amount = total
 
     assert cf.flip.balanceOf(tv) == amount
-    assert cf.flip.balanceOf(addrs.INVESTOR) == 0
+    assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
 
-    tx = tv.fundStateChainAccount(nodeID1, amount, {"from": addrs.INVESTOR})
+    tx = tv.fundStateChainAccount(nodeID1, amount, {"from": addrs.BENEFICIARY})
 
     assert tx.events["Funded"][0].values() == (nodeID1, amount, tv)
     assert tx.events["Transfer"][0].values() == (tv, cf.stateChainGateway, amount)
@@ -125,20 +120,20 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     assert tv.revoked(cf.flip) == True
 
     with reverts(REV_MSG_FUNDS_REVOKED):
-        tv.release(cf.flip, {"from": addrs.INVESTOR})
+        tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     # We would need to unstake the amount. Quick workaround to do the same thing:
     cf.flip.transfer(tv, amount, {"from": addrs.DEPLOYER})
 
     with reverts(REV_MSG_FUNDS_REVOKED):
-        tv.release(cf.flip, {"from": addrs.INVESTOR})
+        tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
-    st_sleepTime = cliff
+    st_sleepTime = end
     chain.sleep(st_sleepTime)
 
     # In option B, once revoked there is no way to release any funds
     with reverts(REV_MSG_FUNDS_REVOKED):
-        tv.release(cf.flip, {"from": addrs.INVESTOR})
+        tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
 
 @given(
@@ -148,16 +143,18 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
 def test_retrieve_revoked_funds_and_rewards(
     addrs, cf, tokenVestingStaking, st_amount, rewards
 ):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
 
-    cf.flip.approve(cf.stateChainGateway.address, st_amount, {"from": addrs.INVESTOR})
-    tx = tv.fundStateChainAccount(1, st_amount, {"from": addrs.INVESTOR})
-    tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
+    cf.flip.approve(
+        cf.stateChainGateway.address, st_amount, {"from": addrs.BENEFICIARY}
+    )
+    tv.fundStateChainAccount(1, st_amount, {"from": addrs.BENEFICIARY})
+    tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
     assert cf.flip.balanceOf(tv) == 0
 
     with reverts(REV_MSG_NOT_REVOKER):
-        tv.retrieveRevokedFunds(cf.flip, {"from": addrs.INVESTOR})
+        tv.retrieveRevokedFunds(cf.flip, {"from": addrs.BENEFICIARY})
 
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, 0)
 
@@ -169,7 +166,7 @@ def test_retrieve_revoked_funds_and_rewards(
     cf.flip.transfer(tv, rewards, {"from": addrs.DEPLOYER})
 
     with reverts(REV_MSG_FUNDS_REVOKED):
-        tv.release(cf.flip, {"from": addrs.INVESTOR})
+        tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, rewards)
 
@@ -177,9 +174,9 @@ def test_retrieve_revoked_funds_and_rewards(
 # If revoked when staked, we don't get the funds. Then we have to enforce that the beneficiary unstakes it.
 # When that happens the beneficiary can't release the funds but they can front-run our retrieveFunds.
 def test_fund_revoked_staked(addrs, cf, tokenVestingStaking):
-    tv, cliff, end, total = tokenVestingStaking
+    tv, _, _ = tokenVestingStaking
     test_revoke_staked(addrs, cf, tokenVestingStaking)
     nodeID1 = web3.toHex(1)
     with reverts(REV_MSG_FLIP_REVOKED):
-        tv.fundStateChainAccount(nodeID1, MAX_TEST_FUND, {"from": addrs.INVESTOR})
+        tv.fundStateChainAccount(nodeID1, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, MAX_TEST_FUND)

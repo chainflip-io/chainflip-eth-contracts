@@ -121,7 +121,7 @@ def addrs(a):
     addrs = Context()
     addrs.DEPLOYER = a[0]
     addrs.REVOKER = a[10]
-    addrs.INVESTOR = a[11]
+    addrs.BENEFICIARY = a[11]
 
     return addrs
 
@@ -137,7 +137,7 @@ def scGatewayAddrHolder(cf, addrs, AddressHolder):
 
 
 @pytest.fixture(scope="module")
-def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
+def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
@@ -146,14 +146,12 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
     end = start + QUARTER_YEAR + YEAR
 
     tv = addrs.DEPLOYER.deploy(
-        TokenVesting,
-        addrs.INVESTOR,
+        TokenVestingNoStaking,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         cliff,
         end,
-        NON_STAKABLE,
         BENEF_TRANSF,
-        scGatewayAddrHolder,
     )
 
     total = MAX_TEST_FUND
@@ -164,21 +162,18 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
 
 
 @pytest.fixture(scope="module")
-def tokenVestingStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
+def tokenVestingStaking(addrs, cf, TokenVestingStaking, scGatewayAddrHolder):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
     start = getChainTime()
     end = start + QUARTER_YEAR + YEAR
-    cliff = end
 
     tv = addrs.DEPLOYER.deploy(
-        TokenVesting,
-        addrs.INVESTOR,
+        TokenVestingStaking,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
-        cliff,
         end,
-        STAKABLE,
         BENEF_TRANSF,
         scGatewayAddrHolder,
     )
@@ -187,7 +182,7 @@ def tokenVestingStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
 
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
-    return tv, cliff, end, total
+    return tv, end, total
 
 
 # Deploy CFReceiver Mock contracts for testing purposes
