@@ -81,7 +81,7 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
-      - name: Checkout
+      - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
