@@ -11,7 +11,9 @@ def test_release_rev_no_tokens(addrs, cf, tokenVestingNoStaking):
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime, addressHolder):
+def test_release(
+    addrs, cf, tokenVestingNoStaking, maths, st_sleepTime, scGatewayAddrHolder
+):
     tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -43,11 +45,11 @@ def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime, addressH
             True,
             cf.stateChainGateway,
             0,
-            addressHolder,
+            scGatewayAddrHolder,
         )
 
 
-def test_release_all(addrs, cf, tokenVestingNoStaking, addressHolder):
+def test_release_all(addrs, cf, tokenVestingNoStaking, scGatewayAddrHolder):
     tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.INVESTOR) == 0
@@ -71,12 +73,12 @@ def test_release_all(addrs, cf, tokenVestingNoStaking, addressHolder):
         True,
         cf.stateChainGateway,
         0,
-        addressHolder,
+        scGatewayAddrHolder,
     )
 
 
 def test_consecutive_releases_after_cliff(
-    addrs, cf, tokenVestingNoStaking, maths, addressHolder
+    addrs, cf, tokenVestingNoStaking, maths, scGatewayAddrHolder
 ):
     tv, cliff, end, total = tokenVestingNoStaking
 
@@ -122,7 +124,7 @@ def test_consecutive_releases_after_cliff(
             True,
             cf.stateChainGateway,
             0,
-            addressHolder,
+            scGatewayAddrHolder,
         )
 
         previousTimestamp = timestamp

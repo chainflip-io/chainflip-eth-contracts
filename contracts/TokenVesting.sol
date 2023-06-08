@@ -45,7 +45,7 @@ contract TokenVesting is ITokenVesting {
     // If false, staking is not allowed
     bool public immutable canStake;
     // The contract that holds the reference to the staking contract. Only relevant if `canStake`
-    IAddressHolder public immutable addressHolder;
+    IAddressHolder public immutable scGatewayAddrHolder;
 
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
@@ -57,7 +57,7 @@ contract TokenVesting is ITokenVesting {
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param canStake_ whether the investor is allowed to use vested funds to stake
      * @param transferableBeneficiary_ whether the beneficiary address can be transferred
-     * @param addressHolder_ the contract holding the reference to the contract to stake to if canStake
+     * @param scGatewayAddrHolder_ the contract holding the reference address to the ScGateway to if `canStake`
      */
     constructor(
         address beneficiary_,
@@ -66,12 +66,12 @@ contract TokenVesting is ITokenVesting {
         uint256 end_,
         bool canStake_,
         bool transferableBeneficiary_,
-        IAddressHolder addressHolder_
+        IAddressHolder scGatewayAddrHolder_
     ) {
         require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
-        require(address(addressHolder_) != address(0), "Vesting: addrHolder is the zero address");
+        require(address(scGatewayAddrHolder_) != address(0), "Vesting: addrHolder is the zero address");
         if (canStake_) require(cliff_ == end_, "Vesting: invalid staking contract cliff");
 
         beneficiary = beneficiary_;
@@ -80,7 +80,7 @@ contract TokenVesting is ITokenVesting {
         end = end_;
         canStake = canStake_;
         transferableBeneficiary = transferableBeneficiary_;
-        addressHolder = addressHolder_;
+        scGatewayAddrHolder = scGatewayAddrHolder_;
     }
 
     //////////////////////////////////////////////////////////////
@@ -97,7 +97,7 @@ contract TokenVesting is ITokenVesting {
      */
     function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary {
         require(canStake, "Vesting: cannot stake");
-        IStateChainGateway stateChainGateway = IStateChainGateway(addressHolder.getReferenceAddress());
+        IStateChainGateway stateChainGateway = IStateChainGateway(scGatewayAddrHolder.getReferenceAddress());
 
         IERC20 flip = stateChainGateway.getFLIP();
         require(!revoked[flip], "Vesting: FLIP revoked");
@@ -148,7 +148,7 @@ contract TokenVesting is ITokenVesting {
 
     /**
      * @notice Allows the revoker to retrieve tokens that have been unstaked
-     *         after the revoke function has been called (in canStake contracts).
+     *         after the revoke function has been called (iff `canStake`).
      *         Safeguard mechanism in case of unstaking happening after revoke.
      *         Otherwise funds would be locked. In !canStake contracts all the
      *         funds are withdrawn once revoked is called, so no need for this
