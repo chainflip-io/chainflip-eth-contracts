@@ -78,6 +78,7 @@ jobs:
           token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
           repository: chainflip-io/chainflip-backend
           path: chainflip-backend
+          ref: "feat/single-party-ceremonies"
 
       - name: Fetch agg_key
         run: |
