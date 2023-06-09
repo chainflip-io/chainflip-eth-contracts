@@ -92,9 +92,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @notice Transfers vested tokens to beneficiary.
      * @param token ERC20 token which is being vested.
      */
-    function release(IERC20 token) external override onlyBeneficiary {
-        require(!revoked[token], "Vesting: token revoked");
-
+    function release(IERC20 token) external override onlyBeneficiary notRevoked(token) {
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "Vesting: no tokens are due");
 
@@ -110,8 +108,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
      * @param token ERC20 token which is being vested.
      */
-    function revoke(IERC20 token) external override onlyRevoker {
-        require(!revoked[token], "Vesting: token revoked");
+    function revoke(IERC20 token) external override onlyRevoker notRevoked(token) {
         require(block.timestamp <= end, "Vesting: vesting expired");
 
         uint256 balance = token.balanceOf(address(this));
@@ -213,6 +210,11 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      */
     modifier onlyRevoker() {
         require(msg.sender == revoker, "Vesting: not the revoker");
+        _;
+    }
+
+    modifier notRevoked(IERC20 token) {
+        require(!revoked[token], "Vesting: token revoked");
         _;
     }
 }
