@@ -11,7 +11,7 @@ def test_release_rev_no_tokens(addrs, cf, tokenVestingStaking):
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTime):
+def test_release(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
     tv, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
@@ -28,7 +28,7 @@ def test_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTi
         # Shouldn't've changed
         check_state_staking(
             cf.stateChainGateway,
-            scGatewayAddrHolder,
+            addressHolder,
             tv,
             cf,
             addrs.BENEFICIARY,
@@ -40,7 +40,7 @@ def test_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTi
         )
 
 
-def test_release_all(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
+def test_release_all(addrs, cf, tokenVestingStaking, addressHolder):
     tv, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
@@ -54,7 +54,7 @@ def test_release_all(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
     # Shouldn't've changed
     check_state_staking(
         cf.stateChainGateway,
-        scGatewayAddrHolder,
+        addressHolder,
         tv,
         cf,
         addrs.BENEFICIARY,
@@ -67,7 +67,7 @@ def test_release_all(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
 
 
 def test_consecutive_releases_after_cliff(
-    addrs, cf, tokenVestingStaking, maths, scGatewayAddrHolder
+    addrs, cf, tokenVestingStaking, maths, addressHolder
 ):
     tv, end, total = tokenVestingStaking
 
@@ -107,7 +107,7 @@ def test_consecutive_releases_after_cliff(
             # Shouldn't've changed
             check_state_staking(
                 cf.stateChainGateway,
-                scGatewayAddrHolder,
+                addressHolder,
                 tv,
                 cf,
                 addrs.BENEFICIARY,
@@ -127,11 +127,11 @@ def test_consecutive_releases_after_cliff(
 
 
 def test_release_staking_rewards_after_end(
-    addrs, cf, tokenVestingStaking, maths, scGatewayAddrHolder
+    addrs, cf, tokenVestingStaking, maths, addressHolder
 ):
     tv, end, total = tokenVestingStaking
 
-    test_release_all(addrs, cf, tokenVestingStaking, scGatewayAddrHolder)
+    test_release_all(addrs, cf, tokenVestingStaking, addressHolder)
 
     # Mimic rewards received from staking
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
@@ -145,7 +145,7 @@ def test_release_staking_rewards_after_end(
     # Shouldn't've changed
     check_state_staking(
         cf.stateChainGateway,
-        scGatewayAddrHolder,
+        addressHolder,
         tv,
         cf,
         addrs.BENEFICIARY,
@@ -160,7 +160,7 @@ def test_release_staking_rewards_after_end(
 # Test that the assert(!canStake) is not reached => cliff == end == start + QUARTER_YEAR + YEAR
 @given(st_sleepTime=strategy("uint256", min_value=QUARTER_YEAR, max_value=YEAR * 2))
 def test_release_around_cliff(
-    addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTime
+    addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime
 ):
     tv, end, total = tokenVestingStaking
 
@@ -173,7 +173,7 @@ def test_release_around_cliff(
         # Shouldn't've changed
         check_state_staking(
             cf.stateChainGateway,
-            scGatewayAddrHolder,
+            addressHolder,
             tv,
             cf,
             addrs.BENEFICIARY,

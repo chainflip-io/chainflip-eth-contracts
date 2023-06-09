@@ -8,7 +8,7 @@ import pytest
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
-def test_revoke(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTime):
+def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
     tv, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
@@ -35,7 +35,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTim
     # Shouldn't've changed
     check_state_staking(
         cf.stateChainGateway,
-        scGatewayAddrHolder,
+        addressHolder,
         tv,
         cf,
         addrs.BENEFICIARY,
@@ -76,6 +76,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVestingStaking):
         end,
         BENEF_NON_TRANSF,
         cf.stateChainGateway,
+        cf.flip,
     )
 
     with reverts(REV_MSG_NOT_REVOKER):

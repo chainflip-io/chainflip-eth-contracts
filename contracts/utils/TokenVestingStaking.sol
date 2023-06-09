@@ -38,7 +38,8 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     uint256 public immutable end;
 
     // The contract that holds the reference to the staking contract.
-    IAddressHolder public immutable scGatewayAddrHolder;
+    IAddressHolder public immutable addressHolder;
+    IERC20 public immutable FLIP;
 
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
@@ -48,22 +49,25 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param transferableBeneficiary_ whether the beneficiary address can be transferred
-     * @param scGatewayAddrHolder_ the contract holding the reference address to the ScGateway for staking
+     * @param addressHolder_ the contract holding the reference address to the ScGateway for staking
+     * @param flip_ the FLIP token address.
      */
     constructor(
         address beneficiary_,
         address revoker_,
         uint256 end_,
         bool transferableBeneficiary_,
-        IAddressHolder scGatewayAddrHolder_
-    ) nzAddr(beneficiary_) nzAddr(address(scGatewayAddrHolder_)) {
+        IAddressHolder addressHolder_,
+        IERC20 flip_
+    ) nzAddr(beneficiary_) nzAddr(address(addressHolder_)) nzAddr(address(flip_)) {
         require(end_ > block.timestamp, "Vesting: final time is before current time");
 
         beneficiary = beneficiary_;
         revoker = revoker_;
         end = end_;
         transferableBeneficiary = transferableBeneficiary_;
-        scGatewayAddrHolder = scGatewayAddrHolder_;
+        addressHolder = addressHolder_;
+        FLIP = flip_;
     }
 
     //////////////////////////////////////////////////////////////
@@ -78,14 +82,13 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param nodeID the nodeID to fund.
      * @param amount the amount of FLIP out of the current funds in this contract.
      */
-    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary {
-        IStateChainGateway stateChainGateway = IStateChainGateway(scGatewayAddrHolder.getReferenceAddress());
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
+        address stateChainGateway = addressHolder.getStateChainGateway();
 
-        IERC20 flip = stateChainGateway.getFLIP();
-        require(!revoked[flip], "Vesting: token revoked");
+        require(!revoked[FLIP], "Vesting: token revoked");
 
-        flip.approve(address(stateChainGateway), amount);
-        stateChainGateway.fundStateChainAccount(nodeID, amount);
+        FLIP.approve(stateChainGateway, amount);
+        IStateChainGateway(stateChainGateway).fundStateChainAccount(nodeID, amount);
     }
 
     /**

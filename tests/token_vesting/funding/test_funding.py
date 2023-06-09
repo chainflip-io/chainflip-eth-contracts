@@ -1,6 +1,7 @@
 from consts import *
 from brownie import reverts, chain
 from brownie.test import given, strategy
+import time
 
 
 @given(
@@ -36,3 +37,21 @@ def test_fund_rev_beneficiary(a, addrs, tokenVestingStaking):
         if ad != addrs.BENEFICIARY:
             with reverts(REV_MSG_NOT_BENEFICIARY):
                 tv.fundStateChainAccount(5, 10, {"from": ad})
+
+
+def test_fund_rev_beneficiary(addrs, TokenVestingStaking, addressHolder, cf):
+
+    tv = addrs.DEPLOYER.deploy(
+        TokenVestingStaking,
+        addrs.BENEFICIARY,
+        addrs.REVOKER,
+        time.time() + YEAR,
+        BENEF_NON_TRANSF,
+        addressHolder,
+        NON_ZERO_ADDR,
+    )
+
+    cf.flip.transfer(tv, TEST_AMNT, {"from": addrs.DEPLOYER})
+
+    with reverts("Transaction reverted without a reason string"):
+        tv.fundStateChainAccount(JUNK_HEX_PAD, TEST_AMNT, {"from": addrs.BENEFICIARY})
