@@ -9,7 +9,7 @@ end = start + YEAR
 
 
 def test_tokenVesting_constructor_cliff(
-    addrs, TokenVestingNoStaking, TokenVestingStaking, cf, scGatewayAddrHolder
+    addrs, TokenVestingNoStaking, TokenVestingStaking, cf, addressHolder
 ):
 
     tv = addrs.DEPLOYER.deploy(
@@ -38,11 +38,12 @@ def test_tokenVesting_constructor_cliff(
         addrs.REVOKER,
         end,
         BENEF_NON_TRANSF,
-        scGatewayAddrHolder,
+        addressHolder,
+        cf.flip,
     )
     check_state_staking(
         cf.stateChainGateway,
-        scGatewayAddrHolder,
+        addressHolder,
         tv,
         cf,
         addrs.BENEFICIARY,
@@ -55,7 +56,7 @@ def test_tokenVesting_constructor_cliff(
 
 
 def test_tokenVesting_constructor_noRevoker(
-    addrs, TokenVestingNoStaking, TokenVestingStaking, scGatewayAddrHolder
+    addrs, TokenVestingNoStaking, TokenVestingStaking, addressHolder
 ):
     addrs.DEPLOYER.deploy(
         TokenVestingNoStaking,
@@ -71,12 +72,13 @@ def test_tokenVesting_constructor_noRevoker(
         ZERO_ADDR,
         end,
         BENEF_TRANSF,
-        scGatewayAddrHolder,
+        addressHolder,
+        NON_ZERO_ADDR,
     )
 
 
 def test_tokenVesting_constructor_rev_beneficiary(
-    addrs, TokenVestingNoStaking, TokenVestingStaking, scGatewayAddrHolder
+    addrs, TokenVestingNoStaking, TokenVestingStaking, addressHolder
 ):
     with reverts(REV_MSG_NZ_ADDR):
         addrs.DEPLOYER.deploy(
@@ -94,7 +96,19 @@ def test_tokenVesting_constructor_rev_beneficiary(
             addrs.REVOKER,
             end,
             BENEF_TRANSF,
-            scGatewayAddrHolder,
+            addressHolder,
+            NON_ZERO_ADDR,
+        )
+
+    with reverts(REV_MSG_NZ_ADDR):
+        addrs.DEPLOYER.deploy(
+            TokenVestingStaking,
+            NON_ZERO_ADDR,
+            addrs.REVOKER,
+            end,
+            BENEF_TRANSF,
+            addressHolder,
+            ZERO_ADDR,
         )
 
 
@@ -145,6 +159,7 @@ def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVestingStaki
             end,
             BENEF_NON_TRANSF,
             ZERO_ADDR,
+            NON_ZERO_ADDR,
         )
 
 
@@ -156,6 +171,7 @@ def test_tokenVesting_constructor_rev_eoa(addrs, TokenVestingStaking):
         addrs.REVOKER,
         end,
         BENEF_NON_TRANSF,
+        NON_ZERO_ADDR,
         NON_ZERO_ADDR,
     )
     # Reference contract is an eoa

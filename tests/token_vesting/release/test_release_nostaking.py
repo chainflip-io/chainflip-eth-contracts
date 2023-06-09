@@ -70,7 +70,7 @@ def test_release_all(addrs, cf, tokenVestingNoStaking):
 
 
 def test_consecutive_releases_after_cliff(
-    addrs, cf, tokenVestingNoStaking, maths, scGatewayAddrHolder
+    addrs, cf, tokenVestingNoStaking, maths, addressHolder
 ):
     tv, cliff, end, total = tokenVestingNoStaking
 

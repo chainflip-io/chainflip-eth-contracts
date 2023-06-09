@@ -18,10 +18,10 @@ def check_released(tv, cf, tx, address, totalReleased, recentlyReleased):
     assert tx.events["TokensReleased"][0].values()[1] == recentlyReleased
 
 
-def check_state_staking(stateChainGateway, scGatewayAddrHolder, tv, cf, *args):
+def check_state_staking(stateChainGateway, addressHolder, tv, cf, *args):
 
-    assert tv.scGatewayAddrHolder() == scGatewayAddrHolder
-    assert scGatewayAddrHolder.getReferenceAddress() == stateChainGateway
+    assert tv.addressHolder() == addressHolder
+    assert addressHolder.getStateChainGateway() == stateChainGateway
     check_state(tv, cf, *args)
 
 

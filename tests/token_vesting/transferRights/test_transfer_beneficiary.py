@@ -1,11 +1,11 @@
 from consts import *
-from brownie import reverts, chain
+from brownie import reverts
 from brownie.test import given, strategy
 from shared_tests_tokenVesting import *
 
 
 @given(st_sender=strategy("address"))
-def test_transfer_beneficiary(
+def test_transfer_beneficiary_0(
     addrs, tokenVestingStaking, tokenVestingNoStaking, st_sender
 ):
     tv_staking, _, _ = tokenVestingStaking
@@ -29,7 +29,7 @@ def test_transfer_beneficiary(
 
 
 @given(st_sender=strategy("address"))
-def test_transfer_beneficiary(
+def test_transfer_beneficiary_1(
     addrs, cf, TokenVestingNoStaking, TokenVestingStaking, st_sender
 ):
     end = getChainTime() + QUARTER_YEAR + YEAR
@@ -41,6 +41,7 @@ def test_transfer_beneficiary(
         end,
         BENEF_NON_TRANSF,
         cf.stateChainGateway,
+        cf.flip,
     )
 
     tv_noStaking = addrs.DEPLOYER.deploy(

@@ -6,20 +6,25 @@ import "../interfaces/IAddressHolder.sol";
 import "../abstract/Shared.sol";
 
 /**
- * @title Address Holder reference
- * @dev A contract that holds a reference to an address. This reference address can only be updated
- *      by the governor. This can be used when multiple contracts hold a reference to an address that
- *      may need to be updated. In that case, it is easier to have a single contract that holds the
- *      reference address.
+ * @title Address' Holder reference
+ * @dev A contract that holds references to addresses. This reference address can only be updated
+ *      by the governor. This can be used when multiple contracts hold references to the same
+ *      addresses that may need to be updated. In that case, it is easier to have a single contract
+ *      that holds all the addresses.
  */
 contract AddressHolder is IAddressHolder, Shared {
     address private governor;
 
-    address private referenceAddress;
+    address private stateChainGateway;
 
-    constructor(address _governor, address _referenceAddress) nzAddr(_governor) nzAddr(_referenceAddress) {
+    address private stFLIP;
+    address private stMinter;
+    address private stBurner;
+
+    // @dev Allow for zero addresses for the stAddresses as they might not be deployed so they'll be set afterwards
+    constructor(address _governor, address _stateChainGateway) nzAddr(_governor) nzAddr(_stateChainGateway) {
         governor = _governor;
-        referenceAddress = _referenceAddress;
+        stateChainGateway = _stateChainGateway;
     }
 
     //////////////////////////////////////////////////////////////
@@ -29,12 +34,11 @@ contract AddressHolder is IAddressHolder, Shared {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Update the reference address
-    function updateReferenceAddress(
-        address _referenceAddress
-    ) external override onlyGovernor nzAddr(_referenceAddress) {
-        address oldReferenceAddress = referenceAddress;
-        referenceAddress = _referenceAddress;
-        emit ReferenceAddressUpdated(oldReferenceAddress, _referenceAddress);
+    function updateStateChainGateway(
+        address _stateChainGateway
+    ) external override onlyGovernor nzAddr(_stateChainGateway) {
+        emit StateChainGatewayUpdated(stateChainGateway, _stateChainGateway);
+        stateChainGateway = _stateChainGateway;
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
@@ -51,8 +55,8 @@ contract AddressHolder is IAddressHolder, Shared {
     //////////////////////////////////////////////////////////////
 
     /// @dev    Getter function for the reference address
-    function getReferenceAddress() external view override returns (address) {
-        return referenceAddress;
+    function getStateChainGateway() external view override returns (address) {
+        return stateChainGateway;
     }
 
     /// @dev    Getter function for the governor address

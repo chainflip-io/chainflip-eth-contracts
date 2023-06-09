@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 interface IAddressHolder {
-    event ReferenceAddressUpdated(address oldReferenceAddress, address newReferenceAddress);
+    event StateChainGatewayUpdated(address oldStateChainGateway, address newStateChainGateway);
     event GovernorTransferred(address oldGovernor, address newGovernor);
 
     //////////////////////////////////////////////////////////////
@@ -12,7 +12,7 @@ interface IAddressHolder {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function updateReferenceAddress(address _referenceAddress) external;
+    function updateStateChainGateway(address _stateChainGateway) external;
 
     function transferGovernor(address _governor) external;
 
@@ -22,7 +22,7 @@ interface IAddressHolder {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function getReferenceAddress() external view returns (address);
+    function getStateChainGateway() external view returns (address);
 
     function getGovernor() external view returns (address);
 }

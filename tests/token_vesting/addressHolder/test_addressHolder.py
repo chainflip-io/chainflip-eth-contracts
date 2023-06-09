@@ -12,46 +12,44 @@ def test_reference_constructor(addrs, cf, AddressHolder):
 
     addressHolder = addrs.DEPLOYER.deploy(AddressHolder, addrs.DEPLOYER, NON_ZERO_ADDR)
     assert addressHolder.getGovernor() == addrs.DEPLOYER
-    assert addressHolder.getReferenceAddress() == NON_ZERO_ADDR
+    assert addressHolder.getStateChainGateway() == NON_ZERO_ADDR
 
 
-def test_reference_transferGovernor(addrs, scGatewayAddrHolder):
+def test_reference_transferGovernor(addrs, addressHolder):
     with reverts(REV_MSG_SCGREF_REV_GOV):
-        scGatewayAddrHolder.transferGovernor(NON_ZERO_ADDR, {"from": addrs.BENEFICIARY})
+        addressHolder.transferGovernor(NON_ZERO_ADDR, {"from": addrs.BENEFICIARY})
 
     with reverts(REV_MSG_NZ_ADDR):
-        scGatewayAddrHolder.transferGovernor(ZERO_ADDR, {"from": addrs.DEPLOYER})
+        addressHolder.transferGovernor(ZERO_ADDR, {"from": addrs.DEPLOYER})
 
-    assert scGatewayAddrHolder.getGovernor() == addrs.DEPLOYER
-    tx = scGatewayAddrHolder.transferGovernor(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
+    assert addressHolder.getGovernor() == addrs.DEPLOYER
+    tx = addressHolder.transferGovernor(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
     assert tx.events["GovernorTransferred"][0].values() == [
         addrs.DEPLOYER,
         NON_ZERO_ADDR,
     ]
-    assert scGatewayAddrHolder.getGovernor() == NON_ZERO_ADDR
+    assert addressHolder.getGovernor() == NON_ZERO_ADDR
 
 
-def test_reference_updateReference(addrs, cf, scGatewayAddrHolder):
+def test_reference_updateReference(addrs, cf, addressHolder):
     with reverts(REV_MSG_SCGREF_REV_GOV):
-        scGatewayAddrHolder.updateReferenceAddress(
+        addressHolder.updateStateChainGateway(
             NON_ZERO_ADDR, {"from": addrs.BENEFICIARY}
         )
 
     with reverts(REV_MSG_NZ_ADDR):
-        scGatewayAddrHolder.updateReferenceAddress(ZERO_ADDR, {"from": addrs.DEPLOYER})
+        addressHolder.updateStateChainGateway(ZERO_ADDR, {"from": addrs.DEPLOYER})
 
-    assert scGatewayAddrHolder.getReferenceAddress() == cf.stateChainGateway
-    tx = scGatewayAddrHolder.updateReferenceAddress(
-        NON_ZERO_ADDR, {"from": addrs.DEPLOYER}
-    )
-    assert tx.events["ReferenceAddressUpdated"][0].values() == [
+    assert addressHolder.getStateChainGateway() == cf.stateChainGateway
+    tx = addressHolder.updateStateChainGateway(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
+    assert tx.events["StateChainGatewayUpdated"][0].values() == [
         cf.stateChainGateway,
         NON_ZERO_ADDR,
     ]
-    assert scGatewayAddrHolder.getReferenceAddress() == NON_ZERO_ADDR
+    assert addressHolder.getStateChainGateway() == NON_ZERO_ADDR
 
 
-def test_reference_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
+def test_reference_release(addrs, cf, tokenVestingStaking, addressHolder):
     tv, _, _ = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
@@ -61,7 +59,7 @@ def test_reference_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
     chain.sleep(YEAR + QUARTER_YEAR)
 
     # Update the refernce to a wrong contract
-    scGatewayAddrHolder.updateReferenceAddress(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
+    addressHolder.updateStateChainGateway(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
 
     # Mimic a return of funds from the state chain
     cf.flip.transfer(tv, MAX_TEST_FUND, {"from": addrs.DEPLOYER})
