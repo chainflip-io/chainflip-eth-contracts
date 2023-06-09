@@ -37,9 +37,11 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
     uint256 public immutable end;
 
-    // The contract that holds the reference to the staking contract.
-    IAddressHolder public immutable addressHolder;
+    // solhint-disable-next-line var-name-mixedcase
     IERC20 public immutable FLIP;
+
+    // The contract that holds the reference addresses for staking purposes.
+    IAddressHolder public immutable addressHolder;
 
     mapping(IERC20 => uint256) public released;
     mapping(IERC20 => bool) public revoked;
