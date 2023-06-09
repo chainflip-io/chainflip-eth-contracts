@@ -78,7 +78,7 @@ def test_tokenVesting_constructor_noRevoker(
 def test_tokenVesting_constructor_rev_beneficiary(
     addrs, TokenVestingNoStaking, TokenVestingStaking, scGatewayAddrHolder
 ):
-    with reverts(REV_MSG_INVALID_BENEFICIARY):
+    with reverts(REV_MSG_NZ_ADDR):
         addrs.DEPLOYER.deploy(
             TokenVestingNoStaking,
             ZERO_ADDR,
@@ -87,7 +87,7 @@ def test_tokenVesting_constructor_rev_beneficiary(
             end,
             BENEF_TRANSF,
         )
-    with reverts(REV_MSG_INVALID_BENEFICIARY):
+    with reverts(REV_MSG_NZ_ADDR):
         addrs.DEPLOYER.deploy(
             TokenVestingStaking,
             ZERO_ADDR,
@@ -137,7 +137,7 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVestingNoStakin
 
 
 def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVestingStaking):
-    with reverts(REV_MSG_INVALID_SCGREF):
+    with reverts(REV_MSG_NZ_ADDR):
         addrs.DEPLOYER.deploy(
             TokenVestingStaking,
             addrs.BENEFICIARY,

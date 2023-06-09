@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import "../abstract/Shared.sol";
 import "../interfaces/IStateChainGateway.sol";
 import "../interfaces/IAddressHolder.sol";
 import "../interfaces/ITokenVestingStaking.sol";
@@ -24,7 +25,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  *      schemes, with a cliff period of a year and a duration of four years, are safe to use.
  *
  */
-contract TokenVestingStaking is ITokenVestingStaking {
+contract TokenVestingStaking is ITokenVestingStaking, Shared {
     using SafeERC20 for IERC20;
 
     // beneficiary of tokens after they are released. It can be transferrable.
@@ -55,10 +56,8 @@ contract TokenVestingStaking is ITokenVestingStaking {
         uint256 end_,
         bool transferableBeneficiary_,
         IAddressHolder scGatewayAddrHolder_
-    ) {
-        require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
+    ) nzAddr(beneficiary_) nzAddr(address(scGatewayAddrHolder_)) {
         require(end_ > block.timestamp, "Vesting: final time is before current time");
-        require(address(scGatewayAddrHolder_) != address(0), "Vesting: addrHolder is the zero address");
 
         beneficiary = beneficiary_;
         revoker = revoker_;
@@ -83,7 +82,7 @@ contract TokenVestingStaking is ITokenVestingStaking {
         IStateChainGateway stateChainGateway = IStateChainGateway(scGatewayAddrHolder.getReferenceAddress());
 
         IERC20 flip = stateChainGateway.getFLIP();
-        require(!revoked[flip], "Vesting: FLIP revoked");
+        require(!revoked[flip], "Vesting: token revoked");
 
         flip.approve(address(stateChainGateway), amount);
         stateChainGateway.fundStateChainAccount(nodeID, amount);
@@ -94,7 +93,7 @@ contract TokenVestingStaking is ITokenVestingStaking {
      * @param token ERC20 token which is being vested.
      */
     function release(IERC20 token) external override onlyBeneficiary {
-        require(!revoked[token], "Vesting: staked funds revoked");
+        require(!revoked[token], "Vesting: token revoked");
 
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "Vesting: no tokens are due");
@@ -112,7 +111,7 @@ contract TokenVestingStaking is ITokenVestingStaking {
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external override onlyRevoker {
-        require(!revoked[token], "Vesting: token already revoked");
+        require(!revoked[token], "Vesting: token revoked");
         require(block.timestamp <= end, "Vesting: vesting expired");
 
         uint256 balance = token.balanceOf(address(this));
@@ -164,16 +163,14 @@ contract TokenVestingStaking is ITokenVestingStaking {
     }
 
     /// @dev    Allow the beneficiary to be transferred to a new address if needed
-    function transferBeneficiary(address beneficiary_) external override onlyBeneficiary {
-        require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
+    function transferBeneficiary(address beneficiary_) external override onlyBeneficiary nzAddr(beneficiary_) {
         require(transferableBeneficiary, "Vesting: beneficiary not transferrable");
         emit BeneficiaryTransferred(beneficiary, beneficiary_);
         beneficiary = beneficiary_;
     }
 
     /// @dev    Allow the revoker to be transferred to a new address if needed
-    function transferRevoker(address revoker_) external override onlyRevoker {
-        require(revoker_ != address(0), "Vesting: revoker_ is the zero address");
+    function transferRevoker(address revoker_) external override onlyRevoker nzAddr(revoker_) {
         emit RevokerTransferred(revoker, revoker_);
         revoker = revoker_;
     }

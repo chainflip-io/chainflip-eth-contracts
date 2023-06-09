@@ -95,5 +95,5 @@ def test_revoke_rev_revoked(addrs, cf, tokenVestingNoStaking):
 
     tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
-    with reverts(REV_MSG_ALREADY_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.revoke(cf.flip, {"from": addrs.REVOKER})

@@ -52,7 +52,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTim
     # When canStake, no amount is releasable after revoking
     chain.sleep(st_sleepTime)
 
-    with reverts(REV_MSG_FUNDS_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
 
@@ -89,7 +89,7 @@ def test_revoke_rev_revoked(a, addrs, cf, tokenVestingStaking):
 
     check_revoked(tv, cf, tx, addrs.REVOKER, total, 0)
 
-    with reverts(REV_MSG_ALREADY_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
     # No more funds to be retrieved
@@ -119,20 +119,20 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     assert tx.events["Transfer"][0].values() == (tv, addrs.REVOKER, 0)
     assert tv.revoked(cf.flip) == True
 
-    with reverts(REV_MSG_FUNDS_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     # We would need to unstake the amount. Quick workaround to do the same thing:
     cf.flip.transfer(tv, amount, {"from": addrs.DEPLOYER})
 
-    with reverts(REV_MSG_FUNDS_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     st_sleepTime = end
     chain.sleep(st_sleepTime)
 
     # In option B, once revoked there is no way to release any funds
-    with reverts(REV_MSG_FUNDS_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
 
@@ -165,7 +165,7 @@ def test_retrieve_revoked_funds_and_rewards(
     # Mimic rewards
     cf.flip.transfer(tv, rewards, {"from": addrs.DEPLOYER})
 
-    with reverts(REV_MSG_FUNDS_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, rewards)
@@ -177,6 +177,6 @@ def test_fund_revoked_staked(addrs, cf, tokenVestingStaking):
     tv, _, _ = tokenVestingStaking
     test_revoke_staked(addrs, cf, tokenVestingStaking)
     nodeID1 = web3.toHex(1)
-    with reverts(REV_MSG_FLIP_REVOKED):
+    with reverts(REV_MSG_TOKEN_REVOKED):
         tv.fundStateChainAccount(nodeID1, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, MAX_TEST_FUND)

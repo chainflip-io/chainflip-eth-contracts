@@ -2,8 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../interfaces/IStateChainGateway.sol";
-import "../interfaces/IAddressHolder.sol";
+import "../abstract/Shared.sol";
 import "../interfaces/ITokenVestingNoStaking.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -19,7 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  *      schemes, with a cliff period of a year and a duration of four years, are safe to use.
  *
  */
-contract TokenVestingNoStaking is ITokenVestingNoStaking {
+contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {
     using SafeERC20 for IERC20;
 
     uint256 public constant CLIFF_DENOMINATOR = 5; // x / 5 = 20% of x
@@ -44,8 +43,13 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking {
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param transferableBeneficiary_ whether the beneficiary address can be transferred
      */
-    constructor(address beneficiary_, address revoker_, uint256 cliff_, uint256 end_, bool transferableBeneficiary_) {
-        require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
+    constructor(
+        address beneficiary_,
+        address revoker_,
+        uint256 cliff_,
+        uint256 end_,
+        bool transferableBeneficiary_
+    ) nzAddr(beneficiary_) {
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
         require(end_ > block.timestamp, "Vesting: final time is before current time");
 
@@ -83,7 +87,7 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking {
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external override onlyRevoker {
-        require(!revoked[token], "Vesting: token already revoked");
+        require(!revoked[token], "Vesting: token revoked");
         require(block.timestamp <= end, "Vesting: vesting expired");
 
         uint256 balance = token.balanceOf(address(this));
@@ -127,16 +131,14 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking {
     }
 
     /// @dev    Allow the beneficiary to be transferred to a new address if needed
-    function transferBeneficiary(address beneficiary_) external override onlyBeneficiary {
-        require(beneficiary_ != address(0), "Vesting: beneficiary_ is the zero address");
+    function transferBeneficiary(address beneficiary_) external override onlyBeneficiary nzAddr(beneficiary_) {
         require(transferableBeneficiary, "Vesting: beneficiary not transferrable");
         emit BeneficiaryTransferred(beneficiary, beneficiary_);
         beneficiary = beneficiary_;
     }
 
     /// @dev    Allow the revoker to be transferred to a new address if needed
-    function transferRevoker(address revoker_) external override onlyRevoker {
-        require(revoker_ != address(0), "Vesting: revoker_ is the zero address");
+    function transferRevoker(address revoker_) external override onlyRevoker nzAddr(revoker_) {
         emit RevokerTransferred(revoker, revoker_);
         revoker = revoker_;
     }
