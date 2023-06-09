@@ -4,9 +4,6 @@ from brownie import reverts, chain
 from brownie.test import given, strategy
 from shared_tests_tokenVesting import *
 
-import pytest
-
-
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_revoke(addrs, cf, tokenVestingStaking, scGatewayAddrHolder, st_sleepTime):
     tv, end, total = tokenVestingStaking
@@ -107,7 +104,7 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
 
-    tx = tv.fundStateChainAccount(nodeID1, amount, {"from": addrs.BENEFICIARY})
+    tx = tv.fundStateChainAccount(cf.flip, nodeID1, amount, {"from": addrs.BENEFICIARY})
 
     assert tx.events["Funded"][0].values() == (nodeID1, amount, tv)
     assert tx.events["Transfer"][0].values() == (tv, cf.stateChainGateway, amount)
@@ -148,7 +145,7 @@ def test_retrieve_revoked_funds_and_rewards(
     cf.flip.approve(
         cf.stateChainGateway.address, st_amount, {"from": addrs.BENEFICIARY}
     )
-    tv.fundStateChainAccount(1, st_amount, {"from": addrs.BENEFICIARY})
+    tv.fundStateChainAccount(cf.flip, 1, st_amount, {"from": addrs.BENEFICIARY})
     tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
     assert cf.flip.balanceOf(tv) == 0
@@ -178,5 +175,5 @@ def test_fund_revoked_staked(addrs, cf, tokenVestingStaking):
     test_revoke_staked(addrs, cf, tokenVestingStaking)
     nodeID1 = web3.toHex(1)
     with reverts(REV_MSG_TOKEN_REVOKED):
-        tv.fundStateChainAccount(nodeID1, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
+        tv.fundStateChainAccount(cf.flip, nodeID1, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, MAX_TEST_FUND)

@@ -56,7 +56,7 @@ def test_reference_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
 
-    tv.fundStateChainAccount(JUNK_INT, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
+    tv.fundStateChainAccount(cf.flip, JUNK_INT, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
 
     chain.sleep(YEAR + QUARTER_YEAR)
 
@@ -77,4 +77,4 @@ def test_reference_release(addrs, cf, tokenVestingStaking, scGatewayAddrHolder):
     # Let's say staking rewards are accrued
     cf.flip.transfer(tv, JUNK_INT, {"from": addrs.DEPLOYER})
     with reverts("Transaction reverted without a reason string"):
-        tv.fundStateChainAccount(JUNK_INT, JUNK_INT, {"from": addrs.BENEFICIARY})
+        tv.fundStateChainAccount(cf.flip, JUNK_INT, JUNK_INT, {"from": addrs.BENEFICIARY})

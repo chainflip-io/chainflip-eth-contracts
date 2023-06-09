@@ -17,7 +17,7 @@ interface ITokenVestingStaking {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external;
+    function fundStateChainAccount(IERC20 flip, bytes32 nodeID, uint256 amount) external;
 
     function release(IERC20 token) external;
 

@@ -148,7 +148,7 @@ def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVestingStaki
         )
 
 
-def test_tokenVesting_constructor_rev_eoa(addrs, TokenVestingStaking):
+def test_tokenVesting_constructor_rev_eoa(cf, addrs, TokenVestingStaking):
 
     tv = addrs.DEPLOYER.deploy(
         TokenVestingStaking,
@@ -160,4 +160,4 @@ def test_tokenVesting_constructor_rev_eoa(addrs, TokenVestingStaking):
     )
     # Reference contract is an eoa
     with reverts("Transaction reverted without a reason string"):
-        tv.fundStateChainAccount(JUNK_INT, 1, {"from": addrs.BENEFICIARY})
+        tv.fundStateChainAccount(cf.flip, JUNK_INT, 1, {"from": addrs.BENEFICIARY})
