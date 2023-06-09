@@ -5,12 +5,28 @@ from shared_tests_tokenVesting import *
 
 def test_reference_constructor(addrs, cf, AddressHolder):
     with reverts(REV_MSG_NZ_ADDR):
-        addrs.DEPLOYER.deploy(AddressHolder, ZERO_ADDR, cf.stateChainGateway)
+        addrs.DEPLOYER.deploy(
+            AddressHolder,
+            ZERO_ADDR,
+            cf.stateChainGateway,
+            NON_ZERO_ADDR,
+            NON_ZERO_ADDR,
+            NON_ZERO_ADDR,
+        )
 
     with reverts(REV_MSG_NZ_ADDR):
-        addrs.DEPLOYER.deploy(AddressHolder, NON_ZERO_ADDR, ZERO_ADDR)
+        addrs.DEPLOYER.deploy(
+            AddressHolder,
+            NON_ZERO_ADDR,
+            ZERO_ADDR,
+            NON_ZERO_ADDR,
+            NON_ZERO_ADDR,
+            NON_ZERO_ADDR,
+        )
 
-    addressHolder = addrs.DEPLOYER.deploy(AddressHolder, addrs.DEPLOYER, NON_ZERO_ADDR)
+    addressHolder = addrs.DEPLOYER.deploy(
+        AddressHolder, addrs.DEPLOYER, NON_ZERO_ADDR, ZERO_ADDR, ZERO_ADDR, ZERO_ADDR
+    )
     assert addressHolder.getGovernor() == addrs.DEPLOYER
     assert addressHolder.getStateChainGateway() == NON_ZERO_ADDR
 

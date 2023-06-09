@@ -8,6 +8,16 @@ import "../interfaces/IAddressHolder.sol";
 import "../interfaces/ITokenVestingStaking.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+interface IMinter {
+    function mint(address to, uint256 amount) external returns (bool);
+}
+
+interface IBurner {
+    function burn(address to, uint256 amount) external returns (uint256);
+
+    function redeem(uint256 burn_id) external;
+}
+
 /**
  * @title TokenVestingStaking
  * @dev A token holder contract that that vests its balance of any ERC20 token to the beneficiary.
@@ -91,6 +101,22 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
         FLIP.approve(stateChainGateway, amount);
         IStateChainGateway(stateChainGateway).fundStateChainAccount(nodeID, amount);
+    }
+
+    function stakeStProvider(uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
+        address stMinter = addressHolder.getStakingAddress();
+
+        FLIP.approve(address(stMinter), amount);
+        require(IMinter(stMinter).mint(address(this), amount));
+    }
+
+    function unstakeStProvider(uint256 amount) external override onlyBeneficiary returns (uint256) {
+        (address stFLIP, address stBurner) = addressHolder.getUnstakingAddresses();
+
+        require(!revoked[IERC20(stFLIP)], "Vesting: token revoked");
+
+        IERC20(stFLIP).approve(address(stBurner), amount);
+        return IBurner(stBurner).burn(address(this), amount);
     }
 
     /**

@@ -4,6 +4,14 @@ pragma solidity ^0.8.0;
 
 interface IAddressHolder {
     event StateChainGatewayUpdated(address oldStateChainGateway, address newStateChainGateway);
+    event StakingAddressesUpdated(
+        address oldStFLIP,
+        address oldStMinter,
+        address oldStBurner,
+        address newStFLIP,
+        address newStMinter,
+        address newStBurner
+    );
     event GovernorTransferred(address oldGovernor, address newGovernor);
 
     //////////////////////////////////////////////////////////////
@@ -14,6 +22,8 @@ interface IAddressHolder {
 
     function updateStateChainGateway(address _stateChainGateway) external;
 
+    function updateStakingAddresses(address _stFLIP, address _stMinter, address _stBurner) external;
+
     function transferGovernor(address _governor) external;
 
     //////////////////////////////////////////////////////////////
@@ -23,6 +33,10 @@ interface IAddressHolder {
     //////////////////////////////////////////////////////////////
 
     function getStateChainGateway() external view returns (address);
+
+    function getStakingAddress() external view returns (address);
+
+    function getUnstakingAddresses() external view returns (address, address);
 
     function getGovernor() external view returns (address);
 }

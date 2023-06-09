@@ -133,7 +133,14 @@ def maths(addrs, MockMaths):
 
 @pytest.fixture(scope="module")
 def addressHolder(cf, addrs, AddressHolder):
-    return addrs.DEPLOYER.deploy(AddressHolder, addrs.DEPLOYER, cf.stateChainGateway)
+    return addrs.DEPLOYER.deploy(
+        AddressHolder,
+        addrs.DEPLOYER,
+        cf.stateChainGateway,
+        ZERO_ADDR,
+        ZERO_ADDR,
+        ZERO_ADDR,
+    )
 
 
 @pytest.fixture(scope="module")
