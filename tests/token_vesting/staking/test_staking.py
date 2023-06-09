@@ -16,25 +16,23 @@ def test_fundStateChainAccount(addrs, tokenVestingStaking, st_nodeID, st_amount,
     if st_amount < MIN_FUNDING:
         with reverts(REV_MSG_MIN_FUNDING):
             tx = tv.fundStateChainAccount(
-                cf.flip, st_nodeID, st_amount, {"from": addrs.BENEFICIARY}
+                st_nodeID, st_amount, {"from": addrs.BENEFICIARY}
             )
     elif st_amount > cf.flip.balanceOf(tv):
-        with reverts(REV_MSG_ERC20_EXCEED_BAL):
+        with reverts("ERC20: transfer amount exceeds balance"):
             tx = tv.fundStateChainAccount(
-                cf.flip, st_nodeID, st_amount, {"from": addrs.BENEFICIARY}
+                st_nodeID, st_amount, {"from": addrs.BENEFICIARY}
             )
     else:
-        tx = tv.fundStateChainAccount(
-            cf.flip, st_nodeID, st_amount, {"from": addrs.BENEFICIARY}
-        )
+        tx = tv.fundStateChainAccount(st_nodeID, st_amount, {"from": addrs.BENEFICIARY})
 
         assert tx.events["Funded"][0].values() == (st_nodeID, st_amount, tv)
 
 
-def test_fund_rev_beneficiary(a, addrs, tokenVestingStaking, cf):
+def test_fund_rev_beneficiary(a, addrs, tokenVestingStaking):
     tv, _, _ = tokenVestingStaking
 
     for ad in a:
         if ad != addrs.BENEFICIARY:
             with reverts(REV_MSG_NOT_BENEFICIARY):
-                tv.fundStateChainAccount(cf.flip, 5, 10, {"from": ad})
+                tv.fundStateChainAccount(5, 10, {"from": ad})

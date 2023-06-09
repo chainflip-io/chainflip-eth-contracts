@@ -75,16 +75,14 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     /**
      * @notice  Funds an account in the statechain with some tokens for the nodeID
      *          and forces the return address of that to be this contract.
-     * @param flip   the flip token address
      * @param nodeID the nodeID to fund.
      * @param amount the amount of FLIP out of the current funds in this contract.
      */
-    function fundStateChainAccount(
-        IERC20 flip,
-        bytes32 nodeID,
-        uint256 amount
-    ) external override onlyBeneficiary notRevoked(flip) {
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary {
         IStateChainGateway stateChainGateway = IStateChainGateway(scGatewayAddrHolder.getReferenceAddress());
+
+        IERC20 flip = stateChainGateway.getFLIP();
+        require(!revoked[flip], "Vesting: token revoked");
 
         flip.approve(address(stateChainGateway), amount);
         stateChainGateway.fundStateChainAccount(nodeID, amount);
