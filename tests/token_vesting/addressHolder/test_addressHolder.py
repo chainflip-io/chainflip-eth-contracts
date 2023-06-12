@@ -24,6 +24,7 @@ def test_reference_constructor(addrs, cf, AddressHolder):
             NON_ZERO_ADDR,
         )
 
+    # We allow zero addresses to be passed as staking provider references
     addressHolder = addrs.DEPLOYER.deploy(
         AddressHolder, addrs.DEPLOYER, NON_ZERO_ADDR, ZERO_ADDR, ZERO_ADDR, ZERO_ADDR
     )
@@ -92,3 +93,21 @@ def test_reference_release(addrs, cf, tokenVestingStaking, addressHolder):
     cf.flip.transfer(tv, JUNK_INT, {"from": addrs.DEPLOYER})
     with reverts("Transaction reverted without a reason string"):
         tv.fundStateChainAccount(JUNK_INT, JUNK_INT, {"from": addrs.BENEFICIARY})
+
+
+def test_reference_updateStakingAddresses(addrs, addressHolder):
+    oldAddresses = (ZERO_ADDR, ZERO_ADDR, ZERO_ADDR)
+    for addresses in [
+        (ZERO_ADDR, NON_ZERO_ADDR, NON_ZERO_ADDR),
+        (NON_ZERO_ADDR, ZERO_ADDR, NON_ZERO_ADDR),
+        (NON_ZERO_ADDR, NON_ZERO_ADDR, ZERO_ADDR),
+        (ZERO_ADDR, ZERO_ADDR, ZERO_ADDR),
+    ]:
+        tx = addressHolder.updateStakingAddresses(*addresses, {"from": addrs.DEPLOYER})
+        assert tx.events["StakingAddressesUpdated"][0].values() == (
+            *oldAddresses,
+            *addresses,
+        )
+        assert addressHolder.getStakingAddress() == addresses[0]
+        assert addressHolder.getUnstakingAddresses() == [addresses[1], addresses[2]]
+        oldAddresses = addresses

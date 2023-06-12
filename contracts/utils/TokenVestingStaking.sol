@@ -14,8 +14,6 @@ interface IMinter {
 
 interface IBurner {
     function burn(address to, uint256 amount) external returns (uint256);
-
-    function redeem(uint256 burn_id) external;
 }
 
 /**
@@ -103,19 +101,28 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         IStateChainGateway(stateChainGateway).fundStateChainAccount(nodeID, amount);
     }
 
-    function stakeStProvider(uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
+    /**
+     * @notice  Stakes to the staking provider by transferring an amount of FLIP to the staking minter.
+     *          It is expected that an amount of stFLIP will be minted to this contract.
+     * @param amount the amount of FLIP to stake to the staking provider.
+     */
+    function stakeToStProvider(uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
         address stMinter = addressHolder.getStakingAddress();
 
-        FLIP.approve(address(stMinter), amount);
+        FLIP.approve(stMinter, amount);
         require(IMinter(stMinter).mint(address(this), amount));
     }
 
-    function unstakeStProvider(uint256 amount) external override onlyBeneficiary returns (uint256) {
-        (address stFLIP, address stBurner) = addressHolder.getUnstakingAddresses();
+    /**
+     * @notice  Unstakes from the staking provider by transferring stFLIP to the staking burner.
+     * @param amount the amount of FLIP to stake to the staking provider.
+     */
+    function unstakeFromStProvider(uint256 amount) external override onlyBeneficiary returns (uint256) {
+        (address stBurner, address stFLIP) = addressHolder.getUnstakingAddresses();
 
         require(!revoked[IERC20(stFLIP)], "Vesting: token revoked");
 
-        IERC20(stFLIP).approve(address(stBurner), amount);
+        IERC20(stFLIP).approve(stBurner, amount);
         return IBurner(stBurner).burn(address(this), amount);
     }
 

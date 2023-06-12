@@ -52,14 +52,14 @@ contract AddressHolder is IAddressHolder, Shared {
 
     /// @dev    Update the reference addresses
     function updateStakingAddresses(
-        address _stFLIP,
         address _stMinter,
-        address _stBurner
-    ) external override onlyGovernor nzAddr(_stFLIP) nzAddr(_stMinter) nzAddr(_stBurner) {
-        emit StakingAddressesUpdated(stFLIP, stMinter, stBurner, _stFLIP, _stMinter, _stBurner);
-        stFLIP = _stFLIP;
+        address _stBurner,
+        address _stFLIP
+    ) external override onlyGovernor {
+        emit StakingAddressesUpdated(stMinter, stBurner, stFLIP, _stMinter, _stBurner, _stFLIP);
         stMinter = _stMinter;
         stBurner = _stBurner;
+        stFLIP = _stFLIP;
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
@@ -85,7 +85,7 @@ contract AddressHolder is IAddressHolder, Shared {
     }
 
     function getUnstakingAddresses() external view override returns (address, address) {
-        return (stFLIP, stBurner);
+        return (stBurner, stFLIP);
     }
 
     /// @dev    Getter function for the governor address

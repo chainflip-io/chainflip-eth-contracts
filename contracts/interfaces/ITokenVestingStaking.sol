@@ -19,9 +19,9 @@ interface ITokenVestingStaking {
 
     function fundStateChainAccount(bytes32 nodeID, uint256 amount) external;
 
-    function stakeStProvider(uint256 amount) external;
+    function stakeToStProvider(uint256 amount) external;
 
-    function unstakeStProvider(uint256 amount) external returns (uint256);
+    function unstakeFromStProvider(uint256 amount) external returns (uint256);
 
     function release(IERC20 token) external;
 

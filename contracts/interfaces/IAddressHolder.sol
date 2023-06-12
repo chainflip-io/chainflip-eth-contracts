@@ -22,7 +22,7 @@ interface IAddressHolder {
 
     function updateStateChainGateway(address _stateChainGateway) external;
 
-    function updateStakingAddresses(address _stFLIP, address _stMinter, address _stBurner) external;
+    function updateStakingAddresses(address _stMinter, address _stBurner, address _stFLIP) external;
 
     function transferGovernor(address _governor) external;
 
