@@ -132,14 +132,36 @@ def maths(addrs, MockMaths):
 
 
 @pytest.fixture(scope="module")
-def addressHolder(cf, addrs, AddressHolder):
+def mockStProvider(cf, addrs, Minter, Burner, stFLIP):
+
+    stFlip = addrs.DEPLOYER.deploy(stFLIP)
+
+    burner = addrs.DEPLOYER.deploy(Burner, stFlip.address, cf.flip)
+
+    # For the sake of testing setting the staking address (output) to be the Burner.
+    # This way the real FLIP goes there automatically when staking.
+    staking_address = burner
+
+    minter = addrs.DEPLOYER.deploy(
+        Minter, stFlip.address, cf.flip.address, staking_address
+    )
+
+    stFlip.initialize(minter.address, burner.address)
+
+    return stFlip, minter, burner, staking_address
+
+
+@pytest.fixture(scope="module")
+def addressHolder(cf, addrs, AddressHolder, mockStProvider):
+    stFLIP, minter, burner, _ = mockStProvider
+
     return addrs.DEPLOYER.deploy(
         AddressHolder,
         addrs.DEPLOYER,
         cf.stateChainGateway,
-        ZERO_ADDR,
-        ZERO_ADDR,
-        ZERO_ADDR,
+        minter.address,
+        burner.address,
+        stFLIP.address,
     )
 
 
@@ -170,7 +192,6 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 
 @pytest.fixture(scope="module")
 def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
-
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
     start = getChainTime()

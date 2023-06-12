@@ -25,15 +25,15 @@ contract AddressHolder is IAddressHolder, Shared {
     constructor(
         address _governor,
         address _stateChainGateway,
-        address _stFLIP,
         address _stMinter,
-        address _stBurner
+        address _stBurner,
+        address _stFLIP
     ) nzAddr(_governor) nzAddr(_stateChainGateway) {
         governor = _governor;
         stateChainGateway = _stateChainGateway;
-        stFLIP = _stFLIP;
         stMinter = _stMinter;
         stBurner = _stBurner;
+        stFLIP = _stFLIP;
     }
 
     //////////////////////////////////////////////////////////////

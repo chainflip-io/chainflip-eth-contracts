@@ -96,7 +96,10 @@ def test_reference_release(addrs, cf, tokenVestingStaking, addressHolder):
 
 
 def test_reference_updateStakingAddresses(addrs, addressHolder):
-    oldAddresses = (ZERO_ADDR, ZERO_ADDR, ZERO_ADDR)
+    oldAddresses = (
+        addressHolder.getStakingAddress(),
+        *addressHolder.getUnstakingAddresses(),
+    )
     for addresses in [
         (ZERO_ADDR, NON_ZERO_ADDR, NON_ZERO_ADDR),
         (NON_ZERO_ADDR, ZERO_ADDR, NON_ZERO_ADDR),
