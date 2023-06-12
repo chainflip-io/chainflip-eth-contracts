@@ -88,8 +88,6 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
         address stateChainGateway = addressHolder.getStateChainGateway();
 
-        require(!revoked[FLIP], "Vesting: token revoked");
-
         FLIP.approve(stateChainGateway, amount);
         IStateChainGateway(stateChainGateway).fundStateChainAccount(nodeID, amount);
     }
