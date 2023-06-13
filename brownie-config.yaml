@@ -7,7 +7,7 @@ dependencies:
   - OpenZeppelin/openzeppelin-contracts@4.8.3
 
 compiler:
-  evm_version: "shanghai"
+  evm_version: "paris"
   solc:
     optimizer:
       enabled: true
