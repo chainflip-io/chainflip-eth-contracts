@@ -11,6 +11,15 @@ on:
         options:
           - "1"
           - "3"
+      chainflip_backend_ref:
+        description: The branch, tag or commit of chainflip-backend to use
+        required: true
+        default: "main"
+      docker_image_tag_suffix:
+        description: A suffix to append to the image tag
+        required: false
+        default: ""
+
 jobs:
   build:
     runs-on: [self-hosted, linux, x64, ephemeral]
@@ -53,7 +62,7 @@ jobs:
   create:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
-      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
+      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
     needs:
       - build
     services:
@@ -72,12 +81,13 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
-      - name: Checkout
+      - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
           repository: chainflip-io/chainflip-backend
           path: chainflip-backend
+          ref: ${{ inputs.chainflip_backend_ref }}
 
       - name: Fetch agg_key
         run: |

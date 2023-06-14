@@ -6,7 +6,7 @@ import "../../Vault.sol";
 import "../../FLIP.sol";
 import "../../KeyManager.sol";
 import "../../StateChainGateway.sol";
-import "../../helpers/DeployerContract.sol";
+import "../../utils/DeployerContract.sol";
 
 import "./KeyManagerEchidna.sol";
 import "./StateChainGatewayEchidna.sol";
