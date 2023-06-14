@@ -217,3 +217,38 @@ def test_deposit_forceEth_after_deployment(cf, Deposit, ForceNativeTokens):
     # is not really supported.
     tx = cf.ALICE.transfer(depositAddr, 0)
     assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
+
+
+# Test that we can get the events from the logs from a contract that doesn't exist yet, which will be the real
+# case scenario for the Deposit contract.
+def test_fetch_event_undeployed_Deposit(cf, Deposit):
+
+    depositAddr = getCreate2Addr(
+        cf.vault.address,
+        JUNK_HEX_PAD,
+        Deposit,
+        cleanHexStrPad(NATIVE_ADDR),
+    )
+
+    depositContractObject = get_contract_object("Deposit", depositAddr)
+
+    new_events = list(
+        fetch_events(
+            depositContractObject.events.FetchedNative,
+            address=depositAddr,
+            from_block=0,
+        )
+    )
+    assert len(new_events) == 0
+
+    # Deploy a deposit contract in the depositAddr
+    signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, NATIVE_ADDR]])
+
+    new_events = list(
+        fetch_events(
+            depositContractObject.events.FetchedNative,
+            address=depositAddr,
+            from_block=0,
+        )
+    )
+    assert len(new_events) == 1

@@ -2,7 +2,6 @@ from consts import *
 from shared_tests import *
 from brownie.test import given, strategy
 
-
 # When testing in local network only the derived default addresses are funded
 @given(
     st_addresses=strategy("address[]"),

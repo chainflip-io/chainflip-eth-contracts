@@ -52,10 +52,6 @@ AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
 nonces = {AGG: 0}
 
 
-def agg_null_sig(kmAddr, chainId):
-    return (kmAddr, chainId, 0, 0, nonces[AGG], ZERO_ADDR)
-
-
 # Deployed contract might have already signed some messages, so we need to sync the nonce
 # of the contract with the nonces in consts.py used to signed the messages.
 def syncNonce(keyManager):
