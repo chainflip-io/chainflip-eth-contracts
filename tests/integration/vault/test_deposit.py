@@ -185,6 +185,18 @@ def test_deposit_forceEth_before_deployment(cf, Deposit, ForceNativeTokens):
 
     ForceNativeTokens.deploy(depositAddr, {"from": cf.SAFEKEEPER, "value": TEST_AMNT})
 
+    # Asser that no FetchNative event has been emitted
+    depositContractObject = get_contract_object("Deposit", depositAddr)
+    new_events = list(
+        fetch_events(
+            depositContractObject.events.FetchedNative,
+            address=depositAddr,
+            from_block=0,
+        )
+    )
+    assert len(new_events) == 0
+
+    # Asser that the funds have not been transferred into the Vault
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == TEST_AMNT
     assert web3.eth.get_balance(cf.vault.address) == 0
 
