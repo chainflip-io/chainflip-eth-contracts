@@ -7,14 +7,14 @@ from brownie.test import given, strategy
 @given(
     st_addresses=strategy("address[]"),
 )
-def test_balanceChecker(cf, st_addresses):
+def test_balanceChecker_balances(cf, st_addresses):
     addresses_balances = [
         web3.eth.get_balance(str(address)) for address in st_addresses
     ]
     assert cf.balanceChecker.getNativeBalances(st_addresses) == addresses_balances
 
 
-def test_balanceChecker_gas(cf):
+def test_balanceChecker_balances_gas(cf):
     # More than this returns a "Transaction ran out of gas" in testing. However, in a real network
     # we should be able to query more addresses.
     number_of_addresses = 27000
@@ -29,4 +29,59 @@ def test_balanceChecker_gas(cf):
     )
 
 
-## TODO: Add test for getDeployedStatus and getNativeBalancesAndDeployedStatus
+def test_balanceChecker_deploymentStatus(cf, Deposit):
+
+    deployedStatus = cf.balanceChecker.getDeployedStatus(
+        [cf.flip, cf.vault, cf.keyManager, cf.balanceChecker, cf.ALICE, cf.BOB]
+    )
+    assert deployedStatus == [True, True, True, True, False, False]
+
+    depositAddr = getCreate2Addr(
+        cf.vault.address,
+        JUNK_HEX_PAD,
+        Deposit,
+        cleanHexStrPad(NATIVE_ADDR),
+    )
+    assert cf.balanceChecker.getDeployedStatus([depositAddr]) == [False]
+
+    # Check that deploying a deposit contract in the depositAddr will change the deployed status
+    signed_call_cf(cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, NATIVE_ADDR]])
+    assert cf.balanceChecker.getDeployedStatus([depositAddr]) == [True]
+
+
+@given(
+    st_addresses=strategy("address[]"),
+)
+def test_balanceChecker_balancesAndDeploymentStatus(cf, st_addresses):
+    st_addresses.extend(
+        [
+            cf.flip.address,
+            cf.vault.address,
+            cf.keyManager.address,
+            cf.balanceChecker.address,
+            cf.ALICE,
+            cf.BOB,
+        ]
+    )
+
+    results = []
+    for address in st_addresses:
+        results.append(
+            (web3.eth.get_balance(str(address)), web3.eth.get_code(str(address)) != b"")
+        )
+
+    assert (
+        list(cf.balanceChecker.getNativeBalancesAndDeployedStatus(st_addresses))
+        == results
+    )
+
+
+def test_balanceChecker_balancesAndDeploymentStatus_gas(cf):
+    # More than this returns a "Transaction ran out of gas" in testing. However, in a real network
+    # we should be able to query more addresses.
+    number_of_addresses = 11000
+    list_of_addresses = [
+        "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    ] * number_of_addresses
+    balances = cf.balanceChecker.getNativeBalancesAndDeployedStatus(list_of_addresses)
+    assert len(balances) == number_of_addresses

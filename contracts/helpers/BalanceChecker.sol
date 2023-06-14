@@ -65,14 +65,14 @@ contract BalanceChecker {
     ) external view returns (BalanceAndDeployedStatus[] memory) {
         uint256 length = addresses.length;
 
-        BalanceAndDeployedStatus[] memory balanceAndDeployedStatus = new BalanceAndDeployedStatus[](length * 2);
+        BalanceAndDeployedStatus[] memory balancesAndDeployedStatus = new BalanceAndDeployedStatus[](length);
 
         for (uint i = 0; i < length; ) {
-            balanceAndDeployedStatus[i] = BalanceAndDeployedStatus(addresses[i].balance, addresses[i].code.length > 0);
+            balancesAndDeployedStatus[i] = BalanceAndDeployedStatus(addresses[i].balance, addresses[i].code.length > 0);
             unchecked {
                 ++i;
             }
         }
-        return balanceAndDeployedStatus;
+        return balancesAndDeployedStatus;
     }
 }
