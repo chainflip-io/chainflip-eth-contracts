@@ -69,7 +69,7 @@ def test_addressChecker_balancesAndDeploymentStatus(cf, st_addresses):
             (web3.eth.get_balance(str(address)), web3.eth.get_code(str(address)) != b"")
         )
 
-    assert list(cf.addressChecker.addressesStates(st_addresses)) == results
+    assert list(cf.addressChecker.addressStates(st_addresses)) == results
 
 
 def test_addressChecker_balancesAndDeploymentStatus_gas(cf):
@@ -79,5 +79,5 @@ def test_addressChecker_balancesAndDeploymentStatus_gas(cf):
     list_of_addresses = [
         "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     ] * number_of_addresses
-    balances = cf.addressChecker.addressesStates(list_of_addresses)
+    balances = cf.addressChecker.addressStates(list_of_addresses)
     assert len(balances) == number_of_addresses

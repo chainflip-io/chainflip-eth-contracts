@@ -17,7 +17,7 @@ pragma solidity ^0.8.0;
 contract AddressChecker {
     struct AddressState {
         uint256 balance;
-        bool haveContract;
+        bool hasContract;
     }
 
     /**
@@ -45,15 +45,15 @@ contract AddressChecker {
     function contractsDeployed(address[] calldata addresses) external view returns (bool[] memory) {
         uint256 length = addresses.length;
 
-        bool[] memory haveContractArray = new bool[](length);
+        bool[] memory hasContractArray = new bool[](length);
 
         for (uint i = 0; i < length; ) {
-            haveContractArray[i] = addresses[i].code.length > 0;
+            hasContractArray[i] = addresses[i].code.length > 0;
             unchecked {
                 ++i;
             }
         }
-        return haveContractArray;
+        return hasContractArray;
     }
 
     /**
@@ -61,7 +61,7 @@ contract AddressChecker {
      *          deployed for for an array of addresses.
      * @param addresses  Array of addresses to check.
      */
-    function addressesStates(address[] calldata addresses) external view returns (AddressState[] memory) {
+    function addressStates(address[] calldata addresses) external view returns (AddressState[] memory) {
         uint256 length = addresses.length;
 
         AddressState[] memory addressStateArray = new AddressState[](length);

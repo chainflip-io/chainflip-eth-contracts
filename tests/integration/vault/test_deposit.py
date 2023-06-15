@@ -155,7 +155,7 @@ def test_receive_gas(cf, Deposit, st_gasLimit, st_amount):
 
     # As of now a transfer of >0 ETH will require ~31.602 gas which ends up being 33776 gas
     # required as a gas Limit (most likely due to the 64/63 rule).
-    if st_gasLimit < 33776:
+    if st_gasLimit < 33777:
         # Brownie is unable to catch this with `reverts()`. It caches it in a normal
         # call using {"gas_limit": st_gas_limit} but not here - using a workaround.
         try:
