@@ -15,7 +15,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(
-    a, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract, BalanceChecker
+    a, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract, AddressChecker
 ):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
     return deploy_Chainflip_contracts(
@@ -25,7 +25,7 @@ def cfDeploy(
         StateChainGateway,
         FLIP,
         DeployerContract,
-        BalanceChecker,
+        AddressChecker,
     )
 
 
