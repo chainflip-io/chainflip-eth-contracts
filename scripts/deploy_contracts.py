@@ -13,6 +13,8 @@ from brownie import (
     FLIP,
     MockUSDC,
     DeployerContract,
+    CFReceiverMock,
+    BalanceChecker,
 )
 from deploy import deploy_Chainflip_contracts, deploy_usdc_contract
 
@@ -49,6 +51,7 @@ def main():
         print(f"  Community Key: {os.environ['COMM_KEY']}")
         print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
         print(f"  Genesis Stake: {os.environ['GENESIS_STAKE']}")
+        print(f"  Genesis Stake / E_18: {int(os.environ['GENESIS_STAKE'])/E_18}")
         print(f"  Num Genesis Validators: {os.environ['NUM_GENESIS_VALIDATORS']}")
         print(
             f"\nFLIP tokens will be minted to the Safekeeper account {os.environ['GOV_KEY']}"
@@ -67,29 +70,34 @@ def main():
         StateChainGateway,
         FLIP,
         DeployerContract,
+        BalanceChecker,
         os.environ,
     )
 
-    # Deploy USDC mimic token only on local/devnets networks
+    # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
+    # swaps and liquidity provision, CFReceiverMock to test cross-chain messaging.
     localnet_chainId = 10997
     if chain.id == localnet_chainId:
         cf.mockUSDC = deploy_usdc_contract(DEPLOYER, MockUSDC, cf_accs[0:10])
+        cf.cfReceiverMock = DEPLOYER.deploy(CFReceiverMock, cf.vault)
 
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
         "SC_GATEWAY_ADDRESS": cf.stateChainGateway.address,
         "VAULT_ADDRESS": cf.vault.address,
         "FLIP_ADDRESS": cf.flip.address,
+        "BALANCE_CHECKER_ADDRESS": cf.balanceChecker.address,
     }
 
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
-    print(f"  Deployer: {cf.deployer}")
+    print(f"  Deployer:   {cf.deployer}")
     print(f"  Safekeeper: {cf.safekeeper}")
-    print(f"  GovKey: {cf.gov}")
+    print(f"  GovKey:     {cf.gov}")
     print(f"  Community Key: {cf.communityKey}")
     print(f"  Aggregate Key: {cf.keyManager.getAggregateKey()}")
     print(f"  Genesis Stake: {cf.genesisStake}")
+    print(f"  Genesis Stake / E_18: {cf.genesisStake/E_18}")
     print(f"  Num Genesis Validators: {cf.numGenesisValidators}" + "\n")
 
     print("Deployed contract addresses\n----------------------------")
@@ -98,9 +106,12 @@ def main():
     print(f"  StateChainGateway: {cf.stateChainGateway.address}")
     print(f"  FLIP: {cf.flip.address}")
     print(f"  Vault: {cf.vault.address}")
+    print(f"  BalanceChecker: {cf.balanceChecker.address}")
     if chain.id == localnet_chainId:
         print(f"  USDC: {cf.mockUSDC.address}")
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
+        print(f"  CfReceiver Mock: {cf.mockUSDC.address}")
+        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiverMock.address
 
     print("\n😎😎 Deployment success! 😎😎")
 

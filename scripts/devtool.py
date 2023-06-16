@@ -13,7 +13,6 @@ from brownie import (
     MockUSDC,
     web3,
     chain,
-    Token,
     network,
 )
 from brownie.convert import to_address
@@ -21,9 +20,6 @@ from brownie.network.event import _decode_logs
 
 import inspect
 from datetime import datetime
-
-## TODO: Refactor this to improve this as it creates the airdrop.log file
-# from .only_airdrop import fetch_events
 
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
 SC_GATEWAY_ADDRESS = environ["SC_GATEWAY_ADDRESS"]
@@ -40,11 +36,11 @@ else:
     # Set the priority fee for all transactions
     network.priority_fee("1 gwei")
 
-    if network.show_active() == "hardhat":
+    if network.show_active() == "hardhat" and "SEED" not in environ:
         AUTONOMY_SEED = "test test test test test test test test test test test junk"
         DEPLOYER_ACCOUNT_INDEX = 0
     else:
-        # Live network
+        # Live network or hardhat with a seed provided
         AUTONOMY_SEED = environ["SEED"]
         DEPLOYER_ACCOUNT_INDEX = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
@@ -56,8 +52,6 @@ else:
     for cf_acc in cf_accs:
         walletAddrs[str(seedNumber)] = cf_acc
         seedNumber += 1
-
-    userAddress = accounts[0]
 
 
 # Define a dictionary of available commands and their corresponding functions
@@ -501,48 +495,11 @@ def viewAll():
 # TODO: Add swapNative and swapToken through the Vault.
 
 
-# TODO: Rewrite this so it is useful - we cannot fetch all events in history,
-# caps at 1000 events, and also it's not parsable by the user.
+# TODO: Add event fetching - we cannot fetch all events in history, caps at 10000
+# events. See airdrop.py snapshot function for inspiration and utils.fetch_events.
+
 # def viewAllTokenTransfers(address, initial_block=0):
-#     contractObject = getERC20ContractFromAddress(address)
-
-#     events = list(
-#         fetch_events(
-#             contractObject.events.Transfer,
-#             from_block=initial_block,
-#             to_block=web3.eth.block_number,
-#         )
-#     )
-#     return events
-
-
 # def viewTokenTransfersTo(tokenAddress, recipient):
-#     transferEvents = viewAllTokenTransfers(tokenAddress)
-
-#     # listEvents = []
-#     for event in transferEvents:
-#         if event.args.to == recipient:
-#             print(event)
-#             # listEvents.append(event)
-
-
-# def getERC20ContractFromAddress(address):
-#     abi = ""
-#     if address == FLIP_ADDRESS:
-#         abi = "build/contracts/FLIP.json"
-#     elif address == USDC_ADDRESS:
-#         abi = "build/contracts/MockUSDC.json"
-#     else:
-#         abi = "build/contracts/Token.json"
-
-#     with open(abi) as f:
-#         info_json = json.load(f)
-#     abi = info_json["abi"]
-
-#     # Object to get the event interface from
-#     tokenContractObject = web3.eth.contract(address=address, abi=abi)
-
-#     return tokenContractObject
 
 
 # We can't display it the same way as for a brownie-broadcasted transaction (tx.info()).

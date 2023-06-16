@@ -18,26 +18,36 @@ def check_released(tv, cf, tx, address, totalReleased, recentlyReleased):
     assert tx.events["TokensReleased"][0].values()[1] == recentlyReleased
 
 
+def check_state_staking(stateChainGateway, addressHolder, tv, cf, *args):
+
+    assert tv.addressHolder() == addressHolder
+    assert addressHolder.getStateChainGateway() == stateChainGateway
+    check_state(tv, cf, *args)
+
+
+def check_state_noStaking(cliff, tv, *args):
+
+    assert tv.cliff() == cliff
+    check_state(tv, *args)
+
+
 def check_state(
     tv,
     cf,
     beneficiary,
     revoker,
     revocable,
-    cliff,
     end,
-    canStake,
-    stateChainGateway,
+    transferableBeneficiary,
     revoked,
 ):
-    assert tv.beneficiary() == beneficiary
-    assert tv.revoker() == revoker
-    tv_revocable = tv.revoker != ZERO_ADDR
+    assert tv.getBeneficiary() == beneficiary
+    assert tv.getRevoker() == revoker
+    tv_revocable = tv.getRevoker() != ZERO_ADDR
     assert tv_revocable == revocable
-    assert tv.cliff() == cliff
     assert tv.end() == end
-    assert tv.canStake() == canStake
-    assert tv.stateChainGateway() == stateChainGateway
+    assert tv.transferableBeneficiary() == transferableBeneficiary
+
     assert tv.revoked(cf.flip) == revoked
 
 

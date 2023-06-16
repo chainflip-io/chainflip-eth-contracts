@@ -1,10 +1,12 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "../../Vault.sol";
 import "../../FLIP.sol";
 import "../../KeyManager.sol";
 import "../../StateChainGateway.sol";
-import "../../deployers/DeployerContract.sol";
+import "../../utils/DeployerContract.sol";
 
 import "./KeyManagerEchidna.sol";
 import "./StateChainGatewayEchidna.sol";

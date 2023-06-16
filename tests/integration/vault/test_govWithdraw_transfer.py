@@ -39,7 +39,8 @@ def test_govWithdraw_transfer(cf, token, token2, Deposit, st_sender):
     )
 
     # Vault can still fetch amounts even after govWithdrawal - pending/old swaps
-    fetchNative(cf, cf.vault, depositAddr)
+    fetchToken(cf, cf.vault, depositAddr, token)
+    cf.GOVERNOR.transfer(depositAddr, TEST_AMNT)
     # GovWithdraw amounts recently fetched
     chain.sleep(AGG_KEY_EMERGENCY_TIMEOUT)
     iniEthBalGov = cf.GOVERNOR.balance()
@@ -56,7 +57,9 @@ def test_govWithdraw_transfer(cf, token, token2, Deposit, st_sender):
 
     cf.vault.enableCommunityGuard({"from": cf.COMMUNITY_KEY})
 
-    fetchNative(cf, cf.vault, depositAddr)
+    fetchToken(cf, cf.vault, depositAddr, token)
+    cf.GOVERNOR.transfer(depositAddr, TEST_AMNT)
+
     # Governance cannot withdraw again since community Guard is enabled again
     with reverts(REV_MSG_GOV_ENABLED_GUARD):
         cf.vault.govWithdraw(tokenList, {"from": cf.GOVERNOR})

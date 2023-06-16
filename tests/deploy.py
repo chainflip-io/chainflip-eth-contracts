@@ -5,7 +5,14 @@ from brownie import network, accounts
 
 
 def deploy_Chainflip_contracts(
-    deployer, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract, *args
+    deployer,
+    KeyManager,
+    Vault,
+    StateChainGateway,
+    FLIP,
+    DeployerContract,
+    AddressChecker,
+    *args,
 ):
 
     # Set the priority fee for all transactions
@@ -74,6 +81,9 @@ def deploy_Chainflip_contracts(
         cf.genesisStake,
         {"from": deployer, "required_confs": required_confs},
     )
+    cf.addressChecker = AddressChecker.deploy(
+        {"from": deployer, "required_confs": required_confs}
+    )
 
     cf.vault = Vault.at(cf.deployerContract.vault())
     cf.flip = FLIP.at(cf.deployerContract.flip())
@@ -141,6 +151,19 @@ def deploy_new_keyManager(deployer, KeyManager, aggKey, govKey, communityKey):
     )
 
     return keyManager
+
+
+def deploy_new_multicall(deployer, Multicall, vault_address):
+    # Set the priority fee for all transactions
+    network.priority_fee("1 gwei")
+
+    # Deploy a new Multicall
+    multicall = deployer.deploy(
+        Multicall,
+        vault_address,
+    )
+
+    return multicall
 
 
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.

@@ -2,7 +2,7 @@ name: Stateless Tests
 on: push
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 jobs:
   lint:
@@ -32,9 +32,6 @@ jobs:
       - run: npm install --global yarn
       - run: yarn
       - run: poetry install
-
-      - run: poetry run brownie compile
-      - run: cat ./build/contracts/Deposit.json | jq .bytecode
 
       - run: npx hardhat node &
       - run: sleep 2

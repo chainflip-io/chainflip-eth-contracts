@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 /**
@@ -12,7 +14,7 @@ interface ICFReceiver {
      * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
      * @param srcAddress    Bytes containing the source address on the source chain.
      * @param message       The message sent on the source chain. This is a general purpose message.
-     * @param token         Address of the token received. _NATIVE_ADDR if native.
+     * @param token         Address of the token received. _NATIVE_ADDR if it's native tokens.
      * @param amount        Amount of tokens received. This will match msg.value for native tokens.
      */
     function cfReceive(

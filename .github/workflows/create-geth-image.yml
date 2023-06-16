@@ -11,6 +11,15 @@ on:
         options:
           - "1"
           - "3"
+      chainflip_backend_ref:
+        description: The branch, tag or commit of chainflip-backend to use
+        required: true
+        default: "main"
+      docker_image_tag_suffix:
+        description: A suffix to append to the image tag
+        required: false
+        default: ""
+
 jobs:
   build:
     runs-on: [self-hosted, linux, x64, ephemeral]
@@ -53,7 +62,7 @@ jobs:
   create:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
-      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
+      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
     needs:
       - build
     services:
@@ -72,12 +81,13 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
-      - name: Checkout
+      - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
           repository: chainflip-io/chainflip-backend
           path: chainflip-backend
+          ref: ${{ inputs.chainflip_backend_ref }}
 
       - name: Fetch agg_key
         run: |
@@ -106,8 +116,10 @@ jobs:
       - run: yarn
       - run: poetry install
 
-      - run: poetry run brownie compile
-      - run: cat ./build/contracts/Deposit.json | jq .bytecode
+      # Ensure that the Deposit's bytecode hasn't changed
+      - run: npx hardhat node --port 10997 &
+      - run: poetry run brownie networks add Ethereum hardhat-modif host=http://localhost:10997 chainid=31337
+      - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat-modif
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
@@ -141,7 +153,7 @@ jobs:
           echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Save agg key to file
-        run: echo ${{ inputs.agg_key }} > agg_key
+        run: echo ${{ env.AGG_KEY }} > agg_key
 
       - name: Save artifacts
         uses: actions/upload-artifact@v3

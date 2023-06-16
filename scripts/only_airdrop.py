@@ -6,19 +6,14 @@ import logging
 import os.path
 
 sys.path.append(os.path.abspath("tests"))
-from consts import ZERO_ADDR, INIT_SUPPLY, E_18
+from consts import E_18
+from utils import fetch_events
+from .airdrop import getContractFromAddress, printAndLog
 from brownie import (
-    chain,
     accounts,
-    KeyManager,
-    Vault,
-    StateChainGateway,
     FLIP,
     web3,
 )
-from deploy import deploy_Chainflip_contracts
-from web3._utils.events import get_event_data
-from web3._utils.filters import construct_event_filter_params
 
 
 logname = "only_airdrop.log"
@@ -102,7 +97,7 @@ def airdrop(airdropper, receiver_csv, newFlip):
 
     receiverAccounts = readCSV(receiver_csv)
 
-    newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     listReceived, listAmounts = getTXsFromTransferEvents(
         airdropper, newFlipContractObject
@@ -163,7 +158,7 @@ def verifyAirdrop(airdropper, receiver_csv, newFlip):
 
     printAndLog("Verifying airdrop")
 
-    newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
+    _, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     listReceived, listAmounts = getTXsFromTransferEvents(
         airdropper, newFlipContractObject
@@ -178,28 +173,6 @@ def verifyAirdrop(airdropper, receiver_csv, newFlip):
         assert listAmounts[index] == amountToSend
 
     printAndLog("😎  Airdrop verified succesfully! 😎")
-
-
-# ---------------------------- Utility functions ---------------------------- #
-
-
-def printAndLog(text):
-    print(text)
-    logging.info(text)
-
-
-def getContractFromAddress(flip_address):
-    with open("build/contracts/FLIP.json") as f:
-        info_json = json.load(f)
-    abi = info_json["abi"]
-
-    # Object to get the event interface from
-    flipContractObject = web3.eth.contract(address=flip_address, abi=abi)
-
-    # Flip Contract to make the calls to
-    flipContract = FLIP.at(flip_address)
-
-    return flipContract, flipContractObject
 
 
 # ---------------------------------------
@@ -228,58 +201,6 @@ def getTXsFromTransferEvents(airdropper, flipContractObject):
             listAmounts.append(amount)
 
     return (listReceivers, listAmounts)
-
-
-def fetch_events(
-    event,
-    argument_filters=None,
-    from_block=None,
-    to_block="latest",
-    address=None,
-    topics=None,
-):
-    """Get events using eth_getLogs API.
-
-    This is a stateless method, as opposite to createFilter and works with
-    stateless nodes like QuikNode and Infura.
-
-    :param event: Event instance from your contract.events
-    :param argument_filters:
-    :param from_block: Start block. Use 0 for all history/
-    :param to_block: Fetch events until this contract
-    :param address:
-    :param topics:
-    :return:
-    """
-
-    if from_block is None:
-        raise TypeError("Missing mandatory keyword argument to getLogs: from_Block")
-
-    abi = event._get_event_abi()
-    abi_codec = event.web3.codec
-
-    # Set up any indexed event filters if needed
-    argument_filters = dict()
-    _filters = dict(**argument_filters)
-
-    data_filter_set, event_filter_params = construct_event_filter_params(
-        abi,
-        abi_codec,
-        contract_address=event.address,
-        argument_filters=_filters,
-        fromBlock=from_block,
-        toBlock=to_block,
-        address=address,
-        topics=topics,
-    )
-
-    # Call node over JSON-RPC API
-    logs = event.web3.eth.get_logs(event_filter_params)
-
-    # Convert raw binary event data to easily manipulable Python objects
-    for entry in logs:
-        data = get_event_data(abi_codec, abi, entry)
-        yield data
 
 
 def waitForLogTXsToComplete(parsedLog):

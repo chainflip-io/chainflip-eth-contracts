@@ -23,6 +23,7 @@ INIT_USDC_ACCOUNT = int(10**6 * 10**6)
 TEST_AMNT_USDC = int(10**6)
 
 # Time in seconds
+MINUTE = 60
 HOUR = 60 * 60
 DAY = HOUR * 24
 MONTH = 30 * DAY
@@ -49,10 +50,6 @@ AGG_KEY_TIMEOUT = 2 * 24 * 60 * 60
 # This wouldn't be the case if a single uint was used to track the current nonce for
 # each agg and gov key tho
 nonces = {AGG: 0}
-
-
-def agg_null_sig(kmAddr, chainId):
-    return (kmAddr, chainId, 0, 0, nonces[AGG], ZERO_ADDR)
 
 
 # Deployed contract might have already signed some messages, so we need to sync the nonce
@@ -125,6 +122,7 @@ REV_MSG_NOT_FLIP = "Gateway: wrong FLIP ref"
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 3 * 24 * 60 * 60
 REV_MSG_VAULT_DELAY = "Vault: not enough time"
+REV_MSG_INSUFFICIENT_GAS = "Vault: insufficient gas"
 
 # -----GovernanceCommunityGuarded-----
 REV_MSG_GOV_ENABLED_GUARD = "Governance: community guard enabled"
@@ -135,23 +133,17 @@ REV_MSG_GOV_SUSPENDED = "Governance: suspended"
 REV_MSG_GOV_NOT_SUSPENDED = "Governance: not suspended"
 
 # -----Vesting-----
-STAKABLE = True
-NON_STAKABLE = False
+BENEF_TRANSF = True
+BENEF_NON_TRANSF = False
 REV_MSG_NO_TOKENS = "Vesting: no tokens are due"
 REV_MSG_NOT_REVOKER = "Vesting: not the revoker"
-REV_MSG_ALREADY_REVOKED = "Vesting: token already revoked"
-REV_MSG_CANNOT_STAKE = "Vesting: cannot stake"
 REV_MSG_VESTING_EXPIRED = "Vesting: vesting expired"
-REV_MSG_CANNOT_RETRIEVE = "Vesting: not retrievable"
-REV_MSG_FUNDS_REVOKED = "Vesting: staked funds revoked"
-REV_MSG_NOT_REVOKED = "Vesting: token not revoked"
 REV_MSG_NOT_BENEFICIARY = "Vesting: not the beneficiary"
-REV_MSG_INVALID_CLIFF = "Vesting: invalid staking contract cliff"
-REV_MSG_INVALID_BENEFICIARY = "Vesting: beneficiary_ is the zero address"
+REV_MSG_BENEF_NOT_TRANSF = "Vesting: beneficiary not transferrable"
 REV_MSG_CLIFF_AFTER_END = "Vesting: cliff_ after end_"
 REV_MSG_INVALID_FINAL_TIME = "Vesting: final time is before current time"
-REV_MSG_INVALID_STAKEMANAGER = "Vesting: stateChainGateway_ is the zero address"
-REV_MSG_FLIP_REVOKED = "Vesting: FLIP revoked"
+REV_MSG_TOKEN_REVOKED = "Vesting: token revoked"
+REV_MSG_SCGREF_REV_GOV = "AddrHolder: not the governor"
 
 
 # -----CFReceiver-----

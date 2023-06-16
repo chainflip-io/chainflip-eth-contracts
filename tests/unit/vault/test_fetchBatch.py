@@ -20,7 +20,10 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
 
     # Deploy initial Deposit contracts
     deployFetchParams = [craftDeployFetchParamsArray(st_swapIDs, tokens)]
-    signed_call_cf(cf, cf.vault.deployAndFetchBatch, *deployFetchParams)
+    tx = signed_call_cf(cf, cf.vault.deployAndFetchBatch, *deployFetchParams)
+
+    if tokens.count(NATIVE_ADDR) > 0:
+        assert len(tx.events["FetchedNative"]) == tokens.count(NATIVE_ADDR)
 
     for am, id, tok in zip(st_amounts, st_swapIDs, tokens):
         # Deploy a deposit contract, get the address to deposit to and deposit
@@ -36,14 +39,18 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
             )
             cf.SAFEKEEPER.transfer(depositAddr, am)
             nativeTotal += am
+            # Auto fetch
+            web3.eth.get_balance(depositAddr) == 0
         depositAddrs.append(depositAddr)
 
     assert token.balanceOf(cf.vault) == 0
-    assert web3.eth.get_balance(cf.vault.address) == 0
+    assert web3.eth.get_balance(cf.vault.address) == nativeTotal
 
-    # Fetch the deposit
+    # Fetch the deposit - Native balances should automatically have been fetched
     fetchBatchParamsArray = [craftFetchParamsArray(depositAddrs, tokens)]
-    signed_call_cf(cf, cf.vault.fetchBatch, *fetchBatchParamsArray)
+    tx = signed_call_cf(cf, cf.vault.fetchBatch, *fetchBatchParamsArray)
+
+    assert "FetchedNative" not in tx.events
 
     assert token.balanceOf(cf.vault.address) == tokenTotal
     assert web3.eth.get_balance(cf.vault.address) == nativeTotal

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 interface IMulticall {
@@ -19,5 +21,5 @@ interface IMulticall {
     error AlreadyRunning();
     error CallFailed(uint256 callPosition, bytes reason);
 
-    function run(Call[] calldata calls, address token, uint256 amount) external payable;
+    function run(Call[] calldata calls, address tokenIn, uint256 amountIn) external payable;
 }

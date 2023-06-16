@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
-import "./interfaces/IERC20Lite.sol";
 import "./interfaces/ICFReceiver.sol";
 import "./abstract/Shared.sol";
 import "./Deposit.sol";
@@ -20,7 +21,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
-    uint256 private constant _GAS_TO_FORWARD = 3500;
+    uint256 private constant _GAS_TO_FORWARD = 3_500;
+    uint256 private constant _FINALIZE_GAS_BUFFER = 30_000;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -76,7 +78,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          deposits , then it performs all transfers specified with the rest
      *          of the inputs, the same as transferBatch (where all inputs are again required
      *          to be of equal length - however the lengths of the fetch inputs do not have to
-     *          be equal to lengths of the transfer inputs). Fetches/transfers of native are
+     *          be equal to lengths of the transfer inputs). Fetches/transfers of native tokens are
      *          indicated with 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE as the token address.
      * @dev     FetchAndDeploy is executed first to handle the edge case , which probably shouldn't
      *          happen anyway, where a deploy and a fetch for the same address are in the same batch.
@@ -110,7 +112,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers native or a token from this vault to a recipient
+     * @notice  Transfers native tokens or a ERC20 token from this vault to a recipient
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param transferParams       The transfer parameters
@@ -131,7 +133,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers native or tokens from this vault to recipients.
+     * @notice  Transfers native tokens or ERC20 tokens from this vault to recipients.
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param transferParamsArray The array of transfer parameters.
@@ -149,7 +151,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     }
 
     /**
-     * @notice  Transfers native or tokens from this vault to recipients.
+     * @notice  Transfers native tokens or ERC20 tokens from this vault to recipients.
      * @param transferParamsArray The array of transfer parameters.
      */
     function _transferBatch(TransferParams[] calldata transferParamsArray) private {
@@ -218,7 +220,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Deploy deposit contracts
         uint256 length = deployFetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            new Deposit{salt: deployFetchParamsArray[i].swapID}(IERC20Lite(deployFetchParamsArray[i].token));
+            new Deposit{salt: deployFetchParamsArray[i].swapID}(deployFetchParamsArray[i].token);
             unchecked {
                 ++i;
             }
@@ -251,7 +253,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
         uint256 length = fetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            Deposit(fetchParamsArray[i].fetchContract).fetch(IERC20Lite(fetchParamsArray[i].token));
+            Deposit(fetchParamsArray[i].fetchContract).fetch(fetchParamsArray[i].token);
             unchecked {
                 ++i;
             }
@@ -423,8 +425,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /**
-     * @notice  Transfers native or a token from this vault to a recipient and makes a function call
-     *          completing a cross-chain swap and call. The ICFReceiver interface is expected on
+     * @notice  Transfers native tokens or an ERC20 token from this vault to a recipient and makes a function
+     *          call completing a cross-chain swap and call. The ICFReceiver interface is expected on
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap.
      * @param sigData    Struct containing the signature data over the message
@@ -537,6 +539,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          a limited amount of funds instead of executing arbitrary calldata here.
      * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
      *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
+     *          The _GAS_BUFFER is a conservative estimation of the gas required to finalize the call.
      * @param sigData         Struct containing the signature data over the message
      *                        to verify, signed by the aggregate key.
      * @param transferParams  The transfer parameters inluding the token and amount to be transferred
@@ -570,25 +573,19 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             }
         }
 
+        // Ensure that the amount of gas supplied to the call to the Multicall contract is at least the gas
+        // limit specified. We can do this by enforcing that we still have gasMulticall + gas buffer available.
+        // The gas buffer is to ensure there is enough gas to finalize the call, including a safety margin.
+        // The 63/64 rule specified in EIP-150 needs to be taken into account.
+        require(gasleft() >= ((gasMulticall + _FINALIZE_GAS_BUFFER) * 64) / 63, "Vault: insufficient gas");
+
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory reason) = transferParams.recipient.call{gas: gasMulticall, value: valueToSend}(
-            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
-        );
+        (bool success, bytes memory reason) = transferParams.recipient.call{
+            gas: gasleft() - _FINALIZE_GAS_BUFFER,
+            value: valueToSend
+        }(abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount));
 
         if (!success) {
-            // Validate that the relayer has sent enough gas for the call.
-            // See https://ronan.eth.limo/blog/ethereum-gas-dangers/
-            if (gasleft() <= gasMulticall / 63) {
-                // Emulate an out of gas exception by explicitly trigger invalid opcode to consume all gas and
-                // bubble-up the effects, since neither revert or assert consume all gas since Solidity 0.8.0.
-
-                // solhint-disable no-inline-assembly
-                /// @solidity memory-safe-assembly
-                assembly {
-                    invalid()
-                }
-                // solhint-enable no-inline-assembly
-            }
             if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
                 IERC20(transferParams.token).approve(transferParams.recipient, 0);
             }
@@ -617,7 +614,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         // Could use msg.sender or getGovernor() but hardcoding the get call just for extra safety
         address payable recipient = payable(getKeyManager().getGovernanceKey());
 
-        // Transfer all native and ERC20 Tokens
+        // Transfer all native tokens and ERC20 Tokens
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokens[i] == _NATIVE_ADDR) {
                 _transfer(_NATIVE_ADDR, recipient, address(this).balance);
@@ -648,6 +645,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving native when Deposit.fetch() is called.
+    /// @dev For receiving native tokens from the Deposit contracts
     receive() external payable {}
 }
