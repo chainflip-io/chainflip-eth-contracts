@@ -13,7 +13,7 @@ from brownie import (
     FLIP,
     DeployerContract,
     Deposit,
-    BalanceChecker,
+    AddressChecker,
     chain,
     network,
 )
@@ -39,7 +39,7 @@ cf = deploy_Chainflip_contracts(
     StateChainGateway,
     FLIP,
     DeployerContract,
-    BalanceChecker,
+    AddressChecker,
 )
 
 cf.flip.transfer(ALICE, MAX_TEST_FUND, {"from": cf.safekeeper})
