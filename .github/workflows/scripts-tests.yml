@@ -8,7 +8,7 @@ jobs:
   lint:
     uses: ./.github/workflows/.lint.yml
 
-  stateful-tests:
+  scripts-tests:
     needs: lint
     runs-on: [self-hosted, linux, x64, ephemeral]
     timeout-minutes: 3600
