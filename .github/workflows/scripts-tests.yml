@@ -47,6 +47,7 @@ jobs:
         env:
           SEED: test test test test test test test test test test test junk
           NUM_GENESIS_VALIDATORS: 3
+          AGG_KEY: "0xDEADBEEF"
           GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
           COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
           GENESIS_STAKE: "1000000000000000000000"
