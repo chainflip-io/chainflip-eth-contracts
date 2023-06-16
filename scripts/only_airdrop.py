@@ -8,7 +8,7 @@ import os.path
 sys.path.append(os.path.abspath("tests"))
 from consts import E_18
 from utils import fetch_events
-from .airdrop import getFLIPContractFromAddress, printAndLog
+from .airdrop import getContractFromAddress, printAndLog
 from brownie import (
     accounts,
     FLIP,
@@ -97,7 +97,7 @@ def airdrop(airdropper, receiver_csv, newFlip):
 
     receiverAccounts = readCSV(receiver_csv)
 
-    newFlipContract, newFlipContractObject = getFLIPContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     listReceived, listAmounts = getTXsFromTransferEvents(
         airdropper, newFlipContractObject
@@ -158,7 +158,7 @@ def verifyAirdrop(airdropper, receiver_csv, newFlip):
 
     printAndLog("Verifying airdrop")
 
-    _, newFlipContractObject = getFLIPContractFromAddress(newFlip)
+    _, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     listReceived, listAmounts = getTXsFromTransferEvents(
         airdropper, newFlipContractObject

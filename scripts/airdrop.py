@@ -163,7 +163,9 @@ def snapshot(
     goerliOldFlip,
     filename,
 ):
-    (oldFlipContract, oldFlipContractObject) = getFLIPContractFromAddress(goerliOldFlip)
+    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(
+        "FLIP", goerliOldFlip
+    )
     # It will throw an error if there are more than 10.000 events (free Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
 
@@ -328,7 +330,7 @@ def airdrop(
         oldFlipDeployerBalance,
     ) = readCSVSnapshotChecksum(snapshot_csv)
 
-    newFlipContract, newFlipContractObject = getFLIPContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     # Craft list of addresses that should be skipped when airdropping. Skip following receivers: airdropper,
     # newStateChainGateway, oldStateChainGateway and oldFlipDeployer. Also skip receivers that have already received
@@ -499,7 +501,7 @@ def verifyAirdrop(
 
     printAndLog("Verifying airdrop")
 
-    newFlipContract, newFlipContractObject = getFLIPContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     totalSupplyNewFlip = newFlipContract.totalSupply(
         block_identifier=web3.eth.block_number
@@ -579,14 +581,15 @@ def printAndLog(text):
     logging.info(text)
 
 
-def getFLIPContractFromAddress(flip_address):
+# contract_name e.g. "FLIP"
+def getContractFromAddress(contract_name, contract_address):
     # Object to get the event interface from
-    flipContractObject = get_contract_object("FLIP", flip_address)
+    contractObject = get_contract_object(contract_name, contract_address)
 
-    # Flip Contract to make the calls to
-    flipContract = FLIP.at(flip_address)
+    # Contract to make the calls to
+    contract = FLIP.at(contract_address)
 
-    return flipContract, flipContractObject
+    return contract, contractObject
 
 
 # ---------------------------------------
