@@ -1,0 +1,58 @@
+name: Run scripts
+on: push
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+jobs:
+  lint:
+    uses: ./.github/workflows/.lint.yml
+
+  scripts-tests:
+    needs: lint
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    timeout-minutes: 3600
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Python virtualenv
+        run: pip install virtualenv
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - run: npm install --global ganache-cli
+      - run: npm install --global yarn
+      - run: yarn
+      - run: poetry install
+
+      - run: npx hardhat node &
+      - run: sleep 2
+
+      # Just checking that the scripts run. More elaborated testing can be done later on.
+      - name: Deploy contracts
+        env:
+          SEED: test test test test test test test test test test test junk
+          NUM_GENESIS_VALIDATORS: 3
+          GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+          COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+          GENESIS_STAKE: "1000000000000000000000"
+          DEPLOYER_ACCOUNT_INDEX: "0"
+        run: poetry run brownie run deploy_contracts --network hardhat
+
+      - name: Deploy individual contracts
+        env:
+          SEED: test test test test test test test test test test test junk
+          KEY_MANAGER_ADDRESS: "0x856e4424f806D16E8CBC702B3c0F2ede5468eae5"
+          FLIP_ADDRESS: "0xddEA3d67503164326F90F53CFD1705b90Ed1312D"
+          VAULT_ADDRESS: "0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3"
+        run: poetry run brownie run deploy_new_contract deploy_vault --network hardhat
+        run: poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat
+        run: poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat
+        run: poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
