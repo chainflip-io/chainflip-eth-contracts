@@ -25,8 +25,11 @@ oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 oldFlip_deployment_block = 7909671 - 10
 
 # NOTE: These addresses are for a fresh hardhat network. To update.
-newFlip = "0x9ada116ec46a6a0501bCFFC3E4C027a640a8536e"
-newStateChainGateway = "0x0e30aFE29222c093aac54E77AD97d49FFA51cc54"
+newFlip = "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
+newStateChainGateway = "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883"
+# Real goerli deployed flip
+# newFlip = "0x9ada116ec46a6a0501bCFFC3E4C027a640a8536e"
+# newStateChainGateway = "0x0e30aFE29222c093aac54E77AD97d49FFA51cc54"
 # -------------------------------------------------------------------- #
 
 
@@ -38,7 +41,9 @@ airdropSuccessMessage = "😎  Airdrop transactions sent and confirmed! 😎"
 multiSendDeploySuccessMessage = "MultiSend deployed at: "
 
 # Amount of transfers per transaction so we don't reach gas limit
-transfer_batch_size = 100
+# NOTE: When forking with hardhat, doing more than 100 transfers per transaction times out.
+# However in a real network we can easily do 200, gas limit is the only
+transfer_batch_size = 200
 
 # Set the priority fee for all transactions
 network.priority_fee("1 gwei")
@@ -50,9 +55,9 @@ def main():
     DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
-    # airdropper = DEPLOYER
+    airdropper = DEPLOYER
     # Fake airdropper for testing in hardhat
-    airdropper = "0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF"
+    # airdropper = "0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF"
 
     # If using Infura it will break if snapshot_blocknumber < latestblock-100 due to free-plan limitation
     # Use alchemy when running the old flip snapshot function
@@ -242,33 +247,6 @@ def snapshot(
     holder_list = list(sorted_dict.keys())
     holder_balances = list(sorted_dict.values())
 
-    # NOTE: Not using this as the balanceOf call is too slow
-    # print("Processing events")
-    # print("Total events: " + str(len(events)))
-    # # Get list of unique addresses that have recieved FLIP
-    # receiver_list = []
-    # for event in events:
-    #     toAddress = event.args.to
-    #     if toAddress not in receiver_list:
-    #         receiver_list.append(toAddress)
-    # holder_balances = []
-    # totalBalance = 0
-
-    # # Get balances of receivers and check if they are holders. Balances need to be obtained at
-    # # the same snapshot block number
-    # print("Getting balances")
-    # print("Number of unique receivers: " + str(len(receiver_list)))
-    # holder_list = []
-    # for index, holder in enumerate(receiver_list):
-    #     print("Processing holder ",index)
-    #     holderBalance = oldFlipContract.balanceOf.call(
-    #         holder, block_identifier=snapshot_blocknumber
-    #     )
-    #     if holderBalance > 0:
-    #         totalBalance += holderBalance
-    #         holder_balances.append(holderBalance)
-    #         holder_list.append(holder)
-
     # Health check
     assert len(holder_list) == len(holder_balances)
     totalSupply = oldFlipContract.totalSupply(block_identifier=snapshot_blocknumber)
@@ -456,7 +434,7 @@ def airdrop(
 
         # NOTE: This might not work when running a local hardhat fork. There is some error that
         # the nonce is too low. It's probably a HH bug, it's not a problem in a fresh hardhat
-        # network nor in a live network => Seems like the problem is having big batches (200 transfers)
+        # network nor in a live network. Doing batches of more than 100 causes timeouts on forks.
         tx = multiSend.multiSendToken(
             newFlipContract,
             transfer_batches,
@@ -529,17 +507,25 @@ def verifyAirdrop(
     del oldFlipHolderAccounts[1]
     del oldFlipholderBalances[1]
 
-    # New airdropper should get the old airdropper balance, assuming it had a balance
+    # New airdropper should get the old airdropper balance, assuming it had a balance. Delete oldFlipDeployer from the list.
     if oldFlipDeployer in oldFlipHolderAccounts:
-        index = oldFlipDeployer.index(oldFlipDeployer)
-        # New airdropper should get the old airdropper balance
-        assert newFlipContract.balanceOf(airdropper) == int(oldFlipholderBalances[index])
-        assert newFlipContract.balanceOf(airdropper) == oldFlipDeployerBalance
-
-    # Delete oldFlip deployer, as we are not airdropping it.
-    if oldFlipDeployer in oldFlipHolderAccounts:
-        index = oldFlipDeployer.index(airdropper)
+        index = oldFlipHolderAccounts.index(oldFlipDeployer)
         assert index == 0
+        # New airdropper should get the oldFlipAirdropper balance plus the oldFlipBalance of the airdropper if any
+        if airdropper in oldFlipHolderAccounts and airdropper != oldFlipDeployer:
+            index_airdropper = oldFlipHolderAccounts.index(airdropper)
+            amount = int(oldFlipholderBalances[index_airdropper])
+        else:
+            amount = 0
+        assert (
+            int(newFlipContract.balanceOf(str(airdropper)))
+            == int(oldFlipholderBalances[index]) + amount
+        )
+        assert (
+            int(newFlipContract.balanceOf(airdropper))
+            == oldFlipDeployerBalance + amount
+        )
+
         del oldFlipHolderAccounts[index]
         del oldFlipholderBalances[index]
 
