@@ -21,7 +21,7 @@ oldFlipDeployer = "0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF"
 goerliOldFlip = "0x8e71CEe1679bceFE1D426C7f23EAdE9d68e62650"
 oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 # Adding a buffer of 10 blocks. Setting this instead of zero
-# as no event swill have been emitted before the deployment
+# as no event will have been emitted before the deployment
 oldFlip_deployment_block = 7909671 - 10
 
 # NOTE: These addresses are for a fresh hardhat network. To update.
@@ -42,7 +42,7 @@ multiSendDeploySuccessMessage = "MultiSend deployed at: "
 
 # Amount of transfers per transaction so we don't reach gas limit
 # NOTE: When forking with hardhat, doing more than 100 transfers per transaction times out.
-# However in a real network we can easily do 200, gas limit is the only
+# However in a real network we can easily do 200, gas limit is the only limitation.
 transfer_batch_size = 200
 
 # Set the priority fee for all transactions
