@@ -14,7 +14,7 @@ from brownie import (
     MockUSDC,
     DeployerContract,
     CFReceiverMock,
-    BalanceChecker,
+    AddressChecker,
 )
 from deploy import deploy_Chainflip_contracts, deploy_usdc_contract
 
@@ -37,9 +37,9 @@ def main():
         "GENESIS_STAKE",
         "NUM_GENESIS_VALIDATORS",
     ]
-    for env_var_name in env_var_names:
-        if env_var_name not in os.environ:
-            raise Exception(f"Environment variable {env_var_name} is not set")
+    # for env_var_name in env_var_names:
+    #     if env_var_name not in os.environ:
+    #         raise Exception(f"Environment variable {env_var_name} is not set")
 
     # For live deployment, add a confirmation step to allow the user to verify the parameters.
     if chain.id == 1:
@@ -70,7 +70,7 @@ def main():
         StateChainGateway,
         FLIP,
         DeployerContract,
-        BalanceChecker,
+        AddressChecker,
         os.environ,
     )
 
@@ -86,7 +86,7 @@ def main():
         "SC_GATEWAY_ADDRESS": cf.stateChainGateway.address,
         "VAULT_ADDRESS": cf.vault.address,
         "FLIP_ADDRESS": cf.flip.address,
-        "BALANCE_CHECKER_ADDRESS": cf.balanceChecker.address,
+        "ADDRESS_CHECKER_ADDRESS": cf.addressChecker.address,
     }
 
     print("Deployed with parameters\n----------------------------")
@@ -106,7 +106,7 @@ def main():
     print(f"  StateChainGateway: {cf.stateChainGateway.address}")
     print(f"  FLIP: {cf.flip.address}")
     print(f"  Vault: {cf.vault.address}")
-    print(f"  BalanceChecker: {cf.balanceChecker.address}")
+    print(f"  AddressChecker: {cf.addressChecker.address}")
     if chain.id == localnet_chainId:
         print(f"  USDC: {cf.mockUSDC.address}")
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
