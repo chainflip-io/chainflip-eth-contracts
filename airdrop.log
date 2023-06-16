@@ -1,0 +1,274 @@
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Old FLIP snapshot not taken previously. Snapshot Blocknumber set to 9187777
+INFO:root:Address of token set to 0x8e71CEe1679bceFE1D426C7f23EAdE9d68e62650
+INFO:root:Old Flip total supply: 86168172483153966078322053. Should match Etherscan for block number: 9187777
+INFO:root:Number of Old Flip holders: 5669. Should match Etherscan for block number: 9187777
+INFO:root:Writing data into csv file
+INFO:root:Snapshot taken and succesfully stored in snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend deployed at: 0x1E330Add546c0B863c7386e03E61dc661170c704
+INFO:root:Airdropper account: 0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF
+INFO:root:Starting airdrop process
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:Getting all transfer events
+INFO:root:Doing transfer from airdropper to StateChainGateway
+INFO:root:Airdrop transaction Tx Hash:0x30e86727f1f6c7100710cb30a8eb751380e3d7e67ef6a2f05e93d6c6cb69efd6
+INFO:root:Final balance of ScGateway div18:  11782955.070503239
+INFO:root:ScGateway supply difference div18: 3831827.5168460337
+INFO:root:Airdrop to ScGateway sent and confirmed!
+INFO:root:Starting airdrop of new FLIP
+INFO:root:Skipping receiver:0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF
+INFO:root:Skipping receiver:0xff99F65D0042393079442f68F47C7AE984C3F930
+INFO:root:Airdrop transaction Tx Hash:0xce828a5e90806b6eb594a3adfb9e4e0b8ce720d5582449df17bfa02e2697f574
+INFO:root:Airdrop transaction Tx Hash:0x8b81e15957b627ccbd05ea26a93f2e2af6e5158b44e69efbbdeeaf3451d04be5
+INFO:root:Airdrop transaction Tx Hash:0x846caf15d032187a2e418992843404c226ba03766dd8f9aaba16e6df13d36e4d
+INFO:root:Airdrop transaction Tx Hash:0xe2a0f0c13e47077c65315212170081b3d7ae644442e042038760a711ea424d93
+INFO:root:Airdrop transaction Tx Hash:0xecf7b4a7cefd4f09f858c5343b08b67169d21db8a340b345a23b08f48ff2610d
+INFO:root:Airdrop transaction Tx Hash:0x52295e8875458a5678b2680a36a1af6ac0767c76bd92d32df7f9159f573f3349
+INFO:root:Airdrop transaction Tx Hash:0x521db82171a931d8d002c7103cf010c0bcc6caf43bae17650a1d6dc6d4ba15da
+INFO:root:Airdrop transaction Tx Hash:0xb5449d140b97db1f10d35f8123dc692807b57acc05be62388cb6bfd622fa99f6
+INFO:root:Airdrop transaction Tx Hash:0x49259eed41a0a8dac74ed5fcd1316f8a0546f872fe897734c72eced6e0c54112
+INFO:root:Airdrop transaction Tx Hash:0xcb65b1b235f3bb7a17f415f8f037a6e1621fa0ca418ebfebc1a2f9ae8998f63e
+INFO:root:Airdrop transaction Tx Hash:0x995611be6f73f437dd953ba5f9f695453dc700e3f93de362154e0b4be56c2917
+INFO:root:Airdrop transaction Tx Hash:0xe49c85efc5e1735bb3fd171ff181bb826779edcaee1525cc56c9407a06a7b35c
+INFO:root:Airdrop transaction Tx Hash:0x2c95f25b97b9c9f24df9dcc7d2fdf13446b2c67427f3d9747e7f64049f7a0b82
+INFO:root:Airdrop transaction Tx Hash:0x80cdcc8d55afec81448fe6aeb8af12865b7d2c2ce36ffbd9656b0b3b5c642b56
+INFO:root:Airdrop transaction Tx Hash:0xa8e5372d1f5a88506bacc672ca1ec3dce792f4c1167e251f5aa02ccf2973af62
+INFO:root:Airdrop transaction Tx Hash:0x538aa35d97c7f3dc26e5dcd593af25866ac7bb95f9d8446a2ffcf5dfd9abe78a
+INFO:root:Airdrop transaction Tx Hash:0x92c34533631864ac4c0ff8e053c483628466f21d8bddc845af14d527fe6565ee
+INFO:root:Airdrop transaction Tx Hash:0xb85873bb7b61e0d76578b0f641c34bb86a92829c3bebc9c9d1c1a9fa821d005f
+INFO:root:Airdrop transaction Tx Hash:0x77bc7f919f4e2a5fe9ab4ed2deb3d40d09cd3066440a9bd9385d5485ec9d441e
+INFO:root:Airdrop transaction Tx Hash:0xeb773c4c3d7e4467d40913b002fe0ab131df78f75cf0b17db8e22c268a8f7ed2
+INFO:root:Airdrop transaction Tx Hash:0xec1a9698c6e169f978c8f350b669e6bd88d7c372418f70c3438b9656deb97ddd
+INFO:root:Airdrop transaction Tx Hash:0x1ee72d9f8db71382f3aa0ae36d30a3b72d9397f2b0ed7911059addc7da6159af
+INFO:root:Airdrop transaction Tx Hash:0xb82ee01409666425f85a03d2f06a2d42baefef510a22a590473ed0bd2e657c69
+INFO:root:Airdrop transaction Tx Hash:0x31b306738da2166c57fe0ec93287358dee0383eda52530be24c27bb2ee094ef3
+INFO:root:Airdrop transaction Tx Hash:0xd07512910bfa40bbd6a18dc6b4f32402c1bb1440de2f70e7c20e17b2d8de3179
+INFO:root:Airdrop transaction Tx Hash:0x1ea80a31cbddd00b678d1cf489075209bdbb77b186abd67f364b3824e93655f6
+INFO:root:Airdrop transaction Tx Hash:0xe38b25eb0b0c4d45b839546b06e777a9daefe9c86784726da2dce34ed72dda29
+INFO:root:Airdrop transaction Tx Hash:0xb8e053135d1a6879446d44ba99bfe26596b2ecbc9fddadcdc5f417ed2c7a5182
+INFO:root:Airdrop transaction Tx Hash:0x91c0bebcc5aa8a4383b00c55e538860849e9ae361a82e3864d39813bc28e7e15
+INFO:root:Airdrop transaction Tx Hash:0x41c1e164d8de9e344abb812da185f92a5f37c4d814130f9554b7cb05e10aa824
+INFO:root:Airdrop transaction Tx Hash:0xc67aad738f0794f548f1f32f675da1ae463d38b0fb090e1dd00645ed15cb7171
+INFO:root:Airdrop transaction Tx Hash:0x6ee3edb63364c78fb16bdf218b95fb886145a3a47c5b8f161e6ebbf7b17d339d
+INFO:root:Airdrop transaction Tx Hash:0x45222f658d50d97e529d609fd7f289e96515d94eaa6d9660b45b60a1b805ac11
+INFO:root:Airdrop transaction Tx Hash:0x27bcf05cb5bc371a4e5ec1f4fa7ae5164341eafa5c0904ba030fe54b5a6fb058
+INFO:root:Airdrop transaction Tx Hash:0x8b5468b04076a391dced9ec26632743dcfac91c4f3f425e3de98aa623ee86c2a
+INFO:root:Airdrop transaction Tx Hash:0x93fda882a6c51d41ef5e2de0e08ce8ad4f0821be85e77917e25d8fa46cc45c7c
+INFO:root:Airdrop transaction Tx Hash:0x57d40bdc6a257b2a10ddb7b853e7d6f9f4fb2af15b6558b8cef1cac104d83a87
+INFO:root:Airdrop transaction Tx Hash:0x2cfb14fe7bd24b5d4a4a641e2b99a17200255dac929befb9e2935802ec9bddbc
+INFO:root:Airdrop transaction Tx Hash:0x4b444e3ca9cf1e08c1580e482ebd3b5faa5dc5f945153ed413f822dcc66e1ff7
+INFO:root:Airdrop transaction Tx Hash:0xa8b51c92e6c03255c5ebb52d32b12977114265e4e08947616ba9b2f3970a745b
+INFO:root:Airdrop transaction Tx Hash:0x1886c87d992c55fc396b2d69de56fa3fe9203eaca255d31e0354eac13c197d43
+INFO:root:Airdrop transaction Tx Hash:0xd1b947d43588d3410adaf4c9a9f4f300fc95cdba6a683de2015f932c3d049f09
+INFO:root:Airdrop transaction Tx Hash:0xbf0e892b841cfcef71351419436f25d267ea25ced3397137357a6d8ba89012ba
+INFO:root:Airdrop transaction Tx Hash:0xb6a859bae96cbecedeb88eec491b63557bd4a4a361607f564ca7f75b50928b61
+INFO:root:Airdrop transaction Tx Hash:0x24bcbc8c8f1e0d7fb7df13d7d254bc49e645ffdb831fd09a8eff1cbb59133821
+INFO:root:Airdrop transaction Tx Hash:0x4fd2b553ac68519c3fcbfc316fb41d0aeccd113593330f80225a5eb8841f4e38
+INFO:root:Airdrop transaction Tx Hash:0xbaea301600813e0dfdd559b3d1bc7cb6e69ad65db63132afec49c47036df1b7d
+INFO:root:Airdrop transaction Tx Hash:0xd79c14862bd5d7f543282a7517cbfbb3be301c3bfe0df7dc7676bb3ea262442e
+INFO:root:Airdrop transaction Tx Hash:0xd1043c3181672d1b94e66b5476cfca504d0c93aa379cc85b5967fcd9fdfe515f
+INFO:root:Airdrop transaction Tx Hash:0x95ffac7c20d7f17c8ff7582a4a31ad7636be08bc49bf9f730c313d3245d2af9c
+INFO:root:Airdrop transaction Tx Hash:0x783e44a767b00f2c6dc57e75e3fdb7cd22f31b376308cd018989d7084f38da59
+INFO:root:Airdrop transaction Tx Hash:0x977a6aa3d154dde2ebb9955d4684587a4528143c5a52f0a8b38c5afef59f8ec4
+INFO:root:Airdrop transaction Tx Hash:0xb8ac4246fadc9a9fe88ed03d81d9cd5659afa027194442a6222f1032f6d69a2a
+INFO:root:Airdrop transaction Tx Hash:0xef27569727c4125d6e71d85e754063680674d4b15a70c4677d89541e0f6d0368
+INFO:root:Airdrop transaction Tx Hash:0x372dc6730cbba8d4caaf4218ac9139aa0ba0ffb932194ecf45e2e2662177c620
+INFO:root:Airdrop transaction Tx Hash:0x9ac08fb223dc5c26fa9894dd7f818c318525f7fe01edc3bf4bf364dcc6a286aa
+INFO:root:Airdrop transaction Tx Hash:0x4c7c29fdeb5a50d8acf2807338c82438f4aaa822ad4410b0831b3de4c9ef489f
+INFO:root:Total number of Airdrop transfers: 57
+INFO:root:Skipped number of transfers: 2. Should have skipped at least 2 (oldStateChainGateway and oldFlipDeployer)
+INFO:root:Waiting for airdrop transactions to be confirmed..
+INFO:root:😎  Airdrop transactions sent and confirmed! 😎
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
+INFO:root:=========================   Running airdrop.py script  ==========================
+INFO:root:Skipped old FLIP snapshot - snapshot already taken
+INFO:root:MultiSend already deployed
+INFO:root:Skipped Airdrop - already completed succesfully
+INFO:root:Verifying airdrop
+INFO:root:Getting all transfer events
+INFO:root:Reading snapshot from file: snapshotOldFlip.csv
+INFO:root:😎  Airdrop verified succesfully! 😎
