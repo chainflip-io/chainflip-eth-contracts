@@ -1,6 +1,5 @@
 import sys
 import os
-import json
 import csv
 import logging
 import os.path
@@ -8,9 +7,8 @@ import math
 
 sys.path.append(os.path.abspath("tests"))
 from consts import ZERO_ADDR, INIT_SUPPLY, E_18
-from brownie import chain, accounts, StateChainGateway, FLIP, web3, network, MultiSend
-from web3._utils.events import get_event_data
-from web3._utils.filters import construct_event_filter_params
+from utils import fetch_events, get_contract_object
+from brownie import chain, accounts, FLIP, web3, network, MultiSend
 
 
 logname = "airdrop.log"
@@ -165,7 +163,9 @@ def snapshot(
     goerliOldFlip,
     filename,
 ):
-    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(goerliOldFlip)
+    (oldFlipContract, oldFlipContractObject) = getContractFromAddress(
+        "FLIP", goerliOldFlip
+    )
     # It will throw an error if there are more than 10.000 events (free Infura Limitation)
     # Split it if that is the case - there is no time requirement anyway
 
@@ -330,7 +330,7 @@ def airdrop(
         oldFlipDeployerBalance,
     ) = readCSVSnapshotChecksum(snapshot_csv)
 
-    newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     # Craft list of addresses that should be skipped when airdropping. Skip following receivers: airdropper,
     # newStateChainGateway, oldStateChainGateway and oldFlipDeployer. Also skip receivers that have already received
@@ -501,7 +501,7 @@ def verifyAirdrop(
 
     printAndLog("Verifying airdrop")
 
-    newFlipContract, newFlipContractObject = getContractFromAddress(newFlip)
+    newFlipContract, newFlipContractObject = getContractFromAddress("FLIP", newFlip)
 
     totalSupplyNewFlip = newFlipContract.totalSupply(
         block_identifier=web3.eth.block_number
@@ -581,18 +581,15 @@ def printAndLog(text):
     logging.info(text)
 
 
-def getContractFromAddress(flip_address):
-    with open("build/contracts/FLIP.json") as f:
-        info_json = json.load(f)
-    abi = info_json["abi"]
-
+# contract_name e.g. "FLIP"
+def getContractFromAddress(contract_name, contract_address):
     # Object to get the event interface from
-    flipContractObject = web3.eth.contract(address=flip_address, abi=abi)
+    contractObject = get_contract_object(contract_name, contract_address)
 
-    # Flip Contract to make the calls to
-    flipContract = FLIP.at(flip_address)
+    # Contract to make the calls to
+    contract = FLIP.at(contract_address)
 
-    return flipContract, flipContractObject
+    return contract, contractObject
 
 
 # ---------------------------------------
@@ -641,58 +638,6 @@ def getTXsAndMintBalancesFromTransferEvents(
     )
 
     return listAirdropTXs, int(initialMintTXs[0][1])
-
-
-def fetch_events(
-    event,
-    argument_filters=None,
-    from_block=None,
-    to_block="latest",
-    address=None,
-    topics=None,
-):
-    """Get events using eth_getLogs API.
-
-    This is a stateless method, as opposite to createFilter and works with
-    stateless nodes like QuikNode and Infura.
-
-    :param event: Event instance from your contract.events
-    :param argument_filters:
-    :param from_block: Start block. Use 0 for all history/
-    :param to_block: Fetch events until this contract
-    :param address:
-    :param topics:
-    :return:
-    """
-
-    if from_block is None:
-        raise TypeError("Missing mandatory keyword argument to getLogs: from_Block")
-
-    abi = event._get_event_abi()
-    abi_codec = event.web3.codec
-
-    # Set up any indexed event filters if needed
-    argument_filters = dict()
-    _filters = dict(**argument_filters)
-
-    data_filter_set, event_filter_params = construct_event_filter_params(
-        abi,
-        abi_codec,
-        contract_address=event.address,
-        argument_filters=_filters,
-        fromBlock=from_block,
-        toBlock=to_block,
-        address=address,
-        topics=topics,
-    )
-
-    # Call node over JSON-RPC API
-    logs = event.web3.eth.get_logs(event_filter_params)
-
-    # Convert raw binary event data to easily manipulable Python objects
-    for entry in logs:
-        data = get_event_data(abi_codec, abi, entry)
-        yield data
 
 
 def waitForLogTXsToComplete(parsedLog):

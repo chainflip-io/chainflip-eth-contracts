@@ -586,7 +586,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
 
         // Ensure that the amount of gas supplied to the call to the Multicall contract is at least the gas
-        // limit specified. We can do this by enforcing that, we still have gasMulticall + gas buffer available.
+        // limit specified. We can do this by enforcing that we still have gasMulticall + gas buffer available.
         // The gas buffer is to ensure there is enough gas to finalize the call, including a safety margin.
         // The 63/64 rule specified in EIP-150 needs to be taken into account.
         require(gasleft() >= ((gasMulticall + _FINALIZE_GAS_BUFFER) * 64) / 63, "Vault: insufficient gas");
