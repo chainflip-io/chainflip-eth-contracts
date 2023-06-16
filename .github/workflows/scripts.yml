@@ -12,8 +12,6 @@ jobs:
     needs: lint
     runs-on: [self-hosted, linux, x64, ephemeral]
     timeout-minutes: 3600
-    env:
-      SEED: test test test test test test test test test test test junk
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -40,6 +38,7 @@ jobs:
       # Just checking that the scripts run. More elaborated testing can be done later on.
       - name: Deploy contracts
         env:
+          SEED: test test test test test test test test test test test junk
           NUM_GENESIS_VALIDATORS: 3
           GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
           COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
@@ -47,23 +46,14 @@ jobs:
           DEPLOYER_ACCOUNT_INDEX: "0"
         run: poetry run brownie run deploy_contracts --network hardhat
 
-      - name: Deploy new Vault contract
+      - name: Deploy individual contracts
         env:
-          KEY_MANAGER_ADDRESS: "0x856e4424f806D16E8CBC702B3c0F2ede5468eae5"
-        run: poetry run brownie run deploy_new_contract deploy_vault --network hardhat
-
-      - name: Deploy new State Chain Gateway contract
-        env:
+          SEED: test test test test test test test test test test test junk
           KEY_MANAGER_ADDRESS: "0x856e4424f806D16E8CBC702B3c0F2ede5468eae5"
           FLIP_ADDRESS: "0xddEA3d67503164326F90F53CFD1705b90Ed1312D"
-        run: poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat
-
-      - name: Deploy new KeyManager contract
-        env:
-          KEY_MANAGER_ADDRESS: "0x856e4424f806D16E8CBC702B3c0F2ede5468eae5"
-        run: poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat
-
-      - name: Deploy new Multicall contract
-        env:
           VAULT_ADDRESS: "0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3"
-        run: poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
+        run: |
+          poetry run brownie run deploy_new_contract deploy_vault --network hardhat &&
+          poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat &&
+          poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat &&
+          poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
