@@ -14,7 +14,7 @@ from brownie import (
     StateChainGateway,
     FLIP,
     DeployerContract,
-    BalanceChecker,
+    AddressChecker,
 )
 from deploy import deploy_Chainflip_contracts
 from brownie.convert import to_bytes
@@ -172,7 +172,7 @@ def deploy():
         StateChainGateway,
         FLIP,
         DeployerContract,
-        BalanceChecker,
+        AddressChecker,
         os.environ,
     )
 
