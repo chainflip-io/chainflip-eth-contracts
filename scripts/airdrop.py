@@ -25,11 +25,11 @@ oldFlipSnapshotFilename = "snapshotOldFlip.csv"
 oldFlip_deployment_block = 7909671 - 10
 
 # NOTE: These addresses are for a fresh hardhat network. To update.
-newFlip = "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
-newStateChainGateway = "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883"
+# newFlip = "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
+# newStateChainGateway = "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883"
 # Real goerli deployed flip
-# newFlip = "0x9ada116ec46a6a0501bCFFC3E4C027a640a8536e"
-# newStateChainGateway = "0x0e30aFE29222c093aac54E77AD97d49FFA51cc54"
+newFlip = "0x9ada116ec46a6a0501bCFFC3E4C027a640a8536e"
+newStateChainGateway = "0x0e30aFE29222c093aac54E77AD97d49FFA51cc54"
 # -------------------------------------------------------------------- #
 
 
@@ -419,10 +419,12 @@ def airdrop(
 
     multiSend = MultiSend.at(multiSend_address)
 
-    # Approve the entire amount in one call
-    newFlipContract.approve(
-        multiSend.address, totalAmount_toTransfer, {"from": airdropper}
-    )
+    # Approve the entire amount in one call. If there is any approval already we assume it has approved
+    # all the amount from a previously started airdrop, so we skip it.
+    if newFlipContract.allowance(airdropper, multiSend.address) == 0:
+        newFlipContract.approve(
+            multiSend.address, totalAmount_toTransfer, {"from": airdropper}
+        )
 
     # Iterate over batches of 200 lists
     for i in range(0, len(listOfTxtoSend), transfer_batch_size):
