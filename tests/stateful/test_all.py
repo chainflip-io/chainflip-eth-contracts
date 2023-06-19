@@ -413,7 +413,8 @@ def test_all(
 
             for swapID, token in zip(st_swapIDs, fetchTokens):
                 if swapID in self.deployedDeposits:
-                    fetchParamsArray.append([self.deployedDeposits[swapID], token])
+                    if token != NATIVE_ADDR:
+                        fetchParamsArray.append([self.deployedDeposits[swapID], token])
                 else:
                     deployFetchParamsArray.append([swapID, token])
 
@@ -687,16 +688,21 @@ def test_all(
                     st_swapID,
                     st_native_amount,
                 )
-                depositAddr = getCreate2Addr(
-                    self.v.address,
-                    cleanHexStrPad(st_swapID),
-                    Deposit,
-                    cleanHexStrPad(NATIVE_ADDR),
-                )
-                st_sender.transfer(depositAddr, st_native_amount)
 
+                if st_swapID in self.deployedDeposits:
+                    depositAddr = self.deployedDeposits[st_swapID]
+                    self.nativeBals[self.v] += st_native_amount
+                else:
+                    depositAddr = getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapID),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
+                    )
+                    self.nativeBals[depositAddr] += st_native_amount
+
+                st_sender.transfer(depositAddr, st_native_amount)
                 self.nativeBals[st_sender] -= st_native_amount
-                self.nativeBals[depositAddr] += st_native_amount
 
         # Transfers a token from a user/sender to one of the depositEth create2 addresses.
         # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
@@ -770,7 +776,7 @@ def test_all(
                 print("                    rule_fetchDepositNative", *toLog)
 
                 if st_swapID not in self.deployedDeposits:
-                    signed_call_km(
+                    tx = signed_call_km(
                         self.km,
                         self.v.deployAndFetchBatch,
                         [[st_swapID, NATIVE_ADDR]],
@@ -785,28 +791,12 @@ def test_all(
                         cleanHexStrPad(NATIVE_ADDR),
                     )
                     self.deployedDeposits[st_swapID] = depositAddr
-                else:
-                    depositAddr = self.deployedDeposits[st_swapID]
-                    signed_call_km(
-                        self.km,
-                        self.v.fetchBatch,
-                        [[depositAddr, NATIVE_ADDR]],
-                        signer=signer,
-                        sender=st_sender,
-                    )
 
-                depositBal = self.nativeBals[depositAddr]
-                tx = signed_call_km(
-                    self.km,
-                    self.v.fetchBatch,
-                    [[depositAddr, NATIVE_ADDR]],
-                    signer=signer,
-                    sender=st_sender,
-                )
+                    depositBal = self.nativeBals[depositAddr]
 
-                self.nativeBals[depositAddr] -= depositBal
-                self.nativeBals[self.v] += depositBal
-                self.lastValidateTime = tx.timestamp
+                    self.nativeBals[depositAddr] -= depositBal
+                    self.nativeBals[self.v] += depositBal
+                    self.lastValidateTime = tx.timestamp
 
         def rule_fetchDepositNativeBatch(self, st_sender, st_swapIDs):
 
@@ -842,14 +832,9 @@ def test_all(
 
                 print("                    rule_fetchDepositNativeBatch", *toLog)
 
-                used_addresses = []
                 non_used_swapIDs = []
                 for st_swapID in st_swapIDs:
-                    if st_swapID in self.deployedDeposits:
-                        depositAddr = self.deployedDeposits[st_swapID]
-                        used_addresses.append(depositAddr)
-
-                    else:
+                    if st_swapID not in self.deployedDeposits:
                         non_used_swapIDs.append(st_swapID)
                         depositAddr = getCreate2Addr(
                             self.v.address,
@@ -859,29 +844,18 @@ def test_all(
                         )
                         self.deployedDeposits[st_swapID] = depositAddr
 
-                    # Accounting here to reuse the loop logic
-                    self.nativeBals[self.v] += self.nativeBals[depositAddr]
-                    self.nativeBals[depositAddr] = 0
+                        # Accounting here to reuse the loop logic
+                        self.nativeBals[self.v] += self.nativeBals[depositAddr]
+                        self.nativeBals[depositAddr] = 0
 
                 deployFetchParamsArray = craftDeployFetchParamsArray(
                     non_used_swapIDs, [NATIVE_ADDR] * len(non_used_swapIDs)
                 )
 
-                signed_call_km(
+                tx = signed_call_km(
                     self.km,
                     self.v.deployAndFetchBatch,
                     deployFetchParamsArray,
-                    signer=signer,
-                    sender=st_sender,
-                )
-
-                fetchParamsArray = craftFetchParamsArray(
-                    used_addresses, [NATIVE_ADDR] * len(used_addresses)
-                )
-                tx = signed_call_km(
-                    self.km,
-                    self.v.fetchBatch,
-                    fetchParamsArray,
                     signer=signer,
                     sender=st_sender,
                 )

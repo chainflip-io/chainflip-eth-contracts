@@ -267,7 +267,8 @@ def test_vault(
 
             for swapID, token in zip(st_swapIDs, fetchTokens):
                 if swapID in self.deployedDeposits:
-                    fetchParamsArray.append([self.deployedDeposits[swapID], token])
+                    if token != NATIVE_ADDR:
+                        fetchParamsArray.append([self.deployedDeposits[swapID], token])
                 else:
                     deployFetchParamsArray.append([swapID, token])
 
@@ -320,6 +321,7 @@ def test_vault(
                             )
                         self.deployedDeposits[swapID] = addr
 
+                    # We have not fetched from deployed addresses but they should be empty anyway.
                     if tok == NATIVE_ADDR:
                         self.nativeBals[self.v.address] += self.nativeBals[addr]
                         self.nativeBals[addr] = 0
@@ -500,21 +502,26 @@ def test_vault(
             # no point sending native to that corresponding addr
             if st_swapID != 0 and self.nativeBals[st_sender] >= st_native_amount:
                 print(
-                    "                    rule_transfer_native_to_depositEth",
+                    "                    rule_transfer_native_to_deposit",
                     st_sender,
                     st_swapID,
                     st_native_amount,
                 )
-                depositAddr = getCreate2Addr(
-                    self.v.address,
-                    cleanHexStrPad(st_swapID),
-                    Deposit,
-                    cleanHexStrPad(NATIVE_ADDR),
-                )
-                st_sender.transfer(depositAddr, st_native_amount)
 
+                if st_swapID in self.deployedDeposits:
+                    depositAddr = self.deployedDeposits[st_swapID]
+                    self.nativeBals[self.v.address] += st_native_amount
+                else:
+                    depositAddr = getCreate2Addr(
+                        self.v.address,
+                        cleanHexStrPad(st_swapID),
+                        Deposit,
+                        cleanHexStrPad(NATIVE_ADDR),
+                    )
+                    self.nativeBals[depositAddr] += st_native_amount
+
+                st_sender.transfer(depositAddr, st_native_amount)
                 self.nativeBals[st_sender] -= st_native_amount
-                self.nativeBals[depositAddr] += st_native_amount
 
         # Transfers a token from a user/sender to one of the depositEth create2 addresses.
         # This isn't called directly since rule_transfer_tokens_to_depositTokenA etc use it
@@ -526,7 +533,7 @@ def test_vault(
             # no point sending native to that corresponding addr
             if st_swapID != 0 and bals[st_sender] >= st_token_amount:
                 print(
-                    "                    _transfer_tokens_to_depositToken",
+                    "                    _transfer_tokens_to_deposit",
                     token,
                     st_sender,
                     st_swapID,
@@ -589,18 +596,10 @@ def test_vault(
                         cleanHexStrPad(NATIVE_ADDR),
                     )
                     self.deployedDeposits[st_swapID] = depositAddr
-                else:
-                    depositAddr = self.deployedDeposits[st_swapID]
-                    signed_call_km(
-                        self.km,
-                        self.v.fetchBatch,
-                        [[depositAddr, NATIVE_ADDR]],
-                        sender=st_sender,
-                    )
 
-                depositBal = self.nativeBals[depositAddr]
-                self.nativeBals[depositAddr] -= depositBal
-                self.nativeBals[self.v.address] += depositBal
+                    depositBal = self.nativeBals[depositAddr]
+                    self.nativeBals[depositAddr] -= depositBal
+                    self.nativeBals[self.v.address] += depositBal
 
         def rule_fetchDepositNativeBatch(self, st_sender, st_swapIDs):
             if self.suspended:
@@ -623,11 +622,7 @@ def test_vault(
             used_addresses = []
             non_used_swapIDs = []
             for st_swapID in st_swapIDs:
-                if st_swapID in self.deployedDeposits:
-                    depositAddr = self.deployedDeposits[st_swapID]
-                    used_addresses.append(depositAddr)
-
-                else:
+                if st_swapID not in self.deployedDeposits:
                     non_used_swapIDs.append(st_swapID)
                     depositAddr = getCreate2Addr(
                         self.v.address,
@@ -637,9 +632,9 @@ def test_vault(
                     )
                     self.deployedDeposits[st_swapID] = depositAddr
 
-                # Accounting here to reuse the loop logic
-                self.nativeBals[self.v.address] += self.nativeBals[depositAddr]
-                self.nativeBals[depositAddr] = 0
+                    # Accounting here to reuse the loop logic
+                    self.nativeBals[self.v.address] += self.nativeBals[depositAddr]
+                    self.nativeBals[depositAddr] = 0
 
             deployFetchParamsArray = craftDeployFetchParamsArray(
                 non_used_swapIDs, [NATIVE_ADDR] * len(non_used_swapIDs)
@@ -650,13 +645,6 @@ def test_vault(
                 self.v.deployAndFetchBatch,
                 deployFetchParamsArray,
                 sender=st_sender,
-            )
-
-            fetchParamsArray = craftFetchParamsArray(
-                used_addresses, [NATIVE_ADDR] * len(used_addresses)
-            )
-            signed_call_km(
-                self.km, self.v.fetchBatch, fetchParamsArray, sender=st_sender
             )
 
         # Fetch the token deposit of a random create2
