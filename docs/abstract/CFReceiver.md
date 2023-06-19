@@ -34,7 +34,7 @@ No description
 
 - `message`:       The message sent on the source chain. This is a general purpose message.
 
-- `token`:         Address of the token received. _NATIVE_ADDR if native.
+- `token`:         Address of the token received. _NATIVE_ADDR if it's native tokens.
 
 - `amount`:        Amount of tokens received. This will match msg.value for native tokens.
 

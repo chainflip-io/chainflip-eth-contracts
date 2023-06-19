@@ -5,7 +5,14 @@ from brownie import network, accounts
 
 
 def deploy_Chainflip_contracts(
-    deployer, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract, *args
+    deployer,
+    KeyManager,
+    Vault,
+    StateChainGateway,
+    FLIP,
+    DeployerContract,
+    AddressChecker,
+    *args,
 ):
 
     # Set the priority fee for all transactions
@@ -73,6 +80,9 @@ def deploy_Chainflip_contracts(
         cf.numGenesisValidators,
         cf.genesisStake,
         {"from": deployer, "required_confs": required_confs},
+    )
+    cf.addressChecker = AddressChecker.deploy(
+        {"from": deployer, "required_confs": required_confs}
     )
 
     cf.vault = Vault.at(cf.deployerContract.vault())

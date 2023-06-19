@@ -1,25 +1,18 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 /**
- * @title    ERC20 Interface
+ * @title    ERC20 Lite Interface
  * @notice   The interface for functions ERC20Lite implements. This is intended to
- *           be used with DepositNative so that there is as little code that goes into
- *           it as possible to reduce gas costs since it'll be deployed frequently
- * @dev      Removed the return bool on the transfer function to avoid reverts on
- *           non-standard ERC20s.
+ *           be used only in the Deposit contract.
+ * @dev      Any change in this contract, including comments, will affect the final
+ *           bytecode and therefore will affect the create2 derived addresses.
+ *           Do NOT modify unless the consequences of doing so are fully understood.
  */
 interface IERC20Lite {
-    // Taken from OZ:
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
-     * Emits a {Transfer} event.
-     */
+    /// @dev Removed the return bool to avoid reverts on non-standard ERC20s.
     function transfer(address, uint256) external;
 
-    // Taken from OZ:
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
     function balanceOf(address) external view returns (uint256);
 }

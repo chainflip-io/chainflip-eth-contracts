@@ -87,7 +87,7 @@ def test_upgrade_keyManager(cf, KeyManager):
 @given(
     st_sender=strategy("address"),
 )
-def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager):
+def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager, token):
 
     totalFunds = cf.DENICE.balance() / 10
     # Replicate a vault with funds - 1000 NATIVE
@@ -120,7 +120,8 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager):
     assert newVault.balance() == totalFunds / 2
 
     # Old vault still functions
-    fetchNative(cf, cf.vault, depositAddr)
+    cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
+    fetchToken(cf, cf.vault, depositAddr, token)
     transfer_native(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
     # Time where fetchs (and maybe transfers) still can be done from the oldVault
@@ -131,7 +132,8 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager):
     assert newVault.balance() == totalFunds
     assert cf.vault.balance() == 0
 
-    fetchNative(cf, newVault, depositAddrNew)
+    cf.SAFEKEEPER.transfer(depositAddrNew, TEST_AMNT)
+    fetchToken(cf, cf.vault, depositAddr, token)
     transfer_native(cf, newVault, cf.ALICE, TEST_AMNT)
     assert newVault.balance() == totalFunds
 
