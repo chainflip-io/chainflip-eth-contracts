@@ -6,7 +6,7 @@ from shared_tests_tokenVesting import *
 
 @given(st_sender=strategy("address"))
 def test_transfer_revoker(addrs, tokenVestingStaking, tokenVestingNoStaking, st_sender):
-    tv_staking, _, _, _ = tokenVestingStaking
+    tv_staking, _, _ = tokenVestingStaking
     tv_noStaking, _, _, _ = tokenVestingNoStaking
 
     for vestingContract in [tv_staking, tv_noStaking]:

@@ -15,7 +15,7 @@ def isolation(fn_isolation):
 # Deploy the contracts for repeated tests without having to redeploy each time
 @pytest.fixture(scope="module")
 def cfDeploy(
-    a, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract, BalanceChecker
+    a, KeyManager, Vault, StateChainGateway, FLIP, DeployerContract, AddressChecker
 ):
     # Deploy with an unused EOA (a[9]) so deployer != safekeeper as in production
     return deploy_Chainflip_contracts(
@@ -25,7 +25,7 @@ def cfDeploy(
         StateChainGateway,
         FLIP,
         DeployerContract,
-        BalanceChecker,
+        AddressChecker,
     )
 
 
@@ -121,7 +121,7 @@ def addrs(a):
     addrs = Context()
     addrs.DEPLOYER = a[0]
     addrs.REVOKER = a[10]
-    addrs.INVESTOR = a[11]
+    addrs.BENEFICIARY = a[11]
 
     return addrs
 
@@ -132,12 +132,12 @@ def maths(addrs, MockMaths):
 
 
 @pytest.fixture(scope="module")
-def scGatewayAddrHolder(cf, addrs, AddressHolder):
+def addressHolder(cf, addrs, AddressHolder):
     return addrs.DEPLOYER.deploy(AddressHolder, addrs.DEPLOYER, cf.stateChainGateway)
 
 
 @pytest.fixture(scope="module")
-def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
+def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
@@ -146,14 +146,12 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
     end = start + QUARTER_YEAR + YEAR
 
     tv = addrs.DEPLOYER.deploy(
-        TokenVesting,
-        addrs.INVESTOR,
+        TokenVestingNoStaking,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
         cliff,
         end,
-        NON_STAKABLE,
         BENEF_TRANSF,
-        scGatewayAddrHolder,
     )
 
     total = MAX_TEST_FUND
@@ -164,30 +162,28 @@ def tokenVestingNoStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
 
 
 @pytest.fixture(scope="module")
-def tokenVestingStaking(addrs, cf, TokenVesting, scGatewayAddrHolder):
+def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
 
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
     start = getChainTime()
     end = start + QUARTER_YEAR + YEAR
-    cliff = end
 
     tv = addrs.DEPLOYER.deploy(
-        TokenVesting,
-        addrs.INVESTOR,
+        TokenVestingStaking,
+        addrs.BENEFICIARY,
         addrs.REVOKER,
-        cliff,
         end,
-        STAKABLE,
         BENEF_TRANSF,
-        scGatewayAddrHolder,
+        addressHolder,
+        cf.flip,
     )
 
     total = MAX_TEST_FUND
 
     cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
-    return tv, cliff, end, total
+    return tv, end, total
 
 
 # Deploy CFReceiver Mock contracts for testing purposes

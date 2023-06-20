@@ -2,9 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-interface IAddressHolder {
-    event StateChainGatewayUpdated(address oldStateChainGateway, address newStateChainGateway);
-    event GovernorTransferred(address oldGovernor, address newGovernor);
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+interface ITokenVestingNoStaking {
+    event TokensReleased(IERC20 indexed token, uint256 amount);
+    event TokenVestingRevoked(IERC20 indexed token, uint256 refund);
+
+    event BeneficiaryTransferred(address oldBeneficiary, address newBeneficiary);
+    event RevokerTransferred(address oldRevoker, address newRevoker);
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -12,9 +17,13 @@ interface IAddressHolder {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function updateStateChainGateway(address _stateChainGateway) external;
+    function release(IERC20 token) external;
 
-    function transferGovernor(address _governor) external;
+    function revoke(IERC20 token) external;
+
+    function transferBeneficiary(address beneficiary_) external;
+
+    function transferRevoker(address revoker_) external;
 
     //////////////////////////////////////////////////////////////
     //                                                          //
@@ -22,7 +31,7 @@ interface IAddressHolder {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function getStateChainGateway() external view returns (address);
+    function getBeneficiary() external view returns (address);
 
-    function getGovernor() external view returns (address);
+    function getRevoker() external view returns (address);
 }

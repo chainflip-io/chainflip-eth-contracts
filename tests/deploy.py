@@ -11,7 +11,7 @@ def deploy_Chainflip_contracts(
     StateChainGateway,
     FLIP,
     DeployerContract,
-    BalanceChecker,
+    AddressChecker,
     *args,
 ):
 
@@ -81,7 +81,7 @@ def deploy_Chainflip_contracts(
         cf.genesisStake,
         {"from": deployer, "required_confs": required_confs},
     )
-    cf.balanceChecker = BalanceChecker.deploy(
+    cf.addressChecker = AddressChecker.deploy(
         {"from": deployer, "required_confs": required_confs}
     )
 
