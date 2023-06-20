@@ -193,6 +193,7 @@ def test_upgradability(
                 self.km.address,
                 self.f.address,
                 MIN_FUNDING,
+                REDEMPTION_DELAY,
             )
 
             chain.sleep(st_sleep_time)

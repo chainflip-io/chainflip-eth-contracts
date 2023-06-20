@@ -34,6 +34,7 @@ def main():
         "AGG_KEY",
         "GOV_KEY",
         "COMM_KEY",
+        "REDEMPTION_DELAY",
         "GENESIS_STAKE",
         "NUM_GENESIS_VALIDATORS",
     ]
@@ -50,7 +51,8 @@ def main():
         print(f"  Safekeeper & GovKey: {os.environ['GOV_KEY']}")
         print(f"  Community Key: {os.environ['COMM_KEY']}")
         print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
-        print(f"  Genesis Stake: {os.environ['GENESIS_STAKE']}")
+        print(f"  Redemption Delay: {os.environ['GENESIS_STAKE']}")
+        print(f"  Genesis Stake: {os.environ['REDEMPTION_DELAY']}")
         print(f"  Genesis Stake / E_18: {int(os.environ['GENESIS_STAKE'])/E_18}")
         print(f"  Num Genesis Validators: {os.environ['NUM_GENESIS_VALIDATORS']}")
         print(
@@ -96,6 +98,7 @@ def main():
     print(f"  GovKey:     {cf.gov}")
     print(f"  Community Key: {cf.communityKey}")
     print(f"  Aggregate Key: {cf.keyManager.getAggregateKey()}")
+    print(f"  Redemption Delay: {cf.redemptionDelay}")
     print(f"  Genesis Stake: {cf.genesisStake}")
     print(f"  Genesis Stake / E_18: {cf.genesisStake/E_18}")
     print(f"  Num Genesis Validators: {cf.numGenesisValidators}" + "\n")
