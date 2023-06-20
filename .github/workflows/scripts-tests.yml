@@ -61,6 +61,7 @@ jobs:
       - name: Deploy individual contracts
         env:
           SEED: test test test test test test test test test test test junk
+          REDEMPTION_DELAY: "120"
           KEY_MANAGER_ADDRESS: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be"
           FLIP_ADDRESS: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
           VAULT_ADDRESS: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968"
