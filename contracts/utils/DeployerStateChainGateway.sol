@@ -19,10 +19,11 @@ contract DeployerStateChainGateway is Shared {
 
     constructor(
         uint256 minFunding,
+        uint48 redemptionDelay,
         KeyManager _keyManager,
         FLIP _flip
     ) nzAddr(address(_keyManager)) nzAddr(address(_flip)) {
-        StateChainGateway _stateChainGateway = new StateChainGateway(_keyManager, minFunding);
+        StateChainGateway _stateChainGateway = new StateChainGateway(_keyManager, minFunding, redemptionDelay);
 
         // Set the FLIP address in the StateChainGateway contract
         _stateChainGateway.setFlip(FLIP(address(_flip)));

@@ -11,6 +11,7 @@ from deploy import deploy_new_vault, deploy_new_stateChainGateway
     st_govKey=strategy("address", exclude=0),
     st_commKey=strategy("address", exclude=0),
     st_minFunding=strategy("uint256", exclude=0),
+    st_redemptionDelay=strategy("uint48", exclude=0),
     st_initSupply=strategy(
         "uint256", min_value=INIT_SUPPLY / 2, max_value=INIT_SUPPLY * 10
     ),
@@ -35,6 +36,7 @@ def test_deployer_constructor(
     st_govKey,
     st_commKey,
     st_minFunding,
+    st_redemptionDelay,
     st_initSupply,
     st_numGenesisValidators,
     st_genesisStake,
@@ -47,6 +49,7 @@ def test_deployer_constructor(
         st_govKey,
         st_commKey,
         st_minFunding,
+        st_redemptionDelay,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
@@ -63,6 +66,7 @@ def test_deployer_constructor(
         st_govKey,
         st_commKey,
         st_minFunding,
+        st_redemptionDelay,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
@@ -116,6 +120,7 @@ def test_upgrader_constructor(
         st_govKey,
         st_commKey,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
@@ -137,6 +142,7 @@ def test_upgrader_constructor(
         keyManager.address,
         flip.address,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
     )
 
     assert deployerStateChainGateway.keyManager() == keyManager.address
@@ -152,6 +158,7 @@ def test_upgrader_constructor(
         st_govKey,
         st_commKey,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
@@ -183,6 +190,7 @@ def test_upgrader_constructor(
         st_govKey,
         st_commKey,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
         st_initSupply,
         st_numGenesisValidators,
         st_genesisStake,
@@ -199,6 +207,7 @@ def check_contracts_state(
     st_govKey,
     st_commKey,
     st_minFunding,
+    st_redemptionDelay,
     st_initSupply,
     st_numGenesisValidators,
     st_genesisStake,
@@ -214,6 +223,7 @@ def check_contracts_state(
     assert stateChainGateway.getMinimumFunding() == st_minFunding
     assert stateChainGateway.getFLIP() == flip.address
     assert stateChainGateway.getKeyManager() == keyManager.address
+    assert stateChainGateway.REDEMPTION_DELAY() == st_redemptionDelay
 
     assert flip.totalSupply() == st_initSupply
     assert (

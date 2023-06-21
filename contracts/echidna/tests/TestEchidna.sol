@@ -8,6 +8,7 @@ contract TestEchidna is DeployerEchidna {
     address internal govKey = address(1);
     address internal commKey = address(2);
     uint256 internal minFunding = 1000 * E_18;
+    uint48 internal redemptionDelay = 2 days;
 
     // Echidna requires that no parameters are passed to the constructor so we need to set
     // constants for the deployments of the contracts
@@ -17,6 +18,7 @@ contract TestEchidna is DeployerEchidna {
             govKey,
             commKey,
             minFunding,
+            redemptionDelay,
             INIT_SUPPLY,
             NUM_GENESIS_VALIDATORS,
             GENESIS_STAKE

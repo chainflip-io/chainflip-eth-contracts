@@ -30,10 +30,22 @@ contract DeployerEchidna is DeployerContract, KeyManagerEchidna, StateChainGatew
         address govKey,
         address commKey,
         uint256 minFunding,
+        uint48 redemptionDelay,
         uint256 initSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake
-    ) DeployerContract(aggKey, govKey, commKey, minFunding, initSupply, numGenesisValidators, genesisStake) {
+    )
+        DeployerContract(
+            aggKey,
+            govKey,
+            commKey,
+            minFunding,
+            redemptionDelay,
+            initSupply,
+            numGenesisValidators,
+            genesisStake
+        )
+    {
         _lastValidateTime = block.timestamp;
     }
 }
