@@ -51,8 +51,8 @@ def main():
         print(f"  Safekeeper & GovKey: {os.environ['GOV_KEY']}")
         print(f"  Community Key: {os.environ['COMM_KEY']}")
         print(f"  Aggregate Key: {os.environ['AGG_KEY']}")
-        print(f"  Redemption Delay: {os.environ['GENESIS_STAKE']}")
-        print(f"  Genesis Stake: {os.environ['REDEMPTION_DELAY']}")
+        print(f"  Redemption Delay: {os.environ['REDEMPTION_DELAY']}")
+        print(f"  Genesis Stake: {os.environ['GENESIS_STAKE']}")
         print(f"  Genesis Stake / E_18: {int(os.environ['GENESIS_STAKE'])/E_18}")
         print(f"  Num Genesis Validators: {os.environ['NUM_GENESIS_VALIDATORS']}")
         print(
