@@ -32,7 +32,8 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
     /// @dev    Holding pending redemptions for the 48h withdrawal delay
     mapping(bytes32 => Redemption) private _pendingRedemptions;
     /// @dev   Time after registerRedemption required to wait before call to executeRedemption
-    uint48 public constant REDEMPTION_DELAY = 2 days;
+    // solhint-disable-next-line var-name-mixedcase
+    uint48 public immutable REDEMPTION_DELAY;
 
     /// @dev    The last block number in which the State Chain updated the totalSupply
     uint256 private _lastSupplyUpdateBlockNum = 0;
@@ -47,8 +48,13 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
     //     uint48 expiryTime;
     // }
 
-    constructor(IKeyManager keyManager, uint256 minFunding) AggKeyNonceConsumer(keyManager) {
+    constructor(
+        IKeyManager keyManager,
+        uint256 minFunding,
+        uint48 redemptionDelay
+    ) AggKeyNonceConsumer(keyManager) nzUint(redemptionDelay) {
         _minFunding = minFunding;
+        REDEMPTION_DELAY = redemptionDelay;
     }
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
