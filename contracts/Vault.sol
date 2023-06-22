@@ -658,5 +658,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //////////////////////////////////////////////////////////////
 
     /// @dev For receiving native tokens from the Deposit contracts
-    receive() external payable {}
+    receive() external payable {
+        emit FetchedNative(msg.sender, msg.value);
+    }
 }

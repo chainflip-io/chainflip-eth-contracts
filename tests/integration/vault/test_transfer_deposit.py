@@ -17,7 +17,7 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Depos
         cf, cf.vault.deployAndFetchBatch, [[JUNK_HEX_PAD, NATIVE_ADDR]], sender=cf.ALICE
     )
     assert len(tx.events["FetchedNative"]) == 1
-    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
+    assert tx.events["FetchedNative"][0].values() == [depositAddr, TEST_AMNT]
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert cf.vault.balance() == TEST_AMNT
@@ -87,8 +87,8 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     )
 
     assert len(tx.events["FetchedNative"]) == 2
-    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
-    assert tx.events["FetchedNative"][1].values() == [2 * TEST_AMNT]
+    assert tx.events["FetchedNative"][0].values() == [depositAddr, TEST_AMNT]
+    assert tx.events["FetchedNative"][1].values() == [depositAddr2, 2 * TEST_AMNT]
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
@@ -235,8 +235,8 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
     )
 
     assert len(tx.events["FetchedNative"]) == 2
-    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
-    assert tx.events["FetchedNative"][1].values() == [2 * TEST_AMNT]
+    assert tx.events["FetchedNative"][0].values() == [depositAddr, TEST_AMNT]
+    assert tx.events["FetchedNative"][1].values() == [depositAddr2, 2 * TEST_AMNT]
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr2)) == 0
