@@ -15,8 +15,6 @@ import "./interfaces/IERC20Lite.sol";
 contract Deposit {
     address payable private immutable vault;
 
-    event FetchedNative(uint256 amount);
-
     /**
      * @notice  Upon deployment it fetches the tokens (native or ERC20) to the Vault.
      * @param token  The address of the token to fetch
@@ -25,7 +23,6 @@ contract Deposit {
         vault = payable(msg.sender);
         // Slightly cheaper to use msg.sender instead of Vault.
         if (token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            emit FetchedNative(address(this).balance);
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = msg.sender.call{value: address(this).balance}("");
             require(success);
@@ -48,7 +45,6 @@ contract Deposit {
     /// @notice Receives native tokens, emits an event and sends them to the Vault. Note that this
     // requires the sender to forward some more gas than for a simple transfer.
     receive() external payable {
-        emit FetchedNative(address(this).balance);
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = vault.call{value: address(this).balance}("");
         require(success);
