@@ -11,6 +11,8 @@ import "./IMulticall.sol";
  * @notice   The interface for functions Vault implements
  */
 interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
+    event FetchedNative(address indexed sender, uint256 amount);
+
     event TransferNativeFailed(address payable indexed recipient, uint256 amount);
     event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
 

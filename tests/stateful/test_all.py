@@ -2268,6 +2268,7 @@ def test_all(
                 self.km.address,
                 self.f.address,
                 INIT_MIN_FUNDING,
+                REDEMPTION_DELAY,
             )
 
             args = (JUNK_HEX, 1, newStateChainGateway, 1)

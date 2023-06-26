@@ -9,7 +9,7 @@ from brownie import accounts, StateChainGateway, FLIP
 FLIP_ADDRESS = environ["FLIP_ADDRESS"]
 SC_GATEWAY_ADDRESS = environ["SC_GATEWAY_ADDRESS"]
 AUTONOMY_SEED = environ["SEED"]
-FLIP_AMOUNT = environ.get("FLIP_AMOUNT", int(10**3))
+FLIP_AMOUNT = int(environ.get("FLIP_AMOUNT", 10**3))
 
 # File should be formatted as a list of NODE_IDs separated by a newline
 NODE_ID_FILE = environ["NODE_ID_FILE"]

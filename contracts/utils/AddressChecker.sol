@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import "../interfaces/IAddressChecker.sol";
+
 /**
  * @title    Address Checker contract
  * @notice   Gets data from multiple addresses in single function calls.
@@ -14,17 +16,12 @@ pragma solidity ^0.8.0;
  *           executes around 75k addresses for getNativeBalances but fails when requesting 100k.
  *           It's advised to split up such big lists to prevent failures.
  */
-contract AddressChecker {
-    struct AddressState {
-        uint256 balance;
-        bool hasContract;
-    }
-
+contract AddressChecker is IAddressChecker {
     /**
      * @notice  Returns an array of the native token balances for array of addresses.
      * @param addresses  Array of addresses to check.
      */
-    function nativeBalances(address[] calldata addresses) external view returns (uint[] memory) {
+    function nativeBalances(address[] calldata addresses) external view override returns (uint[] memory) {
         uint256 length = addresses.length;
 
         uint[] memory balances = new uint[](length);
@@ -42,7 +39,7 @@ contract AddressChecker {
      * @notice  Returns an array of booleans signaling whether there is bytecode deployed for an array of addresses.
      * @param addresses  Array of addresses to check.
      */
-    function contractsDeployed(address[] calldata addresses) external view returns (bool[] memory) {
+    function contractsDeployed(address[] calldata addresses) external view override returns (bool[] memory) {
         uint256 length = addresses.length;
 
         bool[] memory hasContractArray = new bool[](length);
@@ -61,7 +58,7 @@ contract AddressChecker {
      *          deployed for for an array of addresses.
      * @param addresses  Array of addresses to check.
      */
-    function addressStates(address[] calldata addresses) external view returns (AddressState[] memory) {
+    function addressStates(address[] calldata addresses) external view override returns (AddressState[] memory) {
         uint256 length = addresses.length;
 
         AddressState[] memory addressStateArray = new AddressState[](length);
