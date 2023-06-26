@@ -1,6 +1,7 @@
 from consts import *
 from shared_tests import *
 from brownie import reverts
+from brownie.test import given, strategy
 
 
 def test_transfer_native(cf):
@@ -115,3 +116,12 @@ def test_transfer_usdt(cf, mockUSDT):
     assert iniBal_Alice + TEST_AMNT_USDC == mockUSDT.balanceOf(cf.ALICE)
 
     assert ["TransferTokenFailed"] not in tx.events
+
+
+@given(
+    st_amount=strategy("uint", max_value=TEST_AMNT),
+    st_sender=strategy("address"),
+)
+def test_receive_vault(cf, st_sender, st_amount):
+    tx = st_sender.transfer(cf.vault, st_amount)
+    assert tx.events["FetchedNative"][0].values() == [st_sender, st_amount]
