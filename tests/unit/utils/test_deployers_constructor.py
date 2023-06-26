@@ -2,7 +2,7 @@ from consts import *
 from shared_tests import *
 from brownie import network
 from brownie.test import given, strategy
-from deploy import deploy_new_vault, deploy_new_stateChainGateway
+from deploy import deploy_new_vault, deploy_new_stateChainGateway, transaction_params
 
 
 @given(
@@ -39,7 +39,7 @@ def test_deployer_constructor(
     st_numGenesisValidators,
     st_genesisStake,
 ):
-    network.priority_fee("1 gwei")
+    transaction_params()
 
     deployerContract = addrs.DEPLOYER.deploy(
         DeployerContract,
@@ -104,7 +104,7 @@ def test_upgrader_constructor(
     st_genesisStake,
     st_sender,
 ):
-    network.priority_fee("1 gwei")
+    transaction_params()
 
     st_pubKeyX = AGG_SIGNER_1.getPubData()[0]
     st_pubKeyYParity = AGG_SIGNER_1.getPubData()[1]

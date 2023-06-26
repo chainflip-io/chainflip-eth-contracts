@@ -23,8 +23,6 @@ DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 print(f"DEPLOYER = {DEPLOYER}")
 
-network.priority_fee("1 gwei")
-
 
 def main():
     print()

@@ -1,7 +1,7 @@
 from os import environ
 from consts import *
 from web3.auto import w3
-from brownie import network, accounts
+from brownie import network, accounts, chain
 
 
 def deploy_Chainflip_contracts(
@@ -15,8 +15,8 @@ def deploy_Chainflip_contracts(
     *args,
 ):
 
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     class Context:
         pass
@@ -62,13 +62,6 @@ def deploy_Chainflip_contracts(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
 
-    # Deploying in live networks sometimes throws an error when getting the address of the deployed contract.
-    # I suspect that the RPC nodes might not have processed the transaction. Increasing the required confirmations
-    # to more than one is a problem in local networks with hardhat's automining enabled, as it will brick
-    # the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
-    # nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
-    required_confs = 1 if (chain.id == 31337 or chain.id == 10997) else 4
-
     # Deploy contracts via cf.deployerContract. Minting genesis validator FLIP to the State Chain Gateway.
     # The rest of genesis FLIP will be minted to the governance address for safekeeping.
     cf.deployerContract = DeployerContract.deploy(
@@ -98,11 +91,13 @@ def deploy_Chainflip_contracts(
 
 
 def deploy_new_vault(deployer, Vault, KeyManager, keyManager_address):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     keyManager = KeyManager.at(keyManager_address)
-    vault = Vault.deploy(keyManager, {"from": deployer, "required_confs": 1})
+    vault = Vault.deploy(
+        keyManager, {"from": deployer, "required_confs": required_confs}
+    )
 
     return vault
 
@@ -117,8 +112,8 @@ def deploy_new_stateChainGateway(
     flip_address,
     min_funding,
 ):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     flip = FLIP.at(flip_address)
     keyManager = KeyManager.at(keyManager_address)
@@ -127,7 +122,7 @@ def deploy_new_stateChainGateway(
         min_funding,
         keyManager.address,
         flip.address,
-        {"from": deployer, "required_confs": 1},
+        {"from": deployer, "required_confs": required_confs},
     )
 
     # New upgraded contract
@@ -139,28 +134,28 @@ def deploy_new_stateChainGateway(
 
 
 def deploy_new_keyManager(deployer, KeyManager, aggKey, govKey, communityKey):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     # Deploy a new KeyManager
-    keyManager = deployer.deploy(
-        KeyManager,
+    keyManager = KeyManager.deploy(
         aggKey,
         govKey,
         communityKey,
+        {"from": deployer, "required_confs": required_confs},
     )
 
     return keyManager
 
 
 def deploy_new_multicall(deployer, Multicall, vault_address):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     # Deploy a new Multicall
-    multicall = deployer.deploy(
-        Multicall,
+    multicall = Multicall.deploy(
         vault_address,
+        {"from": deployer, "required_confs": required_confs},
     )
 
     return multicall
@@ -168,11 +163,109 @@ def deploy_new_multicall(deployer, Multicall, vault_address):
 
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, MockUSDC, accounts):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
-    mockUsdc = deployer.deploy(MockUSDC, "USD Coin", "USDC", INIT_USDC_SUPPLY)
+    mockUsdc = MockUSDC.deploy(
+        "USD Coin",
+        "USDC",
+        INIT_USDC_SUPPLY,
+        {"from": deployer, "required_confs": required_confs},
+    )
     # Distribute tokens to other accounts
     for account in accounts:
         if account != deployer and mockUsdc.balanceOf(deployer) >= INIT_USDC_ACCOUNT:
             mockUsdc.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
 
     return mockUsdc
+
+
+def deploy_addressHolder(
+    deployer,
+    AddressHolder,
+    governor,
+    stateChainGateway_address,
+    stMinter_address,
+    stBurner_address,
+    stFLIP_address,
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    addressHolder = AddressHolder.deploy(
+        governor,
+        stateChainGateway_address,
+        stMinter_address,
+        stBurner_address,
+        stFLIP_address,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+    return addressHolder
+
+
+def deploy_tokenVestingNoStaking(
+    deployer,
+    TokenVestingNoStaking,
+    beneficiary,
+    revoker,
+    cliff,
+    end,
+    transferableBeneficiary,
+    flip,
+    amount,
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    tokenVestingNoStaking = TokenVestingNoStaking.deploy(
+        beneficiary,
+        revoker,
+        cliff,
+        end,
+        transferableBeneficiary,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+    flip.transfer(tokenVestingNoStaking.address, amount, {"from": deployer})
+
+    return tokenVestingNoStaking
+
+
+def deploy_tokenVestingStaking(
+    deployer,
+    TokenVestingStaking,
+    beneficiary,
+    revoker,
+    end,
+    transferableBeneficiary,
+    addressHolder_address,
+    flip,
+    amount,
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    tokenVestingStaking = TokenVestingStaking.deploy(
+        beneficiary,
+        revoker,
+        end,
+        transferableBeneficiary,
+        addressHolder_address,
+        flip.address,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+    flip.transfer(tokenVestingStaking.address, amount, {"from": deployer})
+
+    return tokenVestingStaking
+
+
+# Deploying in live networks sometimes throws an error when getting the address of the deployed contract.
+# I suspect that the RPC nodes might not have processed the transaction. Increasing the required confirmations
+# to more than one is a problem in local networks with hardhat's automining enabled, as it will brick
+# the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
+# nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
+def transaction_params():
+    network.priority_fee("1 gwei")
+    return 1 if (chain.id == 31337 or chain.id == 10997) else 4

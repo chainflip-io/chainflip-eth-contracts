@@ -1,120 +1,192 @@
 import sys
 import os
-import json
+import csv
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
-from brownie import chain, accounts, TokenVesting, FLIP, network
+from deploy import (
+    deploy_addressHolder,
+    deploy_tokenVestingStaking,
+    deploy_tokenVestingNoStaking,
+)
+from brownie import (
+    chain,
+    accounts,
+    FLIP,
+    AddressHolder,
+    TokenVestingStaking,
+    TokenVestingNoStaking,
+    network,
+)
 
 # File should be formatted as a list of beneficiary_addresses, the amount to vest separated by
 # a space, followed by a true/false pool signaling if they canStake and then if the beneficiary
-# can be transferred.
+# can be transferred. Amount should be in Ether and will be converted to wei in this script.
 VESTING_INFO_FILE = os.environ["VESTING_INFO_FILE"]
+
+order = {"eth_address": 0, "amount": 1, "lockup_type": 2, "transferable_beneficiary": 3}
+options_lockup_type = ["A", "B"]
+options_transferable_beneficiary = ["Y", "N"]
 
 
 def main():
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
-
     AUTONOMY_SEED = os.environ["SEED"]
-    DEPLOY_ARTEFACT_ID = os.environ.get("DEPLOY_ARTEFACT_ID")
     cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
     DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
     DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
-    print(f"DEPLOYER = {DEPLOYER}")
 
     governor = os.environ["GOV_KEY"]
-    # TODO: To potentially be updated with the SC_GATEWAY_REFERENCE_ADDRESS
     sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
     flip_address = os.environ["FLIP_ADDRESS"]
+    stMinter_address = os.environ.get("ST_MINTER_ADDRESS") or ZERO_ADDR
+    stBurner_address = os.environ.get("ST_BURNER_ADDRESS") or ZERO_ADDR
+    stFlip_address = os.environ.get("ST_FLIP_ADDRESS") or ZERO_ADDR
 
-    vestings_list = []
-    total_amount = 0
+    flip = FLIP.at(f"0x{cleanHexStr(flip_address)}")
 
-    required_confs = 1 if (chain.id == 31337) else 4
+    vesting_list = []
+    number_staking = 0
+    number_noStaking = 0
+    flip_total = 0
 
-    # Obtain a list of lists with the parameters parsed and checked that they are valid
-    with open(VESTING_INFO_FILE, "r") as f:
-        for line in f:
-            line = line.strip()  # Remove leading/trailing whitespaces and line breaks
-            parameters = line.split()  # Split the line by whitespaces
-            assert len(parameters) == 4, "Incorrect number of parameters"
-            # Check that the parameters are valid
-            if parameters[2] == "staking":
-                staking = True
-            elif parameters[2] == "notStaking":
-                staking = False
-            else:
-                raise Exception("Panic! Unknown staking parameter")
-            if parameters[3] == "true":
-                transferable = True
-            elif parameters[3] == "false":
-                transferable = False
-            else:
-                raise Exception("Panic! Unknown transferability parameter")
+    with open(VESTING_INFO_FILE, newline="") as csvfile:
+        reader = csv.reader(csvfile, delimiter=",", quotechar='"')
 
-            ## Continue parsing in some way
-            vestings_list.append(
-                [parameters[0], int(parameters[1]), staking, transferable]
+        # Check the first row - parameter names
+        first_row = next(reader)
+        for parameter_name, position in order.items():
+            assert first_row[position] == parameter_name, "Incorrect parameter name"
+
+        # Read the rest of the rows
+        for row in reader:
+            print("row: ", row)
+            assert len(row) == 4, "Incorrect number of parameters"
+
+            beneficiary = row[order["eth_address"]]
+            amount = int(row[order["amount"]])
+            lockup_type = row[order["lockup_type"]]
+            transferable = row[order["transferable_beneficiary"]]
+
+            # Check that the row are valid
+            assert (
+                transferable in options_transferable_beneficiary
+            ), "Incorrect transferability parameter"
+            assert lockup_type in options_lockup_type, "Incorrect lockup type parameter"
+
+            transferable = (
+                True if row[order["transferable_beneficiary"]] == "Y" else False
             )
-            total_amount += int(parameters[1])
 
-    # For live deployment, add a confirmation step to allow the user to verify the parameters.
+            vesting_list.append([beneficiary, amount, transferable, lockup_type])
+
+            if lockup_type == "A":
+                number_staking += 1
+            else:
+                number_noStaking += 1
+
+            flip_total += amount
+
+    # For live deployment, add a confirmation step to allow the user to verify the row.
+    print(f"DEPLOYER = {DEPLOYER}")
+    print(f"FLIP = {flip_address}")
+    print(f"GOVERNOR & REVOKER = {governor}")
+
+    print(f"SC_GATEWAY_ADDRESS = {sc_gateway_address}")
+    print(f"ST_MINTER_ADDRESS = {stMinter_address}")
+    print(f"ST_BURNER_ADDRESS = {stBurner_address}")
+    print(f"ST_FLIP_ADDRESS = {stFlip_address}")
+
+    print(f"Number of staking vesting contracts = {number_staking}")
+    print(f"Number of non-staking vesting contracts = {number_noStaking}")
+    print(f"Total amount of FLIP to vest = {flip_total}")
+
+    # TODO: Should amounts be done in E_18?
+    assert flip_total * E_18 <= flip.balanceOf(
+        DEPLOYER
+    ), "Not enough FLIP tokens to fund the vestings"
+
     if chain.id == 1:
         user_input = input(
-            "\n[WARNING] You are about to deploy to the mainnet with the parameters above. Continue? [y/N] "
+            "\n[WARNING] You are about to deploy to the mainnet with the row above. Continue? [y/N] "
         )
         if user_input != "y":
             ## Gracefully exit the script with a message.
             sys.exit("Deployment cancelled by user")
 
-    # TODO: Add some printing and confirmation of the deployment parameters
-    flip = FLIP.at(f"0x{cleanHexStr(flip_address)}")
-    assert total_amount <= flip.balanceOf(
-        DEPLOYER
-    ), "Not enough FLIP tokens to fund the vestings"
+    # Vesting schedule
+    # TODO: Check that this vesting schedule is correct
+    current_time = chain.time()
+    cliff = current_time + QUARTER_YEAR
+    end = cliff + YEAR
 
-    # Deploy the contracts
-    for vesting in vestings_list:
-        beneficiary = vesting[0]
-        amount = vesting[1]
-        staking = vesting[2]
-        transferable = vesting[3]
+    # Deploying the address Holder
+    addressHolder = deploy_addressHolder(
+        DEPLOYER,
+        AddressHolder,
+        governor,
+        sc_gateway_address,
+        stMinter_address,
+        stBurner_address,
+        stFlip_address,
+    )
 
-        current_time = chain.time()
+    print("vesting_list: ", vesting_list)
+    # Deploy the staking contracts
+    for vesting in vesting_list:
+        beneficiary, amount, transferable_beneficiary, lockup_type = vesting
+        amount_E18 = amount * E_18
 
-        # Vesting schedule
-        # TODO: Check that this vesting shcedule is correct
-        if staking:
-            cliff = end = current_time + YEAR
+        if lockup_type == "A":
+
+            tv = deploy_tokenVestingStaking(
+                DEPLOYER,
+                TokenVestingStaking,
+                beneficiary,
+                governor,
+                end,
+                transferable_beneficiary,
+                addressHolder.address,
+                flip,
+                amount_E18,
+            )
+            assert (
+                tv.addressHolder() == addressHolder.address
+            ), "Address holder not set correctly"
+            assert tv.FLIP() == flip.address, "FLIP not set correctly"
+
         else:
-            cliff = current_time + QUARTER_YEAR
-            end = cliff + YEAR
+            tv = deploy_tokenVestingNoStaking(
+                DEPLOYER,
+                TokenVestingNoStaking,
+                beneficiary,
+                governor,
+                cliff,
+                end,
+                transferable_beneficiary,
+                flip,
+                amount_E18,
+            )
+            assert tv.cliff() == cliff, "Cliff not set correctly"
 
-        tx = TokenVesting.deploy(
-            beneficiary,
-            governor,
-            cliff,
-            end,
-            staking,
-            transferable,
-            sc_gateway_address,
-            {"from": DEPLOYER, "required_confs": required_confs},
-        )
-        assert tx.getBeneficiary() == beneficiary, "Beneficiary not set correctly"
-        assert tx.getRevoker() == governor, "Revoker not set correctly"
-        assert tx.canStake() == staking, "Staking not set correctly"
+        assert tv.getBeneficiary() == beneficiary, "Beneficiary not set correctly"
+        assert tv.getRevoker() == governor, "Revoker not set correctly"
+
         assert (
-            tx.stateChainGateway() == sc_gateway_address
-        ), "SC Gateway not set correctly"
-        assert (
-            tx.beneficiaryCanBeTransferred() == transferable
+            tv.transferableBeneficiary() == transferable_beneficiary
         ), "Transferability not set correctly"
-        assert tx.cliff() == cliff, "Cliff not set correctly"
-        assert tx.end() == end, "End not set correctly"
+        assert tv.end() == end, "End not set correctly"
 
-        # Mint the tokens to the vesting contract
-        flip.transfer(tx.address, amount, {"from": DEPLOYER, "required_confs": 1})
+        assert (
+            flip.balanceOf(tv.address) == amount_E18
+        ), "Tokens not transferred correctly"
+        vesting.append(tv.address)
 
-        assert flip.balanceOf(tx.address) == amount, "Tokens not transferred correctly"
+    print("\n😎😎 Staking vesting contracts deployed successfully! 😎😎\n")
+
+    print("vesting_list: ", vesting_list)
+
+    for i, vesting in enumerate(vesting_list):
+        print(
+            f"- {i}: Lockup type {vesting[3]}, contract with beneficiary {vesting[0]}, amount {vesting[1]} FLIP and transferability {str(vesting[2]):<5} deployed at {vesting[4]}"
+        )
