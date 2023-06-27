@@ -4,6 +4,7 @@ import json
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
+from utils import prompt_user_continue_or_break
 from brownie import (
     chain,
     accounts,
@@ -37,9 +38,9 @@ def main():
         "GENESIS_STAKE",
         "NUM_GENESIS_VALIDATORS",
     ]
-    # for env_var_name in env_var_names:
-    #     if env_var_name not in os.environ:
-    #         raise Exception(f"Environment variable {env_var_name} is not set")
+    for env_var_name in env_var_names:
+        if env_var_name not in os.environ:
+            raise Exception(f"Environment variable {env_var_name} is not set")
 
     # For live deployment, add a confirmation step to allow the user to verify the parameters.
     if chain.id == 1:
@@ -56,12 +57,10 @@ def main():
         print(
             f"\nFLIP tokens will be minted to the Safekeeper account {os.environ['GOV_KEY']}"
         )
-        user_input = input(
-            "\n[WARNING] You are about to deploy to the mainnet with the parameters above. Continue? [y/N] "
+        prompt_user_continue_or_break(
+            "\n[WARNING] You are about to deploy to the mainnet with the row above",
+            False,
         )
-        if user_input != "y":
-            ## Gracefully exit the script with a message.
-            sys.exit("Deployment cancelled by user")
 
     cf = deploy_Chainflip_contracts(
         DEPLOYER,

@@ -9,6 +9,7 @@ from deploy import (
     deploy_tokenVestingStaking,
     deploy_tokenVestingNoStaking,
 )
+from utils import prompt_user_continue_or_break
 from brownie import (
     chain,
     accounts,
@@ -16,17 +17,19 @@ from brownie import (
     AddressHolder,
     TokenVestingStaking,
     TokenVestingNoStaking,
-    network,
 )
 
-# File should be formatted as a list of beneficiary_addresses, the amount to vest separated by
-# a space, followed by a true/false pool signaling if they canStake and then if the beneficiary
-# can be transferred. Amount should be in Ether and will be converted to wei in this script.
+# File should be formatted as a list of parameters. First line should be the headers with names of the
+# parameters. The rest of the lines should be the values for each parameter. It should contain the
+# parameters described in the order dictionary below but it can have others, which will be ignored.
 VESTING_INFO_FILE = os.environ["VESTING_INFO_FILE"]
-
 order = {"eth_address": 0, "amount": 1, "lockup_type": 2, "transferable_beneficiary": 3}
 options_lockup_type = ["A", "B"]
 options_transferable_beneficiary = ["Y", "N"]
+
+# TODO: Check that this vesting schedule is correct
+vesting_time_cliff = QUARTER_YEAR
+vesting_time_end = vesting_time_cliff + YEAR
 
 
 def main():
@@ -41,7 +44,7 @@ def main():
     flip_address = os.environ["FLIP_ADDRESS"]
     stMinter_address = os.environ.get("ST_MINTER_ADDRESS") or ZERO_ADDR
     stBurner_address = os.environ.get("ST_BURNER_ADDRESS") or ZERO_ADDR
-    stFlip_address = os.environ.get("ST_FLIP_ADDRESS") or ZERO_ADDR
+    stFlip_address = os.environ.get("ST_FLIP_ADDRESS  ") or ZERO_ADDR
 
     flip = FLIP.at(f"0x{cleanHexStr(flip_address)}")
 
@@ -60,7 +63,6 @@ def main():
 
         # Read the rest of the rows
         for row in reader:
-            print("row: ", row)
             assert len(row) == 4, "Incorrect number of parameters"
 
             beneficiary = row[order["eth_address"]]
@@ -78,7 +80,7 @@ def main():
                 True if row[order["transferable_beneficiary"]] == "Y" else False
             )
 
-            vesting_list.append([beneficiary, amount, transferable, lockup_type])
+            vesting_list.append([beneficiary, amount, lockup_type, transferable])
 
             if lockup_type == "A":
                 number_staking += 1
@@ -87,38 +89,44 @@ def main():
 
             flip_total += amount
 
+    # Vesting schedule
+    current_time = chain.time()
+    cliff = current_time + vesting_time_cliff
+    end = current_time + vesting_time_end
+
+    assert flip_total * E_18 <= flip.balanceOf(
+        DEPLOYER
+    ), "Not enough FLIP tokens to fund the vestings"
+    final_balance = (flip.balanceOf(DEPLOYER) - flip_total * E_18) // E_18
+
     # For live deployment, add a confirmation step to allow the user to verify the row.
     print(f"DEPLOYER = {DEPLOYER}")
     print(f"FLIP = {flip_address}")
     print(f"GOVERNOR & REVOKER = {governor}")
 
     print(f"SC_GATEWAY_ADDRESS = {sc_gateway_address}")
-    print(f"ST_MINTER_ADDRESS = {stMinter_address}")
-    print(f"ST_BURNER_ADDRESS = {stBurner_address}")
-    print(f"ST_FLIP_ADDRESS = {stFlip_address}")
+    print(f"ST_MINTER_ADDRESS  =  {stMinter_address}")
+    print(f"ST_BURNER_ADDRESS  =  {stBurner_address}")
+    print(f"ST_FLIP_ADDRESS    =  {stFlip_address}")
 
     print(f"Number of staking vesting contracts = {number_staking}")
     print(f"Number of non-staking vesting contracts = {number_noStaking}")
-    print(f"Total amount of FLIP to vest = {flip_total}")
+    print(f"Total number of contracts = {number_staking+number_noStaking}")
+    print(f"Vesting cliff (only for non-staking) = {vesting_time_cliff//MONTH} months")
+    print(
+        f"Vesting end (staking & non-staking)  = {vesting_time_end//YEAR} years and {(vesting_time_end % YEAR)//MONTH} months"
+    )
+    print(f"Total amount of FLIP to vest    = {flip_total:,}")
+    print(f"Initial deployer's FLIP balance = {flip.balanceOf(DEPLOYER)//E_18:,}")
+    print(f"Final deployer's FLIP balance   = {final_balance:,}")
 
-    # TODO: Should amounts be done in E_18?
-    assert flip_total * E_18 <= flip.balanceOf(
-        DEPLOYER
-    ), "Not enough FLIP tokens to fund the vestings"
+    prompt_user_continue_or_break("Deployment with the parameter above", True)
 
     if chain.id == 1:
-        user_input = input(
-            "\n[WARNING] You are about to deploy to the mainnet with the row above. Continue? [y/N] "
+        prompt_user_continue_or_break(
+            "\n[WARNING] You are about to deploy to the mainnet with the row above",
+            False,
         )
-        if user_input != "y":
-            ## Gracefully exit the script with a message.
-            sys.exit("Deployment cancelled by user")
-
-    # Vesting schedule
-    # TODO: Check that this vesting schedule is correct
-    current_time = chain.time()
-    cliff = current_time + QUARTER_YEAR
-    end = cliff + YEAR
 
     # Deploying the address Holder
     addressHolder = deploy_addressHolder(
@@ -131,10 +139,9 @@ def main():
         stFlip_address,
     )
 
-    print("vesting_list: ", vesting_list)
     # Deploy the staking contracts
     for vesting in vesting_list:
-        beneficiary, amount, transferable_beneficiary, lockup_type = vesting
+        beneficiary, amount, lockup_type, transferable_beneficiary = vesting
         amount_E18 = amount * E_18
 
         if lockup_type == "A":
@@ -182,11 +189,12 @@ def main():
         ), "Tokens not transferred correctly"
         vesting.append(tv.address)
 
-    print("\n😎😎 Staking vesting contracts deployed successfully! 😎😎\n")
-
-    print("vesting_list: ", vesting_list)
-
     for i, vesting in enumerate(vesting_list):
         print(
-            f"- {i}: Lockup type {vesting[3]}, contract with beneficiary {vesting[0]}, amount {vesting[1]} FLIP and transferability {str(vesting[2]):<5} deployed at {vesting[4]}"
+            f"- {i}: Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>10} FLIP and transferability {str(vesting[3]):<5} deployed at {vesting[4]}"
         )
+    print("\n😎😎 Vesting contracts deployed successfully! 😎😎\n")
+
+    assert final_balance == flip.balanceOf(DEPLOYER) // E_18, "Incorrect final balance"
+
+    print(f"Final deployer's FLIP balance   = {final_balance:,}")
