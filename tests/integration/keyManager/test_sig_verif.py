@@ -96,6 +96,7 @@ def test_sig_stateChainGateway(
         cf.keyManager.address,
         cf.flip.address,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
     )
 
     args = [

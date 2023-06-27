@@ -10,17 +10,22 @@ from shared_tests import *
     st_fetchSwapID=strategy("bytes32"),
     st_deployToken=strategy("bool"),
 )
-def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken):
+def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken, Deposit):
     tx = signed_call_cf(
         cf,
         cf.vault.deployAndFetchBatch,
         [[st_fetchSwapID, token.address if st_deployToken else NATIVE_ADDR]],
         sender=st_sender,
     )
-
+    depositAddr = getCreate2Addr(
+        cf.vault.address,
+        cleanHexStrPad(st_fetchSwapID),
+        Deposit,
+        cleanHexStrPad(token.address if st_deployToken else NATIVE_ADDR),
+    )
     if not st_deployToken:
         assert len(tx.events["FetchedNative"]) == 1
-        assert tx.events["FetchedNative"][0].values() == [0]
+        assert tx.events["FetchedNative"][0].values() == [depositAddr, 0]
 
 
 @given(
@@ -30,7 +35,7 @@ def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken):
     st_deployToken=strategy("bool"),
 )
 def test_deposit_constructor(
-    cf, st_sender, st_address, st_fetchSwapID, token, st_deployToken
+    cf, Deposit, st_sender, st_address, st_fetchSwapID, token, st_deployToken
 ):
     # Non existing token in that address
     with reverts():
@@ -42,9 +47,15 @@ def test_deposit_constructor(
         [[st_fetchSwapID, token.address if st_deployToken else NATIVE_ADDR]],
         sender=st_sender,
     )
+    depositAddr = getCreate2Addr(
+        cf.vault.address,
+        cleanHexStrPad(st_fetchSwapID),
+        Deposit,
+        cleanHexStrPad(token.address if st_deployToken else NATIVE_ADDR),
+    )
     if not st_deployToken:
         assert len(tx.events["FetchedNative"]) == 1
-        assert tx.events["FetchedNative"][0].values() == [0]
+        assert tx.events["FetchedNative"][0].values() == [depositAddr, 0]
 
 
 @given(
@@ -78,9 +89,15 @@ def test_deposit_fetch(
         [[st_fetchSwapID, token.address if st_deployToken else NATIVE_ADDR]],
         sender=st_sender,
     )
+    depositAddr = getCreate2Addr(
+        cf.vault.address,
+        cleanHexStrPad(st_fetchSwapID),
+        Deposit,
+        cleanHexStrPad(token.address if st_deployToken else NATIVE_ADDR),
+    )
     if not st_deployToken:
         assert len(tx.events["FetchedNative"]) == 1
-        assert tx.events["FetchedNative"][0].values() == [0]
+        assert tx.events["FetchedNative"][0].values() == [depositAddr, 0]
 
     # Call fetch function on the deployed Deposit contract - should fail as only the Vault should be able to call it
     with reverts():
@@ -121,7 +138,7 @@ def deploy_deposit(cf, sender, Deposit):
         sender=sender,
     )
 
-    assert tx.events["FetchedNative"][0].values() == [0]
+    assert tx.events["FetchedNative"][0].values() == [depositAddr, 0]
 
     return depositAddr
 
@@ -141,7 +158,7 @@ def test_receive(cf, st_sender, token, Deposit, st_amount):
     iniVault_nativeBals = web3.eth.get_balance(cf.vault.address)
     # Send some ETH to the deposit contract
     tx = st_sender.transfer(depositAddr, st_amount)
-    assert tx.events["FetchedNative"][0].values() == [st_amount]
+    assert tx.events["FetchedNative"][0].values() == [depositAddr, st_amount]
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(cf.vault.address) == iniVault_nativeBals + st_amount
 
@@ -155,7 +172,7 @@ def test_receive_gas(cf, Deposit, st_gasLimit, st_amount):
 
     # As of now a transfer of >0 ETH will require ~31.602 gas which ends up being 33776 gas
     # required as a gas Limit (most likely due to the 64/63 rule).
-    if st_gasLimit < 33777:
+    if st_gasLimit < 32719:
         # Brownie is unable to catch this with `reverts()`. It caches it in a normal
         # call using {"gas_limit": st_gas_limit} but not here - using a workaround.
         try:
@@ -167,7 +184,7 @@ def test_receive_gas(cf, Deposit, st_gasLimit, st_amount):
             assert False, "Call should be reverting due to not enough gas"
     else:
         tx = cf.DENICE.transfer(depositAddr, st_amount, gas_limit=st_gasLimit)
-        assert tx.events["FetchedNative"][0].values() == [st_amount]
+        assert tx.events["FetchedNative"][0].values() == [depositAddr, st_amount]
         tx.info()
 
 
@@ -186,11 +203,11 @@ def test_deposit_forceEth_before_deployment(cf, Deposit, ForceNativeTokens):
     ForceNativeTokens.deploy(depositAddr, {"from": cf.SAFEKEEPER, "value": TEST_AMNT})
 
     # Asser that no FetchNative event has been emitted
-    depositContractObject = get_contract_object("Deposit", depositAddr)
+    vaultContractObject = get_contract_object("Vault", cf.vault.address)
     new_events = list(
         fetch_events(
-            depositContractObject.events.FetchedNative,
-            address=depositAddr,
+            vaultContractObject.events.FetchedNative,
+            address=cf.vault.address,
             from_block=0,
         )
     )
@@ -205,7 +222,7 @@ def test_deposit_forceEth_before_deployment(cf, Deposit, ForceNativeTokens):
         cf.vault.deployAndFetchBatch,
         [[JUNK_HEX_PAD, NATIVE_ADDR]],
     )
-    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
+    assert tx.events["FetchedNative"][0].values() == [depositAddr, TEST_AMNT]
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(cf.vault.address) == TEST_AMNT
 
@@ -228,7 +245,7 @@ def test_deposit_forceEth_after_deployment(cf, Deposit, ForceNativeTokens):
     # These tokkns can be pickup up in the future with a dummy transactiion, even though this
     # is not really supported.
     tx = cf.ALICE.transfer(depositAddr, 0)
-    assert tx.events["FetchedNative"][0].values() == [TEST_AMNT]
+    assert tx.events["FetchedNative"][0].values() == [depositAddr, TEST_AMNT]
 
 
 # Test that we can get the events from the logs from a contract that doesn't exist yet, which will be the real
@@ -242,12 +259,12 @@ def test_fetch_event_undeployed_Deposit(cf, Deposit):
         cleanHexStrPad(NATIVE_ADDR),
     )
 
-    depositContractObject = get_contract_object("Deposit", depositAddr)
+    vaultContractObject = get_contract_object("Vault", cf.vault.address)
 
     new_events = list(
         fetch_events(
-            depositContractObject.events.FetchedNative,
-            address=depositAddr,
+            vaultContractObject.events.FetchedNative,
+            address=cf.vault.address,
             from_block=0,
         )
     )
@@ -258,8 +275,8 @@ def test_fetch_event_undeployed_Deposit(cf, Deposit):
 
     new_events = list(
         fetch_events(
-            depositContractObject.events.FetchedNative,
-            address=depositAddr,
+            vaultContractObject.events.FetchedNative,
+            address=cf.vault.address,
             from_block=0,
         )
     )

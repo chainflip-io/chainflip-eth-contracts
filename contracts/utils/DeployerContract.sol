@@ -26,13 +26,14 @@ contract DeployerContract is IShared {
         address govKey,
         address commKey,
         uint256 minFunding,
+        uint48 redemptionDelay,
         uint256 initSupply,
         uint256 numGenesisValidators,
         uint256 genesisStake
     ) {
         KeyManager _keyManager = new KeyManager(aggKey, govKey, commKey);
         Vault _vault = new Vault(_keyManager);
-        StateChainGateway _stateChainGateway = new StateChainGateway(_keyManager, minFunding);
+        StateChainGateway _stateChainGateway = new StateChainGateway(_keyManager, minFunding, redemptionDelay);
         FLIP _flip = new FLIP(
             initSupply,
             numGenesisValidators,

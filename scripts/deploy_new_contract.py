@@ -63,6 +63,7 @@ def deploy_vault():
 def deploy_scGateway():
     keyManager = getKeyManager()
     FLIP_ADDRESS = os.environ["FLIP_ADDRESS"]
+    redemption_delay = os.environ["REDEMPTION_DELAY"]
     flip_address = f"0x{cleanHexStr(FLIP_ADDRESS)}"
 
     (deployerStateChainGateway, new_stateChainGateway) = deploy_new_stateChainGateway(
@@ -74,6 +75,7 @@ def deploy_scGateway():
         keyManager.address,
         flip_address,
         MIN_FUNDING,
+        redemption_delay,
     )
     addressDump["NEW_SC_GATEWAY_ADDRESS"] = new_stateChainGateway.address
     addressDump["DEPLOYER_SM"] = deployerStateChainGateway.address

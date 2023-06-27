@@ -52,6 +52,7 @@ def test_stake_upgrade(
         cf.keyManager,
         cf.flip,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
     )
 
     addressHolder.updateStateChainGateway(

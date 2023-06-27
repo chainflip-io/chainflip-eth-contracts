@@ -73,6 +73,7 @@ def test_updateIssuer_rev_notFLIP(
         cf.keyManager.address,
         flip_mock.address,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
     )
 
     with reverts(REV_MSG_NOT_FLIP):
@@ -110,6 +111,7 @@ def test_updateIssuer(
         cf.keyManager.address,
         cf.flip.address,
         MIN_FUNDING,
+        REDEMPTION_DELAY,
     )
 
     tx = signed_call_cf(

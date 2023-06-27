@@ -49,6 +49,11 @@ def deploy_Chainflip_contracts(
     else:
         cf.communityKey = accounts[6]
 
+    cf.redemptionDelay = int(environment.get("REDEMPTION_DELAY") or REDEMPTION_DELAY)
+
+    # Ensure it's either the mainnet or the testnet values
+    assert cf.redemptionDelay in [REDEMPTION_DELAY, REDEMPTION_DELAY_TESTNETS]
+
     cf.numGenesisValidators = int(
         environment.get("NUM_GENESIS_VALIDATORS") or NUM_GENESIS_VALIDATORS
     )
@@ -69,6 +74,7 @@ def deploy_Chainflip_contracts(
         cf.gov,
         cf.communityKey,
         MIN_FUNDING,
+        cf.redemptionDelay,
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
@@ -111,6 +117,7 @@ def deploy_new_stateChainGateway(
     keyManager_address,
     flip_address,
     min_funding,
+    redemption_delay,
 ):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
@@ -120,6 +127,7 @@ def deploy_new_stateChainGateway(
 
     deployerStateChainGateway = DeployerStateChainGateway.deploy(
         min_funding,
+        redemption_delay,
         keyManager.address,
         flip.address,
         {"from": deployer, "required_confs": required_confs},
