@@ -3,16 +3,13 @@ import os
 
 sys.path.append(os.path.abspath("tests"))
 from shared_tests import *
+from utils import prompt_user_continue_or_break
 from consts import *
 from brownie import (
-    chain,
     accounts,
     KeyManager,
-    Vault,
     StateChainGateway,
     FLIP,
-    network,
-    web3,
 )
 
 AUTONOMY_SEED = os.environ["SEED"]
@@ -22,8 +19,6 @@ DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
 DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 print(f"DEPLOYER = {DEPLOYER}")
-
-network.priority_fee("1 gwei")
 
 
 def main():
@@ -99,9 +94,7 @@ def register_redemption_genesis_flip():
     print(
         f"FLIP balance of StateChainGateway {flip_balance}. Registering a redemption to the new StateChainGateway {NEW_SC_GATEWAY_ADDRESS}"
     )
-    user_input = input("Continue? (y/[N])")
-    if user_input not in ["y", "Y", "yes", "Yes", "YES"]:
-        sys.exit("Canceled by the user")
+    prompt_user_continue_or_break("", False)
 
     syncNonce(keyManager)
 
@@ -144,9 +137,7 @@ def update_issuer():
     print(
         f"Update the issuer from old StateChainGateway {SC_GATEWAY_ADDRESS} to the new StateChainGateway {NEW_SC_GATEWAY_ADDRESS}"
     )
-    user_input = input("Continue? (y/[N])")
-    if user_input not in ["y", "Y", "yes", "Yes", "YES"]:
-        sys.exit("Canceled by the user")
+    prompt_user_continue_or_break("", False)
 
     syncNonce(keyManager)
 

@@ -4,6 +4,7 @@ import json
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
+from utils import prompt_user_continue_or_break
 from brownie import (
     chain,
     accounts,
@@ -58,12 +59,10 @@ def main():
         print(
             f"\nFLIP tokens will be minted to the Safekeeper account {os.environ['GOV_KEY']}"
         )
-        user_input = input(
-            "\n[WARNING] You are about to deploy to the mainnet with the parameters above. Continue? [y/N] "
+        prompt_user_continue_or_break(
+            "\n[WARNING] You are about to deploy to the mainnet with the row above",
+            False,
         )
-        if user_input != "y":
-            ## Gracefully exit the script with a message.
-            sys.exit("Deployment cancelled by user")
 
     cf = deploy_Chainflip_contracts(
         DEPLOYER,

@@ -1,8 +1,6 @@
 import pytest
 from consts import *
-from deploy import deploy_Chainflip_contracts, deploy_new_multicall
-from brownie import chain
-from brownie.network import priority_fee
+from deploy import *
 from utils import *
 
 
@@ -155,7 +153,8 @@ def mockStProvider(cf, addrs, Minter, Burner, stFLIP):
 def addressHolder(cf, addrs, AddressHolder, mockStProvider):
     stFLIP, minter, burner, _ = mockStProvider
 
-    return addrs.DEPLOYER.deploy(
+    return deploy_addressHolder(
+        addrs.DEPLOYER,
         AddressHolder,
         addrs.DEPLOYER,
         cf.stateChainGateway,
@@ -174,18 +173,19 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
     cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
 
-    tv = addrs.DEPLOYER.deploy(
+    total = MAX_TEST_FUND
+
+    tv = deploy_tokenVestingNoStaking(
+        addrs.DEPLOYER,
         TokenVestingNoStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         cliff,
         end,
         BENEF_TRANSF,
+        cf.flip,
+        total,
     )
-
-    total = MAX_TEST_FUND
-
-    cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
     return tv, cliff, end, total
 
@@ -197,7 +197,10 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
     start = getChainTime()
     end = start + QUARTER_YEAR + YEAR
 
-    tv = addrs.DEPLOYER.deploy(
+    total = MAX_TEST_FUND
+
+    tv = deploy_tokenVestingStaking(
+        addrs.DEPLOYER,
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
@@ -205,12 +208,8 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
         BENEF_TRANSF,
         addressHolder,
         cf.flip,
+        total,
     )
-
-    total = MAX_TEST_FUND
-
-    cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
-
     return tv, end, total
 
 
