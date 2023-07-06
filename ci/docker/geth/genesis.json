@@ -1,14 +1,14 @@
 {
   "config": {
     "ChainName": "chainflip_private_eth",
-    "arrowGlacierBlock": 0,
-    "berlinBlock": 0,
-    "byzantiumBlock": 0,
     "chainId": 10997,
     "clique": {
       "epoch": 30000,
       "period": 12
     },
+    "arrowGlacierBlock": 0,
+    "berlinBlock": 0,
+    "byzantiumBlock": 0,
     "consensus": "clique",
     "constantinopleBlock": 0,
     "daoForkSupport": true,
