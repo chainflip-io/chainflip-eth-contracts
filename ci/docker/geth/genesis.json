@@ -23,7 +23,7 @@
     "muirGlacierBlock": 0,
     "petersburgBlock": 0,
     "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "terminalTotalDifficulty": 50,
+    "terminalTotalDifficulty": 50
   },
   "difficulty": "1",
   "gasLimit": "30000000",
