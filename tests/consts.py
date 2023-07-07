@@ -1,17 +1,6 @@
 from crypto import *
 from utils import *
 
-# -----Networks-----
-eth_localnet = 10997
-eth_goerli = 5
-eth_sepolia = 11155111
-eth_mainnet = 1
-arb_localnet = 412346
-arb_testnet = 421613
-arb_mainnet = 42161
-hardhat = 31337
-arbitrum_networks = [arb_localnet, arb_testnet, arb_mainnet]
-
 # -----General/shared-----
 ZERO_ADDR_PACKED = "0000000000000000000000000000000000000000"
 ZERO_ADDR = "0x" + ZERO_ADDR_PACKED
