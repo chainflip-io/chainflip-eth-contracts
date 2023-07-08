@@ -15,6 +15,9 @@ jobs:
   lint:
     uses: ./.github/workflows/.lint.yml
 
+  ## TODO: Potentially also spin an Arbitrum node (or just use infura RPC endpoint secret
+  ## to fork arbitrum) and run deploy_contracts and potentially other deployments against
+  ## that node too. Since it's different deployment logic it's worth it to run it separately.
   scripts-tests:
     needs: lint
     runs-on: [self-hosted, linux, x64, ephemeral]
@@ -80,3 +83,5 @@ jobs:
           poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
+          poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
+          poetry run brownie run deploy_new_contract deploy_cfReceiverMock --network hardhat

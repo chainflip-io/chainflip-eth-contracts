@@ -7,8 +7,6 @@ from brownie import network, accounts
 # NOTE: When deploying to a live network (via deploy_contracts.py) the environment
 # variables are forced to be set by the user to avoid defaulting to the testnet values.
 # Therefore, the default values for env. variables in this script are only used in testing.
-
-
 def deploy_Chainflip_contracts(
     deployer,
     KeyManager,
@@ -20,8 +18,8 @@ def deploy_Chainflip_contracts(
     *args,
 ):
 
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     class Context:
         pass
@@ -32,7 +30,7 @@ def deploy_Chainflip_contracts(
     if args:
         environment = args[0]
 
-    get_common_env(cf, environment)
+    get_env_keys(cf, environment)
 
     cf.redemptionDelay = int(environment.get("REDEMPTION_DELAY") or REDEMPTION_DELAY)
 
@@ -42,7 +40,6 @@ def deploy_Chainflip_contracts(
     cf.numGenesisValidators = int(
         environment.get("NUM_GENESIS_VALIDATORS") or NUM_GENESIS_VALIDATORS
     )
-
     cf.genesisStake = int(environment.get("GENESIS_STAKE") or GENESIS_STAKE)
 
     print(
@@ -60,10 +57,10 @@ def deploy_Chainflip_contracts(
         INIT_SUPPLY,
         cf.numGenesisValidators,
         cf.genesisStake,
-        {"from": deployer, "required_confs": cf.required_confs},
+        {"from": deployer, "required_confs": required_confs},
     )
     cf.addressChecker = AddressChecker.deploy(
-        {"from": deployer, "required_confs": cf.required_confs}
+        {"from": deployer, "required_confs": required_confs}
     )
 
     cf.vault = Vault.at(cf.deployerContract.vault())
@@ -71,7 +68,7 @@ def deploy_Chainflip_contracts(
     cf.keyManager = KeyManager.at(cf.deployerContract.keyManager())
     cf.stateChainGateway = StateChainGateway.at(cf.deployerContract.stateChainGateway())
 
-    # All the deployer rights and tokens have been delegated to the governance key.
+    # All the deployer rights and tokens have been delegated to the governance & safekeeper key.
     cf.safekeeper = cf.gov
     cf.deployer = deployer
 
@@ -85,8 +82,8 @@ def deploy_contracts_secondary_evm(
     AddressChecker,
     *args,
 ):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     class Context:
         pass
@@ -97,7 +94,7 @@ def deploy_contracts_secondary_evm(
     if args:
         environment = args[0]
 
-    get_common_env(cf, environment)
+    get_env_keys(cf, environment)
 
     cf.keyManager = deploy_new_keyManager(
         deployer, KeyManager, cf.aggKey, cf.gov, cf.communityKey
@@ -105,7 +102,7 @@ def deploy_contracts_secondary_evm(
     cf.vault = deploy_new_vault(deployer, Vault, KeyManager, cf.keyManager.address)
 
     cf.addressChecker = AddressChecker.deploy(
-        {"from": deployer, "required_confs": cf.required_confs}
+        {"from": deployer, "required_confs": required_confs}
     )
 
     cf.deployer = deployer
@@ -113,7 +110,7 @@ def deploy_contracts_secondary_evm(
     return cf
 
 
-def get_common_env(cf, environment):
+def get_env_keys(cf, environment):
     aggKey = environment.get("AGG_KEY")
     if aggKey:
         cf.aggKey = getKeysFromAggKey(aggKey)
@@ -136,16 +133,14 @@ def get_common_env(cf, environment):
         f"Deploying with AGG_KEY: {aggKey}, GOV_KEY: {cf.gov} and COMM_KEY: {cf.communityKey}"
     )
 
-    cf.required_confs = get_required_confs()
-
 
 def deploy_new_vault(deployer, Vault, KeyManager, keyManager_address):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     keyManager = KeyManager.at(keyManager_address)
     vault = Vault.deploy(
-        keyManager, {"from": deployer, "required_confs": get_required_confs()}
+        keyManager, {"from": deployer, "required_confs": required_confs}
     )
 
     return vault
@@ -162,8 +157,8 @@ def deploy_new_stateChainGateway(
     min_funding,
     redemption_delay,
 ):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     flip = FLIP.at(flip_address)
     keyManager = KeyManager.at(keyManager_address)
@@ -173,7 +168,7 @@ def deploy_new_stateChainGateway(
         redemption_delay,
         keyManager.address,
         flip.address,
-        {"from": deployer, "required_confs": get_required_confs()},
+        {"from": deployer, "required_confs": required_confs},
     )
 
     # New upgraded contract
@@ -185,52 +180,54 @@ def deploy_new_stateChainGateway(
 
 
 def deploy_new_keyManager(deployer, KeyManager, aggKey, govKey, communityKey):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     # Deploy a new KeyManager
     keyManager = KeyManager.deploy(
         aggKey,
         govKey,
         communityKey,
-        {"from": deployer, "required_confs": get_required_confs()},
+        {"from": deployer, "required_confs": required_confs},
     )
 
     return keyManager
 
 
 def deploy_new_multicall(deployer, Multicall, vault_address):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     # Deploy a new Multicall
     multicall = Multicall.deploy(
         vault_address,
-        {"from": deployer, "required_confs": get_required_confs()},
+        {"from": deployer, "required_confs": required_confs},
     )
 
     return multicall
 
 
 def deploy_new_cfReceiverMock(deployer, CFReceiverMock, vault_address):
-    # Set the priority fee for all transactions
-    network.priority_fee("1 gwei")
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     # Deploy a new Multicall
     return CFReceiverMock.deploy(
         vault_address,
-        {"from": deployer, "required_confs": get_required_confs()},
+        {"from": deployer, "required_confs": required_confs},
     )
 
 
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, MockUSDC, accounts):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
 
     mockUsdc = MockUSDC.deploy(
         "USD Coin",
         "USDC",
         INIT_USDC_SUPPLY,
-        {"from": deployer, "required_confs": get_required_confs()},
+        {"from": deployer, "required_confs": required_confs},
     )
     # Distribute tokens to other accounts
     for account in accounts:
@@ -245,5 +242,6 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
 # to more than one is a problem in local networks with hardhat's automining enabled, as it will brick
 # the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
 # nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
-def get_required_confs():
+def transaction_params():
+    network.priority_fee("1 gwei")
     return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 4
