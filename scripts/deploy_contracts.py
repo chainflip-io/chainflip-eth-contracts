@@ -98,8 +98,6 @@ def deploy_ethereum():
 
     display_deployed_contracts(cf, addressDump)
 
-    print("\n😎😎 Deployment success! 😎😎")
-
     store_artifacts(addressDump)
 
 
@@ -142,8 +140,6 @@ def deploy_secondary_evm():
     )
 
     display_deployed_contracts(cf, addressDump)
-
-    print("\n😎😎 Deployment success! 😎😎")
 
     store_artifacts(addressDump)
 
@@ -224,6 +220,8 @@ def display_deployed_contracts(cf, addressDump):
     if hasattr(cf, "cfReceiverMock"):
         print(f"  CfReceiver Mock: {cf.cfReceiverMock.address}")
         addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiverMock.address
+
+    print("\n😎😎 Deployment success! 😎😎\n")
 
 
 def store_artifacts(addressDump):
