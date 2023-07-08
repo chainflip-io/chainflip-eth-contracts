@@ -66,7 +66,7 @@ def deploy_ethereum():
             os.environ["GENESIS_STAKE"],
             os.environ["NUM_GENESIS_VALIDATORS"],
         )
-        promt_warning_mainnet("Ethereum")
+        prompt_warning_mainnet("Ethereum")
 
     cf = deploy_Chainflip_contracts(
         deployer,
@@ -118,7 +118,7 @@ def deploy_secondary_evm():
             os.environ["COMM_KEY"],
             os.environ["AGG_KEY"],
         )
-        promt_warning_mainnet("Arbitrum")
+        prompt_warning_mainnet("Arbitrum")
 
     cf = deploy_contracts_secondary_evm(
         deployer,
@@ -147,7 +147,7 @@ def deploy_secondary_evm():
     print("\n😎😎 Deployment success! 😎😎")
 
 
-def promt_warning_mainnet(network_name):
+def prompt_warning_mainnet(network_name):
     user_input = input(
         f"\n[WARNING] You are about to deploy to {network_name} Mainnet with the parameters above. Continue? [y/N] "
     )
