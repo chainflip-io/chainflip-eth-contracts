@@ -96,7 +96,7 @@ def deploy_ethereum():
         cf.safekeeper, cf.redemptionDelay, cf.genesisStake, cf.numGenesisValidators
     )
 
-    display_deployed_contracts(cf, addressDump)
+    display_deployed_contracts(cf)
 
     store_artifacts(addressDump)
 
@@ -139,7 +139,7 @@ def deploy_secondary_evm():
         chain.id, deployer, cf.gov, cf.communityKey, cf.keyManager.getAggregateKey()
     )
 
-    display_deployed_contracts(cf, addressDump)
+    display_deployed_contracts(cf)
 
     store_artifacts(addressDump)
 
@@ -197,7 +197,7 @@ def display_ethereum_deployment_params(
     print(f"\nFLIP tokens will be minted to the Safekeeper account {safekeeper}")
 
 
-def display_deployed_contracts(cf, addressDump):
+def display_deployed_contracts(cf):
     print("\nDeployed contract addresses\n----------------------------")
 
     # Ethereum contracts
@@ -216,10 +216,8 @@ def display_deployed_contracts(cf, addressDump):
     # Contracts dependant on localnet/testnet/mainnet
     if hasattr(cf, "mockUSDC"):
         print(f"  USDC: {cf.mockUSDC.address}")
-        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
     if hasattr(cf, "cfReceiverMock"):
         print(f"  CfReceiver Mock: {cf.cfReceiverMock.address}")
-        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiverMock.address
 
     print("\n😎😎 Deployment success! 😎😎\n")
 
