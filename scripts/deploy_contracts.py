@@ -96,11 +96,12 @@ def deploy_ethereum():
     display_ethereum_deployment_params(
         cf.safekeeper, cf.redemptionDelay, cf.genesisStake, cf.numGenesisValidators
     )
-    store_artifacts(addressDump)
 
     display_deployed_contracts(cf, addressDump)
 
     print("\n😎😎 Deployment success! 😎😎")
+
+    store_artifacts(addressDump)
 
 
 # As of now this is for Arbitrum
@@ -140,11 +141,12 @@ def deploy_secondary_evm():
     display_common_deployment_params(
         chain.id, deployer, cf.gov, cf.communityKey, cf.keyManager.getAggregateKey()
     )
-    store_artifacts(addressDump)
 
     display_deployed_contracts(cf, addressDump)
 
     print("\n😎😎 Deployment success! 😎😎")
+
+    store_artifacts(addressDump)
 
 
 def prompt_warning_mainnet(network_name):
