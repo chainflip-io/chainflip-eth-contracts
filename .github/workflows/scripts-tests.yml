@@ -15,13 +15,12 @@ jobs:
   lint:
     uses: ./.github/workflows/.lint.yml
 
-  ## TODO: Potentially also spin an Arbitrum node (or just use infura RPC endpoint secret
-  ## to fork arbitrum) and run deploy_contracts and potentially other deployments against
-  ## that node too. Since it's different deployment logic it's worth it to run it separately.
   scripts-tests:
     needs: lint
     runs-on: [self-hosted, linux, x64, ephemeral]
     timeout-minutes: 3600
+    env:
+      SEED: test test test test test test test test test test test junk
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -48,7 +47,6 @@ jobs:
       # Just checking that the scripts run. More elaborated testing can be done later on.
       - name: Deploy contracts Ethereum
         env:
-          SEED: test test test test test test test test test test test junk
           NUM_GENESIS_VALIDATORS: 3
           AGG_KEY: "0xDEADBEEF"
           GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
@@ -60,8 +58,6 @@ jobs:
 
       - name: Deploy contracts Arbitrum (mock)
         env:
-          SEED: test test test test test test test test test test test junk
-          NUM_GENESIS_VALIDATORS: 3
           AGG_KEY: "0xDEADBEEF"
           GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
           COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
@@ -73,7 +69,6 @@ jobs:
 
       - name: Deploy individual contracts
         env:
-          SEED: test test test test test test test test test test test junk
           REDEMPTION_DELAY: "120"
           KEY_MANAGER_ADDRESS: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be"
           FLIP_ADDRESS: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
@@ -82,6 +77,5 @@ jobs:
           poetry run brownie run deploy_new_contract deploy_vault --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat &&
-          poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
           poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
           poetry run brownie run deploy_new_contract deploy_cfReceiverMock --network hardhat
