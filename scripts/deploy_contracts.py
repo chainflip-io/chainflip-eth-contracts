@@ -78,8 +78,6 @@ def deploy_ethereum():
         os.environ,
     )
 
-    deploy_optional_contracts(cf)
-
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
         "SC_GATEWAY_ADDRESS": cf.stateChainGateway.address,
@@ -87,6 +85,8 @@ def deploy_ethereum():
         "FLIP_ADDRESS": cf.flip.address,
         "ADDRESS_CHECKER_ADDRESS": cf.addressChecker.address,
     }
+
+    deploy_optional_contracts(cf, addressDump)
 
     print("Deployed with parameters\n----------------------------")
     display_common_deployment_params(
@@ -128,13 +128,13 @@ def deploy_secondary_evm():
         os.environ,
     )
 
-    deploy_optional_contracts(cf)
-
     addressDump = {
         "KEY_MANAGER_ADDRESS": cf.keyManager.address,
         "VAULT_ADDRESS": cf.vault.address,
         "ADDRESS_CHECKER_ADDRESS": cf.addressChecker.address,
     }
+
+    deploy_optional_contracts(cf, addressDump)
 
     print("Deployed with parameters\n----------------------------")
     display_common_deployment_params(
@@ -171,13 +171,15 @@ def check_env_variables(env_var_names):
 
 # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
 # swaps and liquidity provision, CFReceiverMock to test cross-chain messaging.
-def deploy_optional_contracts(cf):
+def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.mockUSDC = deploy_usdc_contract(deployer, MockUSDC, cf_accs[0:10])
+        addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
     if chain.id not in [eth_mainnet, arb_mainnet]:
         cf.cfReceiverMock = deploy_new_cfReceiverMock(
             deployer, CFReceiverMock, cf.vault.address
         )
+        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiverMock.address
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
