@@ -4,6 +4,9 @@ from web3.auto import w3
 from brownie import network, accounts, chain
 
 
+# NOTE: When deploying to a live network (via deploy_contracts.py) the environment
+# variables are forced to be set by the user to avoid defaulting to the testnet values.
+# Therefore, the default values for env. variables in this script are only used in testing.
 def deploy_Chainflip_contracts(
     deployer,
     KeyManager,
@@ -27,27 +30,7 @@ def deploy_Chainflip_contracts(
     if args:
         environment = args[0]
 
-    # NOTE: When deploying to a live network (via deploy_contracts.py) the environment
-    # variables are forced to be set by the user to avoid defaulting to the testnet values.
-    # Therefore, the default values for env. variables in this script are only used in testing.
-
-    aggKey = environment.get("AGG_KEY")
-    if aggKey:
-        aggKey = getKeysFromAggKey(aggKey)
-    else:
-        aggKey = AGG_SIGNER_1.getPubData()
-
-    govKey = environment.get("GOV_KEY")
-    if govKey:
-        cf.gov = govKey
-    else:
-        cf.gov = accounts[0]
-
-    communityKey = environment.get("COMM_KEY")
-    if communityKey:
-        cf.communityKey = communityKey
-    else:
-        cf.communityKey = accounts[6]
+    get_env_keys(cf, environment)
 
     cf.redemptionDelay = int(environment.get("REDEMPTION_DELAY") or REDEMPTION_DELAY)
 
@@ -57,12 +40,8 @@ def deploy_Chainflip_contracts(
     cf.numGenesisValidators = int(
         environment.get("NUM_GENESIS_VALIDATORS") or NUM_GENESIS_VALIDATORS
     )
-
     cf.genesisStake = int(environment.get("GENESIS_STAKE") or GENESIS_STAKE)
 
-    print(
-        f"Deploying with AGG_KEY: {aggKey}, GOV_KEY: {cf.gov} and COMM_KEY: {cf.communityKey}"
-    )
     print(
         f"Deploying with NUM_GENESIS_VALIDATORS: {cf.numGenesisValidators}, GENESIS_STAKE: {cf.genesisStake}"
     )
@@ -70,7 +49,7 @@ def deploy_Chainflip_contracts(
     # Deploy contracts via cf.deployerContract. Minting genesis validator FLIP to the State Chain Gateway.
     # The rest of genesis FLIP will be minted to the governance address for safekeeping.
     cf.deployerContract = DeployerContract.deploy(
-        aggKey,
+        cf.aggKey,
         cf.gov,
         cf.communityKey,
         MIN_FUNDING,
@@ -89,11 +68,70 @@ def deploy_Chainflip_contracts(
     cf.keyManager = KeyManager.at(cf.deployerContract.keyManager())
     cf.stateChainGateway = StateChainGateway.at(cf.deployerContract.stateChainGateway())
 
-    # All the deployer rights and tokens have been delegated to the governance key.
+    # All the deployer rights and tokens have been delegated to the governance & safekeeper key.
     cf.safekeeper = cf.gov
     cf.deployer = deployer
 
     return cf
+
+
+def deploy_contracts_secondary_evm(
+    deployer,
+    KeyManager,
+    Vault,
+    AddressChecker,
+    *args,
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    class Context:
+        pass
+
+    cf = Context()
+
+    environment = {}
+    if args:
+        environment = args[0]
+
+    get_env_keys(cf, environment)
+
+    cf.keyManager = deploy_new_keyManager(
+        deployer, KeyManager, cf.aggKey, cf.gov, cf.communityKey
+    )
+    cf.vault = deploy_new_vault(deployer, Vault, KeyManager, cf.keyManager.address)
+
+    cf.addressChecker = AddressChecker.deploy(
+        {"from": deployer, "required_confs": required_confs}
+    )
+
+    cf.deployer = deployer
+
+    return cf
+
+
+def get_env_keys(cf, environment):
+    aggKey = environment.get("AGG_KEY")
+    if aggKey:
+        cf.aggKey = getKeysFromAggKey(aggKey)
+    else:
+        cf.aggKey = AGG_SIGNER_1.getPubData()
+
+    govKey = environment.get("GOV_KEY")
+    if govKey:
+        cf.gov = govKey
+    else:
+        cf.gov = accounts[0]
+
+    communityKey = environment.get("COMM_KEY")
+    if communityKey:
+        cf.communityKey = communityKey
+    else:
+        cf.communityKey = accounts[6]
+
+    print(
+        f"Deploying with AGG_KEY: {aggKey}, GOV_KEY: {cf.gov} and COMM_KEY: {cf.communityKey}"
+    )
 
 
 def deploy_new_vault(deployer, Vault, KeyManager, keyManager_address):
@@ -169,6 +207,17 @@ def deploy_new_multicall(deployer, Multicall, vault_address):
     return multicall
 
 
+def deploy_new_cfReceiverMock(deployer, CFReceiverMock, vault_address):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    # Deploy a new Multicall
+    return CFReceiverMock.deploy(
+        vault_address,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, MockUSDC, accounts):
     # Set the priority fee for all transactions and the required number of confirmations.
@@ -186,6 +235,16 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
             mockUsdc.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
 
     return mockUsdc
+
+
+# Deploying in live networks sometimes throws an error when getting the address of the deployed contract.
+# I suspect that the RPC nodes might not have processed the transaction. Increasing the required confirmations
+# to more than one is a problem in local networks with hardhat's automining enabled, as it will brick
+# the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
+# nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
+def transaction_params():
+    network.priority_fee("1 gwei")
+    return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 4
 
 
 def deploy_addressHolder(

@@ -1,6 +1,11 @@
 import pytest
 from consts import *
 from deploy import *
+from deploy import (
+    deploy_Chainflip_contracts,
+    deploy_new_multicall,
+    deploy_new_cfReceiverMock,
+)
 from utils import *
 
 
@@ -216,7 +221,7 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
 # Deploy CFReceiver Mock contracts for testing purposes
 @pytest.fixture(scope="module")
 def cfReceiverMock(cf, CFReceiverMock):
-    return cf.SAFEKEEPER.deploy(CFReceiverMock, cf.vault)
+    return deploy_new_cfReceiverMock(cf.SAFEKEEPER, CFReceiverMock, cf.vault)
 
 
 @pytest.fixture(scope="module")
