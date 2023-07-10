@@ -237,16 +237,6 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
     return mockUsdc
 
 
-# Deploying in live networks sometimes throws an error when getting the address of the deployed contract.
-# I suspect that the RPC nodes might not have processed the transaction. Increasing the required confirmations
-# to more than one is a problem in local networks with hardhat's automining enabled, as it will brick
-# the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
-# nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
-def transaction_params():
-    network.priority_fee("1 gwei")
-    return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 4
-
-
 def deploy_addressHolder(
     deployer,
     AddressHolder,
@@ -335,4 +325,4 @@ def deploy_tokenVestingStaking(
 # nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
 def transaction_params():
     network.priority_fee("1 gwei")
-    return 1 if (chain.id == 31337 or chain.id == 10997) else 4
+    return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 4
