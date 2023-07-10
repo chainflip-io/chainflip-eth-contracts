@@ -66,7 +66,10 @@ def deploy_ethereum():
             os.environ["GENESIS_STAKE"],
             os.environ["NUM_GENESIS_VALIDATORS"],
         )
-        prompt_warning_mainnet("Ethereum")
+        prompt_user_continue_or_break(
+            "[WARNING] You are about to deploy to Ethereum Mainnet with the parameters above",
+            False,
+        )
 
     cf = deploy_Chainflip_contracts(
         deployer,
@@ -117,7 +120,10 @@ def deploy_secondary_evm():
             os.environ["COMM_KEY"],
             os.environ["AGG_KEY"],
         )
-        prompt_warning_mainnet("Arbitrum")
+        prompt_user_continue_or_break(
+            "[WARNING] You are about to deploy to Arbitrum Mainnet with the parameters above",
+            False,
+        )
 
     cf = deploy_contracts_secondary_evm(
         deployer,
@@ -143,15 +149,6 @@ def deploy_secondary_evm():
     display_deployed_contracts(cf)
 
     store_artifacts(addressDump)
-
-
-def prompt_warning_mainnet(network_name):
-    user_input = input(
-        f"\n[WARNING] You are about to deploy to {network_name} Mainnet with the parameters above. Continue? [y/N] "
-    )
-    if user_input != "y":
-        ## Gracefully exit the script with a message.
-        sys.exit("Deployment cancelled by user")
 
 
 # Check that all environment variables are set when deploying to a live network.
