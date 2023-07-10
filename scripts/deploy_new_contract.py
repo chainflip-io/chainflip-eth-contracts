@@ -108,8 +108,8 @@ def deploy_cfReceiverMock():
     vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
     addressDump["VAULT_ADDRESS"] = vault.address
 
-    new_multicall = deploy_new_cfReceiverMock(DEPLOYER, CFReceiverMock, vault.address)
-    addressDump["NEW_CF_RECEIVER"] = new_multicall.address
+    cfReceiver_mock = deploy_new_cfReceiverMock(DEPLOYER, CFReceiverMock, vault.address)
+    addressDump["NEW_CF_RECEIVER"] = cfReceiver_mock.address
     store_artifacts()
 
 
