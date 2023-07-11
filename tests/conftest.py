@@ -238,6 +238,7 @@ def cfReceiverFailMock(cf, CFReceiverFailMock):
 def cfReceiverTryMock(cf, cfReceiverFailMock, CFReceiverTryMock):
     return cf.SAFEKEEPER.deploy(CFReceiverTryMock, cf.vault, cfReceiverFailMock)
 
+
 @pytest.fixture(scope="module")
 def cfDexAggMock(cf, DexAggSrcChainMock, DEXMock, DexAggDstChainMock):
     srcChain = 1
