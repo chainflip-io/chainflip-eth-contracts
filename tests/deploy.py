@@ -1,7 +1,7 @@
 from os import environ
 from consts import *
 from web3.auto import w3
-from brownie import network, accounts
+from brownie import network, accounts, chain
 
 
 # NOTE: When deploying to a live network (via deploy_contracts.py) the environment
@@ -235,6 +235,87 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
             mockUsdc.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
 
     return mockUsdc
+
+
+def deploy_addressHolder(
+    deployer,
+    AddressHolder,
+    governor,
+    stateChainGateway_address,
+    stMinter_address,
+    stBurner_address,
+    stFLIP_address,
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    addressHolder = AddressHolder.deploy(
+        governor,
+        stateChainGateway_address,
+        stMinter_address,
+        stBurner_address,
+        stFLIP_address,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+    return addressHolder
+
+
+def deploy_tokenVestingNoStaking(
+    deployer,
+    TokenVestingNoStaking,
+    beneficiary,
+    revoker,
+    cliff,
+    end,
+    transferableBeneficiary,
+    flip,
+    amount,
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    tokenVestingNoStaking = TokenVestingNoStaking.deploy(
+        beneficiary,
+        revoker,
+        cliff,
+        end,
+        transferableBeneficiary,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+    flip.transfer(tokenVestingNoStaking.address, amount, {"from": deployer})
+
+    return tokenVestingNoStaking
+
+
+def deploy_tokenVestingStaking(
+    deployer,
+    TokenVestingStaking,
+    beneficiary,
+    revoker,
+    end,
+    transferableBeneficiary,
+    addressHolder_address,
+    flip,
+    amount,
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    tokenVestingStaking = TokenVestingStaking.deploy(
+        beneficiary,
+        revoker,
+        end,
+        transferableBeneficiary,
+        addressHolder_address,
+        flip.address,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+    flip.transfer(tokenVestingStaking.address, amount, {"from": deployer})
+
+    return tokenVestingStaking
 
 
 # Deploying in live networks sometimes throws an error when getting the address of the deployed contract.

@@ -6,6 +6,7 @@ import "../abstract/Shared.sol";
 import "../interfaces/IStateChainGateway.sol";
 import "../interfaces/IAddressHolder.sol";
 import "../interfaces/ITokenVestingStaking.sol";
+import "../mocks/MockStProvider.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
@@ -89,6 +90,31 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
         FLIP.approve(stateChainGateway, amount);
         IStateChainGateway(stateChainGateway).fundStateChainAccount(nodeID, amount);
+    }
+
+    /**
+     * @notice  Stakes to the staking provider by transferring an amount of FLIP to the staking minter.
+     *          It is expected that an amount of stFLIP will be minted to this contract.
+     * @param amount the amount of FLIP to stake to the staking provider.
+     */
+    function stakeToStProvider(uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
+        address stMinter = addressHolder.getStakingAddress();
+
+        FLIP.approve(stMinter, amount);
+        require(IMinter(stMinter).mint(address(this), amount));
+    }
+
+    /**
+     * @notice  Unstakes from the staking provider by transferring stFLIP to the staking burner.
+     * @param amount the amount of FLIP to stake to the staking provider.
+     */
+    function unstakeFromStProvider(uint256 amount) external override onlyBeneficiary returns (uint256) {
+        (address stBurner, address stFlip) = addressHolder.getUnstakingAddresses();
+
+        require(!revoked[IERC20(stFlip)], "Vesting: token revoked");
+
+        IERC20(stFlip).approve(stBurner, amount);
+        return IBurner(stBurner).burn(address(this), amount);
     }
 
     /**

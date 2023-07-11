@@ -21,10 +21,19 @@ contract AddressHolder is IAddressHolder, Shared {
     address private stMinter;
     address private stBurner;
 
-    // @dev Allow for zero addresses for the stAddresses as they might not be deployed so they'll be set afterwards
-    constructor(address _governor, address _stateChainGateway) nzAddr(_governor) nzAddr(_stateChainGateway) {
+    // @dev Allow stAddresses to be zero as they might not be known at the time of deployment
+    constructor(
+        address _governor,
+        address _stateChainGateway,
+        address _stMinter,
+        address _stBurner,
+        address _stFLIP
+    ) nzAddr(_governor) nzAddr(_stateChainGateway) {
         governor = _governor;
         stateChainGateway = _stateChainGateway;
+        stMinter = _stMinter;
+        stBurner = _stBurner;
+        stFLIP = _stFLIP;
     }
 
     //////////////////////////////////////////////////////////////
@@ -39,6 +48,18 @@ contract AddressHolder is IAddressHolder, Shared {
     ) external override onlyGovernor nzAddr(_stateChainGateway) {
         emit StateChainGatewayUpdated(stateChainGateway, _stateChainGateway);
         stateChainGateway = _stateChainGateway;
+    }
+
+    /// @dev    Update the reference addresses
+    function updateStakingAddresses(
+        address _stMinter,
+        address _stBurner,
+        address _stFLIP
+    ) external override onlyGovernor {
+        emit StakingAddressesUpdated(stMinter, stBurner, stFLIP, _stMinter, _stBurner, _stFLIP);
+        stMinter = _stMinter;
+        stBurner = _stBurner;
+        stFLIP = _stFLIP;
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
@@ -57,6 +78,14 @@ contract AddressHolder is IAddressHolder, Shared {
     /// @dev    Getter function for the reference address
     function getStateChainGateway() external view override returns (address) {
         return stateChainGateway;
+    }
+
+    function getStakingAddress() external view override returns (address) {
+        return stMinter;
+    }
+
+    function getUnstakingAddresses() external view override returns (address, address) {
+        return (stBurner, stFLIP);
     }
 
     /// @dev    Getter function for the governor address

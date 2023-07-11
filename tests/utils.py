@@ -1,3 +1,4 @@
+import sys
 from brownie import web3, chain, history
 from web3._utils.filters import construct_event_filter_params
 from web3._utils.events import get_event_data
@@ -176,3 +177,16 @@ def fetch_events(
     for entry in logs:
         data = get_event_data(abi_codec, abi, entry)
         yield data
+
+
+def prompt_user_continue_or_break(prompt, default_yes):
+    prompt_default = "([y]/n)" if default_yes else "(y/[n])"
+    user_input = input("\n>> " + prompt + ". Continue? " + prompt_default + ": ")
+
+    userInputConfirm = ["y", "Y", "yes", "Yes", "YES"]
+    if default_yes:
+        userInputConfirm.append("")
+
+    if user_input not in userInputConfirm:
+        ## Gracefully exit the script with a message.
+        sys.exit("Cancelled by the user")

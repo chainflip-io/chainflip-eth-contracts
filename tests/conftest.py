@@ -1,5 +1,6 @@
 import pytest
 from consts import *
+from deploy import *
 from deploy import (
     deploy_Chainflip_contracts,
     deploy_new_multicall,
@@ -134,8 +135,38 @@ def maths(addrs, MockMaths):
 
 
 @pytest.fixture(scope="module")
-def addressHolder(cf, addrs, AddressHolder):
-    return addrs.DEPLOYER.deploy(AddressHolder, addrs.DEPLOYER, cf.stateChainGateway)
+def mockStProvider(cf, addrs, Minter, Burner, stFLIP):
+
+    stFlip = addrs.DEPLOYER.deploy(stFLIP)
+
+    burner = addrs.DEPLOYER.deploy(Burner, stFlip.address, cf.flip)
+
+    # For the sake of testing setting the staking address (output) to be the Burner.
+    # This way the real FLIP goes there automatically when staking.
+    staking_address = burner
+
+    minter = addrs.DEPLOYER.deploy(
+        Minter, stFlip.address, cf.flip.address, staking_address
+    )
+
+    stFlip.initialize(minter.address, burner.address)
+
+    return stFlip, minter, burner, staking_address
+
+
+@pytest.fixture(scope="module")
+def addressHolder(cf, addrs, AddressHolder, mockStProvider):
+    stFLIP, minter, burner, _ = mockStProvider
+
+    return deploy_addressHolder(
+        addrs.DEPLOYER,
+        AddressHolder,
+        addrs.DEPLOYER,
+        cf.stateChainGateway,
+        minter.address,
+        burner.address,
+        stFLIP.address,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -147,31 +178,34 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
     cliff = start + QUARTER_YEAR
     end = start + QUARTER_YEAR + YEAR
 
-    tv = addrs.DEPLOYER.deploy(
+    total = MAX_TEST_FUND
+
+    tv = deploy_tokenVestingNoStaking(
+        addrs.DEPLOYER,
         TokenVestingNoStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         cliff,
         end,
         BENEF_TRANSF,
+        cf.flip,
+        total,
     )
-
-    total = MAX_TEST_FUND
-
-    cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
 
     return tv, cliff, end, total
 
 
 @pytest.fixture(scope="module")
 def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
-
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
     start = getChainTime()
     end = start + QUARTER_YEAR + YEAR
 
-    tv = addrs.DEPLOYER.deploy(
+    total = MAX_TEST_FUND
+
+    tv = deploy_tokenVestingStaking(
+        addrs.DEPLOYER,
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
@@ -179,12 +213,8 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
         BENEF_TRANSF,
         addressHolder,
         cf.flip,
+        total,
     )
-
-    total = MAX_TEST_FUND
-
-    cf.flip.transfer(tv, total, {"from": addrs.DEPLOYER})
-
     return tv, end, total
 
 
