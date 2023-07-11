@@ -12,6 +12,7 @@ from brownie import (
     StateChainGateway,
     FLIP,
     DeployerStateChainGateway,
+    CFReceiverMock,
     Multicall,
 )
 from deploy import (
@@ -19,6 +20,7 @@ from deploy import (
     deploy_new_stateChainGateway,
     deploy_new_keyManager,
     deploy_new_multicall,
+    deploy_new_cfReceiverMock,
 )
 
 
@@ -101,6 +103,16 @@ def deploy_keyManager():
     store_artifacts()
 
 
+def deploy_cfReceiverMock():
+    VAULT_ADDRESS = os.environ["VAULT_ADDRESS"]
+    vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
+    addressDump["VAULT_ADDRESS"] = vault.address
+
+    cfReceiver_mock = deploy_new_cfReceiverMock(DEPLOYER, CFReceiverMock, vault.address)
+    addressDump["NEW_CF_RECEIVER"] = cfReceiver_mock.address
+    store_artifacts()
+
+
 # This will deploy the new Multicall. It requires the Vault address to be deployed.
 def deploy_multicall():
     VAULT_ADDRESS = os.environ["VAULT_ADDRESS"]
@@ -138,6 +150,8 @@ def store_artifacts():
         print(f"  KeyManager: {addressDump['NEW_KEY_MANAGER_ADDRESS']}")
     if "NEW_MULTICALL_ADDRESS" in addressDump:
         print(f"  Multicall: {addressDump['NEW_MULTICALL_ADDRESS']}")
+    if "NEW_CF_RECEIVER" in addressDump:
+        print(f"  Cf Receiver: {addressDump['NEW_CF_RECEIVER']}")
     print("\n😎😎 Deployment success! 😎😎")
 
     if DEPLOY_ARTEFACT_ID:
