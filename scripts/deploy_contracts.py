@@ -15,11 +15,12 @@ from brownie import (
     DeployerContract,
     CFReceiverMock,
     AddressChecker,
+    CFReceiverGriefer,
 )
 from deploy import (
     deploy_Chainflip_contracts,
     deploy_usdc_contract,
-    deploy_new_cfReceiverMock,
+    deploy_new_cfReceiver,
     deploy_contracts_secondary_evm,
 )
 
@@ -160,9 +161,9 @@ def check_env_variables(env_var_names):
         "GOV_KEY",
         "COMM_KEY",
     ]
-    for env_var_name in common_env_var_names + env_var_names:
-        if env_var_name not in os.environ:
-            raise Exception(f"Environment variable {env_var_name} is not set")
+    # for env_var_name in common_env_var_names + env_var_names:
+    #     if env_var_name not in os.environ:
+    #         raise Exception(f"Environment variable {env_var_name} is not set")
 
 
 # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
@@ -171,11 +172,17 @@ def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.mockUSDC = deploy_usdc_contract(deployer, MockUSDC, cf_accs[0:10])
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
+
     if chain.id not in [eth_mainnet, arb_mainnet]:
-        cf.cfReceiverMock = deploy_new_cfReceiverMock(
+        cf.cfReceiver = deploy_new_cfReceiver(
             deployer, CFReceiverMock, cf.vault.address
         )
-        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiverMock.address
+        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiver.address
+
+        cf.cfReceiverGriefer = deploy_new_cfReceiver(
+            deployer, CFReceiverGriefer, cf.vault.address
+        )
+        addressDump["CF_RECEIVER_GRIEFER"] = cf.cfReceiverGriefer.address
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
@@ -216,8 +223,10 @@ def display_deployed_contracts(cf):
     # Contracts dependant on localnet/testnet/mainnet
     if hasattr(cf, "mockUSDC"):
         print(f"  USDC: {cf.mockUSDC.address}")
-    if hasattr(cf, "cfReceiverMock"):
-        print(f"  CfReceiver Mock: {cf.cfReceiverMock.address}")
+    if hasattr(cf, "cfReceiver"):
+        print(f"  CfReceiver: {cf.cfReceiver.address}")
+    if hasattr(cf, "cfReceiverGriefer"):
+        print(f"  CFReceiverGriefer: {cf.cfReceiverGriefer.address}")
 
     print("\n😎😎 Deployment success! 😎😎\n")
 

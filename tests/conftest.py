@@ -3,7 +3,7 @@ from consts import *
 from deploy import (
     deploy_Chainflip_contracts,
     deploy_new_multicall,
-    deploy_new_cfReceiverMock,
+    deploy_new_cfReceiver,
 )
 from utils import *
 
@@ -191,17 +191,22 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
 # Deploy CFReceiver Mock contracts for testing purposes
 @pytest.fixture(scope="module")
 def cfReceiverMock(cf, CFReceiverMock):
-    return deploy_new_cfReceiverMock(cf.SAFEKEEPER, CFReceiverMock, cf.vault)
+    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFReceiverMock, cf.vault)
+
+
+@pytest.fixture(scope="module")
+def cfReceiverGriefer(cf, CFReceiverGriefer):
+    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFReceiverGriefer, cf.vault)
 
 
 @pytest.fixture(scope="module")
 def cfReceiverFailMock(cf, CFReceiverFailMock):
-    return cf.SAFEKEEPER.deploy(CFReceiverFailMock, cf.vault)
+    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFReceiverFailMock, cf.vault)
 
 
 @pytest.fixture(scope="module")
 def cfReceiverTryMock(cf, cfReceiverFailMock, CFReceiverTryMock):
-    return cf.SAFEKEEPER.deploy(CFReceiverTryMock, cf.vault, cfReceiverFailMock)
+    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFReceiverTryMock, cfReceiverFailMock)
 
 
 @pytest.fixture(scope="module")
