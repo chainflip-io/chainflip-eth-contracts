@@ -161,9 +161,9 @@ def check_env_variables(env_var_names):
         "GOV_KEY",
         "COMM_KEY",
     ]
-    # for env_var_name in common_env_var_names + env_var_names:
-    #     if env_var_name not in os.environ:
-    #         raise Exception(f"Environment variable {env_var_name} is not set")
+    for env_var_name in common_env_var_names + env_var_names:
+        if env_var_name not in os.environ:
+            raise Exception(f"Environment variable {env_var_name} is not set")
 
 
 # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
