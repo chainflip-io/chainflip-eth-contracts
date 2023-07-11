@@ -207,12 +207,12 @@ def deploy_new_multicall(deployer, Multicall, vault_address):
     return multicall
 
 
-def deploy_new_cfReceiverMock(deployer, CFReceiverMock, vault_address):
+def deploy_new_cfReceiver(deployer, cfReceiver, vault_address):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
 
-    # Deploy a new Multicall
-    return CFReceiverMock.deploy(
+    # Deploy a new cfReceiver
+    return cfReceiver.deploy(
         vault_address,
         {"from": deployer, "required_confs": required_confs},
     )
