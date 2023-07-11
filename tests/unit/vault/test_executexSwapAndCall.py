@@ -146,24 +146,14 @@ def test_executexSwapAndCall_rev_nzAddrs(cf, cfReceiverMock, token):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
 
-def test_executexSwapAndCall_rev_nzAmount(cf, cfReceiverMock, token):
+def test_executexSwapAndCall_nzAmount(cf, cfReceiverMock, token):
     args = [
         [NATIVE_ADDR, cfReceiverMock, 0],
         JUNK_INT,
         JUNK_HEX,
         JUNK_HEX,
     ]
-    with reverts(REV_MSG_NZ_UINT):
-        signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
-
-    args = [
-        [token, cfReceiverMock, 0],
-        JUNK_INT,
-        JUNK_HEX,
-        JUNK_HEX,
-    ]
-    with reverts(REV_MSG_NZ_UINT):
-        signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
+    signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
 
 def test_executexSwapAndCallNative_rev_msgHash(cf):
