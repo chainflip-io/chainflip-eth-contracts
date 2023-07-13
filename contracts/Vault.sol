@@ -441,6 +441,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          call completing a cross-chain swap and call. The ICFReceiver interface is expected on
      *          the receiver's address. A message is passed to the receiver along with other
      *          parameters specifying the origin of the swap.
+     * @dev     Not checking nzUint(amount) to prevent reversions in edge cases (e.g. all input amount used for gas).
      * @param sigData    Struct containing the signature data over the message
      *                   to verify, signed by the aggregate key.
      * @param transferParams  The transfer parameters
@@ -460,7 +461,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         onlyNotSuspended
         nzAddr(transferParams.token)
         nzAddr(transferParams.recipient)
-        nzUint(transferParams.amount)
         consumesKeyNonce(
             sigData,
             keccak256(abi.encode(this.executexSwapAndCall.selector, transferParams, srcChain, srcAddress, message))
@@ -488,10 +488,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     ) private {
         uint256 nativeAmount;
 
-        if (transferParams.token == _NATIVE_ADDR) {
-            nativeAmount = transferParams.amount;
-        } else {
-            IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+        if (transferParams.amount > 0) {
+            if (transferParams.token == _NATIVE_ADDR) {
+                nativeAmount = transferParams.amount;
+            } else {
+                IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+            }
         }
 
         ICFReceiver(transferParams.recipient).cfReceive{value: nativeAmount}(
