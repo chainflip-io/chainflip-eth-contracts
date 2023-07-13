@@ -20,7 +20,7 @@ from deploy import (
     deploy_new_stateChainGateway,
     deploy_new_keyManager,
     deploy_new_multicall,
-    deploy_new_cfReceiverMock,
+    deploy_new_cfReceiver,
 )
 
 
@@ -108,7 +108,7 @@ def deploy_cfReceiverMock():
     vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
     addressDump["VAULT_ADDRESS"] = vault.address
 
-    cfReceiver_mock = deploy_new_cfReceiverMock(DEPLOYER, CFReceiverMock, vault.address)
+    cfReceiver_mock = deploy_new_cfReceiver(DEPLOYER, CFReceiverMock, vault.address)
     addressDump["NEW_CF_RECEIVER"] = cfReceiver_mock.address
     store_artifacts()
 
