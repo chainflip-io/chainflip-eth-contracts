@@ -2,6 +2,14 @@ name: Create Geth Image
 on:
   workflow_dispatch:
     inputs:
+      image:
+        description: Which image should we build?
+        required: true
+        default: "geth"
+        type: choice
+        options:
+          - "geth"
+          - "arb-geth"
       tag:
         description: Which tag should we deploy against?
         required: true
