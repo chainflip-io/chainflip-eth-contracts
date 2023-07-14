@@ -83,8 +83,6 @@ jobs:
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        volumes:
-          - ${{ github.workspace }}/datadir:/datadir
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -151,6 +149,10 @@ jobs:
           CONTAINER=$(docker ps --format '{{.Names}}' | grep geth)
           docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}
           docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}
+
+      - name: Copy initial Geth state
+        run: |
+          docker cp geth:/datadir ${{ github.workspace }}/datadir
 
       - name: Summary
         run: |
