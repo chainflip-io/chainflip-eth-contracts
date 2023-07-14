@@ -147,12 +147,13 @@ jobs:
       - name: Commit and push new geth image
         run: |
           CONTAINER=$(docker ps --format '{{.Names}}' | grep geth)
+          echo "geth_container=$CONTAINER" >> $GITHUB_ENV
           docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}
           docker push ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}
 
       - name: Copy initial Geth state
         run: |
-          docker cp geth:/datadir ${{ github.workspace }}/datadir
+          docker cp ${{ env.geth_container }}:/datadir ${{ github.workspace }}/datadir
 
       - name: Summary
         run: |
