@@ -1,0 +1,28 @@
+{
+  "address": "6a568afe0f82d34759347bb36f14a6bb171d2cbe",
+  "id": "a0fd877a-82c9-4018-93c4-98641524bdb9",
+  "version": 3,
+  "Crypto": {
+    "cipher": "aes-128-ctr",
+    "cipherparams": { "iv": "a30a973215e3b72009f1fd28b1af35df" },
+    "ciphertext": "1e24c98bc52ac52a738418b3c3edf5a5927c3c71ced03e8eb076dc11a4be4cea",
+    "kdf": "scrypt",
+    "kdfparams": {
+      "salt": "ae8838ffec0b6325718dc27de9b04218d7835ff2dd4366b6da4c86595bad2dfd",
+      "n": 131072,
+      "dklen": 32,
+      "p": 1,
+      "r": 8
+    },
+    "mac": "c95f4abad8587fab6f6f773ad2dbfc478a211836f8babfa42c0a31aba3a90a39"
+  },
+  "x-ethers": {
+    "client": "ethers.js",
+    "gethFilename": "UTC--2023-07-10T09-43-19.0Z--6a568afe0f82d34759347bb36f14a6bb171d2cbe",
+    "mnemonicCounter": "3309032a0c155b60cb431f1cf9009ed8",
+    "mnemonicCiphertext": "45ec2049752a0e9a8ecb10431ff1f5dc",
+    "path": "m/44'/60'/0'/0/2",
+    "locale": "en",
+    "version": "0.1"
+  }
+}
