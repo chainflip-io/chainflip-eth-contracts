@@ -222,8 +222,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update initial-state directory permissions
-        run: chmod -R 777 ./nitro-testnode/${{ env.GETH_INITIAL_STATE_DIR }}
+      - name: Update directory permissions
+        working-directory: nitro-testnode
+        run: |
+          mkdir -p ./data
+          chown -R ubuntu:ubuntu ./${{ env.GETH_INITIAL_STATE_DIR }}
+          chown -R ubuntu:ubuntu ./data
 
       - name: Update Docker user
         run: |
@@ -233,7 +237,7 @@ jobs:
       - name: Build Arbitrum Network
         working-directory: nitro-testnode
         run: |
-          sudo ./test-node.bash --init --detach
+          ./test-node.bash --init --detach
 
       - name: Install Python virtualenv
         run: pip install virtualenv
