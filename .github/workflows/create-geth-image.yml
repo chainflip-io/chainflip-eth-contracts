@@ -282,11 +282,9 @@ jobs:
       - name: Save artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.IMAGE_TAG }}
+          name: ${{ env.IMAGE_TAG }}-localnet-initial-state
           path: |
-            agg_key
-            ./scripts/.artefacts/docker.json
-            ${{ github.workspace }}/nitro-testnode/datadir
+            ${{ github.workspace }}/nitro-testnode/data
 
 
       - name: Clean Up docker containers 🧹
@@ -294,6 +292,7 @@ jobs:
         working-directory: ./nitro-testnode
         continue-on-error: true
         run: |
+          ls -laR ./data
           docker ps -a
           docker compose logs
           docker compose down --rmi all --volumes --remove-orphans
