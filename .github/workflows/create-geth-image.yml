@@ -222,6 +222,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update initial-state directory permissions
+        run: chmod -R 777 ./nitro-testnode/${{ env.GETH_INITIAL_STATE_DIR }}
+
       - name: Build Arbitrum Network
         working-directory: nitro-testnode
         run: |
