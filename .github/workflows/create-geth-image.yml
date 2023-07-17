@@ -226,8 +226,8 @@ jobs:
         working-directory: nitro-testnode
         run: |
           mkdir -p ./data
-          chown -R ubuntu:ubuntu ./${{ env.GETH_INITIAL_STATE_DIR }}
-          chown -R ubuntu:ubuntu ./data
+          chown -R 1000:1000 ./${{ env.GETH_INITIAL_STATE_DIR }}
+          chown -R 1000:1000 ./data
 
       - name: Update Docker user
         run: |
