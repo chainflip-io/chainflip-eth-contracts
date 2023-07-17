@@ -28,7 +28,7 @@ def test_addressChecker_balances_gas(cf):
     )
 
 
-def test_addressChecker_deploymentStatus(cf, Deposit):
+def test_addressChecker_deploymentStatus(cf):
 
     deployedStatus = cf.addressChecker.contractsDeployed(
         [cf.flip, cf.vault, cf.keyManager, cf.addressChecker, cf.ALICE, cf.BOB]
@@ -38,7 +38,7 @@ def test_addressChecker_deploymentStatus(cf, Deposit):
     depositAddr = getCreate2Addr(
         cf.vault.address,
         JUNK_HEX_PAD,
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(NATIVE_ADDR),
     )
     assert cf.addressChecker.contractsDeployed([depositAddr]) == [False]

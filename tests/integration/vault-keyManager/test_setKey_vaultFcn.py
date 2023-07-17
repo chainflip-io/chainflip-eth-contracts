@@ -19,7 +19,6 @@ def test_setAggKeyWithAggKey_allBatch(
     cf,
     token,
     token2,
-    Deposit,
     st_fetchAmounts,
     st_fetchSwapIDs,
     st_tranRecipients,
@@ -49,12 +48,18 @@ def test_setAggKeyWithAggKey_allBatch(
         # Get the address to deposit to and deposit
         if tok == NATIVE_ADDR:
             depositAddr = getCreate2Addr(
-                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(NATIVE_ADDR)
+                cf.vault.address,
+                id.hex(),
+                DEPOSIT_BYTECODE_PRECOMPILED,
+                cleanHexStrPad(NATIVE_ADDR),
             )
             cf.SAFEKEEPER.transfer(depositAddr, am)
         else:
             depositAddr = getCreate2Addr(
-                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
+                cf.vault.address,
+                id.hex(),
+                DEPOSIT_BYTECODE_PRECOMPILED,
+                cleanHexStrPad(tok.address),
             )
             tok.transfer(depositAddr, am, {"from": cf.SAFEKEEPER})
 

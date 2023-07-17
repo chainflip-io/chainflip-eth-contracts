@@ -6,12 +6,15 @@ from utils import *
 # ----------Vault----------
 
 
-def deployAndFetchNative(cf, vault, Deposit, **kwargs):
+def deployAndFetchNative(cf, vault, **kwargs):
     amount = kwargs.get("amount", TEST_AMNT)
 
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
+        vault.address,
+        JUNK_HEX_PAD,
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
 
     assert cf.SAFEKEEPER.balance() >= amount

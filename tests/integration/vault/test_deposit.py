@@ -10,7 +10,7 @@ from shared_tests import *
     st_fetchSwapID=strategy("bytes32"),
     st_deployToken=strategy("bool"),
 )
-def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken, Deposit):
+def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken):
     tx = signed_call_cf(
         cf,
         cf.vault.deployAndFetchBatch,
@@ -20,7 +20,7 @@ def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken, Deposit):
     depositAddr = getCreate2Addr(
         cf.vault.address,
         cleanHexStrPad(st_fetchSwapID),
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(token.address if st_deployToken else NATIVE_ADDR),
     )
     if not st_deployToken:
@@ -35,7 +35,7 @@ def test_deposit(cf, token, st_sender, st_fetchSwapID, st_deployToken, Deposit):
     st_deployToken=strategy("bool"),
 )
 def test_deposit_constructor(
-    cf, Deposit, st_sender, st_address, st_fetchSwapID, token, st_deployToken
+    cf, st_sender, st_address, st_fetchSwapID, token, st_deployToken
 ):
     # Non existing token in that address
     with reverts():
@@ -50,7 +50,7 @@ def test_deposit_constructor(
     depositAddr = getCreate2Addr(
         cf.vault.address,
         cleanHexStrPad(st_fetchSwapID),
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(token.address if st_deployToken else NATIVE_ADDR),
     )
     if not st_deployToken:
@@ -71,14 +71,13 @@ def test_deposit_fetch(
     st_sender,
     st_fetchSwapID,
     st_deployToken,
-    Deposit,
     st_sender_2,
     st_fetchToken,
 ):
     depositAddr = getCreate2Addr(
         cf.vault.address,
         st_fetchSwapID.hex(),
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(token.address)
         if st_deployToken
         else cleanHexStrPad(NATIVE_ADDR),
@@ -92,7 +91,7 @@ def test_deposit_fetch(
     depositAddr = getCreate2Addr(
         cf.vault.address,
         cleanHexStrPad(st_fetchSwapID),
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(token.address if st_deployToken else NATIVE_ADDR),
     )
     if not st_deployToken:
@@ -127,7 +126,7 @@ def deploy_deposit(cf, sender, Deposit):
     depositAddr = getCreate2Addr(
         cf.vault.address,
         JUNK_HEX_PAD,
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(NATIVE_ADDR),
     )
 
@@ -148,7 +147,7 @@ def deploy_deposit(cf, sender, Deposit):
     st_sender=strategy("address"),
     st_amount=strategy("uint256", max_value=TEST_AMNT * 10),
 )
-def test_receive(cf, st_sender, token, Deposit, st_amount):
+def test_receive(cf, st_sender, token, st_amount):
     depositAddr = deploy_deposit(cf, st_sender, Deposit)
 
     # Tokens do not trigger any receive function
@@ -167,7 +166,7 @@ def test_receive(cf, st_sender, token, Deposit, st_amount):
     st_gasLimit=strategy("uint256", min_value=22000, max_value=40000),
     st_amount=strategy("uint256", min_value=1, max_value=TEST_AMNT * 10),
 )
-def test_receive_gas(cf, Deposit, st_gasLimit, st_amount):
+def test_receive_gas(cf, DEPOSIT_BYTECODE_PRECOMPILED, st_gasLimit, st_amount):
     depositAddr = deploy_deposit(cf, cf.ALICE, Deposit)
 
     # As of now a transfer of >0 ETH will require ~31.602 gas which ends up being 33776 gas
@@ -191,11 +190,11 @@ def test_receive_gas(cf, Deposit, st_gasLimit, st_amount):
 # Test the correct and expected behaviour if native tokens are forced into the address.
 
 # Before the contract is deployed it should be supported
-def test_deposit_forceEth_before_deployment(cf, Deposit, ForceNativeTokens):
+def test_deposit_forceEth_before_deployment(cf, ForceNativeTokens):
     depositAddr = getCreate2Addr(
         cf.vault.address,
         JUNK_HEX_PAD,
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(NATIVE_ADDR),
     )
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
@@ -228,7 +227,7 @@ def test_deposit_forceEth_before_deployment(cf, Deposit, ForceNativeTokens):
 
 
 # After deployment it won't be supported
-def test_deposit_forceEth_after_deployment(cf, Deposit, ForceNativeTokens):
+def test_deposit_forceEth_after_deployment(cf, ForceNativeTokens):
     depositAddr = deploy_deposit(cf, cf.ALICE, Deposit)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
@@ -255,7 +254,7 @@ def test_fetch_event_undeployed_Deposit(cf, Deposit):
     depositAddr = getCreate2Addr(
         cf.vault.address,
         JUNK_HEX_PAD,
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(NATIVE_ADDR),
     )
 

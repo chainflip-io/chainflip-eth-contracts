@@ -11,7 +11,7 @@ from shared_tests import *
     st_swapIDs=strategy("bytes32[]", unique=True),
     st_tokenBools=strategy("bool[]"),
 )
-def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
+def test_fetchBatch(cf, token, st_amounts, st_swapIDs, st_tokenBools):
     trimToShortest([st_amounts, st_swapIDs, st_tokenBools])
     tokens = [token if b == True else NATIVE_ADDR for b in st_tokenBools]
     tokenTotal = 0
@@ -29,13 +29,19 @@ def test_fetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
         # Deploy a deposit contract, get the address to deposit to and deposit
         if tok == token:
             depositAddr = getCreate2Addr(
-                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
+                cf.vault.address,
+                id.hex(),
+                DEPOSIT_BYTECODE_PRECOMPILED,
+                cleanHexStrPad(tok.address),
             )
             tok.transfer(depositAddr, am, {"from": cf.SAFEKEEPER})
             tokenTotal += am
         else:
             depositAddr = getCreate2Addr(
-                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok)
+                cf.vault.address,
+                id.hex(),
+                DEPOSIT_BYTECODE_PRECOMPILED,
+                cleanHexStrPad(tok),
             )
             cf.SAFEKEEPER.transfer(depositAddr, am)
             nativeTotal += am

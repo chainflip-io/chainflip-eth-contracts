@@ -33,9 +33,6 @@ jobs:
       - run: yarn
       - run: poetry install
 
-      # Ensure that the Deposit's bytecode hasn't changed
-      - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat
-
       - name: Zip ABIs
         run: |
           CONTRACT_ARTIFACTS=$(ls ./build/contracts | grep -v dependencies)

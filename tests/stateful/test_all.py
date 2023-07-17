@@ -20,7 +20,6 @@ def test_all(
     state_machine,
     a,
     cfDeploy,
-    Deposit,
     Token,
     StateChainGateway,
     KeyManager,
@@ -98,7 +97,7 @@ def test_all(
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cfDeploy, Deposit, Token, CFReceiverMock, MockUSDT):
+        def __init__(cls, a, cfDeploy, Token, CFReceiverMock, MockUSDT):
             super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(
@@ -124,7 +123,7 @@ def test_all(
                 getCreate2Addr(
                     cls.v.address,
                     cleanHexStrPad(swapID),
-                    Deposit,
+                    DEPOSIT_BYTECODE_PRECOMPILED,
                     cleanHexStrPad(NATIVE_ADDR),
                 )
                 for swapID in range(0, MAX_SWAPID + 1)
@@ -133,7 +132,7 @@ def test_all(
                 getCreate2Addr(
                     cls.v.address,
                     cleanHexStrPad(swapID),
-                    Deposit,
+                    DEPOSIT_BYTECODE_PRECOMPILED,
                     cleanHexStrPad(cls.tokenA.address),
                 )
                 for swapID in range(0, MAX_SWAPID + 1)
@@ -142,7 +141,7 @@ def test_all(
                 getCreate2Addr(
                     cls.v.address,
                     cleanHexStrPad(swapID),
-                    Deposit,
+                    DEPOSIT_BYTECODE_PRECOMPILED,
                     cleanHexStrPad(cls.tokenB.address),
                 )
                 for swapID in range(0, MAX_SWAPID + 1)
@@ -326,7 +325,7 @@ def test_all(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapIDs[i]),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(NATIVE_ADDR),
                     )
                 ]
@@ -340,7 +339,7 @@ def test_all(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapIDs[i]),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(self.tokenA.address),
                     )
                 ]
@@ -354,7 +353,7 @@ def test_all(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapIDs[i]),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(self.tokenB.address),
                     )
                 ]
@@ -468,14 +467,14 @@ def test_all(
                             addr = getCreate2Addr(
                                 self.v.address,
                                 cleanHexStrPad(swapID),
-                                Deposit,
+                                DEPOSIT_BYTECODE_PRECOMPILED,
                                 cleanHexStrPad(NATIVE_ADDR),
                             )
                         else:
                             addr = getCreate2Addr(
                                 self.v.address,
                                 cleanHexStrPad(swapID),
-                                Deposit,
+                                DEPOSIT_BYTECODE_PRECOMPILED,
                                 cleanHexStrPad(tok.address),
                             )
                         self.deployedDeposits[swapID] = addr
@@ -696,7 +695,7 @@ def test_all(
                     depositAddr = getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapID),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(NATIVE_ADDR),
                     )
                     self.nativeBals[depositAddr] += st_native_amount
@@ -722,7 +721,7 @@ def test_all(
                 depositAddr = getCreate2Addr(
                     self.v.address,
                     cleanHexStrPad(st_swapID),
-                    Deposit,
+                    DEPOSIT_BYTECODE_PRECOMPILED,
                     cleanHexStrPad(token.address),
                 )
                 token.transfer(depositAddr, st_token_amount, {"from": st_sender})
@@ -787,7 +786,7 @@ def test_all(
                     depositAddr = getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapID),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(NATIVE_ADDR),
                     )
                     self.deployedDeposits[st_swapID] = depositAddr
@@ -839,7 +838,7 @@ def test_all(
                         depositAddr = getCreate2Addr(
                             self.v.address,
                             cleanHexStrPad(st_swapID),
-                            Deposit,
+                            DEPOSIT_BYTECODE_PRECOMPILED,
                             cleanHexStrPad(NATIVE_ADDR),
                         )
                         self.deployedDeposits[st_swapID] = depositAddr
@@ -902,7 +901,7 @@ def test_all(
                     depositAddr = getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(st_swapID),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(token.address),
                     )
                     self.deployedDeposits[st_swapID] = depositAddr
@@ -972,7 +971,7 @@ def test_all(
                         depositAddr = getCreate2Addr(
                             self.v.address,
                             cleanHexStrPad(st_swapID),
-                            Deposit,
+                            DEPOSIT_BYTECODE_PRECOMPILED,
                             cleanHexStrPad(token.address),
                         )
                         self.deployedDeposits[st_swapID] = depositAddr
@@ -2225,7 +2224,7 @@ def test_all(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(swapID),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(NATIVE_ADDR),
                     )
                     for swapID in range(MAX_SWAPID + 1)
@@ -2234,7 +2233,7 @@ def test_all(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(swapID),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(self.tokenA.address),
                     )
                     for swapID in range(MAX_SWAPID + 1)
@@ -2243,7 +2242,7 @@ def test_all(
                     getCreate2Addr(
                         self.v.address,
                         cleanHexStrPad(swapID),
-                        Deposit,
+                        DEPOSIT_BYTECODE_PRECOMPILED,
                         cleanHexStrPad(self.tokenB.address),
                     )
                     for swapID in range(MAX_SWAPID + 1)
@@ -2703,7 +2702,6 @@ def test_all(
         StateMachine,
         a,
         cfDeploy,
-        Deposit,
         Token,
         CFReceiverMock,
         MockUSDT,

@@ -7,7 +7,7 @@ from shared_tests import *
 def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Deposit):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address, JUNK_HEX_PAD, cleanHexStrPad(NATIVE_ADDR)
     )
     cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
 
@@ -40,7 +40,10 @@ def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Depos
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(token.address)
+        cf.vault.address,
+        JUNK_HEX_PAD,
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(token.address),
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
 
@@ -70,11 +73,17 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     swapIDs = [cleanHexStrPad(0), cleanHexStrPad(1)]
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address,
+        swapIDs[0],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
     cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address,
+        swapIDs[1],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
     cf.SAFEKEEPER.transfer(depositAddr2, 2 * TEST_AMNT)
 
@@ -115,11 +124,17 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
+        cf.vault.address,
+        swapIDs[0],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(token.address),
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
+        cf.vault.address,
+        swapIDs[1],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(token.address),
     )
     token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.SAFEKEEPER})
 
@@ -148,17 +163,23 @@ def test_fetchDepositNativeBatch_transfer_fetchDepositTokenBatch_transfer(
 
 
 def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBatch(
-    cf, token, Deposit, utils
+    cf, token, utils
 ):
     swapIDs = [cleanHexStrPad(0), cleanHexStrPad(1)]
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
+        cf.vault.address,
+        swapIDs[0],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(token.address),
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
+        cf.vault.address,
+        swapIDs[1],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(token.address),
     )
     token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.SAFEKEEPER})
 
@@ -217,11 +238,17 @@ def test_fetchDepositTokenBatch_transferBatch_fetchDepositNativeBatch_transferBa
 
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address,
+        swapIDs[0],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
     cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address,
+        swapIDs[1],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
     cf.SAFEKEEPER.transfer(depositAddr2, 2 * TEST_AMNT)
 
@@ -266,11 +293,17 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
     # Fetch token deposit
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(token.address)
+        cf.vault.address,
+        swapIDs[0],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(token.address),
     )
     token.transfer(depositAddr, TEST_AMNT, {"from": cf.SAFEKEEPER})
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(token.address)
+        cf.vault.address,
+        swapIDs[1],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(token.address),
     )
     token.transfer(depositAddr2, 2 * TEST_AMNT, {"from": cf.SAFEKEEPER})
 
@@ -324,11 +357,17 @@ def test_fetchDepositTokenBatch_transferBatch_allBatch(cf, token, Deposit):
 
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, swapIDs[0], Deposit, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address,
+        swapIDs[0],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
     cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
     depositAddr2 = getCreate2Addr(
-        cf.vault.address, swapIDs[1], Deposit, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address,
+        swapIDs[1],
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
     cf.SAFEKEEPER.transfer(depositAddr2, 2 * TEST_AMNT)
 
