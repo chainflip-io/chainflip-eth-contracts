@@ -1,9 +1,6 @@
 name: Release
 
-on:
-  push:
-    tags:
-      - "*"
+on: push
 
 jobs:
   release:
@@ -38,12 +35,7 @@ jobs:
 
       - name: Zip ABIs
         run: |
-          CONTRACT_ARTIFACTS=$(ls ./build/contracts | grep -v dependencies)
-          while read contract; do
-            echo $contract
-            cat build/contracts/$contract | jq .abi > ./$contract
-          done <<< $CONTRACT_ARTIFACTS
-          cat ./build/contracts/Deposit.json | jq .bytecode > Deposit_bytecode.json
+          cat build/contracts/Deposit.json > ./Deposit.json
           zip abis.zip $(find . -maxdepth 1 -type f -name "*.json" -not -name "package*.json" -not -path "./.*")
 
       - name: Store contract abis as Artefact
