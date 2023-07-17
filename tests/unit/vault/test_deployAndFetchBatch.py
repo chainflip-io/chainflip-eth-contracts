@@ -95,9 +95,9 @@ def test_getCreate2Addr(Deposit):
         Deposit,
         cleanHexStrPad(NATIVE_ADDR),
     )
-    assert depositAddr == "0x311373270d730749FF22fd3c1F9836AA803Be47a"
+    assert depositAddr == "0x5B4B124f914B7a364284B1340A264dd2D4f631e4"
 
     depositAddr = getCreate2Addr(
         vault_address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(flip_address)
     )
-    assert depositAddr == "0xe3477D1C61feDe43a5bbB5A7Fd40489225D18826"
+    assert depositAddr == "0xdeE0239d594649cDf04f6Ec50D48F8743D002f47"

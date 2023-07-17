@@ -7,7 +7,7 @@ import "../interfaces/IStateChainGateway.sol";
 import "../interfaces/IAddressHolder.sol";
 import "../interfaces/ITokenVestingStaking.sol";
 import "../mocks/MockStProvider.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title TokenVestingStaking

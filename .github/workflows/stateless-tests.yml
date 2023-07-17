@@ -33,6 +33,10 @@ jobs:
       - run: yarn
       - run: poetry install
 
+      # Ensure that the Deposit's bytecode hasn't changed
+      - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat
+
       - run: npx hardhat node &
       - run: sleep 2
+
       - run: poetry run brownie test --network hardhat --stateful false

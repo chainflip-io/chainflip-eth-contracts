@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.17;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC20} from "../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721Receiver} from "../node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC1155Receiver} from "../node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 import "./interfaces/IMulticall.sol";
 import "./abstract/Shared.sol";

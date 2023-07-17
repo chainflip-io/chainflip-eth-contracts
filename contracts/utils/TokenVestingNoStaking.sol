@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "../abstract/Shared.sol";
 import "../interfaces/ITokenVestingNoStaking.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title TokenVesting

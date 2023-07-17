@@ -2,10 +2,6 @@
 networks:
   default: development
 
-# Require OpenZeppelin Contracts
-dependencies:
-  - OpenZeppelin/openzeppelin-contracts@4.8.3
-
 compiler:
   evm_version: "paris"
   solc:
@@ -13,9 +9,6 @@ compiler:
       enabled: true
       runs: 800
     version: 0.8.20
-    # Path remapping to support OpenZeppelin imports with NPM-style path
-    remappings:
-      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.8.3"
 
 hypothesis:
   max_examples: 50
