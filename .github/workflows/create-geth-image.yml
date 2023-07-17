@@ -185,7 +185,7 @@ jobs:
     env:
       IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
       GETH_INITIAL_STATE_DIR: /tmp/datadir
-      GETH_BASE_IMAGE: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+      GETH_BASE_IMAGE: ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
     needs:
       - create
     steps:
