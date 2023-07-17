@@ -233,7 +233,7 @@ jobs:
       - name: Build Arbitrum Network
         working-directory: nitro-testnode
         run: |
-          ./test-node.bash --init --detach
+          sudo ./test-node.bash --init --detach
 
       - name: Install Python virtualenv
         run: pip install virtualenv
