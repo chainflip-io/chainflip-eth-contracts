@@ -225,6 +225,11 @@ jobs:
       - name: Update initial-state directory permissions
         run: chmod -R 777 ./nitro-testnode/${{ env.GETH_INITIAL_STATE_DIR }}
 
+      - name: Update Docker user
+        run: |
+          sudo usermod -aG docker $USER
+          newgrp docker
+
       - name: Build Arbitrum Network
         working-directory: nitro-testnode
         run: |
