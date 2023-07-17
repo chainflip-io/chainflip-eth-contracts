@@ -11,7 +11,7 @@ from shared_tests import *
     st_swapIDs=strategy("bytes32[]", unique=True),
     st_tokenBools=strategy("bool[]"),
 )
-def test_deployAndFetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_tokenBools):
+def test_deployAndFetchBatch(cf, token, st_amounts, st_swapIDs, st_tokenBools):
     trimToShortest([st_amounts, st_swapIDs, st_tokenBools])
     tokens = [token if b == True else NATIVE_ADDR for b in st_tokenBools]
     tokenTotal = 0
@@ -21,13 +21,19 @@ def test_deployAndFetchBatch(cf, token, Deposit, st_amounts, st_swapIDs, st_toke
         # Get the address to deposit to and deposit
         if tok == token:
             depositAddr = getCreate2Addr(
-                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok.address)
+                cf.vault.address,
+                id.hex(),
+                DEPOSIT_BYTECODE_PRECOMPILED,
+                cleanHexStrPad(tok.address),
             )
             tok.transfer(depositAddr, am, {"from": cf.SAFEKEEPER})
             tokenTotal += am
         else:
             depositAddr = getCreate2Addr(
-                cf.vault.address, id.hex(), Deposit, cleanHexStrPad(tok)
+                cf.vault.address,
+                id.hex(),
+                DEPOSIT_BYTECODE_PRECOMPILED,
+                cleanHexStrPad(tok),
             )
             cf.SAFEKEEPER.transfer(depositAddr, am)
             nativeTotal += am
@@ -85,19 +91,24 @@ def test_deployAndFetchBatch_rev_deployed(cf, token):
 
 # This is a test to catch when the Deposit bytecode changes. As of now this is machine
 # dependant and the results are for the github runners, so this test will fail locally.
-def test_getCreate2Addr(Deposit):
+def test_getCreate2Addr(cf):
+    cf.vault.DEPOSIT_BYTECODE_PRECOMPILED == DEPOSIT_BYTECODE_PRECOMPILED
+
     vault_address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
     flip_address = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
 
     depositAddr = getCreate2Addr(
         vault_address,
         cleanHexStrPad(web3.toHex(420696969)),
-        Deposit,
+        DEPOSIT_BYTECODE_PRECOMPILED,
         cleanHexStrPad(NATIVE_ADDR),
     )
     assert depositAddr == "0x311373270d730749FF22fd3c1F9836AA803Be47a"
 
     depositAddr = getCreate2Addr(
-        vault_address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(flip_address)
+        vault_address,
+        JUNK_HEX_PAD,
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(flip_address),
     )
     assert depositAddr == "0xe3477D1C61feDe43a5bbB5A7Fd40489225D18826"

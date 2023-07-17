@@ -31,8 +31,8 @@ def cleanHexStrPad(thing):
     return ("0" * (64 - len(thing))) + thing
 
 
-def getCreate2Addr(sender, saltHex, contractContainer, argsHex):
-    deployByteCode = contractContainer.bytecode + argsHex
+def getCreate2Addr(sender, saltHex, bytecode, argsHex):
+    deployByteCode = bytecode + argsHex
     return web3.toChecksumAddress(
         web3.keccak(
             hexstr=(

@@ -4,13 +4,20 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IERC20Lite.sol";
 
+/*****************************************************************************************************
+*********************************        ATTENTION!        *******************************************
+******************************************************************************************************
+    Modifying this contract won't take effect on the deployed contracts as this contract's bytecode is 
+    been hardcoded into the Vault contract. That is done because compiling with different environments 
+    might result in different bytecodes and we need to ensure that the bytecode is consistent.
+    Do NOT modify unless the consequences of doing so are fully understood. If modifications are done
+    don't forget to update the Vault's DEPOSIT_BYTECODE_PRECOMPILED constant.
+****************************************************************************************************/
+
 /**
  * @title    Deposit contract
  * @notice   Creates a contract with a known address and withdraws tokens from it.
  *           After deployment, the Vault will call fetch() to withdraw tokens.
- * @dev      Any change in this contract, including comments, will affect the final
- *           bytecode and therefore will affect the create2 derived addresses.
- *           Do NOT modify unless the consequences of doing so are fully understood.
  */
 contract Deposit {
     address payable private immutable vault;
