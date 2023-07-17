@@ -286,7 +286,6 @@ jobs:
           path: |
             ${{ github.workspace }}/nitro-testnode/data
 
-
       - name: Clean Up docker containers 🧹
         if: always()
         working-directory: ./nitro-testnode
