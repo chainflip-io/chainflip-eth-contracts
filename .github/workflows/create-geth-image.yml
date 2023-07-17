@@ -184,7 +184,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
       IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
-      GETH_INITIAL_STATE_DIR: /tmp/datadir
+      GETH_INITIAL_STATE_DIR: ci-geth-initial-state
       GETH_BASE_IMAGE: ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
     needs:
       - create
@@ -213,7 +213,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ${{ env.IMAGE_TAG }}
-          path: ${{ env.GETH_INITIAL_STATE_DIR }}
+          path: ./nitro-testnode/${{ env.GETH_INITIAL_STATE_DIR }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
