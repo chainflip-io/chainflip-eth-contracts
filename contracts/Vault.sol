@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/ICFReceiver.sol";
+import "./interfaces/IDeposit.sol";
 import "./abstract/Shared.sol";
-import "./Deposit.sol";
 import "./AggKeyNonceConsumer.sol";
 import "./GovernanceCommunityGuarded.sol";
 
@@ -286,7 +286,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function _fetchBatch(FetchParams[] calldata fetchParamsArray) private {
         uint256 length = fetchParamsArray.length;
         for (uint256 i = 0; i < length; ) {
-            Deposit(fetchParamsArray[i].fetchContract).fetch(fetchParamsArray[i].token);
+            IDeposit(fetchParamsArray[i].fetchContract).fetch(fetchParamsArray[i].token);
             unchecked {
                 ++i;
             }

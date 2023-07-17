@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IERC20Lite.sol";
+import "./interfaces/IDeposit.sol";
 
 /*****************************************************************************************************
 *********************************        ATTENTION!        *******************************************
@@ -19,7 +20,7 @@ import "./interfaces/IERC20Lite.sol";
  * @notice   Creates a contract with a known address and withdraws tokens from it.
  *           After deployment, the Vault will call fetch() to withdraw tokens.
  */
-contract Deposit {
+contract Deposit is IDeposit {
     address payable private immutable vault;
 
     /**

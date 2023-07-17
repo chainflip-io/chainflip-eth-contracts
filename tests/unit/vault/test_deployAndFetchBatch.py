@@ -92,7 +92,7 @@ def test_deployAndFetchBatch_rev_deployed(cf, token):
 # This is a test to catch when the Deposit bytecode changes. As of now this is machine
 # dependant and the results are for the github runners, so this test will fail locally.
 def test_getCreate2Addr(cf):
-    cf.vault.DEPOSIT_BYTECODE_PRECOMPILED == DEPOSIT_BYTECODE_PRECOMPILED
+    assert cf.vault.DEPOSIT_BYTECODE_PRECOMPILED() == DEPOSIT_BYTECODE_PRECOMPILED
 
     vault_address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
     flip_address = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
@@ -112,3 +112,17 @@ def test_getCreate2Addr(cf):
         cleanHexStrPad(flip_address),
     )
     assert depositAddr == "0xe3477D1C61feDe43a5bbB5A7Fd40489225D18826"
+
+
+# Check that the logic in the Deposit.sol hasn't changed compared to the hardcoded bytecode. This is not
+# bulletproof but it's better than nothing.
+def test_bytecodeChanges(cf, Deposit):
+    assert cf.vault.DEPOSIT_BYTECODE_PRECOMPILED() == DEPOSIT_BYTECODE_PRECOMPILED
+
+    # Check that everything except the swarm hashes match
+    compiled_bytecode = "0x" + Deposit.bytecode
+    cbor_length_bytes = int(compiled_bytecode[-4:], 16)
+    assert (
+        str(cf.vault.DEPOSIT_BYTECODE_PRECOMPILED())[: -4 - cbor_length_bytes * 2]
+        == compiled_bytecode[: -4 - cbor_length_bytes * 2]
+    )
