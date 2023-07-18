@@ -52,7 +52,7 @@ jobs:
             type=semver,pattern={{raw}}
             type=raw,value=latest
 
-      - name: Login to DockerHub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -71,6 +71,8 @@ jobs:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
       IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+    outputs:
+      image-tag: ${{ env.IMAGE_TAG }}
     needs:
       - build
     services:
@@ -101,7 +103,7 @@ jobs:
         run: |
           echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
 
-      - name: Login to DockerHub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -177,3 +179,134 @@ jobs:
             agg_key
             ./scripts/.artefacts/docker.json
             ${{ github.workspace }}/datadir
+
+  build-arb:
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    env:
+      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+      GETH_INITIAL_STATE_DIR: ci-geth-initial-state
+      GETH_BASE_IMAGE: ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+    needs:
+      - create
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Checkout chainflip-io/nitro-testnode
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
+          repository: chainflip-io/nitro-testnode
+          path: nitro-testnode
+          ref: feat/setup-from-scratch
+          submodules: true
+
+      - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
+          repository: chainflip-io/chainflip-backend
+          path: chainflip-backend
+          ref: ${{ inputs.chainflip_backend_ref }}
+
+      - name: Fetch agg_key
+        run: |
+          echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
+      - name: Download Geth Initial State
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.IMAGE_TAG }}
+          path: ./nitro-testnode/${{ env.GETH_INITIAL_STATE_DIR }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update directory permissions
+        working-directory: nitro-testnode
+        run: |
+          chown -R 1000:1000 ./${{ env.GETH_INITIAL_STATE_DIR }}
+
+      - name: Update Docker user
+        run: |
+          sudo usermod -aG docker $USER
+          newgrp docker
+
+      - name: Build Arbitrum Network
+        working-directory: nitro-testnode
+        run: |
+          ./test-node.bash --init --detach
+
+      - name: Install Python virtualenv
+        run: pip install virtualenv
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - run: npm install --global ganache-cli
+      - run: npm install --global yarn
+      - run: yarn
+      - run: poetry install
+
+      - name: Add the network
+        run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
+
+      - name: Deploy contracts
+        env:
+          SEED: indoor dish desk flag debris potato excuse depart ticket judge file exit # ARB Localnet Seed
+          NUM_GENESIS_VALIDATORS: ${{ inputs.genesis_validators }}
+          GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+          COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+          REDEMPTION_DELAY: "120"
+          GENESIS_STAKE: "1000000000000000000000"
+          DEPLOYER_ACCOUNT_INDEX: "0"
+          DEPLOY_ARTEFACT_ID: "docker"
+        run: poetry run brownie run deploy_contracts --network arb-l2
+
+      - name: Stop Containers
+        run: |
+          docker stop $(docker ps -a -q)
+
+      - name: Summary
+        run: |
+          CONTRACTS=$(jq . ./scripts/.artefacts/docker.json)
+          echo "## Deployed L2 Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Save agg key to file
+        run: echo ${{ env.AGG_KEY }} > agg_key
+
+      - name: Update permissions
+        run: |
+          sudo chown -R $USER:$USER ./nitro-testnode/data
+          sudo chmod -R 777 ./nitro-testnode/data
+
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.IMAGE_TAG }}-localnet-initial-state
+          path: |
+            ${{ github.workspace }}/nitro-testnode/data
+
+      - name: Clean Up docker containers 🧹
+        if: always()
+        working-directory: ./nitro-testnode
+        continue-on-error: true
+        run: |
+          ls -laR ./data
+          docker ps -a
+          docker compose logs
+          docker compose down --rmi all --volumes --remove-orphans
