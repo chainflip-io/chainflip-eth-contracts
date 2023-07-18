@@ -40,7 +40,7 @@ jobs:
             echo $contract
             cat build/contracts/$contract | jq .abi > ./$contract
           done <<< $CONTRACT_ARTIFACTS
-          cat ./build/contracts/Deposit.json | jq .bytecode > Deposit_bytecode.json
+          cat ./contracts/utils/Deposit_bytecode.json > Deposit_bytecode.json
           zip abis.zip $(find . -maxdepth 1 -type f -name "*.json" -not -name "package*.json" -not -path "./.*")
 
       - name: Store contract abis as Artefact

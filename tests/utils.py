@@ -4,6 +4,16 @@ from web3._utils.filters import construct_event_filter_params
 from web3._utils.events import get_event_data
 import json
 
+_deposit_bytecode = None
+
+
+def load_deposit_bytecode():
+    global _deposit_bytecode
+    if _deposit_bytecode is None:
+        with open("contracts/utils/Deposit_bytecode.json", "r") as f:
+            _deposit_bytecode = json.load(f)
+    return _deposit_bytecode
+
 
 def cleanHexStr(thing):
     if isinstance(thing, int):
