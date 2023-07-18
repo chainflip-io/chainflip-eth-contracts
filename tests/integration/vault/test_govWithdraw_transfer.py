@@ -6,7 +6,7 @@ from brownie.test import given, strategy
 
 
 @given(st_sender=strategy("address"))
-def test_govWithdraw_transfer(cf, token, token2, Deposit, st_sender):
+def test_govWithdraw_transfer(cf, token, token2, st_sender):
     # Funding Vault with some arbitrary funds
     amountTest = TEST_AMNT * 10
     st_sender.transfer(cf.vault, amountTest)
@@ -15,7 +15,7 @@ def test_govWithdraw_transfer(cf, token, token2, Deposit, st_sender):
     tokenList = [NATIVE_ADDR, token, token2]
 
     # Test vault functioning
-    depositAddr = deployAndFetchNative(cf, cf.vault, Deposit)
+    depositAddr = deployAndFetchNative(cf, cf.vault)
     transfer_native(cf, cf.vault, st_sender, TEST_AMNT)
 
     # Withdraw all Vault balance

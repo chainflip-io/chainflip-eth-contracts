@@ -87,7 +87,7 @@ def test_upgrade_keyManager(cf, KeyManager):
 @given(
     st_sender=strategy("address"),
 )
-def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager, token):
+def test_upgrade_Vault(cf, Vault, st_sender, KeyManager, token):
 
     totalFunds = cf.DENICE.balance() / 10
     # Replicate a vault with funds - 1000 NATIVE
@@ -107,11 +107,11 @@ def test_upgrade_Vault(cf, Vault, Deposit, st_sender, KeyManager, token):
 
     # with a balance in can transfer. However, at this point the new vault should not be used yet
     # more than potentially to start fetching from new addresses.
-    depositAddrNew = deployAndFetchNative(cf, newVault, Deposit)
+    depositAddrNew = deployAndFetchNative(cf, newVault)
     transfer_native(cf, newVault, cf.ALICE, TEST_AMNT)
 
     # Old vault can still operate
-    depositAddr = deployAndFetchNative(cf, cf.vault, Deposit)
+    depositAddr = deployAndFetchNative(cf, cf.vault)
     transfer_native(cf, cf.vault, cf.ALICE, TEST_AMNT)
 
     # Transfer from oldVault to new Vault - unclear if we want to transfer all the balance

@@ -7,7 +7,10 @@ from shared_tests import *
 def test_fetchDepositNative_transfer_fetchDepositToken_transfer(cf, token, Deposit):
     # Get the address to deposit to and deposit
     depositAddr = getCreate2Addr(
-        cf.vault.address, JUNK_HEX_PAD, cleanHexStrPad(NATIVE_ADDR)
+        cf.vault.address,
+        JUNK_HEX_PAD,
+        DEPOSIT_BYTECODE_PRECOMPILED,
+        cleanHexStrPad(NATIVE_ADDR),
     )
     cf.SAFEKEEPER.transfer(depositAddr, TEST_AMNT)
 

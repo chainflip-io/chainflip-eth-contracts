@@ -73,6 +73,7 @@ def test_deposit_fetch(
     st_deployToken,
     st_sender_2,
     st_fetchToken,
+    Deposit,
 ):
     depositAddr = getCreate2Addr(
         cf.vault.address,
@@ -122,7 +123,7 @@ def test_deposit_fetch(
     assert "FetchedNative" not in tx.events
 
 
-def deploy_deposit(cf, sender, Deposit):
+def deploy_deposit(cf, sender):
     depositAddr = getCreate2Addr(
         cf.vault.address,
         JUNK_HEX_PAD,
@@ -148,7 +149,7 @@ def deploy_deposit(cf, sender, Deposit):
     st_amount=strategy("uint256", max_value=TEST_AMNT * 10),
 )
 def test_receive(cf, st_sender, token, st_amount):
-    depositAddr = deploy_deposit(cf, st_sender, Deposit)
+    depositAddr = deploy_deposit(cf, st_sender)
 
     # Tokens do not trigger any receive function
     tx = token.transfer(depositAddr, st_amount, {"from": cf.SAFEKEEPER})
@@ -166,8 +167,8 @@ def test_receive(cf, st_sender, token, st_amount):
     st_gasLimit=strategy("uint256", min_value=22000, max_value=40000),
     st_amount=strategy("uint256", min_value=1, max_value=TEST_AMNT * 10),
 )
-def test_receive_gas(cf, DEPOSIT_BYTECODE_PRECOMPILED, st_gasLimit, st_amount):
-    depositAddr = deploy_deposit(cf, cf.ALICE, Deposit)
+def test_receive_gas(cf, st_gasLimit, st_amount):
+    depositAddr = deploy_deposit(cf, cf.ALICE)
 
     # As of now a transfer of >0 ETH will require ~31.602 gas which ends up being 33776 gas
     # required as a gas Limit (most likely due to the 64/63 rule).
@@ -228,7 +229,7 @@ def test_deposit_forceEth_before_deployment(cf, ForceNativeTokens):
 
 # After deployment it won't be supported
 def test_deposit_forceEth_after_deployment(cf, ForceNativeTokens):
-    depositAddr = deploy_deposit(cf, cf.ALICE, Deposit)
+    depositAddr = deploy_deposit(cf, cf.ALICE)
 
     assert web3.eth.get_balance(web3.toChecksumAddress(depositAddr)) == 0
     assert web3.eth.get_balance(cf.vault.address) == 0
@@ -249,14 +250,7 @@ def test_deposit_forceEth_after_deployment(cf, ForceNativeTokens):
 
 # Test that we can get the events from the logs from a contract that doesn't exist yet, which will be the real
 # case scenario for the Deposit contract.
-def test_fetch_event_undeployed_Deposit(cf, Deposit):
-
-    depositAddr = getCreate2Addr(
-        cf.vault.address,
-        JUNK_HEX_PAD,
-        DEPOSIT_BYTECODE_PRECOMPILED,
-        cleanHexStrPad(NATIVE_ADDR),
-    )
+def test_fetch_event_undeployed_Deposit(cf):
 
     vaultContractObject = get_contract_object("Vault", cf.vault.address)
 
