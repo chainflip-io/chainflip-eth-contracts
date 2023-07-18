@@ -9,10 +9,12 @@ import "./interfaces/IDeposit.sol";
 *********************************        ATTENTION!        *******************************************
 ******************************************************************************************************
     Modifying this contract won't take effect on the deployed contracts as this contract's bytecode is 
-    been hardcoded into the Vault contract. That is done because compiling with different environments 
+    hardcoded into the Vault contract. That is done because compiling with different environments 
     might result in different bytecodes and we need to ensure that the bytecode is consistent.
     Do NOT modify unless the consequences of doing so are fully understood. If modifications are done
-    don't forget to update the Vault's DEPOSIT_BYTECODE_PRECOMPILED constant.
+    don't forget to update the Vault's DEPOSIT_BYTECODE_PRECOMPILED constant as well as the
+    Deposit_bytecode.json file. Differences in the local bytecode and the DEPOSIT_BYTECODE_PRECOMPILED
+    is alright so long as it's only the metadata changing (see test_bytecodeChanges).
 ****************************************************************************************************/
 
 /**
