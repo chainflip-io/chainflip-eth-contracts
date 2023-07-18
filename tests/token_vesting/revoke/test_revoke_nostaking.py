@@ -41,7 +41,6 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
     check_state_noStaking(
         cliff,
         tv,
-        cf,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         True,

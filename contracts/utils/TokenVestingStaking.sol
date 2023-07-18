@@ -45,7 +45,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     IAddressHolder public immutable addressHolder;
 
     mapping(IERC20 => uint256) public released;
-    mapping(IERC20 => bool) public revoked;
+    bool public revoked;
 
     /**
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
@@ -85,7 +85,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param nodeID the nodeID to fund.
      * @param amount the amount of FLIP out of the current funds in this contract.
      */
-    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
+    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary notRevoked {
         address stateChainGateway = addressHolder.getStateChainGateway();
 
         FLIP.approve(stateChainGateway, amount);
@@ -97,7 +97,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      *          It is expected that an amount of stFLIP will be minted to this contract.
      * @param amount the amount of FLIP to stake to the staking provider.
      */
-    function stakeToStProvider(uint256 amount) external override onlyBeneficiary notRevoked(FLIP) {
+    function stakeToStProvider(uint256 amount) external override onlyBeneficiary notRevoked {
         address stMinter = addressHolder.getStakingAddress();
 
         FLIP.approve(stMinter, amount);
@@ -108,10 +108,8 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @notice  Unstakes from the staking provider by transferring stFLIP to the staking burner.
      * @param amount the amount of FLIP to stake to the staking provider.
      */
-    function unstakeFromStProvider(uint256 amount) external override onlyBeneficiary returns (uint256) {
+    function unstakeFromStProvider(uint256 amount) external override onlyBeneficiary notRevoked returns (uint256) {
         (address stBurner, address stFlip) = addressHolder.getUnstakingAddresses();
-
-        require(!revoked[IERC20(stFlip)], "Vesting: token revoked");
 
         IERC20(stFlip).approve(stBurner, amount);
         return IBurner(stBurner).burn(address(this), amount);
@@ -121,7 +119,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @notice Transfers vested tokens to beneficiary.
      * @param token ERC20 token which is being vested.
      */
-    function release(IERC20 token) external override onlyBeneficiary notRevoked(token) {
+    function release(IERC20 token) external override onlyBeneficiary notRevoked {
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "Vesting: no tokens are due");
 
@@ -137,7 +135,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
      * @param token ERC20 token which is being vested.
      */
-    function revoke(IERC20 token) external override onlyRevoker notRevoked(token) {
+    function revoke(IERC20 token) external override onlyRevoker notRevoked {
         require(block.timestamp <= end, "Vesting: vesting expired");
 
         uint256 balance = token.balanceOf(address(this));
@@ -145,7 +143,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         uint256 unreleased = _releasableAmount(token);
         uint256 refund = balance - unreleased;
 
-        revoked[token] = true;
+        revoked = true;
 
         token.safeTransfer(revoker, refund);
 
@@ -159,8 +157,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param token ERC20 token which is being vested.
      */
     function retrieveRevokedFunds(IERC20 token) external override onlyRevoker {
-        require(revoked[token], "Vesting: token not revoked");
-
+        require(revoked, "Vesting: token not revoked");
         uint256 balance = token.balanceOf(address(this));
 
         token.safeTransfer(revoker, balance);
@@ -242,8 +239,8 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         _;
     }
 
-    modifier notRevoked(IERC20 token) {
-        require(!revoked[token], "Vesting: token revoked");
+    modifier notRevoked() {
+        require(!revoked, "Vesting: token revoked");
         _;
     }
 }

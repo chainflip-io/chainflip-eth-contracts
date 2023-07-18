@@ -23,7 +23,6 @@ def test_tokenVesting_constructor_cliff(
     check_state_noStaking(
         cliff,
         tv,
-        cf,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         addrs.REVOKER != ZERO_ADDR,
@@ -45,7 +44,6 @@ def test_tokenVesting_constructor_cliff(
         cf.stateChainGateway,
         addressHolder,
         tv,
-        cf,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         addrs.REVOKER != ZERO_ADDR,
