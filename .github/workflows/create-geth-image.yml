@@ -189,6 +189,9 @@ jobs:
     needs:
       - create
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Checkout chainflip-io/nitro-testnode
         uses: actions/checkout@v3
         with:
