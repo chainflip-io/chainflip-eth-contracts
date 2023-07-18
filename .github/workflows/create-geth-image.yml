@@ -289,6 +289,11 @@ jobs:
       - name: Save agg key to file
         run: echo ${{ env.AGG_KEY }} > agg_key
 
+      - name: Update permissions
+        run: |
+          sudo chown -R $USER:$USER ./nitro-testnode/data
+          sudo chmod -R 777 ./nitro-testnode/data
+
       - name: Save artifacts
         uses: actions/upload-artifact@v3
         with:
