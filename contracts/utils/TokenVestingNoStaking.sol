@@ -34,7 +34,7 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {
     uint256 public immutable end;
 
     mapping(IERC20 => uint256) public released;
-    mapping(IERC20 => bool) public revoked;
+    bool public revoked;
 
     /**
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
@@ -87,7 +87,7 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external override onlyRevoker {
-        require(!revoked[token], "Vesting: token revoked");
+        require(!revoked, "Vesting: token revoked");
         require(block.timestamp <= end, "Vesting: vesting expired");
 
         uint256 balance = token.balanceOf(address(this));
@@ -95,7 +95,7 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {
         uint256 unreleased = _releasableAmount(token);
         uint256 refund = balance - unreleased;
 
-        revoked[token] = true;
+        revoked = true;
 
         token.safeTransfer(revoker, refund);
 
@@ -122,7 +122,7 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {
         uint256 currentBalance = token.balanceOf(address(this));
         uint256 totalBalance = currentBalance + released[token];
 
-        if (block.timestamp >= end || revoked[token]) {
+        if (block.timestamp >= end || revoked) {
             return totalBalance;
         } else {
             uint256 cliffAmount = totalBalance / CLIFF_DENOMINATOR;

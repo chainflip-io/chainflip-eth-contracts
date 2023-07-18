@@ -1,10 +1,7 @@
-from re import A
 from consts import *
 from brownie import reverts, chain
 from brownie.test import given, strategy
 from shared_tests_tokenVesting import *
-
-import pytest
 
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
@@ -37,7 +34,6 @@ def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
         cf.stateChainGateway,
         addressHolder,
         tv,
-        cf,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
@@ -83,7 +79,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVestingStaking):
         tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
 
-def test_revoke_rev_revoked(a, addrs, cf, tokenVestingStaking):
+def test_revoke_rev_revoked(addrs, cf, tokenVestingStaking):
     tv, _, total = tokenVestingStaking
 
     tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
@@ -118,7 +114,7 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
     assert tx.events["Transfer"][0].values() == (tv, addrs.REVOKER, 0)
-    assert tv.revoked(cf.flip) == True
+    assert tv.revoked() == True
 
     with reverts(REV_MSG_TOKEN_REVOKED):
         tv.release(cf.flip, {"from": addrs.BENEFICIARY})
@@ -132,7 +128,7 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
     st_sleepTime = end
     chain.sleep(st_sleepTime)
 
-    # In option B, once revoked there is no way to release any funds
+    # In staking contract, once revoked there is no way to release any funds
     with reverts(REV_MSG_TOKEN_REVOKED):
         tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 

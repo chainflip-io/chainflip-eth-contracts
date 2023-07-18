@@ -34,7 +34,6 @@ def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
         check_state_noStaking(
             cliff,
             tv,
-            cf,
             addrs.BENEFICIARY,
             addrs.REVOKER,
             True,
@@ -59,7 +58,6 @@ def test_release_all(addrs, cf, tokenVestingNoStaking):
     check_state_noStaking(
         cliff,
         tv,
-        cf,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
@@ -107,7 +105,6 @@ def test_consecutive_releases_after_cliff(
         check_state_noStaking(
             cliff,
             tv,
-            cf,
             addrs.BENEFICIARY,
             addrs.REVOKER,
             True,
