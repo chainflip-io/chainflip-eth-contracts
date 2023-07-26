@@ -225,8 +225,8 @@ def cfReceiverMock(cf, CFReceiverMock):
 
 
 @pytest.fixture(scope="module")
-def cfReceiverGriefer(cf, CFReceiverGriefer):
-    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFReceiverGriefer, cf.vault)
+def cfTester(cf, CFTester):
+    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFTester, cf.vault)
 
 
 @pytest.fixture(scope="module")
