@@ -16,7 +16,7 @@ from brownie import (
     DeployerContract,
     CFReceiverMock,
     AddressChecker,
-    CFReceiverGriefer,
+    CFTester,
 )
 from deploy import (
     deploy_Chainflip_contracts,
@@ -177,10 +177,8 @@ def deploy_optional_contracts(cf, addressDump):
         )
         addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiver.address
 
-        cf.cfReceiverGriefer = deploy_new_cfReceiver(
-            deployer, CFReceiverGriefer, cf.vault.address
-        )
-        addressDump["CF_RECEIVER_GRIEFER"] = cf.cfReceiverGriefer.address
+        cf.cfTester = deploy_new_cfReceiver(deployer, CFTester, cf.vault.address)
+        addressDump["CF_RECEIVER_TESTER"] = cf.cfTester.address
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
@@ -223,8 +221,8 @@ def display_deployed_contracts(cf):
         print(f"  USDC: {cf.mockUSDC.address}")
     if hasattr(cf, "cfReceiver"):
         print(f"  CfReceiver: {cf.cfReceiver.address}")
-    if hasattr(cf, "cfReceiverGriefer"):
-        print(f"  CFReceiverGriefer: {cf.cfReceiverGriefer.address}")
+    if hasattr(cf, "cfTester"):
+        print(f"  CFTester: {cf.cfTester.address}")
 
     print("\n😎😎 Deployment success! 😎😎\n")
 
