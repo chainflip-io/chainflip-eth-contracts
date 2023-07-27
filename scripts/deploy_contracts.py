@@ -172,11 +172,6 @@ def deploy_optional_contracts(cf, addressDump):
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
     if chain.id not in [eth_mainnet, arb_mainnet]:
-        cf.cfReceiver = deploy_new_cfReceiver(
-            deployer, CFReceiverMock, cf.vault.address
-        )
-        addressDump["CF_RECEIVER_ADDRESS"] = cf.cfReceiver.address
-
         cf.cfTester = deploy_new_cfReceiver(deployer, CFTester, cf.vault.address)
         addressDump["CF_RECEIVER_TESTER"] = cf.cfTester.address
 
@@ -219,8 +214,6 @@ def display_deployed_contracts(cf):
     # Contracts dependant on localnet/testnet/mainnet
     if hasattr(cf, "mockUSDC"):
         print(f"  USDC: {cf.mockUSDC.address}")
-    if hasattr(cf, "cfReceiver"):
-        print(f"  CfReceiver: {cf.cfReceiver.address}")
     if hasattr(cf, "cfTester"):
         print(f"  CFTester: {cf.cfTester.address}")
 
