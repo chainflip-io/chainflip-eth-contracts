@@ -113,6 +113,33 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         _transferBatch(transferParamsArray);
     }
 
+    /**
+     * @notice  Same functionality as allBatch but removing the contract deployments
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
+     * @param fetchParamsArray    The array of fetch parameters
+     * @param transferParamsArray The array of transfer parameters
+     */
+    function allBatchV2(
+        SigData calldata sigData,
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
+    )
+        external
+        override
+        onlyNotSuspended
+        consumesKeyNonce(
+            sigData,
+            keccak256(abi.encode(this.allBatchV2.selector, fetchParamsArray, transferParamsArray))
+        )
+    {
+        // Fetch from already deployed deposits
+        _fetchBatch(fetchParamsArray);
+
+        // Send all transfers
+        _transferBatch(transferParamsArray);
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Transfers                       //
