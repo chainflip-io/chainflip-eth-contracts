@@ -14,7 +14,6 @@ from brownie import (
     FLIP,
     MockUSDC,
     DeployerContract,
-    CFReceiverMock,
     AddressChecker,
     CFTester,
 )
@@ -173,7 +172,7 @@ def deploy_optional_contracts(cf, addressDump):
 
     if chain.id not in [eth_mainnet, arb_mainnet]:
         cf.cfTester = deploy_new_cfReceiver(deployer, CFTester, cf.vault.address)
-        addressDump["CF_RECEIVER_TESTER"] = cf.cfTester.address
+        addressDump["CF_TESTER"] = cf.cfTester.address
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
