@@ -16,6 +16,7 @@ from brownie import (
     DeployerContract,
     AddressChecker,
     CFTester,
+    Deposit,
 )
 from deploy import (
     deploy_Chainflip_contracts,
@@ -23,6 +24,7 @@ from deploy import (
     deploy_new_cfReceiver,
     deploy_contracts_secondary_evm,
 )
+from shared_tests import deposit_bytecode_test
 
 AUTONOMY_SEED = os.environ["SEED"]
 DEPLOY_ARTEFACT_ID = os.environ.get("DEPLOY_ARTEFACT_ID")
@@ -33,6 +35,9 @@ print(f"DEPLOYER = {deployer}")
 
 
 def main():
+    # Check the bytecode of the Deposit contract
+    deposit_bytecode_test(Deposit)
+
     if chain.id in arbitrum_networks:
         deploy_secondary_evm()
     else:

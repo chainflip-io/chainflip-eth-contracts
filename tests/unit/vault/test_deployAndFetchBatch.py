@@ -86,18 +86,4 @@ def test_deployAndFetchBatch_rev_deployed(cf, token):
 # This is a test to catch when the Deposit bytecode changes. As of now this is machine
 # dependant and the results are for the github runners, so this test will fail locally.
 def test_getCreate2Addr(Deposit):
-    vault_address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
-    flip_address = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
-
-    depositAddr = getCreate2Addr(
-        vault_address,
-        cleanHexStrPad(web3.toHex(420696969)),
-        Deposit,
-        cleanHexStrPad(NATIVE_ADDR),
-    )
-    assert depositAddr == "0x311373270d730749FF22fd3c1F9836AA803Be47a"
-
-    depositAddr = getCreate2Addr(
-        vault_address, JUNK_HEX_PAD, Deposit, cleanHexStrPad(flip_address)
-    )
-    assert depositAddr == "0xe3477D1C61feDe43a5bbB5A7Fd40489225D18826"
+    deposit_bytecode_test(Deposit)
