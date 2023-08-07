@@ -72,6 +72,8 @@ def test_executeRedemption_rand(
             )
             assert tx.events["RedemptionExecuted"][0].values() == [st_nodeID, st_amount]
             assert cf.flip.balanceOf(st_funder) == st_redeemAddress + st_amount
+            assert tx.return_value == (st_funder, st_amount)
+
             # Check things that shouldn't have changed
             assert cf.stateChainGateway.getMinimumFunding() == MIN_FUNDING
 
@@ -92,6 +94,7 @@ def test_executeRedemption_min_delay(cf, redemptionRegistered):
     assert cf.flip.balanceOf(cf.stateChainGateway) == maxValidst_amount - redemption[0]
     assert tx.events["RedemptionExecuted"][0].values() == [JUNK_HEX, redemption[0]]
     assert cf.flip.balanceOf(redemption[1]) == redemption[0]
+    assert tx.return_value == (redemption[1], redemption[0])
 
     # Check things that shouldn't have changed
     assert cf.stateChainGateway.getMinimumFunding() == MIN_FUNDING
@@ -111,13 +114,13 @@ def test_executeRedemption_max_delay(cf, redemptionRegistered):
     assert cf.flip.balanceOf(cf.stateChainGateway) == maxValidst_amount - redemption[0]
     assert tx.events["RedemptionExecuted"][0].values() == [JUNK_HEX, redemption[0]]
     assert cf.flip.balanceOf(redemption[1]) == redemption[0]
+    assert tx.return_value == (redemption[1], redemption[0])
 
     # Check things that shouldn't have changed
     assert cf.stateChainGateway.getMinimumFunding() == MIN_FUNDING
 
 
-def test_executeRedemption_rev_too_early(cf, redemptionRegistered):
-    _, redemption = redemptionRegistered
+def test_executeRedemption_rev_too_early(cf):
     chain.sleep(REDEMPTION_DELAY - 5)
 
     with reverts(REV_MSG_NOT_ON_TIME):
@@ -131,6 +134,7 @@ def test_executeRedemption_rev_too_late(cf, redemptionRegistered):
     tx = cf.stateChainGateway.executeRedemption(JUNK_HEX, {"from": cf.ALICE})
     assert tx.events["RedemptionExpired"][0].values() == [JUNK_HEX, redemption[0]]
     assert cf.stateChainGateway.getPendingRedemption(JUNK_HEX) == NULL_CLAIM
+    assert tx.return_value == (redemption[1], 0)
 
 
 def test_executeRedemption_rev_suspended(cf, redemptionRegistered):
