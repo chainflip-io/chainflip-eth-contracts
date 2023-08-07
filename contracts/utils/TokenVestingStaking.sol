@@ -166,11 +166,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param token ERC20 token which is being vested.
      */
     function _releasableAmount(IERC20 token) private view returns (uint256) {
-        if (block.timestamp < end) {
-            return 0;
-        } else {
-            return token.balanceOf(address(this));
-        }
+        return block.timestamp < end ? 0 : token.balanceOf(address(this));
     }
 
     /// @dev    Allow the beneficiary to be transferred to a new address if needed
