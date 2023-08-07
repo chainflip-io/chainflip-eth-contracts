@@ -24,7 +24,8 @@ def test_release(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
         tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
         # Check release
-        check_released(tv, cf, tx, addrs.BENEFICIARY, total, total)
+        assert tx.events["TokensReleased"][0].values() == (cf.flip, total)
+
         # Shouldn't've changed
         check_state_staking(
             cf.stateChainGateway,
@@ -49,7 +50,8 @@ def test_release_all(addrs, cf, tokenVestingStaking, addressHolder):
     tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     # Check release
-    check_released(tv, cf, tx, addrs.BENEFICIARY, total, total)
+    assert tx.events["TokensReleased"][0].values() == (cf.flip, total)
+
     # Shouldn't've changed
     check_state_staking(
         cf.stateChainGateway,
@@ -100,7 +102,7 @@ def test_consecutive_releases_after_cliff(
             newlyReleased = totalReleased - accomulatedReleases
 
             # Check release
-            check_released(tv, cf, tx, addrs.BENEFICIARY, totalReleased, newlyReleased)
+            assert tx.events["TokensReleased"][0].values() == (cf.flip, newlyReleased)
 
             # Shouldn't've changed
             check_state_staking(
@@ -124,7 +126,7 @@ def test_consecutive_releases_after_cliff(
 
 
 def test_release_staking_rewards_after_end(
-    addrs, cf, tokenVestingStaking, maths, addressHolder
+    addrs, cf, tokenVestingStaking, addressHolder
 ):
     tv, end, total = tokenVestingStaking
 
@@ -137,7 +139,7 @@ def test_release_staking_rewards_after_end(
 
     totalReleased = total + total
 
-    check_released(tv, cf, tx, addrs.BENEFICIARY, totalReleased, total)
+    assert tx.events["TokensReleased"][0].values() == (cf.flip, total)
 
     # Shouldn't've changed
     check_state_staking(
@@ -165,7 +167,7 @@ def test_release_around_cliff(
     if getChainTime() >= end:
         tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
         # Check release
-        check_released(tv, cf, tx, addrs.BENEFICIARY, total, total)
+        assert tx.events["TokensReleased"][0].values() == (cf.flip, total)
         # Shouldn't've changed
         check_state_staking(
             cf.stateChainGateway,
