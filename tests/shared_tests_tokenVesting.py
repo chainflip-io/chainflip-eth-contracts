@@ -11,13 +11,6 @@ def release_revert(tv, cf, address):
         tv.release(cf.flip, {"from": address})
 
 
-def check_released(tv, cf, tx, address, totalReleased, recentlyReleased):
-    assert cf.flip.balanceOf(address) == totalReleased
-    assert tv.released(cf.flip) == totalReleased
-    assert tx.events["TokensReleased"][0].values()[0] == cf.flip
-    assert tx.events["TokensReleased"][0].values()[1] == recentlyReleased
-
-
 def check_state_staking(stateChainGateway, addressHolder, tv, *args):
     assert tv.addressHolder() == addressHolder
     assert addressHolder.getStateChainGateway() == stateChainGateway

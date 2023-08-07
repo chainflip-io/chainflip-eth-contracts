@@ -41,7 +41,6 @@ def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
         True,
         True,
     )
-    assert tv.released(cf.flip) == 0
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(tv) == 0
 
