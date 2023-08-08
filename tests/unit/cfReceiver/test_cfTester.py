@@ -10,6 +10,7 @@ def check_gas_test(tx, gas_to_use):
     assert tx.gas_used > gas_to_use
     assert tx.gas_used > tx.events["GasTest"]["gasUsed"]
 
+
 def test_cfTest_defaultGas(
     cf,
     cfTester,
