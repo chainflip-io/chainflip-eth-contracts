@@ -17,7 +17,7 @@ from brownie import (
     AddressHolder,
     TokenVestingStaking,
     TokenVestingNoStaking,
-    network
+    network,
 )
 
 # File should be formatted as a list of parameters. First line should be the headers with names of the
@@ -41,6 +41,7 @@ DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
 print(f"DEPLOYER = {DEPLOYER}")
 network.priority_fee("1 gwei")
+
 
 def main():
     governor = os.environ["GOV_KEY"]
@@ -209,4 +210,10 @@ def stake_via_stProvider():
     token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
 
     token_vesting.stakeToStProvider(1 * 10**18, {"from": DEPLOYER})
-    # TokenVestingStaking.at("0xA8f1b6A8166a26Ede11d7cDeded630aeb9FEa27B").unstakeFromStProvider(5 * 10**18, {"from": "0x37876B47DEE43492DAC3d87F7682df52dDBC65Ca"})
+
+
+def unstake_from_stProvider():
+    token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
+    token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
+
+    token_vesting.unstakeFromStProvider(1 * 10**18, {"from": DEPLOYER})
