@@ -1,4 +1,6 @@
 name: Create Geth Image
+run-name: Creating Geth Image for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+
 on:
   workflow_dispatch:
     inputs:
