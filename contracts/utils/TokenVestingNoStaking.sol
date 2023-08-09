@@ -111,8 +111,7 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {
     }
 
     /**
-     * @dev Calculates the amount that has already vested. Linear unvesting for
-     *      option A, full unvesting at the end for contract B.
+     * @dev Calculates the amount that has already vested.
      * @param token ERC20 token which is being vested.
      */
     function _vestedAmount(IERC20 token) private view returns (uint256) {
