@@ -78,4 +78,4 @@ jobs:
           poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
-          poetry run brownie run deploy_new_contract deploy_cfReceiverMock --network hardhat
+          poetry run brownie run deploy_new_contract deploy_cfTester --network hardhat
