@@ -78,8 +78,9 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
      *          expiry time
      * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
      * @param nodeID    The nodeID of the account redeeming the FLIP
+     * @return          The address that received the FLIP and the amount
      */
-    function executeRedemption(bytes32 nodeID) external;
+    function executeRedemption(bytes32 nodeID) external returns (address, uint256);
 
     /**
      * @notice  Compares a given new FLIP supply against the old supply and mints or burns

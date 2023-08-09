@@ -188,7 +188,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
      * @dev     No need for nzUint(nodeID) since that is handled by `redemption.expiryTime > 0`
      * @param nodeID    The nodeID of the funder
      */
-    function executeRedemption(bytes32 nodeID) external override onlyNotSuspended {
+    function executeRedemption(bytes32 nodeID) external override onlyNotSuspended returns (address, uint256) {
         Redemption memory redemption = _pendingRedemptions[nodeID];
         require(
             block.timestamp >= redemption.startTime && redemption.expiryTime > 0,
@@ -203,8 +203,10 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
 
             // Send the tokens
             _FLIP.transfer(redemption.redeemAddress, redemption.amount);
+            return (redemption.redeemAddress, redemption.amount);
         } else {
             emit RedemptionExpired(nodeID, redemption.amount);
+            return (redemption.redeemAddress, 0);
         }
     }
 
