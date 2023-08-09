@@ -29,7 +29,9 @@ def test_release(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
             else total
         )
         # Check release
-        check_released(tv, cf, tx, addrs.BENEFICIARY, newlyReleased, newlyReleased)
+        check_released_noStaking(
+            tv, cf, tx, addrs.BENEFICIARY, newlyReleased, newlyReleased
+        )
         # Shouldn't've changed
         check_state_noStaking(
             cliff,
@@ -53,7 +55,7 @@ def test_release_all(addrs, cf, tokenVestingNoStaking):
     tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
     # Check release
-    check_released(tv, cf, tx, addrs.BENEFICIARY, total, total)
+    check_released_noStaking(tv, cf, tx, addrs.BENEFICIARY, total, total)
     # Shouldn't've changed
     check_state_noStaking(
         cliff,
@@ -67,9 +69,7 @@ def test_release_all(addrs, cf, tokenVestingNoStaking):
     )
 
 
-def test_consecutive_releases_after_cliff(
-    addrs, cf, tokenVestingNoStaking, maths, addressHolder
-):
+def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingNoStaking, maths):
     tv, cliff, end, total = tokenVestingNoStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
@@ -99,7 +99,9 @@ def test_consecutive_releases_after_cliff(
         newlyReleased = totalReleased - accomulatedReleases
 
         # Check release
-        check_released(tv, cf, tx, addrs.BENEFICIARY, totalReleased, newlyReleased)
+        check_released_noStaking(
+            tv, cf, tx, addrs.BENEFICIARY, newlyReleased, totalReleased
+        )
 
         # Shouldn't've changed
         check_state_noStaking(
@@ -119,3 +121,10 @@ def test_consecutive_releases_after_cliff(
     assert cf.flip.balanceOf(addrs.BENEFICIARY) <= total
 
     release_revert(tv, cf, addrs.BENEFICIARY)
+
+
+def check_released_noStaking(tv, cf, tx, address, recentlyReleased, totalReleased):
+    assert tx.events["TokensReleased"][0].values()[0] == cf.flip
+    assert tx.events["TokensReleased"][0].values()[1] == recentlyReleased
+    assert tv.released(cf.flip) == totalReleased
+    assert cf.flip.balanceOf(address) == totalReleased

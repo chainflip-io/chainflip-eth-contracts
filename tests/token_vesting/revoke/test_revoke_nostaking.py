@@ -56,7 +56,9 @@ def test_revoke(addrs, cf, tokenVestingNoStaking, maths, st_sleepTime):
     chain.sleep(st_sleepTime)
     if releasable > 0:
         tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
-        check_released(tv, cf, tx, addrs.BENEFICIARY, releasable, releasable)
+        assert tx.events["TokensReleased"][0].values() == (cf.flip, releasable)
+        assert tv.released(cf.flip) == releasable
+        assert cf.flip.balanceOf(addrs.BENEFICIARY) == releasable
     else:
         release_revert(tv, cf, addrs.BENEFICIARY)
     assert cf.flip.balanceOf(tv) == 0

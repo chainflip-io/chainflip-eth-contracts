@@ -8,15 +8,23 @@ import "../interfaces/IVault.sol";
 /**
  * @title    CFTester
  * @dev      Contract used for testing Chainflip behaviour.
+ *           The gas calculations are not totally accurate but it's good enough for testing.
  */
 
 contract CFTester is CFReceiverMock {
     using SafeERC20 for IERC20;
 
     uint256[] public iterations;
-    uint256 public gasIterations = 300;
 
-    bytes public constant GAS_MESSAGE = abi.encode("GasTest");
+    // This will consume ~6.5M gas (iterations + overhead)
+    uint256 public defaultNumIterations = 300;
+    // This will consume ~215k
+    uint256 public defaultStepIterations = 10;
+
+    string public constant GAS_TEST = "GasTest";
+    bytes public constant GAS_MESSAGE_ENCODED = bytes(GAS_TEST);
+
+    event GasTest(uint256 gasUsed);
 
     constructor(address _cfVault) CFReceiverMock(_cfVault) {}
 
@@ -28,21 +36,44 @@ contract CFTester is CFReceiverMock {
         uint256 amount
     ) internal override {
         super._cfReceive(srcChain, srcAddress, message, token, amount);
-        if (keccak256(message) == keccak256(GAS_MESSAGE)) {
-            _consumeGas();
-        }
+        _tryGasTest(message);
     }
 
     function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal override {
         super._cfReceivexCall(srcChain, srcAddress, message);
-        if (keccak256(message) == keccak256(GAS_MESSAGE)) {
-            _consumeGas();
-        }
+        _tryGasTest(message);
     }
 
-    // This will consume ~6.5M gas
-    function _consumeGas() internal {
-        for (uint256 i = 0; i < gasIterations; i++) {
+    function _tryGasTest(bytes calldata message) internal {
+        try this.decodeGasTest(message) returns (bool gasTest, uint256 gasToUse) {
+            if (gasTest) {
+                _gasTest(gasToUse);
+            }
+        } catch {}
+    }
+
+    function decodeGasTest(bytes calldata message) public pure returns (bool, uint256) {
+        (string memory stringMessage, uint256 gasToUse) = abi.decode(message, (string, uint256));
+        return (keccak256(bytes(stringMessage)) == keccak256(GAS_MESSAGE_ENCODED), gasToUse);
+    }
+
+    // This will consume an approximate amount of gas > gasToUse
+    function _gasTest(uint256 gasToUse) internal {
+        uint256 initialGas = gasleft();
+        if (gasToUse == 0) {
+            // Use default gas
+            _consumeGas(defaultNumIterations);
+        } else {
+            while (initialGas - gasleft() < gasToUse) {
+                _consumeGas(defaultStepIterations);
+            }
+        }
+        emit GasTest(initialGas - gasleft());
+    }
+
+    // This consumes ~21.5k per iteration
+    function _consumeGas(uint256 numIterations) internal {
+        for (uint256 i = 0; i < numIterations; i++) {
             iterations.push(i);
         }
     }

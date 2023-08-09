@@ -44,7 +44,6 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     // The contract that holds the reference addresses for staking purposes.
     IAddressHolder public immutable addressHolder;
 
-    mapping(IERC20 => uint256) public released;
     bool public revoked;
 
     /**
@@ -123,7 +122,6 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "Vesting: no tokens are due");
 
-        released[token] += unreleased;
         emit TokensReleased(token, unreleased);
 
         token.safeTransfer(beneficiary, unreleased);
@@ -168,21 +166,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param token ERC20 token which is being vested.
      */
     function _releasableAmount(IERC20 token) private view returns (uint256) {
-        return _vestedAmount(token) - released[token];
-    }
-
-    /**
-     * @dev Calculates the amount that has already vested. Linear unvesting for
-     *      option A, full unvesting at the end for contract B.
-     * @param token ERC20 token which is being vested.
-     */
-    function _vestedAmount(IERC20 token) private view returns (uint256) {
-        if (block.timestamp < end) {
-            return 0;
-        } else {
-            uint256 currentBalance = token.balanceOf(address(this));
-            return currentBalance + released[token];
-        }
+        return block.timestamp < end ? 0 : token.balanceOf(address(this));
     }
 
     /// @dev    Allow the beneficiary to be transferred to a new address if needed
