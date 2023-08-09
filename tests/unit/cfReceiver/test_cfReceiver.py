@@ -4,8 +4,8 @@ from brownie import reverts
 from brownie.test import given, strategy
 
 
-def test_constructor(cf, cfReceiverMock):
-    assert cfReceiverMock.cfVault() == cf.vault.address
+def test_constructor(cf, cfTester):
+    assert cfTester.cfVault() == cf.vault.address
 
 
 @given(
@@ -18,7 +18,7 @@ def test_constructor(cf, cfReceiverMock):
 )
 def test_rev_cfReceive_notVault(
     cf,
-    cfReceiverMock,
+    cfTester,
     st_srcChain,
     st_srcAddress,
     st_message,
@@ -28,7 +28,7 @@ def test_rev_cfReceive_notVault(
 ):
     ## st_sender will never be the vault
     with reverts(REV_MSG_CFREC_SENDER):
-        cfReceiverMock.cfReceive(
+        cfTester.cfReceive(
             st_srcChain,
             st_srcAddress,
             st_message,
@@ -45,11 +45,11 @@ def test_rev_cfReceive_notVault(
     st_sender=strategy("address"),
 )
 def test_rev_cfReceivexCall_notVault(
-    cf, cfReceiverMock, st_srcChain, st_srcAddress, st_message, st_sender
+    cf, cfTester, st_srcChain, st_srcAddress, st_message, st_sender
 ):
     ## st_sender will never be the vault
     with reverts(REV_MSG_CFREC_SENDER):
-        cfReceiverMock.cfReceivexCall(
+        cfTester.cfReceivexCall(
             st_srcChain, st_srcAddress, st_message, {"from": st_sender}
         )
 
@@ -58,11 +58,11 @@ def test_rev_cfReceivexCall_notVault(
     st_sender=strategy("address"),
     st_address=strategy("address"),
 )
-def test_rev_updateCfVault(cf, cfReceiverMock, st_sender, st_address):
+def test_rev_updateCfVault(cf, cfTester, st_sender, st_address):
     if st_sender != cf.SAFEKEEPER:
         ## only owner can update the cfVault address
         with reverts("CFReceiver: caller not owner"):
-            cfReceiverMock.updateCfVault(st_address, {"from": st_sender})
+            cfTester.updateCfVault(st_address, {"from": st_sender})
     else:
-        cfReceiverMock.updateCfVault(st_address, {"from": st_sender})
-        assert cfReceiverMock.cfVault() == st_address
+        cfTester.updateCfVault(st_address, {"from": st_sender})
+        assert cfTester.cfVault() == st_address

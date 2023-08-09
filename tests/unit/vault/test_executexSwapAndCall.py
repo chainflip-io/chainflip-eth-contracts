@@ -29,7 +29,7 @@ import random
 )
 def test_executexSwapAndCallNative(
     cf,
-    cfReceiverMock,
+    cfTester,
     st_sender,
     st_srcChain,
     st_srcAddress,
@@ -40,11 +40,11 @@ def test_executexSwapAndCallNative(
 
     startBalVault = cf.vault.balance()
     assert startBalVault >= st_amount
-    startBalRecipient = cfReceiverMock.balance()
+    startBalRecipient = cfTester.balance()
 
     message = hexStr(st_message)
     args = [
-        [NATIVE_ADDR, cfReceiverMock.address, st_amount],
+        [NATIVE_ADDR, cfTester.address, st_amount],
         st_srcChain,
         st_srcAddress,
         message,
@@ -52,7 +52,7 @@ def test_executexSwapAndCallNative(
     tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args, sender=st_sender)
 
     assert cf.vault.balance() - startBalVault == -st_amount
-    assert cfReceiverMock.balance() - startBalRecipient == st_amount
+    assert cfTester.balance() - startBalRecipient == st_amount
 
     assert tx.events["ReceivedxSwapAndCall"][0].values() == [
         st_srcChain,
@@ -61,6 +61,7 @@ def test_executexSwapAndCallNative(
         NATIVE_ADDR,
         st_amount,
         st_amount,
+        0,
     ]
 
 
@@ -86,14 +87,14 @@ def test_executexSwapAndCall_rev_noCfReceive(cf, token):
 
 
 # rev if token address is not an ERC20
-def test_executexSwapAndCall_revToken(cf, cfReceiverMock):
+def test_executexSwapAndCall_revToken(cf, cfTester):
     cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
     startBalRecipient = cf.ALICE.balance()
 
     args = [
-        [NON_ZERO_ADDR, cfReceiverMock.address, TEST_AMNT],
+        [NON_ZERO_ADDR, cfTester.address, TEST_AMNT],
         JUNK_INT,
         JUNK_HEX,
         JUNK_HEX,
@@ -106,9 +107,9 @@ def test_executexSwapAndCall_revToken(cf, cfReceiverMock):
 
 
 # Trying to send ETH when there's none in the Vault
-def test_executexSwapAndCallNative_rev_not_enough_eth(cf, cfReceiverMock):
+def test_executexSwapAndCallNative_rev_not_enough_eth(cf, cfTester):
     args = [
-        [NATIVE_ADDR, cfReceiverMock, TEST_AMNT],
+        [NATIVE_ADDR, cfTester, TEST_AMNT],
         JUNK_INT,
         JUNK_HEX,
         JUNK_HEX,
@@ -117,9 +118,9 @@ def test_executexSwapAndCallNative_rev_not_enough_eth(cf, cfReceiverMock):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
 
-def test_executexSwapAndCall_rev_nzAddrs(cf, cfReceiverMock, token):
+def test_executexSwapAndCall_rev_nzAddrs(cf, cfTester, token):
     args = [
-        [ZERO_ADDR, cfReceiverMock, TEST_AMNT],
+        [ZERO_ADDR, cfTester, TEST_AMNT],
         JUNK_INT,
         JUNK_HEX,
         JUNK_HEX,
@@ -146,9 +147,9 @@ def test_executexSwapAndCall_rev_nzAddrs(cf, cfReceiverMock, token):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
 
-def test_executexSwapAndCall_nzAmount(cf, cfReceiverMock, token):
+def test_executexSwapAndCall_nzAmount(cf, cfTester, token):
     args = [
-        [NATIVE_ADDR, cfReceiverMock, 0],
+        [NATIVE_ADDR, cfTester, 0],
         JUNK_INT,
         JUNK_HEX,
         JUNK_HEX,
@@ -266,7 +267,7 @@ def test_executexSwapAndCallToken_tryCatch(cf, cfReceiverTryMock, st_amount, tok
 )
 def test_executexSwapAndCallToken(
     cf,
-    cfReceiverMock,
+    cfTester,
     st_sender,
     st_srcChain,
     st_srcAddress,
@@ -278,11 +279,11 @@ def test_executexSwapAndCallToken(
 
     startBalVault = token.balanceOf(cf.vault)
     assert startBalVault >= st_amount
-    startBalRecipient = token.balanceOf(cfReceiverMock)
+    startBalRecipient = token.balanceOf(cfTester)
 
     message = hexStr(st_message)
     args = [
-        [token, cfReceiverMock.address, st_amount],
+        [token, cfTester.address, st_amount],
         st_srcChain,
         st_srcAddress,
         message,
@@ -291,7 +292,7 @@ def test_executexSwapAndCallToken(
 
     # Check that the token amount is transferred to the dstAddress
     assert token.balanceOf(cf.vault) - startBalVault == -st_amount
-    assert token.balanceOf(cfReceiverMock) - startBalRecipient == st_amount
+    assert token.balanceOf(cfTester) - startBalRecipient == st_amount
 
     assert tx.events["ReceivedxSwapAndCall"][0].values() == [
         st_srcChain,
@@ -299,5 +300,6 @@ def test_executexSwapAndCallToken(
         message,
         token,
         st_amount,
+        0,
         0,
     ]

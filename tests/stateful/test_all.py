@@ -25,7 +25,7 @@ def test_all(
     StateChainGateway,
     KeyManager,
     Vault,
-    CFReceiverMock,
+    CFTester,
     MockUSDT,
     FLIP,
     DeployerStateChainGateway,
@@ -98,7 +98,7 @@ def test_all(
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cfDeploy, Deposit, Token, CFReceiverMock, MockUSDT):
+        def __init__(cls, a, cfDeploy, Deposit, Token, CFTester, MockUSDT):
             super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(
@@ -179,11 +179,11 @@ def test_all(
             cls.orig_v = cls.v
             cls.orig_km = cls.km
 
-            # Deploy a CFReceiverMock
-            cls.cfReceiverMock = a[0].deploy(CFReceiverMock, cls.v.address)
-            cls.orig_cfRec = cls.cfReceiverMock
+            # Deploy a CFTester
+            cls.cfTester = a[0].deploy(CFTester, cls.v.address)
+            cls.orig_cfRec = cls.cfTester
 
-            assert cls.cfReceiverMock.cfVault() == cls.v.address
+            assert cls.cfTester.cfVault() == cls.v.address
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -192,7 +192,7 @@ def test_all(
             self.scg = self.orig_scg
             self.v = self.orig_v
             self.km = self.orig_km
-            self.cfReceiverMock = self.orig_cfRec
+            self.cfTester = self.orig_cfRec
 
             self.governor = cfDeploy.gov
             self.communityKey = cfDeploy.communityKey
@@ -1378,7 +1378,7 @@ def test_all(
             st_dstChain,
             st_message,
         ):
-            assert self.cfReceiverMock.cfVault() == self.v.address
+            assert self.cfTester.cfVault() == self.v.address
             signer = self._get_key_prob(AGG)
 
             # just to not create even more strategies
@@ -1387,7 +1387,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [NATIVE_ADDR, self.cfReceiverMock.address, st_native_amount],
+                [NATIVE_ADDR, self.cfTester.address, st_native_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1450,6 +1450,7 @@ def test_all(
                             NATIVE_ADDR,
                             st_native_amount,
                             st_native_amount,
+                            0,
                         ]
                         self.lastValidateTime = tx.timestamp
 
@@ -1470,7 +1471,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                [st_token, self.cfReceiverMock.address, st_token_amount],
+                [st_token, self.cfTester.address, st_token_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1556,6 +1557,7 @@ def test_all(
                             st_token,
                             st_token_amount,
                             0,
+                            0,
                         ]
                         self.lastValidateTime = tx.timestamp
 
@@ -1574,7 +1576,7 @@ def test_all(
 
             message = hexStr(st_message)
             args = [
-                self.cfReceiverMock.address,
+                self.cfTester.address,
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1608,6 +1610,7 @@ def test_all(
                     st_srcChain,
                     hexStr(st_srcAddress),
                     message,
+                    0,
                 ]
                 self.lastValidateTime = tx.timestamp
 
@@ -2217,8 +2220,8 @@ def test_all(
                 self.communityKey = self.communityKey
                 self.v_suspended = False
 
-                # Deploy a new CFReceiverMock that receives from the new Vault
-                self.cfReceiverMock = st_sender.deploy(CFReceiverMock, self.v)
+                # Deploy a new CFTester that receives from the new Vault
+                self.cfTester = st_sender.deploy(CFTester, self.v)
 
                 # Create new addresses for the new Vault and initialize Balances
                 newCreate2EthAddrs = [
@@ -2705,7 +2708,7 @@ def test_all(
         cfDeploy,
         Deposit,
         Token,
-        CFReceiverMock,
+        CFTester,
         MockUSDT,
         settings=settings,
     )

@@ -13,7 +13,7 @@ import random
 )
 def test_executexCall(
     cf,
-    cfReceiverMock,
+    cfTester,
     st_sender,
     st_srcChain,
     st_srcAddress,
@@ -22,11 +22,11 @@ def test_executexCall(
     cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
 
     startBalVault = cf.vault.balance()
-    startBalRecipient = cfReceiverMock.balance()
+    startBalRecipient = cfTester.balance()
 
     message = hexStr(st_message)
     args = [
-        cfReceiverMock.address,
+        cfTester.address,
         st_srcChain,
         st_srcAddress,
         message,
@@ -34,12 +34,13 @@ def test_executexCall(
     tx = signed_call_cf(cf, cf.vault.executexCall, *args, sender=st_sender)
 
     assert cf.vault.balance() == startBalVault
-    assert cfReceiverMock.balance() == startBalRecipient
+    assert cfTester.balance() == startBalRecipient
 
     assert tx.events["ReceivedxCall"][0].values() == [
         st_srcChain,
         hexStr(st_srcAddress),
         message,
+        0,
     ]
 
 
