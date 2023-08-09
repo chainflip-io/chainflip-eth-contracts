@@ -150,9 +150,7 @@ def test_executeActions_rev_cfReceive(
         0,
         cfTester,
         0,
-        cfTester.cfReceivexCall.encode_input(
-            st_srcChain, st_srcAddress, st_message
-        ),
+        cfTester.cfReceivexCall.encode_input(st_srcChain, st_srcAddress, st_message),
         0,
     ]
     args = [[ZERO_ADDR, multicall, 0], [call], 100000]

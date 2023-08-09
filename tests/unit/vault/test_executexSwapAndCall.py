@@ -61,7 +61,7 @@ def test_executexSwapAndCallNative(
         NATIVE_ADDR,
         st_amount,
         st_amount,
-        0
+        0,
     ]
 
 
@@ -301,5 +301,5 @@ def test_executexSwapAndCallToken(
         token,
         st_amount,
         0,
-        0
+        0,
     ]

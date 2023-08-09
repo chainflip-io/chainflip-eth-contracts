@@ -40,7 +40,7 @@ def test_executexCall(
         st_srcChain,
         hexStr(st_srcAddress),
         message,
-        0
+        0,
     ]
 
 

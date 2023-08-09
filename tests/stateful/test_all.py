@@ -1450,7 +1450,7 @@ def test_all(
                             NATIVE_ADDR,
                             st_native_amount,
                             st_native_amount,
-                            0
+                            0,
                         ]
                         self.lastValidateTime = tx.timestamp
 
@@ -1557,7 +1557,7 @@ def test_all(
                             st_token,
                             st_token_amount,
                             0,
-                            0
+                            0,
                         ]
                         self.lastValidateTime = tx.timestamp
 
@@ -1610,7 +1610,7 @@ def test_all(
                     st_srcChain,
                     hexStr(st_srcAddress),
                     message,
-                    0
+                    0,
                 ]
                 self.lastValidateTime = tx.timestamp
 

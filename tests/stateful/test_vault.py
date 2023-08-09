@@ -1294,7 +1294,7 @@ def test_vault(
                             NATIVE_ADDR,
                             st_native_amount,
                             st_native_amount,
-                            0
+                            0,
                         ]
 
         def rule_executexSwapAndCall_token(
@@ -1372,7 +1372,7 @@ def test_vault(
                             st_token,
                             st_token_amount,
                             0,
-                            0
+                            0,
                         ]
 
         def rule_executexCall(
