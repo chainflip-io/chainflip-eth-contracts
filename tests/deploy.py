@@ -284,7 +284,11 @@ def deploy_tokenVestingNoStaking(
         {"from": deployer, "required_confs": required_confs},
     )
 
-    flip.transfer(tokenVestingNoStaking.address, amount, {"from": deployer})
+    flip.transfer(
+        tokenVestingNoStaking.address,
+        amount,
+        {"from": deployer, "required_confs": required_confs},
+    )
 
     return tokenVestingNoStaking
 
@@ -313,7 +317,11 @@ def deploy_tokenVestingStaking(
         {"from": deployer, "required_confs": required_confs},
     )
 
-    flip.transfer(tokenVestingStaking.address, amount, {"from": deployer})
+    flip.transfer(
+        tokenVestingStaking.address,
+        amount,
+        {"from": deployer, "required_confs": required_confs},
+    )
 
     return tokenVestingStaking
 

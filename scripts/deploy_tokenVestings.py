@@ -17,6 +17,7 @@ from brownie import (
     AddressHolder,
     TokenVestingStaking,
     TokenVestingNoStaking,
+    network,
 )
 
 # File should be formatted as a list of parameters. First line should be the headers with names of the
@@ -32,19 +33,23 @@ vesting_time_cliff = QUARTER_YEAR
 vesting_time_end = vesting_time_cliff + YEAR
 
 
+AUTONOMY_SEED = os.environ["SEED"]
+cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
+DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
+
+DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
+
+print(f"DEPLOYER = {DEPLOYER}")
+network.priority_fee("1 gwei")
+
+
 def main():
-    AUTONOMY_SEED = os.environ["SEED"]
-    cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
-    DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
-
-    DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
-
     governor = os.environ["GOV_KEY"]
     sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
     flip_address = os.environ["FLIP_ADDRESS"]
-    stMinter_address = os.environ.get("ST_MINTER_ADDRESS") or ZERO_ADDR
-    stBurner_address = os.environ.get("ST_BURNER_ADDRESS") or ZERO_ADDR
-    stFlip_address = os.environ.get("ST_FLIP_ADDRESS  ") or ZERO_ADDR
+    stMinter_address = os.environ.get("ST_MINTER_ADDRESS")
+    stBurner_address = os.environ.get("ST_BURNER_ADDRESS")
+    stFlip_address = os.environ.get("ST_FLIP_ADDRESS")
 
     flip = FLIP.at(f"0x{cleanHexStr(flip_address)}")
 
@@ -191,10 +196,24 @@ def main():
 
     for i, vesting in enumerate(vesting_list):
         print(
-            f"- {i}: Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>10} FLIP and transferability {str(vesting[3]):<5} deployed at {vesting[4]}"
+            f"- {str(i):>2} Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>8} FLIP and transferability {str(vesting[3]):<5} deployed at {vesting[4]}"
         )
     print("\n😎😎 Vesting contracts deployed successfully! 😎😎\n")
 
     assert final_balance == flip.balanceOf(DEPLOYER) // E_18, "Incorrect final balance"
 
     print(f"Final deployer's FLIP balance   = {final_balance:,}")
+
+
+def stake_via_stProvider():
+    token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
+    token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
+
+    token_vesting.stakeToStProvider(1 * 10**18, {"from": DEPLOYER})
+
+
+def unstake_from_stProvider():
+    token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
+    token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
+
+    token_vesting.unstakeFromStProvider(1 * 10**18, {"from": DEPLOYER})
