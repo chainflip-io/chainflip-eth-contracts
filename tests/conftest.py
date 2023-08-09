@@ -220,8 +220,8 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
 
 # Deploy CFReceiver Mock contracts for testing purposes
 @pytest.fixture(scope="module")
-def cfReceiverMock(cf, CFReceiverMock):
-    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFReceiverMock, cf.vault)
+def cfTester(cf, CFTester):
+    return deploy_new_cfReceiver(cf.SAFEKEEPER, CFTester, cf.vault)
 
 
 @pytest.fixture(scope="module")

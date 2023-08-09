@@ -169,7 +169,7 @@ def check_env_variables(env_var_names):
 
 
 # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
-# swaps and liquidity provision, CFReceiverMock to test cross-chain messaging.
+# swaps and liquidity provision, CFTester to test cross-chain messaging.
 def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.mockUSDC = deploy_usdc_contract(deployer, MockUSDC, cf_accs[0:10])

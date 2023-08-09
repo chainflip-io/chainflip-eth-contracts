@@ -4,11 +4,10 @@ from eth_abi import encode_abi
 from brownie.test import given, strategy
 
 
-def check_gas_test(tx, gas_to_use):
-    assert "GasTest" in tx.events
-    assert tx.events["GasTest"]["gasUsed"] > gas_to_use
+def check_gas_test(tx, gas_to_use, event):
+    assert event["ccmTestGasUsed"] > gas_to_use
     assert tx.gas_used > gas_to_use
-    assert tx.gas_used > tx.events["GasTest"]["gasUsed"]
+    assert tx.gas_used > event["ccmTestGasUsed"]
 
 
 def test_cfTest_defaultGas(
@@ -22,11 +21,11 @@ def test_cfTest_defaultGas(
     cf.ALICE.transfer(cf.vault.address, TEST_AMNT * 10)
     tx = cfTester.cfReceive(0, 0, message, NON_ZERO_ADDR, 0, {"from": cf.vault})
     assert "ReceivedxSwapAndCall" in tx.events
-    check_gas_test(tx, default_gas_used)
+    check_gas_test(tx, default_gas_used, tx.events["ReceivedxSwapAndCall"])
 
     tx = cfTester.cfReceivexCall(0, 0, message, {"from": cf.vault})
     assert "ReceivedxCall" in tx.events
-    check_gas_test(tx, default_gas_used)
+    check_gas_test(tx, default_gas_used, tx.events["ReceivedxCall"])
 
 
 @given(
@@ -38,11 +37,11 @@ def test_cfTest_gas(cf, cfTester, st_gas_to_use):
     cf.ALICE.transfer(cf.vault.address, TEST_AMNT * 10)
     tx = cfTester.cfReceive(0, 0, message, NON_ZERO_ADDR, 0, {"from": cf.vault})
     assert "ReceivedxSwapAndCall" in tx.events
-    check_gas_test(tx, st_gas_to_use)
+    check_gas_test(tx, st_gas_to_use, tx.events["ReceivedxSwapAndCall"])
 
     tx = cfTester.cfReceivexCall(0, 0, message, {"from": cf.vault})
     assert "ReceivedxCall" in tx.events
-    check_gas_test(tx, st_gas_to_use)
+    check_gas_test(tx, st_gas_to_use, tx.events["ReceivedxCall"])
 
 
 @given(
@@ -52,11 +51,11 @@ def test_cfTest_noGasTest(cf, cfTester, st_message):
     cf.ALICE.transfer(cf.vault.address, TEST_AMNT * 10)
     tx = cfTester.cfReceive(0, 0, st_message, NON_ZERO_ADDR, 0, {"from": cf.vault})
     assert "ReceivedxSwapAndCall" in tx.events
-    assert "GasTest" not in tx.events
+    assert tx.events["ReceivedxSwapAndCall"]["ccmTestGasUsed"] == 0
 
     tx = cfTester.cfReceivexCall(0, 0, st_message, {"from": cf.vault})
     assert "ReceivedxCall" in tx.events
-    assert "GasTest" not in tx.events
+    assert tx.events["ReceivedxCall"]["ccmTestGasUsed"] == 0
 
 
 def test_transfer_eth(cf, cfTester, Deposit):

@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./CFReceiverMock.sol";
 import "../interfaces/IVault.sol";
+import "../abstract/CFReceiver.sol";
+import "../abstract/Shared.sol";
 
 /**
  * @title    CFTester
@@ -11,7 +12,7 @@ import "../interfaces/IVault.sol";
  *           The gas calculations are not totally accurate but it's good enough for testing.
  */
 
-contract CFTester is CFReceiverMock {
+contract CFTester is CFReceiver, Shared {
     using SafeERC20 for IERC20;
 
     uint256[] public iterations;
@@ -24,9 +25,18 @@ contract CFTester is CFReceiverMock {
     string public constant GAS_TEST = "GasTest";
     bytes public constant GAS_MESSAGE_ENCODED = bytes(GAS_TEST);
 
-    event GasTest(uint256 gasUsed);
+    event ReceivedxSwapAndCall(
+        uint32 srcChain,
+        bytes srcAddress,
+        bytes message,
+        address token,
+        uint256 amount,
+        uint256 nativeReceived,
+        uint256 ccmTestGasUsed
+    );
+    event ReceivedxCall(uint32 srcChain, bytes srcAddress, bytes message, uint256 ccmTestGasUsed);
 
-    constructor(address _cfVault) CFReceiverMock(_cfVault) {}
+    constructor(address _cfVault) CFReceiver(_cfVault) nzAddr(_cfVault) {}
 
     function _cfReceive(
         uint32 srcChain,
@@ -35,21 +45,22 @@ contract CFTester is CFReceiverMock {
         address token,
         uint256 amount
     ) internal override {
-        super._cfReceive(srcChain, srcAddress, message, token, amount);
-        _tryGasTest(message);
+        uint256 testGasUsed = _tryGasTest(message);
+        emit ReceivedxSwapAndCall(srcChain, srcAddress, message, token, amount, msg.value, testGasUsed);
     }
 
     function _cfReceivexCall(uint32 srcChain, bytes calldata srcAddress, bytes calldata message) internal override {
-        super._cfReceivexCall(srcChain, srcAddress, message);
-        _tryGasTest(message);
+        uint256 testGasUsed = _tryGasTest(message);
+        emit ReceivedxCall(srcChain, srcAddress, message, testGasUsed);
     }
 
-    function _tryGasTest(bytes calldata message) internal {
+    function _tryGasTest(bytes calldata message) internal returns (uint256) {
         try this.decodeGasTest(message) returns (bool gasTest, uint256 gasToUse) {
             if (gasTest) {
-                _gasTest(gasToUse);
+                return _gasTest(gasToUse);
             }
         } catch {}
+        return 0;
     }
 
     function decodeGasTest(bytes calldata message) public pure returns (bool, uint256) {
@@ -58,7 +69,7 @@ contract CFTester is CFReceiverMock {
     }
 
     // This will consume an approximate amount of gas > gasToUse
-    function _gasTest(uint256 gasToUse) internal {
+    function _gasTest(uint256 gasToUse) internal returns (uint256) {
         uint256 initialGas = gasleft();
         if (gasToUse == 0) {
             // Use default gas
@@ -68,7 +79,7 @@ contract CFTester is CFReceiverMock {
                 _consumeGas(defaultStepIterations);
             }
         }
-        emit GasTest(initialGas - gasleft());
+        return initialGas - gasleft();
     }
 
     // This consumes ~21.5k per iteration

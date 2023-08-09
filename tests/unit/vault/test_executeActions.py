@@ -118,15 +118,15 @@ def test_executeActions_rev_cfReceive(
     st_message,
     st_token,
     st_amount,
-    cfReceiverMock,
+    cfTester,
     multicall,
 ):
     ## Ensure we can't call a cfReceive or cfReceivexCall function via Multicall
     call = [
         0,
-        cfReceiverMock,
+        cfTester,
         0,
-        cfReceiverMock.cfReceive.encode_input(
+        cfTester.cfReceive.encode_input(
             st_srcChain, st_srcAddress, st_message, st_token, st_amount
         ),
         0,
@@ -148,9 +148,9 @@ def test_executeActions_rev_cfReceive(
     ## Ensure we can't call a cfReceive or cfReceivexCall function via Multicall
     call = [
         0,
-        cfReceiverMock,
+        cfTester,
         0,
-        cfReceiverMock.cfReceivexCall.encode_input(
+        cfTester.cfReceivexCall.encode_input(
             st_srcChain, st_srcAddress, st_message
         ),
         0,

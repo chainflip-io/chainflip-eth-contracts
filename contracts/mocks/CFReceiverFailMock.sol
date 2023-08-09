@@ -4,7 +4,7 @@ import "../abstract/CFReceiver.sol";
 import "../abstract/Shared.sol";
 
 /**
- * @title    CFReceiverMock
+ * @title    CFReceiverFailMock
  * @dev      Mock implementation of CFReceiver for testing purposes.
  */
 

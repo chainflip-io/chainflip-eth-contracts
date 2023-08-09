@@ -18,7 +18,7 @@ def test_vault(
     cfDeploy,
     Deposit,
     Token,
-    cfReceiverMock,
+    cfTester,
     MockUSDT,
 ):
 
@@ -55,7 +55,7 @@ def test_vault(
         """
 
         # Set up the initial test conditions once
-        def __init__(cls, a, cfDeploy, Deposit, Token, cfReceiverMock, MockUSDT):
+        def __init__(cls, a, cfDeploy, Deposit, Token, cfTester, MockUSDT):
             # cls.aaa = {addr: addr for addr, addr in enumerate(a)}
             super().__init__(cls, a, cfDeploy)
 
@@ -115,7 +115,7 @@ def test_vault(
 
             # Workaround for initial Vault Balance
             cls.initialVaultBalance = web3.eth.get_balance(cls.v.address)
-            cls.cfReceiverMock = cfReceiverMock
+            cls.cfTester = cfTester
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
@@ -1255,7 +1255,7 @@ def test_vault(
 
             message = hexStr(st_message)
             args = [
-                [NATIVE_ADDR, self.cfReceiverMock, st_native_amount],
+                [NATIVE_ADDR, self.cfTester, st_native_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1294,6 +1294,7 @@ def test_vault(
                             NATIVE_ADDR,
                             st_native_amount,
                             st_native_amount,
+                            0
                         ]
 
         def rule_executexSwapAndCall_token(
@@ -1311,7 +1312,7 @@ def test_vault(
 
             message = hexStr(st_message)
             args = [
-                [st_token, self.cfReceiverMock, st_token_amount],
+                [st_token, self.cfTester, st_token_amount],
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1371,6 +1372,7 @@ def test_vault(
                             st_token,
                             st_token_amount,
                             0,
+                            0
                         ]
 
         def rule_executexCall(
@@ -1386,7 +1388,7 @@ def test_vault(
 
             message = hexStr(st_message)
             args = [
-                self.cfReceiverMock,
+                self.cfTester,
                 st_srcChain,
                 st_srcAddress,
                 message,
@@ -1409,6 +1411,7 @@ def test_vault(
                     st_srcChain,
                     hexStr(st_srcAddress),
                     message,
+                    0,
                 ]
 
         # Check all the balances of every address are as they should be after every tx
@@ -1447,7 +1450,7 @@ def test_vault(
         cfDeploy,
         Deposit,
         Token,
-        cfReceiverMock,
+        cfTester,
         MockUSDT,
         settings=settings,
     )

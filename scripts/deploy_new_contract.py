@@ -12,7 +12,7 @@ from brownie import (
     StateChainGateway,
     FLIP,
     DeployerStateChainGateway,
-    CFReceiverMock,
+    CFTester,
     Multicall,
 )
 from deploy import (
@@ -103,12 +103,12 @@ def deploy_keyManager():
     store_artifacts()
 
 
-def deploy_cfReceiverMock():
+def deploy_cfTester():
     VAULT_ADDRESS = os.environ["VAULT_ADDRESS"]
     vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
     addressDump["VAULT_ADDRESS"] = vault.address
 
-    cfReceiver_mock = deploy_new_cfReceiver(DEPLOYER, CFReceiverMock, vault.address)
+    cfReceiver_mock = deploy_new_cfReceiver(DEPLOYER, CFTester, vault.address)
     addressDump["NEW_CF_RECEIVER"] = cfReceiver_mock.address
     store_artifacts()
 
