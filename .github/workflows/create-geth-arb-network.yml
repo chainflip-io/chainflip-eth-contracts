@@ -236,8 +236,8 @@ jobs:
         working-directory: nitro-testnode
         run: |
           ./test-node.bash --init --detach
-          ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 1000000
-          ./test-node.bash script send-l2 --to address_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --ethamount 1000000
+          ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 10000
+          ./test-node.bash script send-l2 --to address_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --ethamount 10000
 
       - name: Install Python virtualenv
         run: pip install virtualenv
