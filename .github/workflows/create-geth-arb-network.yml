@@ -236,7 +236,8 @@ jobs:
         working-directory: nitro-testnode
         run: |
           ./test-node.bash --init --detach
-          ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 100000
+          ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 1000000
+          ./test-node.bash script send-l2 --to address_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --ethamount 1000000
 
       - name: Install Python virtualenv
         run: pip install virtualenv
@@ -259,7 +260,7 @@ jobs:
 
       - name: Deploy contracts
         env:
-          SEED: indoor dish desk flag debris potato excuse depart ticket judge file exit # ARB Localnet Seed
+          SEED: test test test test test test test test test test test junk # ARB Localnet Seed
           NUM_GENESIS_VALIDATORS: ${{ inputs.genesis_validators }}
           GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
           COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
