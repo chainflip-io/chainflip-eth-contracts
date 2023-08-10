@@ -1,5 +1,5 @@
-name: Create Geth Image
-run-name: Creating Geth Image for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+name: Create Geth and ARB Initial State
+run-name: Creating Geth and ARB init state for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
 
 on:
   workflow_dispatch:
@@ -236,6 +236,7 @@ jobs:
         working-directory: nitro-testnode
         run: |
           ./test-node.bash --init --detach
+          ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 100000
 
       - name: Install Python virtualenv
         run: pip install virtualenv
