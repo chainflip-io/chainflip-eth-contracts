@@ -30,6 +30,16 @@ on:
         required: false
         default: ""
 
+env:
+  SEED: test test test test test test test test test test test junk
+  NUM_GENESIS_VALIDATORS: ${{ inputs.genesis_validators }}
+  GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+  COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+  REDEMPTION_DELAY: "120"
+  GENESIS_STAKE: "1000000000000000000000"
+  DEPLOYER_ACCOUNT_INDEX: "0"
+  DEPLOY_ARTEFACT_ID: "docker"
+
 jobs:
   build:
     runs-on: [self-hosted, linux, x64, ephemeral]
@@ -132,15 +142,6 @@ jobs:
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
 
       - name: Deploy contracts
-        env:
-          SEED: test test test test test test test test test test test junk
-          NUM_GENESIS_VALIDATORS: ${{ inputs.genesis_validators }}
-          GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
-          COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
-          REDEMPTION_DELAY: "120"
-          GENESIS_STAKE: "1000000000000000000000"
-          DEPLOYER_ACCOUNT_INDEX: "0"
-          DEPLOY_ARTEFACT_ID: "docker"
         run: poetry run brownie run deploy_contracts --network docker
 
       - name: Commit and push new geth image
@@ -259,15 +260,6 @@ jobs:
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
 
       - name: Deploy contracts
-        env:
-          SEED: test test test test test test test test test test test junk # ARB Localnet Seed
-          NUM_GENESIS_VALIDATORS: ${{ inputs.genesis_validators }}
-          GOV_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
-          COMM_KEY: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
-          REDEMPTION_DELAY: "120"
-          GENESIS_STAKE: "1000000000000000000000"
-          DEPLOYER_ACCOUNT_INDEX: "0"
-          DEPLOY_ARTEFACT_ID: "docker"
         run: poetry run brownie run deploy_contracts --network arb-l2
 
       - name: Stop Containers
