@@ -206,6 +206,7 @@ jobs:
       - name: Fetch agg_key
         run: |
           echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
+
       - name: Download Geth Initial State
         uses: actions/download-artifact@v2
         with:
