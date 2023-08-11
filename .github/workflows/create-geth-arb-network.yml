@@ -4,14 +4,6 @@ run-name: Creating Geth and ARB init state for ${{ inputs.tag }}-${{ inputs.gene
 on:
   workflow_dispatch:
     inputs:
-      image:
-        description: Which image should we build?
-        required: true
-        default: "geth"
-        type: choice
-        options:
-          - "geth"
-          - "arb-geth"
       tag:
         description: Which tag should we deploy against?
         required: true
@@ -78,7 +70,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: ci/docker/${{ inputs.image }}/
+          context: ci/docker/arb-geth/
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
@@ -194,7 +186,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Checkout chainflip-io/nitro-testnode
+      - name: Checkout chainflip-io/nitro-testnode @ ${{ inputs.nitro_testnodes_ref }}
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
