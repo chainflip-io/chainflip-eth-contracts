@@ -4,14 +4,6 @@ run-name: Creating Geth and ARB init state for ${{ inputs.tag }}-${{ inputs.gene
 on:
   workflow_dispatch:
     inputs:
-      image:
-        description: Which image should we build?
-        required: true
-        default: "geth"
-        type: choice
-        options:
-          - "geth"
-          - "arb-geth"
       tag:
         description: Which tag should we deploy against?
         required: true
@@ -25,6 +17,10 @@ on:
         description: The branch, tag or commit of chainflip-backend to use
         required: true
         default: "main"
+      nitro_testnodes_ref:
+        description: The branch, tag or commit of nitro-testnodes to use
+        required: true
+        default: "feat/setup-from-scratch"
       docker_image_tag_suffix:
         description: A suffix to append to the image tag
         required: false
@@ -74,7 +70,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: ci/docker/${{ inputs.image }}/
+          context: ci/docker/arb-geth/
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
@@ -190,13 +186,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Checkout chainflip-io/nitro-testnode
+      - name: Checkout chainflip-io/nitro-testnode @ ${{ inputs.nitro_testnodes_ref }}
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.CF_GITHUB_BOT_TOKEN }}
           repository: chainflip-io/nitro-testnode
           path: nitro-testnode
-          ref: feat/setup-from-scratch
+          ref: ${{ inputs.nitro_testnodes_ref }}
           submodules: true
 
       - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
@@ -210,6 +206,7 @@ jobs:
       - name: Fetch agg_key
         run: |
           echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
+
       - name: Download Geth Initial State
         uses: actions/download-artifact@v2
         with:
@@ -226,7 +223,7 @@ jobs:
       - name: Update directory permissions
         working-directory: nitro-testnode
         run: |
-          chown -R 1000:1000 ./${{ env.GETH_INITIAL_STATE_DIR }}
+          chmod -R 777 ./${{ env.GETH_INITIAL_STATE_DIR }}
 
       - name: Update Docker user
         run: |
@@ -236,6 +233,8 @@ jobs:
       - name: Build Arbitrum Network
         working-directory: nitro-testnode
         run: |
+          mkdir -p ./data
+          chmod -R 777 ./data
           ./test-node.bash --init --detach
           ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 10000
           ./test-node.bash script send-l2 --to address_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --ethamount 10000
