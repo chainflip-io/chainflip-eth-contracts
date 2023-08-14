@@ -149,6 +149,12 @@ commands = {
         ["address"],
         True,
     ),
+    "event_AggKeySetByAggKey": (
+        lambda: event_AggKeySetByAggKey(),
+        "Display all AggKeySetByAggKey events",
+        [],
+        False,
+    ),
     # Transactions to Key Manager
     # TODO: Add xSwapNative, xSwapToken, xCallNative, xCallToken
     # View the state of the contracts
@@ -216,8 +222,6 @@ if USDC_ADDRESS != ZERO_ADDR:
 
 
 def main():
-
-    fetch_events_vault()
 
     print("\n*** Devtool started. Type 'help' for a list of commands ***\n")
 
@@ -573,7 +577,7 @@ def checkAndConvertToType(input, type):
     return None
 
 
-def fetch_events_vault():
+def event_AggKeySetByAggKey():
     eventsFound = list(
         fetch_events(
             keyManager.events.AggKeySetByAggKey,
