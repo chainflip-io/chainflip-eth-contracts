@@ -13,13 +13,6 @@ import random
 # 3. hexStr(st_message), when st_message is a strategy("bytes")
 #    parameter value = 0x00. Returned the same from event => Can be compared
 
-# NOTE: The signing of the message rev (check msgHash) when the st_srcAddr is an
-#       empty string. So min_size is set to 1 to avoid this issue. I expect this to be
-#       a brownie/python test issue. In reality we should be able to send xCall with
-#       empty message.
-# TODO : To be tested when CF validators do the signing.
-
-
 @given(
     st_srcChain=strategy("uint32"),
     st_srcAddress=strategy("bytes"),
@@ -303,3 +296,48 @@ def test_executexSwapAndCallToken(
         0,
         0,
     ]
+
+
+def test_executexSwapAndCallToken_gasTest(
+    cf,
+    cfTester,
+    token,
+):
+    # Hardcode variables to speed up the test
+    srcChain = 1
+    amount = TEST_AMNT
+    st_srcAddress = bytes.fromhex(cf.ALICE.address[2:])
+
+    token.transfer(cf.vault, amount * 2, {"from": cf.SAFEKEEPER})
+
+    # Currently the gasLimit is hardcoded at 400k in the state chain.
+    message = encode_abi(["string","uint256"], ["GasTest",210000])
+    args = [
+        [token, cfTester.address, amount],
+        srcChain,
+        st_srcAddress,
+        message,
+    ]
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args)
+    cf.vault.executexSwapAndCall(
+        sigData,
+        *args,
+        {"from": cf.ALICE, "gas": 400000},
+    )
+
+    message = encode_abi(["string","uint256"], ["GasTest",230000])
+    args = [
+        [token, cfTester.address, amount],
+        srcChain,
+        st_srcAddress,
+        message,
+    ]
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args)
+
+    # Reverts - run out of gas
+    with reverts(""):
+        cf.vault.executexSwapAndCall(
+            sigData,
+            *args,
+            {"from": cf.ALICE, "gas": 400000},
+        )
