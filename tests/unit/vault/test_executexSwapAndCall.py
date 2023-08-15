@@ -13,6 +13,7 @@ import random
 # 3. hexStr(st_message), when st_message is a strategy("bytes")
 #    parameter value = 0x00. Returned the same from event => Can be compared
 
+
 @given(
     st_srcChain=strategy("uint32"),
     st_srcAddress=strategy("bytes"),
@@ -311,28 +312,32 @@ def test_executexSwapAndCallToken_gasTest(
     token.transfer(cf.vault, amount * 2, {"from": cf.SAFEKEEPER})
 
     # Currently the gasLimit is hardcoded at 400k in the state chain.
-    message = encode_abi(["string","uint256"], ["GasTest",210000])
+    message = encode_abi(["string", "uint256"], ["GasTest", 210000])
     args = [
         [token, cfTester.address, amount],
         srcChain,
         st_srcAddress,
         message,
     ]
-    sigData = AGG_SIGNER_1.getSigDataWithNonces(cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args)
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args
+    )
     cf.vault.executexSwapAndCall(
         sigData,
         *args,
         {"from": cf.ALICE, "gas": 400000},
     )
 
-    message = encode_abi(["string","uint256"], ["GasTest",230000])
+    message = encode_abi(["string", "uint256"], ["GasTest", 230000])
     args = [
         [token, cfTester.address, amount],
         srcChain,
         st_srcAddress,
         message,
     ]
-    sigData = AGG_SIGNER_1.getSigDataWithNonces(cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args)
+    sigData = AGG_SIGNER_1.getSigDataWithNonces(
+        cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args
+    )
 
     # Reverts - run out of gas
     with reverts(""):
