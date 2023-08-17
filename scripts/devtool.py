@@ -490,6 +490,7 @@ def viewAll():
     viewLastSigTime()
     viewCurrentTime()
 
+
 # We can't display it the same way as for a brownie-broadcasted transaction (tx.info()).
 def display_tx(txHash):
 
