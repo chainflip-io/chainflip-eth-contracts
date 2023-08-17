@@ -28,7 +28,7 @@ order = {"eth_address": 0, "amount": 1, "lockup_type": 2, "transferable_benefici
 options_lockup_type = ["A", "B"]
 options_transferable_beneficiary = ["Y", "N"]
 
-# TODO: Check that this vesting schedule is correct
+# NOTE: Ensure vesting schedule is correct
 vesting_time_cliff = QUARTER_YEAR
 vesting_time_end = vesting_time_cliff + YEAR
 

@@ -4,15 +4,6 @@ from brownie import reverts
 from brownie.test import given, strategy
 import random
 
-# NOTE: There is several ways to pass bytes as a message in the arguments:
-# 1. JUNKHEX =>  web3.toHex(<int>).
-#    paramter value = 0xa455. Returned the same from event => Can be compared
-# 2. coming from brownie strategy("bytes")
-#    parameter value = b'\x05'. Event returns 0x00 => origi value must be converted
-#    to hex via hexString() to be compared.
-# 3. hexStr(st_message), when st_message is a strategy("bytes")
-#    parameter value = 0x00. Returned the same from event => Can be compared
-
 
 @given(
     st_srcChain=strategy("uint32"),
