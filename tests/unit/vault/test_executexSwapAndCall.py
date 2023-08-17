@@ -4,6 +4,7 @@ from brownie import reverts
 from brownie.test import given, strategy
 import random
 
+
 @given(
     st_srcChain=strategy("uint32"),
     st_srcAddress=strategy("bytes"),
