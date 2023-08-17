@@ -17,7 +17,6 @@ import random
 #       empty string. So min_size is set to 1 to avoid this issue. I expect this to be
 #       a brownie/python test issue. In reality we should be able to send xCall with
 #       empty message.
-# TODO : To be tested when CF validators do the signing.
 
 
 @given(

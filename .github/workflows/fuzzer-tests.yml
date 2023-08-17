@@ -1,56 +1,52 @@
-name: Fuzzer Testing
-on:
-  push:
-    branches:
-      - master
+# Skipping it for now because it needs to be updated with the new fuzzing tests
 
-jobs:
-  lint:
-    # Skipping it for now because it needs to be updated with the new fuzzing tests
-    if: false
+# name: Fuzzer Testing
+# on:
+#   push:
+#     branches:
+#       - master
 
-    uses: ./.github/workflows/.lint.yml
+# jobs:
+#   lint:
+#     uses: ./.github/workflows/.lint.yml
 
-  fuzzer-tests:
-    # Skipping it for now because it needs to be updated with the new fuzzing tests
-    if: false
+#   fuzzer-tests:
+#     name: Fuzzer
+#     needs: lint
+#     # Running on a github runner because for some reason self-hosted fails to run crytic-compile <contract>
+#     runs-on: ubuntu-20.04
+#     timeout-minutes: 30
+#     strategy:
+#       matrix:
+#         contract: [TestEchidna, TestEchidnaGovComm]
+#         config: [echidna-assertion, echidna-property]
 
-    name: Fuzzer
-    needs: lint
-    # Running on a github runner because for some reason self-hosted fails to run crytic-compile <contract>
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        contract: [TestEchidna, TestEchidnaGovComm]
-        config: [echidna-assertion, echidna-property]
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v3
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+#       - name: Setup Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: "3.7"
 
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
+#       - name: Setup Node
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: "14"
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "14"
+#       - name: Install Poetry
+#         uses: snok/install-poetry@v1
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+#       - run: npm install
+#       - run: npm install --global ganache-cli
+#       - run: pip3 install eth-brownie
+#       - run: poetry install
+#       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
+#       - run: sudo snap install solc --edge
 
-      - run: npm install
-      - run: npm install --global ganache-cli
-      - run: pip3 install eth-brownie
-      - run: poetry install
-      - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
-      - run: sudo snap install solc --edge
+#       - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
+#       - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
 
-      - run: curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
-      - run: tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
-
-      # Running actual fuzzing tests
-      - run: poetry run ./echidna-test contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml
+#       # Running actual fuzzing tests
+#       - run: poetry run ./echidna-test contracts/echidna/tests/${{ matrix.contract }}.sol --contract ${{ matrix.contract }} --config contracts/echidna/tests/${{ matrix.config }}.config.yml

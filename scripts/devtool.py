@@ -149,7 +149,6 @@ commands = {
         True,
     ),
     # Transactions to Key Manager
-    # TODO: Add xSwapNative, xSwapToken, xCallNative, xCallToken
     # View the state of the contracts
     "viewMinFunding": (
         lambda: viewMinFunding(),
@@ -490,17 +489,6 @@ def viewAll():
     viewCommKey()
     viewLastSigTime()
     viewCurrentTime()
-
-
-# TODO: Add swapNative and swapToken through the Vault.
-
-
-# TODO: Add event fetching - we cannot fetch all events in history, caps at 10000
-# events. See airdrop.py snapshot function for inspiration and utils.fetch_events.
-
-# def viewAllTokenTransfers(address, initial_block=0):
-# def viewTokenTransfersTo(tokenAddress, recipient):
-
 
 # We can't display it the same way as for a brownie-broadcasted transaction (tx.info()).
 def display_tx(txHash):
