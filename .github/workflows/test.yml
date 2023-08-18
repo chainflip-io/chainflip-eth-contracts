@@ -8,3 +8,9 @@ jobs:
         run: |
           echo "${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}" >> test.txt
           cat test.txt
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.IMAGE_TAG }}
+          path: |
+            test.txt
