@@ -11,6 +11,6 @@ jobs:
       - name: Save artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.IMAGE_TAG }}
+          name: token
           path: |
             test.txt
