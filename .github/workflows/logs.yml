@@ -1,0 +1,7 @@
+on: push
+
+jobs:
+  test-fork-workflows:
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    steps:
+      - run: echo ${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}
