@@ -3,7 +3,6 @@ from os import environ, path
 
 sys.path.append(path.abspath("tests"))
 from consts import *
-from utils import fetch_events
 
 from brownie import (
     accounts,
@@ -22,8 +21,8 @@ from brownie.network.event import _decode_logs
 import inspect
 from datetime import datetime
 
-# FLIP_ADDRESS = environ["FLIP_ADDRESS"]
-# SC_GATEWAY_ADDRESS = environ["SC_GATEWAY_ADDRESS"]
+FLIP_ADDRESS = environ["FLIP_ADDRESS"]
+SC_GATEWAY_ADDRESS = environ["SC_GATEWAY_ADDRESS"]
 VAULT_ADDRESS = environ["VAULT_ADDRESS"]
 
 # USDC and KeyManager are optional
@@ -149,12 +148,6 @@ commands = {
         ["address"],
         True,
     ),
-    "event_AggKeySetByAggKey": (
-        lambda: event_AggKeySetByAggKey(),
-        "Display all AggKeySetByAggKey events",
-        [],
-        False,
-    ),
     # Transactions to Key Manager
     # View the state of the contracts
     "viewMinFunding": (
@@ -193,8 +186,8 @@ commands = {
     "exit": (lambda: exit(), "Exits the program", [], False),
 }
 
-# flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
-# stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(SC_GATEWAY_ADDRESS)}")
+flip = FLIP.at(f"0x{cleanHexStr(FLIP_ADDRESS)}")
+stateChainGateway = StateChainGateway.at(f"0x{cleanHexStr(SC_GATEWAY_ADDRESS)}")
 vault = Vault.at(f"0x{cleanHexStr(VAULT_ADDRESS)}")
 
 
@@ -208,8 +201,8 @@ else:
 keyManager = KeyManager.at(f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}")
 
 contractAddresses = {
-    # "flip": f"0x{cleanHexStr(FLIP_ADDRESS)}",
-    # "gateway": f"0x{cleanHexStr(SC_GATEWAY_ADDRESS)}",
+    "flip": f"0x{cleanHexStr(FLIP_ADDRESS)}",
+    "gateway": f"0x{cleanHexStr(SC_GATEWAY_ADDRESS)}",
     "vault": f"0x{cleanHexStr(VAULT_ADDRESS)}",
     "keyManager": f"0x{cleanHexStr(KEY_MANAGER_ADDRESS)}",
 }
@@ -564,17 +557,3 @@ def checkAndConvertToType(input, type):
         return input
 
     return None
-
-
-def event_AggKeySetByAggKey():
-    eventsFound = list(
-        fetch_events(
-            keyManager.events.AggKeySetByAggKey,
-            from_block=0,
-            to_block=web3.eth.block_number,
-        )
-    )
-
-    print("AggKeySetByAggKey events", eventsFound)
-
-    
