@@ -5,18 +5,11 @@ on:
       - master
 
 jobs:
-  lint:
-    # Skipping it for now because it needs to be updated with the new fuzzing tests
-    if: false
-
-    uses: ./.github/workflows/.lint.yml
-
   fuzzer-tests:
     # Skipping it for now because it needs to be updated with the new fuzzing tests
     if: false
 
     name: Fuzzer
-    needs: lint
     # Running on a github runner because for some reason self-hosted fails to run crytic-compile <contract>
     runs-on: ubuntu-20.04
     timeout-minutes: 30

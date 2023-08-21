@@ -30,18 +30,6 @@ IMessageTransmitterMock = _project.interface.IMessageTransmitterMock
 IAxelarGateway = _project.interface.IAxelarGateway
 
 
-# NOTE: When forking a network (in another terminal) it spins a copy of the network
-# with the default hardhat chain id 31337. Another option is to declare the network
-# in hardhat.config.js, but we would need to add that manually as all the networks
-# that we support are via brownie. Then brownie might not play well with that.
-# Therefore we just spin the forks in another terminal via hardhat command.
-
-# Valid for Goerli
-# message = "0x000000000000000100000000000000000000a01b000000000000000000000000eb08f243e5d3fcff26a9e38ae5520a669f4019d0000000000000000000000000d0c3da58f55358142b8d3e06c1c30c5c6114efe80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005425890298aed601595a70ab815c96711a31bc65000000000000000000000000000000000000000000000000000000000000012300000000000000000000000000000000000000000000000000000000000f424000000000000000000000000037876b47dee43492dac3d87f7682df52ddbc65ca"
-# messageHash = "0xc9ac14d7c51d474215d3c01e024926d23c79a34816ecdc2cb81f685c1b1a1fbc"
-# For the above message, this is the correct attestation
-# attestation_response['attestation'] = '0x5c858ef0d057a12a309ddbe682d138f00ceae129377edc48b3e7cf050d74b34413729de6ce81fb05ceb3cdb50e689754d02134295fe84ff4d3e06df58f4a59751bf44e0efd9e56c7de548a98e95bc06995cd0fd3fb539bb13362230430e26944210d797913e10ca73d4814beba039a8f2328f806fffa4b9cea95f8e0e71aee4dab1c'
-
 AUTONOMY_SEED = os.environ["SEED"]
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
@@ -84,6 +72,8 @@ SQUID_MULTICALL_ADDRESS = "0x7a4F2BCdDf68C98202cbad13c4f3a04FF2405681"
 # Bridging properties
 tokens_to_transfer = 1 * 10**6
 
+# NOTE: When forking a network (in another terminal) it spins a copy of the network
+# with the default hardhat chain id 31337.
 
 # To run on AVAX-Test fork (FUJI), spin AVAX-TEST fork on a separate terminal and run script:
 #   npx hardhat node --fork https://api.avax-test.network/ext/bc/C/rpc
@@ -96,9 +86,6 @@ tokens_to_transfer = 1 * 10**6
 #   brownie run cctp avax-to-eth --network hardhat
 # Run it on real Goerli:
 #   brownie run cctp-avax-to-eth --network goerli
-
-# TODO: Think about adding an option or a function to do the whole flow in actual testnets (not forks)
-# for a complete atomic test.
 
 
 def main():
@@ -518,50 +505,3 @@ def get_and_submit_attestation(
     print("Values are correct! Success!")
 
     return tx
-
-
-# def axelar_and_squid():
-#         SQUID_GOERLI_ADDRESS = "0xe25e5ae59592bFbA3b5359000fb72E6c21D3228E"
-#         # This second action is to mimic the case where we want to ingress from a chain we don't support and we
-#         # need either Squid to transfer to a Deposit (that should be easy to do) or we want Squid to call SwapToken
-#         # or swapNative and pass the xswap information to the Vault. It should work no problem even though it's quite
-#         # a hustle to set up.
-
-#         # TODO: This is failing on the egress side for some reason. Also, the gas is not being witnessed, it might
-#         # need to be part of the same contract.
-#         # Try to do it via SimpleCallContract.send() to see if it picks up the gas and if it works. Otherwise we can
-#         # just let it go and assume that this is feasible using Squid.
-
-#         aUsdc.approve(
-#             axelar_gateway.address,
-#             tokens_to_transfer,
-#             {"from": DEPLOYER, "required_confs": 1},
-#         )
-
-#         # Encoded payayload calltype (Default=0) + refundRecipient
-#         # payload = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000037876b47dee43492dac3d87f7682df52ddbc65ca"
-#         # payload all zeroos
-#         payload = "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000037876b47dee43492dac3d87f7682df52ddbc65ca0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
-#         axelar_gas_service.payNativeGasForContractCallWithToken(
-#             DEPLOYER,
-#             "ethereum-2",
-#             SQUID_GOERLI_ADDRESS[2:],
-#             payload,
-#             "aUSDC",
-#             tokens_to_transfer,
-#             DEPLOYER,
-#             {"from": DEPLOYER, "value": 1 * 10**18, "required_confs": 1},
-#         )
-#         print(error_from_string("BurnFailed(string)"))
-
-#         # We try to send the aUSDC to AXLR, then to Squid on the egress chain and then so it calls the Vault
-#         tx = axelar_gateway.callContractWithToken(
-#             "ethereum-2",  ## destination chain name
-#             SQUID_GOERLI_ADDRESS[2:],  ## some destination address (should be your own)
-#             payload,  ## message
-#             "aUSDC",  ## asset symbol
-#             tokens_to_transfer,  ## amount (in atomic units)
-#             {"from": DEPLOYER, "required_confs": 1},
-#         )
-
-#         tx.info()
