@@ -1270,32 +1270,25 @@ def test_vault(
                         self.km, self.v.executexSwapAndCall, *args, sender=st_sender
                     )
             else:
-                if st_native_amount == 0:
-                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
-                    with reverts(REV_MSG_NZ_UINT):
-                        signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
-                        )
-                else:
-                    if web3.eth.get_balance(self.v.address) >= st_native_amount:
-                        print("                    rule_executexSwapAndCall", *toLog)
-                        tx = signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
-                        )
-                        assert (
-                            web3.eth.get_balance(self.v.address)
-                            == self.nativeBals[self.v.address] - st_native_amount
-                        )
-                        self.nativeBals[self.v.address] -= st_native_amount
-                        assert tx.events["ReceivedxSwapAndCall"][0].values() == [
-                            st_srcChain,
-                            hexStr(st_srcAddress),
-                            message,
-                            NATIVE_ADDR,
-                            st_native_amount,
-                            st_native_amount,
-                            0,
-                        ]
+                if web3.eth.get_balance(self.v.address) >= st_native_amount:
+                    print("                    rule_executexSwapAndCall", *toLog)
+                    tx = signed_call_km(
+                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                    )
+                    assert (
+                        web3.eth.get_balance(self.v.address)
+                        == self.nativeBals[self.v.address] - st_native_amount
+                    )
+                    self.nativeBals[self.v.address] -= st_native_amount
+                    assert tx.events["ReceivedxSwapAndCall"][0].values() == [
+                        st_srcChain,
+                        hexStr(st_srcAddress),
+                        message,
+                        NATIVE_ADDR,
+                        st_native_amount,
+                        st_native_amount,
+                        0,
+                    ]
 
         def rule_executexSwapAndCall_token(
             self,
