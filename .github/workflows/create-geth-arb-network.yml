@@ -312,6 +312,9 @@ jobs:
     needs:
       - build-arb-state
     runs-on: [self-hosted, linux, x64, ephemeral]
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
