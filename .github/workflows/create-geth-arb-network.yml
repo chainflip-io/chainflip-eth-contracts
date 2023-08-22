@@ -231,7 +231,7 @@ jobs:
           echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
 
       - name: Download Geth Initial State
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ env.IMAGE_TAG }}
           path: ./nitro-testnode/${{ env.GETH_INITIAL_STATE_DIR }}
