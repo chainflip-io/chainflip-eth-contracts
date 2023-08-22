@@ -22,7 +22,7 @@ on:
         default: ""
 
 jobs:
-  build:
+  build-geth-base-image:
     runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout
@@ -60,12 +60,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-  create:
+
+  build-arb-network:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
       IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
     needs:
-      - build
+      - build-geth-base-image
     services:
       geth:
         image: ghcr.io/${{ github.repository }}/geth-base:latest
