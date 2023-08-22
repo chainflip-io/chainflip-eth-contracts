@@ -186,3 +186,7 @@ def test_executeRedemption_rev_executor(
     else:
         with reverts(REV_MSG_NOT_EXECUTOR):
             cf.stateChainGateway.executeRedemption(nodeId, {"from": st_executor})
+        chain.sleep(2 * REDEMPTION_DELAY)
+        tx = cf.stateChainGateway.executeRedemption(nodeId, {"from": st_executor})
+        assert tx.events["RedemptionExpired"][0].values() == [nodeId, JUNK_INT]
+        assert tx.return_value == (st_redeem_address, 0)
