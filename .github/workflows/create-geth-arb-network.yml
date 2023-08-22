@@ -309,6 +309,8 @@ jobs:
           docker compose down --rmi all --volumes --remove-orphans
 
   build-initial-state:
+    needs:
+      - build-arb-state
     runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout
