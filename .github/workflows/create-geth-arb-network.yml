@@ -35,6 +35,7 @@ env:
   GENESIS_STAKE: "1000000000000000000000"
   DEPLOYER_ACCOUNT_INDEX: "0"
   DEPLOY_ARTEFACT_ID: "docker"
+  IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
 
 jobs:
   build-geth-base:
@@ -78,8 +79,6 @@ jobs:
 
   build-geth-state:
     runs-on: [self-hosted, linux, x64, ephemeral]
-    env:
-      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
     outputs:
       image-tag: ${{ env.IMAGE_TAG }}
     needs:
@@ -178,7 +177,6 @@ jobs:
   build-arb-state:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
-      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
       GETH_INITIAL_STATE_DIR: ci-geth-initial-state
       GETH_BASE_IMAGE: ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
     needs:
@@ -186,29 +184,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Set up QEMU ⚙️
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx 👷
-        uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: |
-            image=moby/buildkit:v0.10.6
-
-      - name: Docker meta 🔖
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ github.repository }}/localnet-initial-state
-          tags: ${{ env.IMAGE_TAG }}
-
-      - name: Login to GitHub Container Registry ➡️🦑
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout chainflip-io/nitro-testnode @ ${{ inputs.nitro_testnodes_ref }}
         uses: actions/checkout@v3
@@ -323,6 +298,51 @@ jobs:
           path: |
             ${{ github.workspace }}/nitro-testnode/data
 
+      - name: Clean Up docker containers 🧹
+        if: always()
+        working-directory: ./nitro-testnode
+        continue-on-error: true
+        run: |
+          ls -laR ./data
+          docker ps -a
+          docker compose logs
+          docker compose down --rmi all --volumes --remove-orphans
+
+  build-initial-state:
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU ⚙️
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx 👷
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: |
+            image=moby/buildkit:v0.10.6
+
+      - name: Docker meta 🔖
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ github.repository }}/localnet-initial-state
+          tags: ${{ env.IMAGE_TAG }}
+
+      - name: Login to GitHub Container Registry ➡️🦑
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Initial State from previous job
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.IMAGE_TAG }}-localnet-initial-state
+          path: ./nitro-testnode/data
+
       - name: Get Current Time ⌚️
         id: get_time
         run: echo "current_datetime=$(date -u +"%b %d, %Y at %R UTC")" >> $GITHUB_OUTPUT
@@ -339,17 +359,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            INITIAL_STATE_DIR=${{ github.workspace }}/nitro-testnode/data
+            INITIAL_STATE_DIR=./nitro-testnode/data
             BUILD_DATETIME=${{ steps.get_time.outputs.current_datetime }}
             VCS_REF=${{ github.sha }}
             BACKEND_REF=${{ inputs.chainflip_backend_ref }}
-
-      - name: Clean Up docker containers 🧹
-        if: always()
-        working-directory: ./nitro-testnode
-        continue-on-error: true
-        run: |
-          ls -laR ./data
-          docker ps -a
-          docker compose logs
-          docker compose down --rmi all --volumes --remove-orphans
