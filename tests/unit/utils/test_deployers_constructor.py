@@ -173,6 +173,7 @@ def test_upgrader_constructor(
         flip.balanceOf(stateChainGateway.address),
         new_stateChainGateway.address,
         getChainTime() + (2 * REDEMPTION_DELAY),
+        st_sender,
     ]
 
     # Manually transfer FLIP funds.

@@ -151,6 +151,7 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
                 st_amount,
                 st_redeemAddress,
                 getChainTime() + st_expiry_time_diff,
+                ZERO_ADDR,
             )
             toLog = (*args, st_signer_agg, st_sender)
 
