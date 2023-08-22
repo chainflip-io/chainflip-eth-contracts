@@ -339,10 +339,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            INITIAL_STATE_DIR="nitro-testnode/data"
-            BUILD_DATETIME="${{ steps.get_time.outputs.current_datetime }}"
-            VCS_REF="${{ github.sha }}"
-            BACKEND_REF="${{ inputs.chainflip_backend_ref }}"
+            INITIAL_STATE_DIR=${{ github.workspace }}/nitro-testnode/data
+            BUILD_DATETIME=${{ steps.get_time.outputs.current_datetime }}
+            VCS_REF=${{ github.sha }}
+            BACKEND_REF=${{ inputs.chainflip_backend_ref }}
 
       - name: Clean Up docker containers 🧹
         if: always()
