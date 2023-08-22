@@ -1,5 +1,4 @@
 FROM debian:bullseye
-ARG INITIAL_STATE_DIR
 ARG BUILD_DATETIME
 ARG BACKEND_REF
 ARG VCS_REF
@@ -15,6 +14,9 @@ LABEL org.opencontainers.image.backend_ref="development"
 LABEL org.opencontainers.image.documentation="https://github.com/chainflip-io/chainflip-eth-contracts"
 
 WORKDIR /initial-state
-COPY ${INITIAL_STATE_DIR} /initial-state
+
+COPY localnet-initial-state /initial-state
+
+RUN ls -laR /initial-state
 
 WORKDIR /initial-state
