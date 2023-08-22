@@ -308,7 +308,7 @@ jobs:
           docker compose logs
           docker compose down --rmi all --volumes --remove-orphans
 
-  build-initial-state:
+  build-initial-state-container:
     needs:
       - build-arb-state
     runs-on: [self-hosted, linux, x64, ephemeral]
