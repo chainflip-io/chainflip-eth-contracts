@@ -28,6 +28,7 @@ def test_registerRedemption_fund_executeRedemption_fund_registerRedemption_execu
         redemptionAmount1,
         cf.DENICE,
         expiryTime1,
+        cf.ALICE,
     )
 
     # Redemptioning before enough time passed should revert
@@ -91,6 +92,7 @@ def test_registerRedemption_fund_executeRedemption_fund_registerRedemption_execu
         redemptionAmount2,
         cf.DENICE,
         expiryTime2,
+        ZERO_ADDR,
     )
 
     chain.sleep(REDEMPTION_DELAY + 5)

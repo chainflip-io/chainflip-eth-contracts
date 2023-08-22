@@ -191,7 +191,7 @@ def fundTest(cf, prevTotal, nodeID, minFunding, tx, amount):
 # inputs through @given, so this is a common fcn that can be used for `test_redemption` and
 # similar tests that test specific desired values
 def registerRedemptionTest(
-    cf, stateChainGateway, nodeID, minFunding, amount, receiver, expiryTime
+    cf, stateChainGateway, nodeID, minFunding, amount, receiver, expiryTime, executor
 ):
     prevReceiverBal = cf.flip.balanceOf(receiver)
     prevStakeManBal = cf.flip.balanceOf(stateChainGateway)
@@ -203,6 +203,7 @@ def registerRedemptionTest(
         amount,
         receiver,
         expiryTime,
+        executor,
     )
 
     startTime = tx.timestamp + REDEMPTION_DELAY
@@ -212,6 +213,7 @@ def registerRedemptionTest(
         receiver,
         startTime,
         expiryTime,
+        executor,
     )
     assert tx.events["RedemptionRegistered"][0].values() == (
         nodeID,
@@ -219,6 +221,7 @@ def registerRedemptionTest(
         receiver,
         startTime,
         expiryTime,
+        executor,
     )
     # Check things that shouldn't have changed
     assert cf.flip.balanceOf(receiver) == prevReceiverBal

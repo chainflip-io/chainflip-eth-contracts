@@ -104,6 +104,7 @@ def test_sig_stateChainGateway(
         cf.flip.balanceOf(cf.stateChainGateway.address),
         cf.stateChainGateway.address,
         getChainTime() + (2 * REDEMPTION_DELAY),
+        ZERO_ADDR,
     ]
 
     # Generate original calldata for the call that is to be frontrunned
@@ -235,12 +236,7 @@ def test_sig_msgHash(cf, st_sender, st_new_govKey, st_address, st_chainId, st_am
         st_new_govKey,
     )
 
-    args = [
-        JUNK_HEX,
-        st_amount,
-        st_address,
-        getChainTime(),
-    ]
+    args = [JUNK_HEX, st_amount, st_address, getChainTime(), st_address]
     msgHash_verification(
         cf,
         cf.stateChainGateway.registerRedemption,

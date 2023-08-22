@@ -17,7 +17,8 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
         uint256 amount,
         address indexed redeemAddress,
         uint48 startTime,
-        uint48 expiryTime
+        uint48 expiryTime,
+        address executor
     );
     event RedemptionExecuted(bytes32 indexed nodeID, uint256 amount);
     event RedemptionExpired(bytes32 indexed nodeID, uint256 amount);
@@ -33,6 +34,7 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
         // into a single 256 bit slot
         uint48 startTime;
         uint48 expiryTime;
+        address executor;
     }
 
     /**
@@ -69,7 +71,8 @@ interface IStateChainGateway is IGovernanceCommunityGuarded, IFlipIssuer, IAggKe
         bytes32 nodeID,
         uint256 amount,
         address redeemAddress,
-        uint48 expiryTime
+        uint48 expiryTime,
+        address executor
     ) external;
 
     /**

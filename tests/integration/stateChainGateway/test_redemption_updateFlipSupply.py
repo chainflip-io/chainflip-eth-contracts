@@ -17,6 +17,7 @@ def test_registerRedemption_updateFlipSupply_executeRedemption(cf, fundedMin):
         redemptionAmount,
         receiver,
         getChainTime() + (2 * REDEMPTION_DELAY),
+        cf.ALICE,
     )
 
     stateChainBlockNumber = 1
