@@ -207,7 +207,7 @@ def test_upgradability(
                 redemptionAmount,
                 newStateChainGateway,
                 expiryTime,
-                st_sender
+                st_sender,
             )
             signed_call_km(
                 self.km, self.scg.registerRedemption, *args, sender=st_sender
