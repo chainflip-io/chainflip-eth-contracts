@@ -46,6 +46,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
     //     // into a single 256 bit slot
     //     uint48 startTime;
     //     uint48 expiryTime;
+    //     address executor;
     // }
 
     constructor(
@@ -155,7 +156,8 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         bytes32 nodeID,
         uint256 amount,
         address redeemAddress,
-        uint48 expiryTime
+        uint48 expiryTime,
+        address executor
     )
         external
         override
@@ -165,7 +167,7 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         nzAddr(redeemAddress)
         consumesKeyNonce(
             sigData,
-            keccak256(abi.encode(this.registerRedemption.selector, nodeID, amount, redeemAddress, expiryTime))
+            keccak256(abi.encode(this.registerRedemption.selector, nodeID, amount, redeemAddress, expiryTime, executor))
         )
     {
         require(
@@ -177,8 +179,8 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         uint48 startTime = uint48(block.timestamp) + REDEMPTION_DELAY;
         require(expiryTime > startTime, "Gateway: expiry time too soon");
 
-        _pendingRedemptions[nodeID] = Redemption(amount, redeemAddress, startTime, expiryTime);
-        emit RedemptionRegistered(nodeID, amount, redeemAddress, startTime, expiryTime);
+        _pendingRedemptions[nodeID] = Redemption(amount, redeemAddress, startTime, expiryTime, executor);
+        emit RedemptionRegistered(nodeID, amount, redeemAddress, startTime, expiryTime, executor);
     }
 
     /**
@@ -199,6 +201,9 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
         delete _pendingRedemptions[nodeID];
 
         if (block.timestamp <= redemption.expiryTime) {
+            if (redemption.executor != address(0)) {
+                require(msg.sender == redemption.executor, "Gateway: not executor");
+            }
             emit RedemptionExecuted(nodeID, redemption.amount);
 
             // Send the tokens

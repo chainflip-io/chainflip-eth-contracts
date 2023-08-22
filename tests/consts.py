@@ -121,7 +121,7 @@ MAX_TEST_FUND = 1 * 10**7 * E_18
 # 13292
 REDEMPTION_DELAY = 2 * DAY
 REDEMPTION_DELAY_TESTNETS = 2 * MINUTE
-NULL_CLAIM = (0, ZERO_ADDR, 0, 0)
+NULL_CLAIM = (0, ZERO_ADDR, 0, 0, ZERO_ADDR)
 
 REV_MSG_MIN_FUNDING = "Gateway: not enough funds"
 REV_MSG_CLAIM_EXISTS = "Gateway: a pending redemption exists"
@@ -130,6 +130,7 @@ REV_MSG_NOT_ON_TIME = "Gateway: early or already execd"
 REV_MSG_FLIP_ADDRESS = "Gateway: Flip address already set"
 REV_MSG_OLD_FLIP_SUPPLY_UPDATE = "Gateway: old FLIP supply update"
 REV_MSG_NOT_FLIP = "Gateway: wrong FLIP ref"
+REV_MSG_NOT_EXECUTOR = "Gateway: not executor"
 
 # -----Vault-----
 AGG_KEY_EMERGENCY_TIMEOUT = 3 * 24 * 60 * 60
