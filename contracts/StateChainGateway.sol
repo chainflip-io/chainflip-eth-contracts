@@ -149,7 +149,8 @@ contract StateChainGateway is IFlipIssuer, IStateChainGateway, AggKeyNonceConsum
      * @param nodeID    The nodeID of the account redeeming the FLIP
      * @param amount    The amount of funds to be locked up
      * @param redeemAddress    The redeemAddress who will receive the FLIP
-     * @param expiryTime   The last valid timestamp that can execute this redemption (uint48)
+     * @param expiryTime  The last valid timestamp that can execute this redemption (uint48)
+     * @param executor    The address that can execute the redemption (zero address if anyone)
      */
     function registerRedemption(
         SigData calldata sigData,
