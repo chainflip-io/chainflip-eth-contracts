@@ -186,6 +186,7 @@ def test_upgrade_StateChainGateway(
         redemptionAmount,
         cf.DENICE,
         expiryTime,
+        cf.ALICE,
     )
 
     chain.sleep(REDEMPTION_DELAY)
@@ -211,6 +212,7 @@ def test_upgrade_StateChainGateway(
         redemptionAmount,
         newStateChainGateway,
         expiryTime,
+        ZERO_ADDR,
     )
 
     chain.sleep(REDEMPTION_DELAY)
@@ -230,6 +232,7 @@ def test_upgrade_StateChainGateway(
         redemptionAmount,
         cf.DENICE,
         getChainTime() + (REDEMPTION_DELAY * 2),
+        cf.ALICE,
     )
     chain.sleep(REDEMPTION_DELAY)
     newStateChainGateway.executeRedemption(nodeID, {"from": cf.ALICE})

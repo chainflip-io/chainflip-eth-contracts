@@ -89,7 +89,7 @@ def fundedMin(cf):
 def redemptionRegistered(cf, fundedMin):
     _, amount = fundedMin
     expiryTime = getChainTime() + (2 * REDEMPTION_DELAY)
-    args = (JUNK_HEX, amount, cf.DENICE, expiryTime)
+    args = (JUNK_HEX, amount, cf.DENICE, expiryTime, ZERO_ADDR)
 
     sigData = AGG_SIGNER_1.getSigDataWithNonces(
         cf.keyManager, cf.stateChainGateway.registerRedemption, nonces, *args
@@ -100,7 +100,13 @@ def redemptionRegistered(cf, fundedMin):
         {"from": cf.ALICE},
     )
 
-    return tx, (amount, cf.DENICE, tx.timestamp + REDEMPTION_DELAY, expiryTime)
+    return tx, (
+        amount,
+        cf.DENICE,
+        tx.timestamp + REDEMPTION_DELAY,
+        expiryTime,
+        ZERO_ADDR,
+    )
 
 
 # Deploy a generic token

@@ -81,9 +81,15 @@ def all_stateChainGateway_events():
 
     redemption_amount = int(MIN_FUNDING / 3)
     print(
-        f"\n💰 Alice registers a redemption for {redemption_amount} with nodeID {JUNK_INT}\n"
+        f"\n💰 Alice registers a redemption for {redemption_amount} with nodeID {JUNK_INT} and {ZERO_ADDR} executor\n"
     )
-    args = (JUNK_INT, redemption_amount, ALICE, chain.time() + (2 * REDEMPTION_DELAY))
+    args = (
+        JUNK_INT,
+        redemption_amount,
+        ALICE,
+        chain.time() + (2 * REDEMPTION_DELAY),
+        ZERO_ADDR,
+    )
 
     tx = signed_call_cf(
         cf, cf.stateChainGateway.registerRedemption, *args, sender=ALICE
@@ -96,7 +102,13 @@ def all_stateChainGateway_events():
     tx = cf.stateChainGateway.executeRedemption(JUNK_INT, {"from": ALICE})
     assert "RedemptionExecuted" in tx.events
 
-    args = (JUNK_INT, redemption_amount, ALICE, chain.time() + (2 * REDEMPTION_DELAY))
+    args = (
+        JUNK_INT,
+        redemption_amount,
+        ALICE,
+        chain.time() + (2 * REDEMPTION_DELAY),
+        ZERO_ADDR,
+    )
 
     tx = signed_call_cf(
         cf, cf.stateChainGateway.registerRedemption, *args, sender=ALICE

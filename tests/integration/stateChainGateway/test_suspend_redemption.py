@@ -99,5 +99,6 @@ def test_suspend_registerRedemption(cf, st_native_amount):
             st_native_amount,
             cf.DENICE,
             getChainTime() + REDEMPTION_DELAY,
+            ZERO_ADDR,
         )
         signed_call_cf(cf, cf.stateChainGateway.registerRedemption, *args)
