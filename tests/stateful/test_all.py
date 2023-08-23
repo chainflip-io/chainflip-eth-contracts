@@ -2302,6 +2302,7 @@ def test_all(
                     redemptionAmount,
                     newStateChainGateway,
                     expiryTime,
+                    st_sender,
                 )
                 signed_call_km(
                     self.km,
