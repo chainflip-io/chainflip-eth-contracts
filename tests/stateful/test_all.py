@@ -1835,6 +1835,7 @@ def test_all(
                 st_amount,
                 st_redeemAddress,
                 getChainTime() + st_expiry_time_diff,
+                ZERO_ADDR
             )
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender)
