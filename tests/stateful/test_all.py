@@ -1914,6 +1914,7 @@ def test_all(
                     st_redeemAddress,
                     tx.timestamp + REDEMPTION_DELAY,
                     args[3],
+                    ZERO_ADDR,
                 )
                 self.lastValidateTime = tx.timestamp
 

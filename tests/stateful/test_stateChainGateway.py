@@ -236,6 +236,7 @@ def test_stateChainGateway(BaseStateMachine, state_machine, a, cfDeploy):
                     st_redeemAddress,
                     tx.timestamp + REDEMPTION_DELAY,
                     args[3],
+                    ZERO_ADDR,
                 )
 
         # Sleep for a random time so that executeRedemption can be called without reverting
