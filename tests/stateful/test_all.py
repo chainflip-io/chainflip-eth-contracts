@@ -1406,18 +1406,7 @@ def test_all(
                         sender=st_sender,
                     )
             else:
-                if st_native_amount == 0:
-                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
-                    with reverts(REV_MSG_NZ_UINT):
-                        signed_call_km(
-                            self.km,
-                            self.v.executexSwapAndCall,
-                            *args,
-                            signer=signer,
-                            sender=st_sender,
-                        )
-
-                elif signer != self.keyIDToCurKeys[AGG]:
+                if signer != self.keyIDToCurKeys[AGG]:
                     print("        REV_MSG_SIG rule_executexSwapAndCall", signer)
                     with reverts(REV_MSG_SIG):
                         signed_call_km(
