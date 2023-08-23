@@ -2265,7 +2265,7 @@ def test_all(
                 REDEMPTION_DELAY,
             )
 
-            args = (JUNK_HEX, 1, newStateChainGateway, 1)
+            args = (JUNK_HEX, 1, newStateChainGateway, 1, ZERO_ADDR)
             signer = self._get_key_prob(AGG)
 
             if self.scg_suspended:
