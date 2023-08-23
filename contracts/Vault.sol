@@ -21,7 +21,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
-    uint256 private constant _GAS_TO_FORWARD = 3_500;
+    uint256 private constant _GAS_TO_FORWARD = 8_000;
     uint256 private constant _FINALIZE_GAS_BUFFER = 30_000;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
@@ -165,6 +165,32 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         consumesKeyNonce(sigData, keccak256(abi.encode(this.transfer.selector, transferParams)))
     {
         _transfer(transferParams.token, transferParams.recipient, transferParams.amount);
+    }
+
+    /**
+     * @notice  Fallback transfer tokens from this vault to a recipient with all the gas.
+     * @param sigData    Struct containing the signature data over the message
+     *                   to verify, signed by the aggregate key.
+     * @param transferParams  The transfer parameters
+
+     */
+    function transferFallback(
+        SigData calldata sigData,
+        TransferParams calldata transferParams
+    )
+        external
+        onlyNotSuspended
+        nzAddr(transferParams.token)
+        nzAddr(transferParams.recipient)
+        nzUint(transferParams.amount)
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.transferFallback.selector, transferParams)))
+    {
+        if (transferParams.token == _NATIVE_ADDR) {
+            (bool success, ) = transferParams.recipient.call{value: transferParams.amount}("");
+            require(success, "Vault: transfer fallback failed");
+        } else {
+            IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+        }
     }
 
     /**
