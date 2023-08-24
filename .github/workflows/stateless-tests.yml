@@ -1,8 +1,6 @@
 name: Stateless Tests
-on:
-  push:
-    branches:
-      - master
+on: push
+
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
