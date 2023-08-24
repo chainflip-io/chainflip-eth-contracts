@@ -1477,18 +1477,7 @@ def test_all(
                         sender=st_sender,
                     )
             else:
-                if st_token_amount == 0:
-                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
-                    with reverts(REV_MSG_NZ_UINT):
-                        signed_call_km(
-                            self.km,
-                            self.v.executexSwapAndCall,
-                            *args,
-                            signer=signer,
-                            sender=st_sender,
-                        )
-
-                elif signer != self.keyIDToCurKeys[AGG]:
+                if signer != self.keyIDToCurKeys[AGG]:
                     print("        REV_MSG_SIG rule_executexSwapAndCall", signer)
                     with reverts(REV_MSG_SIG):
                         signed_call_km(
@@ -1498,7 +1487,6 @@ def test_all(
                             signer=signer,
                             sender=st_sender,
                         )
-
                 else:
                     if st_token.balanceOf(self.v.address) < st_token_amount:
                         print(
@@ -1835,6 +1823,7 @@ def test_all(
                 st_amount,
                 st_redeemAddress,
                 getChainTime() + st_expiry_time_diff,
+                ZERO_ADDR,
             )
             signer = self._get_key_prob(AGG)
             toLog = (*args, signer, st_sender)
@@ -1913,6 +1902,7 @@ def test_all(
                     st_redeemAddress,
                     tx.timestamp + REDEMPTION_DELAY,
                     args[3],
+                    ZERO_ADDR,
                 )
                 self.lastValidateTime = tx.timestamp
 
@@ -2263,7 +2253,7 @@ def test_all(
                 REDEMPTION_DELAY,
             )
 
-            args = (JUNK_HEX, 1, newStateChainGateway, 1)
+            args = (JUNK_HEX, 1, newStateChainGateway, 1, ZERO_ADDR)
             signer = self._get_key_prob(AGG)
 
             if self.scg_suspended:
@@ -2300,6 +2290,7 @@ def test_all(
                     redemptionAmount,
                     newStateChainGateway,
                     expiryTime,
+                    st_sender,
                 )
                 signed_call_km(
                     self.km,

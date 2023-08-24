@@ -16,7 +16,7 @@ def test_addressChecker_balances(cf, st_addresses):
 def test_addressChecker_balances_gas(cf):
     # More than this returns a "Transaction ran out of gas" in testing. However, in a real network
     # we should be able to query more addresses.
-    number_of_addresses = 27000
+    number_of_addresses = 25000
     list_of_addresses = [
         "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     ] * number_of_addresses
