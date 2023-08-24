@@ -64,7 +64,7 @@ jobs:
   build-geth-network:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
-      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+      IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}-legacy
     needs:
       - build-geth-base-image
     services:
