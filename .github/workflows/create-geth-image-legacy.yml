@@ -1,5 +1,5 @@
 name: Create Legacy Geth Image
-run-name: Creating Legacy Geth Image for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node
+run-name: Creating Legacy Geth Image for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node-legacy
 on:
   workflow_dispatch:
     inputs:
@@ -61,7 +61,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-arb-network:
+  build-geth-network:
     runs-on: [self-hosted, linux, x64, ephemeral]
     env:
       IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
