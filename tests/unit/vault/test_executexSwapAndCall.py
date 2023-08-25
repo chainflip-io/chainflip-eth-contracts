@@ -290,7 +290,7 @@ def test_executexSwapAndCallToken(
     ]
 
 
-def test_executexSwapAndCallToken_gasTest(
+def test_executexSwapAndCallToken_gasTest400(
     cf,
     cfTester,
     token,
@@ -303,7 +303,12 @@ def test_executexSwapAndCallToken_gasTest(
     token.transfer(cf.vault, amount * 2, {"from": cf.SAFEKEEPER})
 
     # Currently the gasLimit is hardcoded at 400k in the state chain.
-    message = encode_abi(["string", "uint256"], ["GasTest", 210000])
+
+    ## GasTest 270k makes the whole transaction consume 392k with ccmTestGasUsed: 272k
+    # => overhead = 120k, that's including a bunch of logic in the receiver contract.
+    # With no code in the receiver (except checking the vault address) it's 112k
+    # Depending on the tx number it reverts between 270 and 300k.
+    message = encode_abi(["string", "uint256"], ["GasTest", 270000])
     args = [
         [token, cfTester.address, amount],
         srcChain,
@@ -313,19 +318,17 @@ def test_executexSwapAndCallToken_gasTest(
     sigData = AGG_SIGNER_1.getSigDataWithNonces(
         cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args
     )
-    cf.vault.executexSwapAndCall(
+    tx = cf.vault.executexSwapAndCall(
         sigData,
         *args,
         {"from": cf.ALICE, "gas": 400000},
     )
 
-    message = encode_abi(["string", "uint256"], ["GasTest", 230000])
-    args = [
-        [token, cfTester.address, amount],
-        srcChain,
-        st_srcAddress,
-        message,
-    ]
+    assert tx.events["ReceivedxSwapAndCall"]["ccmTestGasUsed"] >= 270000
+
+    # overhead = tx.gas_used - tx.events["ReceivedxSwapAndCall"]["ccmTestGasUsed"]
+    message = encode_abi(["string", "uint256"], ["GasTest", 300000])
+    args[3] = message
     sigData = AGG_SIGNER_1.getSigDataWithNonces(
         cf.keyManager, cf.vault.executexSwapAndCall, nonces, *args
     )

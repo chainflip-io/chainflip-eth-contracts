@@ -17,10 +17,10 @@ contract CFTester is CFReceiver, Shared {
 
     uint256[] public iterations;
 
-    // This will consume ~6.5M gas (iterations + overhead)
+    // This will consume ~6.5M gas (iterations + overhead) for the whole tx
     uint256 public defaultNumIterations = 300;
-    // This will consume ~215k
-    uint256 public defaultStepIterations = 10;
+    // This will consume ~21.5k per loop
+    uint256 public defaultStepIterations = 1;
 
     string public constant GAS_TEST = "GasTest";
     bytes public constant GAS_MESSAGE_ENCODED = bytes(GAS_TEST);
