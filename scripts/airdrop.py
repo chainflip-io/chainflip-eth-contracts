@@ -410,7 +410,9 @@ def airdrop(
     for i in range(len(oldFlipHolderAccounts)):
         if oldFlipHolderAccounts[i] not in skip_receivers_list:
             if int(oldFlipholderBalances[i]) >= airdrop_amount_cutoff:
-                listOfTxtoSend.append([oldFlipHolderAccounts[i], oldFlipholderBalances[i]])
+                listOfTxtoSend.append(
+                    [oldFlipHolderAccounts[i], oldFlipholderBalances[i]]
+                )
                 totalAmount_toTransfer += int(oldFlipholderBalances[i])
         else:
             # Logging only in debug level
