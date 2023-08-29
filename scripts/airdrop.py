@@ -183,8 +183,8 @@ def snapshot(
     # Split it if that is the case - there is no time requirement anyway
 
     # lets do a fetch every 10000 blocks - in total it's around 1,3M blocks. That's to avoid
-    # the providers 10k limits
-    step = 1000
+    # the providers 10k limits. It might need to be reduced to 1k if Infura rpc calls fail.
+    step = 10000
     next_block = oldFlip_deployment_block + step
     from_block = oldFlip_deployment_block
 
@@ -524,7 +524,7 @@ def verifyAirdrop(
             amount = int(oldFlipholderBalances[index_airdropper])
         else:
             amount = 0
-        # >= because we have not airdropped to some small accounts
+        # >= because we might have not airdropped to some small accounts
         assert (
             int(newFlipContract.balanceOf(str(airdropper)))
             >= int(oldFlipholderBalances[index]) + amount
