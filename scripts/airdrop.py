@@ -524,7 +524,7 @@ def verifyAirdrop(
             amount = int(oldFlipholderBalances[index_airdropper])
         else:
             amount = 0
-        # >= because we might have not airdropped to some small accounts
+        # >= because we might have not airdropped to all original holders
         assert (
             int(newFlipContract.balanceOf(str(airdropper)))
             >= int(oldFlipholderBalances[index]) + amount
