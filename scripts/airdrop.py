@@ -30,6 +30,10 @@ oldFlip_deployment_block = 9216165 - 10
 # Real goerli deployed flip
 newFlip = "0x0485D65da68b2A6b48C3fA28D7CCAce196798B94"
 newStateChainGateway = "0x38AA40B7b5a70d738baBf6699a45DacdDBBEB3fc"
+
+# Set amount to zero to airdrop to all addresses
+airdrop_amount_cutoff = 1000 * E_18
+verify_amount_cutoff = 6000 * 10**18
 # -------------------------------------------------------------------- #
 
 
@@ -58,7 +62,8 @@ def main():
 
     airdropper = DEPLOYER
     # Fake airdropper for testing in hardhat
-    airdropper = "0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF"
+    # airdropper = "0xa56A6be23b6Cf39D9448FF6e897C29c41c8fbDFF"
+    print("Airdropper address: " + airdropper.address)
 
     # If using Infura it will break if snapshot_blocknumber < latestblock-100 due to free-plan limitation
     # Use alchemy when running the old flip snapshot function
@@ -235,10 +240,8 @@ def snapshot(
 
     # Verify that at least the most relevant accounts' balances are correct
     print("Verifying balances of top holders")
-
-    cutoff_amount = 6000 * 10**18
     for holder, balance in sorted_dict.items():
-        if balance < cutoff_amount:
+        if balance < verify_amount_cutoff:
             break
         else:
             assert balance == oldFlipContract.balanceOf(
@@ -406,8 +409,9 @@ def airdrop(
     totalAmount_toTransfer = 0
     for i in range(len(oldFlipHolderAccounts)):
         if oldFlipHolderAccounts[i] not in skip_receivers_list:
-            listOfTxtoSend.append([oldFlipHolderAccounts[i], oldFlipholderBalances[i]])
-            totalAmount_toTransfer += int(oldFlipholderBalances[i])
+            if int(oldFlipholderBalances[i]) >= airdrop_amount_cutoff:
+                listOfTxtoSend.append([oldFlipHolderAccounts[i], oldFlipholderBalances[i]])
+                totalAmount_toTransfer += int(oldFlipholderBalances[i])
         else:
             # Logging only in debug level
             printAndLog("Skipping receiver:" + str(oldFlipHolderAccounts[i]))
@@ -520,13 +524,14 @@ def verifyAirdrop(
             amount = int(oldFlipholderBalances[index_airdropper])
         else:
             amount = 0
+        # >= because we have not airdropped to some small accounts
         assert (
             int(newFlipContract.balanceOf(str(airdropper)))
-            == int(oldFlipholderBalances[index]) + amount
+            >= int(oldFlipholderBalances[index]) + amount
         )
         assert (
             int(newFlipContract.balanceOf(airdropper))
-            == oldFlipDeployerBalance + amount
+            >= oldFlipDeployerBalance + amount
         )
 
         del oldFlipHolderAccounts[index]
@@ -540,15 +545,14 @@ def verifyAirdrop(
 
     # Sanity check - this could potentially fail if the batch transfers have been broken and it has ended up
     # doing a different amount of batches than if it had all succeeded.
-    assert int(math.ceil(len(listAirdropTXs) / transfer_batch_size)) == int(
+    assert int(math.ceil(len(listAirdropTXs) / transfer_batch_size)) <= int(
         math.ceil(len(oldFlipHolderAccounts) / transfer_batch_size)
     )
 
-    # oldFlipHolderAccounts is ordered so we can break as soon as an amount is < cutoff_amount
+    # oldFlipHolderAccounts is ordered so we can break as soon as an amount is < verify_amount_cutoff
     # It is check that oldFlipHolders have been airdropped the correct amount
-    cutoff_amount = 6000 * 10**18
     for (holder, balance) in zip(oldFlipHolderAccounts, oldFlipholderBalances):
-        if int(balance) < cutoff_amount:
+        if int(balance) < verify_amount_cutoff:
             continue
         else:
             airdrop_found = False
@@ -562,7 +566,7 @@ def verifyAirdrop(
 
     # Extra check
     assert (
-        len(listAirdropTXs) == len(oldFlipHolderAccounts) == len(oldFlipholderBalances)
+        len(listAirdropTXs) <= len(oldFlipHolderAccounts) == len(oldFlipholderBalances)
     )
 
     # Check that the final supply difference and that the difference is in the stateChainGateway
