@@ -339,7 +339,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Destination token to be swapped to.
-     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
+     * @param cfParameters  Additional parameters to be passed to the Chainflip protocol.
      */
     function xSwapNative(
         uint32 dstChain,
@@ -360,7 +360,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param dstToken      Uint containing the specifics of the swap to be performed according to Chainflip's nomenclature.
      * @param srcToken      Address of the source token to swap.
      * @param amount        Amount of tokens to swap.
-     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
+     * @param cfParameters  Additional parameters to be passed to the Chainflip protocol.
      */
     function xSwapToken(
         uint32 dstChain,
@@ -387,15 +387,15 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          The message parameter is transmitted to the destination chain as part of the cross-chain call.
      * @dev     Checking the validity of inputs shall be done as part of the event witnessing. Only the amount is checked
      *          to explicity inidcate that an amount is required. It isn't preventing spamming.
-     *
      * @param dstChain      The destination chain according to the Chainflip Protocol's nomenclature.
      * @param dstAddress    Bytes containing the destination address on the destination chain.
      * @param dstToken      Uint containing the specifics of the swap to be performed, if any, as part of the xCall. The string
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
-     * @param message       The message to be sent to the egress chain. This is a general purpose message.
+     * @param message       General purpose message to be sent to the egress chain. Notice that the Chainflip protocol has a limit size
+     *                      for the message. Ensure that the message length is smaller that the limit before starting a swap.
      * @param gasAmount     The amount to be used for gas in the egress chain.
-     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
+     * @param cfParameters  Additional parameters to be passed to the Chainflip protocol.
      */
     function xCallNative(
         uint32 dstChain,
@@ -422,11 +422,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @param dstToken      Uint containing the specifics of the swap to be performed, if any, as part of the xCall. The string
      *                      must follow Chainflip's nomenclature. It can signal that no swap needs to take place
      *                      and the source token will be used for gas in a swapless xCall.
-     * @param message       The message to be sent to the egress chain. This is a general purpose message.
+     * @param message       General purpose message to be sent to the egress chain. Notice that the Chainflip protocol has a limit size
+     *                      for the message. Ensure that the message length is smaller that the limit before starting a swap.
      * @param gasAmount     The amount to be used for gas in the egress chain.
      * @param srcToken      Address of the source token.
      * @param amount        Amount of tokens to swap.
-     * @param cfParameters  Additional paramters to be passed to the Chainflip protocol.
+     * @param cfParameters  Additional parameters to be passed to the Chainflip protocol.
      */
     function xCallToken(
         uint32 dstChain,
