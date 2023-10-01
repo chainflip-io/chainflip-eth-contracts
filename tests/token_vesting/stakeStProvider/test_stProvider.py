@@ -5,17 +5,22 @@ from shared_tests_tokenVesting import *
 
 def test_stakeToStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
     tv, _, total = tokenVestingStaking
-    stFLIP, _, _, staking_address = mockStProvider
+    stFLIP, _, _, staking_address, _ = mockStProvider
 
     assert cf.flip.balanceOf(tv) == total
     assert stFLIP.balanceOf(tv) == 0
     assert cf.flip.balanceOf(staking_address) == 0
     assert stFLIP.balanceOf(staking_address) == 0
+    assert tv.stTokenUnstaked() == 0
+    assert tv.stTokenStaked() == 0
+
     tv.stakeToStProvider(total, {"from": addrs.BENEFICIARY})
     assert cf.flip.balanceOf(tv) == 0
     assert stFLIP.balanceOf(tv) == total
     assert cf.flip.balanceOf(staking_address) == total
     assert stFLIP.balanceOf(staking_address) == 0
+    assert tv.stTokenUnstaked() == 0
+    assert tv.stTokenStaked() == total
 
 
 def test_stake_unstake_rev_sender(addrs, tokenVestingStaking):
@@ -45,7 +50,7 @@ def test_stake_rev_revoked(addrs, tokenVestingStaking, cf):
 
 def test_unstake_rev_revoked(addrs, tokenVestingStaking, mockStProvider):
     tv, _, _ = tokenVestingStaking
-    stFLIP, _, _, _ = mockStProvider
+    stFLIP, _, _, _, _ = mockStProvider
 
     tv.revoke(stFLIP, {"from": addrs.REVOKER})
 
@@ -55,7 +60,7 @@ def test_unstake_rev_revoked(addrs, tokenVestingStaking, mockStProvider):
 
 def test_unstakeFromStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
     tv, _, total = tokenVestingStaking
-    stFLIP, _, burner, staking_address = mockStProvider
+    stFLIP, _, burner, staking_address, _ = mockStProvider
 
     test_stakeToStProvider(addrs, tokenVestingStaking, cf, mockStProvider)
 
@@ -73,3 +78,5 @@ def test_unstakeFromStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
     assert stFLIP.balanceOf(tv) == 0
     assert cf.flip.balanceOf(staking_address) == 0
     assert stFLIP.balanceOf(staking_address) == 0
+    assert tv.stTokenUnstaked() == total
+    assert tv.stTokenStaked() == total

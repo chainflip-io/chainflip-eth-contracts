@@ -86,7 +86,6 @@ def test_consecutive_releases_after_cliff(addrs, cf, tokenVestingNoStaking, math
     ]
 
     for timestamp in timestamps:
-
         chain.sleep(timestamp - previousTimestamp)
         print(timestamp)
         tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})

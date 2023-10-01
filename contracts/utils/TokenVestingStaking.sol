@@ -120,7 +120,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         uint256 burnId = IBurner(stBurner).burn(address(this), amount);
         stTokenUnstaked += amount;
         return burnId;
-    } 
+    }
 
     /**
      * @notice Aggregates staking by purchasing stFLIP via Curve and minting via staking contract
@@ -129,9 +129,13 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @dev `amountTotal - amountSwap` amount of FLIP will be minted. In order to determine the `amountSwap` amount, please call
      * `calculatePurchasable` with the correct parameters to determine the amount purchasable for a discount. For more information,
      * see `thunderhead-labs/stflip-contracts` repo. `minimumAmountSwapOut` should be derived by calling `calculateSwap` on the Curve pool
-     * and multiplying by the desired slippage tolerance. 
+     * and multiplying by the desired slippage tolerance.
      */
-    function aggregateStakeToStProvider(uint256 amountTotal, uint256 amountSwap, uint256 minimumAmountSwapOut) external onlyBeneficiary notRevoked {
+    function aggregateStakeToStProvider(
+        uint256 amountTotal,
+        uint256 amountSwap,
+        uint256 minimumAmountSwapOut
+    ) external onlyBeneficiary notRevoked {
         address stAggregator = addressHolder.getAggregatorAddress();
         (, address stFlip) = addressHolder.getUnstakingAddresses();
 
@@ -142,7 +146,10 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
         uint256 finalBalance = stFLIP(stFlip).balanceOf(address(this));
 
-        require(finalBalance >= initialBalance + amountTotal - amountSwap + minimumAmountSwapOut, "Vesting: did not receive enough stFLIP"); // additional safety precaution. trusted dependency, but lets assume adversarial mindset.
+        require(
+            finalBalance >= initialBalance + amountTotal - amountSwap + minimumAmountSwapOut,
+            "Vesting: did not receive enough stFLIP"
+        ); // additional safety precaution. trusted dependency, but lets assume adversarial mindset.
         stTokenStaked += received;
     }
 
@@ -153,7 +160,12 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param amountSwap the amount of stFLIP to swap for FLIP
      * @param minimumAmountSwapOut the minimum amount of FLIP to receive from the swap
      */
-    function aggregateUnstakeToStProvider(uint256 amountInstantBurn, uint256 amountBurn, uint256 amountSwap, uint256 minimumAmountSwapOut) external onlyBeneficiary notRevoked {
+    function aggregateUnstakeToStProvider(
+        uint256 amountInstantBurn,
+        uint256 amountBurn,
+        uint256 amountSwap,
+        uint256 minimumAmountSwapOut
+    ) external onlyBeneficiary notRevoked {
         address stAggregator = addressHolder.getAggregatorAddress();
         (address burner, address stFlip) = addressHolder.getUnstakingAddresses();
 
@@ -165,7 +177,10 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
         uint256 finalBalance = FLIP.balanceOf(address(this));
 
-        require(finalBalance >= initialBalance + amountInstantBurn + minimumAmountSwapOut, "Vesting: did not receive enough FLIP"); // additional safety precaution. trusted dependency, but lets assume adversarial mindset.
+        require(
+            finalBalance >= initialBalance + amountInstantBurn + minimumAmountSwapOut,
+            "Vesting: did not receive enough FLIP"
+        ); // additional safety precaution. trusted dependency, but lets assume adversarial mindset.
         stTokenUnstaked += total;
     }
 
@@ -174,7 +189,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param recipient_ the address to send the rewards to. If 0x0, then the beneficiary is used.
      * @param amount_ the amount of rewards to claim. If greater than `totalRewards`, then all rewards are claimed.
      * @dev `stTokenCounter` updates after staking/unstaking operation to keep track of the st token principle. Any amount above the
-     * principle is considered rewards and thus can be claimed by the beneficiary. 
+     * principle is considered rewards and thus can be claimed by the beneficiary.
      */
     function claimStProviderRewards(address recipient_, uint256 amount_) external onlyBeneficiary notRevoked {
         (, address stFlip) = addressHolder.getUnstakingAddresses();

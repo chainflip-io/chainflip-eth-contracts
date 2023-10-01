@@ -87,7 +87,6 @@ def test_consecutive_releases_after_cliff(
     # In staking  conctrracts cliff == end
     # No amount can be released until we reach the cliff == end where it is all releasable
     for timestamp in timestamps:
-
         chain.sleep(timestamp - previousTimestamp)
         if getChainTime() < end:
             release_revert(tv, cf, addrs.BENEFICIARY)

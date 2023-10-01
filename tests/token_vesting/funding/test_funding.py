@@ -9,7 +9,6 @@ import time
     st_amount=strategy("uint256", max_value=MAX_TEST_FUND * 2),
 )
 def test_fundStateChainAccount(addrs, tokenVestingStaking, st_nodeID, st_amount, cf):
-
     tv, _, _ = tokenVestingStaking
 
     st_nodeID = web3.toHex(st_nodeID)
@@ -40,7 +39,6 @@ def test_fund_rev_beneficiary(a, addrs, tokenVestingStaking):
 
 
 def test_fund_rev_beneficiary(addrs, TokenVestingStaking, addressHolder, cf):
-
     tv = addrs.DEPLOYER.deploy(
         TokenVestingStaking,
         addrs.BENEFICIARY,

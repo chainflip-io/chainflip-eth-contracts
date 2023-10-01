@@ -12,6 +12,7 @@ def test_reference_constructor(addrs, cf, AddressHolder):
             NON_ZERO_ADDR,
             NON_ZERO_ADDR,
             NON_ZERO_ADDR,
+            NON_ZERO_ADDR
         )
 
     with reverts(REV_MSG_NZ_ADDR):
@@ -22,6 +23,7 @@ def test_reference_constructor(addrs, cf, AddressHolder):
             NON_ZERO_ADDR,
             NON_ZERO_ADDR,
             NON_ZERO_ADDR,
+            NON_ZERO_ADDR
         )
 
     # We allow zero addresses to be passed as staking provider references

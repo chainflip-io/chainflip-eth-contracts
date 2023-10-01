@@ -11,7 +11,6 @@ end = start + YEAR
 def test_tokenVesting_constructor_cliff(
     addrs, TokenVestingNoStaking, TokenVestingStaking, cf, addressHolder
 ):
-
     tv = addrs.DEPLOYER.deploy(
         TokenVestingNoStaking,
         addrs.BENEFICIARY,
@@ -162,7 +161,6 @@ def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVestingStaki
 
 
 def test_tokenVesting_constructor_rev_eoa(addrs, TokenVestingStaking):
-
     tv = addrs.DEPLOYER.deploy(
         TokenVestingStaking,
         addrs.BENEFICIARY,
