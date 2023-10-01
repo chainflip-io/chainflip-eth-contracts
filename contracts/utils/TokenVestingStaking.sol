@@ -46,6 +46,10 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
     bool public revoked;
 
+    // Counters to keep track of staking operations so rewards can be claimed
+    uint256 public stTokenStaked;
+    uint256 public stTokenUnstaked;
+
     /**
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
@@ -101,6 +105,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
         FLIP.approve(stMinter, amount);
         require(IMinter(stMinter).mint(address(this), amount));
+        stTokenStaked += amount;
     }
 
     /**
@@ -111,7 +116,74 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         (address stBurner, address stFlip) = addressHolder.getUnstakingAddresses();
 
         IERC20(stFlip).approve(stBurner, amount);
-        return IBurner(stBurner).burn(address(this), amount);
+
+        uint256 burnId = IBurner(stBurner).burn(address(this), amount);
+        stTokenUnstaked += amount;
+        return burnId;
+    } 
+
+    /**
+     * @notice Aggregates staking by purchasing stFLIP via Curve and minting via staking contract
+     * @param amountTotal the total amount of FLIP to convert to stFLIP
+     * @param amountSwap the amount of FLIP to swap for stFLIP
+     * @dev `amountTotal - amountSwap` amount of FLIP will be minted. In order to determine the `amountSwap` amount, please call
+     * `calculatePurchasable` with the correct parameters to determine the amount purchasable for a discount. For more information,
+     * see `thunderhead-labs/stflip-contracts` repo. `minimumAmountSwapOut` should be derived by calling `calculateSwap` on the Curve pool
+     * and multiplying by the desired slippage tolerance. 
+     */
+    function aggregateStakeToStProvider(uint256 amountTotal, uint256 amountSwap, uint256 minimumAmountSwapOut) external onlyBeneficiary notRevoked {
+        address stAggregator = addressHolder.getAggregatorAddress();
+        (, address stFlip) = addressHolder.getUnstakingAddresses();
+
+        uint256 initialBalance = stFLIP(stFlip).balanceOf(address(this));
+
+        FLIP.approve(stAggregator, amountTotal);
+        uint256 received = IAggregator(stAggregator).stakeAggregate(amountTotal, amountSwap, minimumAmountSwapOut);
+
+        uint256 finalBalance = stFLIP(stFlip).balanceOf(address(this));
+
+        require(finalBalance >= initialBalance + amountTotal - amountSwap + minimumAmountSwapOut, "Vesting: did not receive enough stFLIP"); // additional safety precaution. trusted dependency, but lets assume adversarial mindset.
+        stTokenStaked += received;
+    }
+
+    /**
+     * @notice Aggregates unstaking by burning stFLIP via Curve and unstaking via staking contract
+     * @param amountInstantBurn the amount of stFLIP to burn instantly
+     * @param amountBurn the amount of stFLIP to burn normally
+     * @param amountSwap the amount of stFLIP to swap for FLIP
+     * @param minimumAmountSwapOut the minimum amount of FLIP to receive from the swap
+     */
+    function aggregateUnstakeToStProvider(uint256 amountInstantBurn, uint256 amountBurn, uint256 amountSwap, uint256 minimumAmountSwapOut) external onlyBeneficiary notRevoked {
+        address stAggregator = addressHolder.getAggregatorAddress();
+        (address burner, address stFlip) = addressHolder.getUnstakingAddresses();
+
+        uint256 initialBalance = FLIP.balanceOf(address(this));
+        uint256 total = amountInstantBurn + amountBurn + amountSwap;
+
+        stFLIP(stFlip).approve(stAggregator, total);
+        IAggregator(stAggregator).unstakeAggregate(amountInstantBurn, amountBurn, amountSwap, minimumAmountSwapOut);
+
+        uint256 finalBalance = FLIP.balanceOf(address(this));
+
+        require(finalBalance >= initialBalance + amountInstantBurn + minimumAmountSwapOut, "Vesting: did not receive enough FLIP"); // additional safety precaution. trusted dependency, but lets assume adversarial mindset.
+        stTokenUnstaked += total;
+    }
+
+    /**
+     * @notice Claims the liquid staking provider rewards.
+     * @param recipient_ the address to send the rewards to. If 0x0, then the beneficiary is used.
+     * @param amount_ the amount of rewards to claim. If greater than `totalRewards`, then all rewards are claimed.
+     * @dev `stTokenCounter` updates after staking/unstaking operation to keep track of the st token principle. Any amount above the
+     * principle is considered rewards and thus can be claimed by the beneficiary. 
+     */
+    function claimStProviderRewards(address recipient_, uint256 amount_) external onlyBeneficiary notRevoked {
+        (, address stFlip) = addressHolder.getUnstakingAddresses();
+        uint256 totalRewards = stFLIP(stFlip).balanceOf(address(this)) - stTokenStaked + stTokenUnstaked;
+
+        uint256 amount = amount_ > totalRewards ? totalRewards : amount_;
+        address recipient = recipient_ == address(0) ? beneficiary : recipient_;
+
+        stFLIP(stFlip).transfer(recipient, amount);
     }
 
     /**

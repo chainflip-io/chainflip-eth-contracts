@@ -20,6 +20,7 @@ contract AddressHolder is IAddressHolder, Shared {
     address private stFLIP;
     address private stMinter;
     address private stBurner;
+    address private stAggregator;
 
     // @dev Allow stAddresses to be zero as they might not be known at the time of deployment
     constructor(
@@ -27,13 +28,15 @@ contract AddressHolder is IAddressHolder, Shared {
         address _stateChainGateway,
         address _stMinter,
         address _stBurner,
-        address _stFLIP
+        address _stFLIP,
+        address _stAggregator
     ) nzAddr(_governor) nzAddr(_stateChainGateway) {
         governor = _governor;
         stateChainGateway = _stateChainGateway;
         stMinter = _stMinter;
         stBurner = _stBurner;
         stFLIP = _stFLIP;
+        stAggregator = _stAggregator;
     }
 
     //////////////////////////////////////////////////////////////
@@ -86,6 +89,10 @@ contract AddressHolder is IAddressHolder, Shared {
 
     function getUnstakingAddresses() external view override returns (address, address) {
         return (stBurner, stFLIP);
+    }
+
+    function getAggregatorAddress() external view override returns (address) {
+        return stAggregator;
     }
 
     /// @dev    Getter function for the governor address
