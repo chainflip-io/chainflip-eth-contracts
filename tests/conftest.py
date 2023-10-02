@@ -141,8 +141,7 @@ def maths(addrs, MockMaths):
 
 
 @pytest.fixture(scope="module")
-def mockStProvider(cf, addrs, Minter, Burner, stFLIP):
-
+def mockStProvider(cf, addrs, Minter, Burner, stFLIP, Aggregator):
     stFlip = addrs.DEPLOYER.deploy(stFLIP)
 
     burner = addrs.DEPLOYER.deploy(Burner, stFlip.address, cf.flip)
@@ -155,14 +154,18 @@ def mockStProvider(cf, addrs, Minter, Burner, stFLIP):
         Minter, stFlip.address, cf.flip.address, staking_address
     )
 
+    aggregator = addrs.DEPLOYER.deploy(
+        Aggregator, minter.address, burner.address, stFlip.address, cf.flip.address
+    )
+
     stFlip.initialize(minter.address, burner.address)
 
-    return stFlip, minter, burner, staking_address
+    return stFlip, minter, burner, staking_address, aggregator
 
 
 @pytest.fixture(scope="module")
 def addressHolder(cf, addrs, AddressHolder, mockStProvider):
-    stFLIP, minter, burner, _ = mockStProvider
+    stFLIP, minter, burner, _, aggregator = mockStProvider
 
     return deploy_addressHolder(
         addrs.DEPLOYER,
@@ -172,12 +175,12 @@ def addressHolder(cf, addrs, AddressHolder, mockStProvider):
         minter.address,
         burner.address,
         stFLIP.address,
+        aggregator.address,
     )
 
 
 @pytest.fixture(scope="module")
 def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
-
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
     start = getChainTime()

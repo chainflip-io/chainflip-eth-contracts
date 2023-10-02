@@ -28,7 +28,7 @@ def test_reference_constructor(addrs, cf, AddressHolder):
 
     # We allow zero addresses to be passed as staking provider references
     addressHolder = addrs.DEPLOYER.deploy(
-        AddressHolder, addrs.DEPLOYER, NON_ZERO_ADDR, ZERO_ADDR, ZERO_ADDR, ZERO_ADDR
+        AddressHolder, addrs.DEPLOYER, NON_ZERO_ADDR, ZERO_ADDR, ZERO_ADDR, ZERO_ADDR, ZERO_ADDR
     )
     assert addressHolder.getGovernor() == addrs.DEPLOYER
     assert addressHolder.getStateChainGateway() == NON_ZERO_ADDR
@@ -101,12 +101,14 @@ def test_reference_updateStakingAddresses(addrs, addressHolder):
     oldAddresses = (
         addressHolder.getStakingAddress(),
         *addressHolder.getUnstakingAddresses(),
+        addressHolder.getAggregatorAddress()
     )
     for addresses in [
-        (ZERO_ADDR, NON_ZERO_ADDR, NON_ZERO_ADDR),
-        (NON_ZERO_ADDR, ZERO_ADDR, NON_ZERO_ADDR),
-        (NON_ZERO_ADDR, NON_ZERO_ADDR, ZERO_ADDR),
-        (ZERO_ADDR, ZERO_ADDR, ZERO_ADDR),
+        (ZERO_ADDR, NON_ZERO_ADDR, NON_ZERO_ADDR, NON_ZERO_ADDR),
+        (NON_ZERO_ADDR, ZERO_ADDR, NON_ZERO_ADDR, NON_ZERO_ADDR),
+        (NON_ZERO_ADDR, NON_ZERO_ADDR, ZERO_ADDR, NON_ZERO_ADDR),
+        (NON_ZERO_ADDR, NON_ZERO_ADDR, NON_ZERO_ADDR, ZERO_ADDR),
+        (ZERO_ADDR, ZERO_ADDR, ZERO_ADDR, ZERO_ADDR),
     ]:
         tx = addressHolder.updateStakingAddresses(*addresses, {"from": addrs.DEPLOYER})
         assert tx.events["StakingAddressesUpdated"][0].values() == (
@@ -115,4 +117,6 @@ def test_reference_updateStakingAddresses(addrs, addressHolder):
         )
         assert addressHolder.getStakingAddress() == addresses[0]
         assert addressHolder.getUnstakingAddresses() == [addresses[1], addresses[2]]
+        assert addressHolder.getAggregatorAddress() == addresses[3]
+
         oldAddresses = addresses

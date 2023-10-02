@@ -8,9 +8,11 @@ interface IAddressHolder {
         address oldStFLIP,
         address oldStMinter,
         address oldStBurner,
+        address oldStAggregator,
         address newStFLIP,
         address newStMinter,
-        address newStBurner
+        address newStBurner,
+        address newStAggregator
     );
     event GovernorTransferred(address oldGovernor, address newGovernor);
 
@@ -22,7 +24,7 @@ interface IAddressHolder {
 
     function updateStateChainGateway(address _stateChainGateway) external;
 
-    function updateStakingAddresses(address _stMinter, address _stBurner, address _stFLIP) external;
+    function updateStakingAddresses(address _stMinter, address _stBurner, address _stFLIP, address _stAggregator) external;
 
     function transferGovernor(address _governor) external;
 

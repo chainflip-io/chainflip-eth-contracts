@@ -119,6 +119,10 @@ contract stFLIP is ERC20 {
         emit Burn(msg.sender, value, refundee);
         _burn(msg.sender, value);
     }
+
+    function mockSlash(address account, uint256 value) public {
+        _burn(account, value);
+    }
 }
 
 contract Aggregator is IAggregator {

@@ -17,7 +17,6 @@ def deploy_Chainflip_contracts(
     AddressChecker,
     *args,
 ):
-
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
 
@@ -245,6 +244,7 @@ def deploy_addressHolder(
     stMinter_address,
     stBurner_address,
     stFLIP_address,
+    aggregator_address,
 ):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
@@ -255,6 +255,7 @@ def deploy_addressHolder(
         stMinter_address,
         stBurner_address,
         stFLIP_address,
+        aggregator_address,
         {"from": deployer, "required_confs": required_confs},
     )
 

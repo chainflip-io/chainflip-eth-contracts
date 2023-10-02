@@ -57,12 +57,14 @@ contract AddressHolder is IAddressHolder, Shared {
     function updateStakingAddresses(
         address _stMinter,
         address _stBurner,
-        address _stFLIP
+        address _stFLIP,
+        address _stAggregator
     ) external override onlyGovernor {
-        emit StakingAddressesUpdated(stMinter, stBurner, stFLIP, _stMinter, _stBurner, _stFLIP);
+        emit StakingAddressesUpdated(stMinter, stBurner, stFLIP, stAggregator, _stMinter, _stBurner, _stFLIP, _stAggregator);
         stMinter = _stMinter;
         stBurner = _stBurner;
         stFLIP = _stFLIP;
+        stAggregator = _stAggregator;
     }
 
     /// @dev    Allow the governor to transfer governance to a new address in case of need
