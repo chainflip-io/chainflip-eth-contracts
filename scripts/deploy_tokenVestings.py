@@ -58,9 +58,9 @@ def main():
     governor = os.environ["GOV_KEY"]
     sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
     flip_address = os.environ["FLIP_ADDRESS"]
-    stMinter_address = os.environ.get("ST_MINTER_ADDRESS")
-    stBurner_address = os.environ.get("ST_BURNER_ADDRESS")
-    stFlip_address = os.environ.get("ST_FLIP_ADDRESS")
+    stMinter_address = os.environ["ST_MINTER_ADDRESS"]
+    stBurner_address = os.environ["ST_BURNER_ADDRESS"]
+    stFlip_address = os.environ["ST_FLIP_ADDRESS"]
 
     flip = FLIP.at(f"0x{cleanHexStr(flip_address)}")
 
@@ -95,8 +95,7 @@ def main():
             elif lockup_type == options_lockup_type[2]:
                 continue
             else:
-                continue
-                # raise Exception(f"Incorrect lockup type parameter {lockup_type}")
+                raise Exception(f"Incorrect lockup type parameter {lockup_type}")
 
             beneficiary = row[columns.index("Beneficiary Wallet Address")]
             amount = int(row[columns.index("# tokens")].replace(",", ""))
@@ -104,20 +103,14 @@ def main():
                 columns.index("Address transfer enabled in smart contract?")
             ]
 
-            # assert web3.isAddress(beneficiary), f"Incorrect beneficiary address {beneficiary}"
-
-            # To remove
-            validAddress = web3.isAddress(beneficiary)
-            if not validAddress:
-                continue
+            assert web3.isAddress(beneficiary), f"Incorrect beneficiary address {beneficiary}"
 
             if transferable in ["yes", "Yes"]:
                 transferable = True
             elif transferable in ["no", "No"]:
                 transferable = False
             else:
-                continue
-            #     raise Exception(f"Incorrect transferability parameter {transferable}")
+                raise Exception(f"Incorrect transferability parameter {transferable}")
 
             vesting_list.append([beneficiary, amount, lockup_type, transferable])
 
