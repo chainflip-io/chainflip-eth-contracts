@@ -35,11 +35,9 @@ columns = [
     "Address transfer enabled in smart contract?",
     "Sanity checked?",
 ]
-# order = {"eth_address": 0, "amount": 1, "lockup_type": 2, "transferable_beneficiary": 3}
 options_lockup_type = ["Option A", "Option B", "Airdrop"]
-# options_transferable_beneficiary = ["Y", "N"]
 
-# NOTE: Ensure vesting schedule is correct
+# TODO: Ensure vesting schedule is correct
 vesting_time_cliff = QUARTER_YEAR
 vesting_time_end = vesting_time_cliff + YEAR
 
