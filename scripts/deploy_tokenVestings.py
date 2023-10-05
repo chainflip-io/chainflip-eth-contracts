@@ -18,15 +18,26 @@ from brownie import (
     TokenVestingStaking,
     TokenVestingNoStaking,
     network,
+    web3,
 )
 
 # File should be formatted as a list of parameters. First line should be the headers with names of the
 # parameters. The rest of the lines should be the values for each parameter. It should contain the
 # parameters described in the order dictionary below but it can have others, which will be ignored.
 VESTING_INFO_FILE = os.environ["VESTING_INFO_FILE"]
-order = {"eth_address": 0, "amount": 1, "lockup_type": 2, "transferable_beneficiary": 3}
-options_lockup_type = ["A", "B"]
-options_transferable_beneficiary = ["Y", "N"]
+columns = [
+    "Full name/Company Name",
+    "Email Address",
+    "Final Choice Lock up Schedule",
+    "Investor Label",
+    "# tokens",
+    "Beneficiary Wallet Address",
+    "Address transfer enabled in smart contract?",
+    "Sanity checked?",
+]
+# order = {"eth_address": 0, "amount": 1, "lockup_type": 2, "transferable_beneficiary": 3}
+options_lockup_type = ["Option A", "Option B", "Airdrop"]
+# options_transferable_beneficiary = ["Y", "N"]
 
 # NOTE: Ensure vesting schedule is correct
 vesting_time_cliff = QUARTER_YEAR
@@ -63,34 +74,52 @@ def main():
 
         # Check the first row - parameter names
         first_row = next(reader)
-        for parameter_name, position in order.items():
-            assert first_row[position] == parameter_name, "Incorrect parameter name"
+        for position, parameter_name in enumerate(columns):
+            assert (
+                first_row[position] == parameter_name
+            ), f"Incorrect parameter name: expected {parameter_name}, but got {first_row[position]}"
 
         # Read the rest of the rows
         for row in reader:
-            assert len(row) == 4, "Incorrect number of parameters"
+            assert len(row) == len(
+                columns
+            ), f"Incorrect number of parameters: expected {len(columns)}, but got {len(row)}"
 
-            beneficiary = row[order["eth_address"]]
-            amount = int(row[order["amount"]])
-            lockup_type = row[order["lockup_type"]]
-            transferable = row[order["transferable_beneficiary"]]
+            # Check that all rows are valid
+            lockup_type = row[columns.index("Final Choice Lock up Schedule")]
 
-            # Check that the row are valid
-            assert (
-                transferable in options_transferable_beneficiary
-            ), "Incorrect transferability parameter"
-            assert lockup_type in options_lockup_type, "Incorrect lockup type parameter"
+            if lockup_type == options_lockup_type[0]:
+                number_staking += 1
+            elif lockup_type == options_lockup_type[1]:
+                number_noStaking += 1
+            elif lockup_type == options_lockup_type[2]:
+                continue
+            else:
+                continue
+                # raise Exception(f"Incorrect lockup type parameter {lockup_type}")
 
-            transferable = (
-                True if row[order["transferable_beneficiary"]] == "Y" else False
-            )
+            beneficiary = row[columns.index("Beneficiary Wallet Address")]
+            amount = int(row[columns.index("# tokens")].replace(",", ""))
+            transferable = row[
+                columns.index("Address transfer enabled in smart contract?")
+            ]
+
+            # assert web3.isAddress(beneficiary), f"Incorrect beneficiary address {beneficiary}"
+
+            # To remove
+            validAddress = web3.isAddress(beneficiary)
+            if not validAddress:
+                continue
+
+            if transferable in ["yes", "Yes"]:
+                transferable = True
+            elif transferable in ["no", "No"]:
+                transferable = False
+            else:
+                continue
+            #     raise Exception(f"Incorrect transferability parameter {transferable}")
 
             vesting_list.append([beneficiary, amount, lockup_type, transferable])
-
-            if lockup_type == "A":
-                number_staking += 1
-            else:
-                number_noStaking += 1
 
             flip_total += amount
 
@@ -149,7 +178,7 @@ def main():
         beneficiary, amount, lockup_type, transferable_beneficiary = vesting
         amount_E18 = amount * E_18
 
-        if lockup_type == "A":
+        if lockup_type == options_lockup_type[0]:
 
             tv = deploy_tokenVestingStaking(
                 DEPLOYER,
