@@ -101,7 +101,9 @@ def main():
                 columns.index("Address transfer enabled in smart contract?")
             ]
 
-            assert web3.isAddress(beneficiary), f"Incorrect beneficiary address {beneficiary}"
+            assert web3.isAddress(
+                beneficiary
+            ), f"Incorrect beneficiary address {beneficiary}"
 
             if transferable in ["yes", "Yes"]:
                 transferable = True
