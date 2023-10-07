@@ -43,8 +43,14 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
     // The contract that holds the reference addresses for staking purposes.
     IAddressHolder public immutable addressHolder;
-
+    
     bool public revoked;
+
+    // Cumulative counter for amount staked to the st provider
+    uint256 public stTokenStaked;
+
+    // Cumulative counter for amount unstaked from the st provider
+    uint256 public stTokenUnstaked;
 
     /**
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
@@ -101,6 +107,8 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
         FLIP.approve(stMinter, amount);
         require(IMinter(stMinter).mint(address(this), amount));
+
+        stTokenStaked += amount;
     }
 
     /**
@@ -111,7 +119,51 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         (address stBurner, address stFlip) = addressHolder.getUnstakingAddresses();
 
         IERC20(stFlip).approve(stBurner, amount);
+
+        stTokenUnstaked += amount;
+
         return IBurner(stBurner).burn(address(this), amount);
+
+    }
+
+    /**
+     * @notice Claims the liquid staking provider rewards.
+     * @param recipient_ the address to send the rewards to. If 0x0, then the beneficiary is used.
+     * @param amount_ the amount of rewards to claim. If greater than `totalRewards`, then all rewards are claimed.
+     * @dev `stTokenCounter` updates after staking/unstaking operation to keep track of the st token principle. Any amount above the
+     * principle is considered rewards and thus can be claimed by the beneficiary.
+     * 
+     * Claim rewards flow possibilities
+     * 1. increment stake (staked 100, unstaked 0, balance 100)
+     * 2. earn rewards    (staked 100, unstaked 0, balance 103)
+     * 3. claim rewards   (staked 100, unstaked 0, balance 100) 103 + 0 - 100 = 3
+     * 4. receive 3 stflip
+     * 
+     * 1. stake            (staked 100, unstaked 0, balance 100)
+     * 2. earn rewards     (staked 100, unstaked 0, balance 103)
+     * 3. unstake all      (staked 100, unstaked 103, balance 0)
+     * 4. claim underflows (staked 100, unstaked 103, balance 0) 0 + 103 - 100 = 3
+     * 5. Need to have stflip to claim
+     * 1. stake            (staked 100, unstaked 0, balance 100)
+     * 2. get slashed      (staked 100, unstaked 0, balance 95)
+     * 3. unstake all      (staked 100, unstaked 0, balance 95)
+     * 4. claim underflows (staked 100, unstaked 0, balance 95) 95 + 0 - 100 = -5
+     * 5. must earn 5 stflip first before earning claimable rewards
+     * 
+     * 1. stake            (staked 100, unstaked 0, balance 100)
+     * 2. earn rewards     (staked 100, unstaked 0, balance 103)
+     * 3. unstake half     (staked 50, unstaked 53, balance 50)
+     * 4. claim rewards   (staked 50, unstaked 53, balance 50) 50 + 53 - 50 = 3
+     * 5. Receive 3 stflip
+     */
+    function claimStProviderRewards(address recipient_, uint256 amount_) external onlyBeneficiary notRevoked {
+        (, address stFlip) = addressHolder.getUnstakingAddresses();
+        uint256 totalRewards = stFLIP(stFlip).balanceOf(address(this)) + stTokenUnstaked - stTokenStaked;
+
+        uint256 amount = amount_ > totalRewards ? totalRewards : amount_;
+        address recipient = recipient_ == address(0) ? beneficiary : recipient_;
+
+        stFLIP(stFlip).transfer(recipient, amount);
     }
 
     /**

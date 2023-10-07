@@ -96,4 +96,8 @@ contract stFLIP is ERC20 {
         emit Burn(msg.sender, value, refundee);
         _burn(msg.sender, value);
     }
+
+    function mockSlash(address account, uint256 amount) public {
+        _burn(account, amount);
+    }
 }
