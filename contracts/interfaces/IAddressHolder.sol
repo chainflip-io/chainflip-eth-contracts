@@ -38,5 +38,7 @@ interface IAddressHolder {
 
     function getUnstakingAddresses() external view returns (address, address);
 
+    function getStFlip() external view returns (address);
+
     function getGovernor() external view returns (address);
 }
