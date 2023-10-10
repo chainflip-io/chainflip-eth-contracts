@@ -17,6 +17,8 @@ contract MultiSend {
     function multiSendToken(IERC20 token, TransferParams[] calldata transferParamsArray, uint256 totalAmount) external {
         require(msg.sender == owner, "Not owner");
 
+        uint256 initialBalance = token.balanceOf(address(this));
+
         require(token.transferFrom(msg.sender, address(this), totalAmount));
 
         uint256 length = transferParamsArray.length;
@@ -27,8 +29,8 @@ contract MultiSend {
             }
         }
 
-        // Return remainding tokens to msg.sender. If totalAmount < actualAmount, it will revert before
-        require(token.balanceOf(address(this)) == 0, "MultiSend: TotalAmount != amountSent");
+        // Assumed that this contract won't be in the recipientAddress
+        require(token.balanceOf(address(this)) == initialBalance, "MultiSend: TotalAmount != amountSent");
     }
 
     function recoverTokens(IERC20 token) external {
