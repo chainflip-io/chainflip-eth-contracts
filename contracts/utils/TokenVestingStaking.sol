@@ -106,9 +106,10 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         address stMinter = addressHolder.getStakingAddress();
 
         FLIP.approve(stMinter, amount);
-        require(IMinter(stMinter).mint(address(this), amount));
 
         stTokenStaked += amount;
+
+        require(IMinter(stMinter).mint(address(this), amount));
     }
 
     /**
