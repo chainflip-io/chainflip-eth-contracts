@@ -128,31 +128,8 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     /**
      * @notice Claims the liquid staking provider rewards.
      * @param amount_ the amount of rewards to claim. If greater than `totalRewards`, then all rewards are claimed.
-     * @dev `stTokenCounter` updates after staking/unstaking operation to keep track of the st token principle. Any amount above the
-     * principle is considered rewards and thus can be claimed by the beneficiary.
-     *
-     * Claim rewards flow possibilities
-     * 1. increment stake (staked 100, unstaked 0, balance 100)
-     * 2. earn rewards    (staked 100, unstaked 0, balance 103)
-     * 3. claim rewards   (staked 100, unstaked 0, balance 100) 103 + 0 - 100 = 3
-     * 4. receive 3 stflip
-     *
-     * 1. stake            (staked 100, unstaked 0, balance 100)
-     * 2. earn rewards     (staked 100, unstaked 0, balance 103)
-     * 3. unstake all      (staked 100, unstaked 103, balance 0)
-     * 4. claim underflows (staked 100, unstaked 103, balance 0) 0 + 103 - 100 = 3
-     * 5. Need to have stflip to claim
-     * 1. stake            (staked 100, unstaked 0, balance 100)
-     * 2. get slashed      (staked 100, unstaked 0, balance 95)
-     * 3. unstake all      (staked 100, unstaked 0, balance 95)
-     * 4. claim underflows (staked 100, unstaked 0, balance 95) 95 + 0 - 100 = -5
-     * 5. must earn 5 stflip first before earning claimable rewards
-     *
-     * 1. stake            (staked 100, unstaked 0, balance 100)
-     * 2. earn rewards     (staked 100, unstaked 0, balance 103)
-     * 3. unstake half     (staked 50, unstaked 53, balance 50)
-     * 4. claim rewards   (staked 50, unstaked 53, balance 50) 50 + 53 - 50 = 3
-     * 5. Receive 3 stflip
+     * @dev `stTokenCounter` updates after staking/unstaking operation to keep track of the st token principle. Any
+     *       amount above the principle is considered rewards and thus can be claimed by the beneficiary.
      */
     function claimStProviderRewards(uint256 amount_) external override onlyBeneficiary notRevoked {
         address stFlip = addressHolder.getStFlip();
@@ -177,9 +154,9 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     }
 
     /**
-     * @notice Allows the revoker to revoke the vesting and stop the beneficiary from releasing
-     * any tokens if the vesting period has not bene completed. Any staked tokens at the time of
-     * revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
+     * @notice Allows the revoker to revoke the vesting and stop the beneficiary from releasing any
+     *         tokens if the vesting period has not bene completed. Any staked tokens at the time of
+     *         revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external override onlyRevoker notRevoked {

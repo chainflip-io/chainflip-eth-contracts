@@ -87,6 +87,30 @@ def test_unstakeFromStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
     assert stFLIP.balanceOf(staking_address) == 0
 
 
+## Claim rewards flow possibilities
+## 1. increment stake (staked 100, unstaked 0, balance 100)
+## 2. earn rewards    (staked 100, unstaked 0, balance 103)
+## 3. claim rewards   (staked 100, unstaked 0, balance 100) 103 + 0 - 100 = 3
+## 4. receive 3 stflip
+##
+## 1. stake            (staked 100, unstaked 0, balance 100)
+## 2. earn rewards     (staked 100, unstaked 0, balance 103)
+## 3. unstake all      (staked 100, unstaked 103, balance 0)
+## 4. claim underflows (staked 100, unstaked 103, balance 0) 0 + 103 - 100 = 3
+## 5. Need to have stflip to claim
+## 1. stake            (staked 100, unstaked 0, balance 100)
+## 2. get slashed      (staked 100, unstaked 0, balance 95)
+## 3. unstake all      (staked 100, unstaked 0, balance 95)
+## 4. claim underflows (staked 100, unstaked 0, balance 95) 95 + 0 - 100 = -5
+## 5. must earn 5 stflip first before earning claimable rewards
+##
+## 1. stake            (staked 100, unstaked 0, balance 100)
+## 2. earn rewards     (staked 100, unstaked 0, balance 103)
+## 3. unstake half     (staked 50, unstaked 53, balance 50)
+## 4. claim rewards   (staked 50, unstaked 53, balance 50) 50 + 53 - 50 = 3
+## 5. Receive 3 stflip
+
+
 def test_stProviderClaimRewards(addrs, tokenVestingStaking, cf, mockStProvider):
     tv, _, total = tokenVestingStaking
     stFLIP, minter, _, _ = mockStProvider
