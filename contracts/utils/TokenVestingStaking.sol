@@ -46,6 +46,12 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
     bool public revoked;
 
+    // Cumulative counter for amount staked to the st provider
+    uint256 public stTokenStaked;
+
+    // Cumulative counter for amount unstaked from the st provider
+    uint256 public stTokenUnstaked;
+
     /**
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
@@ -100,6 +106,9 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         address stMinter = addressHolder.getStakingAddress();
 
         FLIP.approve(stMinter, amount);
+
+        stTokenStaked += amount;
+
         require(IMinter(stMinter).mint(address(this), amount));
     }
 
@@ -111,7 +120,25 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         (address stBurner, address stFlip) = addressHolder.getUnstakingAddresses();
 
         IERC20(stFlip).approve(stBurner, amount);
+
+        stTokenUnstaked += amount;
+
         return IBurner(stBurner).burn(address(this), amount);
+    }
+
+    /**
+     * @notice Claims the liquid staking provider rewards.
+     * @param amount_ the amount of rewards to claim. If greater than `totalRewards`, then all rewards are claimed.
+     * @dev `stTokenCounter` updates after staking/unstaking operation to keep track of the st token principle. Any
+     *       amount above the principle is considered rewards and thus can be claimed by the beneficiary.
+     */
+    function claimStProviderRewards(uint256 amount_) external override onlyBeneficiary notRevoked {
+        address stFlip = addressHolder.getStFlip();
+        uint256 totalRewards = stFLIP(stFlip).balanceOf(address(this)) + stTokenUnstaked - stTokenStaked;
+
+        uint256 amount = amount_ > totalRewards ? totalRewards : amount_;
+
+        stFLIP(stFlip).transfer(beneficiary, amount);
     }
 
     /**
@@ -128,9 +155,9 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     }
 
     /**
-     * @notice Allows the revoker to revoke the vesting and stop the beneficiary from releasing
-     * any tokens if the vesting period has not bene completed. Any staked tokens at the time of
-     * revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
+     * @notice Allows the revoker to revoke the vesting and stop the beneficiary from releasing any
+     *         tokens if the vesting period has not bene completed. Any staked tokens at the time of
+     *         revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
      * @param token ERC20 token which is being vested.
      */
     function revoke(IERC20 token) external override onlyRevoker notRevoked {

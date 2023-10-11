@@ -88,6 +88,10 @@ contract AddressHolder is IAddressHolder, Shared {
         return (stBurner, stFLIP);
     }
 
+    function getStFlip() external view override returns (address) {
+        return stFLIP;
+    }
+
     /// @dev    Getter function for the governor address
     function getGovernor() external view override returns (address) {
         return governor;
