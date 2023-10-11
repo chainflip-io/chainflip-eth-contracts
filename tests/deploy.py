@@ -281,7 +281,8 @@ def deploy_tokenVestingNoStaking(
         cliff,
         end,
         transferableBeneficiary,
-        {"from": deployer, "required_confs": required_confs},
+        # Only waiting for 1 confirmation since the token transfer will wait for required_confs
+        {"from": deployer, "required_confs": 1},
     )
 
     flip.transfer(
@@ -314,7 +315,8 @@ def deploy_tokenVestingStaking(
         transferableBeneficiary,
         addressHolder_address,
         flip.address,
-        {"from": deployer, "required_confs": required_confs},
+        # Only waiting for 1 confirmation since the token transfer will wait for required_confs
+        {"from": deployer, "required_confs": 1},
     )
 
     flip.transfer(

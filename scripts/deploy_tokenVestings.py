@@ -38,8 +38,8 @@ columns = [
 ]
 options_lockup_type = ["Option A", "Option B", "Airdrop"]
 
-# TODO: Ensure vesting schedule is correct
-vesting_time_cliff = QUARTER_YEAR
+# TODO: Ensure vesting schedule is correct. Leaving cliff to 1 day for safety
+vesting_time_cliff = DAY
 vesting_time_end = vesting_time_cliff + YEAR
 
 
@@ -54,6 +54,7 @@ network.priority_fee("1 gwei")
 
 
 def main():
+    # TODO: Assumption that revoker and Address Holder's governor are the same
     governor = os.environ["GOV_KEY"]
     sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
     flip_address = os.environ["FLIP_ADDRESS"]
@@ -236,7 +237,7 @@ def main():
 
     for i, vesting in enumerate(vesting_list):
         print(
-            f"- {str(i):>2} Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>8} FLIP and transferability {str(vesting[3]):<5} deployed at {vesting[4]}"
+            f"- {str(i):>2} Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>8} FLIP and transferability {str(vesting[3]):<5}deployed at {vesting[-1]}"
         )
     print("\n😎😎 Vesting contracts deployed successfully! 😎😎\n")
 
