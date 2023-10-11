@@ -237,7 +237,7 @@ def main():
 
     for i, vesting in enumerate(vesting_list):
         print(
-            f"- {str(i):>2} Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>8} FLIP and transferability {str(vesting[3]):<5}deployed at {vesting[-1]}"
+            f"- {str(i):>3}: Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>8} FLIP, transferability {str(vesting[3]):<5}, revokability {str(vesting[4]):<5}, deployed at {vesting[-1]}"
         )
     print("\n😎😎 Vesting contracts deployed successfully! 😎😎\n")
 
