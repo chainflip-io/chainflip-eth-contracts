@@ -33,6 +33,7 @@ columns = [
     "# tokens",
     "Beneficiary Wallet Address",
     "Address transfer enabled in smart contract?",
+    "Yeet Function?",
     "Sanity checked?",
 ]
 options_lockup_type = ["Option A", "Option B", "Airdrop"]
@@ -91,6 +92,7 @@ def main():
             elif lockup_type == options_lockup_type[1]:
                 number_noStaking += 1
             elif lockup_type == options_lockup_type[2]:
+                # Skip the ones marked as Airdrop
                 continue
             else:
                 raise Exception(f"Incorrect lockup type parameter {lockup_type}")
@@ -100,6 +102,7 @@ def main():
             transferable = row[
                 columns.index("Address transfer enabled in smart contract?")
             ]
+            revokable = row[columns.index("Yeet Function?")]
 
             assert web3.isAddress(
                 beneficiary
@@ -112,7 +115,16 @@ def main():
             else:
                 raise Exception(f"Incorrect transferability parameter {transferable}")
 
-            vesting_list.append([beneficiary, amount, lockup_type, transferable])
+            if revokable == "Enabled":
+                revokable = True
+            elif revokable == "Disabled":
+                revokable = False
+            else:
+                raise Exception(f"Incorrect revokability parameter {revokable}")
+
+            vesting_list.append(
+                [beneficiary, amount, lockup_type, transferable, revokable]
+            )
 
             flip_total += amount
 
@@ -168,8 +180,10 @@ def main():
 
     # Deploy the staking contracts
     for vesting in vesting_list:
-        beneficiary, amount, lockup_type, transferable_beneficiary = vesting
+        beneficiary, amount, lockup_type, transferable_beneficiary, revokable = vesting
         amount_E18 = amount * E_18
+
+        revoker = governor if revokable else ZERO_ADDR
 
         if lockup_type == options_lockup_type[0]:
 
@@ -177,7 +191,7 @@ def main():
                 DEPLOYER,
                 TokenVestingStaking,
                 beneficiary,
-                governor,
+                revoker,
                 end,
                 transferable_beneficiary,
                 addressHolder.address,
@@ -189,12 +203,12 @@ def main():
             ), "Address holder not set correctly"
             assert tv.FLIP() == flip.address, "FLIP not set correctly"
 
-        else:
+        elif lockup_type == options_lockup_type[1]:
             tv = deploy_tokenVestingNoStaking(
                 DEPLOYER,
                 TokenVestingNoStaking,
                 beneficiary,
-                governor,
+                revoker,
                 cliff,
                 end,
                 transferable_beneficiary,
@@ -202,9 +216,13 @@ def main():
                 amount_E18,
             )
             assert tv.cliff() == cliff, "Cliff not set correctly"
+        else:
+            raise Exception(
+                f"Incorrect lockup type parameter {lockup_type}. Should have been dropped earlier"
+            )
 
         assert tv.getBeneficiary() == beneficiary, "Beneficiary not set correctly"
-        assert tv.getRevoker() == governor, "Revoker not set correctly"
+        assert tv.getRevoker() == revoker, "Revoker not set correctly"
 
         assert (
             tv.transferableBeneficiary() == transferable_beneficiary
