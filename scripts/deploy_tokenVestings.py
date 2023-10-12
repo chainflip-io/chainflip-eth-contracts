@@ -160,9 +160,9 @@ def main():
     print(f"Number of staking vesting contracts = {number_staking}")
     print(f"Number of non-staking vesting contracts = {number_noStaking}")
     print(f"Total number of contracts = {number_staking+number_noStaking}")
-    print(f"Vesting cliff (only for non-staking) = {vesting_time_cliff//MONTH} months")
+    print(f"Vesting cliff (only for non-staking) = {vesting_time_cliff//YEAR} years, {(vesting_time_cliff % YEAR)//MONTH} months and {((vesting_time_cliff % YEAR)%MONTH)//DAY} days")
     print(
-        f"Vesting end (staking & non-staking)  = {vesting_time_end//YEAR} years and {(vesting_time_end % YEAR)//MONTH} months"
+        f"Vesting end (staking & non-staking)  = {vesting_time_end//YEAR} years, {(vesting_time_end % YEAR)//MONTH} months and {((vesting_time_end % YEAR)%MONTH)//DAY} days"
     )
     print(f"Total amount of FLIP to vest    = {flip_total_E18//E_18:,}")
     print(f"Initial deployer's FLIP balance = {flip.balanceOf(DEPLOYER)//E_18:,}")
@@ -267,8 +267,8 @@ def main():
     vesting_amounts_E18 = [vesting[1] for vesting in vesting_list]
     assert len(vesting_addresses) == len(vesting_amounts_E18)
 
-    total_amount = sum(vesting_amounts_E18)
-    assert total_amount == flip_total_E18
+    total_amount_E18 = sum(vesting_amounts_E18)
+    assert total_amount_E18 == flip_total_E18
 
     # Same address in mainnet and test networks
     airdrop_contract = IAirdropContract(address_wenTokens)
@@ -276,14 +276,14 @@ def main():
     required_confs = transaction_params()
     flip.approve(
         address_wenTokens,
-        total_amount,
+        total_amount_E18,
         {"from": DEPLOYER, "required_confs": required_confs},
     )
     airdrop_contract.airdropERC20(
         flip,
         vesting_addresses,
         vesting_amounts_E18,
-        total_amount,
+        total_amount_E18,
         {"from": DEPLOYER, "required_confs": required_confs},
     )
     assert flip.allowance(DEPLOYER, address_wenTokens) == 0, "Allowance not correct"
