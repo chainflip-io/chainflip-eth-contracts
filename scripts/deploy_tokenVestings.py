@@ -160,7 +160,9 @@ def main():
     print(f"Number of staking vesting contracts = {number_staking}")
     print(f"Number of non-staking vesting contracts = {number_noStaking}")
     print(f"Total number of contracts = {number_staking+number_noStaking}")
-    print(f"Vesting cliff (only for non-staking) = {vesting_time_cliff//YEAR} years, {(vesting_time_cliff % YEAR)//MONTH} months and {((vesting_time_cliff % YEAR)%MONTH)//DAY} days")
+    print(
+        f"Vesting cliff (only for non-staking) = {vesting_time_cliff//YEAR} years, {(vesting_time_cliff % YEAR)//MONTH} months and {((vesting_time_cliff % YEAR)%MONTH)//DAY} days"
+    )
     print(
         f"Vesting end (staking & non-staking)  = {vesting_time_end//YEAR} years, {(vesting_time_end % YEAR)//MONTH} months and {((vesting_time_end % YEAR)%MONTH)//DAY} days"
     )
@@ -187,7 +189,7 @@ def main():
         stFlip_address,
     )
 
-    # Deploy all the staking contracts
+    # Deploy all the vesting contracts
     for vesting in vesting_list:
         (
             beneficiary,
