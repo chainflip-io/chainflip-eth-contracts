@@ -172,7 +172,7 @@ def main():
 
     if chain.id == 1:
         prompt_user_continue_or_break(
-            "\n[WARNING] You are about to deploy to the mainnet with the row above",
+            "\n[WARNING] You are about to deploy to the mainnet",
             False,
         )
 
