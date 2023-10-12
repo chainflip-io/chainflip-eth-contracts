@@ -23,6 +23,8 @@ interface ITokenVestingStaking {
 
     function unstakeFromStProvider(uint256 amount) external returns (uint256);
 
+    function claimStProviderRewards(uint256 amount_) external;
+
     function release(IERC20 token) external;
 
     function revoke(IERC20 token) external;
