@@ -261,6 +261,18 @@ def deploy_addressHolder(
     return addressHolder
 
 
+def deploy_tokenVesting_andFund(flip, amount, deployer, staking, *args):
+    fcn = deploy_tokenVestingStaking if staking else deploy_tokenVestingNoStaking
+    tv = fcn(deployer, *args)
+
+    flip.transfer(
+        tv.address,
+        amount,
+        {"from": deployer},
+    )
+    return tv
+
+
 def deploy_tokenVestingNoStaking(
     deployer,
     TokenVestingNoStaking,
@@ -269,28 +281,15 @@ def deploy_tokenVestingNoStaking(
     cliff,
     end,
     transferableBeneficiary,
-    flip,
-    amount,
 ):
-    # Set the priority fee for all transactions and the required number of confirmations.
-    required_confs = transaction_params()
-
     tokenVestingNoStaking = TokenVestingNoStaking.deploy(
         beneficiary,
         revoker,
         cliff,
         end,
         transferableBeneficiary,
-        # Only waiting for 1 confirmation since the token transfer will wait for required_confs
-        {"from": deployer, "required_confs": 1},
+        {"from": deployer},
     )
-
-    flip.transfer(
-        tokenVestingNoStaking.address,
-        amount,
-        {"from": deployer, "required_confs": required_confs},
-    )
-
     return tokenVestingNoStaking
 
 
@@ -303,11 +302,7 @@ def deploy_tokenVestingStaking(
     transferableBeneficiary,
     addressHolder_address,
     flip,
-    amount,
 ):
-    # Set the priority fee for all transactions and the required number of confirmations.
-    required_confs = transaction_params()
-
     tokenVestingStaking = TokenVestingStaking.deploy(
         beneficiary,
         revoker,
@@ -315,16 +310,8 @@ def deploy_tokenVestingStaking(
         transferableBeneficiary,
         addressHolder_address,
         flip.address,
-        # Only waiting for 1 confirmation since the token transfer will wait for required_confs
-        {"from": deployer, "required_confs": 1},
+        {"from": deployer},
     )
-
-    flip.transfer(
-        tokenVestingStaking.address,
-        amount,
-        {"from": deployer, "required_confs": required_confs},
-    )
-
     return tokenVestingStaking
 
 

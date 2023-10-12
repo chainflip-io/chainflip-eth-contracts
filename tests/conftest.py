@@ -186,16 +186,17 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 
     total = MAX_TEST_FUND
 
-    tv = deploy_tokenVestingNoStaking(
+    tv = deploy_tokenVesting_andFund(
+        cf.flip,
+        total,
         addrs.DEPLOYER,
+        False,
         TokenVestingNoStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         cliff,
         end,
         BENEF_TRANSF,
-        cf.flip,
-        total,
     )
 
     return tv, cliff, end, total
@@ -210,8 +211,11 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
 
     total = MAX_TEST_FUND
 
-    tv = deploy_tokenVestingStaking(
+    tv = deploy_tokenVesting_andFund(
+        cf.flip,
+        total,
         addrs.DEPLOYER,
+        True,
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
@@ -219,7 +223,6 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
         BENEF_TRANSF,
         addressHolder,
         cf.flip,
-        total,
     )
     return tv, end, total
 
