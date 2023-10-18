@@ -179,6 +179,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         TransferParams calldata transferParams
     )
         external
+        override
         onlyNotSuspended
         nzAddr(transferParams.token)
         nzAddr(transferParams.recipient)
