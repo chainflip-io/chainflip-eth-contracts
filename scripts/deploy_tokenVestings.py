@@ -8,9 +8,11 @@ from deploy import (
     deploy_addressHolder,
     deploy_tokenVestingStaking,
     deploy_tokenVestingNoStaking,
+    transaction_params,
 )
 from utils import prompt_user_continue_or_break
 from brownie import (
+    project,
     chain,
     accounts,
     FLIP,
@@ -20,6 +22,10 @@ from brownie import (
     network,
     web3,
 )
+
+_project = project.get_loaded_projects()[0]
+IAirdropContract = _project.interface.IAirdrop
+address_wenTokens = "0x2c952eE289BbDB3aEbA329a4c41AE4C836bcc231"
 
 # File should be formatted as a list of parameters. First line should be the headers with names of the
 # parameters. The rest of the lines should be the values for each parameter. It should contain the
@@ -33,12 +39,13 @@ columns = [
     "# tokens",
     "Beneficiary Wallet Address",
     "Address transfer enabled in smart contract?",
+    "Yeet Function?",
     "Sanity checked?",
 ]
 options_lockup_type = ["Option A", "Option B", "Airdrop"]
 
-# TODO: Ensure vesting schedule is correct
-vesting_time_cliff = QUARTER_YEAR
+# TODO: Ensure vesting schedule is correct. Leaving cliff to 1 day for safety
+vesting_time_cliff = DAY
 vesting_time_end = vesting_time_cliff + YEAR
 
 
@@ -53,6 +60,7 @@ network.priority_fee("1 gwei")
 
 
 def main():
+    # TODO: Assumption that revoker and Address Holder's governor are the same
     governor = os.environ["GOV_KEY"]
     sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
     flip_address = os.environ["FLIP_ADDRESS"]
@@ -65,7 +73,7 @@ def main():
     vesting_list = []
     number_staking = 0
     number_noStaking = 0
-    flip_total = 0
+    flip_total_E18 = 0
 
     with open(VESTING_INFO_FILE, newline="") as csvfile:
         reader = csv.reader(csvfile, delimiter=",", quotechar='"')
@@ -91,6 +99,7 @@ def main():
             elif lockup_type == options_lockup_type[1]:
                 number_noStaking += 1
             elif lockup_type == options_lockup_type[2]:
+                # Skip the ones marked as Airdrop
                 continue
             else:
                 raise Exception(f"Incorrect lockup type parameter {lockup_type}")
@@ -100,6 +109,7 @@ def main():
             transferable = row[
                 columns.index("Address transfer enabled in smart contract?")
             ]
+            revokable = row[columns.index("Yeet Function?")]
 
             assert web3.isAddress(
                 beneficiary
@@ -112,19 +122,30 @@ def main():
             else:
                 raise Exception(f"Incorrect transferability parameter {transferable}")
 
-            vesting_list.append([beneficiary, amount, lockup_type, transferable])
+            if revokable == "Enabled":
+                revoker = governor
+            elif revokable == "Disabled":
+                revoker = ZERO_ADDR
+            else:
+                raise Exception(f"Incorrect revokability parameter {revokable}")
 
-            flip_total += amount
+            amount_E18 = amount * E_18
+
+            vesting_list.append(
+                [beneficiary, amount_E18, lockup_type, transferable, revoker]
+            )
+
+            flip_total_E18 += amount_E18
 
     # Vesting schedule
     current_time = chain.time()
     cliff = current_time + vesting_time_cliff
     end = current_time + vesting_time_end
 
-    assert flip_total * E_18 <= flip.balanceOf(
+    assert flip_total_E18 <= flip.balanceOf(
         DEPLOYER
     ), "Not enough FLIP tokens to fund the vestings"
-    final_balance = (flip.balanceOf(DEPLOYER) - flip_total * E_18) // E_18
+    final_balance = (flip.balanceOf(DEPLOYER) - flip_total_E18) // E_18
 
     # For live deployment, add a confirmation step to allow the user to verify the row.
     print(f"DEPLOYER = {DEPLOYER}")
@@ -139,11 +160,13 @@ def main():
     print(f"Number of staking vesting contracts = {number_staking}")
     print(f"Number of non-staking vesting contracts = {number_noStaking}")
     print(f"Total number of contracts = {number_staking+number_noStaking}")
-    print(f"Vesting cliff (only for non-staking) = {vesting_time_cliff//MONTH} months")
     print(
-        f"Vesting end (staking & non-staking)  = {vesting_time_end//YEAR} years and {(vesting_time_end % YEAR)//MONTH} months"
+        f"Vesting cliff (only for non-staking) = {vesting_time_cliff//YEAR} years, {(vesting_time_cliff % YEAR)//MONTH} months and {((vesting_time_cliff % YEAR)%MONTH)//DAY} days"
     )
-    print(f"Total amount of FLIP to vest    = {flip_total:,}")
+    print(
+        f"Vesting end (staking & non-staking)  = {vesting_time_end//YEAR} years, {(vesting_time_end % YEAR)//MONTH} months and {((vesting_time_end % YEAR)%MONTH)//DAY} days"
+    )
+    print(f"Total amount of FLIP to vest    = {flip_total_E18//E_18:,}")
     print(f"Initial deployer's FLIP balance = {flip.balanceOf(DEPLOYER)//E_18:,}")
     print(f"Final deployer's FLIP balance   = {final_balance:,}")
 
@@ -151,7 +174,7 @@ def main():
 
     if chain.id == 1:
         prompt_user_continue_or_break(
-            "\n[WARNING] You are about to deploy to the mainnet with the row above",
+            "\n[WARNING] You are about to deploy to the mainnet",
             False,
         )
 
@@ -166,10 +189,15 @@ def main():
         stFlip_address,
     )
 
-    # Deploy the staking contracts
+    # Deploy all the vesting contracts
     for vesting in vesting_list:
-        beneficiary, amount, lockup_type, transferable_beneficiary = vesting
-        amount_E18 = amount * E_18
+        (
+            beneficiary,
+            amount_E18,
+            lockup_type,
+            transferable_beneficiary,
+            revoker,
+        ) = vesting
 
         if lockup_type == options_lockup_type[0]:
 
@@ -177,49 +205,107 @@ def main():
                 DEPLOYER,
                 TokenVestingStaking,
                 beneficiary,
-                governor,
+                revoker,
                 end,
                 transferable_beneficiary,
                 addressHolder.address,
                 flip,
-                amount_E18,
             )
-            assert (
-                tv.addressHolder() == addressHolder.address
-            ), "Address holder not set correctly"
-            assert tv.FLIP() == flip.address, "FLIP not set correctly"
 
-        else:
+        elif lockup_type == options_lockup_type[1]:
             tv = deploy_tokenVestingNoStaking(
                 DEPLOYER,
                 TokenVestingNoStaking,
                 beneficiary,
-                governor,
+                revoker,
                 cliff,
                 end,
                 transferable_beneficiary,
-                flip,
-                amount_E18,
             )
+        else:
+            raise Exception(
+                f"Incorrect lockup type parameter {lockup_type}. Should have been dropped earlier"
+            )
+        vesting.append(tv)
+
+    # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
+    print("Waiting for all the transaction receipts...")
+    for vesting in vesting_list:
+        web3.eth.wait_for_transaction_receipt(vesting[-1].tx.txid)
+
+    print("Verifying correct deployment of vesting contracts...")
+    for vesting in vesting_list:
+        (
+            beneficiary,
+            amount_E18,
+            lockup_type,
+            transferable_beneficiary,
+            revoker,
+            tv,
+        ) = vesting
+
+        if lockup_type == options_lockup_type[0]:
+            assert (
+                tv.addressHolder() == addressHolder.address
+            ), "Address holder not set correctly"
+            assert tv.FLIP() == flip.address, "FLIP not set correctly"
+        else:
             assert tv.cliff() == cliff, "Cliff not set correctly"
 
         assert tv.getBeneficiary() == beneficiary, "Beneficiary not set correctly"
-        assert tv.getRevoker() == governor, "Revoker not set correctly"
+        assert tv.getRevoker() == revoker, "Revoker not set correctly"
 
         assert (
             tv.transferableBeneficiary() == transferable_beneficiary
         ), "Transferability not set correctly"
         assert tv.end() == end, "End not set correctly"
 
+    prompt_user_continue_or_break(
+        "Deployment of contracts finalized. Proceed with token airdrop?", True
+    )
+
+    # Multisend using wenTokens optimized airdrop tool
+    vesting_addresses = [vesting[-1].address for vesting in vesting_list]
+    vesting_amounts_E18 = [vesting[1] for vesting in vesting_list]
+    assert len(vesting_addresses) == len(vesting_amounts_E18)
+
+    total_amount_E18 = sum(vesting_amounts_E18)
+    assert total_amount_E18 == flip_total_E18
+
+    # Same address in mainnet and test networks
+    airdrop_contract = IAirdropContract(address_wenTokens)
+
+    required_confs = transaction_params()
+    flip.approve(
+        address_wenTokens,
+        total_amount_E18,
+        {"from": DEPLOYER, "required_confs": required_confs},
+    )
+    airdrop_contract.airdropERC20(
+        flip,
+        vesting_addresses,
+        vesting_amounts_E18,
+        total_amount_E18,
+        {"from": DEPLOYER, "required_confs": required_confs},
+    )
+    assert flip.allowance(DEPLOYER, address_wenTokens) == 0, "Allowance not correct"
+
+    for i, vesting in enumerate(vesting_list):
+        (
+            beneficiary,
+            amount_E18,
+            lockup_type,
+            transferable_beneficiary,
+            revoker,
+            tv,
+        ) = vesting
         assert (
             flip.balanceOf(tv.address) == amount_E18
         ), "Tokens not transferred correctly"
-        vesting.append(tv.address)
-
-    for i, vesting in enumerate(vesting_list):
         print(
-            f"- {str(i):>2} Lockup type {vesting[2]}, contract with beneficiary {vesting[0]}, amount {str(vesting[1]):>8} FLIP and transferability {str(vesting[3]):<5} deployed at {vesting[4]}"
+            f"- {str(i):>3}: Lockup type {lockup_type}, contract with beneficiary {beneficiary}, amount {str(amount_E18//E_18):>8} FLIP, transferability {str(transferable_beneficiary):<5}, revoker {str(revoker):<5}, deployed at {tv.address}"
         )
+
     print("\n😎😎 Vesting contracts deployed successfully! 😎😎\n")
 
     assert final_balance == flip.balanceOf(DEPLOYER) // E_18, "Incorrect final balance"
