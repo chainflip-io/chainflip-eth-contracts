@@ -142,6 +142,7 @@ def main():
     cliff = current_time + vesting_time_cliff
     end = current_time + vesting_time_end
 
+    print("Deployer balance: ", flip.balanceOf(DEPLOYER) // E_18)
     assert flip_total_E18 <= flip.balanceOf(
         DEPLOYER
     ), "Not enough FLIP tokens to fund the vestings"
@@ -261,7 +262,7 @@ def main():
         assert tv.end() == end, "End not set correctly"
 
     prompt_user_continue_or_break(
-        "Deployment of contracts finalized. Proceed with token airdrop?", True
+        "Deployment of contracts finalized. Proceeding with token airdrop", True
     )
 
     # Multisend using wenTokens optimized airdrop tool
@@ -312,16 +313,55 @@ def main():
 
     print(f"Final deployer's FLIP balance   = {final_balance:,}")
 
+def release():
+    token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
+    token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
+    flip_address = os.environ["FLIP_ADDRESS"]
+    tx = token_vesting.release(flip_address, {"from": DEPLOYER})
+    tx.info()
+
+
+def fund():
+    token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
+    token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
+
+    tx = token_vesting.fundStateChainAccount(JUNK_HEX, 1 * 10**18, {"from": DEPLOYER})
+    tx.info()
+
+
+def updateStakingAddresses():
+    addressHolder_address = os.environ["ADDERSS_HOLDER_ADDRESS"]
+    stMinter_address = os.environ["ST_MINTER_ADDRESS"]
+    stBurner_address = os.environ["ST_BURNER_ADDRESS"]
+    stFlip_address = os.environ["ST_FLIP_ADDRESS"]
+    address_holder = AddressHolder.at(f"0x{cleanHexStr(addressHolder_address)}")
+
+    tx = address_holder.updateStakingAddresses(
+        stMinter_address, stBurner_address, stFlip_address, {"from": DEPLOYER}
+    )
+    tx.info()
+
+
+def updateStateChainGateway():
+    addressHolder_address = os.environ["ADDERSS_HOLDER_ADDRESS"]
+    address_holder = AddressHolder.at(f"0x{cleanHexStr(addressHolder_address)}")
+    sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
+
+    tx = address_holder.updateStateChainGateway(sc_gateway_address, {"from": DEPLOYER})
+    tx.info()
+
 
 def stake_via_stProvider():
     token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
     token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
 
-    token_vesting.stakeToStProvider(1 * 10**18, {"from": DEPLOYER})
+    tx = token_vesting.stakeToStProvider(1 * 10**18, {"from": DEPLOYER})
+    tx.info()
 
 
 def unstake_from_stProvider():
     token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
     token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
 
-    token_vesting.unstakeFromStProvider(1 * 10**18, {"from": DEPLOYER})
+    tx = token_vesting.unstakeFromStProvider(1 * 10**18, {"from": DEPLOYER})
+    tx.info()
