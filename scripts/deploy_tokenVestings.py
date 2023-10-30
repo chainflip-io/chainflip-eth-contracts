@@ -313,6 +313,7 @@ def main():
 
     print(f"Final deployer's FLIP balance   = {final_balance:,}")
 
+
 def release():
     token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
     token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
