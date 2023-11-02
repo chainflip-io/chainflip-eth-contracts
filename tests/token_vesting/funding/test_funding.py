@@ -10,7 +10,7 @@ import time
 )
 def test_fundStateChainAccount(addrs, tokenVestingStaking, st_nodeID, st_amount, cf):
 
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
 
     st_nodeID = web3.toHex(st_nodeID)
 
@@ -31,7 +31,7 @@ def test_fundStateChainAccount(addrs, tokenVestingStaking, st_nodeID, st_amount,
 
 
 def test_fund_rev_beneficiary(a, addrs, tokenVestingStaking):
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
 
     for ad in a:
         if ad != addrs.BENEFICIARY:
@@ -45,6 +45,7 @@ def test_fund_rev_beneficiary(addrs, TokenVestingStaking, addressHolder, cf):
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
+        time.time() + YEAR,
         time.time() + YEAR,
         BENEF_NON_TRANSF,
         addressHolder,

@@ -51,7 +51,7 @@ contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {
         bool transferableBeneficiary_
     ) nzAddr(beneficiary_) {
         require(cliff_ <= end_, "Vesting: cliff_ after end_");
-        require(end_ > block.timestamp, "Vesting: final time is before current time");
+        require(block.timestamp < cliff_, "Vesting: cliff before current time");
 
         beneficiary = beneficiary_;
         revoker = revoker_;

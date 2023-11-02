@@ -155,7 +155,7 @@ REV_MSG_VESTING_EXPIRED = "Vesting: vesting expired"
 REV_MSG_NOT_BENEFICIARY = "Vesting: not the beneficiary"
 REV_MSG_BENEF_NOT_TRANSF = "Vesting: beneficiary not transferrable"
 REV_MSG_CLIFF_AFTER_END = "Vesting: cliff_ after end_"
-REV_MSG_INVALID_FINAL_TIME = "Vesting: final time is before current time"
+REV_MSG_INVALID_VESTING_TIME = "Vesting: cliff before current time"
 REV_MSG_TOKEN_REVOKED = "Vesting: token revoked"
 REV_MSG_SCGREF_REV_GOV = "AddrHolder: not the governor"
 

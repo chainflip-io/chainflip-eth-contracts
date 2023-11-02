@@ -8,6 +8,15 @@ contract MockMaths {
         return cliffAmount + ((total - cliffAmount) * (time - cliff)) / (end - cliff);
     }
 
+    function simulateReleaseSt(
+        uint256 total,
+        uint256 time,
+        uint256 end,
+        uint256 cliff
+    ) external pure returns (uint256) {
+        return (total * (time - cliff)) / (end - cliff);
+    }
+
     function calculateFlipGenesis(
         uint256 flipTotalSupply,
         uint256 numGenesisValidators,

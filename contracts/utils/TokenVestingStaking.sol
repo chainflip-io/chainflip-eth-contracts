@@ -36,6 +36,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     address private revoker;
 
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
+    uint256 public immutable stakingVestingEnd;
     uint256 public immutable end;
 
     // solhint-disable-next-line var-name-mixedcase
@@ -44,6 +45,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     // The contract that holds the reference addresses for staking purposes.
     IAddressHolder public immutable addressHolder;
 
+    mapping(IERC20 => uint256) public released;
     bool public revoked;
 
     // Cumulative counter for amount staked to the st provider
@@ -63,15 +65,18 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     constructor(
         address beneficiary_,
         address revoker_,
+        uint256 stakingVestingEnd_,
         uint256 end_,
         bool transferableBeneficiary_,
         IAddressHolder addressHolder_,
         IERC20 flip_
     ) nzAddr(beneficiary_) nzAddr(address(addressHolder_)) nzAddr(address(flip_)) {
-        require(end_ > block.timestamp, "Vesting: final time is before current time");
+        require(stakingVestingEnd_ <= end_, "Vesting: cliff_ after end_");
+        require(block.timestamp < stakingVestingEnd_, "Vesting: cliff before current time");
 
         beneficiary = beneficiary_;
         revoker = revoker_;
+        stakingVestingEnd = stakingVestingEnd_;
         end = end_;
         transferableBeneficiary = transferableBeneficiary_;
         addressHolder = addressHolder_;
@@ -149,14 +154,18 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         uint256 unreleased = _releasableAmount(token);
         require(unreleased > 0, "Vesting: no tokens are due");
 
+        released[token] += unreleased;
         emit TokensReleased(token, unreleased);
 
         token.safeTransfer(beneficiary, unreleased);
     }
 
+    // TODO: Revoking during linear vesting (after staking period) will not respect the linear vesting,
+    // it will just revoke anything on the contract and anything that is currently staked. We
+    // either accept this or we don't allow revokation after stakingVestingEnd
     /**
      * @notice Allows the revoker to revoke the vesting and stop the beneficiary from releasing any
-     *         tokens if the vesting period has not bene completed. Any staked tokens at the time of
+     *         tokens if the vesting period has not been completed. Any staked tokens at the time of
      *         revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
      * @param token ERC20 token which is being vested.
      */
@@ -165,14 +174,11 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
         uint256 balance = token.balanceOf(address(this));
 
-        uint256 unreleased = _releasableAmount(token);
-        uint256 refund = balance - unreleased;
-
         revoked = true;
 
-        token.safeTransfer(revoker, refund);
+        token.safeTransfer(revoker, balance);
 
-        emit TokenVestingRevoked(token, refund);
+        emit TokenVestingRevoked(token, balance);
     }
 
     /**
@@ -193,7 +199,29 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param token ERC20 token which is being vested.
      */
     function _releasableAmount(IERC20 token) private view returns (uint256) {
-        return block.timestamp < end ? 0 : token.balanceOf(address(this));
+        return _vestedAmount(token) - released[token];
+        // return block.timestamp < end ? 0 : token.balanceOf(address(this));
+    }
+
+    /**
+     * @dev Calculates the amount that has already vested. Linear unvesting for
+     *      option A, full unvesting at the end for contract B.
+     * @param token ERC20 token which is being vested.
+     */
+    function _vestedAmount(IERC20 token) private view returns (uint256) {
+        if (block.timestamp < stakingVestingEnd) {
+            return 0;
+        }
+
+        uint256 currentBalance = token.balanceOf(address(this));
+        uint256 totalBalance = currentBalance + released[token];
+
+        if (block.timestamp >= end || revoked) {
+            return totalBalance;
+        } else {
+            // Assumption cliff == 0
+            return (totalBalance * (block.timestamp - stakingVestingEnd)) / (end - stakingVestingEnd);
+        }
     }
 
     /// @dev    Allow the beneficiary to be transferred to a new address if needed

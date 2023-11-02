@@ -67,13 +67,13 @@ def test_reference_updateReference(addrs, cf, addressHolder):
 
 
 def test_reference_release(addrs, cf, tokenVestingStaking, addressHolder):
-    tv, _, _ = tokenVestingStaking
+    tv, _, end, _ = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
 
     tv.fundStateChainAccount(JUNK_INT, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
 
-    chain.sleep(YEAR + QUARTER_YEAR)
+    chain.sleep(end)
 
     # Update the refernce to a wrong contract
     addressHolder.updateStateChainGateway(NON_ZERO_ADDR, {"from": addrs.DEPLOYER})
