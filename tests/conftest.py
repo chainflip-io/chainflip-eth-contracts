@@ -207,8 +207,8 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
     start = getChainTime()
-    stakingVestingEnd = start + QUARTER_YEAR + YEAR
-    end = stakingVestingEnd + YEAR
+    start = start + QUARTER_YEAR + YEAR
+    end = start + YEAR
 
     total = MAX_TEST_FUND
 
@@ -220,13 +220,13 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
-        stakingVestingEnd,
+        start,
         end,
         BENEF_TRANSF,
         addressHolder,
         cf.flip,
     )
-    return tv, stakingVestingEnd, end, total
+    return tv, start, end, total
 
 
 # Deploy CFReceiver Mock contracts for testing purposes

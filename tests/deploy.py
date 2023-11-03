@@ -298,7 +298,7 @@ def deploy_tokenVestingStaking(
     TokenVestingStaking,
     beneficiary,
     revoker,
-    stakingVestingEnd,
+    start,
     end,
     transferableBeneficiary,
     addressHolder_address,
@@ -307,7 +307,7 @@ def deploy_tokenVestingStaking(
     tokenVestingStaking = TokenVestingStaking.deploy(
         beneficiary,
         revoker,
-        stakingVestingEnd,
+        start,
         end,
         transferableBeneficiary,
         addressHolder_address,

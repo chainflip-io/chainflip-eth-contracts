@@ -14,8 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  *
  *      The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and
  *      is therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree).
- *      Therefore, it is recommended to avoid using short time durations (less than a minute). Typical vesting
- *      schemes, with a cliff period of a year and a duration of four years, are safe to use.
+ *      Therefore, it is recommended to avoid using short time durations (less than a minute).
  *
  */
 contract TokenVestingNoStaking is ITokenVestingNoStaking, Shared {

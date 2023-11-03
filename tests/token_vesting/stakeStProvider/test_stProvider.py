@@ -223,7 +223,7 @@ def test_stProviderClaimRewardsSlash(addrs, tokenVestingStaking, cf, mockStProvi
 
 
 def test_stProviderRewards_release(addrs, tokenVestingStaking, cf, mockStProvider):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
     stFLIP, minter, _, _ = mockStProvider
     reward_amount = total
 
@@ -240,7 +240,7 @@ def test_stProviderRewards_release(addrs, tokenVestingStaking, cf, mockStProvide
     stFlipInContract += reward_amount
 
     # Approximately into the middle of the vesting period
-    chain.sleep(stakingVestingEnd + (end - stakingVestingEnd) // 2 - getChainTime())
+    chain.sleep(start + (end - start) // 2 - getChainTime())
 
     # The vested percentage of FLIP and stFLIP can be released.
     tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})

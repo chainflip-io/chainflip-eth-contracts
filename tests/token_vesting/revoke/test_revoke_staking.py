@@ -6,7 +6,7 @@ from shared_tests_tokenVesting import *
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
@@ -34,7 +34,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
         cf.stateChainGateway,
         addressHolder,
         tv,
-        stakingVestingEnd,
+        start,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
@@ -182,11 +182,11 @@ def test_fund_revoked_staked(addrs, cf, tokenVestingStaking):
 
 # Revoke with some tokens staked and linear vesting has started
 def test_revoke_staked_linear(addrs, cf, tokenVestingStaking):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
     amount_staked = (total * 2) // 3
     tv.fundStateChainAccount(JUNK_HEX, amount_staked, {"from": addrs.BENEFICIARY})
     # Half the vesting period
-    chain.sleep(stakingVestingEnd + (end - stakingVestingEnd) // 2 - getChainTime())
+    chain.sleep(start + (end - start) // 2 - getChainTime())
     amountInContract = total - amount_staked
     assert cf.flip.balanceOf(tv) == amountInContract
 

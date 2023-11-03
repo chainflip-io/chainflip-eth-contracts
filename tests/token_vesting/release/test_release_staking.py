@@ -12,19 +12,19 @@ def test_release_rev_no_tokens(addrs, cf, tokenVestingStaking):
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_release(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime, maths):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
 
     chain.sleep(st_sleepTime)
 
-    if getChainTime() < stakingVestingEnd:
+    if getChainTime() < start:
         release_revert(tv, cf, addrs.BENEFICIARY)
     else:
         tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
         newlyReleased = (
-            maths.simulateReleaseSt(total, tx.timestamp, end, stakingVestingEnd)
+            maths.simulateReleaseSt(total, tx.timestamp, end, start)
             if tx.timestamp < end
             else total
         )
@@ -37,7 +37,7 @@ def test_release(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime, ma
             cf.stateChainGateway,
             addressHolder,
             tv,
-            stakingVestingEnd,
+            start,
             addrs.BENEFICIARY,
             addrs.REVOKER,
             True,
@@ -48,7 +48,7 @@ def test_release(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime, ma
 
 
 def test_release_all(addrs, cf, tokenVestingStaking, addressHolder):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
 
@@ -64,7 +64,7 @@ def test_release_all(addrs, cf, tokenVestingStaking, addressHolder):
         cf.stateChainGateway,
         addressHolder,
         tv,
-        stakingVestingEnd,
+        start,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
@@ -77,7 +77,7 @@ def test_release_all(addrs, cf, tokenVestingStaking, addressHolder):
 def test_consecutive_releases_after_cliff(
     addrs, cf, tokenVestingStaking, maths, addressHolder
 ):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
 
@@ -85,9 +85,9 @@ def test_consecutive_releases_after_cliff(
 
     # Substracting current time because they are on absolute terms
     timestamps = [
-        stakingVestingEnd - 100,
-        stakingVestingEnd + QUARTER_YEAR,
-        stakingVestingEnd + QUARTER_YEAR * 2,
+        start - 100,
+        start + QUARTER_YEAR,
+        start + QUARTER_YEAR * 2,
         end - 100,
         end + 100,
     ]
@@ -97,13 +97,13 @@ def test_consecutive_releases_after_cliff(
     for timestamp in timestamps:
 
         chain.sleep(timestamp - getChainTime())
-        if getChainTime() < stakingVestingEnd:
+        if getChainTime() < start:
             release_revert(tv, cf, addrs.BENEFICIARY)
         else:
             tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
 
             totalReleased = (
-                maths.simulateReleaseSt(total, tx.timestamp, end, stakingVestingEnd)
+                maths.simulateReleaseSt(total, tx.timestamp, end, start)
                 if tx.timestamp < end
                 else total
             )
@@ -117,7 +117,7 @@ def test_consecutive_releases_after_cliff(
                 cf.stateChainGateway,
                 addressHolder,
                 tv,
-                stakingVestingEnd,
+                start,
                 addrs.BENEFICIARY,
                 addrs.REVOKER,
                 True,
@@ -135,7 +135,7 @@ def test_consecutive_releases_after_cliff(
 def test_release_staking_rewards_after_end(
     addrs, cf, tokenVestingStaking, addressHolder
 ):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
 
     test_release_all(addrs, cf, tokenVestingStaking, addressHolder)
 
@@ -151,7 +151,7 @@ def test_release_staking_rewards_after_end(
         cf.stateChainGateway,
         addressHolder,
         tv,
-        stakingVestingEnd,
+        start,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
@@ -165,11 +165,11 @@ def test_release_staking_rewards_after_end(
 def test_release_around_cliff(
     addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime
 ):
-    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
 
     chain.sleep(st_sleepTime)
 
-    if getChainTime() >= stakingVestingEnd:
+    if getChainTime() >= start:
         tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
         # Check release
         assert tx.events["TokensReleased"]["token"] == cf.flip
@@ -181,7 +181,7 @@ def test_release_around_cliff(
             cf.stateChainGateway,
             addressHolder,
             tv,
-            stakingVestingEnd,
+            start,
             addrs.BENEFICIARY,
             addrs.REVOKER,
             True,

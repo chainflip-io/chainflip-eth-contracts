@@ -12,8 +12,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /**
  * @title TokenVestingStaking
  * @dev A token holder contract that that vests its balance of any ERC20 token to the beneficiary.
- *      Validator lockup - stakable. Nothing unlocked until end of contract where everything
- *      unlocks at once. All funds can be staked during the vesting period.
+ *      Validator lockup - stakable. Nothing unlocked until the start is reached but can be staked
+ *      in the meantime. After that all funds are unlocked according to a linear time-based vesting
+ *      schedule. When the end is reached, all funds are unlocked.
  *      If revoked send all funds to revoker and block beneficiary releases indefinitely.
  *      Any staked funds at the moment of revocation can be retrieved by the revoker upon unstaking.
  *
@@ -22,8 +23,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  *
  *      The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and
  *      is therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree).
- *      Therefore, it is recommended to avoid using short time durations (less than a minute). Typical vesting
- *      schemes, with a cliff period of a year and a duration of four years, are safe to use.
+ *      Therefore, it is recommended to avoid using short time durations (less than a minute).
  *
  */
 contract TokenVestingStaking is ITokenVestingStaking, Shared {
@@ -36,7 +36,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     address private revoker;
 
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
-    uint256 public immutable stakingVestingEnd;
+    uint256 public immutable start;
     uint256 public immutable end;
 
     // solhint-disable-next-line var-name-mixedcase
@@ -57,6 +57,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     /**
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
+     * @param start_ the unix time of the start of the linear vesting period
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param transferableBeneficiary_ whether the beneficiary address can be transferred
      * @param addressHolder_ the contract holding the reference address to the ScGateway for staking
@@ -65,18 +66,18 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     constructor(
         address beneficiary_,
         address revoker_,
-        uint256 stakingVestingEnd_,
+        uint256 start_,
         uint256 end_,
         bool transferableBeneficiary_,
         IAddressHolder addressHolder_,
         IERC20 flip_
     ) nzAddr(beneficiary_) nzAddr(address(addressHolder_)) nzAddr(address(flip_)) {
-        require(stakingVestingEnd_ <= end_, "Vesting: cliff_ after end_");
-        require(block.timestamp < stakingVestingEnd_, "Vesting: cliff before current time");
+        require(start_ <= end_, "Vesting: cliff_ after end_");
+        require(block.timestamp < start_, "Vesting: cliff before current time");
 
         beneficiary = beneficiary_;
         revoker = revoker_;
-        stakingVestingEnd = stakingVestingEnd_;
+        start = start_;
         end = end_;
         transferableBeneficiary = transferableBeneficiary_;
         addressHolder = addressHolder_;
@@ -205,7 +206,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param token ERC20 token which is being vested.
      */
     function _vestedAmount(IERC20 token) private view returns (uint256) {
-        if (block.timestamp < stakingVestingEnd) {
+        if (block.timestamp < start) {
             return 0;
         }
 
@@ -216,7 +217,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
             return totalBalance;
         } else {
             // No cliff
-            return (totalBalance * (block.timestamp - stakingVestingEnd)) / (end - stakingVestingEnd);
+            return (totalBalance * (block.timestamp - start)) / (end - start);
         }
     }
 
