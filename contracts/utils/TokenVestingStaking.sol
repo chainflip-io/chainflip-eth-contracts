@@ -213,7 +213,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         uint256 currentBalance = token.balanceOf(address(this));
         uint256 totalBalance = currentBalance + released[token];
 
-        if (block.timestamp >= end || revoked) {
+        if (block.timestamp >= end) {
             return totalBalance;
         } else {
             // No cliff
