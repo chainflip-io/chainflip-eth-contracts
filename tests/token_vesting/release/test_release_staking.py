@@ -161,7 +161,6 @@ def test_release_staking_rewards_after_end(
     )
 
 
-# Test that the assert(!canStake) is not reached => cliff == end == start + QUARTER_YEAR + YEAR
 @given(st_sleepTime=strategy("uint256", min_value=QUARTER_YEAR, max_value=YEAR * 2))
 def test_release_around_cliff(
     addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime

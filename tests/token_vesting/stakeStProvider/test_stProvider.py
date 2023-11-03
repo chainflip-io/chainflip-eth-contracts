@@ -220,3 +220,33 @@ def test_stProviderClaimRewardsSlash(addrs, tokenVestingStaking, cf, mockStProvi
 
     with reverts(REV_MSG_INTEGER_OVERFLOW):
         tv.claimStProviderRewards(2**256 - 1, {"from": addrs.BENEFICIARY})
+
+
+def test_stProviderRewards_release(addrs, tokenVestingStaking, cf, mockStProvider):
+    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    stFLIP, minter, _, _ = mockStProvider
+    reward_amount = total
+
+    cf.flip.approve(minter, 2**256 - 1, {"from": addrs.DEPLOYER})
+    minter.mint(addrs.DEPLOYER, reward_amount, {"from": addrs.DEPLOYER})
+
+    flipStaked = total // 3
+    flipInContract = total - flipStaked
+    tv.stakeToStProvider(flipStaked, {"from": addrs.BENEFICIARY})
+    stFlipInContract = flipStaked
+
+    # Earn rewards
+    stFLIP.transfer(tv, reward_amount, {"from": addrs.DEPLOYER})
+    stFlipInContract += reward_amount
+
+    # Approximately into the middle of the vesting period
+    chain.sleep(stakingVestingEnd + (end - stakingVestingEnd) // 2 - getChainTime())
+
+    # The vested percentage of FLIP and stFLIP can be released.
+    tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
+    releasedAmount = tx.events["TokensReleased"]["amount"]
+    assert flipInContract // 2 <= releasedAmount <= flipInContract * 1.01 // 2
+
+    tx = tv.release(stFLIP, {"from": addrs.BENEFICIARY})
+    releasedAmount = tx.events["TokensReleased"]["amount"]
+    assert stFlipInContract // 2 <= releasedAmount <= stFlipInContract * 1.01 // 2

@@ -178,3 +178,34 @@ def test_fund_revoked_staked(addrs, cf, tokenVestingStaking):
     with reverts(REV_MSG_TOKEN_REVOKED):
         tv.fundStateChainAccount(nodeID1, MAX_TEST_FUND, {"from": addrs.BENEFICIARY})
     retrieve_revoked_and_check(tv, cf, addrs.REVOKER, MAX_TEST_FUND)
+
+
+# Revoke with some tokens staked and linear vesting has started
+def test_revoke_staked_linear(addrs, cf, tokenVestingStaking):
+    tv, stakingVestingEnd, end, total = tokenVestingStaking
+    amount_staked = (total * 2) // 3
+    tv.fundStateChainAccount(JUNK_HEX, amount_staked, {"from": addrs.BENEFICIARY})
+    # Half the vesting period
+    chain.sleep(stakingVestingEnd + (end - stakingVestingEnd) // 2 - getChainTime())
+    amountInContract = total - amount_staked
+    assert cf.flip.balanceOf(tv) == amountInContract
+
+    # Release approx half of the tokens in the contract
+    tx = tv.release(cf.flip, {"from": addrs.BENEFICIARY})
+    releasedAmount = tx.events["TokensReleased"]["amount"]
+    assert amountInContract // 2 <= releasedAmount <= amountInContract * 1.01 // 2
+    amountInContract = amountInContract - releasedAmount
+    assert cf.flip.balanceOf(tv) == amountInContract
+
+    # Revoke remaining tokens in the contract
+    tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
+    revokedAmount = tx.events["TokenVestingRevoked"]["refund"]
+    assert revokedAmount == amountInContract
+
+    # Imitate unstake the amount
+    cf.flip.transfer(tv, amount_staked, {"from": addrs.DEPLOYER})
+
+    with reverts(REV_MSG_TOKEN_REVOKED):
+        tv.release(cf.flip, {"from": addrs.BENEFICIARY})
+
+    retrieve_revoked_and_check(tv, cf, addrs.REVOKER, amount_staked)

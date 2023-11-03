@@ -160,9 +160,6 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         token.safeTransfer(beneficiary, unreleased);
     }
 
-    // TODO: Revoking during linear vesting (after staking period) will not respect the linear vesting,
-    // it will just revoke anything on the contract and anything that is currently staked. We
-    // either accept this or we don't allow revokation after stakingVestingEnd
     /**
      * @notice Allows the revoker to revoke the vesting and stop the beneficiary from releasing any
      *         tokens if the vesting period has not been completed. Any staked tokens at the time of
@@ -200,7 +197,6 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      */
     function _releasableAmount(IERC20 token) private view returns (uint256) {
         return _vestedAmount(token) - released[token];
-        // return block.timestamp < end ? 0 : token.balanceOf(address(this));
     }
 
     /**
@@ -219,7 +215,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
         if (block.timestamp >= end || revoked) {
             return totalBalance;
         } else {
-            // Assumption cliff == 0
+            // No cliff
             return (totalBalance * (block.timestamp - stakingVestingEnd)) / (end - stakingVestingEnd);
         }
     }
