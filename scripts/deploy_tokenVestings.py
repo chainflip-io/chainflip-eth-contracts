@@ -58,8 +58,7 @@ network.priority_fee("1 gwei")
 def main():
 
     # TODO: Ensure vesting schedule is correct. Leaving cliff to 1 day for safety. Enter env variables?
-    # TODO: For TGE the noStaking_cliff might need to be a precise timestamp, not adding the current chain.time()
-    # Use datetime.fromtimestamp(chain.time()) to print the date for cliffs, start and ends.
+    # TODO: If we want noStaking_cliff to be a precise timestamp, remove the the chain.time() addition
     # Vesting schedule
     noStaking_cliff = DAY
     noStaking_end = noStaking_cliff + YEAR
