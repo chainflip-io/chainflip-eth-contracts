@@ -22,6 +22,7 @@ from brownie import (
     network,
     web3,
 )
+from datetime import datetime
 
 _project = project.get_loaded_projects()[0]
 IAirdropContract = _project.interface.IAirdrop
@@ -44,11 +45,6 @@ columns = [
 ]
 options_lockup_type = ["Option A", "Option B", "Airdrop"]
 
-# TODO: Ensure vesting schedule is correct. Leaving cliff to 1 day for safety
-vesting_time_cliff = DAY
-vesting_time_end = vesting_time_cliff + YEAR
-
-
 AUTONOMY_SEED = os.environ["SEED"]
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
@@ -60,8 +56,18 @@ network.priority_fee("1 gwei")
 
 
 def main():
-    # TODO: Assumption that revoker and Address Holder's governor are the same
+
+    # TODO: Ensure vesting schedule is correct. Leaving cliff to 1 day for safety. Enter env variables?
+    # TODO: For TGE the noStaking_cliff might need to be a precise timestamp, not adding the current chain.time()
+    # Use datetime.fromtimestamp(chain.time()) to print the date for cliffs, start and ends.
+    # Vesting schedule
+    noStaking_cliff = DAY
+    noStaking_end = noStaking_cliff + YEAR
+    staking_start = YEAR
+    staking_end = staking_start + YEAR
+
     governor = os.environ["GOV_KEY"]
+    revoker_address = os.environ["REVOKER_ADDRESS"]
     sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
     flip_address = os.environ["FLIP_ADDRESS"]
     stMinter_address = os.environ["ST_MINTER_ADDRESS"]
@@ -123,7 +129,7 @@ def main():
                 raise Exception(f"Incorrect transferability parameter {transferable}")
 
             if revokable == "Enabled":
-                revoker = governor
+                revoker = revoker_address
             elif revokable == "Disabled":
                 revoker = ZERO_ADDR
             else:
@@ -137,11 +143,6 @@ def main():
 
             flip_total_E18 += amount_E18
 
-    # Vesting schedule
-    current_time = chain.time()
-    cliff = current_time + vesting_time_cliff
-    end = current_time + vesting_time_end
-
     print("Deployer balance: ", flip.balanceOf(DEPLOYER) // E_18)
     assert flip_total_E18 <= flip.balanceOf(
         DEPLOYER
@@ -152,6 +153,7 @@ def main():
     print(f"DEPLOYER = {DEPLOYER}")
     print(f"FLIP = {flip_address}")
     print(f"GOVERNOR & REVOKER = {governor}")
+    print(f"REVOKER = {revoker_address}")
 
     print(f"SC_GATEWAY_ADDRESS = {sc_gateway_address}")
     print(f"ST_MINTER_ADDRESS  =  {stMinter_address}")
@@ -161,19 +163,52 @@ def main():
     print(f"Number of staking vesting contracts = {number_staking}")
     print(f"Number of non-staking vesting contracts = {number_noStaking}")
     print(f"Total number of contracts = {number_staking+number_noStaking}")
-    print(
-        f"Vesting cliff (only for non-staking) = {vesting_time_cliff//YEAR} years, {(vesting_time_cliff % YEAR)//MONTH} months and {((vesting_time_cliff % YEAR)%MONTH)//DAY} days"
-    )
-    print(
-        f"Vesting end (staking & non-staking)  = {vesting_time_end//YEAR} years, {(vesting_time_end % YEAR)//MONTH} months and {((vesting_time_end % YEAR)%MONTH)//DAY} days"
-    )
     print(f"Total amount of FLIP to vest    = {flip_total_E18//E_18:,}")
     print(f"Initial deployer's FLIP balance = {flip.balanceOf(DEPLOYER)//E_18:,}")
     print(f"Final deployer's FLIP balance   = {final_balance:,}")
 
+    # Calculate final vesting times
+    current_time = chain.time()
+    deploy_staking_start = staking_start + current_time
+    deploy_staking_end = staking_end + current_time
+    deploy_noStaking_cliff = noStaking_cliff + current_time
+    deploy_noStaking_end = noStaking_end + current_time
+
+    print(f"Current date = {datetime.fromtimestamp(current_time)} ({current_time})")
+
+    print("Staking vesting parameters")
+    print(
+        f"   - Linear start = {staking_start//YEAR} year(s), {(staking_start % YEAR)//MONTH} month(s) and {((staking_start % YEAR)%MONTH)//DAY} day(s)"
+    )
+    print(
+        f"   - Linear start date = {datetime.fromtimestamp(deploy_staking_start)} ({deploy_staking_start})"
+    )
+
+    print(
+        f"   - Linear end = {staking_end//YEAR} year(s), {(staking_end % YEAR)//MONTH} month(s) and {((staking_end % YEAR)%MONTH)//DAY} day(s)"
+    )
+    print(
+        f"   - Linear end date = {datetime.fromtimestamp(deploy_staking_end)} ({deploy_staking_end})"
+    )
+
+    print("Non-Staking vesting parameters")
+    print(
+        f"   - Cliff = {noStaking_cliff//YEAR} year(s), {(noStaking_cliff % YEAR)//MONTH} month(s) and {((noStaking_cliff % YEAR)%MONTH)//DAY} day(s)"
+    )
+    print(
+        f"   - Cliff date = {datetime.fromtimestamp(deploy_noStaking_cliff)} ({deploy_noStaking_cliff})"
+    )
+
+    print(
+        f"   - End = {noStaking_end//YEAR} year(s), {(noStaking_end % YEAR)//MONTH} month(s) and {((noStaking_end % YEAR)%MONTH)//DAY} day(s)"
+    )
+    print(
+        f"   - End date = {datetime.fromtimestamp(deploy_noStaking_end)} ({deploy_noStaking_end})"
+    )
+
     prompt_user_continue_or_break("Deployment with the parameter above", True)
 
-    if chain.id == 1:
+    if chain.id == eth_mainnet or chain.id == arb_mainnet:
         prompt_user_continue_or_break(
             "\n[WARNING] You are about to deploy to the mainnet",
             False,
@@ -207,7 +242,8 @@ def main():
                 TokenVestingStaking,
                 beneficiary,
                 revoker,
-                end,
+                deploy_staking_start,
+                deploy_staking_end,
                 transferable_beneficiary,
                 addressHolder.address,
                 flip,
@@ -219,8 +255,8 @@ def main():
                 TokenVestingNoStaking,
                 beneficiary,
                 revoker,
-                cliff,
-                end,
+                deploy_noStaking_cliff,
+                deploy_noStaking_end,
                 transferable_beneficiary,
             )
         else:
@@ -229,10 +265,14 @@ def main():
             )
         vesting.append(tv)
 
-    # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
-    print("Waiting for all the transaction receipts...")
+    print("Checking all the transaction receipts...")
     for vesting in vesting_list:
         web3.eth.wait_for_transaction_receipt(vesting[-1].tx.txid)
+
+    # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
+    if chain.id in [eth_localnet, arb_localnet, hardhat]:
+        print("Waiting for some blocks for safety")
+        chain.sleep(24)
 
     print("Verifying correct deployment of vesting contracts...")
     for vesting in vesting_list:
@@ -250,8 +290,14 @@ def main():
                 tv.addressHolder() == addressHolder.address
             ), "Address holder not set correctly"
             assert tv.FLIP() == flip.address, "FLIP not set correctly"
+            assert tv.start() == deploy_staking_start, "Staking end not set correctly"
+            assert tv.end() == deploy_staking_end, "NoStaking end not set correctly"
+
         else:
-            assert tv.cliff() == cliff, "Cliff not set correctly"
+            assert (
+                tv.cliff() == deploy_noStaking_cliff
+            ), "NoStaking Cliff not set correctly"
+            assert tv.end() == deploy_noStaking_end, "NoStaking end not set correctly"
 
         assert tv.getBeneficiary() == beneficiary, "Beneficiary not set correctly"
         assert tv.getRevoker() == revoker, "Revoker not set correctly"
@@ -259,7 +305,6 @@ def main():
         assert (
             tv.transferableBeneficiary() == transferable_beneficiary
         ), "Transferability not set correctly"
-        assert tv.end() == end, "End not set correctly"
 
     prompt_user_continue_or_break(
         "Deployment of contracts finalized. Proceeding with token airdrop", True
@@ -290,6 +335,8 @@ def main():
         {"from": DEPLOYER, "required_confs": required_confs},
     )
     assert flip.allowance(DEPLOYER, address_wenTokens) == 0, "Allowance not correct"
+
+    print("Address holder deployed at: ", addressHolder.address)
 
     for i, vesting in enumerate(vesting_list):
         (

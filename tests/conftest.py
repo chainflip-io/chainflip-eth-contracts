@@ -206,8 +206,7 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
-    start = getChainTime()
-    start = start + QUARTER_YEAR + YEAR
+    start = getChainTime() + QUARTER_YEAR + YEAR
     end = start + YEAR
 
     total = MAX_TEST_FUND
