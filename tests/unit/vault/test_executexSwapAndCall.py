@@ -288,5 +288,3 @@ def test_executexSwapAndCallToken(
         0,
         0,
     ]
-
-
