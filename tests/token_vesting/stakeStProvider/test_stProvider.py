@@ -4,7 +4,7 @@ from shared_tests_tokenVesting import *
 
 
 def test_stakeToStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
     stFLIP, _, _, staking_address = mockStProvider
 
     assert cf.flip.balanceOf(tv) == total
@@ -19,7 +19,7 @@ def test_stakeToStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
 
 
 def test_rev_sender(addrs, tokenVestingStaking):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
     with reverts(REV_MSG_NOT_BENEFICIARY):
         tv.stakeToStProvider(total, {"from": addrs.DEPLOYER})
     with reverts(REV_MSG_NOT_BENEFICIARY):
@@ -29,7 +29,7 @@ def test_rev_sender(addrs, tokenVestingStaking):
 
 
 def test_rev_amount(addrs, tokenVestingStaking):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
     with reverts(REV_MSG_ERC20_EXCEED_BAL):
         tv.stakeToStProvider(total + 1, {"from": addrs.BENEFICIARY})
 
@@ -38,7 +38,7 @@ def test_rev_amount(addrs, tokenVestingStaking):
 
 
 def test_stake_rev_revoked(addrs, tokenVestingStaking, cf):
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
 
     tv.revoke(cf.flip, {"from": addrs.REVOKER})
     with reverts(REV_MSG_TOKEN_REVOKED):
@@ -46,7 +46,7 @@ def test_stake_rev_revoked(addrs, tokenVestingStaking, cf):
 
 
 def test_unstake_rev_revoked(addrs, tokenVestingStaking, mockStProvider):
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
     stFLIP, _, _, _ = mockStProvider
 
     tv.revoke(stFLIP, {"from": addrs.REVOKER})
@@ -56,7 +56,7 @@ def test_unstake_rev_revoked(addrs, tokenVestingStaking, mockStProvider):
 
 
 def test_claim_rev_revoked(addrs, tokenVestingStaking, mockStProvider):
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
     stFLIP, _, _, _ = mockStProvider
 
     tv.revoke(stFLIP, {"from": addrs.REVOKER})
@@ -66,7 +66,7 @@ def test_claim_rev_revoked(addrs, tokenVestingStaking, mockStProvider):
 
 
 def test_unstakeFromStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
     stFLIP, _, burner, staking_address = mockStProvider
 
     test_stakeToStProvider(addrs, tokenVestingStaking, cf, mockStProvider)
@@ -112,7 +112,7 @@ def test_unstakeFromStProvider(addrs, tokenVestingStaking, cf, mockStProvider):
 
 
 def test_stProviderClaimRewards(addrs, tokenVestingStaking, cf, mockStProvider):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
     stFLIP, minter, _, _ = mockStProvider
     reward_amount = 100 * 10**18
 
@@ -150,7 +150,7 @@ def test_stProviderClaimRewards(addrs, tokenVestingStaking, cf, mockStProvider):
 def test_stProviderClaimRewardsInsufficientStflip(
     addrs, tokenVestingStaking, cf, mockStProvider
 ):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
     stFLIP, minter, _, _ = mockStProvider
     reward_amount = 100 * 10**18
 
@@ -188,7 +188,7 @@ def test_stProviderClaimRewardsInsufficientStflip(
 
 
 def test_stProviderClaimRewardsSlash(addrs, tokenVestingStaking, cf, mockStProvider):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
     stFLIP, _, _, _ = mockStProvider
     slash_amount = 100 * 10**18
 

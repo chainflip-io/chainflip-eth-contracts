@@ -11,9 +11,11 @@ def release_revert(tv, cf, address):
         tv.release(cf.flip, {"from": address})
 
 
-def check_state_staking(stateChainGateway, addressHolder, tv, *args):
+def check_state_staking(stateChainGateway, addressHolder, tv, start, *args):
     assert tv.addressHolder() == addressHolder
     assert addressHolder.getStateChainGateway() == stateChainGateway
+    assert tv.start() == start
+
     check_state(tv, *args)
 
 

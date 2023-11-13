@@ -8,7 +8,7 @@ from shared_tests_tokenVesting import *
 def test_transfer_beneficiary_0(
     addrs, tokenVestingStaking, tokenVestingNoStaking, st_sender
 ):
-    tv_staking, _, _ = tokenVestingStaking
+    tv_staking, _, _, _ = tokenVestingStaking
     tv_noStaking, _, _, _ = tokenVestingNoStaking
 
     for vestingContract in [tv_staking, tv_noStaking]:
@@ -38,6 +38,7 @@ def test_transfer_beneficiary_1(
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
+        getChainTime() + QUARTER_YEAR,
         end,
         BENEF_NON_TRANSF,
         cf.stateChainGateway,

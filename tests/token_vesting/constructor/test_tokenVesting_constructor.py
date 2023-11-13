@@ -1,11 +1,10 @@
 from consts import *
-import time
 from brownie import reverts
 from shared_tests_tokenVesting import *
 
-start = time.time()
+start = getChainTime()
 cliff = start + int(YEAR / 2)
-end = start + YEAR
+end = cliff + YEAR
 
 
 def test_tokenVesting_constructor_cliff(
@@ -35,6 +34,7 @@ def test_tokenVesting_constructor_cliff(
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
+        cliff,
         end,
         BENEF_NON_TRANSF,
         addressHolder,
@@ -44,6 +44,7 @@ def test_tokenVesting_constructor_cliff(
         cf.stateChainGateway,
         addressHolder,
         tv,
+        cliff,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         addrs.REVOKER != ZERO_ADDR,
@@ -69,6 +70,7 @@ def test_tokenVesting_constructor_noRevoker(
         addrs.BENEFICIARY,
         ZERO_ADDR,
         end,
+        end,
         BENEF_TRANSF,
         addressHolder,
         NON_ZERO_ADDR,
@@ -92,6 +94,7 @@ def test_tokenVesting_constructor_rev_beneficiary(
             TokenVestingStaking,
             ZERO_ADDR,
             addrs.REVOKER,
+            cliff,
             end,
             BENEF_TRANSF,
             addressHolder,
@@ -103,6 +106,7 @@ def test_tokenVesting_constructor_rev_beneficiary(
             TokenVestingStaking,
             NON_ZERO_ADDR,
             addrs.REVOKER,
+            cliff,
             end,
             BENEF_TRANSF,
             addressHolder,
@@ -110,7 +114,9 @@ def test_tokenVesting_constructor_rev_beneficiary(
         )
 
 
-def test_tokenVesting_constructor_rev_end_0(addrs, TokenVestingNoStaking):
+def test_tokenVesting_constructor_rev_end_0(
+    addrs, TokenVestingNoStaking, TokenVestingStaking
+):
     with reverts(REV_MSG_CLIFF_AFTER_END):
         addrs.DEPLOYER.deploy(
             TokenVestingNoStaking,
@@ -121,9 +127,32 @@ def test_tokenVesting_constructor_rev_end_0(addrs, TokenVestingNoStaking):
             BENEF_NON_TRANSF,
         )
 
+    with reverts(REV_MSG_START_AFTER_END):
+        addrs.DEPLOYER.deploy(
+            TokenVestingStaking,
+            NON_ZERO_ADDR,
+            addrs.REVOKER,
+            getChainTime(),
+            getChainTime() - 1,
+            BENEF_TRANSF,
+            NON_ZERO_ADDR,
+            NON_ZERO_ADDR,
+        )
+    with reverts(REV_MSG_NZ_ADDR):
+        addrs.DEPLOYER.deploy(
+            TokenVestingStaking,
+            NON_ZERO_ADDR,
+            addrs.REVOKER,
+            cliff,
+            0,
+            BENEF_TRANSF,
+            NON_ZERO_ADDR,
+            ZERO_ADDR,
+        )
+
 
 def test_tokenVesting_constructor_rev_cliff_not_before_end(
-    addrs, TokenVestingNoStaking
+    addrs, TokenVestingNoStaking, TokenVestingStaking
 ):
     with reverts(REV_MSG_CLIFF_AFTER_END):
         addrs.DEPLOYER.deploy(
@@ -135,9 +164,23 @@ def test_tokenVesting_constructor_rev_cliff_not_before_end(
             BENEF_TRANSF,
         )
 
+    with reverts(REV_MSG_START_AFTER_END):
+        addrs.DEPLOYER.deploy(
+            TokenVestingStaking,
+            NON_ZERO_ADDR,
+            addrs.REVOKER,
+            cliff,
+            cliff - 1,
+            BENEF_TRANSF,
+            NON_ZERO_ADDR,
+            NON_ZERO_ADDR,
+        )
 
-def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVestingNoStaking):
-    with reverts(REV_MSG_INVALID_FINAL_TIME):
+
+def test_tokenVesting_constructor_rev_cliff_before_now(
+    addrs, TokenVestingNoStaking, TokenVestingStaking
+):
+    with reverts(REV_MSG_INVALID_CLIFF_TIME):
         addrs.DEPLOYER.deploy(
             TokenVestingNoStaking,
             addrs.BENEFICIARY,
@@ -147,6 +190,18 @@ def test_tokenVesting_constructor_rev_end_before_now(addrs, TokenVestingNoStakin
             BENEF_TRANSF,
         )
 
+    with reverts(REV_MSG_INVALID_START_TIME):
+        addrs.DEPLOYER.deploy(
+            TokenVestingStaking,
+            NON_ZERO_ADDR,
+            addrs.REVOKER,
+            cliff - (YEAR * 2),
+            end - (YEAR * 2),
+            BENEF_TRANSF,
+            NON_ZERO_ADDR,
+            NON_ZERO_ADDR,
+        )
+
 
 def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVestingStaking):
     with reverts(REV_MSG_NZ_ADDR):
@@ -154,6 +209,7 @@ def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVestingStaki
             TokenVestingStaking,
             addrs.BENEFICIARY,
             addrs.REVOKER,
+            start + 10,
             end,
             BENEF_NON_TRANSF,
             ZERO_ADDR,
@@ -162,16 +218,40 @@ def test_tokenVesting_constructor_rev_stateChainGateway(addrs, TokenVestingStaki
 
 
 def test_tokenVesting_constructor_rev_eoa(addrs, TokenVestingStaking):
-
     tv = addrs.DEPLOYER.deploy(
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
+        start + 100,
         end,
         BENEF_NON_TRANSF,
         NON_ZERO_ADDR,
         NON_ZERO_ADDR,
     )
+    chain.sleep(100)
     # Reference contract is an eoa
     with reverts("Transaction reverted without a reason string"):
         tv.fundStateChainAccount(JUNK_INT, 1, {"from": addrs.BENEFICIARY})
+
+
+def test_tokenVesting_constructor_rev_not_started(
+    addrs, TokenVestingStaking, addressHolder, cf
+):
+    tv = addrs.DEPLOYER.deploy(
+        TokenVestingStaking,
+        addrs.BENEFICIARY,
+        addrs.REVOKER,
+        start + 100,
+        end,
+        BENEF_NON_TRANSF,
+        addressHolder,
+        cf.flip,
+    )
+
+    # Reference contract is an eoa
+    with reverts(REV_MSG_NOT_STARTED):
+        tv.fundStateChainAccount(JUNK_INT, 1, {"from": addrs.BENEFICIARY})
+
+    # Reference contract is an eoa
+    with reverts(REV_MSG_NOT_STARTED):
+        tv.stakeToStProvider(1, {"from": addrs.BENEFICIARY})
