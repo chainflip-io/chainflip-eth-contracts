@@ -324,4 +324,4 @@ def deploy_tokenVestingStaking(
 # nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
 def transaction_params():
     network.priority_fee("1 gwei")
-    return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 1
+    return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 3

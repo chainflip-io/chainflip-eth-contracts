@@ -240,7 +240,8 @@ def main():
             stBurner_address,
             stFlip_address,
         )
-        web3.eth.wait_for_transaction_receipt(addressHolder.txid)
+        
+        # AddressHolder deployment will already wait for several confirmations
         print("Address holder deployed at: ", addressHolder.address)
 
         # Deploy all the vesting contracts
@@ -289,8 +290,8 @@ def main():
 
         # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
         if chain.id in [eth_localnet, arb_localnet, hardhat]:
-            print("Waiting for some blocks for safety")
-            chain.sleep(24)
+            print("Waiting for a blocks for safety")
+            chain.sleep(12)
 
         # Write the data to a CSV file
         print(f"Storing deployment info in {DEPLOYMENT_INFO_FILE}")
