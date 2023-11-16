@@ -1,6 +1,7 @@
 import sys
 import os
 import csv
+import time
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
@@ -284,14 +285,14 @@ def main():
                 )
             vesting.append(tv)
 
+        # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
+        if chain.id not in [eth_localnet, arb_localnet, hardhat]:
+            print("Waiting for a short time for safety...")
+            time.sleep(12)
+
         print("Checking all the transaction receipts...")
         for vesting in vesting_list:
             web3.eth.wait_for_transaction_receipt(vesting[5].tx.txid)
-
-        # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
-        if chain.id not in [eth_localnet, arb_localnet, hardhat]:
-            print("Waiting for a blocks for safety...")
-            chain.sleep(12)
 
         # Write the data to a CSV file
         print(f"Storing deployment info in {DEPLOYMENT_INFO_FILE}")
@@ -412,7 +413,7 @@ def fund():
 
 
 def updateStakingAddresses():
-    addressHolder_address = os.environ["ADDERSS_HOLDER_ADDRESS"]
+    addressHolder_address = os.environ["ADDRESS_HOLDER_ADDRESS"]
     stMinter_address = os.environ["ST_MINTER_ADDRESS"]
     stBurner_address = os.environ["ST_BURNER_ADDRESS"]
     stFlip_address = os.environ["ST_FLIP_ADDRESS"]
@@ -425,7 +426,7 @@ def updateStakingAddresses():
 
 
 def updateStateChainGateway():
-    addressHolder_address = os.environ["ADDERSS_HOLDER_ADDRESS"]
+    addressHolder_address = os.environ["ADDRESS_HOLDER_ADDRESS"]
     address_holder = AddressHolder.at(f"0x{cleanHexStr(addressHolder_address)}")
     sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
 
@@ -446,4 +447,14 @@ def unstake_from_stProvider():
     token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
 
     tx = token_vesting.unstakeFromStProvider(1 * 10**18, {"from": DEPLOYER})
+    tx.info()
+
+
+def revoke():
+    token_vesting_address = os.environ["TOKEN_VESTING_ADDRESS"]
+    flip_address = os.environ["FLIP_ADDRESS"]
+
+    token_vesting = TokenVestingStaking.at(f"0x{cleanHexStr(token_vesting_address)}")
+
+    tx = token_vesting.revoke(flip_address, {"from": DEPLOYER})
     tx.info()
