@@ -202,8 +202,8 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 
 @pytest.fixture(scope="module")
 def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
-    # Adding small delay to ensure start > current timestamp
-    start = getChainTime() + 2
+    # Add small delay to ensure start > current timestamp
+    start = getChainTime() + 10
     end = start + QUARTER_YEAR + YEAR
 
     total = MAX_TEST_FUND
@@ -222,6 +222,9 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
         addressHolder,
         cf.flip,
     )
+
+    # Wait for the staking period to start
+    chain.sleep(10)
 
     return tv, start, end, total
 
