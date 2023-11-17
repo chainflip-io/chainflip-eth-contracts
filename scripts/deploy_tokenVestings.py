@@ -83,11 +83,6 @@ def main():
     number_noStaking = 0
     flip_total_E18 = 0
 
-    ## TODO: Remove this, it's only when forking and using default seed
-    # DEPLOYER.transfer("0x38a4BCC04f5136e6408589A440F495D7AD0F34DB", "1 ether", )
-    # flip.transfer(DEPLOYER, flip.balanceOf("0x38a4BCC04f5136e6408589A440F495D7AD0F34DB"), {"from": "0x38a4BCC04f5136e6408589A440F495D7AD0F34DB"})
-    # assert False
-
     if not os.path.isfile(DEPLOYMENT_INFO_FILE):
         prompt_user_continue_or_break("Starting deployment from scratch", True)
 
