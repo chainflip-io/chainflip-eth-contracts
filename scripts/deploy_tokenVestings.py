@@ -45,7 +45,7 @@ columns = [
     "Yeet Function?",
     "Sanity checked?",
 ]
-options_lockup_type = ["Option A", "Option B", "Airdrop"]
+options_lockup_type = ["Option A", "Option B", "Airdrop", "Waiting on Confirmation"]
 
 # TODO: Ensure vesting schedule is correct, currently set to 1 year
 vesting_period = YEAR
@@ -83,6 +83,11 @@ def main():
     number_noStaking = 0
     flip_total_E18 = 0
 
+    ## TODO: Remove this, it's only when forking and using default seed
+    # DEPLOYER.transfer("0x38a4BCC04f5136e6408589A440F495D7AD0F34DB", "1 ether", )
+    # flip.transfer(DEPLOYER, flip.balanceOf("0x38a4BCC04f5136e6408589A440F495D7AD0F34DB"), {"from": "0x38a4BCC04f5136e6408589A440F495D7AD0F34DB"})
+    # assert False
+
     if not os.path.isfile(DEPLOYMENT_INFO_FILE):
         prompt_user_continue_or_break("Starting deployment from scratch", True)
 
@@ -103,6 +108,12 @@ def main():
                 ), f"Incorrect number of parameters: expected {len(columns)}, but got {len(row)}"
 
                 # Check that all rows are valid
+                beneficiary = row[columns.index("Beneficiary Wallet Address")]
+
+                if beneficiary == "":
+                    print(f"Skipping row with no beneficiary {row}")
+                    continue
+
                 lockup_type = row[columns.index("Final Choice Lock up Schedule")]
 
                 if lockup_type == options_lockup_type[0]:
@@ -111,11 +122,15 @@ def main():
                     number_noStaking += 1
                 elif lockup_type == options_lockup_type[2]:
                     # Skip the ones marked as Airdrop
+                    print(f"Skipping row marked as Airdrop {row}")
+                    continue
+                elif lockup_type == options_lockup_type[3] and beneficiary == "":
+                    # Skip the ones marked as Waiting on Confirmation. We expect those to have an empty beneficiary
+                    print(f"Skipping row with no lockup option nor beneficiary {row}")
                     continue
                 else:
                     raise Exception(f"Incorrect lockup type parameter {lockup_type}")
 
-                beneficiary = row[columns.index("Beneficiary Wallet Address")]
                 amount = int(row[columns.index("# tokens")].replace(",", ""))
                 transferable = row[
                     columns.index("Address transfer enabled in smart contract?")
@@ -124,11 +139,14 @@ def main():
 
                 assert web3.isAddress(
                     beneficiary
-                ), f"Incorrect beneficiary address {beneficiary}"
+                ), f"Incorrect beneficiary address {beneficiary}, {row}"
 
                 if transferable in ["yes", "Yes"]:
                     transferable = True
                 elif transferable in ["no", "No"]:
+                    transferable = False
+                elif transferable in ["", "No answer", "No Answer", "no answer"]:
+                    # For unknwons and undetermined, we default to False
                     transferable = False
                 else:
                     raise Exception(
@@ -138,6 +156,9 @@ def main():
                 if revokable == "Enabled":
                     revoker = revoker_address
                 elif revokable == "Disabled":
+                    revoker = ZERO_ADDR
+                elif revokable == "":
+                    # For undetermined default to disabled
                     revoker = ZERO_ADDR
                 else:
                     raise Exception(f"Incorrect revokability parameter {revokable}")
