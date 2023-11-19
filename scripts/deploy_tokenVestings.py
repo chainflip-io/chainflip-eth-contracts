@@ -102,13 +102,18 @@ def main():
                     columns
                 ), f"Incorrect number of parameters: expected {len(columns)}, but got {len(row)}"
 
-                # Check that all rows are valid
+                # Check beneficiary
                 beneficiary = row[columns.index("Beneficiary Wallet Address")]
 
                 if beneficiary == "":
                     print(f"Skipping row with no beneficiary {row}")
                     continue
 
+                assert web3.isAddress(
+                    beneficiary
+                ), f"Incorrect beneficiary address {beneficiary}, {row}"
+
+                # Check lockup type
                 lockup_type = row[columns.index("Final Choice Lock up Schedule")]
 
                 if lockup_type == options_lockup_type[0]:
@@ -120,21 +125,16 @@ def main():
                     print(f"Skipping row marked as Airdrop {row}")
                     continue
                 elif lockup_type == options_lockup_type[3] and beneficiary == "":
-                    # Skip the ones marked as Waiting on Confirmation. We expect those to have an empty beneficiary
-                    print(f"Skipping row with no lockup option nor beneficiary {row}")
-                    continue
+                    raise Exception(
+                        f"Undetermined lockup type {lockup_type} but with beneficiary address {beneficiary}"
+                    )
                 else:
                     raise Exception(f"Incorrect lockup type parameter {lockup_type}")
 
-                amount = int(row[columns.index("# tokens")].replace(",", ""))
+                # Check transferability
                 transferable = row[
                     columns.index("Address transfer enabled in smart contract?")
                 ]
-                revokable = row[columns.index("Yeet Function?")]
-
-                assert web3.isAddress(
-                    beneficiary
-                ), f"Incorrect beneficiary address {beneficiary}, {row}"
 
                 if transferable in ["yes", "Yes"]:
                     transferable = True
@@ -148,6 +148,9 @@ def main():
                         f"Incorrect transferability parameter {transferable}"
                     )
 
+                # Check revokability
+                revokable = row[columns.index("Yeet Function?")]
+
                 if revokable == "Enabled":
                     revoker = revoker_address
                 elif revokable == "Disabled":
@@ -158,6 +161,8 @@ def main():
                 else:
                     raise Exception(f"Incorrect revokability parameter {revokable}")
 
+                # Check amount
+                amount = int(row[columns.index("# tokens")].replace(",", ""))
                 amount_E18 = amount * E_18
 
                 vesting_list.append(
