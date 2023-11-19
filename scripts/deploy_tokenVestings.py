@@ -45,7 +45,7 @@ columns = [
     "Yeet Function?",
     "Sanity checked?",
 ]
-options_lockup_type = ["Option A", "Option B", "Airdrop", "Waiting on Confirmation"]
+options_lockup_type = ["Option A", "Option B", "Airdrop"]
 
 # TODO: Ensure vesting schedule is correct, currently set to 1 year
 vesting_period = YEAR
@@ -124,10 +124,6 @@ def main():
                     # Skip the ones marked as Airdrop
                     print(f"Skipping row marked as Airdrop {row}")
                     continue
-                elif lockup_type == options_lockup_type[3]:
-                    raise Exception(
-                        f"Lockup type {lockup_type} but with beneficiary address {beneficiary}"
-                    )
                 else:
                     raise Exception(f"Incorrect lockup type parameter {lockup_type}")
 
