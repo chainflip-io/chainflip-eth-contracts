@@ -124,9 +124,9 @@ def main():
                     # Skip the ones marked as Airdrop
                     print(f"Skipping row marked as Airdrop {row}")
                     continue
-                elif lockup_type == options_lockup_type[3] and beneficiary == "":
+                elif lockup_type == options_lockup_type[3]:
                     raise Exception(
-                        f"Undetermined lockup type {lockup_type} but with beneficiary address {beneficiary}"
+                        f"Lockup type {lockup_type} but with beneficiary address {beneficiary}"
                     )
                 else:
                     raise Exception(f"Incorrect lockup type parameter {lockup_type}")
