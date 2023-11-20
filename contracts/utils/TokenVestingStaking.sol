@@ -22,8 +22,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  *
  *      The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and
  *      is therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree).
- *      Therefore, it is recommended to avoid using short time durations (less than a minute). Typical vesting
- *      schemes, with a cliff period of a year and a duration of four years, are safe to use.
+ *      Therefore, it is recommended to avoid using short time durations (less than a minute).
  *
  */
 contract TokenVestingStaking is ITokenVestingStaking, Shared {
@@ -36,6 +35,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     address private revoker;
 
     // Durations and timestamps are expressed in UNIX time, the same units as block.timestamp.
+    uint256 public immutable start;
     uint256 public immutable end;
 
     // solhint-disable-next-line var-name-mixedcase
@@ -55,6 +55,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     /**
      * @param beneficiary_ address of the beneficiary to whom vested tokens are transferred
      * @param revoker_   the person with the power to revoke the vesting. Address(0) means it is not revocable.
+     * @param start_ the unix time when the beneficiary can start staking the tokens.
      * @param end_ the unix time of the end of the vesting period, everything withdrawable after
      * @param transferableBeneficiary_ whether the beneficiary address can be transferred
      * @param addressHolder_ the contract holding the reference address to the ScGateway for staking
@@ -63,15 +64,18 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
     constructor(
         address beneficiary_,
         address revoker_,
+        uint256 start_,
         uint256 end_,
         bool transferableBeneficiary_,
         IAddressHolder addressHolder_,
         IERC20 flip_
     ) nzAddr(beneficiary_) nzAddr(address(addressHolder_)) nzAddr(address(flip_)) {
-        require(end_ > block.timestamp, "Vesting: final time is before current time");
+        require(start_ <= end_, "Vesting: start_ after end_");
+        require(block.timestamp < start_, "Vesting: start before current time");
 
         beneficiary = beneficiary_;
         revoker = revoker_;
+        start = start_;
         end = end_;
         transferableBeneficiary = transferableBeneficiary_;
         addressHolder = addressHolder_;
@@ -90,7 +94,10 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      * @param nodeID the nodeID to fund.
      * @param amount the amount of FLIP out of the current funds in this contract.
      */
-    function fundStateChainAccount(bytes32 nodeID, uint256 amount) external override onlyBeneficiary notRevoked {
+    function fundStateChainAccount(
+        bytes32 nodeID,
+        uint256 amount
+    ) external override onlyBeneficiary notRevoked afterStart {
         address stateChainGateway = addressHolder.getStateChainGateway();
 
         FLIP.approve(stateChainGateway, amount);
@@ -102,7 +109,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
      *          It is expected that an amount of stFLIP will be minted to this contract.
      * @param amount the amount of FLIP to stake to the staking provider.
      */
-    function stakeToStProvider(uint256 amount) external override onlyBeneficiary notRevoked {
+    function stakeToStProvider(uint256 amount) external override onlyBeneficiary notRevoked afterStart {
         address stMinter = addressHolder.getStakingAddress();
 
         FLIP.approve(stMinter, amount);
@@ -156,7 +163,7 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
     /**
      * @notice Allows the revoker to revoke the vesting and stop the beneficiary from releasing any
-     *         tokens if the vesting period has not bene completed. Any staked tokens at the time of
+     *         tokens if the vesting period has not been completed. Any staked tokens at the time of
      *         revoking can be retrieved by the revoker upon unstaking via `retrieveRevokedFunds`.
      * @param token ERC20 token which is being vested.
      */
@@ -252,6 +259,11 @@ contract TokenVestingStaking is ITokenVestingStaking, Shared {
 
     modifier notRevoked() {
         require(!revoked, "Vesting: token revoked");
+        _;
+    }
+
+    modifier afterStart() {
+        require(block.timestamp >= start, "Vesting: not started");
         _;
     }
 }

@@ -177,12 +177,10 @@ def addressHolder(cf, addrs, AddressHolder, mockStProvider):
 
 @pytest.fixture(scope="module")
 def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
-
     # This was hardcoded to a timestamp, but ganache uses real-time when we run
     # the tests, so we should use relative values instead of absolute ones
-    start = getChainTime()
-    cliff = start + QUARTER_YEAR
-    end = start + QUARTER_YEAR + YEAR
+    cliff = getChainTime() + QUARTER_YEAR
+    end = cliff + YEAR
 
     total = MAX_TEST_FUND
 
@@ -204,9 +202,8 @@ def tokenVestingNoStaking(addrs, cf, TokenVestingNoStaking):
 
 @pytest.fixture(scope="module")
 def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
-    # This was hardcoded to a timestamp, but ganache uses real-time when we run
-    # the tests, so we should use relative values instead of absolute ones
-    start = getChainTime()
+    # Add small delay to ensure start > current timestamp
+    start = getChainTime() + 10
     end = start + QUARTER_YEAR + YEAR
 
     total = MAX_TEST_FUND
@@ -219,12 +216,17 @@ def tokenVestingStaking(addrs, cf, TokenVestingStaking, addressHolder):
         TokenVestingStaking,
         addrs.BENEFICIARY,
         addrs.REVOKER,
+        start,
         end,
         BENEF_TRANSF,
         addressHolder,
         cf.flip,
     )
-    return tv, end, total
+
+    # Wait for the staking period to start
+    chain.sleep(10)
+
+    return tv, start, end, total
 
 
 # Deploy CFReceiver Mock contracts for testing purposes

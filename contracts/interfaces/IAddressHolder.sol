@@ -5,12 +5,12 @@ pragma solidity ^0.8.0;
 interface IAddressHolder {
     event StateChainGatewayUpdated(address oldStateChainGateway, address newStateChainGateway);
     event StakingAddressesUpdated(
-        address oldStFLIP,
         address oldStMinter,
         address oldStBurner,
-        address newStFLIP,
+        address oldStFLIP,
         address newStMinter,
-        address newStBurner
+        address newStBurner,
+        address newStFLIP
     );
     event GovernorTransferred(address oldGovernor, address newGovernor);
 

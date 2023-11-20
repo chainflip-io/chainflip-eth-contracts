@@ -6,7 +6,7 @@ from shared_tests_tokenVesting import *
 
 @given(st_sleepTime=strategy("uint256", max_value=YEAR * 2))
 def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
-    tv, end, total = tokenVestingStaking
+    tv, start, end, total = tokenVestingStaking
 
     assert cf.flip.balanceOf(addrs.BENEFICIARY) == 0
     assert cf.flip.balanceOf(addrs.REVOKER) == 0
@@ -34,6 +34,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
         cf.stateChainGateway,
         addressHolder,
         tv,
+        start,
         addrs.BENEFICIARY,
         addrs.REVOKER,
         True,
@@ -52,7 +53,7 @@ def test_revoke(addrs, cf, tokenVestingStaking, addressHolder, st_sleepTime):
 
 
 def test_revoke_rev_revoker(a, addrs, cf, tokenVestingStaking):
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
 
     for ad in a:
         if ad != addrs.REVOKER:
@@ -68,6 +69,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVestingStaking):
         TokenVestingStaking,
         addrs.BENEFICIARY,
         ZERO_ADDR,
+        start + 2,
         end,
         BENEF_NON_TRANSF,
         cf.stateChainGateway,
@@ -79,7 +81,7 @@ def test_revoke_rev_revokable(addrs, cf, TokenVestingStaking):
 
 
 def test_revoke_rev_revoked(addrs, cf, tokenVestingStaking):
-    tv, _, total = tokenVestingStaking
+    tv, _, _, total = tokenVestingStaking
 
     tx = tv.revoke(cf.flip, {"from": addrs.REVOKER})
 
@@ -94,7 +96,7 @@ def test_revoke_rev_revoked(addrs, cf, tokenVestingStaking):
 
 
 def test_revoke_staked(addrs, cf, tokenVestingStaking):
-    tv, end, total = tokenVestingStaking
+    tv, _, end, total = tokenVestingStaking
     nodeID1 = web3.toHex(1)
 
     amount = total
@@ -139,7 +141,7 @@ def test_revoke_staked(addrs, cf, tokenVestingStaking):
 def test_retrieve_revoked_funds_and_rewards(
     addrs, cf, tokenVestingStaking, st_amount, rewards
 ):
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
 
     cf.flip.approve(
         cf.stateChainGateway.address, st_amount, {"from": addrs.BENEFICIARY}
@@ -170,7 +172,7 @@ def test_retrieve_revoked_funds_and_rewards(
 # If revoked when staked, we don't get the funds. Then we have to enforce that the beneficiary unstakes it.
 # When that happens the beneficiary can't release the funds but they can front-run our retrieveFunds.
 def test_fund_revoked_staked(addrs, cf, tokenVestingStaking):
-    tv, _, _ = tokenVestingStaking
+    tv, _, _, _ = tokenVestingStaking
     test_revoke_staked(addrs, cf, tokenVestingStaking)
     nodeID1 = web3.toHex(1)
     with reverts(REV_MSG_TOKEN_REVOKED):
