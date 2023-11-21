@@ -47,12 +47,12 @@ columns = [
 ]
 options_lockup_type = ["Option A", "Option B", "Airdrop"]
 
-# TODO: Ensure vesting schedule is correct, currently set to 1 year
+# Vesting set to 1 year
 vesting_period = YEAR
 # Vesting schedule
-noStaking_cliff = int(os.environ["STAKING_CLIFF_TIMESTAMP"])
+noStaking_cliff = int(os.environ["STAKING_CLIFF_TIMESTAMP"])  # 1700740800 TGE
 noStaking_end = noStaking_cliff + vesting_period
-staking_start = int(os.environ["NO_STAKING_START_TIMESTAMP"])
+staking_start = int(os.environ["NO_STAKING_START_TIMESTAMP"])  # 1700740800 TGE
 staking_end = staking_start + vesting_period
 
 
@@ -63,15 +63,27 @@ DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 
 print(f"DEPLOYER = {DEPLOYER}")
-network.priority_fee("1 gwei")
+transaction_params()
 
 
 def main():
-    revoker_address = os.environ["REVOKER_ADDRESS"]
+    if chain.id == 1:
+        prompt_user_continue_or_break(
+            "\n[WARNING] You are about to interact with Ethereum mainnet",
+            False,
+        )
+
+    revoker_address = os.environ[
+        "REVOKER_ADDRESS"
+    ]  # 0x38a4BCC04f5136e6408589A440F495D7AD0F34DB
     # AddressHolder governor
-    governor = os.environ["GOV_KEY"]
-    sc_gateway_address = os.environ["SC_GATEWAY_ADDRESS"]
-    flip_address = os.environ["FLIP_ADDRESS"]
+    governor = os.environ["GOV_KEY"]  # 0x38a4BCC04f5136e6408589A440F495D7AD0F34DB
+    sc_gateway_address = os.environ[
+        "SC_GATEWAY_ADDRESS"
+    ]  # 0x6995Ab7c4D7F4B03f467Cf4c8E920427d9621DBd
+    flip_address = os.environ[
+        "FLIP_ADDRESS"
+    ]  # 0x826180541412D574cf1336d22c0C0a287822678A
     stMinter_address = os.environ["ST_MINTER_ADDRESS"]
     stBurner_address = os.environ["ST_BURNER_ADDRESS"]
     stFlip_address = os.environ["ST_FLIP_ADDRESS"]
@@ -168,10 +180,13 @@ def main():
                 flip_total_E18 += amount_E18
 
         print("Deployer balance: ", flip.balanceOf(DEPLOYER) // E_18)
+        print(f"Amount of FLIP required    = {flip_total_E18//E_18:,}")
+
         assert flip_total_E18 <= flip.balanceOf(
             DEPLOYER
         ), "Not enough FLIP tokens to fund the vestings"
         expected_final_balance = flip.balanceOf(DEPLOYER) - flip_total_E18
+        assert number_staking + number_noStaking == len(vesting_list)
 
         # For live deployment, add a confirmation step to allow the user to verify the row.
         print(f"DEPLOYER = {DEPLOYER}")
@@ -242,12 +257,6 @@ def main():
 
         prompt_user_continue_or_break("Deployment with the parameter above", True)
 
-        if chain.id == 1:
-            prompt_user_continue_or_break(
-                "\n[WARNING] You are about to deploy to the mainnet",
-                False,
-            )
-
         # Deploying the address Holder
         addressHolder = deploy_addressHolder(
             DEPLOYER,
@@ -258,9 +267,6 @@ def main():
             stBurner_address,
             stFlip_address,
         )
-
-        # AddressHolder deployment will already wait for several confirmations
-        print("Address holder deployed at: ", addressHolder.address)
 
         # Deploy all the vesting contracts
         for vesting in vesting_list:
@@ -305,17 +311,16 @@ def main():
         # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
         if chain.id not in [eth_localnet, arb_localnet, hardhat]:
             print("Waiting for a short time for safety...")
-            time.sleep(12)
-
-        print("Checking all the transaction receipts...")
-        for vesting in vesting_list:
-            web3.eth.wait_for_transaction_receipt(vesting[5].tx.txid)
+            time.sleep(36)
 
         # Write the data to a CSV file
         print(f"Storing deployment info in {DEPLOYMENT_INFO_FILE}")
         with open(DEPLOYMENT_INFO_FILE, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(vesting_list)
+
+        # AddressHolder deployment will already wait for several confirmations
+        print("Address holder deployed at: ", addressHolder.address)
 
         print("Verifying correct deployment of vesting contracts...")
         for vesting in vesting_list:
@@ -375,19 +380,23 @@ def main():
     # Same address in mainnet and test networks
     airdrop_contract = IAirdropContract(address_wenTokens)
 
-    required_confs = transaction_params()
     flip.approve(
         address_wenTokens,
         total_amount_E18,
-        {"from": DEPLOYER, "required_confs": required_confs},
+        {"from": DEPLOYER, "required_confs": 1},
     )
     airdrop_contract.airdropERC20(
         flip,
         vesting_addresses,
         vesting_amounts_E18,
         total_amount_E18,
-        {"from": DEPLOYER, "required_confs": required_confs},
+        {"from": DEPLOYER, "required_confs": 1},
     )
+    # Wait to make sure all contracts are deployed and we don't get a failure when doing checks
+    if chain.id not in [eth_localnet, arb_localnet, hardhat]:
+        print("Waiting for a short time for safety...")
+        time.sleep(12)
+
     assert flip.allowance(DEPLOYER, address_wenTokens) == 0, "Allowance not correct"
 
     for i, vesting in enumerate(vesting_list):
