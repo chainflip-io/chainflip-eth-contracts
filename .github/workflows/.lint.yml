@@ -6,10 +6,10 @@ jobs:
     runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses:  actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "14"
 
@@ -17,7 +17,7 @@ jobs:
         run: pip install virtualenv
 
       - name: Install and configure Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b
 
       - run: npm install
       - run: npx solhint -w 0 'contracts/**/*.sol'
