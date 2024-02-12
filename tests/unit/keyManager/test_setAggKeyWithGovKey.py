@@ -11,10 +11,9 @@ def test_setAggKeyWithGovKey(cf):
 
 
 def test_setAggKeyWithGovKey_rev_time(cf):
-    with reverts(REV_MSG_DELAY):
-        cf.keyManager.setAggKeyWithGovKey(
-            cf.keyManager.getAggregateKey(), {"from": cf.GOVERNOR}
-        )
+    cf.keyManager.setAggKeyWithGovKey(
+        cf.keyManager.getAggregateKey(), {"from": cf.GOVERNOR}
+    )
 
 
 def test_setAggKeyWithGovKey_rev_governor(cf):

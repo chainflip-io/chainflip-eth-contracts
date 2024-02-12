@@ -28,11 +28,10 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         Key memory initialAggKey,
         address initialGovKey,
         address initialCommKey
-    ) nzAddr(initialGovKey) nzAddr(initialCommKey) nzKey(initialAggKey) validAggKey(initialAggKey) {
+    ) nzAddr(initialGovKey) nzAddr(initialCommKey) validAggKey(initialAggKey) {
         _aggKey = initialAggKey;
         _govKey = initialGovKey;
         _commKey = initialCommKey;
-        _lastValidateTime = block.timestamp;
     }
 
     //////////////////////////////////////////////////////////////
