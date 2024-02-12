@@ -32,7 +32,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _aggKey = initialAggKey;
         _govKey = initialGovKey;
         _commKey = initialCommKey;
-        _lastValidateTime = block.timestamp;
     }
 
     //////////////////////////////////////////////////////////////
