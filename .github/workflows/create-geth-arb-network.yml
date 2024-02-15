@@ -260,6 +260,12 @@ jobs:
       - name: Deploy contracts
         run: poetry run brownie run deploy_contracts --network arb-l2
 
+      - name: Check whether arbUSDC Contract was deployed 🕵️‍♂️
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9", "latest"],"id":1}' \
+          http://127.0.0.1:8547
+
       - name: Stop Containers
         run: |
           # Stop ARB containers in order to preserve a clean state
