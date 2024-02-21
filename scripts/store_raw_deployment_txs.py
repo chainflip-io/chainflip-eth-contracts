@@ -5,7 +5,7 @@ import json
 sys.path.append(os.path.abspath("tests"))
 from consts import *
 
-from brownie import network,web3, accounts
+from brownie import network, web3, accounts
 
 AUTONOMY_SEED = os.environ["SEED"]
 DEPLOY_RAW_TX_ID = os.environ["DEPLOY_RAW_TX_ID"]
@@ -14,6 +14,7 @@ DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 deployer = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 print(f"DEPLOYER = {deployer}")
 
+
 def main():
     latest_block = web3.eth.block_number
     raw_transactions = []
@@ -21,14 +22,14 @@ def main():
     # Iterate over all blocks
     for blockNumber in range(0, latest_block):
         # Get the block details
-        block = web3.eth.get_block(blockNumber+1)
+        block = web3.eth.get_block(blockNumber + 1)
 
         # Extract and print the transactions
-        transactions = block['transactions']
+        transactions = block["transactions"]
 
         for tx in transactions:
             tx_data = web3.eth.get_transaction(tx.hex())
-            sender = tx_data['from']
+            sender = tx_data["from"]
             if sender == deployer:
                 raw_transactions.append(web3.eth.get_raw_transaction(tx.hex()).hex())
 
@@ -54,7 +55,8 @@ def send_raw_json_txs():
     for raw_tx in data.values():
         # Send the raw transaction
         tx_hash = web3.eth.sendRawTransaction(raw_tx)
-        print(f'Transaction sent with hash: {tx_hash.hex()}')
+        print(f"Transaction sent with hash: {tx_hash.hex()}")
+
 
 def get_number_txs():
     print(web3.eth.get_transaction_count(deployer))
