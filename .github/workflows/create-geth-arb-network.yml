@@ -280,6 +280,13 @@ jobs:
       - run: yarn
       - run: poetry install
 
+      - name: Login to GitHub Container Registry ➡️🦑
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Restart Arbitrum Network
         working-directory: nitro-testnode
         run: |
