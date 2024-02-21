@@ -2,7 +2,7 @@
 // INSTRUCTIONS
 //
 // This command takes no arguments.
-// It will perform the initial arbitrum contract deployment according to the `arb_deployment_txs.json` file
+// It will perform the initial arbitrum contract deployment according to the `arbRawDeploymentTxs.json` file
 // and will send a transaction every ~260ms to mimic the Arbitrum mainnet block production.
 
 import fs from 'fs/promises';
@@ -11,21 +11,28 @@ import { setTimeout as sleep } from 'timers/promises';
 
 async function main(): Promise<void> {
   const web3 = new Web3(process.env.ARB_ENDPOINT ?? 'http://127.0.0.1:8547');
+  const usdcArbitrumAddress = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 
-  const abi = await fs.readFile('./commands/arbRawDeploymentTxs.json', 'utf-8');
-  const arbRawTxs: JSON = JSON.parse(abi);
+  const bytecode = await web3.eth.getCode(usdcArbitrumAddress);
 
-  // Loop through each raw transaction data
-  for (const arbRawTx of Object.values(arbRawTxs)) {
-    const txHash = await web3.eth.sendSignedTransaction(arbRawTx, (error) => {
-      if (error) {
-        console.error(`Arbitrum transaction failure:`, error);
-      }
-    });
-    console.log(`Transaction sent with hash: ${txHash.transactionHash}`);
+  if (bytecode === '0x') {
+    const abi = await fs.readFile('./commands/arbRawDeploymentTxs.json', 'utf-8');
+    const arbRawTxs: JSON = JSON.parse(abi);
+
+    // Loop through each raw transaction data
+    for (const arbRawTx of Object.values(arbRawTxs)) {
+      const txHash = await web3.eth.sendSignedTransaction(arbRawTx, (error) => {
+        if (error) {
+          console.log(`Arbitrum transaction failure:`, error);
+        }
+      });
+      console.log(`Transaction sent with hash: ${txHash.transactionHash}`);
+    }
+
+    console.log('=== Arbitrum contracts deployed succesfully ===');
+  } else {
+    console.log(`=== Contracts already deployed ===`);
   }
-
-  console.log('=== Arbitrum contracts deployed succesfully ===');
 
   console.log('=== Start spamming ===');
 
