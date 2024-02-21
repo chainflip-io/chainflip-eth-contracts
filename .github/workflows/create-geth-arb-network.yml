@@ -252,6 +252,11 @@ jobs:
           # Stop any other containers that may be running
           docker stop $(docker ps -a -q)
 
+      - name: Update permissions
+        run: |
+          sudo chown -R $USER:$USER ./nitro-testnode/data
+          sudo chmod -R 777 ./nitro-testnode/data
+
       - name: Save Initial State Artifacts
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
         with:
