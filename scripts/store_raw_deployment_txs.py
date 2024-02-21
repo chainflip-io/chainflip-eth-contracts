@@ -1,11 +1,7 @@
-import sys
 import os
 import json
 
-sys.path.append(os.path.abspath("tests"))
-from consts import *
-
-from brownie import network, web3, accounts
+from brownie import web3, accounts
 
 AUTONOMY_SEED = os.environ["SEED"]
 DEPLOY_RAW_TX_ID = os.environ["DEPLOY_RAW_TX_ID"]
