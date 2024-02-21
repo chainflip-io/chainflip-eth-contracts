@@ -16,7 +16,7 @@ async function main(): Promise<void> {
   const bytecode = await web3.eth.getCode(usdcArbitrumAddress);
 
   if (bytecode === '0x') {
-    const abi = await fs.readFile('./commands/arbRawDeploymentTxs.json', 'utf-8');
+    const abi = await fs.readFile('./arbRawDeploymentTxs.json', 'utf-8');
     const arbRawTxs: JSON = JSON.parse(abi);
 
     // Loop through each raw transaction data
