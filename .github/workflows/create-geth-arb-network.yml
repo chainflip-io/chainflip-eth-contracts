@@ -238,7 +238,18 @@ jobs:
           ./test-node.bash --init --detach
           ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 10000
           ./test-node.bash script send-l2 --to address_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --ethamount 10000
-          docker compose down
+
+      - name: Stop Containers
+        run: |
+          # Stop ARB containers in order to preserve a clean state
+          docker stop nitro-testnode-poster-1
+          docker stop nitro-testnode-staker-unsafe-1
+          docker stop nitro-testnode-sequencer-1
+          docker stop nitro-testnode-redis-1
+          docker stop nitro-testnode-geth-1
+
+          # Stop any other containers that may be running
+          docker stop $(docker ps -a -q)
 
       - name: Save Initial State Artifacts
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
@@ -276,18 +287,6 @@ jobs:
 
       - name: Get raw deployment transactions
         run: poetry run brownie run store_raw_deployment_txs --network arb-l2
-
-      # - name: Stop Containers
-      #   run: |
-      #     # Stop ARB containers in order to preserve a clean state
-      #     docker stop nitro-testnode-poster-1
-      #     docker stop nitro-testnode-staker-unsafe-1
-      #     docker stop nitro-testnode-sequencer-1
-      #     docker stop nitro-testnode-redis-1
-      #     docker stop nitro-testnode-geth-1
-
-      #     # Stop any other containers that may be running
-      #     docker stop $(docker ps -a -q)
 
       - name: Summary
         run: |
