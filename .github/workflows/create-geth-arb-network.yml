@@ -264,68 +264,68 @@ jobs:
           path: |
             ${{ github.workspace }}/nitro-testnode/data
 
-      - name: Install Python virtualenv
-        run: pip install virtualenv
+      # - name: Install Python virtualenv
+      #   run: pip install virtualenv
 
-      - name: Setup Node
-        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
-        with:
-          node-version: "16"
+      # - name: Setup Node
+      #   uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
+      #   with:
+      #     node-version: "16"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b
+      # - name: Install Poetry
+      #   uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b
 
-      - run: npm install --global ganache-cli
-      - run: npm install --global yarn
-      - run: yarn
-      - run: poetry install
+      # - run: npm install --global ganache-cli
+      # - run: npm install --global yarn
+      # - run: yarn
+      # - run: poetry install
 
-      - name: Login to GitHub Container Registry ➡️🦑
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Login to GitHub Container Registry ➡️🦑
+      #   uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restart Arbitrum Network
-        working-directory: nitro-testnode
-        run: |
-          docker compose up -d
+      # - name: Restart Arbitrum Network
+      #   working-directory: nitro-testnode
+      #   run: |
+      #     docker compose up -d
 
-      - name: Add the network
-        run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
+      # - name: Add the network
+      #   run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
 
-      - name: Deploy contracts
-        run: poetry run brownie run deploy_contracts --network arb-l2
+      # - name: Deploy contracts
+      #   run: poetry run brownie run deploy_contracts --network arb-l2
 
-      - name: Get raw deployment transactions
-        run: poetry run brownie run store_raw_deployment_txs --network arb-l2
+      # - name: Get raw deployment transactions
+      #   run: poetry run brownie run store_raw_deployment_txs --network arb-l2
 
-      - name: Summary
-        run: |
-          CONTRACTS=$(jq . ./scripts/.artefacts/docker.json)
-          echo "## Deployed L2 Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
-          echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+      # - name: Summary
+      #   run: |
+      #     CONTRACTS=$(jq . ./scripts/.artefacts/docker.json)
+      #     echo "## Deployed L2 Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
+      #     echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
+      #     echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+      #     echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
+      #     echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      #     echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
+      #     echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
 
-      - name: Save agg key to file
-        run: echo ${{ env.AGG_KEY }} > agg_key
+      # - name: Save agg key to file
+      #   run: echo ${{ env.AGG_KEY }} > agg_key
 
-      - name: Update permissions
-        run: |
-          sudo chown -R $USER:$USER ./nitro-testnode/data
-          sudo chmod -R 777 ./nitro-testnode/data
+      # - name: Update permissions
+      #   run: |
+      #     sudo chown -R $USER:$USER ./nitro-testnode/data
+      #     sudo chmod -R 777 ./nitro-testnode/data
 
-      - name: Save ARB Raw Deployment Txs Artifacts
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
-        with:
-          name: Arbitrum raw deployment transactions
-          path: |
-            ./scripts/.artefacts/arbRawDeploymentTxs.json
+      # - name: Save ARB Raw Deployment Txs Artifacts
+      #   uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+      #   with:
+      #     name: Arbitrum raw deployment transactions
+      #     path: |
+      #       ./scripts/.artefacts/arbRawDeploymentTxs.json
 
       - name: Clean Up docker containers 🧹
         if: always()
