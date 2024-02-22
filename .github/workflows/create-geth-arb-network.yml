@@ -309,6 +309,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
+        uses:  actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          token: ${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}
+          repository: chainflip-io/chainflip-backend
+          path: chainflip-backend
+          ref: ${{ inputs.chainflip_backend_ref }}
+
+      - name: Fetch agg_key
+        run: |
+          echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
+
       - name: Download Initial State from previous job
         uses: actions/download-artifact@7a1cd3216ca9260cd8022db641d960b1db4d1be4
         with:
