@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   // NOTE: The naive approach to just have a nonce increment every time seems to work fine
   let nonce = await web3.eth.getTransactionCount(whaleAddress);
   let livelinessLogCounter = 0;
-
+  let spammingTxCounter = 0;
   while (true) {
     const tx = { to: whaleAddress, data: undefined, gas: 5000000, nonce, value: 1 };
 
@@ -59,9 +59,12 @@ async function main(): Promise<void> {
       },
     );
     nonce++;
+    spammingTxCounter++;
     livelinessLogCounter++;
-    if (livelinessLogCounter === 100) {
-      console.log(`💌 Transaction sent with nonce: ${nonce}`);
+    if (livelinessLogCounter === 120) { // 120 * 250ms = 30s
+      console.log(
+        `💌 Total Number of Spamming TXs sent: ${livelinessLogCounter}`
+      );
       livelinessLogCounter = 0;
     }
     await sleep(250);
