@@ -450,7 +450,6 @@ jobs:
 
       - name: Clean Up docker containers 🧹
         if: always()
-        working-directory: ./nitro-testnode
         continue-on-error: true
         run: |
           docker ps -a
