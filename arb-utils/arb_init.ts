@@ -63,7 +63,7 @@ async function main(): Promise<void> {
     livelinessLogCounter++;
     if (livelinessLogCounter === 120) { // 120 * 250ms = 30s
       console.log(
-        `💌 Total Number of Spamming TXs sent: ${livelinessLogCounter}`
+        `💌 Total Number of Spamming TXs sent: ${spammingTxCounter}`
       );
       livelinessLogCounter = 0;
     }
