@@ -9,7 +9,7 @@ from brownie import accounts, network
 
 AUTONOMY_SEED = os.environ["SEED"]
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
-DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
+DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 1)
 
 DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 print(f"DEPLOYER = {DEPLOYER}")
@@ -17,6 +17,8 @@ network.priority_fee("1 gwei")
 
 # NUM_SPAM_TXS = int(os.environ["NUM_SPAM_TXS"])
 NUM_SPAM_TXS = 100
+
+print("DEPLOYER", DEPLOYER)
 
 
 def main():
