@@ -1,5 +1,12 @@
 name: Stateless Tests
-on: push
+on:
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize]
+  push:
+    branches:
+      - master
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
@@ -15,7 +22,7 @@ jobs:
     timeout-minutes: 360
     steps:
       - name: Checkout
-        uses:  actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Install Python virtualenv
         run: pip install virtualenv
