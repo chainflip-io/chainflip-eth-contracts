@@ -26,6 +26,10 @@ on:
         required: false
         default: ""
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   SEED: test test test test test test test test test test test junk
   NUM_GENESIS_VALIDATORS: ${{ inputs.genesis_validators }}
@@ -35,6 +39,7 @@ env:
   GENESIS_STAKE: "1000000000000000000000"
   DEPLOYER_ACCOUNT_INDEX: "0"
   DEPLOY_ARTEFACT_ID: "docker"
+  DEPLOY_RAW_TX_ID: "arbRawDeploymentTxs"
   IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
 
 jobs:
@@ -42,17 +47,17 @@ jobs:
     runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@31cebacef4805868f9ce9a0cb03ee36c32df2ac4
         with:
           images: ghcr.io/${{ github.repository }}/geth-base
           flavor: |
@@ -62,14 +67,14 @@ jobs:
             type=raw,value=latest
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
         with:
           context: ci/docker/arb-geth/
           push: true
@@ -95,12 +100,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           ref: ${{ inputs.tag }}
 
       - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           token: ${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}
           repository: chainflip-io/chainflip-backend
@@ -112,7 +117,7 @@ jobs:
           echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -122,12 +127,12 @@ jobs:
         run: pip install virtualenv
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "16"
 
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
@@ -166,7 +171,7 @@ jobs:
         run: echo ${{ env.AGG_KEY }} > agg_key
 
       - name: Save artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
         with:
           name: ${{ env.IMAGE_TAG }}
           path: |
@@ -183,10 +188,10 @@ jobs:
       - build-geth-state
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Checkout chainflip-io/nitro-testnode @ ${{ inputs.nitro_testnodes_ref }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           token: ${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}
           repository: chainflip-io/nitro-testnode
@@ -195,7 +200,7 @@ jobs:
           submodules: true
 
       - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           token: ${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}
           repository: chainflip-io/chainflip-backend
@@ -207,13 +212,13 @@ jobs:
           echo "AGG_KEY=$(jq -r .eth_agg_key chainflip-backend/localnet/init/keyshare/${{ inputs.genesis_validators }}-node/agg_keys.json)" >> $GITHUB_ENV
 
       - name: Download Geth Initial State
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@7a1cd3216ca9260cd8022db641d960b1db4d1be4
         with:
           name: ${{ env.IMAGE_TAG }}
           path: ./nitro-testnode/${{ env.GETH_INITIAL_STATE_DIR }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -237,17 +242,20 @@ jobs:
           ./test-node.bash --init --detach
           ./test-node.bash script send-l2 --to address_0x076d3803349fd5FB48863c5Fc33483cB2243C0Df --ethamount 10000
           ./test-node.bash script send-l2 --to address_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --ethamount 10000
+          ./test-node.bash script send-l2 --to address_0x70997970C51812dc3A010C7d01b50e0d17dc79C8 --ethamount 10000
+
+      # Spamming Arbitrum so the final state contains all the previous funding transactions
 
       - name: Install Python virtualenv
         run: pip install virtualenv
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "16"
 
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
@@ -257,8 +265,8 @@ jobs:
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
 
-      - name: Deploy contracts
-        run: poetry run brownie run deploy_contracts --network arb-l2
+      - name: Spam txs
+        run: poetry run brownie run spam_txs --network arb-l2
 
       - name: Stop Containers
         run: |
@@ -272,27 +280,13 @@ jobs:
           # Stop any other containers that may be running
           docker stop $(docker ps -a -q)
 
-      - name: Summary
-        run: |
-          CONTRACTS=$(jq . ./scripts/.artefacts/docker.json)
-          echo "## Deployed L2 Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
-          echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Save agg key to file
-        run: echo ${{ env.AGG_KEY }} > agg_key
-
       - name: Update permissions
         run: |
           sudo chown -R $USER:$USER ./nitro-testnode/data
           sudo chmod -R 777 ./nitro-testnode/data
 
-      - name: Save artifacts
-        uses: actions/upload-artifact@v3
+      - name: Save Initial State Artifacts
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
         with:
           name: ${{ env.IMAGE_TAG }}-localnet-initial-state
           path: |
@@ -312,38 +306,35 @@ jobs:
     needs:
       - build-arb-state
     runs-on: [self-hosted, linux, x64, ephemeral]
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up QEMU ⚙️
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3
 
       - name: Set up Docker Buildx 👷
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226
         with:
           driver-opts: |
             image=moby/buildkit:v0.10.6
 
       - name: Docker meta 🔖
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@31cebacef4805868f9ce9a0cb03ee36c32df2ac4
         with:
           images: ghcr.io/${{ github.repository }}/localnet-initial-state
           tags: ${{ env.IMAGE_TAG }}
 
       - name: Login to GitHub Container Registry ➡️🦑
-        uses: docker/login-action@v2
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download Initial State from previous job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@7a1cd3216ca9260cd8022db641d960b1db4d1be4
         with:
           name: ${{ env.IMAGE_TAG }}-localnet-initial-state
           path: ./localnet-initial-state
@@ -356,7 +347,7 @@ jobs:
         run: echo "current_datetime=$(date -u +"%b %d, %Y at %R UTC")" >> $GITHUB_OUTPUT
 
       - name: Build Initial State Image 🫙
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
         with:
           context: .
           file: ci/docker/localnet-initial-state.Dockerfile
@@ -370,3 +361,121 @@ jobs:
             BUILD_DATETIME="${{ steps.get_time.outputs.current_datetime }}"
             VCS_REF="${{ github.sha }}"
             BACKEND_REF="${{ inputs.chainflip_backend_ref }}"
+
+  get-l2-contracts-raw-tx:
+    env:
+      AGG_KEY: "346529871269487315764593845752985329862751012"
+    needs:
+      - build-initial-state-container
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Set up QEMU ⚙️
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3
+
+      - name: Set up Docker Buildx 👷
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226
+        with:
+          driver-opts: |
+            image=moby/buildkit:v0.10.6
+
+      - name: Docker meta 🔖
+        id: meta
+        uses: docker/metadata-action@31cebacef4805868f9ce9a0cb03ee36c32df2ac4
+        with:
+          images: ghcr.io/${{ github.repository }}/arbitrum-gizmo-shop
+          tags: ${{ env.IMAGE_TAG }}
+
+      - name: Login to GitHub Container Registry ➡️🦑
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Docker user 🐳
+        run: |
+          sudo usermod -aG docker $USER
+          newgrp docker
+
+      - name: Start Arb Network 🚀
+        run: |
+          docker compose pull > /dev/null 2>&1
+          docker compose up init -d
+          docker compose up -d
+
+      - name: Install Python virtualenv
+        run: pip install virtualenv
+
+      - name: Setup Node
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
+        with:
+          node-version: "16"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b
+
+      - run: npm install --global ganache-cli
+      - run: npm install --global yarn
+      - run: yarn
+      - run: poetry install
+
+      - name: Add the network
+        run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
+
+      - name: Deploy contracts
+        run: poetry run brownie run deploy_contracts --network arb-l2
+
+      - name: Get raw deployment transactions
+        run: poetry run brownie run store_raw_deployment_txs --network arb-l2
+
+      - name: Summary
+        run: |
+          CONTRACTS=$(jq . ./scripts/.artefacts/docker.json)
+          echo "## Deployed L2 Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/geth:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Save agg key to file
+        run: echo ${{ env.AGG_KEY }} > agg_key
+
+      - name: Save ARB Raw Deployment Txs Artifacts
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+        with:
+          name: Arbitrum raw deployment transactions
+          path: |
+            ./scripts/.artefacts/arbRawDeploymentTxs.json
+
+      - name: Get Current Time ⌚️
+        id: get_time
+        run: echo "current_datetime=$(date -u +"%b %d, %Y at %R UTC")" >> $GITHUB_OUTPUT
+
+      - name: Build Arbitrum Gizmo Shop Image 🪀
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
+        with:
+          context: .
+          file: ci/docker/arbitrum-gizmo-shop.Dockerfile
+          push: true
+          pull: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATETIME="${{ steps.get_time.outputs.current_datetime }}"
+            VCS_REF="${{ github.sha }}"
+            BACKEND_REF="${{ inputs.chainflip_backend_ref }}"
+
+      - name: Clean Up docker containers 🧹
+        if: always()
+        continue-on-error: true
+        run: |
+          docker ps -a
+          docker compose logs
+          docker compose down --rmi all --volumes --remove-orphans

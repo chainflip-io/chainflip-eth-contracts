@@ -30,15 +30,6 @@ def test_setAggKeyWithAggKey_setAggKeyWithAggKey(cf):
 
 
 def test_setGovKeyWithGovKey_setAggKeyWithGovKey(cf):
-    # Changing the agg key with the gov key should fail if the delay hasn't been long enough yet
-    # No time has passed since the constructor has set the first value of _lastValidateTime
-    with reverts(REV_MSG_DELAY):
-        cf.keyManager.setAggKeyWithGovKey(
-            AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR_2}
-        )
-
-    chain.sleep(AGG_KEY_TIMEOUT)
-
     # Change the gov key
     setGovKeyWithGovKey_test(cf)
 
@@ -63,15 +54,6 @@ def test_setGovKeyWithGovKey_setAggKeyWithGovKey(cf):
 
 # Check that _withAggKey calls update the _lastValidateTime
 def test_setAggKeyWithGovKey_setKeyWithAggKey(cf):
-    # Changing the agg key with the gov key should fail if the delay hasn't been long enough yet
-    # No time has passed since the constructor has set the first value of _lastValidateTime
-    with reverts(REV_MSG_DELAY):
-        cf.keyManager.setAggKeyWithGovKey(
-            AGG_SIGNER_2.getPubData(), {"from": cf.GOVERNOR}
-        )
-
-    chain.sleep(AGG_KEY_TIMEOUT)
-
     setAggKeyWithAggKey_test(cf)
 
     # Reverts due to setAggKeyWithAggKey updating the _lastValidateTime

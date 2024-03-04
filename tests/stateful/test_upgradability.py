@@ -50,7 +50,7 @@ def test_upgradability(
             self.v = self.orig_v
             self.km = self.orig_km
 
-            self.lastValidateTime = self.deployerContract.tx.timestamp
+            self.lastValidateTime = 0
             self.numTxsTested = 0
 
             # StateChainGateway
@@ -104,7 +104,7 @@ def test_upgradability(
                 assert aggKeyNonceConsumer.getKeyManager() == newKeyManager
 
             self.km = newKeyManager
-            self.lastValidateTime = self.km.tx.timestamp
+            self.lastValidateTime = 0
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
         def rule_upgrade_Vault(

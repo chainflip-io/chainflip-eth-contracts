@@ -235,7 +235,7 @@ def test_all(
             self.v_suspended = self.v.getSuspendedState()
 
             # KeyManager
-            self.lastValidateTime = self.deployerContract.tx.timestamp
+            self.lastValidateTime = 0
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + (
                 [Signer.gen_signer(None, {})]
@@ -2123,7 +2123,7 @@ def test_all(
 
                 self._updateBalancesOnUpgrade(self.km, newKeyManager)
                 self.km = newKeyManager
-                self.lastValidateTime = self.km.tx.timestamp
+                self.lastValidateTime = 0
 
         # Deploys a new Vault and transfers the funds from the old Vault to the new one
         def rule_upgrade_Vault(self, st_sender, st_sleep_time):

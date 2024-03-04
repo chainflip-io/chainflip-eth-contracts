@@ -23,18 +23,18 @@ jobs:
       SEED: test test test test test test test test test test test junk
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses:  actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Install Python virtualenv
         run: pip install virtualenv
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "16"
 
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn

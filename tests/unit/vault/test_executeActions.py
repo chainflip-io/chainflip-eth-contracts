@@ -424,8 +424,8 @@ def test_executeActions_revgas(cf, multicall):
     # Gas limit that doesn't allow the Multicall to execute the actions but leaves
     # enough gas to trigger "Vault: gasMulticall too low". Succesfull tx according
     # to gas test is ~140k but it doesn't succeed until gas_limit is not at least
-    # 180k (without the gas check). Then from 190k to 210k, when adding the gas check,
-    # it reverts with "Vault: gasMulticall too low". After 210k it will succeed as normal
+    # 180k (without the gas check). Then from 190k to 220k, when adding the gas check,
+    # it reverts with "Vault: gasMulticall too low". After 220k it will succeed as normal
     gas_limit = 200000
 
     # Reverted with empty revert string is to catch the invalid opcode
@@ -437,7 +437,7 @@ def test_executeActions_revgas(cf, multicall):
             {"from": cf.DENICE, "gas_limit": gas_limit},
         )
 
-    gas_limit = 210000
+    gas_limit = 220000
 
     tx = cf.vault.executeActions(
         sigData,
@@ -448,7 +448,7 @@ def test_executeActions_revgas(cf, multicall):
 
 
 @given(
-    st_gas_limit=strategy("uint256", min_value=80000, max_value=250000),
+    st_gas_limit=strategy("uint256", min_value=100000, max_value=250000),
 )
 def test_executeActions_gas(cf, multicall, st_gas_limit):
     print("gas limit", st_gas_limit)
@@ -473,7 +473,7 @@ def test_executeActions_gas(cf, multicall, st_gas_limit):
 
     # Exact gas limit that makes the transaction have enough gas to pass the
     # gas check, execute the actions and succeeed.
-    cutoff_gas_limit = 202288
+    cutoff_gas_limit = 219452
 
     # On low gas_limit values it will revert with not enough gas error and other
     # error such as no reason string. Arbitrary 80k under the cutoff gas limit

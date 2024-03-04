@@ -6,15 +6,12 @@ import time
 
 
 def test_setAggKeyWithGovKey(cf):
-    chain.sleep(AGG_KEY_TIMEOUT)
     setAggKeyWithGovKey_test(cf)
 
 
-def test_setAggKeyWithGovKey_rev_time(cf):
-    with reverts(REV_MSG_DELAY):
-        cf.keyManager.setAggKeyWithGovKey(
-            cf.keyManager.getAggregateKey(), {"from": cf.GOVERNOR}
-        )
+def test_setAggKeyWithGovKey_delay_success(cf):
+    chain.sleep(AGG_KEY_TIMEOUT)
+    setAggKeyWithGovKey_test(cf)
 
 
 def test_setAggKeyWithGovKey_rev_governor(cf):

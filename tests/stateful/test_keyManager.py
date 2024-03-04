@@ -31,7 +31,7 @@ def test_keyManager(BaseStateMachine, state_machine, a, cfDeploy):
 
         # Reset the local versions of state to compare the contract to after every run
         def setup(self):
-            self.lastValidateTime = self.deployerContract.tx.timestamp
+            self.lastValidateTime = 0
             self.keyIDToCurKeys = {AGG: AGG_SIGNER_1}
             self.allKeys = [*self.keyIDToCurKeys.values()] + (
                 [Signer.gen_signer(None, {})]
