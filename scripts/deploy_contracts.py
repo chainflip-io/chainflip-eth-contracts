@@ -13,6 +13,7 @@ from brownie import (
     StateChainGateway,
     FLIP,
     MockUSDC,
+    MockUSDT,
     DeployerContract,
     AddressChecker,
     CFTester,
@@ -21,6 +22,7 @@ from brownie import (
 from deploy import (
     deploy_Chainflip_contracts,
     deploy_usdc_contract,
+    deploy_usdt_contract,
     deploy_new_cfReceiver,
     deploy_contracts_secondary_evm,
 )
@@ -179,6 +181,11 @@ def deploy_optional_contracts(cf, addressDump):
         cf.cfTester = deploy_new_cfReceiver(deployer, CFTester, cf.vault.address)
         addressDump["CF_TESTER"] = cf.cfTester.address
 
+    # Keeping the order to not change the final addresses
+    if chain.id in [arb_localnet, eth_localnet, hardhat]:
+        cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT, cf_accs[0:10])
+        addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
+
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
     print(f"  Chain: {chain_id}")
@@ -218,6 +225,8 @@ def display_deployed_contracts(cf):
     # Contracts dependant on localnet/testnet/mainnet
     if hasattr(cf, "mockUSDC"):
         print(f"  USDC: {cf.mockUSDC.address}")
+    if hasattr(cf, "mockUSDC"):
+        print(f"  USDT: {cf.mockUSDT.address}")
     if hasattr(cf, "cfTester"):
         print(f"  CFTester: {cf.cfTester.address}")
 

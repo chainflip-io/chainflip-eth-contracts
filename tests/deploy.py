@@ -237,6 +237,25 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
     return mockUsdc
 
 
+# Deploy USDCT mock token
+def deploy_usdt_contract(deployer, MockUSDT, accounts):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    mockUsdt = MockUSDT.deploy(
+        "Tether USD",
+        "USDT",
+        INIT_USDC_SUPPLY,
+        {"from": deployer, "required_confs": required_confs},
+    )
+    # Distribute tokens to other accounts
+    for account in accounts:
+        if account != deployer and mockUsdt.balanceOf(deployer) >= INIT_USDC_ACCOUNT:
+            mockUsdt.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
+
+    return mockUsdt
+
+
 def deploy_addressHolder(
     deployer,
     AddressHolder,
