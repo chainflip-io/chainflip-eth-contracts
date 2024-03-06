@@ -226,7 +226,7 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
     mockUsdc = MockUSDC.deploy(
         "USD Coin",
         "USDC",
-        INIT_USDC_SUPPLY,
+        INIT_USD_SUPPLY,
         {"from": deployer, "required_confs": required_confs},
     )
     # Distribute tokens to other accounts
@@ -245,7 +245,7 @@ def deploy_usdt_contract(deployer, MockUSDT, accounts):
     mockUsdt = MockUSDT.deploy(
         "Tether USD",
         "USDT",
-        INIT_USDC_SUPPLY,
+        INIT_USD_SUPPLY,
         {"from": deployer, "required_confs": required_confs},
     )
     # Distribute tokens to other accounts

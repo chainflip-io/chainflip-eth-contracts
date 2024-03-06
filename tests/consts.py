@@ -29,7 +29,7 @@ INIT_TOKEN_SUPPLY = int(10**8 * E_18)
 INIT_NATIVE_BAL = int(10000 * E_18)
 SECS_PER_BLOCK = 13
 # USDC and USDT use 6 decimals
-INIT_USDC_SUPPLY = int(20 * 10**6 * 10**6)
+INIT_USD_SUPPLY = int(20 * 10**6 * 10**6)
 INIT_USDC_ACCOUNT = int(10**6 * 10**6)
 TEST_AMNT_USDC = int(10**6)
 
