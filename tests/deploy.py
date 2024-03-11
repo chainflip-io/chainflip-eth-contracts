@@ -231,8 +231,8 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
     )
     # Distribute tokens to other accounts
     for account in accounts:
-        if account != deployer and mockUsdc.balanceOf(deployer) >= INIT_USDC_ACCOUNT:
-            mockUsdc.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
+        if account != deployer and mockUsdc.balanceOf(deployer) >= INIT_USD_BALANCE:
+            mockUsdc.transfer(account, INIT_USD_BALANCE, {"from": deployer})
 
     return mockUsdc
 
@@ -250,8 +250,8 @@ def deploy_usdt_contract(deployer, MockUSDT, accounts):
     )
     # Distribute tokens to other accounts
     for account in accounts:
-        if account != deployer and mockUsdt.balanceOf(deployer) >= INIT_USDC_ACCOUNT:
-            mockUsdt.transfer(account, INIT_USDC_ACCOUNT, {"from": deployer})
+        if account != deployer and mockUsdt.balanceOf(deployer) >= INIT_USD_BALANCE:
+            mockUsdt.transfer(account, INIT_USD_BALANCE, {"from": deployer})
 
     return mockUsdt
 
