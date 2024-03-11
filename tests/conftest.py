@@ -268,7 +268,7 @@ def cfLoopbackMock(cf, LoopBackMock):
 
 @pytest.fixture(scope="module")
 def mockUsdc(cf, MockUSDC):
-    return cf.SAFEKEEPER.deploy(MockUSDC, "USD Coin", "USDC", INIT_USDC_SUPPLY)
+    return cf.SAFEKEEPER.deploy(MockUSDC, "USD Coin", "USDC", INIT_USD_SUPPLY)
 
 
 @pytest.fixture(scope="module")
@@ -278,7 +278,7 @@ def utils(cf, Utils):
 
 @pytest.fixture(scope="module")
 def mockUSDT(cf, MockUSDT):
-    return cf.SAFEKEEPER.deploy(MockUSDT, "Tether USD", "USDT", INIT_USDC_SUPPLY)
+    return cf.SAFEKEEPER.deploy(MockUSDT, "Tether USD", "USDT", INIT_USD_SUPPLY)
 
 
 @pytest.fixture(scope="module")
