@@ -225,7 +225,7 @@ def display_deployed_contracts(cf):
     # Contracts dependant on localnet/testnet/mainnet
     if hasattr(cf, "mockUSDC"):
         print(f"  USDC: {cf.mockUSDC.address}")
-    if hasattr(cf, "mockUSDC"):
+    if hasattr(cf, "mockUSDT"):
         print(f"  USDT: {cf.mockUSDT.address}")
     if hasattr(cf, "cfTester"):
         print(f"  CFTester: {cf.cfTester.address}")
