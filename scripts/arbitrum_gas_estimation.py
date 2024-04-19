@@ -5,15 +5,6 @@ sys.path.append(os.path.abspath("tests"))
 from consts import *
 from brownie import accounts, Contract, web3
 
-AUTONOMY_SEED = os.environ["SEED"]
-DEPLOY_ARTEFACT_ID = os.environ.get("DEPLOY_ARTEFACT_ID")
-cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
-DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
-
-DEPLOYER = cf_accs[DEPLOYER_ACCOUNT_INDEX]
-print(f"DEPLOYER = {DEPLOYER}")
-
-
 # Original from Arbitrum code:
 # https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/gas-estimation/scripts/exec.ts
 
