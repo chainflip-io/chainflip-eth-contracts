@@ -3,9 +3,9 @@ import os
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
-from brownie import accounts, Contract, web3
+from brownie import Contract, web3
 
-# Original from Arbitrum code:
+# Reference code from Arbitrum with some updates:
 # https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/gas-estimation/scripts/exec.ts
 
 REFERENCE_GAS_LIMIT = 21004
@@ -75,23 +75,11 @@ def gas_estimate_component():
     print("-------------------")
     print("Transaction estimated fees to pay =", TXFEES)
 
-    # I think what we want to use to track is G, aka the gas limit. however, this ends up
-    # being the same as the gas estimation, so we can just use the gas estimation as a proxy.
+    # We want to track the Gas Limit
     print("Gas Limit", G, "units")
-    print("Buffer", B, "units")
 
-    # Only gotcha is that it will depend on the lenght of the data for CCM calls. The gas limit
-    # will increment according to:
-    # G = L2G + B = L2G + (L1 calldata cost) / P => L1P is the same, P is the same, L2G increases and L1S increases.
-    # That would increase with L2G < x < L1G + L2G
-    print("Factor:", G / REFERENCE_GAS_LIMIT)
-
-
-def get_fee_history():
-    print(
-        "Ethereum base fee queryied        ",
-        web3.eth.fee_history(1, "latest", [0.5]).baseFeePerGas[0],
-    )
+    # Gas Limit Multiplier
+    print("Gas Limit Multiplier:", G / REFERENCE_GAS_LIMIT)
 
 
 def estimate_gas():
@@ -105,6 +93,13 @@ def estimate_gas():
                 "data": "0x123137548635386",
             }
         ),
+    )
+
+
+def get_fee_history():
+    print(
+        "Base fee queryied via fee_history",
+        web3.eth.fee_history(1, "latest", [0.5]).baseFeePerGas[0],
     )
 
 
