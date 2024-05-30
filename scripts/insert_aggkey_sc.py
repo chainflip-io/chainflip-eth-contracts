@@ -8,7 +8,6 @@ from consts import *
 from brownie import accounts, KeyManager, network
 
 AUTONOMY_SEED = os.environ["SEED"]
-DEPLOY_ARTEFACT_ID = os.environ.get("DEPLOY_ARTEFACT_ID")
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 
