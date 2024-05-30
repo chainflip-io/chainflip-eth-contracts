@@ -16,11 +16,6 @@ print(f"DEPLOYER = {DEPLOYER}")
 
 
 def main():
-    print()
-
-
-# This is to be used manually to insert the sc generated agg key for testnets
-def insert_agg_key_from_sc():
     network.priority_fee("1 gwei")
     KEY_MANAGER_ADDRESS = os.environ["KEY_MANAGER_ADDRESS"]
     keyManager = KeyManager.at(KEY_MANAGER_ADDRESS)
@@ -42,4 +37,4 @@ def insert_agg_key_from_sc():
     )
 
     tx.info()
-    print(f"Succesfullly updated the aggregate key to {newAggKey}")
+    print(f"Succesfully updated the aggregate key to {newAggKey}")
