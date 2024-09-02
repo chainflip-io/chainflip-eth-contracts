@@ -15,7 +15,7 @@ import re
 # Also, insert the adequate values that you want to decode/broadcast.
 # Finally, you can add `.call` to simulate the transaction without broadcasting it. Remove it to broadcast the transaction.
 
-# Run with `brownie run contracts_utils <function_name> --network mainnet/arbitrum-main`
+# Run with `brownie run contracts_utils <function_name> --network hardhat/mainnet/arbitrum-main`
 
 AUTONOMY_SEED = os.environ["SEED"]
 cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
