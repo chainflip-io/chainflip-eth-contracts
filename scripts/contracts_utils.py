@@ -109,6 +109,7 @@ def send_rotation():
 # Parse file with the `transactionOutIdToBroadcastId`
 # That should be a list like this [[[{s: string, kTimesGAddress: string}],[broadcastId, blockNumber]], ...]
 def parse_text():
+    # Insert the path to the file
     file_path = 'file.txt'
     pairs = []
     
