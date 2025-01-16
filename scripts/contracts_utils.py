@@ -98,6 +98,7 @@ def send_allBatch():
     tx = vault.allBatch(sigData, [], [], [transferParams], {"from": DEPLOYER})
     tx.info()
 
+
 def send_ccm():
     # Insert the address of the vault contract for the network
     vault = Vault.at("0x79001a5e762f3befc8e5871b42f6734e00498920")
@@ -116,10 +117,13 @@ def send_ccm():
     ]
     message = "0x"
 
-    tx = vault.executexSwapAndCall(sigData, transferParams, 5, b"", message, {"from": DEPLOYER})
+    tx = vault.executexSwapAndCall(
+        sigData, transferParams, 5, b"", message, {"from": DEPLOYER}
+    )
     # tx = vault.executexSwapAndCall.call(sigData, transferParams, 5, b"", message, {"from": DEPLOYER})
     print(tx)
     tx.info()
+
 
 def send_rotation():
     # Insert the address of the Key Manager contract for the network
