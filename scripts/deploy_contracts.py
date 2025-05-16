@@ -18,6 +18,7 @@ from brownie import (
     AddressChecker,
     CFTester,
     Deposit,
+    PriceFeedMock,
 )
 from deploy import (
     deploy_Chainflip_contracts,
@@ -25,6 +26,7 @@ from deploy import (
     deploy_usdt_contract,
     deploy_new_cfReceiver,
     deploy_contracts_secondary_evm,
+    deploy_price_feeds,
 )
 from shared_tests import deposit_bytecode_test
 
@@ -185,6 +187,10 @@ def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT, cf_accs[0:10])
         addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
+        cf.priceFeeds = deploy_price_feeds(
+            deployer, PriceFeedMock, int(os.environ.get("NUMBER_OF_FEEDS") or 10)
+        )
+        addressDump["PRICE_FEEDS"] = ", ".join(feed.address for feed in cf.priceFeeds)
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
@@ -229,6 +235,8 @@ def display_deployed_contracts(cf):
         print(f"  USDT: {cf.mockUSDT.address}")
     if hasattr(cf, "cfTester"):
         print(f"  CFTester: {cf.cfTester.address}")
+    if hasattr(cf, "priceFeeds"):
+        print(f"  PriceFeeds: {', '.join(feed.address for feed in cf.priceFeeds)}")
 
     print("\n😎😎 Deployment success! 😎😎\n")
 
