@@ -40,7 +40,7 @@ jobs:
       - name: Install and configure Poetry
         uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
         with:
-          version: "1.5.1"
+          version: "1.4.1"
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
