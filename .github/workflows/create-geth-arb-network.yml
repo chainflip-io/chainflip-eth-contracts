@@ -74,7 +74,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
+        uses: docker/build-push-action@1dc73863535b631f98b2378be8619f83b136f4a0
         with:
           context: ci/docker/arb-geth/
           push: true
@@ -351,7 +351,7 @@ jobs:
         run: echo "current_datetime=$(date -u +"%b %d, %Y at %R UTC")" >> $GITHUB_OUTPUT
 
       - name: Build Initial State Image 🫙
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
+        uses: docker/build-push-action@1dc73863535b631f98b2378be8619f83b136f4a0
         with:
           context: .
           file: ci/docker/localnet-initial-state.Dockerfile
@@ -463,7 +463,7 @@ jobs:
         run: echo "current_datetime=$(date -u +"%b %d, %Y at %R UTC")" >> $GITHUB_OUTPUT
 
       - name: Build Arbitrum Gizmo Shop Image 🪀
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
+        uses: docker/build-push-action@1dc73863535b631f98b2378be8619f83b136f4a0
         with:
           context: .
           file: ci/docker/arbitrum-gizmo-shop.Dockerfile
