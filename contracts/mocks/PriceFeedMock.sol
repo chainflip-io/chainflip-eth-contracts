@@ -78,10 +78,19 @@ contract PriceFeedMock is AggregatorV3Interface {
         return _version;
     }
 
-    /**
-     * @notice Added mock functions to update the values
-     */
-    function updatePriceFeed(
+    //////////////////////////////////////////////////////////////
+    //                                                          //
+    //        Mock functions to mimick an oracle update         //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
+
+    // TODO: We will need to have some periodic updates for the bouncer to work
+    // well. If we end up having a docker doing automatic updates we might need
+    // to add an "automatic" bool to indirectly stop the updates when we want to
+    // run a lending test. Then when that bool is set the `updatePrice` function
+    // doesn't revert but doesn't update the values either.
+
+    function submitRound(
         uint80 newRoundId,
         int256 newAnswer,
         uint256 newStartedAt,
@@ -93,6 +102,17 @@ contract PriceFeedMock is AggregatorV3Interface {
         _startedAt = newStartedAt;
         _updatedAt = newUpdatedAt;
         _answeredInRound = newAnsweredInRound;
+    }
+
+    // Easier way to just submit a price and automatically update the rest of
+    // the values with some valid defaults.
+    function updatePrice(int256 newAnswer) external {
+        // To check that the increases can be more than one.
+        _roundId += (block.number % 2 == 0) ? 1 : 2;
+        _answer = newAnswer;
+        _startedAt = block.timestamp - 1;
+        _updatedAt = block.timestamp;
+        _answeredInRound = _roundId;
     }
 
     function updateSettings(uint8 newDecimals, uint256 newVersion) external {
