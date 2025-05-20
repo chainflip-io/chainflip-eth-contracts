@@ -17,8 +17,8 @@ interface AggregatorV3Interface {
 }
 
 contract PriceFeedMock is AggregatorV3Interface {
-    uint8 private _decimals;
-    uint256 private _version;
+    uint8 private _decimals = 8;
+    uint256 private _version = 6;
 
     uint80 private _roundId;
     int256 private _answer;
