@@ -40,7 +40,7 @@ print(f"DEPLOYER = {deployer}")
 
 def main():
     # Check the bytecode of the Deposit contract
-    # deposit_bytecode_test(Deposit)
+    deposit_bytecode_test(Deposit)
 
     if chain.id in arbitrum_networks:
         deploy_secondary_evm()
