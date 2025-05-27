@@ -336,18 +336,21 @@ def deploy_tokenVestingStaking(
     return tokenVestingStaking
 
 
-def deploy_price_feeds(deployer, PriceFeedMockContract, number_of_feeds):
+def deploy_price_feeds(deployer, PriceFeedMockContract, feed_descriptions):
     required_confs = transaction_params()
 
-    feed_contracts = []
+    deployed_feeds = []
 
-    for _ in range(number_of_feeds):
+    for description in feed_descriptions:
         feed_contract = PriceFeedMockContract.deploy(
+            8,  # decimals
+            6,  # version
+            description,
             {"from": deployer, "required_confs": required_confs},
         )
-        feed_contracts.append(feed_contract)
+        deployed_feeds.append([description, feed_contract])
 
-    return feed_contracts
+    return deployed_feeds
 
 
 # Deploying in live networks sometimes throws an error when getting the address of the deployed contract.

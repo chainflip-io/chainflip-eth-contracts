@@ -10,6 +10,8 @@ interface AggregatorV3Interface {
 
     function version() external view returns (uint256);
 
+    function description() external view returns (string memory);
+
     function latestRoundData()
         external
         view
@@ -17,14 +19,21 @@ interface AggregatorV3Interface {
 }
 
 contract PriceFeedMock is AggregatorV3Interface {
-    uint8 private _decimals = 8;
-    uint256 private _version = 6;
+    uint8 private _decimals;
+    uint256 private _version;
 
     uint80 private _roundId;
     int256 private _answer;
     uint256 private _startedAt;
     uint256 private _updatedAt;
     uint80 private _answeredInRound;
+    string private _description;
+
+    constructor(uint8 initialDecimals, uint256 initialVersion, string memory description) {
+        _decimals = initialDecimals;
+        _version = initialVersion;
+        _description = description;
+    }
 
     /**
      * @notice get data about the latest round. Consumers are encouraged to check
@@ -76,6 +85,13 @@ contract PriceFeedMock is AggregatorV3Interface {
      */
     function version() external view override returns (uint256) {
         return _version;
+    }
+
+    /**
+     * @notice returns the description of the aggregator the proxy points to.
+     */
+    function description() external view override returns (string memory) {
+        return _description;
     }
 
     //////////////////////////////////////////////////////////////

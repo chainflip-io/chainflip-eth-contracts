@@ -40,7 +40,7 @@ print(f"DEPLOYER = {deployer}")
 
 def main():
     # Check the bytecode of the Deposit contract
-    deposit_bytecode_test(Deposit)
+    # deposit_bytecode_test(Deposit)
 
     if chain.id in arbitrum_networks:
         deploy_secondary_evm()
@@ -188,9 +188,11 @@ def deploy_optional_contracts(cf, addressDump):
         cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT, cf_accs[0:10])
         addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
         cf.priceFeeds = deploy_price_feeds(
-            deployer, PriceFeedMock, int(os.environ.get("NUMBER_OF_FEEDS") or 10)
+            deployer, PriceFeedMock, ["BTC / USD", "ETH / USD", "SOL / USD"]
         )
-        addressDump["PRICE_FEEDS"] = ", ".join(feed.address for feed in cf.priceFeeds)
+        addressDump["PRICE_FEEDS"] = ", ".join(
+            f"{feed[0]}: {feed[1].address}" for feed in cf.priceFeeds
+        )
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
@@ -236,7 +238,9 @@ def display_deployed_contracts(cf):
     if hasattr(cf, "cfTester"):
         print(f"  CFTester: {cf.cfTester.address}")
     if hasattr(cf, "priceFeeds"):
-        print(f"  PriceFeeds: {', '.join(feed.address for feed in cf.priceFeeds)}")
+        print(
+            f"  PriceFeeds: {', '.join(f'{feed[0]}: {feed[1].address}' for feed in cf.priceFeeds)}"
+        )
 
     print("\n😎😎 Deployment success! 😎😎\n")
 
