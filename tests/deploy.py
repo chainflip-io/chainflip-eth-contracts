@@ -336,6 +336,23 @@ def deploy_tokenVestingStaking(
     return tokenVestingStaking
 
 
+def deploy_price_feeds(deployer, PriceFeedMockContract, feed_descriptions):
+    required_confs = transaction_params()
+
+    deployed_feeds = []
+
+    for description in feed_descriptions:
+        feed_contract = PriceFeedMockContract.deploy(
+            8,  # decimals
+            6,  # version
+            description,
+            {"from": deployer, "required_confs": required_confs},
+        )
+        deployed_feeds.append([description, feed_contract])
+
+    return deployed_feeds
+
+
 # Deploying in live networks sometimes throws an error when getting the address of the deployed contract.
 # I suspect that the RPC nodes might not have processed the transaction. Increasing the required confirmations
 # to more than one is a problem in local networks with hardhat's automining enabled, as it will brick
