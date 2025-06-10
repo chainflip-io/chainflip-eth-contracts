@@ -127,7 +127,7 @@ def deploy_multicall():
     store_artifacts()
 
 
-def deploy_address_checker():
+def deploy_addr_checker():
     addressChecker = deploy_address_checker(DEPLOYER, AddressChecker)
     addressDump["ADDRESS_CHECKER"] = addressChecker.address
     store_artifacts()
