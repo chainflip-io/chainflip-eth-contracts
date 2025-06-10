@@ -81,7 +81,7 @@ contract AddressChecker is IAddressChecker {
     function queryPriceFeeds(address[] calldata addresses) external view override returns (PriceFeedData[] memory) {
         uint256 length = addresses.length;
 
-        PriceFeedData[] memory addressStateArray = new PriceFeedData[](length);
+        PriceFeedData[] memory priceFeedDataArray = new PriceFeedData[](length);
 
         for (uint i = 0; i < length; ) {
             (
@@ -93,7 +93,7 @@ contract AddressChecker is IAddressChecker {
             ) = AggregatorV3Interface(addresses[i]).latestRoundData();
             uint8 decimals = AggregatorV3Interface(addresses[i]).decimals();
             string memory description = AggregatorV3Interface(addresses[i]).description();
-            addressStateArray[i] = PriceFeedData(
+            priceFeedDataArray[i] = PriceFeedData(
                 roundId,
                 answer,
                 startedAt,
@@ -106,6 +106,6 @@ contract AddressChecker is IAddressChecker {
                 ++i;
             }
         }
-        return addressStateArray;
+        return priceFeedDataArray;
     }
 }

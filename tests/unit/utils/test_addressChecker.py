@@ -111,17 +111,12 @@ def test_addressChecker_price_feed_data(cf):
     deployed_feeds = deploy_price_feeds(cf.deployer, PriceFeedMock, descriptions)
     feed_addresses = [feed[1] for feed in deployed_feeds]
 
-    # Update prices
     for feed, price in zip(deployed_feeds, prices):
         feed[1].updatePrice(price)
 
-    # Query price feeds
     result = cf.addressChecker.queryPriceFeeds(feed_addresses)
-
-    # Check result length
     assert len(result) == len(deployed_feeds)
 
-    # Verify each feed's data
     for i, (feed_data, price, desc) in enumerate(zip(result, prices, descriptions)):
         assert feed_data[0] > 0, f"Feed {i} answer is not positive"
         assert feed_data[1] == price, f"Feed {i} price mismatch"
