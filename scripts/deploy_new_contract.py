@@ -37,9 +37,10 @@ print(f"DEPLOYER = {DEPLOYER}")
 
 addressDump = {}
 
-# This script, so far, supports deploying a StateChainGateway, a Vault, or a KeyManager.
-# This will only deploy a contract so then the StateChain can run the upgrade process to
-# set up the new contracts as part of the Chainflip protocol.
+# This script is to deploy new contracts independently without redeploying all the Chainflip
+# contract stack. This can be useful when deploying a new updated contract or to deploy
+# a new contract from scratch. Run with:
+# brownie run deploy_new_contract <function_name> --network <network_name>
 
 
 def main():
