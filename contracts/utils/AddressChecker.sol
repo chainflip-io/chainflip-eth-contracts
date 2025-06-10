@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IAddressChecker.sol";
+import "../mocks/PriceFeedMock.sol";
 
 /**
  * @title    Address Checker contract
@@ -10,6 +11,7 @@ import "../interfaces/IAddressChecker.sol";
  *           It can be used to check balances and to check whether there is bytecode
  *           (contract deployed) for multiple addresses. This is useful in order to avoid
  *           issuing a separate call for each address, which is very innefficient.
+ *           It is also used to query all price feed data for multiple assets in a single call.
  * @dev      This contract only contains view functions that doesn't spend gas. However, some RPC
  *           providers put a cap on the amount of gas that the transaction *would* consume to
  *           prevent spamming. As a rough refernece, a try using a free INFURA endpoint succesfully
@@ -65,6 +67,41 @@ contract AddressChecker is IAddressChecker {
 
         for (uint i = 0; i < length; ) {
             addressStateArray[i] = AddressState(addresses[i].balance, addresses[i].code.length > 0);
+            unchecked {
+                ++i;
+            }
+        }
+        return addressStateArray;
+    }
+
+    /**
+     * @notice  Returns the price feed data for an array of addresses.
+     * @param addresses  Array of addresses to query.
+     */
+    function queryPriceFeeds(address[] calldata addresses) external view override returns (PriceFeedData[] memory) {
+        uint256 length = addresses.length;
+
+        PriceFeedData[] memory addressStateArray = new PriceFeedData[](length);
+
+        for (uint i = 0; i < length; ) {
+            (
+                uint80 roundId,
+                int256 answer,
+                uint256 startedAt,
+                uint256 updatedAt,
+                uint80 answeredInRound
+            ) = AggregatorV3Interface(addresses[i]).latestRoundData();
+            uint8 decimals = AggregatorV3Interface(addresses[i]).decimals();
+            string memory description = AggregatorV3Interface(addresses[i]).description();
+            addressStateArray[i] = PriceFeedData(
+                roundId,
+                answer,
+                startedAt,
+                updatedAt,
+                answeredInRound,
+                decimals,
+                description
+            );
             unchecked {
                 ++i;
             }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 /**
@@ -99,12 +101,6 @@ contract PriceFeedMock is AggregatorV3Interface {
     //        Mock functions to mimick an oracle update         //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    // TODO: We will need to have some periodic updates for the bouncer to work
-    // well. If we end up having a docker doing automatic updates we might need
-    // to add an "automatic" bool to indirectly stop the updates when we want to
-    // run a lending test. Then when that bool is set the `updatePrice` function
-    // doesn't revert but doesn't update the values either.
 
     function submitRound(
         uint80 newRoundId,
