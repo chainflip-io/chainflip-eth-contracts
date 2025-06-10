@@ -79,5 +79,6 @@ jobs:
           poetry run brownie run deploy_new_contract deploy_vault --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat &&
-          poetry run brownie run deploy_new_contract deploy_multicall --network hardhat
-          poetry run brownie run deploy_new_contract deploy_cfTester --network hardhat
+          poetry run brownie run deploy_new_contract deploy_multicall --network hardhat &&
+          poetry run brownie run deploy_new_contract deploy_cfTester --network hardhat &&
+          poetry run brownie run deploy_new_contract deploy_address_checker --network hardhat

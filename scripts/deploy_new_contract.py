@@ -14,6 +14,7 @@ from brownie import (
     DeployerStateChainGateway,
     CFTester,
     Multicall,
+    AddressChecker,
 )
 from deploy import (
     deploy_new_vault,
@@ -21,6 +22,7 @@ from deploy import (
     deploy_new_keyManager,
     deploy_new_multicall,
     deploy_new_cfReceiver,
+    deploy_address_checker,
 )
 
 
@@ -124,6 +126,12 @@ def deploy_multicall():
     store_artifacts()
 
 
+def deploy_address_checker():
+    addressChecker = deploy_address_checker(DEPLOYER, AddressChecker)
+    addressDump["ADDRESS_CHECKER"] = addressChecker.address
+    store_artifacts()
+
+
 def store_artifacts():
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
@@ -152,6 +160,8 @@ def store_artifacts():
         print(f"  Multicall: {addressDump['NEW_MULTICALL_ADDRESS']}")
     if "NEW_CF_RECEIVER" in addressDump:
         print(f"  Cf Receiver: {addressDump['NEW_CF_RECEIVER']}")
+    if "ADDRESS_CHECKER" in addressDump:
+        print(f"  AddressChecker: {addressDump['ADDRESS_CHECKER']}")
     print("\n😎😎 Deployment success! 😎😎")
 
     if DEPLOY_ARTEFACT_ID:

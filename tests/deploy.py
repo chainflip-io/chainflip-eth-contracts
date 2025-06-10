@@ -59,9 +59,7 @@ def deploy_Chainflip_contracts(
         cf.genesisStake,
         {"from": deployer, "required_confs": required_confs},
     )
-    cf.addressChecker = AddressChecker.deploy(
-        {"from": deployer, "required_confs": required_confs}
-    )
+    deploy_address_checker(deployer, AddressChecker)
 
     cf.vault = Vault.at(cf.deployerContract.vault())
     cf.flip = FLIP.at(cf.deployerContract.flip())
@@ -334,6 +332,15 @@ def deploy_tokenVestingStaking(
         {"from": deployer},
     )
     return tokenVestingStaking
+
+
+def deploy_address_checker(deployer, AddressChecker):
+    required_confs = transaction_params()
+
+    addressChecker = AddressChecker.deploy(
+        {"from": deployer, "required_confs": required_confs}
+    )
+    return addressChecker
 
 
 def deploy_price_feeds(deployer, PriceFeedMockContract, feed_descriptions):
