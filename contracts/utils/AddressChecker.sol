@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IAddressChecker.sol";
-import "../mocks/PriceFeedMock.sol";
+import "../interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title    Address Checker contract
