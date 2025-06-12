@@ -24,5 +24,7 @@ interface IAddressChecker {
 
     function addressStates(address[] calldata addresses) external view returns (AddressState[] memory);
 
-    function queryPriceFeeds(address[] calldata addresses) external view returns (PriceFeedData[] memory);
+    function queryPriceFeeds(
+        address[] calldata addresses
+    ) external view returns (uint256 blockNumber, uint256 blockTimestamp, PriceFeedData[] memory);
 }

@@ -94,13 +94,18 @@ def test_addressChecker_price_feed_data(cf):
     )
     feed_addresses = [feed[1] for feed in deployed_feeds]
 
-    result = cf.addressChecker.queryPriceFeeds(feed_addresses)
+    (iniBlockNumber, iniTimestamp, result) = cf.addressChecker.queryPriceFeeds(
+        feed_addresses
+    )
+
     assert len(result) == len(deployed_feeds)
     assert result == (
         (0, 0, 0, 0, 0, 8, "BTC / USD"),
         (0, 0, 0, 0, 0, 8, "ETH / USD"),
         (0, 0, 0, 0, 0, 8, "SOL / USD"),
     )
+    assert iniBlockNumber > 0
+    assert iniTimestamp > 0
 
     btcPrice = 100000
     ethPrice = 2000
@@ -114,8 +119,10 @@ def test_addressChecker_price_feed_data(cf):
     for feed, price in zip(deployed_feeds, prices):
         feed[1].updatePrice(price)
 
-    result = cf.addressChecker.queryPriceFeeds(feed_addresses)
+    (blockNumber, timestamp, result) = cf.addressChecker.queryPriceFeeds(feed_addresses)
     assert len(result) == len(deployed_feeds)
+    assert blockNumber > 0 and blockNumber >= iniBlockNumber
+    assert timestamp > 0 and timestamp >= iniTimestamp
 
     for i, (feed_data, price, desc) in enumerate(zip(result, prices, descriptions)):
         assert feed_data[0] > 0, f"Feed {i} answer is not positive"

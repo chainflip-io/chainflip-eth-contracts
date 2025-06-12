@@ -78,7 +78,9 @@ contract AddressChecker is IAddressChecker {
      * @notice  Returns the price feed data for an array of addresses.
      * @param addresses  Array of addresses to query.
      */
-    function queryPriceFeeds(address[] calldata addresses) external view override returns (PriceFeedData[] memory) {
+    function queryPriceFeeds(
+        address[] calldata addresses
+    ) external view override returns (uint256, uint256, PriceFeedData[] memory) {
         uint256 length = addresses.length;
 
         PriceFeedData[] memory priceFeedDataArray = new PriceFeedData[](length);
@@ -106,6 +108,6 @@ contract AddressChecker is IAddressChecker {
                 ++i;
             }
         }
-        return priceFeedDataArray;
+        return (block.number, block.timestamp, priceFeedDataArray);
     }
 }
