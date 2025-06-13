@@ -1,22 +1,13 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
+
+import "../interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title    Chainlink AggregatorProxy Mock
  * @dev      Mock of the Chainlink Price Feed Aggregator program.
  */
-
-interface AggregatorV3Interface {
-    function decimals() external view returns (uint8);
-
-    function version() external view returns (uint256);
-
-    function description() external view returns (string memory);
-
-    function latestRoundData()
-        external
-        view
-        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
-}
 
 contract PriceFeedMock is AggregatorV3Interface {
     uint8 private _decimals;
@@ -99,12 +90,6 @@ contract PriceFeedMock is AggregatorV3Interface {
     //        Mock functions to mimick an oracle update         //
     //                                                          //
     //////////////////////////////////////////////////////////////
-
-    // TODO: We will need to have some periodic updates for the bouncer to work
-    // well. If we end up having a docker doing automatic updates we might need
-    // to add an "automatic" bool to indirectly stop the updates when we want to
-    // run a lending test. Then when that bool is set the `updatePrice` function
-    // doesn't revert but doesn't update the values either.
 
     function submitRound(
         uint80 newRoundId,

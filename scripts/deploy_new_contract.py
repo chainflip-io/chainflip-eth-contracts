@@ -14,6 +14,7 @@ from brownie import (
     DeployerStateChainGateway,
     CFTester,
     Multicall,
+    AddressChecker,
 )
 from deploy import (
     deploy_new_vault,
@@ -21,6 +22,7 @@ from deploy import (
     deploy_new_keyManager,
     deploy_new_multicall,
     deploy_new_cfReceiver,
+    deploy_address_checker,
 )
 
 
@@ -35,9 +37,10 @@ print(f"DEPLOYER = {DEPLOYER}")
 
 addressDump = {}
 
-# This script, so far, supports deploying a StateChainGateway, a Vault, or a KeyManager.
-# This will only deploy a contract so then the StateChain can run the upgrade process to
-# set up the new contracts as part of the Chainflip protocol.
+# This script is to deploy new contracts independently without redeploying all the Chainflip
+# contract stack. This can be useful when deploying a new updated contract or to deploy
+# a new contract from scratch. Run with:
+# brownie run deploy_new_contract <function_name> --network <network_name>
 
 
 def main():
@@ -124,6 +127,12 @@ def deploy_multicall():
     store_artifacts()
 
 
+def deploy_addr_checker():
+    addressChecker = deploy_address_checker(DEPLOYER, AddressChecker)
+    addressDump["ADDRESS_CHECKER"] = addressChecker.address
+    store_artifacts()
+
+
 def store_artifacts():
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
@@ -152,6 +161,8 @@ def store_artifacts():
         print(f"  Multicall: {addressDump['NEW_MULTICALL_ADDRESS']}")
     if "NEW_CF_RECEIVER" in addressDump:
         print(f"  Cf Receiver: {addressDump['NEW_CF_RECEIVER']}")
+    if "ADDRESS_CHECKER" in addressDump:
+        print(f"  AddressChecker: {addressDump['ADDRESS_CHECKER']}")
     print("\n😎😎 Deployment success! 😎😎")
 
     if DEPLOY_ARTEFACT_ID:

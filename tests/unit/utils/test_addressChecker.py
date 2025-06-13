@@ -2,6 +2,11 @@ from consts import *
 from shared_tests import *
 from brownie.test import given, strategy
 
+from deploy import deploy_price_feeds
+from brownie import (
+    PriceFeedMock,
+)
+
 # When testing in local network only the derived default addresses are funded
 @given(
     st_addresses=strategy("address[]"),
@@ -81,3 +86,49 @@ def test_addressChecker_balancesAndDeploymentStatus_gas(cf):
     ] * number_of_addresses
     balances = cf.addressChecker.addressStates(list_of_addresses)
     assert len(balances) == number_of_addresses
+
+
+def test_addressChecker_price_feed_data(cf):
+    deployed_feeds = deploy_price_feeds(
+        cf.deployer, PriceFeedMock, ["BTC / USD", "ETH / USD", "SOL / USD"]
+    )
+    feed_addresses = [feed[1] for feed in deployed_feeds]
+
+    (iniBlockNumber, iniTimestamp, result) = cf.addressChecker.queryPriceFeeds(
+        feed_addresses
+    )
+
+    assert len(result) == len(deployed_feeds)
+    assert result == (
+        (0, 0, 0, 0, 0, 8, "BTC / USD"),
+        (0, 0, 0, 0, 0, 8, "ETH / USD"),
+        (0, 0, 0, 0, 0, 8, "SOL / USD"),
+    )
+    assert iniBlockNumber > 0
+    assert iniTimestamp > 0
+
+    btcPrice = 100000
+    ethPrice = 2000
+    solPrice = 150
+    prices = [btcPrice, ethPrice, solPrice]
+    descriptions = ["BTC / USD", "ETH / USD", "SOL / USD"]
+
+    deployed_feeds = deploy_price_feeds(cf.deployer, PriceFeedMock, descriptions)
+    feed_addresses = [feed[1] for feed in deployed_feeds]
+
+    for feed, price in zip(deployed_feeds, prices):
+        feed[1].updatePrice(price)
+
+    (blockNumber, timestamp, result) = cf.addressChecker.queryPriceFeeds(feed_addresses)
+    assert len(result) == len(deployed_feeds)
+    assert blockNumber > 0 and blockNumber >= iniBlockNumber
+    assert timestamp > 0 and timestamp >= iniTimestamp
+
+    for i, (feed_data, price, desc) in enumerate(zip(result, prices, descriptions)):
+        assert feed_data[0] > 0, f"Feed {i} answer is not positive"
+        assert feed_data[1] == price, f"Feed {i} price mismatch"
+        assert feed_data[2] > 0, f"Feed {i} startedAt is not positive"
+        assert feed_data[3] > 0, f"Feed {i} updatedAt is not positive"
+        assert feed_data[4] > 0, f"Feed {i} answeredInRound is not positive"
+        assert feed_data[5] == 8, f"Feed {i} decimals is not 8"
+        assert feed_data[6] == desc, f"Feed {i} description mismatch"
