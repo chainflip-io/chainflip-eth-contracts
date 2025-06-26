@@ -280,6 +280,10 @@ def utils(cf, Utils):
 def mockUSDT(cf, MockUSDT):
     return cf.SAFEKEEPER.deploy(MockUSDT, "Tether USD", "USDT", INIT_USD_SUPPLY)
 
+@pytest.fixture(scope="module")
+def cfScUtils(cf, ScUtils):
+    return cf.SAFEKEEPER.deploy(ScUtils, cf.flip, cf.stateChainGateway, cf.vault)
+
 
 @pytest.fixture(scope="module")
 def mockKeyManagers(
