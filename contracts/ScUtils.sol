@@ -82,8 +82,6 @@ contract ScUtils is Shared {
     ) external payable onlyCfVault {
         (address to, bytes memory data) = abi.decode(message, (address, bytes));
 
-        // TODO: We could consider also unifying this to only the DepositTo, same
-        // as for the deposit functions.
         // Using `address(this)` as a way to signal that it's `fundStateChainAccount`
         // so we don't need nested `abi.encode`.
         if (to == address(this)) {

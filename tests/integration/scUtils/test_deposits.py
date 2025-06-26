@@ -5,39 +5,24 @@ from shared_tests import *
 
 scCall = "0x1234"
 
+
 def test_deposit_rev_approve(cf, cfScUtils):
     with reverts(REV_MSG_ERC20_INSUF_ALLOW):
-        cfScUtils.depositToScGateway(
-            TEST_AMNT,
-            "0x",
-            {"from": cf.ALICE}
-        )
+        cfScUtils.depositToScGateway(TEST_AMNT, "0x", {"from": cf.ALICE})
     with reverts(REV_MSG_ERC20_INSUF_ALLOW):
-        cfScUtils.depositToVault(
-            TEST_AMNT,
-            cf.flip.address,
-            "0x",
-            {"from": cf.ALICE}
-        )
+        cfScUtils.depositToVault(TEST_AMNT, cf.flip.address, "0x", {"from": cf.ALICE})
     with reverts(REV_MSG_ERC20_INSUF_ALLOW):
         cfScUtils.depositTo(
-            TEST_AMNT,
-            cf.flip.address,
-            ZERO_ADDR,
-            "0x",
-            {"from": cf.ALICE}
+            TEST_AMNT, cf.flip.address, ZERO_ADDR, "0x", {"from": cf.ALICE}
         )
+
 
 def test_deposit_scgateway(cf, cfScUtils):
     iniBalUser = cf.flip.balanceOf(cf.ALICE)
     iniBalScGateway = cf.flip.balanceOf(cf.stateChainGateway)
     iniBalScUtils = cf.flip.balanceOf(cfScUtils)
     cf.flip.approve(cfScUtils, TEST_AMNT, {"from": cf.ALICE})
-    tx = cfScUtils.depositToScGateway(
-        TEST_AMNT,
-        scCall,
-        {"from": cf.ALICE}
-    )
+    tx = cfScUtils.depositToScGateway(TEST_AMNT, scCall, {"from": cf.ALICE})
     assert tx.events["DepositToScGatewayAndScCall"]["amount"] == TEST_AMNT
     assert tx.events["DepositToScGatewayAndScCall"]["scCall"] == scCall
     assert tx.events["DepositToScGatewayAndScCall"]["sender"] == cf.ALICE
@@ -46,16 +31,14 @@ def test_deposit_scgateway(cf, cfScUtils):
     assert cf.flip.balanceOf(cf.stateChainGateway) == iniBalScGateway + TEST_AMNT
     assert cf.flip.balanceOf(cfScUtils) == iniBalScUtils
 
+
 def test_deposit_token_vault(cf, cfScUtils):
     iniBalUser = cf.flip.balanceOf(cf.ALICE)
     iniBalVault = cf.flip.balanceOf(cf.vault)
     iniBalScUtils = cf.flip.balanceOf(cfScUtils)
     cf.flip.approve(cfScUtils, TEST_AMNT, {"from": cf.ALICE})
     tx = cfScUtils.depositToVault(
-        TEST_AMNT,
-        cf.flip.address,
-        scCall,
-        {"from": cf.ALICE}
+        TEST_AMNT, cf.flip.address, scCall, {"from": cf.ALICE}
     )
     assert tx.events["DepositToVaultAndScCall"]["amount"] == TEST_AMNT
     assert tx.events["DepositToVaultAndScCall"]["scCall"] == scCall
@@ -65,25 +48,19 @@ def test_deposit_token_vault(cf, cfScUtils):
     assert cf.flip.balanceOf(cf.vault) == iniBalVault + TEST_AMNT
     assert cf.flip.balanceOf(cfScUtils) == iniBalScUtils
 
+
 def test_deposit_eth_vault_rev_amount(cf, cfScUtils):
     with reverts("ScUtils: value should match amount"):
-        cfScUtils.depositToVault(
-            TEST_AMNT,
-            NATIVE_ADDR,
-            scCall,
-            {"from": cf.ALICE}
-        )
+        cfScUtils.depositToVault(TEST_AMNT, NATIVE_ADDR, scCall, {"from": cf.ALICE})
+
 
 def test_deposit_eth_vault(cf, cfScUtils):
     iniBalUser = cf.ALICE.balance()
     iniBalVault = cf.vault.balance()
     iniBalScUtils = cfScUtils.balance()
-    
+
     tx = cfScUtils.depositToVault(
-        TEST_AMNT,
-        NATIVE_ADDR,
-        scCall,
-        {"from": cf.ALICE, "value":  TEST_AMNT}
+        TEST_AMNT, NATIVE_ADDR, scCall, {"from": cf.ALICE, "value": TEST_AMNT}
     )
     assert tx.events["DepositToVaultAndScCall"]["amount"] == TEST_AMNT
     assert tx.events["DepositToVaultAndScCall"]["scCall"] == scCall
@@ -93,6 +70,7 @@ def test_deposit_eth_vault(cf, cfScUtils):
     assert cf.vault.balance() == iniBalVault + TEST_AMNT
     assert cfScUtils.balance() == iniBalScUtils
 
+
 def test_deposit_eth_to_rev_amount(cf, cfScUtils):
     with reverts("ScUtils: value should match amount"):
         cfScUtils.depositTo(
@@ -100,17 +78,18 @@ def test_deposit_eth_to_rev_amount(cf, cfScUtils):
             NATIVE_ADDR,
             "0xb5d85cbf7cb3ee0d56b3bb207d5fc4b82f43f511",
             scCall,
-            {"from": cf.ALICE}
+            {"from": cf.ALICE},
         )
 
     with reverts():
         cfScUtils.depositTo(
             TEST_AMNT,
             NATIVE_ADDR,
-            cf.stateChainGateway.address, # cant receive eth
+            cf.stateChainGateway.address,  # cant receive eth
             scCall,
-        {"from": cf.ALICE, "value":  TEST_AMNT}
+            {"from": cf.ALICE, "value": TEST_AMNT},
         )
+
 
 def test_deposit_token_to(cf, cfScUtils):
     toAddress = "0xb5d85cbf7cb3ee0d56b3bb207d5fc4b82f43f511"
@@ -119,11 +98,7 @@ def test_deposit_token_to(cf, cfScUtils):
     iniBalScUtils = cf.flip.balanceOf(cfScUtils)
     cf.flip.approve(cfScUtils, TEST_AMNT, {"from": cf.ALICE})
     tx = cfScUtils.depositTo(
-        TEST_AMNT,
-        cf.flip.address,
-        toAddress,
-        scCall,
-        {"from": cf.ALICE}
+        TEST_AMNT, cf.flip.address, toAddress, scCall, {"from": cf.ALICE}
     )
     assert tx.events["DepositAndScCall"]["amount"] == TEST_AMNT
     assert tx.events["DepositAndScCall"]["scCall"] == scCall
@@ -134,9 +109,7 @@ def test_deposit_token_to(cf, cfScUtils):
     assert cf.flip.balanceOf(toAddress) == iniBalTo + TEST_AMNT
     assert cf.flip.balanceOf(cfScUtils) == iniBalScUtils
 
+
 def test_call_sc(cf, cfScUtils):
-    tx = cfScUtils.callSc(
-        scCall,
-        {"from": cf.ALICE}
-    )
+    tx = cfScUtils.callSc(scCall, {"from": cf.ALICE})
     assert tx.events["CallSc"]["scCall"] == scCall
