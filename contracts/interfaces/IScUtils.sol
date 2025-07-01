@@ -3,6 +3,11 @@
 pragma solidity ^0.8.0;
 
 interface IScUtils {
+    event DepositToScGatewayAndScCall(address sender, address signer, uint256 amount, bytes scCall);
+    event DepositToVaultAndScCall(address sender, address signer, uint256 amount, address token, bytes scCall);
+    event DepositAndScCall(address sender, address signer, uint256 amount, address token, address to, bytes scCall);
+    event CallSc(address sender, address signer, bytes scCall);
+
     function depositToScGateway(uint256 amount, bytes calldata scCall) external;
 
     function depositToVault(uint256 amount, address token, bytes calldata scCall) external payable;

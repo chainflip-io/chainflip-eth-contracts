@@ -14,11 +14,6 @@ import "./interfaces/IScUtils.sol";
 // Emiting the signer (tx.origin) for the State Chain for flexibility so the State Chain
 // has all the information to execute the call.
 contract ScUtils is Shared, IScUtils {
-    event DepositToScGatewayAndScCall(address sender, address signer, uint256 amount, bytes scCall);
-    event DepositToVaultAndScCall(address sender, address signer, uint256 amount, address token, bytes scCall);
-    event DepositAndScCall(address sender, address signer, uint256 amount, address token, address to, bytes scCall);
-    event CallSc(address sender, address signer, bytes scCall);
-
     // solhint-disable-next-line var-name-mixedcase
     address public immutable FLIP;
     // solhint-disable-next-line var-name-mixedcase
