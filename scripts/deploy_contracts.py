@@ -200,7 +200,7 @@ def deploy_optional_contracts(cf, addressDump):
         cf.scUtils = deploy_scUtils(
             deployer, ScUtils, cf.flip, cf.stateChainGateway, cf.vault
         )
-        addressDump["SC_UTILS"] = cf.mockUSDT.address
+        addressDump["SC_UTILS"] = cf.scUtils.address
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
