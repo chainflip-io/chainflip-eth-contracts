@@ -19,6 +19,7 @@ from brownie import (
     CFTester,
     Deposit,
     PriceFeedMock,
+    ScUtils,
 )
 from deploy import (
     deploy_Chainflip_contracts,
@@ -27,6 +28,7 @@ from deploy import (
     deploy_new_cfReceiver,
     deploy_contracts_secondary_evm,
     deploy_price_feeds,
+    deploy_scUtils,
 )
 from shared_tests import deposit_bytecode_test
 
@@ -174,6 +176,7 @@ def check_env_variables(env_var_names):
 
 # Deploy extra contracts on local/devnets networks. Deploy USDC mock token to test
 # swaps and liquidity provision, CFTester to test cross-chain messaging.
+# Deployed in a set order to maintain their addresses when adding new contracts.
 def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.mockUSDC = deploy_usdc_contract(deployer, MockUSDC, cf_accs[0:10])
@@ -193,6 +196,11 @@ def deploy_optional_contracts(cf, addressDump):
         addressDump["PRICE_FEEDS"] = ", ".join(
             f"{feed[0]}: {feed[1].address}" for feed in cf.priceFeeds
         )
+    if chain.id in [eth_mainnet, eth_sepolia, eth_localnet, hardhat]:
+        cf.scUtils = deploy_scUtils(
+            deployer, ScUtils, cf.flip, cf.stateChainGateway, cf.vault
+        )
+        addressDump["SC_UTILS"] = cf.mockUSDT.address
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
@@ -241,6 +249,8 @@ def display_deployed_contracts(cf):
         print(
             f"  PriceFeeds: {', '.join(f'{feed[0]}: {feed[1].address}' for feed in cf.priceFeeds)}"
         )
+    if hasattr(cf, "scUtils"):
+        print(f"  ScUtils: {cf.scUtils.address}")
 
     print("\n😎😎 Deployment success! 😎😎\n")
 

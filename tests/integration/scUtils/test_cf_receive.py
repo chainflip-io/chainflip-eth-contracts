@@ -6,7 +6,7 @@ from brownie.convert.datatypes import HexString
 
 
 def test_executexSwapAndCallNative_rev_sender(cf, cfScUtils):
-    with reverts("ScUtils: caller not Chainflip Vault"):
+    with reverts("ScUtils: caller not Cf Vault"):
         cfScUtils.cfReceive(
             1, "0x", "0x12", cf.flip.address, TEST_AMNT, {"from": cf.ALICE}
         )
@@ -29,6 +29,7 @@ def test_ccm_fund_vault_eth(cf, cfScUtils):
     assert tx.events["FetchedNative"][0].values() == [cfScUtils.address, TEST_AMNT]
     assert tx.events["DepositToVaultAndScCall"][0].values() == [
         cf.vault.address,
+        ZERO_ADDR,
         TEST_AMNT,
         NATIVE_ADDR,
         JUNK_HEX,
@@ -54,6 +55,7 @@ def test_ccm_fund_vault_flip(cf, cfScUtils):
 
     assert tx.events["DepositToVaultAndScCall"][0].values() == [
         cf.vault.address,
+        ZERO_ADDR,
         TEST_AMNT,
         cf.flip.address,
         JUNK_HEX,
@@ -70,14 +72,14 @@ def test_ccm_fund_rev_asset(cf, cfScUtils):
     )
 
     args = [[NATIVE_ADDR, cfScUtils.address, TEST_AMNT], 1, "0x", message]
-    with reverts("ScUtils: token is not FLIP"):
+    with reverts("ScUtils: token not FLIP"):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
     args[3] = encode_abi(
         ["address", "bytes"],
         [cf.stateChainGateway.address, bytes.fromhex(JUNK_HEX_PAD)],
     )
-    with reverts("ScUtils: token is not FLIP"):
+    with reverts("ScUtils: token not FLIP"):
         signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
 
 
@@ -125,6 +127,7 @@ def test_ccm_fund_to(cf, cfScUtils):
 
     assert tx.events["DepositAndScCall"][0].values() == [
         cf.vault.address,
+        ZERO_ADDR,
         TEST_AMNT,
         cf.flip.address,
         toAddress,

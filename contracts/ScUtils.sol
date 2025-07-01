@@ -5,14 +5,13 @@ pragma solidity ^0.8.0;
 import "./abstract/Shared.sol";
 import "./interfaces/IStateChainGateway.sol";
 
+// Emiting the signer (tx.origin) for the State Chain for flexibility so the State Chain
+// has all the information to execute the call.
 contract ScUtils is Shared {
-    // We should probably still attribute the delegation/action to an address in the payload
-    // to allow the swapAndDelegate, where the msg.sender will be the Vault. We emit the msg.sender
-    // in case we ever need it.
-    event DepositToScGatewayAndScCall(address sender, uint256 amount, bytes scCall);
-    event DepositToVaultAndScCall(address sender, uint256 amount, address token, bytes scCall);
-    event DepositAndScCall(address sender, uint256 amount, address token, address to, bytes scCall);
-    event CallSc(address sender, bytes scCall);
+    event DepositToScGatewayAndScCall(address sender, address signer, uint256 amount, bytes scCall);
+    event DepositToVaultAndScCall(address sender, address signer, uint256 amount, address token, bytes scCall);
+    event DepositAndScCall(address sender, address signer, uint256 amount, address token, address to, bytes scCall);
+    event CallSc(address sender, address signer, bytes scCall);
 
     // solhint-disable-next-line var-name-mixedcase
     address public immutable FLIP;
@@ -35,35 +34,39 @@ contract ScUtils is Shared {
     /// putting a minimum for each might not even make sense.
     function depositToScGateway(uint256 amount, bytes calldata scCall) public {
         _depositFrom(amount, FLIP, SC_GATEWAY);
-        emit DepositToScGatewayAndScCall(msg.sender, amount, scCall);
+        // solhint-disable-next-line avoid-tx-origin
+        emit DepositToScGatewayAndScCall(msg.sender, tx.origin, amount, scCall);
     }
 
     function depositToVault(uint256 amount, address token, bytes calldata scCall) public payable {
         _depositFrom(amount, token, CF_VAULT);
-        emit DepositToVaultAndScCall(msg.sender, amount, token, scCall);
+        // solhint-disable-next-line avoid-tx-origin
+        emit DepositToVaultAndScCall(msg.sender, tx.origin, amount, token, scCall);
     }
 
     // In case in the future there is a need to deposit to an arbitrary address.
     function depositTo(uint256 amount, address token, address to, bytes calldata scCall) public payable {
         _depositFrom(amount, token, to);
-        emit DepositAndScCall(msg.sender, amount, token, to, scCall);
+        // solhint-disable-next-line avoid-tx-origin
+        emit DepositAndScCall(msg.sender, tx.origin, amount, token, to, scCall);
     }
 
     // For other actions that don't require payment. For example to undelegate.
     // We rely on Ethereum to not be DoS'd, otherwise we choose to add a minimum
     // payment.
     function callSc(bytes calldata scCall) public {
-        emit CallSc(msg.sender, scCall);
+        // solhint-disable-next-line avoid-tx-origin
+        emit CallSc(msg.sender, tx.origin, scCall);
     }
 
     function _depositFrom(uint256 amount, address token, address to) private {
         if (token != _NATIVE_ADDR) {
-            require(msg.value == 0, "ScUtils: value should be zero");
+            require(msg.value == 0, "ScUtils: value not zero");
 
             // Assumption of set token allowance by the user
             IERC20(token).transferFrom(msg.sender, to, amount);
         } else {
-            require(amount == msg.value, "ScUtils: value should match amount");
+            require(amount == msg.value, "ScUtils: value missmatch");
 
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = to.call{value: msg.value}("");
@@ -73,6 +76,8 @@ contract ScUtils is Shared {
 
     // Receive a call from Chainflip and execute a deposit and SC Call. This can be useful
     // to have a swap + delegation, swap + staking without having to add that logic into the SC.
+    // Using address(0) when coming from a cross-chain swap as the tx.origin will be the
+    // a Chainflip validator's key.
     function cfReceive(
         uint32,
         bytes calldata,
@@ -86,30 +91,30 @@ contract ScUtils is Shared {
         // so we don't need nested `abi.encode`.
         if (to == address(this)) {
             // Fund State Chain account
-            require(token == FLIP, "ScUtils: token is not FLIP");
+            require(token == FLIP, "ScUtils: token not FLIP");
             require(IERC20(FLIP).approve(SC_GATEWAY, amount));
             IStateChainGateway(SC_GATEWAY).fundStateChainAccount(bytes32(data), amount);
         } else if (to == SC_GATEWAY) {
             // Deposit to ScGateway
-            require(token == FLIP, "ScUtils: token is not FLIP");
+            require(token == FLIP, "ScUtils: token not FLIP");
             _deposit(amount, FLIP, SC_GATEWAY);
-            emit DepositToScGatewayAndScCall(msg.sender, amount, data);
+            emit DepositToScGatewayAndScCall(msg.sender, address(0), amount, data);
         } else if (to == CF_VAULT) {
             // Deposit to Vault
             _deposit(amount, token, CF_VAULT);
-            emit DepositToVaultAndScCall(msg.sender, amount, token, data);
+            emit DepositToVaultAndScCall(msg.sender, address(0), amount, token, data);
         } else {
             _deposit(amount, token, to);
-            emit DepositAndScCall(msg.sender, amount, token, to, data);
+            emit DepositAndScCall(msg.sender, address(0), amount, token, to, data);
         }
     }
 
     function _deposit(uint256 amount, address token, address to) private {
         if (token != _NATIVE_ADDR) {
-            require(msg.value == 0, "ScUtils: value should be zero");
+            require(msg.value == 0, "ScUtils: value not zero");
             IERC20(token).transfer(to, amount);
         } else {
-            require(amount == msg.value, "ScUtils: value should match amount");
+            require(amount == msg.value, "ScUtils: value missmatch");
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = to.call{value: msg.value}("");
             require(success);
@@ -118,7 +123,7 @@ contract ScUtils is Shared {
 
     /// @dev Check that the sender is the Chainflip's Vault.
     modifier onlyCfVault() {
-        require(msg.sender == CF_VAULT, "ScUtils: caller not Chainflip Vault");
+        require(msg.sender == CF_VAULT, "ScUtils: caller not Cf Vault");
         _;
     }
 }

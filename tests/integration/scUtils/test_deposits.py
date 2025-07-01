@@ -26,6 +26,7 @@ def test_deposit_scgateway(cf, cfScUtils):
     assert tx.events["DepositToScGatewayAndScCall"]["amount"] == TEST_AMNT
     assert tx.events["DepositToScGatewayAndScCall"]["scCall"] == scCall
     assert tx.events["DepositToScGatewayAndScCall"]["sender"] == cf.ALICE
+    assert tx.events["DepositToScGatewayAndScCall"]["signer"] == cf.ALICE
 
     assert cf.flip.balanceOf(cf.ALICE) == iniBalUser - TEST_AMNT
     assert cf.flip.balanceOf(cf.stateChainGateway) == iniBalScGateway + TEST_AMNT
@@ -43,6 +44,7 @@ def test_deposit_token_vault(cf, cfScUtils):
     assert tx.events["DepositToVaultAndScCall"]["amount"] == TEST_AMNT
     assert tx.events["DepositToVaultAndScCall"]["scCall"] == scCall
     assert tx.events["DepositToVaultAndScCall"]["sender"] == cf.ALICE
+    assert tx.events["DepositToVaultAndScCall"]["signer"] == cf.ALICE
 
     assert cf.flip.balanceOf(cf.ALICE) == iniBalUser - TEST_AMNT
     assert cf.flip.balanceOf(cf.vault) == iniBalVault + TEST_AMNT
@@ -50,7 +52,7 @@ def test_deposit_token_vault(cf, cfScUtils):
 
 
 def test_deposit_eth_vault_rev_amount(cf, cfScUtils):
-    with reverts("ScUtils: value should match amount"):
+    with reverts("ScUtils: value missmatch"):
         cfScUtils.depositToVault(TEST_AMNT, NATIVE_ADDR, scCall, {"from": cf.ALICE})
 
 
@@ -65,6 +67,7 @@ def test_deposit_eth_vault(cf, cfScUtils):
     assert tx.events["DepositToVaultAndScCall"]["amount"] == TEST_AMNT
     assert tx.events["DepositToVaultAndScCall"]["scCall"] == scCall
     assert tx.events["DepositToVaultAndScCall"]["sender"] == cf.ALICE
+    assert tx.events["DepositToVaultAndScCall"]["signer"] == cf.ALICE
 
     assert cf.ALICE.balance() < iniBalUser - TEST_AMNT
     assert cf.vault.balance() == iniBalVault + TEST_AMNT
@@ -72,7 +75,7 @@ def test_deposit_eth_vault(cf, cfScUtils):
 
 
 def test_deposit_eth_to_rev_amount(cf, cfScUtils):
-    with reverts("ScUtils: value should match amount"):
+    with reverts("ScUtils: value missmatch"):
         cfScUtils.depositTo(
             TEST_AMNT,
             NATIVE_ADDR,
@@ -104,6 +107,7 @@ def test_deposit_token_to(cf, cfScUtils):
     assert tx.events["DepositAndScCall"]["scCall"] == scCall
     assert tx.events["DepositAndScCall"]["sender"] == cf.ALICE
     assert tx.events["DepositAndScCall"]["to"] == toAddress
+    assert tx.events["DepositAndScCall"]["signer"] == cf.ALICE
 
     assert cf.flip.balanceOf(cf.ALICE) == iniBalUser - TEST_AMNT
     assert cf.flip.balanceOf(toAddress) == iniBalTo + TEST_AMNT
@@ -113,3 +117,5 @@ def test_deposit_token_to(cf, cfScUtils):
 def test_call_sc(cf, cfScUtils):
     tx = cfScUtils.callSc(scCall, {"from": cf.ALICE})
     assert tx.events["CallSc"]["scCall"] == scCall
+    assert tx.events["CallSc"]["sender"] == cf.ALICE
+    assert tx.events["CallSc"]["signer"] == cf.ALICE
