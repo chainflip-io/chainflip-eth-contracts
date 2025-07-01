@@ -4,10 +4,16 @@ pragma solidity ^0.8.0;
 
 import "./abstract/Shared.sol";
 import "./interfaces/IStateChainGateway.sol";
+import "./interfaces/IScUtils.sol";
+
+// TODO: Consider allowing for arrays to do multiple things in one TX. Just making the scCall an
+// array is not good enough, as each action might have a different amount. However, if we batch
+// it all we should probably just pull the whole amount in one for tokens. Also verify for ETH
+// that msg.value matches the full amount. TBD.
 
 // Emiting the signer (tx.origin) for the State Chain for flexibility so the State Chain
 // has all the information to execute the call.
-contract ScUtils is Shared {
+contract ScUtils is Shared, IScUtils {
     event DepositToScGatewayAndScCall(address sender, address signer, uint256 amount, bytes scCall);
     event DepositToVaultAndScCall(address sender, address signer, uint256 amount, address token, bytes scCall);
     event DepositAndScCall(address sender, address signer, uint256 amount, address token, address to, bytes scCall);
@@ -32,20 +38,20 @@ contract ScUtils is Shared {
     /// it. It seems simpler to just add checks on the engine for amounts, like we do
     /// for the minimum deposit. Especially given that this scCalls are arbitrary so
     /// putting a minimum for each might not even make sense.
-    function depositToScGateway(uint256 amount, bytes calldata scCall) public {
+    function depositToScGateway(uint256 amount, bytes calldata scCall) public override {
         _depositFrom(amount, FLIP, SC_GATEWAY);
         // solhint-disable-next-line avoid-tx-origin
         emit DepositToScGatewayAndScCall(msg.sender, tx.origin, amount, scCall);
     }
 
-    function depositToVault(uint256 amount, address token, bytes calldata scCall) public payable {
+    function depositToVault(uint256 amount, address token, bytes calldata scCall) public payable override {
         _depositFrom(amount, token, CF_VAULT);
         // solhint-disable-next-line avoid-tx-origin
         emit DepositToVaultAndScCall(msg.sender, tx.origin, amount, token, scCall);
     }
 
     // In case in the future there is a need to deposit to an arbitrary address.
-    function depositTo(uint256 amount, address token, address to, bytes calldata scCall) public payable {
+    function depositTo(uint256 amount, address token, address to, bytes calldata scCall) public payable override {
         _depositFrom(amount, token, to);
         // solhint-disable-next-line avoid-tx-origin
         emit DepositAndScCall(msg.sender, tx.origin, amount, token, to, scCall);
@@ -54,7 +60,7 @@ contract ScUtils is Shared {
     // For other actions that don't require payment. For example to undelegate.
     // We rely on Ethereum to not be DoS'd, otherwise we choose to add a minimum
     // payment.
-    function callSc(bytes calldata scCall) public {
+    function callSc(bytes calldata scCall) public override {
         // solhint-disable-next-line avoid-tx-origin
         emit CallSc(msg.sender, tx.origin, scCall);
     }
@@ -84,7 +90,7 @@ contract ScUtils is Shared {
         bytes calldata message,
         address token,
         uint256 amount
-    ) external payable onlyCfVault {
+    ) external payable override onlyCfVault {
         (address to, bytes memory data) = abi.decode(message, (address, bytes));
 
         // Using `address(this)` as a way to signal that it's `fundStateChainAccount`
