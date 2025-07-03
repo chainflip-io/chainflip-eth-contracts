@@ -94,8 +94,6 @@ contract ScUtils is Shared, IScUtils {
      *          having to add that logic into the SC.
      * @dev     Using address(0) when coming from a cross-chain swap as the tx.origin
      *          will be the Chainflip validator's key, which shouldn't be used.
-     * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
-     * @param srcAddress    Bytes containing the source address on the source chain.
      * @param message       Message containing the SC Call and the destination address to deposit
      *                      the assets. This contract's address is used to signal that it
      *                      should be used to fund a State Chain account.
