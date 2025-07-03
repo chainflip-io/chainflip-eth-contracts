@@ -216,6 +216,20 @@ def deploy_new_cfReceiver(deployer, cfReceiver, vault_address):
     )
 
 
+def deploy_scUtils(
+    deployer, cfScUtils, flip_address, stateChainGateway_address, vault_address
+):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    return cfScUtils.deploy(
+        flip_address,
+        stateChainGateway_address,
+        vault_address,
+        {"from": deployer, "required_confs": required_confs},
+    )
+
+
 # Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, MockUSDC, accounts):
     # Set the priority fee for all transactions and the required number of confirmations.
