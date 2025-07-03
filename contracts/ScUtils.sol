@@ -6,12 +6,6 @@ import "./abstract/Shared.sol";
 import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/IScUtils.sol";
 
-// TODO: Consider allowing for arrays to do multiple things in one TX. Just making the scCall an
-// array is not good enough, as each action might have a different amount. However, if we batch
-// it all we should probably just pull the whole amount in one for tokens. Also verify for ETH
-// that msg.value matches the full amount. TBD but it might be quite useful in the future
-// for new features that might require managing a position, which could be multiple actions.
-
 // Emiting the signer (tx.origin) for the State Chain for flexibility so the State Chain
 // has all the information to execute the call.
 contract ScUtils is Shared, IScUtils {
