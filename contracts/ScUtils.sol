@@ -9,7 +9,8 @@ import "./interfaces/IScUtils.sol";
 // TODO: Consider allowing for arrays to do multiple things in one TX. Just making the scCall an
 // array is not good enough, as each action might have a different amount. However, if we batch
 // it all we should probably just pull the whole amount in one for tokens. Also verify for ETH
-// that msg.value matches the full amount. TBD.
+// that msg.value matches the full amount. TBD but it might be quite useful in the future
+// for new features that might require managing a position, which could be multiple actions.
 
 // Emiting the signer (tx.origin) for the State Chain for flexibility so the State Chain
 // has all the information to execute the call.
@@ -28,33 +29,51 @@ contract ScUtils is Shared, IScUtils {
         CF_VAULT = _CF_VAULT;
     }
 
-    /// We could put a minimum of token/FLIP/ETH for each of these actions. However
-    /// that would be very arbitrary. We would need to get the governance key to modify
-    /// it. It seems simpler to just add checks on the engine for amounts, like we do
-    /// for the minimum deposit. Especially given that this scCalls are arbitrary so
-    /// putting a minimum for each might not even make sense.
+    /**
+     * @notice  Deposit an amount of FLIP to the State Chain Gateway contract and perform
+     *          a call to the State Chain.
+     * @dev     There is no minimum amount of FLIP required for the deposit. It would be
+     *          arbitrary to hardcode one and updating it via governance key is unnecessary.
+     *          It is simpler to just have a minimum on the engine, like for minimum deposit
+     *          channel deposit amounts.
+     * @param amount    Amount of FLIP to transfer to the State Chain Gateway contract.
+     * @param scCall    Arbitrary State Chain call bytes
+     */
     function depositToScGateway(uint256 amount, bytes calldata scCall) public override {
         _depositFrom(amount, FLIP, SC_GATEWAY);
         // solhint-disable-next-line avoid-tx-origin
         emit DepositToScGatewayAndScCall(msg.sender, tx.origin, amount, scCall);
     }
 
+    /**
+     * @notice  Deposit an amount of any token or ETH to the Vault contract and perform
+     *          a call to the State Chain.
+     * @param amount    Amount to transfer to the State Chain Gateway contract.
+     * @param scCall    Arbitrary State Chain call bytes
+     */
     function depositToVault(uint256 amount, address token, bytes calldata scCall) public payable override {
         _depositFrom(amount, token, CF_VAULT);
         // solhint-disable-next-line avoid-tx-origin
         emit DepositToVaultAndScCall(msg.sender, tx.origin, amount, token, scCall);
     }
 
-    // In case in the future there is a need to deposit to an arbitrary address.
+    /**
+     * @notice  Deposit an amount of any token or ETH to the an address and perform
+     *          a call to the State Chain.
+     * @dev     To be used in the future if new features are added.
+     * @param amount    Amount to transfer to the State Chain Gateway contract.
+     * @param scCall    Arbitrary State Chain call bytes
+     */
     function depositTo(uint256 amount, address token, address to, bytes calldata scCall) public payable override {
         _depositFrom(amount, token, to);
         // solhint-disable-next-line avoid-tx-origin
         emit DepositAndScCall(msg.sender, tx.origin, amount, token, to, scCall);
     }
 
-    // For other actions that don't require payment. For example to undelegate.
-    // We rely on Ethereum to not be DoS'd, otherwise we choose to add a minimum
-    // payment.
+    /**
+     * @notice  Perform a call to the State Chain.
+     * @param scCall    Arbitrary State Chain call bytes
+     */
     function callSc(bytes calldata scCall) public override {
         // solhint-disable-next-line avoid-tx-origin
         emit CallSc(msg.sender, tx.origin, scCall);
@@ -75,10 +94,20 @@ contract ScUtils is Shared, IScUtils {
         }
     }
 
-    // Receive a call from Chainflip and execute a deposit and SC Call. This can be useful
-    // to have a swap + delegation, swap + staking without having to add that logic into the SC.
-    // Using address(0) when coming from a cross-chain swap as the tx.origin will be the
-    // a Chainflip validator's key.
+    /**
+     * @notice  Receive a CCM swap from Chainflip and execute a deposit and SC Call.
+     *          This can be useful to have a swap + delegation, swap + staking without
+     *          having to add that logic into the SC.
+     * @dev     Using address(0) when coming from a cross-chain swap as the tx.origin
+     *          will be the Chainflip validator's key, which shouldn't be used.
+     * @param srcChain      The source chain according to the Chainflip Protocol's nomenclature.
+     * @param srcAddress    Bytes containing the source address on the source chain.
+     * @param message       Message containing the SC Call and the destination address to deposit
+     *                      the assets. This contract's address is used to signal that it
+     *                      should be used to fund a State Chain account.
+     * @param token         Address of the token received. _NATIVE_ADDR if it's native tokens.
+     * @param amount        Amount of tokens received. This will match msg.value for native tokens.
+     */
     function cfReceive(
         uint32,
         bytes calldata,
