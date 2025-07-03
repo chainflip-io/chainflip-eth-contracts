@@ -5,10 +5,13 @@ pragma solidity ^0.8.0;
 import "./abstract/Shared.sol";
 import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/IScUtils.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Emiting the signer (tx.origin) for the State Chain for flexibility so the State Chain
 // has all the information to execute the call.
 contract ScUtils is Shared, IScUtils {
+    using SafeERC20 for IERC20;
+
     // solhint-disable-next-line var-name-mixedcase
     address public immutable FLIP;
     // solhint-disable-next-line var-name-mixedcase
@@ -78,7 +81,7 @@ contract ScUtils is Shared, IScUtils {
             require(msg.value == 0, "ScUtils: value not zero");
 
             // Assumption of set token allowance by the user
-            IERC20(token).transferFrom(msg.sender, to, amount);
+            IERC20(token).safeTransferFrom(msg.sender, to, amount);
         } else {
             require(amount == msg.value, "ScUtils: value missmatch");
 
@@ -134,7 +137,7 @@ contract ScUtils is Shared, IScUtils {
     function _deposit(uint256 amount, address token, address to) private {
         if (token != _NATIVE_ADDR) {
             require(msg.value == 0, "ScUtils: value not zero");
-            IERC20(token).transfer(to, amount);
+            IERC20(token).safeTransfer(to, amount);
         } else {
             require(amount == msg.value, "ScUtils: value missmatch");
             // solhint-disable-next-line avoid-low-level-calls

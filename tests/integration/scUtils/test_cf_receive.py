@@ -13,7 +13,10 @@ def test_executexSwapAndCallNative_rev_sender(cf, cfScUtils):
 
 
 def test_ccm_fund_vault_eth(cf, cfScUtils):
+
     cf.SAFEKEEPER.transfer(cf.vault, TEST_AMNT)
+
+    iniBalanceVault = web3.eth.get_balance(cf.vault.address)
     message = encode_abi(
         ["address", "bytes"], [cf.vault.address, bytes.fromhex(JUNK_HEX[2:])]
     )
@@ -35,32 +38,39 @@ def test_ccm_fund_vault_eth(cf, cfScUtils):
         JUNK_HEX,
     ]
 
+    assert web3.eth.get_balance(cf.vault.address) == iniBalanceVault
 
-def test_ccm_fund_vault_flip(cf, cfScUtils):
-    cf.flip.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
 
-    iniBalanceVault = cf.flip.balanceOf(cf.vault)
+def test_ccm_fund_vault_flip(cf, cfScUtils, mockUSDT):
 
-    message = encode_abi(
-        ["address", "bytes"], [cf.vault.address, bytes.fromhex(JUNK_HEX[2:])]
-    )
+    tokens = [cf.flip, mockUSDT]
+    amount = [TEST_AMNT, TEST_AMNT_USDC]
 
-    args = [
-        [cf.flip.address, cfScUtils.address, TEST_AMNT],
-        1,
-        "0x",
-        message,
-    ]
-    tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
+    for token, amount in zip(tokens, amount):
+        token.transfer(cf.vault, amount, {"from": cf.SAFEKEEPER})
 
-    assert tx.events["DepositToVaultAndScCall"][0].values() == [
-        cf.vault.address,
-        ZERO_ADDR,
-        TEST_AMNT,
-        cf.flip.address,
-        JUNK_HEX,
-    ]
-    assert cf.flip.balanceOf(cf.vault) == iniBalanceVault
+        iniBalanceVault = token.balanceOf(cf.vault)
+
+        message = encode_abi(
+            ["address", "bytes"], [cf.vault.address, bytes.fromhex(JUNK_HEX[2:])]
+        )
+
+        args = [
+            [token.address, cfScUtils.address, amount],
+            1,
+            "0x",
+            message,
+        ]
+        tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
+
+        assert tx.events["DepositToVaultAndScCall"][0].values() == [
+            cf.vault.address,
+            ZERO_ADDR,
+            amount,
+            token.address,
+            JUNK_HEX,
+        ]
+        assert token.balanceOf(cf.vault) == iniBalanceVault
 
 
 def test_ccm_fund_rev_asset(cf, cfScUtils):
@@ -111,25 +121,37 @@ def test_ccm_fund_scgateway(cf, cfScUtils):
     assert iniBalanceScGateway == cf.flip.balanceOf(cf.stateChainGateway) - MIN_FUNDING
 
 
-def test_ccm_fund_to(cf, cfScUtils):
+def test_ccm_fund_to(cf, cfScUtils, mockUSDT):
     toAddress = "0xb5d85cbf7cb3ee0d56b3bb207d5fc4b82f43f511"
 
-    cf.flip.transfer(cf.vault, TEST_AMNT, {"from": cf.SAFEKEEPER})
+    tokens = [cf.flip, mockUSDT]
+    amounts = [TEST_AMNT, TEST_AMNT_USDC]
 
-    message = encode_abi(["address", "bytes"], [toAddress, bytes.fromhex(JUNK_HEX[2:])])
-    args = [
-        [cf.flip.address, cfScUtils.address, TEST_AMNT],
-        1,
-        "0x",
-        message,
-    ]
-    tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
+    for token, amount in zip(tokens, amounts):
 
-    assert tx.events["DepositAndScCall"][0].values() == [
-        cf.vault.address,
-        ZERO_ADDR,
-        TEST_AMNT,
-        cf.flip.address,
-        toAddress,
-        JUNK_HEX,
-    ]
+        token.transfer(cf.vault, amount, {"from": cf.SAFEKEEPER})
+
+        iniVaultBalance = token.balanceOf(cf.vault)
+        iniToAddressBalance = token.balanceOf(toAddress)
+
+        message = encode_abi(
+            ["address", "bytes"], [toAddress, bytes.fromhex(JUNK_HEX[2:])]
+        )
+        args = [
+            [token.address, cfScUtils.address, amount],
+            1,
+            "0x",
+            message,
+        ]
+        tx = signed_call_cf(cf, cf.vault.executexSwapAndCall, *args)
+
+        assert tx.events["DepositAndScCall"][0].values() == [
+            cf.vault.address,
+            ZERO_ADDR,
+            amount,
+            token.address,
+            toAddress,
+            JUNK_HEX,
+        ]
+        assert token.balanceOf(cf.vault) == iniVaultBalance - amount
+        assert token.balanceOf(toAddress) == iniToAddressBalance + amount

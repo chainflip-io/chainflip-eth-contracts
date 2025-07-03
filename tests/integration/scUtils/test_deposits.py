@@ -33,22 +33,26 @@ def test_deposit_scgateway(cf, cfScUtils):
     assert cf.flip.balanceOf(cfScUtils) == iniBalScUtils
 
 
-def test_deposit_token_vault(cf, cfScUtils):
-    iniBalUser = cf.flip.balanceOf(cf.ALICE)
-    iniBalVault = cf.flip.balanceOf(cf.vault)
-    iniBalScUtils = cf.flip.balanceOf(cfScUtils)
-    cf.flip.approve(cfScUtils, TEST_AMNT, {"from": cf.ALICE})
-    tx = cfScUtils.depositToVault(
-        TEST_AMNT, cf.flip.address, scCall, {"from": cf.ALICE}
-    )
-    assert tx.events["DepositToVaultAndScCall"]["amount"] == TEST_AMNT
-    assert tx.events["DepositToVaultAndScCall"]["scCall"] == scCall
-    assert tx.events["DepositToVaultAndScCall"]["sender"] == cf.ALICE
-    assert tx.events["DepositToVaultAndScCall"]["signer"] == cf.ALICE
+def test_deposit_token_vault(cf, cfScUtils, mockUSDT):
+    mockUSDT.transfer(cf.ALICE, TEST_AMNT_USDC, {"from": cf.SAFEKEEPER})
 
-    assert cf.flip.balanceOf(cf.ALICE) == iniBalUser - TEST_AMNT
-    assert cf.flip.balanceOf(cf.vault) == iniBalVault + TEST_AMNT
-    assert cf.flip.balanceOf(cfScUtils) == iniBalScUtils
+    tokens = [cf.flip, mockUSDT]
+    amounts = [TEST_AMNT, TEST_AMNT_USDC]
+
+    for token, amount in zip(tokens, amounts):
+        iniBalUser = token.balanceOf(cf.ALICE)
+        iniBalVault = token.balanceOf(cf.vault)
+        iniBalScUtils = token.balanceOf(cfScUtils)
+        token.approve(cfScUtils, amount, {"from": cf.ALICE})
+        tx = cfScUtils.depositToVault(amount, token.address, scCall, {"from": cf.ALICE})
+        assert tx.events["DepositToVaultAndScCall"]["amount"] == amount
+        assert tx.events["DepositToVaultAndScCall"]["scCall"] == scCall
+        assert tx.events["DepositToVaultAndScCall"]["sender"] == cf.ALICE
+        assert tx.events["DepositToVaultAndScCall"]["signer"] == cf.ALICE
+
+        assert token.balanceOf(cf.ALICE) == iniBalUser - amount
+        assert token.balanceOf(cf.vault) == iniBalVault + amount
+        assert token.balanceOf(cfScUtils) == iniBalScUtils
 
 
 def test_deposit_eth_vault_rev_amount(cf, cfScUtils):
@@ -112,6 +116,29 @@ def test_deposit_token_to(cf, cfScUtils):
     assert cf.flip.balanceOf(cf.ALICE) == iniBalUser - TEST_AMNT
     assert cf.flip.balanceOf(toAddress) == iniBalTo + TEST_AMNT
     assert cf.flip.balanceOf(cfScUtils) == iniBalScUtils
+
+
+def test_deposit_eth_to(cf, cfScUtils):
+    iniBalUser = web3.eth.get_balance(cf.ALICE.address)
+    iniBalScUtils = web3.eth.get_balance(cfScUtils.address)
+    iniBalTo = web3.eth.get_balance(NON_ZERO_ADDR)
+
+    tx = cfScUtils.depositTo(
+        TEST_AMNT,
+        NATIVE_ADDR,
+        NON_ZERO_ADDR,
+        scCall,
+        {"from": cf.ALICE, "value": TEST_AMNT},
+    )
+    assert tx.events["DepositAndScCall"]["amount"] == TEST_AMNT
+    assert tx.events["DepositAndScCall"]["scCall"] == scCall
+    assert tx.events["DepositAndScCall"]["sender"] == cf.ALICE
+    assert tx.events["DepositAndScCall"]["to"] == NON_ZERO_ADDR
+    assert tx.events["DepositAndScCall"]["signer"] == cf.ALICE
+
+    assert web3.eth.get_balance(cf.ALICE.address) < iniBalUser - TEST_AMNT
+    assert web3.eth.get_balance(NON_ZERO_ADDR) == iniBalTo + TEST_AMNT
+    assert web3.eth.get_balance(cfScUtils.address) == iniBalScUtils
 
 
 def test_call_sc(cf, cfScUtils):
