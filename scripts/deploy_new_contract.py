@@ -23,6 +23,7 @@ from deploy import (
     deploy_new_multicall,
     deploy_new_cfReceiver,
     deploy_address_checker,
+    deploy_scUtils,
 )
 
 
@@ -133,6 +134,19 @@ def deploy_addr_checker():
     store_artifacts()
 
 
+def deploy_sc_utils():
+    VAULT_ADDRESS = os.environ["VAULT_ADDRESS"]
+    FLIP_ADDRESS = os.environ["FLIP_ADDRESS"]
+    SC_GATEWAY_ADDRESS = os.environ["SC_GATEWAY_ADDRESS"]
+
+    scUtilsAddress = deploy_scUtils(
+        DEPLOYER, FLIP_ADDRESS, SC_GATEWAY_ADDRESS, VAULT_ADDRESS
+    )
+    addressDump["SC_UTILS"] = scUtilsAddress.address
+
+    store_artifacts()
+
+
 def store_artifacts():
     print("Deployed with parameters\n----------------------------")
     print(f"  ChainID: {chain.id}")
@@ -148,6 +162,8 @@ def store_artifacts():
         print(f"  FLIP: {addressDump['FLIP_ADDRESS']}")
     if "VAULT_ADDRESS" in addressDump:
         print(f"  Vault: {addressDump['VAULT_ADDRESS']}")
+    if "SC_GATEWAY_ADDRESS" in addressDump:
+        print(f"  SC Gateway: {addressDump['SC_GATEWAY_ADDRESS']}")
 
     print("\nNew deployed contract addresses\n----------------------------")
     if "NEW_SC_GATEWAY_ADDRESS" in addressDump:
@@ -163,6 +179,8 @@ def store_artifacts():
         print(f"  Cf Receiver: {addressDump['NEW_CF_RECEIVER']}")
     if "ADDRESS_CHECKER" in addressDump:
         print(f"  AddressChecker: {addressDump['ADDRESS_CHECKER']}")
+    if "SC_UTILS" in addressDump:
+        print(f"  ScUtils: {addressDump['SC_UTILS']}")
     print("\n😎😎 Deployment success! 😎😎")
 
     if DEPLOY_ARTEFACT_ID:
