@@ -7,8 +7,18 @@ import "./interfaces/IStateChainGateway.sol";
 import "./interfaces/IScUtils.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// Emiting the signer (tx.origin) for the State Chain for flexibility so the State Chain
-// has all the information to execute the call.
+/**
+ * @title    State Chain Utils Contract
+ * @notice   Contract that allows users to deposit assets into Chainflip contracts (Vault,
+ *           State Chain Gateway or other) and perform arbitrary calls to the State Chain
+ *           in a single transaction. The arbitrary call to the State Chain is a `bytes`
+ *           parameter that will be interpreted by the State Chain.
+ * @dev      There is a function for each contract (Vault, State Chain Gateway) to make
+ *           the engine's witnessing and parsing of events easier and less prone to error.
+ *           Also to guarantee that FLIP is transferred to the SCGateway contract.
+ *           We emit both the msg.sender and tx.origin to give the maximum amount of
+ *           flexibility to the State Chain to execute the call.
+ */
 contract ScUtils is Shared, IScUtils {
     using SafeERC20 for IERC20;
 
