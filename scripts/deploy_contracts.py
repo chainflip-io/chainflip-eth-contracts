@@ -191,7 +191,9 @@ def deploy_optional_contracts(cf, addressDump):
         cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT, cf_accs[0:10])
         addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
         cf.priceFeeds = deploy_price_feeds(
-            deployer, PriceFeedMock, ["BTC / USD", "ETH / USD", "SOL / USD", "USDC / USD", "USDT / USD"]
+            deployer,
+            PriceFeedMock,
+            ["BTC / USD", "ETH / USD", "SOL / USD", "USDC / USD", "USDT / USD"],
         )
         addressDump["PRICE_FEEDS"] = ", ".join(
             f"{feed[0]}: {feed[1].address}" for feed in cf.priceFeeds
