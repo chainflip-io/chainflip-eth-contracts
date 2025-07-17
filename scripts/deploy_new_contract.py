@@ -15,6 +15,7 @@ from brownie import (
     CFTester,
     Multicall,
     AddressChecker,
+    ScUtils
 )
 from deploy import (
     deploy_new_vault,
@@ -140,7 +141,7 @@ def deploy_sc_utils():
     SC_GATEWAY_ADDRESS = os.environ["SC_GATEWAY_ADDRESS"]
 
     scUtilsAddress = deploy_scUtils(
-        DEPLOYER, FLIP_ADDRESS, SC_GATEWAY_ADDRESS, VAULT_ADDRESS
+        DEPLOYER, ScUtils, FLIP_ADDRESS, SC_GATEWAY_ADDRESS, VAULT_ADDRESS
     )
     addressDump["SC_UTILS"] = scUtilsAddress.address
 
