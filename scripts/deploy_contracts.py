@@ -201,9 +201,7 @@ def deploy_optional_contracts(cf, addressDump):
     if chain.id in [eth_mainnet, eth_sepolia, eth_localnet, hardhat] and hasattr(
         cf, "flip"
     ):
-        cf.scUtils = deploy_scUtils(
-            deployer, ScUtils, cf.flip, cf.stateChainGateway, cf.vault
-        )
+        cf.scUtils = deploy_scUtils(deployer, ScUtils, cf.stateChainGateway, cf.vault)
         addressDump["SC_UTILS"] = cf.scUtils.address
 
 

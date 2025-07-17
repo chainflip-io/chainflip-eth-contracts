@@ -137,11 +137,10 @@ def deploy_addr_checker():
 
 def deploy_sc_utils():
     VAULT_ADDRESS = os.environ["VAULT_ADDRESS"]
-    FLIP_ADDRESS = os.environ["FLIP_ADDRESS"]
     SC_GATEWAY_ADDRESS = os.environ["SC_GATEWAY_ADDRESS"]
 
     scUtilsAddress = deploy_scUtils(
-        DEPLOYER, ScUtils, FLIP_ADDRESS, SC_GATEWAY_ADDRESS, VAULT_ADDRESS
+        DEPLOYER, ScUtils, SC_GATEWAY_ADDRESS, VAULT_ADDRESS
     )
     addressDump["SC_UTILS"] = scUtilsAddress.address
 

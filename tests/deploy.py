@@ -216,14 +216,11 @@ def deploy_new_cfReceiver(deployer, cfReceiver, vault_address):
     )
 
 
-def deploy_scUtils(
-    deployer, cfScUtils, flip_address, stateChainGateway_address, vault_address
-):
+def deploy_scUtils(deployer, cfScUtils, stateChainGateway_address, vault_address):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
 
     return cfScUtils.deploy(
-        flip_address,
         stateChainGateway_address,
         vault_address,
         {"from": deployer, "required_confs": required_confs},
