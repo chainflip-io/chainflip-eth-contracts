@@ -23,15 +23,12 @@ contract ScUtils is Shared, IScUtils {
     using SafeERC20 for IERC20;
 
     // solhint-disable-next-line var-name-mixedcase
-    address public immutable FLIP;
-    // solhint-disable-next-line var-name-mixedcase
     address public immutable SC_GATEWAY;
     // solhint-disable-next-line var-name-mixedcase
     address public immutable CF_VAULT;
 
     // solhint-disable-next-line var-name-mixedcase
-    constructor(address _FLIP, address _SC_GATEWAY, address _CF_VAULT) {
-        FLIP = _FLIP;
+    constructor(address _SC_GATEWAY, address _CF_VAULT) {
         SC_GATEWAY = _SC_GATEWAY;
         CF_VAULT = _CF_VAULT;
     }
@@ -47,7 +44,8 @@ contract ScUtils is Shared, IScUtils {
      * @param scCall    Arbitrary State Chain call bytes
      */
     function depositToScGateway(uint256 amount, bytes calldata scCall) public override {
-        _depositFrom(amount, FLIP, SC_GATEWAY);
+        address flip = _getFlip();
+        _depositFrom(amount, flip, SC_GATEWAY);
         // solhint-disable-next-line avoid-tx-origin
         emit DepositToScGatewayAndScCall(msg.sender, tx.origin, amount, scCall);
     }
@@ -126,13 +124,15 @@ contract ScUtils is Shared, IScUtils {
         // so we don't need nested `abi.encode`.
         if (to == address(this)) {
             // Fund State Chain account
-            require(token == FLIP, "ScUtils: token not FLIP");
-            require(IERC20(FLIP).approve(SC_GATEWAY, amount));
+            address flip = _getFlip();
+            require(token == flip, "ScUtils: token not FLIP");
+            require(IERC20(flip).approve(SC_GATEWAY, amount));
             IStateChainGateway(SC_GATEWAY).fundStateChainAccount(bytes32(data), amount);
         } else if (to == SC_GATEWAY) {
             // Deposit to ScGateway
-            require(token == FLIP, "ScUtils: token not FLIP");
-            _deposit(amount, FLIP, SC_GATEWAY);
+            address flip = _getFlip();
+            require(token == flip, "ScUtils: token not FLIP");
+            _deposit(amount, flip, SC_GATEWAY);
             emit DepositToScGatewayAndScCall(msg.sender, address(0), amount, data);
         } else if (to == CF_VAULT) {
             // Deposit to Vault
@@ -154,6 +154,12 @@ contract ScUtils is Shared, IScUtils {
             (bool success, ) = to.call{value: msg.value}("");
             require(success);
         }
+    }
+
+    function _getFlip() private view returns (address) {
+        address flip = address(IStateChainGateway(SC_GATEWAY).getFLIP());
+        require(flip != address(0), "ScUtils: FLIP not set");
+        return flip;
     }
 
     /// @dev Check that the sender is the Chainflip's Vault.

@@ -75,10 +75,12 @@ jobs:
           KEY_MANAGER_ADDRESS: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be"
           FLIP_ADDRESS: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
           VAULT_ADDRESS: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968"
+          SC_GATEWAY_ADDRESS: "0x1F7fE41C798cc7b1D34BdC8de2dDDA4a4bE744D9"
         run: |
           poetry run brownie run deploy_new_contract deploy_vault --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_scGateway --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_keyManager --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_multicall --network hardhat &&
           poetry run brownie run deploy_new_contract deploy_cfTester --network hardhat &&
-          poetry run brownie run deploy_new_contract deploy_addr_checker --network hardhat
+          poetry run brownie run deploy_new_contract deploy_addr_checker --network hardhat &&
+          poetry run brownie run deploy_new_contract deploy_sc_utils --network hardhat

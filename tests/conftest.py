@@ -283,9 +283,7 @@ def mockUSDT(cf, MockUSDT):
 
 @pytest.fixture(scope="module")
 def cfScUtils(cf, ScUtils):
-    return deploy_scUtils(
-        cf.SAFEKEEPER, ScUtils, cf.flip, cf.stateChainGateway, cf.vault
-    )
+    return deploy_scUtils(cf.SAFEKEEPER, ScUtils, cf.stateChainGateway, cf.vault)
 
 
 @pytest.fixture(scope="module")
