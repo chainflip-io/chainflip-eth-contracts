@@ -15,7 +15,7 @@ from brownie import (
     CFTester,
     Multicall,
     AddressChecker,
-    ScUtils
+    ScUtils,
 )
 from deploy import (
     deploy_new_vault,
