@@ -3,7 +3,7 @@ import os
 
 sys.path.append(os.path.abspath("tests"))
 from consts import *
-from brownie import accounts, KeyManager, Vault, network
+from brownie import accounts, KeyManager, Vault, network, web3
 from shared_tests import *
 import re
 
@@ -54,13 +54,14 @@ def send_transferFallback():
     # Insert the address of the vault contract for the network
     vault = Vault.at("0xF5e10380213880111522dd0efD3dbb45b9f62Bcc")
 
-    # Get the sig data from the signed tx. Will look like this and can be converted straight away to a uint.
+    # Get the sig data from the signed tx or decode the raw bytes via decode_vault_call.
+    # Sig might look like this and shall be converted straight away to a uint.
     # sig: 105,443,778,774,230,036,821,222,798,164,959,664,336,048,410,063,990,219,863,188,006,721,837,015,465,009
     sig = 105443778774230036821222798164959664336048410063990219863188006721837015465009
     nonce = 7227
     kTimesGAddress = "0x6c87aef85c3342deaecc056aecaf62f61af62233"
 
-    # Insert [token, recipitent, amount]
+    # Insert [token, recipient, amount]
     transferParams = [
         NATIVE_ADDR,
         "0xf112f5d0995e17bfe5021fea90c3a6fac875664e",
@@ -81,13 +82,13 @@ def send_allBatch():
     # Insert the address of the vault contract for the network
     vault = Vault.at("0x2bb150e6d4366A1BDBC4275D1F35892CD63F27e3")
 
-    # Get the sig data from the signed tx as in the send_transferFallback function.
+    # Get the sig data from the signed tx or decode the raw bytes via decode_vault_call.
     sigData = [
         53564996668499050857217723416332709030557380600265126346613536706207704396933,
         584,
         "0xd1714973cbd82edad9c1af48cb21abd54283e366",
     ]
-    # [token, recipitent, amount]
+    # [token, recipient, amount]
     transferParams = [
         NATIVE_ADDR,
         "0x8c952cc18969129a1c67297332a0b6558eb0bfec",
@@ -98,11 +99,37 @@ def send_allBatch():
     tx.info()
 
 
+def send_ccm():
+    # Insert the address of the vault contract for the network
+    vault = Vault.at("0x79001a5e762f3befc8e5871b42f6734e00498920")
+
+    # Get the sig data from the signed tx or decode the raw bytes via decode_vault_call.
+    sigData = [
+        22693291636675602011791116506026624476735317944893560308690927511849435500000,
+        6247,
+        "0xa5b6a41b2c74BCbD0975FA3F69614b5149A1508A",
+    ]
+    # [token, recipient, amount]
+    transferParams = [
+        NATIVE_ADDR,
+        "0xce16F69375520ab01377ce7B88f5BA8C48F8D666",
+        11560083268210087,
+    ]
+    message = "0x"
+
+    tx = vault.executexSwapAndCall(
+        sigData, transferParams, 5, b"", message, {"from": DEPLOYER}
+    )
+    # tx = vault.executexSwapAndCall.call(sigData, transferParams, 5, b"", message, {"from": DEPLOYER})
+    print(tx)
+    tx.info()
+
+
 def send_rotation():
     # Insert the address of the Key Manager contract for the network
     keyManager = KeyManager.at("0x18195b0E3c33EeF3cA6423b1828E0FE0C03F32Fd")
 
-    # Get the sig data from the signed tx as in the send_transferFallback function.
+    # Get the sig data from the signed tx or decode the raw bytes via decode_vault_call.
     sigData = [
         15744132089818751460223478396489526259646805948031235684624463192235106336468,
         587,
