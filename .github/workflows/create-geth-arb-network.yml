@@ -193,11 +193,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
-      - name: Checkout chainflip-io/nitro-testnode @ ${{ inputs.nitro_testnodes_ref }}
+      - name: Checkout MxmUrw/nitro-testnode @ ${{ inputs.nitro_testnodes_ref }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           # token: ${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}
-          repository: chainflip-io/nitro-testnode
+          repository: MxmUrw/nitro-testnode # chainflip-io/nitro-testnode
           path: nitro-testnode
           ref: ${{ inputs.nitro_testnodes_ref }}
           submodules: true
