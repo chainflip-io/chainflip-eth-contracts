@@ -3,16 +3,18 @@ name = "eth-contracts"
 version = "0.1.0"
 description = ""
 authors = ["Albert Llimos <albert@chainflip.io>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.7.3, <3.11"
+setuptools = "62.1.0"
 umbral = "0.3.0"
 eth-brownie = "1.18.2"
 py-ecc = "5.2.0"
 pre-commit = "2.20.0"
 slither-analyzer = "0.8.3"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pylint = "2.15.3"
 autopep8 = "1.7.0"
 
