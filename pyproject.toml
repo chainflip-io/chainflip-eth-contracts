@@ -14,7 +14,7 @@ py-ecc = "5.2.0"
 pre-commit = "2.20.0"
 slither-analyzer = "0.8.3"
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.dev-dependencies]
 pylint = "2.15.3"
 autopep8 = "1.7.0"
 
