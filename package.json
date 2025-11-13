@@ -10,7 +10,7 @@
     "@openzeppelin/contracts": "4.8.3"
   },
   "devDependencies": {
-    "hardhat": "2.14.0",
+    "hardhat": "2.26.5",
     "markdownlint-cli": "0.34.0",
     "prettier": "2.8.8",
     "prettier-plugin-solidity": "1.1.3",
