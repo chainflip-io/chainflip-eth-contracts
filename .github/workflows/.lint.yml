@@ -6,7 +6,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout repo
-        uses:  actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
@@ -23,5 +23,7 @@ jobs:
 
       - run: npm install
       - run: npx solhint -w 0 'contracts/**/*.sol'
-      - run: poetry install
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
       - run: poetry run black . --check
