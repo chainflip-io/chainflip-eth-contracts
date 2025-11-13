@@ -40,7 +40,11 @@ jobs:
       - run: npm install
       - run: npm install --global ganache-cli
       - run: pip3 install eth-brownie
-      - run: poetry install
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference is the pyproject.toml.
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
       - run: poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
       - run: sudo snap install solc --edge
 

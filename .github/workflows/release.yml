@@ -33,7 +33,11 @@ jobs:
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
       - run: yarn
-      - run: poetry install
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference is the pyproject.toml.
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
 
       # Ensure that the Deposit's bytecode hasn't changed
       - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat

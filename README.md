@@ -10,15 +10,16 @@ The State Chain Gatway contract holds the FLIP funds that are being used to stak
 
 ## Dependencies
 
-- Python 3.5+
+- Python >3.7, <3.10
   For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
-- [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
+- [Poetry (Python dependency manager)](https://python-poetry.org/docs/) v2.2.1
 
 In case of python version dependency issues it might be useful to use a virtual environment such as pyenv. For example:
 
 ```bash
 pyenv install 3.8.10
 poetry env use ~/.pyenv/versions/3.8.10/bin/python
+poetry install
 ```
 
 ## Setup

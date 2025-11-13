@@ -23,6 +23,8 @@ jobs:
 
       - run: npm install
       - run: npx solhint -w 0 'contracts/**/*.sol'
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference is the pyproject.toml.
       - run: |
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
