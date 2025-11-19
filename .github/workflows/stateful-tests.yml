@@ -35,7 +35,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
-          node-version: "16"
+          node-version: "18"
 
       - name: Install and configure Poetry
         uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
@@ -45,7 +45,11 @@ jobs:
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
       - run: yarn
-      - run: poetry install
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference is the pyproject.toml.
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
       # Spinning hardhat node externally because there's some intermittent nasty bug when the node is shut down at
       # the end of some stateful test causing the tests to fail - it is confusingly logged as a Flaky inconsistent
       # data generation that behaved differently between runs

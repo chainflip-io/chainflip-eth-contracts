@@ -10,9 +10,17 @@ The State Chain Gatway contract holds the FLIP funds that are being used to stak
 
 ## Dependencies
 
-- Python 2.7 or 3.5+
+- Python >3.7, <3.10
   For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
-- [Poetry (Python dependency manager)](https://python-poetry.org/docs/)
+- [Poetry (Python dependency manager)](https://python-poetry.org/docs/) v2.2.1
+
+In case of python version dependency issues it might be useful to use a virtual environment such as pyenv. For example:
+
+```bash
+pyenv install 3.8.10
+poetry env use ~/.pyenv/versions/3.8.10/bin/python
+poetry install
+```
 
 ## Setup
 
@@ -24,7 +32,8 @@ cd chainflip-eth-contracts
 yarn
 poetry shell
 poetry install
-brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
+poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
+# optional
 pre-commit install
 ```
 
@@ -36,13 +45,13 @@ We use the `hardhat` EVM for testing.
 
 ```bash
 # Run without the stateful tests, because they take hours
-brownie test --network hardhat --stateful false
+poetry run brownie test --network hardhat --stateful false
 ```
 
 Run tests with additional features:
 
 ```bash
-brownie test <test-name> -s --network hardhat --stateful <bool> --coverage --gas --hypothesis-seed <seed_number>
+poetry run brownie test <test-name> -s --network hardhat --stateful <bool> --coverage --gas --hypothesis-seed <seed_number>
 ```
 
 Flags:
@@ -134,7 +143,7 @@ npx hardhat node --config hardhat-interval-mining.config.js
 # If brownie fails to connect to the hardhat node check ip and run with the adequate hostname address. For instance:
 npx hardhat node --hostname 127.0.0.1
 # deploy the contracts - they will be deployed by acct #1 on the hardhat pre-seeded accounts
-brownie run deploy_and
+poetry run brownie run deploy_and
 ```
 
 ### Live Test network
@@ -155,65 +164,15 @@ export GENESIS_STAKE=<the stake each node should have at genesis> (default =
 export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
 
 # deploy the contracts to goerli.
-brownie run deploy_contracts --network goerli
+poetry run brownie run deploy_contracts --network goerli
 ```
 
 ## Useful commands
 
-`brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
+`poetry run brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
 
-`brownie test --stateful false` runs all tests EXCEPT stateful tests
+`poetry run brownie test --stateful false` runs all tests EXCEPT stateful tests
 
-`brownie test --stateful true` runs ONLY the stateful tests
+`poetry run brownie test --stateful true` runs ONLY the stateful tests
 
-`brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events
-
-## Dev Tool
-
-A dev tool is available ease development and debugging. It can be used on live networks (goerli, mainnet..), private networks and locally deployed networks (hardhat). To use it, first ensure that you have been through the setup process and you are inside the poetry shell.
-
-The tool runs within the brownie framework and acts as a console-like client.
-
-```bash
-# To connect to a locally deployed network (hardhat), no endpoint is required.
-# To connect to a public network just set your provider as normal
-export WEB3_INFURA_PROJECT_ID=<Infura project id>
-# or
-export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
-
-# Instead, to connect to a private network, import the network config file and
-# set the RPC_URL that should be used to access the chain
-brownie networks import ./network-config.yaml
-export RPC_URL=<your_rpc_url>
-
-# ensure that the ETH account associated with this seed has ETH on that network
-export SEED="<your seed phrase>"
-# set the required deployed contract addresses. All in hex format, with leading 0x
-export FLIP_ADDRESS=<Address of the deployed FLIP contract>
-export SC_GATEWAY_ADDRESS=<Address of the deployed StateChain Gateway contract>
-export VAULT_ADDRESS=<Address of the deployed Vault contract>
-# Optional: only required when running USDC-related commands
-export USDC_ADDRESS=<Address of the deployed Mock USDC contract>
-# Optional - if not provided the tool will automatically obtain it
-export KEY_MANAGER_ADDRESS=<Address of the deployed KeyManager contract>
-
-
-# Run the tool specifying which network to use (private/goerli/hardhat)
-brownie run devtool --network private-testnet
-
-# When running the tool:
-# Run `help` to display all supported commands
->> help
-
-# Display user address
->> user
-
-# Example of checking the ETH balance of the State Chain Gateway
->> balanceEth gateway
-
-# Example of staking 2k FLIP for nodeId 0xDEADBEEF to the State Chain Gateway
->> fund 2000 0xDEADBEEF
-
-# To eventually exit the tool
->> exit
-```
+`poetry run brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events

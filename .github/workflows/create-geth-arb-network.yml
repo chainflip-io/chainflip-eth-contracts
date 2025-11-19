@@ -130,7 +130,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
-          node-version: "16"
+          node-version: "18"
 
       - name: Install and configure Poetry
         uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
@@ -140,7 +140,11 @@ jobs:
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
       - run: yarn
-      - run: poetry install
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference is the pyproject.toml.
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
@@ -255,7 +259,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
-          node-version: "16"
+          node-version: "18"
 
       - name: Install and configure Poetry
         uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
@@ -265,7 +269,11 @@ jobs:
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
       - run: yarn
-      - run: poetry install
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference is the pyproject.toml.
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
@@ -417,7 +425,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
-          node-version: "16"
+          node-version: "18"
 
       - name: Install and configure Poetry
         uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
@@ -427,7 +435,11 @@ jobs:
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
       - run: yarn
-      - run: poetry install
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference is the pyproject.toml.
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
