@@ -112,13 +112,17 @@ def redemptionRegistered(cf, fundedMin):
 # Deploy a generic token
 @pytest.fixture(scope="module")
 def token(cf, Token):
-    return cf.SAFEKEEPER.deploy(Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY)
+    return cf.SAFEKEEPER.deploy(
+        Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY, DEFAULT_TOKEN_DECIMALS
+    )
 
 
 # Deploy a generic token
 @pytest.fixture(scope="module")
 def token2(cf, Token):
-    return cf.SAFEKEEPER.deploy(Token, "NotAPonzi2", "NAP2", INIT_TOKEN_SUPPLY)
+    return cf.SAFEKEEPER.deploy(
+        Token, "NotAPonzi2", "NAP2", INIT_TOKEN_SUPPLY, DEFAULT_TOKEN_DECIMALS
+    )
 
 
 # Vesting

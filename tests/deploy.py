@@ -227,7 +227,7 @@ def deploy_scUtils(deployer, cfScUtils, stateChainGateway_address, vault_address
     )
 
 
-# Deploy USDC mimic token (standard ERC20) and transfer init amount to several accounts.
+# Deploy USDC mock token and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, MockUSDC, accounts):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
@@ -246,7 +246,7 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
     return mockUsdc
 
 
-# Deploy USDCT mock token
+# Deploy USDT mock token
 def deploy_usdt_contract(deployer, MockUSDT, accounts):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
