@@ -20,6 +20,7 @@ from brownie import (
     Deposit,
     PriceFeedMock,
     ScUtils,
+    Token,
 )
 from deploy import (
     deploy_Chainflip_contracts,
@@ -29,6 +30,7 @@ from deploy import (
     deploy_contracts_secondary_evm,
     deploy_price_feeds,
     deploy_scUtils,
+    deploy_wbtc_contract,
 )
 from shared_tests import deposit_bytecode_test
 
@@ -203,6 +205,10 @@ def deploy_optional_contracts(cf, addressDump):
     ):
         cf.scUtils = deploy_scUtils(deployer, ScUtils, cf.stateChainGateway, cf.vault)
         addressDump["SC_UTILS"] = cf.scUtils.address
+    # Keeping the order to not change the final addresses
+    if chain.id in [arb_localnet, eth_localnet, hardhat]:
+        cf.wbtc = deploy_wbtc_contract(deployer, Token, cf_accs[0:10])
+        addressDump["WBTC_ADDRESS"] = cf.wbtc.address
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
@@ -253,6 +259,9 @@ def display_deployed_contracts(cf):
         )
     if hasattr(cf, "scUtils"):
         print(f"  ScUtils: {cf.scUtils.address}")
+
+    if hasattr(cf, "wbtc"):
+        print(f"  WBTC: {cf.wbtc.address}")
 
     print("\n😎😎 Deployment success! 😎😎\n")
 
