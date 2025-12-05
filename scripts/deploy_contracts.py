@@ -20,6 +20,7 @@ from brownie import (
     Deposit,
     PriceFeedMock,
     ScUtils,
+    Token,
 )
 from deploy import (
     deploy_Chainflip_contracts,
@@ -206,7 +207,7 @@ def deploy_optional_contracts(cf, addressDump):
         addressDump["SC_UTILS"] = cf.scUtils.address
     # Keeping the order to not change the final addresses
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
-        cf.wbtc = deploy_wbtc_contract(deployer, cf_accs[0:10])
+        cf.wbtc = deploy_wbtc_contract(deployer, Token, cf_accs[0:10])
         addressDump["WBTC_ADDRESS"] = cf.wbtc.address
 
 
