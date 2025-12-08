@@ -227,13 +227,6 @@ def deploy_scUtils(deployer, cfScUtils, stateChainGateway_address, vault_address
     )
 
 
-# Distribute tokens from deployer to other accounts
-def distribute_tokens(token, deployer, accounts, amount_per_account):
-    for account in accounts:
-        if account != deployer and token.balanceOf(deployer) >= amount_per_account:
-            token.transfer(account, amount_per_account, {"from": deployer})
-
-
 # Deploy USDC mock token and transfer init amount to several accounts.
 def deploy_usdc_contract(deployer, MockUSDC, accounts):
     # Set the priority fee for all transactions and the required number of confirmations.
@@ -245,7 +238,6 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
         INIT_USD_SUPPLY,
         {"from": deployer, "required_confs": required_confs},
     )
-    distribute_tokens(mockUsdc, deployer, accounts, INIT_USD_BALANCE)
     return mockUsdc
 
 
@@ -260,7 +252,6 @@ def deploy_usdt_contract(deployer, MockUSDT, accounts):
         INIT_USD_SUPPLY,
         {"from": deployer, "required_confs": required_confs},
     )
-    distribute_tokens(mockUsdt, deployer, accounts, INIT_USD_BALANCE)
     return mockUsdt
 
 
@@ -275,7 +266,6 @@ def deploy_wbtc_contract(deployer, MockWBTC, accounts):
         WBTC_TOKEN_DECIMALS,
         {"from": deployer, "required_confs": required_confs},
     )
-    distribute_tokens(mockWbtc, deployer, accounts, INIT_WBTC_SUPPLY)
     return mockWbtc
 
 
