@@ -60,10 +60,18 @@ def test_vault(
             super().__init__(cls, a, cfDeploy)
 
             cls.tokenA = a[0].deploy(
-                Token, "NotAPonziA", "NAPA", INIT_TOKEN_SUPPLY * 10
+                Token,
+                "NotAPonziA",
+                "NAPA",
+                INIT_TOKEN_SUPPLY * 10,
+                DEFAULT_TOKEN_DECIMALS,
             )
             cls.tokenB = a[0].deploy(
-                MockUSDT, "NotAPonziB", "NAPB", INIT_TOKEN_SUPPLY * 10
+                MockUSDT,
+                "NotAPonziB",
+                "NAPB",
+                INIT_TOKEN_SUPPLY * 10,
+                DEFAULT_TOKEN_DECIMALS,
             )
             cls.tokensList = (NATIVE_ADDR, cls.tokenA, cls.tokenB)
 
