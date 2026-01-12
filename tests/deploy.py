@@ -259,12 +259,8 @@ def deploy_usdt_contract(deployer, MockUSDT):
 
 # Mock transactions to keep the contract's addresses unchanged in images
 def mock_transactions(deployer):
-    required_confs = transaction_params()
-
     for _ in range(9):
-        deployer.transfer(
-            deployer, "0 ether", {"from": deployer, "required_confs": required_confs}
-        )
+        deployer.transfer(deployer, "1 ether")
 
 
 # Deploy mock for WBTC as a mock token with 8 decimals
