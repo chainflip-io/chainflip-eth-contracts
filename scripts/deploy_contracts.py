@@ -181,7 +181,7 @@ def check_env_variables(env_var_names):
 # Deployed in a set order to maintain their addresses when adding new contracts.
 def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
-        cf.mockUSDC = deploy_usdc_contract(deployer, MockUSDC, cf_accs[0:10])
+        cf.mockUSDC = deploy_usdc_contract(deployer, MockUSDC)
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
     if chain.id not in [eth_mainnet, arb_mainnet]:
@@ -190,7 +190,7 @@ def deploy_optional_contracts(cf, addressDump):
 
     # Keeping the order to not change the final addresses
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
-        cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT, cf_accs[0:10])
+        cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT)
         addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
         cf.priceFeeds = deploy_price_feeds(
             deployer,
@@ -207,7 +207,7 @@ def deploy_optional_contracts(cf, addressDump):
         addressDump["SC_UTILS"] = cf.scUtils.address
     # Keeping the order to not change the final addresses
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
-        cf.wbtc = deploy_wbtc_contract(deployer, Token, cf_accs[0:10])
+        cf.wbtc = deploy_wbtc_contract(deployer, Token)
         addressDump["WBTC_ADDRESS"] = cf.wbtc.address
 
 
