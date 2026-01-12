@@ -257,7 +257,8 @@ def deploy_usdt_contract(deployer, MockUSDT):
     return mockUsdt
 
 
-# Mock transactions to keep the contract's addresses unchanged in images
+# Mock transactions to keep the contract's addresses unchanged in images. In legacy images
+# we used to airdrop tokens to 9 accounts, so we need to do the same amount of transactions.
 def mock_transactions(deployer):
     for _ in range(9):
         deployer.transfer(deployer, "1 ether")
