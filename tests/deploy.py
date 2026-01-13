@@ -228,7 +228,7 @@ def deploy_scUtils(deployer, cfScUtils, stateChainGateway_address, vault_address
 
 
 # Deploy USDC mock token and transfer init amount to several accounts.
-def deploy_usdc_contract(deployer, MockUSDC, accounts):
+def deploy_usdc_contract(deployer, MockUSDC):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
 
@@ -238,11 +238,12 @@ def deploy_usdc_contract(deployer, MockUSDC, accounts):
         INIT_USD_SUPPLY,
         {"from": deployer, "required_confs": required_confs},
     )
+    mock_transactions(deployer)
     return mockUsdc
 
 
 # Deploy USDT mock token
-def deploy_usdt_contract(deployer, MockUSDT, accounts):
+def deploy_usdt_contract(deployer, MockUSDT):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
 
@@ -252,11 +253,19 @@ def deploy_usdt_contract(deployer, MockUSDT, accounts):
         INIT_USD_SUPPLY,
         {"from": deployer, "required_confs": required_confs},
     )
+    mock_transactions(deployer)
     return mockUsdt
 
 
+# Mock transactions to keep the contract's addresses unchanged in images. In legacy images
+# we used to airdrop tokens to 9 accounts, so we need to do the same amount of transactions.
+def mock_transactions(deployer):
+    for _ in range(9):
+        deployer.transfer(deployer, "1 ether")
+
+
 # Deploy mock for WBTC as a mock token with 8 decimals
-def deploy_wbtc_contract(deployer, MockWBTC, accounts):
+def deploy_wbtc_contract(deployer, MockWBTC):
     required_confs = transaction_params()
 
     mockWbtc = MockWBTC.deploy(
