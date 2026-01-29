@@ -10,10 +10,22 @@ module.exports = {
       fullHost: "http://127.0.0.1:9090",
       network_id: "*",
     },
+    nile: {
+      // Obtain test coin at https://nileex.io/join/getJoinPage
+      privateKey: process.env.PRIVATE_KEY_NILE,
+      // TO use mnenonic instead of private key:
+      //   mnemonic: process.env.MNEMONIC,
+      //   path: "m/44'/195'/0'/0/0",
+      userFeePercentage: 100,
+      feeLimit: 1000 * 1e6,
+      fullHost: "https://nile.trongrid.io",
+      network_id: "3",
+    },
     mainnet: {
       privateKey: process.env.PRIVATE_KEY,
-      feeLimit: 1e8,
-      fullHost: "https://api.trongrid.io", // ⚠️ TRON mainnet endpoint
+      userFeePercentage: 0,
+      feeLimit: 500 * 1e6, // 500 TRX
+      fullHost: "https://api.trongrid.io",
       network_id: "1",
     },
   },
