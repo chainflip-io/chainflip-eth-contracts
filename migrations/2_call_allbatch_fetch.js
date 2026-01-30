@@ -1,4 +1,5 @@
 // Run by: yarn tronbox migrate --f 2 --to 2 --network nile
+// Deployer: TCKygWnz919n1frEAnp2Uoa5VzCasLes12
 
 const VaultContract = artifacts.require("Vault");
 
@@ -7,7 +8,8 @@ module.exports = async function (deployer, network, accounts) {
 
   // Load the existing Vault contract at the deployed address
   // Convert base58 address to hex format for web3/tronweb
-  const vaultAddress = "41adeecfa46eb3579c0f733085ba69a296ae9ee743"; // TRpsz8cDtcH3oQGAdm19My5EGgTtw2cN5A
+  // const vaultAddress = "41adeecfa46eb3579c0f733085ba69a296ae9ee743"; // TRpsz8cDtcH3oQGAdm19My5EGgTtw2cN5A
+  const vaultAddress = "41260b17d1ad3bda79746db09f7675dee7b28d169b"; // TDSMy79DPk164ZtxEh2GqinTz3nfjkGqdi
 
   console.log("Loading Vault at address:", vaultAddress);
   const vault = await VaultContract.at(vaultAddress);
@@ -23,20 +25,20 @@ module.exports = async function (deployer, network, accounts) {
   //   const deployFetchParamsArray = []
 
   // NATIVE
-  // const deployFetchParamsArray = [
-  //   [
-  //     "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
-  //     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
-  //   ],
-  // ];
-  // USDT: 0x41eca9bc828a3005b9a3b909f2cc5c2a54794de05f107f6d36
-  // 20-byte address: 0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f
   const deployFetchParamsArray = [
     [
       "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
-      "0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f", // USDT
+      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
     ],
   ];
+  // USDT: 0x41eca9bc828a3005b9a3b909f2cc5c2a54794de05f107f6d36
+  // 20-byte address: 0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f
+  // const deployFetchParamsArray = [
+  //   [
+  //     "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
+  //     "0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f", // USDT
+  //   ],
+  // ];
   const fetchParamsArray = [];
   const transferParamsArray = [];
 

@@ -1,0 +1,8 @@
+Receive is not being executed on the depoist  contract. We need to use "function() external payable"
+However, when fetching the event gets emitted in the vault  with receive. Why?
+Seems like we can't use receive/fallback as wallet transfers won't trigger it.
+
+Also, the fetch native seems to get emitted with a crazy amnount number. Why?
+Seems to be an edge case when the value is zero in a call: recipient.call{value: 0}("");
+If we move to selfdestruct/fetch deposit channels we can just chekc that when we fetch.
+However, the problem becomes for Vault Swaps. How can we solve that?
