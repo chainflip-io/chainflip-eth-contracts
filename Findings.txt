@@ -1,8 +1,32 @@
-Receive is not being executed on the depoist  contract. We need to use "function() external payable"
+Receive is not being executed on the deposit  contract. We need to use "function() external payable"
 However, when fetching the event gets emitted in the vault  with receive. Why?
 Seems like we can't use receive/fallback as wallet transfers won't trigger it.
 
 Also, the fetch native seems to get emitted with a crazy amnount number. Why?
 Seems to be an edge case when the value is zero in a call: recipient.call{value: 0}("");
+https://nile.tronscan.org/#/transaction/7ad4d54e4fac3515e1e803209e95bcff915e201010fb0dd38bf06473845a95f3
 If we move to selfdestruct/fetch deposit channels we can just chekc that when we fetch.
 However, the problem becomes for Vault Swaps. How can we solve that?
+
+
+// *********
+
+Solution with native fetching, `getBlockBalance` and `eth_getLogs`
+
+Deployment tx: https://nile.tronscan.org/#/transaction/80df6bf039ae3031af47fe21ca2d8c7d2180e1baa7f3c71b9615eb8df239e999
+Vault address: TTVnpcuAZs6tEUT2TuC7fmadgLgcyM431v // 0x41c042d9449e5340a4a6e48f73622ee0b611e56ea6
+
+
+Deploy Deposit contract (native): 
+tx: https://nile.tronscan.org/#/transaction/3bc02375c701b7ff166b11cd908cd3b5f07fba8ff27e39534a0746d42e898e16
+Fetched 0 as there is no balance.
+Deposit contract address: THQQYhjsNHUQva3E6YNogX4CWbBmV8qzoB
+
+Deposit TRON tx to Deposit: https://nile.tronscan.org/#/transaction/59175823dd6f9102e2848550db1d6528f85acfab5156240af79666b2ebf7e9e0
+
+Fetch TRX from deposit channels
+https://nile.tronscan.org/#/transaction/8c287bb9ce166eeee96a04ad85fa5800f71fc53dd2ebc7aac8861bd49b5e49a2
+
+
+Example transfer from vault to deposit contract:
+https://nile.tronscan.org/#/transaction/010ff6fe22ec2976f1a6c9fb1df437c07b64c49d0f09b7bdc66dcd3cbf81aa26

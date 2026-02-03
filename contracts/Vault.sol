@@ -21,8 +21,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     using SafeERC20 for IERC20;
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
-    uint256 private constant _GAS_TO_FORWARD = 8_000;
-    uint256 private constant _FINALIZE_GAS_BUFFER = 30_000;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -240,8 +238,9 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      */
     function _transfer(address token, address payable recipient, uint256 amount) private {
         if (address(token) == _NATIVE_ADDR) {
+            // TVM sends all energy anyway, it ignores the gas set here anyway
             // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = recipient.call{gas: _GAS_TO_FORWARD, value: amount}("");
+            (bool success, ) = recipient.call{value: amount}("");
             if (!success) {
                 emit TransferNativeFailed(recipient, amount);
             }
@@ -606,15 +605,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @notice  Transfer funds and pass calldata to be executed on a Multicall contract.
      * @dev     For safety purposes it's preferred to execute calldata externally with
      *          a limited amount of funds instead of executing arbitrary calldata here.
-     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
-     *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
-     *          The _GAS_BUFFER is a conservative estimation of the gas required to finalize the call.
+     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed.
      * @param sigData         Struct containing the signature data over the message
      *                        to verify, signed by the aggregate key.
      * @param transferParams  The transfer parameters inluding the token and amount to be transferred
      *                        and the multicall contract address.
      * @param calls           Array of actions to be executed.
-     * @param gasMulticall    Gas that must be forwarded to the multicall.
+     * @param gasMulticall    Gas that must be forwarded to the multicall. Legacy from EVM.
 
      */
     function executeActions(
@@ -642,17 +639,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             }
         }
 
-        // Ensure that the amount of gas supplied to the call to the Multicall contract is at least the gas
-        // limit specified. We can do this by enforcing that we still have gasMulticall + gas buffer available.
-        // The gas buffer is to ensure there is enough gas to finalize the call, including a safety margin.
-        // The 63/64 rule specified in EIP-150 needs to be taken into account.
-        require(gasleft() >= ((gasMulticall + _FINALIZE_GAS_BUFFER) * 64) / 63, "Vault: insufficient gas");
-
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory reason) = transferParams.recipient.call{
-            gas: gasleft() - _FINALIZE_GAS_BUFFER,
-            value: valueToSend
-        }(abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount));
+        (bool success, bytes memory reason) = transferParams.recipient.call{value: valueToSend}(
+            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
+        );
 
         if (!success) {
             if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
@@ -714,8 +704,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving native tokens from the Deposit contracts
-    receive() external payable {
-        emit FetchedNative(msg.sender, msg.value);
-    }
+    /// @dev For receiving native asset
+    receive() external payable {}
 }

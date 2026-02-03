@@ -1,3 +1,5 @@
+// yarn tronbox migrate --f 3 --to 3 --network nile
+
 const VaultContract = artifacts.require("Vault");
 
 module.exports = async function (deployer, network, accounts) {
@@ -12,7 +14,8 @@ module.exports = async function (deployer, network, accounts) {
 
   // Amount: 1 TRX. On Nile/testnet examples use 1_000_000 (6 decimals)
   const amount = "1000000"; // 1 TRX
-  const recipient = "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97";
+  // const recipient = "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97";
+  const recipient = "THQQYhjsNHUQva3E6YNogX4CWbBmV8qzoB";
 
   const deployFetchParamsArray = [];
   const fetchParamsArray = [];
@@ -47,18 +50,7 @@ module.exports = async function (deployer, network, accounts) {
     );
 
     console.log("\n✅ allBatch (transfer) called successfully!");
-    console.log(
-      "Transaction hash:",
-      tx.tx || tx.transactionHash || "(provider-specific, may be undefined)"
-    );
-    console.log("Gas used:", tx.receipt ? tx.receipt.gasUsed : "N/A");
-
-    if (tx.logs && tx.logs.length) {
-      console.log("\nEvents emitted:");
-      tx.logs.forEach((log, i) =>
-        console.log(` ${i + 1}. ${log.event}`, log.args || "")
-      );
-    }
+    console.log("transaction hash", tx);
   } catch (err) {
     console.error("\n❌ Error calling allBatch transfer:");
     console.error(err && err.message ? err.message : err);

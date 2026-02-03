@@ -9,7 +9,8 @@ module.exports = async function (deployer, network, accounts) {
   // Load the existing Vault contract at the deployed address
   // Convert base58 address to hex format for web3/tronweb
   // const vaultAddress = "41adeecfa46eb3579c0f733085ba69a296ae9ee743"; // TRpsz8cDtcH3oQGAdm19My5EGgTtw2cN5A
-  const vaultAddress = "41260b17d1ad3bda79746db09f7675dee7b28d169b"; // TDSMy79DPk164ZtxEh2GqinTz3nfjkGqdi
+  // const vaultAddress = "41260b17d1ad3bda79746db09f7675dee7b28d169b"; // TDSMy79DPk164ZtxEh2GqinTz3nfjkGqdi
+  const vaultAddress = "41c042d9449e5340a4a6e48f73622ee0b611e56ea6"; // TTVnpcuAZs6tEUT2TuC7fmadgLgcyM431v
 
   console.log("Loading Vault at address:", vaultAddress);
   const vault = await VaultContract.at(vaultAddress);
@@ -25,10 +26,17 @@ module.exports = async function (deployer, network, accounts) {
   //   const deployFetchParamsArray = []
 
   // NATIVE
-  const deployFetchParamsArray = [
+  const deployFetchParamsArray = [];
+  // const deployFetchParamsArray = [
+  //   [
+  //     "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
+  //     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
+  //   ],
+  // ];
+  const fetchParamsArray = [
     [
-      "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
-      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
+      "THQQYhjsNHUQva3E6YNogX4CWbBmV8qzoB", // swapID: bytes32 zero
+      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // TRX
     ],
   ];
   // USDT: 0x41eca9bc828a3005b9a3b909f2cc5c2a54794de05f107f6d36
@@ -39,7 +47,7 @@ module.exports = async function (deployer, network, accounts) {
   //     "0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f", // USDT
   //   ],
   // ];
-  const fetchParamsArray = [];
+  // const fetchParamsArray = [];
   const transferParamsArray = [];
 
   console.log("\nCalling allBatch with parameters:");
@@ -65,16 +73,7 @@ module.exports = async function (deployer, network, accounts) {
     // This is not getting the tx has correctly, it's just undefined
     // byt the tx is sent.
     console.log("\n✅ allBatch called successfully!");
-    console.log("Transaction hash:", tx.tx || tx.transactionHash);
-    console.log("Gas used:", tx.receipt ? tx.receipt.gasUsed : "N/A");
-
-    // Log any events emitted (if available)
-    if (tx.logs && tx.logs.length > 0) {
-      console.log("\nEvents emitted:");
-      tx.logs.forEach((log, index) => {
-        console.log(`  ${index + 1}. ${log.event}`);
-      });
-    }
+    console.log("transaction hash", tx);
   } catch (error) {
     console.error("\n❌ Error calling allBatch:");
     console.error(error.message);
