@@ -13,6 +13,7 @@ import "./interfaces/IERC20Lite.sol";
  *           Do NOT modify unless the consequences of doing so are fully understood.
  */
 contract Deposit {
+    uint256 public constant MIN_TOKEN_BALANCE = 1;
     address payable private immutable vault;
 
     /**
@@ -42,10 +43,11 @@ contract Deposit {
                 require(success);
             }
         } else {
+            // Always keep a minimum balance to avoid paying extra energy to initialize storage on every deposit.
             uint256 tokenBalance = IERC20Lite(token).balanceOf(address(this));
-            if (tokenBalance > 0) {
+            if (tokenBalance > MIN_TOKEN_BALANCE) {
                 // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
-                IERC20Lite(token).transfer(msg.sender, IERC20Lite(token).balanceOf(address(this)));
+                IERC20Lite(token).transfer(msg.sender, tokenBalance - MIN_TOKEN_BALANCE);
             }
         }
     }

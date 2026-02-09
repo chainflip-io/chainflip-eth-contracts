@@ -30,3 +30,15 @@ https://nile.tronscan.org/#/transaction/8c287bb9ce166eeee96a04ad85fa5800f71fc53d
 
 Example transfer from vault to deposit contract:
 https://nile.tronscan.org/#/transaction/010ff6fe22ec2976f1a6c9fb1df437c07b64c49d0f09b7bdc66dcd3cbf81aa26
+
+
+
+Interesting tx around energy delegation: https://tronscan.org/#/transaction/45133bb897e64e28692a4700fe8abb148e1239eaad10f2ef4b67ba0626ec0c4b
+
+Deployed Vault contract with 90% energy sponsored by deployer - TTmmRfpKqsypGRQbMUcrJu9MMhudRh8FCk // 41c34856cadd5524892907d8a34126053447740375
+
+Vault swap with some energy consumed by the deployer.
+https://nile.tronscan.org/#/transaction/674c5c209c01b5a05d5defa779e84f7edb11fe1665720fc2f0141e721d7a9b04
+
+We can use thecontract's ennergy limit to limit the amount of energy that can be consumed per transaction from the deployer's account. However,
+the max will be some batch fetch of multiple fetches, which is much greater than a grief/spam Vault swaps.

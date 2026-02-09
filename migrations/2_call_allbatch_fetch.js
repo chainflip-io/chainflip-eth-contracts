@@ -26,19 +26,19 @@ module.exports = async function (deployer, network, accounts) {
   //   const deployFetchParamsArray = []
 
   // NATIVE
-  const deployFetchParamsArray = [];
-  // const deployFetchParamsArray = [
-  //   [
-  //     "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
-  //     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
-  //   ],
-  // ];
-  const fetchParamsArray = [
+  // const deployFetchParamsArray = [];
+  const deployFetchParamsArray = [
     [
-      "THQQYhjsNHUQva3E6YNogX4CWbBmV8qzoB", // swapID: bytes32 zero
-      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // TRX
+      "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
+      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
     ],
   ];
+  // const fetchParamsArray = [
+  //   [
+  //     "THQQYhjsNHUQva3E6YNogX4CWbBmV8qzoB", // swapID: bytes32 zero
+  //     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // TRX
+  //   ],
+  // ];
   // USDT: 0x41eca9bc828a3005b9a3b909f2cc5c2a54794de05f107f6d36
   // 20-byte address: 0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f
   // const deployFetchParamsArray = [
@@ -47,7 +47,7 @@ module.exports = async function (deployer, network, accounts) {
   //     "0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f", // USDT
   //   ],
   // ];
-  // const fetchParamsArray = [];
+  const fetchParamsArray = [];
   const transferParamsArray = [];
 
   console.log("\nCalling allBatch with parameters:");
