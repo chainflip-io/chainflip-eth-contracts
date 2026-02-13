@@ -16,7 +16,7 @@ module.exports = {
       // TO use mnenonic instead of private key:
       //   mnemonic: process.env.MNEMONIC,
       //   path: "m/44'/195'/0'/0/0",
-      userFeePercentage: 100,
+      userFeePercentage: 20,
       feeLimit: 1000 * 1e6,
       fullHost: "https://nile.trongrid.io",
       network_id: "3",

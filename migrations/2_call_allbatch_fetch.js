@@ -5,12 +5,15 @@ const VaultContract = artifacts.require("Vault");
 
 module.exports = async function (deployer, network, accounts) {
   console.log("\n=== Calling allBatch on existing Vault ===");
+  const deployerAccount = deployer.options.options.network_config.from;
 
   // Load the existing Vault contract at the deployed address
   // Convert base58 address to hex format for web3/tronweb
   // const vaultAddress = "41adeecfa46eb3579c0f733085ba69a296ae9ee743"; // TRpsz8cDtcH3oQGAdm19My5EGgTtw2cN5A
   // const vaultAddress = "41260b17d1ad3bda79746db09f7675dee7b28d169b"; // TDSMy79DPk164ZtxEh2GqinTz3nfjkGqdi
-  const vaultAddress = "41c042d9449e5340a4a6e48f73622ee0b611e56ea6"; // TTVnpcuAZs6tEUT2TuC7fmadgLgcyM431v
+  // const vaultAddress = "41c042d9449e5340a4a6e48f73622ee0b611e56ea6"; // TTVnpcuAZs6tEUT2TuC7fmadgLgcyM431v
+  // const vaultAddress = "TMiYQL4FPjEYQ9KyqM37T1QmAnKzJTntic";
+  const vaultAddress = "TZEQtGkPWPFLSXQyEiQCJZQnzRpxCVb5zT";
 
   console.log("Loading Vault at address:", vaultAddress);
   const vault = await VaultContract.at(vaultAddress);
@@ -23,20 +26,27 @@ module.exports = async function (deployer, network, accounts) {
 
   // DeployFetchParams struct: (bytes32 swapID, address token)
   // Pass as array: [swapID, token]
-  //   const deployFetchParamsArray = []
+  const deployFetchParamsArray = [];
 
   // NATIVE
   // const deployFetchParamsArray = [];
-  const deployFetchParamsArray = [
-    [
-      "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
-      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
-    ],
-  ];
+  // const deployFetchParamsArray = [
+  //   [
+  //     "0x0000000000000000000000000000000000000000000000000000000000000000", // swapID: bytes32 zero
+  //     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token: native token address
+  //   ],
+  // ];
   // const fetchParamsArray = [
   //   [
-  //     "THQQYhjsNHUQva3E6YNogX4CWbBmV8qzoB", // swapID: bytes32 zero
+  //     "TYQn89aNzAkwcCmTyKB3XPQJvbCn82Ew2y", // Deposit contract address
   //     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // TRX
+  //   ],
+  // ];
+  // const transferParamsArray = [
+  //   [
+  //     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // token
+  //     "TXhTQ2g2NsyrmVXyZJLbLscwNftHixDm2x", //recipient,
+  //     2, // amount],
   //   ],
   // ];
   // USDT: 0x41eca9bc828a3005b9a3b909f2cc5c2a54794de05f107f6d36
@@ -47,8 +57,21 @@ module.exports = async function (deployer, network, accounts) {
   //     "0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f", // USDT
   //   ],
   // ];
+  // const fetchParamsArray = [
+  //   [
+  //     "TYQn89aNzAkwcCmTyKB3XPQJvbCn82Ew2y", // Deposit contract address
+  //     "0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f", // USDT
+  //   ],
+  // ];
+  const transferParamsArray = [
+    [
+      "0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f", // token (USDT)
+      "TGAunhJqpXGrRgZib56anzUxvmpU665H7c", //recipient,
+      2, // amount],
+    ],
+  ];
   const fetchParamsArray = [];
-  const transferParamsArray = [];
+  // const transferParamsArray = [];
 
   console.log("\nCalling allBatch with parameters:");
   console.log(
@@ -58,15 +81,17 @@ module.exports = async function (deployer, network, accounts) {
   );
   console.log("- fetchParamsArray:", fetchParamsArray.length, "items");
   console.log("- transferParamsArray:", transferParamsArray.length, "items");
-
+  // Using a random number to make it unlikely that it's a used nonce.
+  const nonce = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
   try {
     // Call allBatch - this will execute the transaction
     const tx = await vault.allBatch(
+      [1, nonce, deployerAccount],
       deployFetchParamsArray,
       fetchParamsArray,
       transferParamsArray,
       {
-        from: deployer.options.options.network_config.from,
+        from: deployerAccount,
       }
     );
 
@@ -97,7 +122,3 @@ module.exports = async function (deployer, network, accounts) {
 // 20-byte address: 0xeca9bc828a3005b9a3b909f2cc5c2a54794de05f
 // TX: https://nile.tronscan.org/#/transaction/c2bfb35047f5b69a3c4721fb6bd5c5ab40e7273faa255080d442a79f1a0c1584
 // Created deposit contract: TKfZUffqnAg5SqxwQwUG2vyvbSVLjMgkyn
-
-// TODO: Try deposit native with a wallet and see if it correctly funnels it to the vault (native deployed deposit TVTF9dvzB4Hqo9qtv2ZMiAMHqXYtpKURaK)
-// TODO: Try egressing both native and USDT tokens to check it works.
-// TODO: Ensure actual fetching of funds work (>0), but we need precompute for that.

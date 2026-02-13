@@ -2,14 +2,23 @@
 // yarn tronbox migrate --f 1 --to 1 --reset --network nile
 
 const VaultContract = artifacts.require("Vault");
+const KeyManagerContract = artifacts.require("KeyManager");
 
 module.exports = async function (deployer) {
   console.log("Starting deployment of VaultContract...");
-  console.log(
-    "Using deployer account:",
-    deployer.options.options.network_config.from
-  ); // TCKygWnz919n1frEAnp2Uoa5VzCasLes12
-  const keyManagerAddress = "0xcd351d3626Dc244730796A3168D315168eBf08Be"; // TODO: To modify
+  const deployerAccount = deployer.options.options.network_config.from;
+  console.log("Using deployer account:", deployerAccount); // TCKygWnz919n1frEAnp2Uoa5VzCasLes12
+  await deployer.deploy(
+    KeyManagerContract,
+    [1, 2], // dummy aggKey
+    deployerAccount,
+    deployerAccount
+  );
+
+  const keyManagerInstance = await KeyManagerContract.deployed();
+  const keyManagerAddress = keyManagerInstance.address;
+  console.log("KeyManagerContract deployed at address:", keyManagerAddress);
+
   // deploy a contract
   await deployer.deploy(VaultContract, keyManagerAddress);
   //access information about your deployed contract instance
@@ -23,11 +32,11 @@ module.exports = async function (deployer) {
   // function getDepositBytecode() external pure returns (bytes memory) {
   //     return type(Deposit).creationCode;
   // }
-  console.log("\nCalling getDepositBytecode()...");
-  const depositBytecode = await instance.getDepositBytecode();
-  console.log("Deposit contract bytecode:");
-  console.log(depositBytecode);
-  console.log("Bytecode length:", depositBytecode.length);
+  // console.log("\nCalling getDepositBytecode()...");
+  // const depositBytecode = await instance.getDepositBytecode();
+  // console.log("Deposit contract bytecode:");
+  // console.log(depositBytecode);
+  // console.log("Bytecode length:", depositBytecode.length);
 };
 
 //// DEPLOYED WITH RECEIVE
