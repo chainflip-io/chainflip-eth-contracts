@@ -14,7 +14,7 @@ module.exports = async function (deployer, network, accounts) {
   // Raw bytes note to include in the transaction
   // Example: hex string representing arbitrary data
   const note =
-    "0x54686973206973206120436861696E666C697020545258205661756C74205377617021"; // "This is a Chainflip TRX Vault Swap!" in hex
+    "0x010012121212121212121212121212121212121212120089010164000000f627b6285759e4fa9ca1214c31f6748afaad766c6ccf732256d0ecbe06e43a03000000000000000000000000000000000000000000016e00000070d0cd75a367987344a3896a18e1510e5429ca5e88357b6c2a2e306b3877380d000000"; // "This is a Chainflip TRX Vault Swap!" in hex
 
   console.log("\nTransfer parameters:");
   console.log("- To (Vault):", vaultAddress);
@@ -90,4 +90,7 @@ module.exports = async function (deployer, network, accounts) {
   console.log("\n=== Migration complete ===\n");
 };
 
-// TX example: https://nile.tronscan.org/#/transaction/f3de44cca0c78890854a637c215e19490211c0ece6cf892fe759773b98dbf900
+// TX example with random cf_parameters:
+//  https://nile.tronscan.org/#/transaction/f3de44cca0c78890854a637c215e19490211c0ece6cf892fe759773b98dbf900
+// TX example of a valid TRX Vault Swap without CCM
+//  https://nile.tronscan.org/#/transaction/b8042280e6a813d65ad01a0555e1e9a9497bf69d012b58cdc5d925c21df35972
