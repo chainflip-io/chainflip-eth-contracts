@@ -13,7 +13,7 @@ hardhat = 31337
 arbitrum_networks = [arb_localnet, arb_testnet, arb_mainnet]
 bnb_mainnet = 56
 bnb_testnet = 97
-bnb_localnet = 1235  # TODO: Update
+bnb_localnet = 343
 bnb_networks = [bnb_mainnet, bnb_testnet, bnb_localnet]
 
 # -----General/shared-----
