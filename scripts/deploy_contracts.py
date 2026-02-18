@@ -46,7 +46,7 @@ def main():
     # Check the bytecode of the Deposit contract
     deposit_bytecode_test(Deposit)
 
-    if chain.id in arbitrum_networks:
+    if chain.id in arbitrum_networks or chain.id in bnb_networks:
         deploy_secondary_evm()
     else:
         # Default to deploying all the contracts
@@ -118,12 +118,12 @@ def deploy_ethereum():
     store_artifacts(addressDump)
 
 
-# As of now this is for Arbitrum
+# As of now this is for Arbitrum and BNB
 def deploy_secondary_evm():
     check_env_variables([])
 
     # For live deployment, add a confirmation step to allow the user to verify the parameters.
-    if chain.id == arb_mainnet:
+    if chain.id == arb_mainnet or chain.id == bnb_mainnet:
         # Print all the environment variables for mainnet deployment.
         print("\nTo be deployed with parameters\n----------------------------")
         display_common_deployment_params(
@@ -134,7 +134,7 @@ def deploy_secondary_evm():
             os.environ["AGG_KEY"],
         )
         prompt_user_continue_or_break(
-            "[WARNING] You are about to deploy to Arbitrum Mainnet with the parameters above",
+            "[WARNING] You are about to deploy to Mainnet with the parameters above",
             False,
         )
 
@@ -184,14 +184,15 @@ def deploy_optional_contracts(cf, addressDump):
         cf.mockUSDC = deploy_usdc_contract(deployer, MockUSDC)
         addressDump["USDC_ADDRESS"] = cf.mockUSDC.address
 
-    if chain.id not in [eth_mainnet, arb_mainnet]:
+    if chain.id not in [eth_mainnet, arb_mainnet, bnb_mainnet]:
         cf.cfTester = deploy_new_cfReceiver(deployer, CFTester, cf.vault.address)
         addressDump["CF_TESTER"] = cf.cfTester.address
 
-    # Keeping the order to not change the final addresses
-    if chain.id in [arb_localnet, eth_localnet, hardhat]:
+    if chain.id in [arb_localnet, eth_localnet, hardhat, bnb_localnet]:
         cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT)
         addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
+
+    if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.priceFeeds = deploy_price_feeds(
             deployer,
             PriceFeedMock,
@@ -205,7 +206,7 @@ def deploy_optional_contracts(cf, addressDump):
     ):
         cf.scUtils = deploy_scUtils(deployer, ScUtils, cf.stateChainGateway, cf.vault)
         addressDump["SC_UTILS"] = cf.scUtils.address
-    # Keeping the order to not change the final addresses
+
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.wbtc = deploy_wbtc_contract(deployer, Token)
         addressDump["WBTC_ADDRESS"] = cf.wbtc.address
