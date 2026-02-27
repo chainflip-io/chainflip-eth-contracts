@@ -80,8 +80,8 @@ We use solhint and prettier for the solidity code and black for the python code.
 To run the lint check or to format the code, run the following inside the poetry shell:
 
 ```bash
-yarn lint
-yarn format
+poetry run yarn lint
+poetry run yarn format
 ```
 
 ## Fuzzing

@@ -11,6 +11,10 @@ arb_testnet = 421613
 arb_mainnet = 42161
 hardhat = 31337
 arbitrum_networks = [arb_localnet, arb_testnet, arb_mainnet]
+bnb_mainnet = 56
+bnb_testnet = 97
+bnb_localnet = 343
+bnb_networks = [bnb_mainnet, bnb_testnet, bnb_localnet]
 
 # -----General/shared-----
 ZERO_ADDR_PACKED = "0000000000000000000000000000000000000000"
