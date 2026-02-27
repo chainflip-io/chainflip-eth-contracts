@@ -243,6 +243,25 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build create-validator
+        working-directory: ci/docker/bsc/create-validator
+        run: go build
+
+      - name: Register validator into StakeHub
+        working-directory: ci/docker/bsc/create-validator
+        run: ./create-validator \
+            --consensus-key-dir .. \
+            --vote-key-dir .. \
+            --password-path ../password.txt \
+            --amount 20001 \
+            --validator-desc Val0 \
+            --rpc-url http://127.0.0.1:8545
+
       - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
@@ -285,7 +304,7 @@ jobs:
           poetry install
 
       - name: Add the network
-        run: poetry run brownie networks add Ethereum bsc-docker host=http://localhost:8545 chainid=714
+        run: poetry run brownie networks add Ethereum bsc-docker host=http://localhost:8545 chainid=343
 
       - name: Deploy contracts
         run: poetry run brownie run deploy_contracts --network bsc-docker
