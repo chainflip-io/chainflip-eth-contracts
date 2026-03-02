@@ -254,13 +254,14 @@ jobs:
 
       - name: Register validator into StakeHub
         working-directory: ci/docker/bsc/create-validator
-        run: ./create-validator \
-            --consensus-key-dir .. \
-            --vote-key-dir .. \
-            --password-path ../password.txt \
-            --amount 20001 \
-            --validator-desc Val0 \
-            --rpc-url http://127.0.0.1:8545
+        run: |
+          ./create-validator \
+              --consensus-key-dir .. \
+              --vote-key-dir .. \
+              --password-path ../password.txt \
+              --amount 20001 \
+              --validator-desc Val0 \
+              --rpc-url http://127.0.0.1:8545
 
       - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
