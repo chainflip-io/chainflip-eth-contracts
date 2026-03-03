@@ -146,6 +146,26 @@ jobs:
           docker logs tron
           exit 1
 
+      - name: Wait for peer connection
+        # java-tron returns NO_CONNECTION on broadcasttransaction until activePeerCount >= 1.
+        # The peer node connects *to* the witness, so the witness sees it as a passive
+        # connection. Use currentConnectCount (total = active + passive), not activeConnectCount.
+        run: |
+          echo "Waiting for peer connection..."
+          for i in $(seq 1 60); do
+            PEERS=$(curl -s -X POST http://localhost:8090/wallet/getnodeinfo | python3 -c "import sys,json; print(json.load(sys.stdin).get('currentConnectCount', 0))" 2>/dev/null || echo 0)
+            if [ "$PEERS" -ge 1 ]; then
+              echo "Peer connected (currentConnectCount=$PEERS)"
+              exit 0
+            fi
+            echo "  attempt $i/60, peers=$PEERS, retrying in 3s..."
+            sleep 3
+          done
+          echo "Peer did not connect in time"
+          docker logs tron
+          docker logs tron-peer
+          exit 1
+
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
