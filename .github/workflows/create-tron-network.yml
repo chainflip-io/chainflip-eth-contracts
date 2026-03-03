@@ -151,7 +151,7 @@ jobs:
       - run: yarn
 
       - name: Deploy contracts
-        run: yarn tronbox migrate --reset --network localnet
+        run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet
 
       - name: Commit and push TRON image
         run: |
