@@ -239,6 +239,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     function _transfer(address token, address payable recipient, uint256 amount) private {
         if (address(token) == _NATIVE_ADDR) {
             // TVM sends all energy anyway, it ignores the gas set here anyway
+            // TODO: We might then want to use send instead as it's clearer.
+            // We might also want to skip it if the reciever address is a contract
+            // to avoid griefing. For CCM griefing is probably not possible as the
+            // caller will incurr all the costs via `fee_limit` (or we whitelist addresses).
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = recipient.call{value: amount}("");
             if (!success) {
