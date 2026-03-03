@@ -1,7 +1,10 @@
 name: Create TRON Initial State
-run-name: Creating TRON init state for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+run-name: Creating TRON init state for ${{ inputs.tag || github.sha }}-${{ inputs.genesis_validators || '1' }}-node${{ inputs.docker_image_tag_suffix }}
 
 on:
+  push:
+    branches:
+      - feat/tron
   workflow_dispatch:
     inputs:
       tag:
@@ -27,7 +30,8 @@ permissions:
   packages: write
 
 env:
-  IMAGE_TAG: ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
+  IMAGE_TAG: ${{ inputs.tag || github.sha }}-${{ inputs.genesis_validators || '1' }}-node${{ inputs.docker_image_tag_suffix }}
+  CHAINFLIP_BACKEND_REF: ${{ inputs.chainflip_backend_ref || 'main' }}
 
 jobs:
   build-tron-base:
@@ -82,13 +86,13 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
-      - name: Checkout chainflip-backend @ ${{ inputs.chainflip_backend_ref }}
+      - name: Checkout chainflip-backend @ ${{ env.CHAINFLIP_BACKEND_REF }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           # token: ${{ secrets.CF_GITHUB_BOT_READONLY_BACKEND_REPO }}
           repository: chainflip-io/chainflip-backend
           path: chainflip-backend
-          ref: ${{ inputs.chainflip_backend_ref }}
+          ref: ${{ env.CHAINFLIP_BACKEND_REF }}
 
       - name: Fetch agg_key
         run: |
