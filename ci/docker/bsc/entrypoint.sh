@@ -1,8 +1,4 @@
 #!/bin/sh
-NOW=$(date +%s)
-T40=$((NOW + 40))
-T50=$((NOW + 50))
-
 exec geth \
     --config /config.toml \
     --datadir /geth/data \
@@ -15,12 +11,12 @@ exec geth \
     --pprof --pprof.addr localhost --pprof.port 7060 \
     --gcmode full --syncmode full --monitor.maliciousvote \
     --rialtohash 0xb23274833b0bf0abeb4ba3ac140c80931b8e9aaeeba435940e053aa3ebd46e7c \
-    --override.passedforktime $T40 \
-    --override.lorentz $T40 \
-    --override.maxwell $T40 \
-    --override.fermi $T50 \
-    --override.osaka $T50 \
-    --override.mendel $T50 \
+    --override.passedforktime 1 \
+    --override.lorentz 1 \
+    --override.maxwell 1 \
+    --override.fermi 1 \
+    --override.osaka 1 \
+    --override.mendel 1 \
     --override.immutabilitythreshold 2048 \
     --override.breatheblockinterval 1200 \
     --override.minforblobrequest 576 \
