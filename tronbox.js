@@ -14,6 +14,19 @@ module.exports = {
       network_id: "*",
       originEnergyLimit: 10_000_000, // Default origin energy limit for contract deployment
     },
+    localnet: {
+      // For the chainflip localnet TRON node (tronprotocol/java-tron via ci/docker/tron/).
+      // Deployer is Hardhat account #0 from the standard test mnemonic:
+      //   EVM:  0xf39Fd6e51aad88F6f4ce6aB8827279cffFb92266
+      //   TRON: TYBNgWfhGuNzdLtjKtxXTfskAhTbMcqbaG
+      privateKey:
+        "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+      userFeePercentage: 0,
+      feeLimit: 1000 * 1e6,
+      fullHost: "http://127.0.0.1:8090",
+      network_id: "*",
+      originEnergyLimit: 10_000_000,
+    },
     nile: {
       // Obtain test coin at https://nileex.io/join/getJoinPage
       privateKey: process.env.PRIVATE_KEY_NILE,
