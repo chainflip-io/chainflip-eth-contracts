@@ -313,7 +313,7 @@ jobs:
       - name: Commit and push new bsc image
         run: |
           CONTAINER=$(docker ps --format '{{.Names}}' | grep bsc)
-          echo "bsc_container=$CONTAINER" >> $GITHUB_ENV
+          docker stop $CONTAINER
           docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
           docker push ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
 
