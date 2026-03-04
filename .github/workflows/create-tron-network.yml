@@ -1,10 +1,7 @@
 name: Create TRON Initial State
-run-name: Creating TRON init state for ${{ inputs.tag || github.sha }}-${{ inputs.genesis_validators || '1' }}-node${{ inputs.docker_image_tag_suffix }}
+run-name: Creating TRON init state for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
 
 on:
-  push:
-    branches:
-      - feat/tron
   workflow_dispatch:
     inputs:
       tag:
@@ -20,6 +17,10 @@ on:
         description: The branch, tag or commit of chainflip-backend to use
         required: true
         default: "main"
+      nitro_testnodes_ref:
+        description: The branch, tag or commit of nitro-testnodes to use
+        required: true
+        default: "feat/setup-from-scratch"
       docker_image_tag_suffix:
         description: A suffix to append to the image tag
         required: false
