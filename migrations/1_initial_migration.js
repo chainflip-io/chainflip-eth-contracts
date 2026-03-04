@@ -4,6 +4,8 @@
 const VaultContract = artifacts.require("Vault");
 const KeyManagerContract = artifacts.require("KeyManager");
 
+// TODO: Write an extra migration to deploy USDT separately. This way we can use this for mainnet and
+// then use both scripts for testnet/localnet.
 module.exports = async function (deployer) {
   console.log("Starting deployment of VaultContract...");
   const deployerAccount = deployer.options.options.network_config.from;
