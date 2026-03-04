@@ -168,6 +168,27 @@ jobs:
           docker logs tron-peer
           exit 1
 
+      - name: Wait for blocks to advance
+        # Ensure the network is stable and producing blocks before deploying.
+        # Without this, broadcasttransaction may silently fail.
+        run: |
+          echo "Waiting for blocks to advance..."
+          INITIAL_BLOCK=$(curl -s -X POST http://localhost:8090/wallet/getnowblock | python3 -c "import sys,json; print(json.load(sys.stdin).get('block_header',{}).get('raw_data',{}).get('number',0))")
+          echo "Initial block: $INITIAL_BLOCK"
+          TARGET=$((INITIAL_BLOCK + 3))
+          for i in $(seq 1 60); do
+            CURRENT=$(curl -s -X POST http://localhost:8090/wallet/getnowblock | python3 -c "import sys,json; print(json.load(sys.stdin).get('block_header',{}).get('raw_data',{}).get('number',0))")
+            if [ "$CURRENT" -ge "$TARGET" ]; then
+              echo "Blocks advancing: $INITIAL_BLOCK -> $CURRENT"
+              exit 0
+            fi
+            echo "  attempt $i/60, block=$CURRENT (waiting for >=$TARGET), retrying in 3s..."
+            sleep 3
+          done
+          echo "Blocks not advancing"
+          docker logs tron
+          exit 1
+
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
