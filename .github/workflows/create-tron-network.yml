@@ -1,3 +1,4 @@
+# gh workflow run create-tron-network.yml --ref feat/tron -f tag=tron-test-0 -f genesis_validators=1 -f chainflip_backend_ref=main
 name: Create TRON Initial State
 run-name: Creating TRON init state for ${{ inputs.tag }}-${{ inputs.genesis_validators }}-node${{ inputs.docker_image_tag_suffix }}
 
@@ -176,7 +177,7 @@ jobs:
       - run: yarn
 
       - name: Deploy contracts
-        run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet
+        run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
       - name: Commit and push TRON image
         run: |
@@ -185,8 +186,13 @@ jobs:
 
       - name: Extract deployed contract addresses
         run: |
-          KEY_MANAGER=$(jq -r '.networks | to_entries | last | .value.address' build/contracts/KeyManager.json)
-          VAULT=$(jq -r '.networks | to_entries | last | .value.address' build/contracts/Vault.json)
+          KEY_MANAGER=$(grep "KeyManagerContract deployed at address:" deploy_output.txt | awk '{print $NF}')
+          VAULT=$(grep "VaultContract deployed at address:" deploy_output.txt | awk '{print $NF}')
+          if [ -z "$KEY_MANAGER" ] || [ -z "$VAULT" ]; then
+            echo "ERROR: Failed to extract contract addresses from deployment output"
+            cat deploy_output.txt
+            exit 1
+          fi
           echo "KEY_MANAGER_ADDRESS=$KEY_MANAGER" >> $GITHUB_ENV
           echo "VAULT_ADDRESS=$VAULT" >> $GITHUB_ENV
           jq -n \
