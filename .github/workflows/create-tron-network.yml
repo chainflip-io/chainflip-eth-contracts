@@ -200,6 +200,23 @@ jobs:
       - name: Deploy contracts
         run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
+      - name: Wait for blocks after deployment to ensure state is flushed
+        run: |
+          echo "Waiting for blocks to advance after deployment..."
+          INITIAL_BLOCK=$(curl -s -X POST http://localhost:8090/wallet/getnowblock | python3 -c "import sys,json; print(json.load(sys.stdin).get('block_header',{}).get('raw_data',{}).get('number',0))")
+          TARGET=$((INITIAL_BLOCK + 10))
+          for i in $(seq 1 60); do
+            CURRENT=$(curl -s -X POST http://localhost:8090/wallet/getnowblock | python3 -c "import sys,json; print(json.load(sys.stdin).get('block_header',{}).get('raw_data',{}).get('number',0))")
+            if [ "$CURRENT" -ge "$TARGET" ]; then
+              echo "Blocks advanced: $INITIAL_BLOCK -> $CURRENT"
+              exit 0
+            fi
+            echo "  attempt $i/60, block=$CURRENT (waiting for >=$TARGET), retrying in 3s..."
+            sleep 3
+          done
+          echo "Blocks not advancing after deployment"
+          exit 1
+
       - name: Stop TRON node gracefully to flush state to disk
         run: |
           docker stop -t 30 tron
