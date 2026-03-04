@@ -179,6 +179,11 @@ jobs:
       - name: Deploy contracts
         run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
+      - name: Stop TRON node gracefully to flush state to disk
+        run: |
+          docker stop -t 30 tron
+          docker stop -t 10 tron-peer
+
       - name: Commit and push TRON image
         run: |
           docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}
