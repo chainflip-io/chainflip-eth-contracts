@@ -83,9 +83,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
                 contractMsgHash,
                 sigData.nonce,
                 // Arbitrum params
-                "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+                address(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512),
                 412346,
-                "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+                address(0x5FbDB2315678afecb367f032d93F642f64180aa3)
             )
         );
         _consumeKeyNonce(sigData, msgHash);
@@ -100,9 +100,9 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
                 contractMsgHash,
                 sigData.nonce,
                 // Arbitrum params
-                "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+                address(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512),
                 412346,
-                "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+                address(0x5FbDB2315678afecb367f032d93F642f64180aa3)
             )
         );
         Key memory key = _aggKey;
