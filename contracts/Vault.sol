@@ -242,6 +242,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             // TODO: Implement a check on the receiving contract and if it's a smart contract
             // it emits `TransferNativeFailed`. Also implement a switch via aggKey to decide
             // whether to do the check or not for future proofing.
+            // Check out https://github.com/tronprotocol/tips/blob/master/tip-44.md
+            // We might want to have all the possible options.
             (bool success, ) = recipient.call{value: amount}("");
             if (!success) {
                 emit TransferNativeFailed(recipient, amount);
