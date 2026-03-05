@@ -708,6 +708,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
+    function getChainId() external view returns (uint256) {
+        return block.chainid;
+    }
+
     /// @dev For receiving native asset
     receive() external payable {}
 }

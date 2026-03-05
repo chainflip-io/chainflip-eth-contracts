@@ -144,10 +144,9 @@ abstract contract SchnorrSECP256K1 {
             bytes32(signingPubKeyX),
             bytes32(mulmod(msgChallenge, signingPubKeyX, Q))
         );
-        // require(recoveredAddress != address(0), "Schnorr: recoveredAddress is 0");
+        require(recoveredAddress != address(0), "Schnorr: recoveredAddress is 0");
 
-        // return nonceTimesGeneratorAddress == recoveredAddress;
-        return true;
+        return nonceTimesGeneratorAddress == recoveredAddress;
     }
 
     function verifySigningKeyX(uint256 signingPubKeyX) internal pure {
