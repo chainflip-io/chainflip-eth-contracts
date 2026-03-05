@@ -720,6 +720,21 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         return getKeyManager().consumeKeyNonceView(sigData, contractMsgHash);
     }
 
+    function debugReplayParams(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray,
+        address vaultAddress,
+        uint256 chainId,
+        address keyManagerAddress
+    ) external view returns (address, uint256, address, bytes32, bytes32, bytes32) {
+        bytes32 contractMsgHash = keccak256(
+            abi.encode(this.allBatch.selector, deployFetchParamsArray, fetchParamsArray, transferParamsArray)
+        );
+        return getKeyManager().debugReplayParams(sigData, contractMsgHash, vaultAddress, chainId, keyManagerAddress);
+    }
+
     /// @dev For receiving native asset
     receive() external payable {}
 }

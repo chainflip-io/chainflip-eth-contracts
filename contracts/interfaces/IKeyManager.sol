@@ -28,6 +28,14 @@ interface IKeyManager is IShared {
 
     function consumeKeyNonceView(SigData memory sigData, bytes32 contractMsgHash) external view returns (address);
 
+    function debugReplayParams(
+        SigData calldata sigData,
+        bytes32 contractMsgHash,
+        address vaultAddress,
+        uint256 chainId,
+        address keyManagerAddress
+    ) external view returns (address, uint256, address, bytes32, bytes32, bytes32);
+
     function setAggKeyWithAggKey(SigData memory sigData, Key memory newAggKey) external;
 
     function setAggKeyWithGovKey(Key memory newAggKey) external;
