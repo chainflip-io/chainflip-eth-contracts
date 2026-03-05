@@ -79,7 +79,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      */
     function consumeKeyNonce(SigData calldata sigData, bytes32 contractMsgHash) external override {
         bytes32 msgHash = keccak256(
-            abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
+            abi.encode(
+                contractMsgHash,
+                sigData.nonce,
+                // Arbitrum params
+                "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+                412346,
+                "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+            )
         );
         _consumeKeyNonce(sigData, msgHash);
     }
@@ -89,7 +96,14 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         bytes32 contractMsgHash
     ) external view override returns (address) {
         bytes32 msgHash = keccak256(
-            abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
+            abi.encode(
+                contractMsgHash,
+                sigData.nonce,
+                // Arbitrum params
+                "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+                412346,
+                "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+            )
         );
         Key memory key = _aggKey;
         address recoveredAddress = verifySignatureAddress(
@@ -99,7 +113,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
             key.pubKeyYParity,
             sigData.kTimesGAddress
         );
-        (msgHash, sigData.sig, key.pubKeyX, key.pubKeyYParity, sigData.kTimesGAddress);
         return recoveredAddress;
     }
 
