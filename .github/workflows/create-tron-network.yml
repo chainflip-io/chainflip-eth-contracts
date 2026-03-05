@@ -175,7 +175,7 @@ jobs:
           echo "Waiting for blocks to advance..."
           INITIAL_BLOCK=$(curl -s -X POST http://localhost:8090/wallet/getnowblock | python3 -c "import sys,json; print(json.load(sys.stdin).get('block_header',{}).get('raw_data',{}).get('number',0))")
           echo "Initial block: $INITIAL_BLOCK"
-          TARGET=$((INITIAL_BLOCK + 3))
+          TARGET=$((INITIAL_BLOCK + 6))
           for i in $(seq 1 60); do
             CURRENT=$(curl -s -X POST http://localhost:8090/wallet/getnowblock | python3 -c "import sys,json; print(json.load(sys.stdin).get('block_header',{}).get('raw_data',{}).get('number',0))")
             if [ "$CURRENT" -ge "$TARGET" ]; then
