@@ -708,8 +708,16 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    function getChainId() external view returns (uint256) {
-        return block.chainid;
+    function debugSignatureRecovery(
+        SigData calldata sigData,
+        DeployFetchParams[] calldata deployFetchParamsArray,
+        FetchParams[] calldata fetchParamsArray,
+        TransferParams[] calldata transferParamsArray
+    ) external view returns (address) {
+        bytes32 contractMsgHash = keccak256(
+            abi.encode(this.allBatch.selector, deployFetchParamsArray, fetchParamsArray, transferParamsArray)
+        );
+        return getKeyManager().consumeKeyNonceView(sigData, contractMsgHash);
     }
 
     /// @dev For receiving native asset
