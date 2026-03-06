@@ -84,40 +84,6 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         _consumeKeyNonce(sigData, msgHash);
     }
 
-    function consumeKeyNonceView(
-        SigData calldata sigData,
-        bytes32 contractMsgHash
-    ) external view override returns (address) {
-        bytes32 msgHash = keccak256(
-            abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
-        );
-        Key memory key = _aggKey;
-        address recoveredAddress = verifySignatureAddress(
-            msgHash,
-            sigData.sig,
-            key.pubKeyX,
-            key.pubKeyYParity,
-            sigData.kTimesGAddress
-        );
-        return recoveredAddress;
-    }
-
-    function debugReplayParams(
-        SigData calldata sigData,
-        bytes32 contractMsgHash,
-        address vaultAddress,
-        uint256 chainId,
-        address keyManagerAddress
-    ) external view returns (address, uint256, address, bytes32, bytes32, bytes32) {
-        bytes32 msgHash = keccak256(
-            abi.encode(contractMsgHash, sigData.nonce, msg.sender, block.chainid, address(this))
-        );
-        bytes32 msgHashHardcoded = keccak256(
-            abi.encode(contractMsgHash, sigData.nonce, vaultAddress, chainId, keyManagerAddress)
-        );
-        return (msg.sender, block.chainid, address(this), contractMsgHash, msgHash, msgHashHardcoded);
-    }
-
     /**
      * @notice  Set a new aggregate key. Requires a signature from the current aggregate key
      * @param sigData   Struct containing the signature data over the message

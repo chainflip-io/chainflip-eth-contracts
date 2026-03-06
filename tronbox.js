@@ -57,7 +57,7 @@ module.exports = {
           runs: 800,
         },
         evmVersion: "istanbul",
-        viaIR: true,
+        viaIR: false,
       },
     },
   },

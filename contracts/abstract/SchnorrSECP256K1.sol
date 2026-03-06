@@ -149,56 +149,6 @@ abstract contract SchnorrSECP256K1 {
         return nonceTimesGeneratorAddress == recoveredAddress;
     }
 
-    function verifySignatureAddress(
-        bytes32 msgHash,
-        uint256 signature,
-        uint256 signingPubKeyX,
-        uint8 pubKeyYParity,
-        address nonceTimesGeneratorAddress
-    ) internal pure returns (address) {
-        require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
-        // Avoid signature malleability from multiple representations for ℤ/Qℤ elts
-        require(signature < Q, "Sig must be reduced modulo Q");
-
-        // Forbid trivial inputs, to avoid ecrecover edge cases. The main thing to
-        // avoid is something which causes ecrecover to return 0x0: then trivial
-        // signatures could be constructed with the nonceTimesGeneratorAddress input
-        // set to 0x0.
-        //
-        // solium-disable-next-line indentation
-        require(
-            nonceTimesGeneratorAddress != address(0) && signingPubKeyX > 0 && signature > 0 && msgHash > 0,
-            "No zero inputs allowed"
-        );
-
-        uint256 msgChallenge = uint256(
-            keccak256(abi.encodePacked(signingPubKeyX, pubKeyYParity, msgHash, nonceTimesGeneratorAddress))
-        );
-
-        // Verify msgChallenge * signingPubKey + signature * generator ==
-        //        nonce * generator
-        //
-        // https://ethresear.ch/t/you-can-kinda-abuse-ecrecover-to-do-ecmul-in-secp256k1-today/2384/9
-        // The point corresponding to the address returned by
-        // ecrecover(-s*r,v,r,e*r) is (r⁻¹ mod Q)*(e*r*R-(-s)*r*g)=e*R+s*g, where R
-        // is the (v,r) point. See https://crypto.stackexchange.com/a/18106
-        //
-        // solium-disable-next-line indentation
-        address recoveredAddress = ecrecover(
-            // solium-disable-next-line zeppelin/no-arithmetic-operations
-            bytes32(Q - mulmod(signingPubKeyX, signature, Q)),
-            // https://ethereum.github.io/yellowpaper/paper.pdf p. 24, "The
-            // value 27 represents an even y value and 28 represents an odd
-            // y value."
-            (pubKeyYParity == 0) ? 27 : 28,
-            bytes32(signingPubKeyX),
-            bytes32(mulmod(msgChallenge, signingPubKeyX, Q))
-        );
-        require(recoveredAddress != address(0), "Schnorr: recoveredAddress is 0");
-
-        return recoveredAddress;
-    }
-
     function verifySigningKeyX(uint256 signingPubKeyX) internal pure {
         require(signingPubKeyX < HALF_Q, "Public-key x >= HALF_Q");
     }
