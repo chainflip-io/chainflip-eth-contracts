@@ -244,6 +244,11 @@ jobs:
             '{"KEY_MANAGER_ADDRESS": $km, "VAULT_ADDRESS": $vault}' \
             > tron_contracts.json
 
+      - name: Extract Deposit bytecode
+        run: |
+          DEPOSIT_BYTECODE=$(cat build/contracts/Deposit.json | jq -r .bytecode)
+          echo "DEPOSIT_BYTECODE=$DEPOSIT_BYTECODE" >> $GITHUB_ENV
+
       - name: Summary
         run: |
           CONTRACTS=$(jq . tron_contracts.json)
@@ -251,6 +256,10 @@ jobs:
           echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "## Deposit Bytecode" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$DEPOSIT_BYTECODE" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
           echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
