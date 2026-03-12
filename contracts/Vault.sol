@@ -238,15 +238,14 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      */
     function _transfer(address token, address payable recipient, uint256 amount) private {
         if (address(token) == _NATIVE_ADDR) {
-            // TVM sends all energy anyway, it ignores the gas set here anyway
-            // TODO: Implement a check on the receiving contract and if it's a smart contract
-            // it emits `TransferNativeFailed`. Also implement a switch via aggKey to decide
-            // whether to do the check or not for future proofing.
-            // Check out https://github.com/tronprotocol/tips/blob/master/tip-44.md
-            // We might want to have all the possible options.
-            (bool success, ) = recipient.call{value: amount}("");
-            if (!success) {
+            // TODO: To add switch governed by the AggKey
+            if (recipient.isContract) {
                 emit TransferNativeFailed(recipient, amount);
+            } else {
+                (bool success, ) = recipient.call{value: amount}("");
+                if (!success) {
+                    emit TransferNativeFailed(recipient, amount);
+                }
             }
         } else {
             // solhint-disable-next-line avoid-low-level-calls
