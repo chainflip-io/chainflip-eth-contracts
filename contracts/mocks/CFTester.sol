@@ -9,7 +9,6 @@ import "../abstract/Shared.sol";
 /**
  * @title    CFTester
  * @dev      Contract used for testing Chainflip behaviour.
- *           The gas calculations are not totally accurate but it's good enough for testing.
  */
 
 contract CFTester is CFReceiver, Shared {
@@ -17,6 +16,7 @@ contract CFTester is CFReceiver, Shared {
 
     uint256[] public iterations;
 
+    // This will be testing energy but keeping the naming from other EVM chains.
     string public constant GAS_TEST = "GasTest";
     bytes public constant GAS_MESSAGE_ENCODED = bytes(GAS_TEST);
 
@@ -144,5 +144,10 @@ contract CFTester is CFReceiver, Shared {
                 );
             }
         }
+    }
+
+    // Testing out a malicious receiver that consumes a lot of energy
+    receive() external payable {
+        _gasTest(300);
     }
 }
