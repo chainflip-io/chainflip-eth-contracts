@@ -15,6 +15,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     event TransferNativeFailed(address payable indexed recipient, uint256 amount);
     event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
+    event TransferNativeSkipped(address payable indexed recipient, uint256 amount);
 
     event SwapNative(
         uint32 dstChain,
