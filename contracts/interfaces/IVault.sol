@@ -70,6 +70,15 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         bytes reason
     );
 
+    event TransferConfigSet(TransferConfig oldTransferConfig, TransferConfig newTransferConfig);
+
+    // Allow for multiple configurations for future-proofing
+    enum TransferConfig {
+        ContractCheckWithFallbackEvent,
+        ContractCheckWithoutFallbackEvent,
+        SkipContractCheck
+    }
+
     function allBatch(
         SigData calldata sigData,
         DeployFetchParams[] calldata deployFetchParamsArray,
@@ -213,4 +222,6 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
 
     function govWithdraw(address[] calldata tokens) external;
+
+    function setTransferConfig(SigData calldata sigData, TransferConfig newTransferConfig) external;
 }

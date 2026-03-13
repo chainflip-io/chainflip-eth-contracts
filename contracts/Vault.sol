@@ -22,6 +22,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
 
+    TransferConfig public transferConfig = TransferConfig.ContractCheckWithFallbackEvent;
+
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
     /// @dev   Get the governor address from the KeyManager. This is called by the onlyGovernor
@@ -226,9 +228,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
-     * @dev     When transfering native tokens, using call function limiting the amount of gas so
-     *          the receivers can't consume all the gas. Setting that amount of gas to more than
-     *          2300 to future-proof the contract in case of opcode gas costs changing.
+     * @dev     In TRON energy can't be set in a call (neither via transfer, send nor call). Therefore
+     *          a flag is used to determine if we allow transfers to contracts and if that should emit
+     *          a TransferNativeFailed event. The former triggers a fallback transfer in the State
+     *          Chain. This configuration is set by the aggKey.
      * @dev     When transferring ERC20 tokens, if it fails ensure the transfer fails gracefully
      *          to not revert an entire batch. e.g. usdc blacklisted recipient. Following safeTransfer
      *          approach to support tokens that don't return a bool.
@@ -238,9 +241,12 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      */
     function _transfer(address token, address payable recipient, uint256 amount) private {
         if (address(token) == _NATIVE_ADDR) {
-            // TODO: To add switch governed by the AggKey
-            if (recipient.isContract) {
-                emit TransferNativeFailed(recipient, amount);
+            if (transferConfig != TransferConfig.SkipContractCheck && recipient.isContract) {
+                if (transferConfig == TransferConfig.ContractCheckWithFallbackEvent) {
+                    emit TransferNativeFailed(recipient, amount);
+                } else {
+                    emit TransferNativeSkipped(recipient, amount);
+                }
             } else {
                 (bool success, ) = recipient.call{value: amount}("");
                 if (!success) {
@@ -684,6 +690,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 _transfer(tokens[i], recipient, IERC20(tokens[i]).balanceOf(address(this)));
             }
         }
+    }
+
+    function setTransferConfig(
+        SigData calldata sigData,
+        TransferConfig newTransferConfig
+    )
+        external
+        override
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.setTransferConfig.selector, newTransferConfig)))
+    {
+        emit TransferConfigSet(transferConfig, newTransferConfig);
+        transferConfig = newTransferConfig;
     }
 
     //////////////////////////////////////////////////////////////
