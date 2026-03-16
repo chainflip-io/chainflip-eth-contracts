@@ -1,5 +1,7 @@
 /**
- *Submitted for verification at BscTrace on 2024-12-12
+ Binance-pegged BSC-USDT token contract. Source code copied from deployment at
+ address 0x55d398326f99059ff775485246999027b3197955 on BSC mainnet with some
+ small modifications so it compiles with Solidity 0.8.0.
  */
 
 pragma solidity ^0.8.0;
