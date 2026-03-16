@@ -21,6 +21,7 @@ from brownie import (
     PriceFeedMock,
     ScUtils,
     Token,
+    BEP20USDT,
 )
 from deploy import (
     deploy_Chainflip_contracts,
@@ -31,6 +32,7 @@ from deploy import (
     deploy_price_feeds,
     deploy_scUtils,
     deploy_wbtc_contract,
+    deploy_bsc_usdt_contract,
 )
 from shared_tests import deposit_bytecode_test
 
@@ -188,8 +190,11 @@ def deploy_optional_contracts(cf, addressDump):
         cf.cfTester = deploy_new_cfReceiver(deployer, CFTester, cf.vault.address)
         addressDump["CF_TESTER"] = cf.cfTester.address
 
-    if chain.id in [arb_localnet, eth_localnet, hardhat, bnb_localnet]:
+    if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.mockUSDT = deploy_usdt_contract(deployer, MockUSDT)
+        addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
+    elif chain.id in [bnb_localnet]:
+        cf.mockUSDT = deploy_bsc_usdt_contract(deployer, BEP20USDT)
         addressDump["USDT_ADDRESS"] = cf.mockUSDT.address
 
     if chain.id in [arb_localnet, eth_localnet, hardhat]:

@@ -257,6 +257,17 @@ def deploy_usdt_contract(deployer, MockUSDT):
     return mockUsdt
 
 
+# Deploy BSC USDT mock token
+def deploy_usdt_contract(deployer, MockBscUSDT):
+    # Set the priority fee for all transactions and the required number of confirmations.
+    required_confs = transaction_params()
+
+    mockUsdt = MockBscUSDT.deploy(
+        {"from": deployer, "required_confs": required_confs},
+    )
+    return mockUsdt
+
+
 # Mock transactions to keep the contract's addresses unchanged in images. In legacy images
 # we used to airdrop tokens to 9 accounts, so we need to do the same amount of transactions.
 def mock_transactions(deployer):
