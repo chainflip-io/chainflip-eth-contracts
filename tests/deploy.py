@@ -258,7 +258,7 @@ def deploy_usdt_contract(deployer, MockUSDT):
 
 
 # Deploy BSC USDT mock token
-def deploy_usdt_contract(deployer, MockBscUSDT):
+def deploy_bsc_usdt_contract(deployer, MockBscUSDT):
     # Set the priority fee for all transactions and the required number of confirmations.
     required_confs = transaction_params()
 
