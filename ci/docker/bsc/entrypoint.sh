@@ -14,9 +14,9 @@ exec geth \
     --override.passedforktime 1 \
     --override.lorentz 1 \
     --override.maxwell 1 \
-    --override.fermi 1 \
-    --override.osaka 1 \
-    --override.mendel 1 \
+    --override.fermi 2 \
+    --override.osaka 2 \
+    --override.mendel 2 \
     --override.immutabilitythreshold 2048 \
     --override.breatheblockinterval 1200 \
     --override.minforblobrequest 576 \
