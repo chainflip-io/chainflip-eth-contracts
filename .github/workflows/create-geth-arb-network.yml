@@ -245,7 +245,6 @@ jobs:
             -e FORK_TIME_2=$FORK_TIME_2 \
             -p 8545:8545 \
             ghcr.io/${{ github.repository }}/bsc-base:latest
-          docker logs -f bsc &
           until curl -sf -X POST http://127.0.0.1:8545 \
             -H "Content-Type: application/json" \
             --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'; do
