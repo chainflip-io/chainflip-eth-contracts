@@ -28,7 +28,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
         Key memory initialAggKey,
         address initialGovKey,
         address initialCommKey
-    ) nzAddr(initialGovKey) nzAddr(initialCommKey) nzKey(initialAggKey) validAggKey(initialAggKey) {
+    ) nzAddr(initialGovKey) nzKey(initialAggKey) validAggKey(initialAggKey) {
         _aggKey = initialAggKey;
         _govKey = initialGovKey;
         _commKey = initialCommKey;
@@ -141,7 +141,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @notice  Set a new governance key. Can only be called by current governance key
      * @param newGovKey    The new governance key to be set.
      */
-    function setGovKeyWithGovKey(address newGovKey) external override nzAddr(newGovKey) onlyGovernor {
+    function setGovKeyWithGovKey(address newGovKey) external override onlyGovernor {
         emit GovKeySetByGovKey(_govKey, newGovKey);
         _govKey = newGovKey;
     }
@@ -170,7 +170,7 @@ contract KeyManager is SchnorrSECP256K1, Shared, IKeyManager {
      * @notice  Update the Community Key. Can only be called by the current Community Key.
      * @param newCommKey   New Community key address.
      */
-    function setCommKeyWithCommKey(address newCommKey) external override onlyCommunityKey nzAddr(newCommKey) {
+    function setCommKeyWithCommKey(address newCommKey) external override onlyCommunityKey {
         emit CommKeySetByCommKey(_commKey, newCommKey);
         _commKey = newCommKey;
     }
