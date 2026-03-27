@@ -4,15 +4,15 @@
 module.exports = {
   networks: {
     development: {
-      // For tronbox/tre docker image
-      // See https://hub.docker.com/r/tronbox/tre
+      // Also used by `tronbox test` for migrations (always runs against "development").
+      // Points to the same java-tron node as localnet.
       privateKey:
-        "0000000000000000000000000000000000000000000000000000000000000001",
-      userFeePercentage: 0, // The percentage of resource consumption ratio.
+        "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
       feeLimit: 1000 * 1e6, // The TRX consumption limit for the deployment and trigger, unit is SUN
-      fullHost: "http://127.0.0.1:9090",
+      fullHost: "http://127.0.0.1:8090",
       network_id: "*",
-      originEnergyLimit: 10_000_000, // Default origin energy limit for contract deployment
+      userFeePercentage: 5, // The percentage of resource consumption ratio.
+      originEnergyLimit: 10_000_000,
     },
     localnet: {
       // For the chainflip localnet TRON node (tronprotocol/java-tron via ci/docker/tron/).
@@ -21,14 +21,13 @@ module.exports = {
       //   TRON: TYBNgWfhGuNzdLtjKtxXTfskAhTbMcqbaG
       privateKey:
         "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-      userFeePercentage: 0,
       feeLimit: 1000 * 1e6,
       fullHost: "http://127.0.0.1:8090",
       network_id: "*",
+      userFeePercentage: 5,
       originEnergyLimit: 10_000_000,
     },
     nile: {
-      // Obtain test coin at https://nileex.io/join/getJoinPage
       privateKey: process.env.PRIVATE_KEY_NILE,
       // TO use mnenonic instead of private key:
       //   mnemonic: process.env.MNEMONIC,
@@ -37,15 +36,15 @@ module.exports = {
       feeLimit: 1000 * 1e6,
       fullHost: "https://nile.trongrid.io",
       network_id: "3",
-      originEnergyLimit: 10_000_000, // Default origin energy limit for contract deployment
+      originEnergyLimit: 10_000_000,
     },
     mainnet: {
       privateKey: process.env.PRIVATE_KEY,
-      userFeePercentage: 0,
       feeLimit: 500 * 1e6, // 500 TRX
       fullHost: "https://api.trongrid.io",
       network_id: "1",
-      originEnergyLimit: 10_000_000, // Default origin energy limit for contract deployment
+      userFeePercentage: 5,
+      originEnergyLimit: 10_000_000,
     },
   },
   compilers: {
