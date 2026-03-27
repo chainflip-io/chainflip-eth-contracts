@@ -27,9 +27,11 @@ function cleanHexStrPad(thing) {
 
 function getCreate2Addr(sender, saltHex, deployBytecode, argsHex) {
   const bytecodeWithArgs = deployBytecode + argsHex;
-  const bytecodeHash = cleanHexStr(keccak256(arrayify("0x" + bytecodeWithArgs)));
+  const bytecodeHash = cleanHexStr(
+    keccak256(arrayify("0x" + bytecodeWithArgs))
+  );
 
-  const payload = "ff" + cleanHexStr(sender) + saltHex + bytecodeHash;
+  const payload = "41" + cleanHexStr(sender) + saltHex + bytecodeHash;
 
   const hash = keccak256(arrayify("0x" + payload));
   // Take the last 20 bytes
@@ -39,9 +41,17 @@ function getCreate2Addr(sender, saltHex, deployBytecode, argsHex) {
 const NATIVE_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
 // Load the compiled Deposit artifact
-const artifactPath = path.join(__dirname, "..", "build", "contracts", "Deposit.json");
+const artifactPath = path.join(
+  __dirname,
+  "..",
+  "build",
+  "contracts",
+  "Deposit.json"
+);
 if (!fs.existsSync(artifactPath)) {
-  console.error("Error: Deposit.json not found. Run `yarn tronbox compile` first.");
+  console.error(
+    "Error: Deposit.json not found. Run `yarn tronbox compile` first."
+  );
   process.exit(1);
 }
 
@@ -92,4 +102,6 @@ if (depositAddr2.toLowerCase() !== expectedAddr2.toLowerCase()) {
   process.exit(1);
 }
 
-console.log("\n✅ Deposit bytecode check passed! CREATE2 addresses match expected values.");
+console.log(
+  "\n✅ Deposit bytecode check passed! CREATE2 addresses match expected values."
+);
