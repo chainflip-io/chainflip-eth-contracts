@@ -1,4 +1,5 @@
-// Run by: yarn tronbox migrate --f 2 --to 2 --network nile
+// To run, move this file to the migrations/ folder as "2_call_allbatch_fetch.js" and run:
+// yarn tronbox migrate --f 2 --to 2 --network nile
 // Deployer: TCKygWnz919n1frEAnp2Uoa5VzCasLes12
 
 const VaultContract = artifacts.require("Vault");

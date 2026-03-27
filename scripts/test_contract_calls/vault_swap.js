@@ -1,4 +1,5 @@
-// Run by: yarn tronbox migrate --f 4 --to 4 --network nile
+// To run, move this file to the migrations/ folder as "4_vault_swap.js" and run:
+// yarn tronbox migrate --f 4 --to 4 --network nile
 
 const VaultContract = artifacts.require("Vault");
 const TRC20Contract = artifacts.require("ERC20");

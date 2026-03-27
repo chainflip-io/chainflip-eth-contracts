@@ -39,6 +39,27 @@ pre-commit install
 
 Then, set the appropriate environment variables. See `.env.example` as an example. To deploy on a live network a SEED and an RPC endpoint is needed.
 
+### Tron compilation and test
+
+```bash
+yarn tronbox compile
+# Test bytecode
+node scripts/check_deposit_bytecode.js
+
+# If using a `linux/arm64` you can start the tron node for testing like this:
+docker run -d -p 9090:9090 tronbox/tre && sleep 5 && yarn tronbox test --network development
+
+# Otherwise it needs some manual steps
+docker build -t tron-base ci/docker/tron/
+docker network create tron-net
+docker run -d --name tron --network tron-net -p 8090:8090 -p 18888:18888 tron-base
+docker run -d --name tron-peer --network tron-net tron-base -c /tron/config/config-peer.conf -d /tron/output-directory
+sleep 5
+# This runs all the migrations and then the tests
+yarn tronbox test --network localnet
+
+```
+
 ### Running Tests
 
 We use the `hardhat` EVM for testing.

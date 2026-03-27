@@ -1,4 +1,5 @@
-// Run by: yarn tronbox migrate --f 6 --to 6 --network nile
+// To run, move this file to the migrations/ folder as "6_trx_transfer_with_note.js" and run:
+// yarn tronbox migrate --f 6 --to 6 --network nile
 
 module.exports = async function (deployer, network, accounts) {
   console.log("\n=== TRX Transfer to Vault with Note ===");

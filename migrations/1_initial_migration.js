@@ -1,15 +1,16 @@
-// We need to use --reset for the migration run to work.
 // yarn tronbox migrate --f 1 --to 1 --reset --network nile
 
 const VaultContract = artifacts.require("Vault");
 const KeyManagerContract = artifacts.require("KeyManager");
+const MockUSDT = artifacts.require("MockUSDT");
+const CFTester = artifacts.require("CFTester");
 
-// TODO: Write an extra migration to deploy USDT separately. This way we can use this for mainnet and
-// then use both scripts for testnet/localnet.
-module.exports = async function (deployer) {
-  console.log("Starting deployment of VaultContract...");
+module.exports = async function (deployer, network) {
+  console.log("Starting deployment on network:", network);
   const deployerAccount = deployer.options.options.network_config.from;
-  console.log("Using deployer account:", deployerAccount); // TCKygWnz919n1frEAnp2Uoa5VzCasLes12
+  console.log("Using deployer account:", deployerAccount);
+
+  // --- Deploy KeyManager and Vault (all networks) ---
   await deployer.deploy(
     KeyManagerContract,
     [1, 2], // dummy aggKey
@@ -21,11 +22,10 @@ module.exports = async function (deployer) {
   const keyManagerAddress = keyManagerInstance.address;
   console.log("KeyManagerContract deployed at address:", keyManagerAddress);
 
-  // deploy a contract
   await deployer.deploy(VaultContract, keyManagerAddress);
-  //access information about your deployed contract instance
-  const instance = await VaultContract.deployed();
-  console.log("VaultContract deployed at address:", instance.address); // 0x4132aea965af223ab8831b58ab2b8b80136856d53e
+  const vault = await VaultContract.deployed();
+  console.log("VaultContract deployed at address:", vault.address);
+
   // Contract deployed: TEbC2Mm2razM2LsE7CJQUho9yn3z7zujLc
   // Deployment tx: https://nile.tronscan.org/#/transaction/08e95ceeb3f1f60844336e1ee80764ddfbd759ab77cff4806099b7d1c6799544
 
@@ -39,8 +39,24 @@ module.exports = async function (deployer) {
   // console.log("Deposit contract bytecode:");
   // console.log(depositBytecode);
   // console.log("Bytecode length:", depositBytecode.length);
-};
 
+  // --- Deploy optional test contracts (localnet only) ---
+  if (network === "localnet") {
+    console.log("\n=== Deploying optional test contracts (localnet) ===");
+
+    // 20M USDT with 6 decimals
+    const INIT_USD_SUPPLY = "20000000000000";
+    await deployer.deploy(MockUSDT, "Tether USD", "USDT", INIT_USD_SUPPLY);
+    const usdt = await MockUSDT.deployed();
+    console.log("MockUSDT deployed at address:", usdt.address);
+
+    await deployer.deploy(CFTester, vault.address);
+    const cfTester = await CFTester.deployed();
+    console.log("CFTester deployed at address:", cfTester.address);
+  }
+
+  console.log("\n=== Deployment complete ===\n");
+};
 //// DEPLOYED WITH RECEIVE
 // https://nile.tronscan.org/#/transaction/bfbec1a55fb4f6b4fb630dd1307a92ed9488d6ac25b90da54f1d9082f8440d28
 // Using deployer account: TCKygWnz919n1frEAnp2Uoa5VzCasLes12

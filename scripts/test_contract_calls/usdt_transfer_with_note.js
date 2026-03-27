@@ -1,4 +1,5 @@
-// Run by: yarn tronbox migrate --f 5 --to 5 --network nile
+// To run, move this file to the migrations/ folder as "5_usdt_transfer_with_note.js" and run:
+// yarn tronbox migrate --f 5 --to 5 --network nile
 
 module.exports = async function (deployer, network, accounts) {
   console.log("\n=== USDT Transfer to Vault with Note ===");

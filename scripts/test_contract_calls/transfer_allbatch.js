@@ -1,3 +1,4 @@
+// To run, move this file to the migrations/ folder as "3_transfer_allbatch.js" and run:
 // yarn tronbox migrate --f 3 --to 3 --network nile
 
 const VaultContract = artifacts.require("Vault");

@@ -200,14 +200,6 @@ jobs:
       - name: Deploy contracts
         run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
-      - name: Extract Vault address for migration 8
-        run: |
-          VAULT=$(grep "VaultContract deployed at address:" deploy_output.txt | awk '{print $NF}')
-          echo "VAULT_ADDRESS=$VAULT" >> $GITHUB_ENV
-
-      - name: Deploy optional contracts
-        run: yarn tronbox migrate --f 8 --to 8 --network localnet 2>&1 | tee deploy_output_8.txt
-
       - name: Wait for blocks after deployment to ensure state is flushed
         run: |
           echo "Waiting for blocks to advance after deployment..."
@@ -239,8 +231,8 @@ jobs:
         run: |
           KEY_MANAGER=$(grep "KeyManagerContract deployed at address:" deploy_output.txt | awk '{print $NF}')
           VAULT=$(grep "VaultContract deployed at address:" deploy_output.txt | awk '{print $NF}')
-          USDT=$(grep "MockUSDT deployed at address:" deploy_output_8.txt | awk '{print $NF}')
-          CF_TESTER=$(grep "CFTester deployed at address:" deploy_output_8.txt | awk '{print $NF}')
+          USDT=$(grep "MockUSDT deployed at address:" deploy_output.txt | awk '{print $NF}')
+          CF_TESTER=$(grep "CFTester deployed at address:" deploy_output.txt | awk '{print $NF}')
           if [ -z "$KEY_MANAGER" ] || [ -z "$VAULT" ]; then
             echo "ERROR: Failed to extract contract addresses from deployment output"
             cat deploy_output.txt
@@ -248,7 +240,7 @@ jobs:
           fi
           if [ -z "$USDT" ] || [ -z "$CF_TESTER" ]; then
             echo "ERROR: Failed to extract USDT/CFTester addresses from deployment output"
-            cat deploy_output_8.txt
+            cat deploy_output.txt
             exit 1
           fi
           echo "KEY_MANAGER_ADDRESS=$KEY_MANAGER" >> $GITHUB_ENV
