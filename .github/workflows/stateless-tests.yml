@@ -49,4 +49,9 @@ jobs:
 
       - run: npx hardhat node &
       - run: sleep 2
-      - run: poetry run brownie test --network hardhat --stateful false
+      - run: yarn tronbox compile
+
+      # Ensure that the Deposit's bytecode hasn't changed
+      - run: node scripts/check_deposit_bytecode.js
+
+      # TODO: Add some basic unit testing

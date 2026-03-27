@@ -39,8 +39,11 @@ jobs:
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
 
+      # Compile with tronbox
+      - run: yarn tronbox compile
+
       # Ensure that the Deposit's bytecode hasn't changed
-      - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat
+      - run: node scripts/check_deposit_bytecode.js
 
       - name: Zip ABIs
         run: |
