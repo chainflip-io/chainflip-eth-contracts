@@ -82,6 +82,7 @@ contract CFTester is CFReceiver, Shared {
         srcToken.transfer(to, amount);
     }
 
+    // NOTE: Leaving the same interface to simplify the testing but all this info will be passed separately
     function multipleContractSwap(
         uint32 dstChain,
         bytes memory dstAddress,
@@ -94,17 +95,18 @@ contract CFTester is CFReceiver, Shared {
         if (srcToken == IERC20(_NATIVE_ADDR)) {
             require(msg.value == amount * numSwaps, "CFTester: Amount doesn't match value");
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xSwapNative{value: amount}(dstChain, dstAddress, dstToken, cfParameters);
+                (bool success, ) = cfVault.call{value: amount}("");
+                require(success, "CFTester: ETH transfer failed");
             }
         } else {
             srcToken.safeTransferFrom(msg.sender, address(this), amount * numSwaps);
-            require(IERC20(srcToken).approve(cfVault, amount * numSwaps));
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xSwapToken(dstChain, dstAddress, dstToken, srcToken, amount, cfParameters);
+                srcToken.safeTransfer(cfVault, amount);
             }
         }
     }
 
+    // NOTE: Leaving the same interface to simplify the testing but all this info will be passed separately
     function multipleContractCall(
         uint32 dstChain,
         bytes memory dstAddress,
@@ -119,29 +121,13 @@ contract CFTester is CFReceiver, Shared {
         if (srcToken == IERC20(_NATIVE_ADDR)) {
             require(msg.value == amount * numSwaps, "CFTester: Amount doesn't match value");
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xCallNative{value: amount}(
-                    dstChain,
-                    dstAddress,
-                    dstToken,
-                    message,
-                    gasAmount,
-                    cfParameters
-                );
+                (bool success, ) = cfVault.call{value: amount}("");
+                require(success, "CFTester: ETH transfer failed");
             }
         } else {
             srcToken.safeTransferFrom(msg.sender, address(this), amount * numSwaps);
-            require(IERC20(srcToken).approve(cfVault, amount * numSwaps));
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xCallToken(
-                    dstChain,
-                    dstAddress,
-                    dstToken,
-                    message,
-                    gasAmount,
-                    srcToken,
-                    amount,
-                    cfParameters
-                );
+                srcToken.safeTransfer(cfVault, amount);
             }
         }
     }
