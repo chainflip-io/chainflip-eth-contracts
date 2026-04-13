@@ -1,0 +1,135 @@
+[Eth]
+NetworkId = 714
+SyncMode = "full"
+DisablePeerTxBroadcast = false
+EVNNodeIDsToAdd = []
+EVNNodeIDsToRemove = []
+HistoryMode = "all"
+EthDiscoveryURLs = []
+SnapDiscoveryURLs = []
+BscDiscoveryURLs = []
+NoPruning = false
+NoPrefetch = false
+EnableBAL = false
+DirectBroadcast = false
+DisableSnapProtocol = false
+RangeLimit = false
+LogExportCheckpoints = ""
+DatabaseCache = 512
+DatabaseFreezer = ""
+DatabaseEra = ""
+PruneAncientData = false
+TrieCleanCache = 256
+TrieDirtyCache = 256
+TrieTimeout = 3600000000000
+SnapshotCache = 0
+TriesInMemory = 128
+TriesVerifyMode = "local"
+Preimages = false
+FilterLogCacheSize = 0
+EnablePreimageRecording = false
+VMTrace = ""
+VMTraceJsonConfig = ""
+RPCGasCap = 0
+RPCEVMTimeout = 0
+RPCTxFeeCap = 0e+00
+BlobExtraReserve = 0
+EnableOpcodeOptimizing = false
+EnableIncrSnapshots = false
+IncrSnapshotPath = ""
+IncrSnapshotBlockInterval = 0
+IncrSnapshotStateBuffer = 0
+IncrSnapshotKeptBlocks = 0
+UseRemoteIncrSnapshot = false
+RemoteIncrSnapshotURL = ""
+
+[Eth.Miner]
+GasFloor = 0
+GasCeil = 35000000
+GasPrice = 1000000000
+Recommit = 10000000000
+VoteEnable = false
+MaxWaitProposalInSecs = 3
+DisableVoteAttestation = false
+TxGasLimit = 0
+
+[Eth.Miner.Mev]
+Enabled = true
+GreedyMergeTx = true
+BuilderFeeCeil = "0"
+SentryURL = ""
+ValidatorCommission = 1000
+
+[[Eth.Miner.Mev.Builders]]
+Address = "0x04d63abcd2b9b1baa327f2dda0f873f197ccd186"
+URL = ""
+
+[Eth.TxPool]
+Locals = []
+NoLocals = true
+Journal = "transactions.rlp"
+Rejournal = 3600000000000
+PriceLimit = 1000000000
+PriceBump = 10
+AccountSlots = 200
+GlobalSlots = 8000
+AccountQueue = 200
+GlobalQueue = 4000
+OverflowPoolSlots = 0
+Lifetime = 10800000000000
+ReannounceTime = 0
+
+[Eth.BlobPool]
+Datadir = ""
+Datacap = 0
+PriceBump = 0
+
+[Eth.GPO]
+Blocks = 0
+Percentile = 0
+MaxHeaderHistory = 0
+MaxBlockHistory = 0
+
+[Node]
+DataDir = ""
+InsecureUnlockAllowed = true
+EnableEVNFeatures = true
+EnableQuickBlockFetching = true
+IPCPath = "geth.ipc"
+HTTPHost = "127.0.0.1"
+HTTPPort = 8545
+HTTPVirtualHosts = ["*"]
+HTTPModules = ["eth", "mev", "net", "web3", "txpool", "parlia", "debug"]
+WSHost = "0.0.0.0"
+WSPort = 8545
+WSModules = []
+
+[Node.P2P]
+MaxPeers = 50
+NoDiscovery = false
+BootstrapNodes = []
+StaticNodes = []
+TrustedNodes = []
+ListenAddr = ":30311"
+DiscAddr = ""
+EnableMsgEvents = false
+PeerFilterPatterns = []
+
+[Node.HTTPTimeouts]
+ReadTimeout = 30000000000
+ReadHeaderTimeout = 0
+WriteTimeout = 30000000000
+IdleTimeout = 120000000000
+
+[Node.LogConfig]
+FileRoot = ""
+FilePath = "bsc.log"
+MaxBytesSize = 10485760
+Level = "info"
+MaxBackups = 1000
+TimeFormat = "01-02|15:04:05.000"
+
+[FakeBeacon]
+Enable = false
+Addr = ""
+Port = 0
