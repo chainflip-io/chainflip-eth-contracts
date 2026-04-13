@@ -1,5 +1,6 @@
-// TODO: We probably want to set the  userFeePercentage and originEnergyLimit on e per contract
-// deployment instead to only cover Vault calls.
+// TODO: We might want to set the  userFeePercentage and originEnergyLimit on a per contract
+// deployment instead to only cover Vault calls, even though it shouldn't make a difference
+// to have that for the KeyManager as well.
 // e.g. deployer.deploy(MyContract, { feeLimit: 1000000000, callValue: 0,  originEnergyLimit: 10000000});
 module.exports = {
   networks: {
@@ -12,7 +13,7 @@ module.exports = {
       fullHost: "http://127.0.0.1:8090",
       network_id: "*",
       userFeePercentage: 5, // The percentage of resource consumption ratio.
-      originEnergyLimit: 10_000_000,
+      originEnergyLimit: 800_000,
     },
     localnet: {
       // For the chainflip localnet TRON node (tronprotocol/java-tron via ci/docker/tron/).
@@ -25,18 +26,18 @@ module.exports = {
       fullHost: "http://127.0.0.1:8090",
       network_id: "*",
       userFeePercentage: 5,
-      originEnergyLimit: 10_000_000,
+      originEnergyLimit: 800_000,
     },
     nile: {
       privateKey: process.env.PRIVATE_KEY_NILE,
       // TO use mnenonic instead of private key:
       //   mnemonic: process.env.MNEMONIC,
       //   path: "m/44'/195'/0'/0/0",
-      userFeePercentage: 20,
+      userFeePercentage: 5,
       feeLimit: 1000 * 1e6,
       fullHost: "https://nile.trongrid.io",
       network_id: "3",
-      originEnergyLimit: 10_000_000,
+      originEnergyLimit: 800_000,
     },
     mainnet: {
       privateKey: process.env.PRIVATE_KEY,
@@ -44,7 +45,7 @@ module.exports = {
       fullHost: "https://api.trongrid.io",
       network_id: "1",
       userFeePercentage: 5,
-      originEnergyLimit: 10_000_000,
+      originEnergyLimit: 800_000,
     },
   },
   compilers: {
