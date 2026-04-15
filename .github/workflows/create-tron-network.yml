@@ -197,6 +197,22 @@ jobs:
       - run: npm install --global yarn
       - run: yarn
 
+      - name: Debug compilation environment
+        run: |
+          echo "=== Working directory ==="
+          pwd
+          echo "=== Node version ==="
+          node --version
+          echo "=== NPM version ==="
+          npm --version
+          echo "=== Tronbox version ==="
+          yarn tronbox version || true
+          echo "=== Solc version (from tronbox) ==="
+          ls -la node_modules/.cache/tronbox/solc/ 2>/dev/null || echo "No cached solc found"
+          echo "=== OS info ==="
+          uname -a
+          cat /etc/os-release 2>/dev/null || true
+
       - name: Deploy contracts
         run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
