@@ -62,36 +62,10 @@ yarn tronbox test --network localnet
 
 ### Running Tests
 
-We use the `hardhat` EVM for testing.
+We use the `tronbox` for testing.
 
 ```bash
-# Run without the stateful tests, because they take hours
-poetry run brownie test --network hardhat --stateful false
-```
-
-Run tests with additional features:
-
-```bash
-poetry run brownie test <test-name> -s --network hardhat --stateful <bool> --coverage --gas --hypothesis-seed <seed_number>
-```
-
-Flags:
-
-- `<test-name>` - Run a specific test. If no test-name is provided all tests are run.
-- `-s`- Runs with the `print` outputs in tests.
-- `--stateful <bool>` - Runs (or not) stateful tests. Stateful tests might take several hours so it is recommended to set it to false.
-- `--gas` - generates a gas profile report
-- `--coverage` - generates and updates the test coverage report under reports/coverage.json
-- `--hypothesis-seed <seed_number>` - Inputs a seed (int) to the hypothesis strategies. Useful to deterministically reproduce tests failures and for accurate gas comparisons when doing gas optimizations.
-
-### Static Analysis
-
-Slither is used for static analysis. In the event of the command below failing, try removing the `build/` directory and run it again.
-
-Inside the poetry shell:
-
-```bash
-slither .
+yarn tronbox test --network localnet
 ```
 
 ### Linter
@@ -105,95 +79,46 @@ poetry run yarn lint
 poetry run yarn format
 ```
 
-## Fuzzing
-
-Echidna is used for fuzzing the contracts. Make sure to follow Echidna's installation instructions or simply download the compiled binary. For Ubuntu:
-
-```bash
-curl -fL https://github.com/crytic/echidna/releases/download/v2.0.2/echidna-test-2.0.2-Ubuntu-18.04.tar.gz -o echidna-test-2.0.2-Ubuntu-18.04.tar.gz
-tar -xvf echidna-test-2.0.2-Ubuntu-18.04.tar.gz
-```
-
-Make sure solc is installed with the latest versions with support to at least Solidity 0.8.0. To install:
-
-`sudo snap install solc --edge`
-
-Then Echidna can be run as normal. Echidna is not capable of reading the inherited contracts from packages under node_modules and needs an extra remapping in the config files. So always specify one of the echidna.config.yml files. There are different configuration files that can be specified for the different test modes.
-
-```bash
-./echidna-test contracts/echidna/tests/TestEchidna.sol --contract TestEchidna --config contracts/echidna/tests/echidna-assertion.config.yml
-```
-
-### Pre-commit hook
-
-Pre-commit is part of the poetry virtual environment. Therefore, ensure that poetry is installed when commiting.
-
-Current pre-commit hooks implemented:
-
-- lint
-
-To perform a commit without running the pre-commits, add the --no-verify flag to the git commit command. (not recommended)
-
-### Generating Docs
-
-Requires [Yarn](https://yarnpkg.com).
-
-```bash
-yarn docgen
-```
-
-## Notes
-
-Brownie and `solidity-docgen` don't play very nice with each other. For this reason we've installed the OpenZeppelin contracts through both the brownie package manager (because it doesn't like node_modules when compiling internally), and `yarn` (because `solc` doesn't search the `~/.brownie` folder for packages).
-
-This isn't an ideal solution but it'll do for now.
-
 ## Deploy the contracts
 
-The deploying account will be allocated all the FLIP on a testnet (90M)
+We want the live network contracts to match exactly the contracts in the localnet bytecode-wise. Otherwise the address derivation for deposit channels won't work. There is a small workaround for locally matching the CI deployment runs.
 
-Inside the poetry shell:
+### Bytecode workaround
+
+#### 1. Create the directory
+
+```bash
+# 1. Create the directory
+sudo mkdir -p /opt/actions-runner/\_work/chainflip-eth-contracts
+
+# 2. Copy the entire repo there (not symlink, not bind mount)
+sudo cp -a /<local_path>/tron_contracts/chainflip-eth-contracts /opt/actions-runner/\_work/chainflip-eth-contracts/chainflip-eth-contracts
+
+# 3. Make sure you own it
+sudo chown -R $USER:$USER /opt/actions-runner/\_work/chainflip-eth-contracts/chainflip-eth-contracts
+
+# 4. Go there and clean previous build artifacts
+cd /opt/actions-runner/\_work/chainflip-eth-contracts/chainflip-eth-contracts
+rm -rf build/contracts
+
+# 5. Compile
+yarn tronbox compile
+
+# 6. Check compiled bytecode
+node scripts/check_deposit_bytecode.js
+```
 
 ### Local Test network
 
 ```bash
-# if you haven't already started a hardhat node
-npx hardhat node
-# Instead, to run with interval mining - so the node continues mining blocks periodically
-npx hardhat node --config hardhat-interval-mining.config.js
-# If brownie fails to connect to the hardhat node check ip and run with the adequate hostname address. For instance:
-npx hardhat node --hostname 127.0.0.1
-# deploy the contracts - they will be deployed by acct #1 on the hardhat pre-seeded accounts
-poetry run brownie run deploy_and
+# It will use the default EVM deployer key and default endpoint
+yarn tronbox migrate --f 1 --to 1 --reset --network localnet
 ```
 
 ### Live Test network
 
 ```bash
-# get this id from Infura and/or Alchemy
-export WEB3_INFURA_PROJECT_ID=<Infura project id>
-export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
-# ensure that the ETH account associated with this seed has ETH on that network
-export SEED="<your seed phrase>"
-# Set an aggregate key, a governance address and a community address that you would like to use
-export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
-export GOV_KEY=<gov address, hex format, with leading 0x>
-export COMM_KEY=<comm address, hex format, with leading 0x>
-# Set genesis parameters
-export GENESIS_STAKE=<the stake each node should have at genesis> (default =
-50000000000000000000000)
-export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
-
-# deploy the contracts to goerli.
-poetry run brownie run deploy_contracts --network goerli
+# It will use the default endpoint
+export PRIVATE_KEY_NILE=<Tron private key>
+yarn tronbox migrate --f 1 --to 1 --reset --network <nile/mainnet>
 ```
-
-## Useful commands
-
-`poetry run brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
-
-`poetry run brownie test --stateful false` runs all tests EXCEPT stateful tests
-
-`poetry run brownie test --stateful true` runs ONLY the stateful tests
-
-`poetry run brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events

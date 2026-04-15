@@ -30,7 +30,7 @@ module.exports = {
     },
     nile: {
       privateKey: process.env.PRIVATE_KEY_NILE,
-      // TO use mnenonic instead of private key:
+      // To use mnemonic instead of private key:
       //   mnemonic: process.env.MNEMONIC,
       //   path: "m/44'/195'/0'/0/0",
       userFeePercentage: 5,
