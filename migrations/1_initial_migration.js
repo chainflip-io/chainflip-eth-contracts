@@ -17,13 +17,12 @@ module.exports = async function (deployer, network) {
 
   // --- Deploy KeyManager and Vault (all networks) ---
 
-  // TODO: We could hardcode the aggKey and the commKey. The read an env
-  // variable for the govKey or just use the deployer account as the govKey.
+  // Hardcoded dummy aggKey and zero commKey as this is how it will be initialized in live networks.
   await deployer.deploy(
     KeyManagerContract,
     [1, 2], // dummy aggKey
     deployerAccount,
-    deployerAccount
+    "0x0000000000000000000000000000000000000000" // commKey
   );
 
   const keyManagerInstance = await KeyManagerContract.deployed();
