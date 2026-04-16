@@ -17,8 +17,8 @@ module.exports = async function (deployer, network) {
 
   // --- Deploy KeyManager and Vault (all networks) ---
 
-  // TODO: Add reading environment variables for aggKey. I think we can hardcode the
-  // govKey and commKey to zero for now, as that seems to be how we will set it up.
+  // TODO: We could hardcode the aggKey and the commKey. The read an env
+  // variable for the govKey or just use the deployer account as the govKey.
   await deployer.deploy(
     KeyManagerContract,
     [1, 2], // dummy aggKey
