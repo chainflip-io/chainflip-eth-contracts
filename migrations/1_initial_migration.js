@@ -33,8 +33,10 @@ module.exports = async function (deployer, network) {
   const vault = await VaultContract.deployed();
   console.log("VaultContract deployed at address:", vault.address);
 
-  // --- Deploy optional test contracts (localnet only) ---
-  if (network === "localnet") {
+  // --- Deploy optional test contracts ---
+  // Deploying both CfTester and USDT to both localnet and nile for testing purposes.
+  // We might end up not using the USDT contract on Nile.
+  if (network === "localnet" || network === "nile") {
     console.log("\n=== Deploying optional test contracts (localnet) ===");
 
     // 20M USDT with 6 decimals
@@ -46,8 +48,6 @@ module.exports = async function (deployer, network) {
     await deployer.deploy(CFTester, vault.address);
     const cfTester = await CFTester.deployed();
     console.log("CFTester deployed at address:", cfTester.address);
-
-    // TODO: Maybe deploy USDT on live networks too if we can't get a chunk of the real Testnet USDT
   }
 
   console.log("\n=== Deployment complete ===\n");
