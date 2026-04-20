@@ -10,7 +10,7 @@ const { checkDepositBytecode } = require("../scripts/deposit_bytecode_check");
 module.exports = async function (deployer, network) {
   console.log("Starting deployment on network:", network);
 
-  // Verify Deposit bytecode hasn't changed before deploying
+  // Verify Deposit bytecode matches the expected bytecode in the State Chain before proceeding with the deployment.
   checkDepositBytecode(DepositContract.bytecode);
   const deployerAccount = deployer.options.options.network_config.from;
   console.log("Using deployer account:", deployerAccount);

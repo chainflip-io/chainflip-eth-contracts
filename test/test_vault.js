@@ -71,7 +71,7 @@ contract("Vault", (accounts) => {
   // Tests below require valid Schnorr signatures. To avoid rewriting the signer
   // logic in crypto.py but in javaScript, we'd ideally want to reuse the
   // python logic to precompute and then hardcode the signature data. However,
-  // the contracta addresses are not deterministic and change on each deployment,
+  // the contract addresses are not deterministic and change on each deployment,
   // which makes the precomputed signatures invalid. For now we just comment out
   // the signature verification when running these tests in CI.
   // ---------------------------------------------------------------------------
