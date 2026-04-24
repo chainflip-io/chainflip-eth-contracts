@@ -71,13 +71,21 @@ jobs:
         with:
           context: ci/docker/tron/
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           # Disabling because of old buildx version, see: https://docs.docker.com/build/ci/github-actions/cache/#github-cache
           # cache-from: type=gha
           # cache-to: type=gha,mode=max
 
   build-tron-state:
-    runs-on: [self-hosted, linux, x64, ephemeral]
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: '["self-hosted", "linux", "x64", "ephemeral"]'
+          - arch: arm64
+            runner: '["self-hosted", "linux", "arm64", "ephemeral"]'
+    runs-on: ${{ fromJSON(matrix.runner) }}
     outputs:
       image-tag: ${{ env.IMAGE_TAG }}
     needs:
@@ -115,7 +123,7 @@ jobs:
           docker run -d \
             --name tron \
             --network tron-net \
-            --platform linux/amd64 \
+            --platform linux/${{ matrix.arch }} \
             -p 8090:8090 \
             -p 8555:8555 \
             -p 50051:50051 \
@@ -129,7 +137,7 @@ jobs:
           docker run -d \
             --name tron-peer \
             --network tron-net \
-            --platform linux/amd64 \
+            --platform linux/${{ matrix.arch }} \
             ghcr.io/${{ github.repository }}/tron-base:latest \
             -c /tron/config/config-peer.conf -d /tron/output-directory
 
@@ -224,8 +232,8 @@ jobs:
 
       - name: Commit and push TRON image
         run: |
-          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}
-          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}
+          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-${{ matrix.arch }}
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-${{ matrix.arch }}
 
       - name: Extract deployed contract addresses
         run: |
@@ -263,7 +271,7 @@ jobs:
       - name: Summary
         run: |
           CONTRACTS=$(jq . tron_contracts.json)
-          echo "## Deployed TRON Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployed TRON Contracts for \`${{ inputs.genesis_validators }}-node\` (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
           echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
@@ -273,12 +281,14 @@ jobs:
           echo "$DEPOSIT_BYTECODE" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-${{ matrix.arch }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Save agg key to file
         run: echo ${{ env.AGG_KEY }} > agg_key
 
+      # Artifacts only uploaded from amd64 leg — contract state is network-specific, not arch-specific.
       - name: Save artifacts
+        if: matrix.arch == 'amd64'
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
         with:
           name: ${{ env.IMAGE_TAG }}-tron
@@ -295,3 +305,25 @@ jobs:
           docker stop tron tron-peer || true
           docker rm tron tron-peer || true
           docker network rm tron-net || true
+
+  merge-tron-manifest:
+    needs:
+      - build-tron-state
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge arch-specific images into multi-arch manifest
+        run: |
+          docker buildx imagetools create -t \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }} \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64 \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64
