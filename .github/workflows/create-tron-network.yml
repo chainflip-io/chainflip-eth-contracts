@@ -77,29 +77,6 @@ jobs:
           # cache-from: type=gha
           # cache-to: type=gha,mode=max
 
-  compile-contracts:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-
-      - name: Setup Node
-        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
-        with:
-          node-version: "18"
-
-      - run: npm install --global yarn
-      - run: yarn
-
-      - name: Compile contracts
-        run: yarn tronbox compile
-
-      - name: Upload compiled artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: tron-compiled-contracts
-          path: build/
-
   build-tron-state:
     strategy:
       matrix:
@@ -113,7 +90,6 @@ jobs:
       image-tag: ${{ env.IMAGE_TAG }}
     needs:
       - build-tron-base
-      - compile-contracts
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -137,20 +113,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download compiled contracts
-        uses: actions/download-artifact@v4
-        with:
-          name: tron-compiled-contracts
-          path: build/
-
-      - name: Setup Node
-        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
-        with:
-          node-version: "18"
-
-      - run: npm install --global yarn
-      - run: yarn
-
       - name: Create Docker network
         run: docker network create tron-net
 
@@ -159,7 +121,7 @@ jobs:
           docker run -d \
             --name tron \
             --network tron-net \
-            --platform linux/${{ matrix.arch }} \
+            --platform linux/amd64 \
             -p 8090:8090 \
             -p 8555:8555 \
             -p 50051:50051 \
@@ -173,7 +135,7 @@ jobs:
           docker run -d \
             --name tron-peer \
             --network tron-net \
-            --platform linux/${{ matrix.arch }} \
+            --platform linux/amd64 \
             ghcr.io/${{ github.repository }}/tron-base:latest \
             -c /tron/config/config-peer.conf -d /tron/output-directory
 
@@ -232,6 +194,14 @@ jobs:
           echo "Blocks not advancing"
           docker logs tron
           exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
+        with:
+          node-version: "18"
+
+      - run: npm install --global yarn
+      - run: yarn
 
       - name: Deploy contracts
         run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
