@@ -37,7 +37,7 @@ env:
 
 jobs:
   build-tron-base:
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -82,7 +82,7 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-22.04
+            runner: [self-hosted, linux, x64, ephemeral]
           - arch: arm64
             runner: ubuntu-22.04-arm
     runs-on: ${{ matrix.runner }}
@@ -310,7 +310,7 @@ jobs:
   merge-tron-manifest:
     needs:
       - build-tron-state
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226
