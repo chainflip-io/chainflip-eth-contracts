@@ -265,6 +265,7 @@ jobs:
 
       - name: Deploy contracts without recompiling
         run: |
+          set -o pipefail
           yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
       - name: Wait for blocks after deployment to ensure state is flushed
