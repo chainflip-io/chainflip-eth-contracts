@@ -77,6 +77,29 @@ jobs:
           # cache-from: type=gha
           # cache-to: type=gha,mode=max
 
+  compile-contracts:
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup Node
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
+        with:
+          node-version: "18"
+
+      - run: npm install --global yarn
+      - run: yarn
+
+      - name: Compile contracts
+        run: yarn tronbox compile
+
+      - name: Upload compiled artifacts
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+        with:
+          name: tron-compiled-contracts
+          path: build/
+
   build-tron-state:
     strategy:
       matrix:
@@ -90,6 +113,7 @@ jobs:
       image-tag: ${{ env.IMAGE_TAG }}
     needs:
       - build-tron-base
+      - compile-contracts
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -112,6 +136,20 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download compiled contracts
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: tron-compiled-contracts
+          path: build/
+
+      - name: Setup Node
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
+        with:
+          node-version: "18"
+
+      - run: npm install --global yarn
+      - run: yarn
 
       - name: Create Docker network
         run: docker network create tron-net
@@ -194,14 +232,6 @@ jobs:
           echo "Blocks not advancing"
           docker logs tron
           exit 1
-
-      - name: Setup Node
-        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
-        with:
-          node-version: "18"
-
-      - run: npm install --global yarn
-      - run: yarn
 
       - name: Deploy contracts
         run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
