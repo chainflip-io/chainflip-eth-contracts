@@ -239,7 +239,27 @@ jobs:
           NOW=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
           for artifact in build/contracts/*.json; do
             tmp="${artifact}.tmp"
-            jq --arg now "$NOW" '.updatedAt = $now' "$artifact" > "$tmp"
+            jq \
+              --arg now "$NOW" \
+              --arg workspace "$GITHUB_WORKSPACE" \
+              '
+                .updatedAt = $now
+                | if (.sourcePath | type) == "string" then
+                    .sourcePath =
+                      if (.sourcePath | startswith("./")) then
+                        ($workspace + "/" + (.sourcePath | sub("^\\./"; "")))
+                      elif (.sourcePath | startswith("contracts/")) then
+                        ($workspace + "/" + .sourcePath)
+                      elif (.sourcePath | contains("/contracts/")) then
+                        ($workspace + "/" + (.sourcePath | sub("^.*?/contracts/"; "contracts/")))
+                      else
+                        .sourcePath
+                      end
+                  else
+                    .
+                  end
+              ' \
+              "$artifact" > "$tmp"
             mv "$tmp" "$artifact"
           done
 
