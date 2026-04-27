@@ -71,7 +71,7 @@ jobs:
         with:
           context: ci/docker/tron/
           push: true
-          platforms: linux/amd64,macos/arm64
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           # Disabling because of old buildx version, see: https://docs.docker.com/build/ci/github-actions/cache/#github-cache
           # cache-from: type=gha
@@ -84,7 +84,7 @@ jobs:
           - arch: amd64
             runner: '["self-hosted", "linux", "x64", "ephemeral"]'
           - arch: arm64
-            runner: '["self-hosted", "macos", "arm64", "ephemeral"]'
+            runner: '["self-hosted", "linux", "arm64", "ephemeral"]'
     runs-on: ${{ fromJSON(matrix.runner) }}
     outputs:
       image-tag: ${{ env.IMAGE_TAG }}
