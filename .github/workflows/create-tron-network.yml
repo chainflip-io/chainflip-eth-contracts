@@ -234,8 +234,18 @@ jobs:
           name: tron-build-contracts
           path: build/contracts
 
-      - name: Deploy contracts
-        run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
+      - name: Refresh artifact timestamps for TronBox
+        run: |
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          for artifact in build/contracts/*.json; do
+            tmp="${artifact}.tmp"
+            jq --arg now "$NOW" '.updatedAt = $now' "$artifact" > "$tmp"
+            mv "$tmp" "$artifact"
+          done
+
+      - name: Deploy contracts without recompiling
+        run: |
+          yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
       - name: Wait for blocks after deployment to ensure state is flushed
         run: |
