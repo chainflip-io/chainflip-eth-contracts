@@ -84,7 +84,7 @@ jobs:
           - arch: amd64
             runner: '["self-hosted", "linux", "x64", "ephemeral"]'
           - arch: arm64
-            runner: '["self-hosted", "linux", "arm64", "ephemeral"]'
+            runner: '["self-hosted", "macos", "arm64", "ephemeral"]'
     runs-on: ${{ fromJSON(matrix.runner) }}
     outputs:
       image-tag: ${{ env.IMAGE_TAG }}
