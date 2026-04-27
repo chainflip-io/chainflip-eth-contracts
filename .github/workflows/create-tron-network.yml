@@ -82,10 +82,10 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: '["self-hosted", "linux", "x64", "ephemeral"]'
+            runner: [self-hosted, linux, x64, ephemeral]
           - arch: arm64
-            runner: '["self-hosted", "linux", "arm64", "ephemeral"]'
-    runs-on: ${{ fromJSON(matrix.runner) }}
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
     outputs:
       image-tag: ${{ env.IMAGE_TAG }}
     needs:
