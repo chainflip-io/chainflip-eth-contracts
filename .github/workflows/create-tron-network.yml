@@ -77,17 +77,44 @@ jobs:
           # cache-from: type=gha
           # cache-to: type=gha,mode=max
 
+  compile-tron-contracts:
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup Node
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
+        with:
+          node-version: "18"
+
+      - run: npm install --global yarn
+      - run: yarn
+
+      - name: Compile contracts once on self-hosted runner
+        run: yarn tronbox compile --all
+
+      - name: Upload compiled contract artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tron-build-contracts
+          path: build/contracts
+          if-no-files-found: error
+
   build-tron-state:
     strategy:
       matrix:
         include:
           - arch: amd64
             runner: [self-hosted, linux, x64, ephemeral]
+          - arch: arm64
+            runner: ubuntu-22.04-arm
     runs-on: ${{ matrix.runner }}
     outputs:
       image-tag: ${{ env.IMAGE_TAG }}
     needs:
       - build-tron-base
+      - compile-tron-contracts
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -111,9 +138,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3
-
       - name: Create Docker network
         run: docker network create tron-net
 
@@ -122,7 +146,7 @@ jobs:
           docker run -d \
             --name tron \
             --network tron-net \
-            --platform linux/arm64 \
+            --platform linux/${{ matrix.arch }} \
             -p 8090:8090 \
             -p 8555:8555 \
             -p 50051:50051 \
@@ -136,7 +160,7 @@ jobs:
           docker run -d \
             --name tron-peer \
             --network tron-net \
-            --platform linux/arm64 \
+            --platform linux/${{ matrix.arch }} \
             ghcr.io/${{ github.repository }}/tron-base:latest \
             -c /tron/config/config-peer.conf -d /tron/output-directory
 
@@ -203,6 +227,12 @@ jobs:
 
       - run: npm install --global yarn
       - run: yarn
+
+      - name: Download compiled contract artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tron-build-contracts
+          path: build/contracts
 
       - name: Deploy contracts
         run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
