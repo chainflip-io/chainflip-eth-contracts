@@ -77,44 +77,10 @@ jobs:
           # cache-from: type=gha
           # cache-to: type=gha,mode=max
 
-  compile-tron-contracts:
+  deploy-tron-state:
     runs-on: [self-hosted, linux, x64, ephemeral]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-
-      - name: Setup Node
-        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
-        with:
-          node-version: "18"
-
-      - run: npm install --global yarn
-      - run: yarn
-
-      - name: Compile contracts once on self-hosted runner
-        run: yarn tronbox compile --all
-
-      - name: Upload compiled contract artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: tron-build-contracts
-          path: build/contracts
-          if-no-files-found: error
-
-  build-tron-state:
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            runner: [self-hosted, linux, x64, ephemeral]
-          - arch: arm64
-            runner: ubuntu-22.04-arm
-    runs-on: ${{ matrix.runner }}
-    outputs:
-      image-tag: ${{ env.IMAGE_TAG }}
     needs:
       - build-tron-base
-      - compile-tron-contracts
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -146,7 +112,7 @@ jobs:
           docker run -d \
             --name tron \
             --network tron-net \
-            --platform linux/${{ matrix.arch }} \
+            --platform linux/amd64 \
             -p 8090:8090 \
             -p 8555:8555 \
             -p 50051:50051 \
@@ -160,7 +126,7 @@ jobs:
           docker run -d \
             --name tron-peer \
             --network tron-net \
-            --platform linux/${{ matrix.arch }} \
+            --platform linux/amd64 \
             ghcr.io/${{ github.repository }}/tron-base:latest \
             -c /tron/config/config-peer.conf -d /tron/output-directory
 
@@ -228,42 +194,7 @@ jobs:
       - run: npm install --global yarn
       - run: yarn
 
-      - name: Download compiled contract artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: tron-build-contracts
-          path: build/contracts
-
-      - name: Refresh artifact timestamps for TronBox
-        run: |
-          NOW=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
-          for artifact in build/contracts/*.json; do
-            tmp="${artifact}.tmp"
-            jq \
-              --arg now "$NOW" \
-              --arg workspace "$GITHUB_WORKSPACE" \
-              '
-                .updatedAt = $now
-                | if (.sourcePath | type) == "string" then
-                    .sourcePath =
-                      if (.sourcePath | startswith("./")) then
-                        ($workspace + "/" + (.sourcePath | sub("^\\./"; "")))
-                      elif (.sourcePath | startswith("contracts/")) then
-                        ($workspace + "/" + .sourcePath)
-                      elif (.sourcePath | contains("/contracts/")) then
-                        ($workspace + "/" + (.sourcePath | sub("^.*?/contracts/"; "contracts/")))
-                      else
-                        .sourcePath
-                      end
-                  else
-                    .
-                  end
-              ' \
-              "$artifact" > "$tmp"
-            mv "$tmp" "$artifact"
-          done
-
-      - name: Deploy contracts without recompiling
+      - name: Deploy contracts
         run: |
           set -o pipefail
           yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
@@ -290,10 +221,10 @@ jobs:
           docker stop -t 30 tron
           docker stop -t 10 tron-peer
 
-      - name: Commit and push TRON image
+      - name: Commit and push TRON image (amd64)
         run: |
-          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-${{ matrix.arch }}
-          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-${{ matrix.arch }}
+          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64
 
       - name: Extract deployed contract addresses
         run: |
@@ -331,7 +262,7 @@ jobs:
       - name: Summary
         run: |
           CONTRACTS=$(jq . tron_contracts.json)
-          echo "## Deployed TRON Contracts for \`${{ inputs.genesis_validators }}-node\` (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployed TRON Contracts for \`${{ inputs.genesis_validators }}-node\`" >> $GITHUB_STEP_SUMMARY
           echo "\`agg_key\` = \`${{ env.AGG_KEY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           echo "$CONTRACTS" >> $GITHUB_STEP_SUMMARY
@@ -341,14 +272,12 @@ jobs:
           echo "$DEPOSIT_BYTECODE" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-${{ matrix.arch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Save agg key to file
         run: echo ${{ env.AGG_KEY }} > agg_key
 
-      # Artifacts only uploaded from amd64 leg — contract state is network-specific, not arch-specific.
       - name: Save artifacts
-        if: matrix.arch == 'amd64'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.IMAGE_TAG }}-tron
@@ -366,9 +295,52 @@ jobs:
           docker rm tron tron-peer || true
           docker network rm tron-net || true
 
+  build-arm64-state:
+    runs-on: ubuntu-22.04-arm
+    needs:
+      - build-tron-base
+      - deploy-tron-state
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract DB state from amd64 image
+        # Pull the committed amd64 image and copy out the RocksDB output-directory.
+        # RocksDB files are platform-agnostic so the same data can be read by the arm64 binary.
+        run: |
+          docker create --name tron-state-src \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64
+          docker cp tron-state-src:/tron/output-directory ./tron-output-directory
+          docker rm tron-state-src
+
+      - name: Inject DB state into arm64 image
+        run: |
+          docker create --name tron \
+            --platform linux/arm64 \
+            ghcr.io/${{ github.repository }}/tron-base:latest
+          docker cp ./tron-output-directory/. tron:/tron/output-directory
+          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64
+
+      - name: Summary
+        run: |
+          echo "## Docker Image (arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64\`" >> $GITHUB_STEP_SUMMARY
+          echo "DB state copied from amd64 image — contract addresses are identical to amd64." >> $GITHUB_STEP_SUMMARY
+
+      - name: Clean up Docker containers
+        if: always()
+        continue-on-error: true
+        run: |
+          docker rm tron tron-state-src || true
+
   merge-tron-manifest:
     needs:
-      - build-tron-state
+      - build-arm64-state
     runs-on: [self-hosted, linux, x64, ephemeral]
     steps:
       - name: Set up Docker Buildx
