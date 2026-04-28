@@ -316,14 +316,18 @@ jobs:
             ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64
           docker cp tron-state-src:/tron/output-directory ./tron-output-directory
           docker rm tron-state-src
+          echo "Extracted $(find ./tron-output-directory -type f | wc -l) files from amd64 image"
+          find ./tron-output-directory -type f | head -20
 
-      - name: Inject DB state into arm64 image
+      - name: Build arm64 image with injected DB state
+        # Use a Dockerfile COPY so the destination path is unambiguous.
         run: |
-          docker create --name tron \
-            --platform linux/arm64 \
-            ghcr.io/${{ github.repository }}/tron-base:latest
-          docker cp ./tron-output-directory/. tron:/tron/output-directory
-          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64
+          printf 'FROM ghcr.io/%s/tron-base:latest\nCOPY tron-output-directory /tron/output-directory\n' \
+            "${{ github.repository }}" > Dockerfile.arm64-state
+          docker build \
+            -f Dockerfile.arm64-state \
+            -t ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64 \
+            .
           docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64
 
       - name: Summary
@@ -332,11 +336,12 @@ jobs:
           echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64\`" >> $GITHUB_STEP_SUMMARY
           echo "DB state copied from amd64 image — contract addresses are identical to amd64." >> $GITHUB_STEP_SUMMARY
 
-      - name: Clean up Docker containers
+      - name: Clean up
         if: always()
         continue-on-error: true
         run: |
-          docker rm tron tron-state-src || true
+          docker rm tron-state-src || true
+          rm -f Dockerfile.arm64-state
 
   merge-tron-manifest:
     needs:
