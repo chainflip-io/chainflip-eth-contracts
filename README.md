@@ -163,4 +163,5 @@ with open('KeyManager_flat_clean.sol', 'w') as f:
     f.writelines(out)
 ```
 
-Uploaded KeyManager_flat_clean.sol to the Tron verifier — success.
+Maybe rename the obtained "KeyManager_flat_clean.sol" to something a bit nicer.
+Uploaded to the Tron verifier — success.
