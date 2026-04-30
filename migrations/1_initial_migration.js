@@ -34,9 +34,9 @@ module.exports = async function (deployer, network) {
   console.log("VaultContract deployed at address:", vault.address);
 
   // --- Deploy optional test contracts ---
-  // Deploying both CfTester and USDT to both localnet and nile for testing purposes.
-  // We might end up not using the USDT contract on Nile.
-  if (network === "localnet" || network === "nile") {
+  // Deploying both CfTester to both localnet and nile for testing purposes.
+  // USDT only deployed on localnet for testing, we use the real testnet USDT on Nile.
+  if (network === "localnet") {
     console.log("\n=== Deploying optional test contracts (localnet) ===");
 
     // 20M USDT with 6 decimals
@@ -44,7 +44,9 @@ module.exports = async function (deployer, network) {
     await deployer.deploy(MockUSDT, "Tether USD", "USDT", INIT_USD_SUPPLY);
     const usdt = await MockUSDT.deployed();
     console.log("MockUSDT deployed at address:", usdt.address);
+  }
 
+  if (network === "localnet" || network === "nile") {
     await deployer.deploy(CFTester, vault.address);
     const cfTester = await CFTester.deployed();
     console.log("CFTester deployed at address:", cfTester.address);
