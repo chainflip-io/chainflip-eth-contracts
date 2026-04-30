@@ -122,3 +122,45 @@ yarn tronbox migrate --f 1 --to 1 --reset --network localnet
 export PRIVATE_KEY_NILE=<Tron private key>
 yarn tronbox migrate --f 1 --to 1 --reset --network <nile/mainnet>
 ```
+
+### Verify in Tronscan
+
+https://developers.tron.network/docs/contract-verification
+https://developers.tron.network/reference/flattening-your-contracts
+https://support.tronscan.org/hc/en-us/articles/19500651417241-How-to-verify-contracts-with-subdirectory-structures
+https://tronscan.org/#/contracts/verify
+
+Identified the compiler version — checked tronbox.js: Solidity 0.8.20, optimizer enabled (800 runs), EVM istanbul, MIT License.
+
+Flattened the contract cleanly using --silent to suppress yarn's banner:
+
+```bash
+yarn --silent tronbox flatten contracts/KeyManager.sol > KeyManager_flat.sol
+```
+
+Identified duplicate SPDX/pragma lines — the flattened file had 6 copies of each, which the Tron verifier rejects.
+Deduplicated with a Python script, producing KeyManager_flat_clean.sol with exactly one SPDX-License-Identifier and one pragma solidity line. Python script:
+
+```python
+with open('KeyManager_flat.sol', 'r') as f:
+    lines = f.readlines()
+
+spdx_seen = False
+pragma_seen = False
+out = []
+for line in lines:
+    if 'SPDX-License-Identifier' in line:
+        if spdx_seen:
+            continue
+        spdx_seen = True
+    if line.startswith('pragma solidity'):
+        if pragma_seen:
+            continue
+        pragma_seen = True
+    out.append(line)
+
+with open('KeyManager_flat_clean.sol', 'w') as f:
+    f.writelines(out)
+```
+
+Uploaded KeyManager_flat_clean.sol to the Tron verifier — success.
