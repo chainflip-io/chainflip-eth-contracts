@@ -4,6 +4,12 @@ FROM tronprotocol/java-tron
 # as either witness node (default) or observer peer (by overriding CMD).
 COPY config.conf /tron/config/config.conf
 COPY config-peer.conf /tron/config/config-peer.conf
+# Place logback.xml in the java-tron working directory (/java-tron) so it is on the
+# classpath as a fallback, and also point to it explicitly via JAVA_TOOL_OPTIONS so the
+# JVM picks it up regardless of classpath ordering.
+# JAVA_TOOL_OPTIONS is read automatically by any JVM process, no entrypoint changes needed.
+COPY logback.xml /java-tron/logback.xml
+ENV JAVA_TOOL_OPTIONS="-Dlogback.configurationFile=/java-tron/logback.xml"
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=10 --start-period=30s \
     CMD curl -s -X POST -H "Content-Type: application/json" http://127.0.0.1:8090/wallet/getnowblock

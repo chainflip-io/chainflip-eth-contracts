@@ -71,22 +71,19 @@ jobs:
         with:
           context: ci/docker/tron/
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           # Disabling because of old buildx version, see: https://docs.docker.com/build/ci/github-actions/cache/#github-cache
           # cache-from: type=gha
           # cache-to: type=gha,mode=max
 
-  build-tron-state:
+  deploy-tron-state:
     runs-on: [self-hosted, linux, x64, ephemeral]
-    outputs:
-      image-tag: ${{ env.IMAGE_TAG }}
     needs:
       - build-tron-base
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-        with:
-          ref: ${{ inputs.tag }}
 
       - name: Checkout chainflip-backend @ ${{ env.CHAINFLIP_BACKEND_REF }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -198,7 +195,9 @@ jobs:
       - run: yarn
 
       - name: Deploy contracts
-        run: yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
+        run: |
+          set -o pipefail
+          yarn tronbox migrate --f 1 --to 1 --reset --network localnet 2>&1 | tee deploy_output.txt
 
       - name: Wait for blocks after deployment to ensure state is flushed
         run: |
@@ -222,10 +221,10 @@ jobs:
           docker stop -t 30 tron
           docker stop -t 10 tron-peer
 
-      - name: Commit and push TRON image
+      - name: Commit and push TRON image (amd64)
         run: |
-          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}
-          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}
+          docker commit tron ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64
 
       - name: Extract deployed contract addresses
         run: |
@@ -273,13 +272,13 @@ jobs:
           echo "$DEPOSIT_BYTECODE" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "## Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Save agg key to file
         run: echo ${{ env.AGG_KEY }} > agg_key
 
       - name: Save artifacts
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.IMAGE_TAG }}-tron
           path: |
@@ -295,3 +294,73 @@ jobs:
           docker stop tron tron-peer || true
           docker rm tron tron-peer || true
           docker network rm tron-net || true
+
+  build-arm64-state:
+    runs-on: ubuntu-22.04-arm
+    needs:
+      - build-tron-base
+      - deploy-tron-state
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract DB state from amd64 image
+        # Pull the committed amd64 image and copy out the RocksDB output-directory.
+        # RocksDB files are platform-agnostic so the same data can be read by the arm64 binary.
+        run: |
+          docker create --name tron-state-src \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64
+          docker cp tron-state-src:/tron/output-directory ./tron-output-directory
+          docker rm tron-state-src
+          echo "Extracted $(find ./tron-output-directory -type f | wc -l) files from amd64 image"
+          find ./tron-output-directory -type f | head -20
+
+      - name: Build arm64 image with injected DB state
+        # Use a Dockerfile COPY so the destination path is unambiguous.
+        run: |
+          printf 'FROM ghcr.io/%s/tron-base:latest\nCOPY tron-output-directory /tron/output-directory\n' \
+            "${{ github.repository }}" > Dockerfile.arm64-state
+          docker build \
+            -f Dockerfile.arm64-state \
+            -t ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64 \
+            .
+          docker push ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64
+
+      - name: Summary
+        run: |
+          echo "## Docker Image (arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "\`ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64\`" >> $GITHUB_STEP_SUMMARY
+          echo "DB state copied from amd64 image — contract addresses are identical to amd64." >> $GITHUB_STEP_SUMMARY
+
+      - name: Clean up
+        if: always()
+        continue-on-error: true
+        run: |
+          docker rm tron-state-src || true
+          rm -f Dockerfile.arm64-state
+
+  merge-tron-manifest:
+    needs:
+      - build-arm64-state
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge arch-specific images into multi-arch manifest
+        run: |
+          docker buildx imagetools create -t \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }} \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-amd64 \
+            ghcr.io/chainflip-io/chainflip-eth-contracts/tron:${{ env.IMAGE_TAG }}-arm64
