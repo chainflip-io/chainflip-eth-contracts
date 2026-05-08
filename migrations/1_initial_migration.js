@@ -20,7 +20,7 @@ module.exports = async function (deployer, network) {
   // Hardcoded dummy aggKey and zero commKey as this is how it will be initialized in live networks.
   await deployer.deploy(
     KeyManagerContract,
-    [1, 2], // dummy aggKey
+    [1, 0], // dummy aggKey
     deployerAccount,
     "0x0000000000000000000000000000000000000000" // commKey
   );
