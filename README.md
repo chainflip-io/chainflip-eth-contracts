@@ -159,9 +159,8 @@ for line in lines:
         pragma_seen = True
     out.append(line)
 
-with open('KeyManager_flat_clean.sol', 'w') as f:
+with open('KeyManager.sol', 'w') as f:
     f.writelines(out)
 ```
 
-Maybe rename the obtained "KeyManager_flat_clean.sol" to something a bit nicer.
-Uploaded to the Tron verifier — success.
+Uploaded the final file (e.g. KeyManager.sol) the Tron verifier — success.
