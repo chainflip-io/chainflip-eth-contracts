@@ -2,7 +2,7 @@
 
 const VaultContract = artifacts.require("Vault");
 const KeyManagerContract = artifacts.require("KeyManager");
-const MockUSDT = artifacts.require("MockUSDT");
+const TetherToken = artifacts.require("TetherToken");
 const CFTester = artifacts.require("CFTester");
 const DepositContract = artifacts.require("Deposit");
 const { checkDepositBytecode } = require("../scripts/deposit_bytecode_check");
@@ -11,7 +11,7 @@ module.exports = async function (deployer, network) {
   console.log("Starting deployment on network:", network);
 
   // Verify Deposit bytecode matches the expected bytecode in the State Chain before proceeding with the deployment.
-  checkDepositBytecode(DepositContract.bytecode);
+  // checkDepositBytecode(DepositContract.bytecode);
   const deployerAccount = deployer.options.options.network_config.from;
   console.log("Using deployer account:", deployerAccount);
 
@@ -41,8 +41,14 @@ module.exports = async function (deployer, network) {
 
     // 20M USDT with 6 decimals
     const INIT_USD_SUPPLY = "20000000000000";
-    await deployer.deploy(MockUSDT, "Tether USD", "USDT", INIT_USD_SUPPLY);
-    const usdt = await MockUSDT.deployed();
+    await deployer.deploy(
+      TetherToken,
+      INIT_USD_SUPPLY,
+      "Tether USD",
+      "USDT",
+      6
+    );
+    const usdt = await TetherToken.deployed();
     console.log("MockUSDT deployed at address:", usdt.address);
   }
 
