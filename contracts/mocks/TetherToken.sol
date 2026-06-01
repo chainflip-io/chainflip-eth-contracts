@@ -7,7 +7,7 @@
  * @dev The original contract has been modified for compatibility with modern Solidity:
  *      - Updated the Solidity pragma version from the original to ^0.8.0
  *      - Applied necessary changes to ensure successful compilation with the new compiler version
- *      - Notably, the transfer function returns false on failure, which differs from the ERC20
+ *      - Notably, the transfer function returns false on success, which differs from the ERC20
  *        standard and even the USDT implementation on Ethereum, making it unique.
  */
 
