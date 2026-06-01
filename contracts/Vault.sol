@@ -15,6 +15,9 @@ import "./GovernanceCommunityGuarded.sol";
  * @notice   The vault for holding and transferring native or ERC20 tokens and deploying contracts for
  *           fetching individual deposits. It also allows users to do cross-chain swaps and(or) calls by
  *           making a function call directly to this contract.
+ * @dev      OpenZeppelin's SafeERC20 library is not used in this contract due to compatibility issues
+ *           with the Tron USDT implementation that returns `false` on success, different from the ERC20
+ *           standard and faulty in a different way than the USDT implementation on Ethereum.
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
