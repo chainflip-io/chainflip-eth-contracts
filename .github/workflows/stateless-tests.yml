@@ -3,10 +3,12 @@ on:
   pull_request:
     branches:
       - master
+      - feat/tron
     types: [opened, synchronize]
   push:
     branches:
       - master
+      - feat/tron
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IVault.sol";
 import "../abstract/CFReceiver.sol";
 import "../abstract/Shared.sol";
@@ -12,8 +11,6 @@ import "../abstract/Shared.sol";
  */
 
 contract CFTester is CFReceiver, Shared {
-    using SafeERC20 for IERC20;
-
     uint256[] public iterations;
 
     // This will be testing energy but keeping the naming from other EVM chains.
@@ -78,7 +75,7 @@ contract CFTester is CFReceiver, Shared {
     }
 
     function transferToken(address to, IERC20 srcToken, uint256 amount) external payable {
-        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        srcToken.transferFrom(msg.sender, address(this), amount);
         srcToken.transfer(to, amount);
     }
 
@@ -99,9 +96,9 @@ contract CFTester is CFReceiver, Shared {
                 require(success, "CFTester: ETH transfer failed");
             }
         } else {
-            srcToken.safeTransferFrom(msg.sender, address(this), amount * numSwaps);
+            srcToken.transferFrom(msg.sender, address(this), amount * numSwaps);
             for (uint i = 0; i < numSwaps; i++) {
-                srcToken.safeTransfer(cfVault, amount);
+                srcToken.transfer(cfVault, amount);
             }
         }
     }
@@ -125,9 +122,9 @@ contract CFTester is CFReceiver, Shared {
                 require(success, "CFTester: ETH transfer failed");
             }
         } else {
-            srcToken.safeTransferFrom(msg.sender, address(this), amount * numSwaps);
+            srcToken.transferFrom(msg.sender, address(this), amount * numSwaps);
             for (uint i = 0; i < numSwaps; i++) {
-                srcToken.safeTransfer(cfVault, amount);
+                srcToken.transfer(cfVault, amount);
             }
         }
     }

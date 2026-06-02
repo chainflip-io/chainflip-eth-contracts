@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/ICFReceiver.sol";
@@ -16,10 +15,11 @@ import "./GovernanceCommunityGuarded.sol";
  * @notice   The vault for holding and transferring native or ERC20 tokens and deploying contracts for
  *           fetching individual deposits. It also allows users to do cross-chain swaps and(or) calls by
  *           making a function call directly to this contract.
+ * @dev      OpenZeppelin's SafeERC20 library is not used in this contract due to compatibility issues
+ *           with the Tron USDT implementation that returns `false` on success, different from the ERC20
+ *           standard and faulty in a different way than the USDT implementation on Ethereum.
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
-    using SafeERC20 for IERC20;
-
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
 
     TransferConfig public transferConfig = TransferConfig.ContractCheckWithFallbackEvent;
@@ -190,7 +190,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             (bool success, ) = transferParams.recipient.call{value: transferParams.amount}("");
             require(success, "Vault: transfer fallback failed");
         } else {
-            IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+            IERC20(transferParams.token).transfer(transferParams.recipient, transferParams.amount);
         }
     }
 
@@ -233,8 +233,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      *          a TransferNativeFailed event. The former triggers a fallback transfer in the State
      *          Chain. This configuration is set by the aggKey.
      * @dev     When transferring ERC20 tokens, if it fails ensure the transfer fails gracefully
-     *          to not revert an entire batch. e.g. usdc blacklisted recipient. Following safeTransfer
-     *          approach to support tokens that don't return a bool.
+     *          to not revert an entire batch. e.g. usdc blacklisted recipient.
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
@@ -259,9 +258,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(IERC20(token).transfer.selector, recipient, amount)
             );
 
-            // No need to check token.code.length since it comes from a gated call
-            bool transferred = success && (returndata.length == uint256(0) || abi.decode(returndata, (bool)));
-            if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
+            // No need to check token.code.length since it comes from a gated call.
+            if (!success) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }
 
@@ -379,7 +377,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
-        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        srcToken.transferFrom(msg.sender, address(this), amount);
         emit SwapToken(dstChain, dstAddress, dstToken, address(srcToken), amount, msg.sender, cfParameters);
     }
 
@@ -448,7 +446,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
-        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        srcToken.transferFrom(msg.sender, address(this), amount);
         emit XCallToken(
             dstChain,
             dstAddress,
@@ -489,7 +487,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         IERC20 token
     ) external override onlyNotSuspended nzUint(amount) {
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        token.transferFrom(msg.sender, address(this), amount);
         emit AddGasToken(swapID, amount, address(token));
     }
 
@@ -555,7 +553,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             if (transferParams.token == _NATIVE_ADDR) {
                 nativeAmount = transferParams.amount;
             } else {
-                IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+                IERC20(transferParams.token).transfer(transferParams.recipient, transferParams.amount);
             }
         }
 
