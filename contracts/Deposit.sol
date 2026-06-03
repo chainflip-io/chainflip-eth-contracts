@@ -13,40 +13,48 @@ import "./interfaces/IERC20Lite.sol";
  *           Do NOT modify unless the consequences of doing so are fully understood.
  */
 contract Deposit {
+    uint256 public constant MIN_TOKEN_BALANCE = 1;
     address payable private immutable vault;
 
     /**
-     * @notice  Upon deployment it fetches the tokens (native or ERC20) to the Vault.
+     * @notice  Upon deployment it fetches the assets (native or ERC20) to the Vault.
      * @param token  The address of the token to fetch
      */
     constructor(address token) {
         vault = payable(msg.sender);
-        // Slightly cheaper to use msg.sender instead of Vault.
-        if (token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = msg.sender.call{value: address(this).balance}("");
-            require(success);
-        } else {
-            // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
-            IERC20Lite(token).transfer(msg.sender, IERC20Lite(token).balanceOf(address(this)));
-        }
+        _fetchAsset(token);
     }
 
     /**
-     * @notice  Allows the Vault to fetch ERC20 tokens from this contract.
+     * @notice  Allows the Vault to fetch assets (native or ERC20) from this contract.
      * @param token  The address of the token to fetch
      */
     function fetch(address token) external {
         require(msg.sender == vault);
-        // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
-        IERC20Lite(token).transfer(msg.sender, IERC20Lite(token).balanceOf(address(this)));
+        _fetchAsset(token);
     }
 
-    /// @notice Receives native tokens, emits an event and sends them to the Vault. Note that this
-    // requires the sender to forward some more gas than for a simple transfer.
-    receive() external payable {
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = vault.call{value: address(this).balance}("");
-        require(success);
+    function _fetchAsset(address token) internal {
+        if (token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            uint256 balance = address(this).balance;
+            if (balance > 0) {
+                // solhint-disable-next-line avoid-low-level-calls
+                (bool success, ) = msg.sender.call{value: address(this).balance}("");
+                require(success);
+            }
+        } else {
+            // Always keep a minimum balance to avoid paying extra energy to initialize storage on every deposit.
+            uint256 tokenBalance = IERC20Lite(token).balanceOf(address(this));
+            if (tokenBalance > MIN_TOKEN_BALANCE) {
+                // IERC20Lite.transfer doesn't have a return bool to avoid reverts on non-standard ERC20s
+                IERC20Lite(token).transfer(msg.sender, tokenBalance - MIN_TOKEN_BALANCE);
+            }
+        }
     }
+
+    /// @dev For receiving native asset. Accepts clean transfers.
+    receive() external payable {}
+
+    /// @dev Accept TRX with calldata as we can ingress it too
+    fallback() external payable {}
 }

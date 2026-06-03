@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IVault.sol";
 import "../abstract/CFReceiver.sol";
 import "../abstract/Shared.sol";
@@ -9,19 +8,12 @@ import "../abstract/Shared.sol";
 /**
  * @title    CFTester
  * @dev      Contract used for testing Chainflip behaviour.
- *           The gas calculations are not totally accurate but it's good enough for testing.
  */
 
 contract CFTester is CFReceiver, Shared {
-    using SafeERC20 for IERC20;
-
     uint256[] public iterations;
 
-    // This will consume ~6.5M gas (iterations + overhead) for the whole tx
-    uint256 public defaultNumIterations = 300;
-    // This will consume ~21.5k per loop
-    uint256 public defaultStepIterations = 1;
-
+    // This will be testing energy but keeping the naming from other EVM chains.
     string public constant GAS_TEST = "GasTest";
     bytes public constant GAS_MESSAGE_ENCODED = bytes(GAS_TEST);
 
@@ -55,38 +47,26 @@ contract CFTester is CFReceiver, Shared {
     }
 
     function _tryGasTest(bytes calldata message) internal returns (uint256) {
-        try this.decodeGasTest(message) returns (bool gasTest, uint256 gasToUse) {
+        try this.decodeGasTest(message) returns (bool gasTest, uint256 sstores) {
             if (gasTest) {
-                return _gasTest(gasToUse);
+                return _gasTest(sstores);
             }
         } catch {}
         return 0;
     }
 
     function decodeGasTest(bytes calldata message) public pure returns (bool, uint256) {
-        (string memory stringMessage, uint256 gasToUse) = abi.decode(message, (string, uint256));
-        return (keccak256(bytes(stringMessage)) == keccak256(GAS_MESSAGE_ENCODED), gasToUse);
+        (string memory stringMessage, uint256 sstores) = abi.decode(message, (string, uint256));
+        return (keccak256(bytes(stringMessage)) == keccak256(GAS_MESSAGE_ENCODED), sstores);
     }
 
-    // This will consume an approximate amount of gas > gasToUse
-    function _gasTest(uint256 gasToUse) internal returns (uint256) {
-        uint256 initialGas = gasleft();
-        if (gasToUse == 0) {
-            // Use default gas
-            _consumeGas(defaultNumIterations);
-        } else {
-            while (initialGas - gasleft() < gasToUse) {
-                _consumeGas(defaultStepIterations);
-            }
-        }
-        return initialGas - gasleft();
-    }
-
-    // This consumes ~21.5k per iteration
-    function _consumeGas(uint256 numIterations) internal {
-        for (uint256 i = 0; i < numIterations; i++) {
+    // This will make a certain amount of sstores since we can't rely on gasleft() in TRON
+    function _gasTest(uint256 sstores) internal returns (uint256) {
+        for (uint256 i = 0; i < sstores; i++) {
             iterations.push(i);
         }
+        // Returning 1 instead of 0 to not confuse it with the scenario where the decodeGasTest fails
+        return 1;
     }
 
     function transferEth(address payable to) external payable {
@@ -95,10 +75,11 @@ contract CFTester is CFReceiver, Shared {
     }
 
     function transferToken(address to, IERC20 srcToken, uint256 amount) external payable {
-        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        srcToken.transferFrom(msg.sender, address(this), amount);
         srcToken.transfer(to, amount);
     }
 
+    // NOTE: Leaving the same interface to simplify the testing but all this info will be passed separately
     function multipleContractSwap(
         uint32 dstChain,
         bytes memory dstAddress,
@@ -111,17 +92,18 @@ contract CFTester is CFReceiver, Shared {
         if (srcToken == IERC20(_NATIVE_ADDR)) {
             require(msg.value == amount * numSwaps, "CFTester: Amount doesn't match value");
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xSwapNative{value: amount}(dstChain, dstAddress, dstToken, cfParameters);
+                (bool success, ) = cfVault.call{value: amount}("");
+                require(success, "CFTester: ETH transfer failed");
             }
         } else {
-            srcToken.safeTransferFrom(msg.sender, address(this), amount * numSwaps);
-            require(IERC20(srcToken).approve(cfVault, amount * numSwaps));
+            srcToken.transferFrom(msg.sender, address(this), amount * numSwaps);
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xSwapToken(dstChain, dstAddress, dstToken, srcToken, amount, cfParameters);
+                srcToken.transfer(cfVault, amount);
             }
         }
     }
 
+    // NOTE: Leaving the same interface to simplify the testing but all this info will be passed separately
     function multipleContractCall(
         uint32 dstChain,
         bytes memory dstAddress,
@@ -136,30 +118,19 @@ contract CFTester is CFReceiver, Shared {
         if (srcToken == IERC20(_NATIVE_ADDR)) {
             require(msg.value == amount * numSwaps, "CFTester: Amount doesn't match value");
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xCallNative{value: amount}(
-                    dstChain,
-                    dstAddress,
-                    dstToken,
-                    message,
-                    gasAmount,
-                    cfParameters
-                );
+                (bool success, ) = cfVault.call{value: amount}("");
+                require(success, "CFTester: ETH transfer failed");
             }
         } else {
-            srcToken.safeTransferFrom(msg.sender, address(this), amount * numSwaps);
-            require(IERC20(srcToken).approve(cfVault, amount * numSwaps));
+            srcToken.transferFrom(msg.sender, address(this), amount * numSwaps);
             for (uint i = 0; i < numSwaps; i++) {
-                IVault(cfVault).xCallToken(
-                    dstChain,
-                    dstAddress,
-                    dstToken,
-                    message,
-                    gasAmount,
-                    srcToken,
-                    amount,
-                    cfParameters
-                );
+                srcToken.transfer(cfVault, amount);
             }
         }
+    }
+
+    // Testing out a malicious receiver that consumes a lot of energy
+    receive() external payable {
+        _gasTest(300);
     }
 }

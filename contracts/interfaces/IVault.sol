@@ -15,6 +15,7 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
 
     event TransferNativeFailed(address payable indexed recipient, uint256 amount);
     event TransferTokenFailed(address payable indexed recipient, uint256 amount, address indexed token, bytes reason);
+    event TransferNativeSkipped(address payable indexed recipient, uint256 amount);
 
     event SwapNative(
         uint32 dstChain,
@@ -69,6 +70,15 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
         address indexed token,
         bytes reason
     );
+
+    event TransferConfigSet(TransferConfig oldTransferConfig, TransferConfig newTransferConfig);
+
+    // Allow for multiple configurations for future-proofing
+    enum TransferConfig {
+        ContractCheckWithFallbackEvent,
+        ContractCheckWithoutFallbackEvent,
+        SkipContractCheck
+    }
 
     function allBatch(
         SigData calldata sigData,
@@ -213,4 +223,6 @@ interface IVault is IGovernanceCommunityGuarded, IAggKeyNonceConsumer {
     //////////////////////////////////////////////////////////////
 
     function govWithdraw(address[] calldata tokens) external;
+
+    function setTransferConfig(SigData calldata sigData, TransferConfig newTransferConfig) external;
 }

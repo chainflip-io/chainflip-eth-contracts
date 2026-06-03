@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IKeyManager.sol";
 import "./interfaces/ICFReceiver.sol";
@@ -16,13 +15,14 @@ import "./GovernanceCommunityGuarded.sol";
  * @notice   The vault for holding and transferring native or ERC20 tokens and deploying contracts for
  *           fetching individual deposits. It also allows users to do cross-chain swaps and(or) calls by
  *           making a function call directly to this contract.
+ * @dev      OpenZeppelin's SafeERC20 library is not used in this contract due to compatibility issues
+ *           with the Tron USDT implementation that returns `false` on success, different from the ERC20
+ *           standard and faulty in a different way than the USDT implementation on Ethereum.
  */
 contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
-    using SafeERC20 for IERC20;
-
     uint256 private constant _AGG_KEY_EMERGENCY_TIMEOUT = 3 days;
-    uint256 private constant _GAS_TO_FORWARD = 8_000;
-    uint256 private constant _FINALIZE_GAS_BUFFER = 30_000;
+
+    TransferConfig public transferConfig = TransferConfig.ContractCheckWithFallbackEvent;
 
     constructor(IKeyManager keyManager) AggKeyNonceConsumer(keyManager) {}
 
@@ -190,7 +190,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             (bool success, ) = transferParams.recipient.call{value: transferParams.amount}("");
             require(success, "Vault: transfer fallback failed");
         } else {
-            IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+            IERC20(transferParams.token).transfer(transferParams.recipient, transferParams.amount);
         }
     }
 
@@ -228,22 +228,29 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
 
     /**
      * @notice  Transfers ETH or a token from this vault to a recipient
-     * @dev     When transfering native tokens, using call function limiting the amount of gas so
-     *          the receivers can't consume all the gas. Setting that amount of gas to more than
-     *          2300 to future-proof the contract in case of opcode gas costs changing.
+     * @dev     In TRON energy can't be set in a call (neither via transfer, send nor call). Therefore
+     *          a flag is used to determine if we allow transfers to contracts and if that should emit
+     *          a TransferNativeFailed event. The former triggers a fallback transfer in the State
+     *          Chain. This configuration is set by the aggKey.
      * @dev     When transferring ERC20 tokens, if it fails ensure the transfer fails gracefully
-     *          to not revert an entire batch. e.g. usdc blacklisted recipient. Following safeTransfer
-     *          approach to support tokens that don't return a bool.
+     *          to not revert an entire batch. e.g. usdc blacklisted recipient.
      * @param token The address of the token to be transferred
      * @param recipient The address of the recipient of the transfer
      * @param amount    The amount to transfer, in wei (uint)
      */
     function _transfer(address token, address payable recipient, uint256 amount) private {
         if (address(token) == _NATIVE_ADDR) {
-            // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = recipient.call{gas: _GAS_TO_FORWARD, value: amount}("");
-            if (!success) {
-                emit TransferNativeFailed(recipient, amount);
+            if (transferConfig != TransferConfig.SkipContractCheck && recipient.isContract) {
+                if (transferConfig == TransferConfig.ContractCheckWithFallbackEvent) {
+                    emit TransferNativeFailed(recipient, amount);
+                } else {
+                    emit TransferNativeSkipped(recipient, amount);
+                }
+            } else {
+                (bool success, ) = recipient.call{value: amount}("");
+                if (!success) {
+                    emit TransferNativeFailed(recipient, amount);
+                }
             }
         } else {
             // solhint-disable-next-line avoid-low-level-calls
@@ -251,9 +258,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
                 abi.encodeWithSelector(IERC20(token).transfer.selector, recipient, amount)
             );
 
-            // No need to check token.code.length since it comes from a gated call
-            bool transferred = success && (returndata.length == uint256(0) || abi.decode(returndata, (bool)));
-            if (!transferred) emit TransferTokenFailed(recipient, amount, token, returndata);
+            // No need to check token.code.length since it comes from a gated call.
+            if (!success) emit TransferTokenFailed(recipient, amount, token, returndata);
         }
     }
 
@@ -371,7 +377,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
-        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        srcToken.transferFrom(msg.sender, address(this), amount);
         emit SwapToken(dstChain, dstAddress, dstToken, address(srcToken), amount, msg.sender, cfParameters);
     }
 
@@ -440,7 +446,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         bytes calldata cfParameters
     ) external override onlyNotSuspended nzUint(amount) {
-        srcToken.safeTransferFrom(msg.sender, address(this), amount);
+        srcToken.transferFrom(msg.sender, address(this), amount);
         emit XCallToken(
             dstChain,
             dstAddress,
@@ -481,7 +487,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         uint256 amount,
         IERC20 token
     ) external override onlyNotSuspended nzUint(amount) {
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        token.transferFrom(msg.sender, address(this), amount);
         emit AddGasToken(swapID, amount, address(token));
     }
 
@@ -547,7 +553,7 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             if (transferParams.token == _NATIVE_ADDR) {
                 nativeAmount = transferParams.amount;
             } else {
-                IERC20(transferParams.token).safeTransfer(transferParams.recipient, transferParams.amount);
+                IERC20(transferParams.token).transfer(transferParams.recipient, transferParams.amount);
             }
         }
 
@@ -606,15 +612,13 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
      * @notice  Transfer funds and pass calldata to be executed on a Multicall contract.
      * @dev     For safety purposes it's preferred to execute calldata externally with
      *          a limited amount of funds instead of executing arbitrary calldata here.
-     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed. The 
-     *          gasMulticall parameters is needed to prevent an insufficient gas griefing attack. 
-     *          The _GAS_BUFFER is a conservative estimation of the gas required to finalize the call.
+     * @dev     Calls are not reverted upon Multicall.run() failure so the nonce gets consumed.
      * @param sigData         Struct containing the signature data over the message
      *                        to verify, signed by the aggregate key.
      * @param transferParams  The transfer parameters inluding the token and amount to be transferred
      *                        and the multicall contract address.
      * @param calls           Array of actions to be executed.
-     * @param gasMulticall    Gas that must be forwarded to the multicall.
+     * @param gasMulticall    Gas that must be forwarded to the multicall. Legacy from EVM.
 
      */
     function executeActions(
@@ -642,17 +646,10 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             }
         }
 
-        // Ensure that the amount of gas supplied to the call to the Multicall contract is at least the gas
-        // limit specified. We can do this by enforcing that we still have gasMulticall + gas buffer available.
-        // The gas buffer is to ensure there is enough gas to finalize the call, including a safety margin.
-        // The 63/64 rule specified in EIP-150 needs to be taken into account.
-        require(gasleft() >= ((gasMulticall + _FINALIZE_GAS_BUFFER) * 64) / 63, "Vault: insufficient gas");
-
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory reason) = transferParams.recipient.call{
-            gas: gasleft() - _FINALIZE_GAS_BUFFER,
-            value: valueToSend
-        }(abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount));
+        (bool success, bytes memory reason) = transferParams.recipient.call{value: valueToSend}(
+            abi.encodeWithSelector(IMulticall.run.selector, calls, transferParams.token, transferParams.amount)
+        );
 
         if (!success) {
             if (transferParams.amount > 0 && transferParams.token != _NATIVE_ADDR) {
@@ -693,6 +690,18 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
         }
     }
 
+    function setTransferConfig(
+        SigData calldata sigData,
+        TransferConfig newTransferConfig
+    )
+        external
+        override
+        consumesKeyNonce(sigData, keccak256(abi.encode(this.setTransferConfig.selector, newTransferConfig)))
+    {
+        emit TransferConfigSet(transferConfig, newTransferConfig);
+        transferConfig = newTransferConfig;
+    }
+
     //////////////////////////////////////////////////////////////
     //                                                          //
     //                          Modifiers                       //
@@ -714,8 +723,6 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
     //                                                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev For receiving native tokens from the Deposit contracts
-    receive() external payable {
-        emit FetchedNative(msg.sender, msg.value);
-    }
+    /// @dev For receiving native asset
+    receive() external payable {}
 }
