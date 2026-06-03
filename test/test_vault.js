@@ -1,5 +1,6 @@
 const VaultContract = artifacts.require("Vault");
 const KeyManagerContract = artifacts.require("KeyManager");
+const TetherToken = artifacts.require("TetherToken");
 
 const NATIVE_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
@@ -41,6 +42,7 @@ function hasEvent(info, eventSignature) {
 contract("Vault", (accounts) => {
   let vault;
   let keyManager;
+  let usdt;
 
   // TronBox only has one account (from the single privateKey in tronbox.js).
   // Use a hardcoded EOA address as the transfer recipient (TRON hex format).
@@ -53,6 +55,7 @@ contract("Vault", (accounts) => {
   before(async () => {
     vault = await VaultContract.deployed();
     keyManager = await KeyManagerContract.deployed();
+    usdt = await TetherToken.deployed();
   });
 
   it("setTransferConfig reverts with invalid signature", async () => {
@@ -200,6 +203,54 @@ contract("Vault", (accounts) => {
     assert.ok(
       hasEvent(info, "TransferNativeSkipped(address,uint256)"),
       "TransferNativeSkipped event should be emitted"
+    );
+  });
+
+  it("allBatch single USDT transfer emits TransferTokenFailed when vault has no USDT", async () => {
+    const sigData = [
+      "0x1", // sig (non-zero to pass input validation)
+      "0x6", // nonce (must be different from previous tests)
+      accounts[0], // kTimesGAddress
+    ];
+
+    const transferAmount = 1_000_000; // 1 USDT (6 decimals)
+    const transferParams = [[usdt.address, alice, transferAmount]];
+
+    const tx = await vault.allBatch(sigData, [], [], transferParams, {
+      from: accounts[0],
+    });
+    const info = await getTxInfo(tx);
+    assertSuccess(info, "allBatch");
+
+    assert.ok(
+      hasEvent(info, "TransferTokenFailed(address,uint256,address,bytes)"),
+      "TransferTokenFailed should be emitted when vault has no USDT"
+    );
+  });
+
+  it("allBatch single USDT transfer does not emit TransferTokenFailed when vault is funded", async () => {
+    const transferAmount = 1_000_000; // 1 USDT (6 decimals)
+
+    // Fund the vault with USDT from the deployer account (holds initial supply)
+    await usdt.transfer(vault.address, transferAmount, { from: accounts[0] });
+
+    const sigData = [
+      "0x1", // sig (non-zero to pass input validation)
+      "0x7", // nonce (must be different from previous tests)
+      accounts[0], // kTimesGAddress
+    ];
+
+    const transferParams = [[usdt.address, alice, transferAmount]];
+
+    const tx = await vault.allBatch(sigData, [], [], transferParams, {
+      from: accounts[0],
+    });
+    const info = await getTxInfo(tx);
+    assertSuccess(info, "allBatch");
+
+    assert.ok(
+      !hasEvent(info, "TransferTokenFailed(address,uint256,address,bytes)"),
+      "TransferTokenFailed should NOT be emitted when vault has sufficient USDT"
     );
   });
 });
