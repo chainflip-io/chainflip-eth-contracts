@@ -190,17 +190,11 @@ poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCr
 
 Brownie resolves OpenZeppelin imports via a remapping in its compiler module. By default this remapping uses the path `~/.brownie/packages/...`, which expands to your actual home directory rather than `/home/ubuntu`. You must patch it manually.
 
-Find the path of the active Poetry virtual environment:
-
-```bash
-poetry env list --full-path
-```
-
-Patch the `_get_solc_remappings` function in the Brownie compiler module to hardcode the `/home/ubuntu` path (substitute `<VENV_PATH>` with the path shown above):
+Patch the `_get_solc_remappings` function in the Brownie compiler module to hardcode the `/home/ubuntu` path:
 
 ```bash
 sed -i 's|.*return \[f.*remapped_dict.*|    return ["@openzeppelin=/home/ubuntu/.brownie/packages/OpenZeppelin/openzeppelin-contracts@4.8.3"]|' \
-  "<VENV_PATH>/lib/python3.8/site-packages/brownie/project/compiler/__init__.py"
+  "$(poetry env list --full-path | head -1)/lib/python3.8/site-packages/brownie/project/compiler/__init__.py"
 ```
 
 #### Providing the OpenZeppelin Package
