@@ -196,16 +196,11 @@ Find the path of the active Poetry virtual environment:
 poetry env list --full-path
 ```
 
-Open the Brownie compiler module (substitute `<POETRY_ENV_PATH>` with the suffix shown by the command above, e.g. `eth-contracts-aBcDeF12-py3.8`):
+Patch the `_get_solc_remappings` function in the Brownie compiler module to hardcode the `/home/ubuntu` path (substitute `<VENV_PATH>` with the path shown above):
 
 ```bash
-code /home/albert/.cache/pypoetry/virtualenvs/eth-contracts-<POETRY_ENV_PATH>-py3.8/lib/python3.8/site-packages/brownie/project/compiler/__init__.py
-```
-
-In the function `_get_solc_remappings`, change the `return` line to hardcode the `/home/ubuntu` path:
-
-```python
-return ['@openzeppelin=/home/ubuntu/.brownie/packages/OpenZeppelin/openzeppelin-contracts@4.8.3']
+sed -i 's|.*return \[f.*remapped_dict.*|    return ["@openzeppelin=/home/ubuntu/.brownie/packages/OpenZeppelin/openzeppelin-contracts@4.8.3"]|' \
+  "<VENV_PATH>/lib/python3.8/site-packages/brownie/project/compiler/__init__.py"
 ```
 
 #### Providing the OpenZeppelin Package
