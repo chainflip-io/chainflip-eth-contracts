@@ -148,6 +148,9 @@ jobs:
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
 
+      - name: Install solc
+        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+
       - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
 
@@ -308,6 +311,9 @@ jobs:
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
 
+      - name: Install solc
+        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+
       - name: Add the network
         run: poetry run brownie networks add Ethereum bsc-docker host=http://localhost:8545 chainid=343
 
@@ -423,6 +429,9 @@ jobs:
       - run: |
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
+
+      - name: Install solc
+        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
@@ -591,6 +600,9 @@ jobs:
       - run: |
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
+
+      - name: Install solc
+        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
