@@ -33,6 +33,7 @@ from deploy import (
     deploy_scUtils,
     deploy_wbtc_contract,
     deploy_bsc_usdt_contract,
+    deploy_cbbtc_contract,
 )
 from shared_tests import deposit_bytecode_test
 
@@ -216,6 +217,10 @@ def deploy_optional_contracts(cf, addressDump):
         cf.wbtc = deploy_wbtc_contract(deployer, Token)
         addressDump["WBTC_ADDRESS"] = cf.wbtc.address
 
+    if chain.id in [arb_localnet, eth_localnet, hardhat]:
+        cf.cbbtc = deploy_cbbtc_contract(deployer, Token)
+        addressDump["CBBTC_ADDRESS"] = cf.cbbtc.address
+
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
     print(f"  Chain: {chain_id}")
@@ -268,6 +273,9 @@ def display_deployed_contracts(cf):
 
     if hasattr(cf, "wbtc"):
         print(f"  WBTC: {cf.wbtc.address}")
+
+    if hasattr(cf, "cbbtc"):
+        print(f"  cbBTC: {cf.cbbtc.address}")
 
     print("\n😎😎 Deployment success! 😎😎\n")
 
