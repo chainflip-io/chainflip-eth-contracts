@@ -124,20 +124,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Python virtualenv
-        run: |
-          sudo apt-get install -y python3-venv
-          pip install virtualenv
-
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "18"
 
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
-        with:
-          version: "1.4.1"
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
@@ -147,12 +140,6 @@ jobs:
       - run: |
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
-
-      - name: Install solc
-        run: |
-          mkdir -p ~/.solcx
-          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
-          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
@@ -290,20 +277,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Python virtualenv
-        run: |
-          sudo apt-get install -y python3-venv
-          pip install virtualenv
-
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "18"
 
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
-        with:
-          version: "1.4.1"
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
@@ -313,12 +293,6 @@ jobs:
       - run: |
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
-
-      - name: Install solc
-        run: |
-          mkdir -p ~/.solcx
-          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
-          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum bsc-docker host=http://localhost:8545 chainid=343
@@ -412,20 +386,13 @@ jobs:
 
       # Spamming Arbitrum so the final state contains all the previous funding transactions
 
-      - name: Install Python virtualenv
-        run: |
-          sudo apt-get install -y python3-venv
-          pip install virtualenv
-
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "18"
 
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
-        with:
-          version: "1.4.1"
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
@@ -435,12 +402,6 @@ jobs:
       - run: |
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
-
-      - name: Install solc
-        run: |
-          mkdir -p ~/.solcx
-          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
-          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
@@ -586,20 +547,13 @@ jobs:
           docker compose up init -d
           docker compose up -d
 
-      - name: Install Python virtualenv
-        run: |
-          sudo apt-get install -y python3-venv
-          pip install virtualenv
-
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "18"
 
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
-        with:
-          version: "1.4.1"
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
 
       - run: npm install --global ganache-cli
       - run: npm install --global yarn
@@ -609,12 +563,6 @@ jobs:
       - run: |
           sed -i '/^package-mode = false$/d' pyproject.toml
           poetry install
-
-      - name: Install solc
-        run: |
-          mkdir -p ~/.solcx
-          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
-          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346

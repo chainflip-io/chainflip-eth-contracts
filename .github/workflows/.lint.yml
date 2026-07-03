@@ -13,15 +13,8 @@ jobs:
         with:
           node-version: "14"
 
-      - name: Install Python virtualenv
-        run: |
-          sudo apt-get install -y python3-venv
-          pip install virtualenv
-
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
-        with:
-          version: "1.4.1"
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
 
       - run: npm install
       - run: npx solhint -w 0 'contracts/**/*.sol'
