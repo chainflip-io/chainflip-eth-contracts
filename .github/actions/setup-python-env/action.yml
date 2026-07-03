@@ -1,0 +1,23 @@
+name: Setup Python environment
+description: Installs python3-venv, Poetry 1.4.1, and solc 0.8.20
+
+runs:
+  using: composite
+  steps:
+    - name: Install Python virtualenv
+      shell: bash
+      run: |
+        sudo apt-get install -y python3-venv
+        pip install virtualenv
+
+    - name: Install and configure Poetry
+      uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
+      with:
+        version: "1.4.1"
+
+    - name: Install solc
+      shell: bash
+      run: |
+        mkdir -p ~/.solcx
+        curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
+        chmod +x ~/.solcx/solc-v0.8.20

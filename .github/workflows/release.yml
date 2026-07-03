@@ -12,18 +12,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
-      - name: Install Python virtualenv
-        run: pip install virtualenv
-
       - name: Setup Node
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: "18"
 
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a
-        with:
-          version: "1.4.1"
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
 
       - name: Install zip
         run: |
