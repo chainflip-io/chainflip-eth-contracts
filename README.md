@@ -146,20 +146,6 @@ Current pre-commit hooks implemented:
 
 To perform a commit without running the pre-commits, add the --no-verify flag to the git commit command. (not recommended)
 
-### Generating Docs
-
-Inside a container shell (`make shell`, or a VS Code Dev Container terminal):
-
-```bash
-yarn docgen
-```
-
-## Notes
-
-Brownie and `solidity-docgen` don't play very nice with each other. For this reason we've installed the OpenZeppelin contracts through both the brownie package manager (because it doesn't like node_modules when compiling internally), and `yarn` (because `solc` doesn't search the `~/.brownie` folder for packages). Both are baked into the dev-container image.
-
-This isn't an ideal solution but it'll do for now.
-
 ## Deploy the contracts
 
 The deploying account will be allocated all the FLIP on a testnet (90M).
@@ -176,7 +162,7 @@ npx hardhat node --config hardhat-interval-mining.config.js
 # If brownie fails to connect to the hardhat node check ip and run with the adequate hostname address. For instance:
 npx hardhat node --hostname 127.0.0.1
 # deploy the contracts - they will be deployed by acct #1 on the hardhat pre-seeded accounts
-poetry run brownie run deploy_and
+poetry run brownie run deploy_contracts
 ```
 
 As a shortcut, `make deploy` runs the hardhat node + `deploy_and` for you, and `make deploy-eth` / `deploy-arb` / `deploy-bsc` reproduce the full production deployment (and canonical `CREATE2` addresses) against throwaway localnets with the right chainId.
@@ -215,5 +201,3 @@ Inside a container shell (`make shell`, or a VS Code Dev Container terminal):
 `poetry run brownie test --stateful false` runs all tests EXCEPT stateful tests
 
 `poetry run brownie test --stateful true` runs ONLY the stateful tests
-
-`poetry run brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events
