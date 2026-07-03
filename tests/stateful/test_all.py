@@ -113,7 +113,6 @@ def test_all(
                 "NotAPonziB",
                 "NAPB",
                 INIT_TOKEN_SUPPLY * 10,
-                DEFAULT_TOKEN_DECIMALS,
             )
             cls.tokensList = (NATIVE_ADDR, cls.tokenA, cls.tokenB)
 
