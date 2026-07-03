@@ -127,6 +127,81 @@ Brownie and `solidity-docgen` don't play very nice with each other. For this rea
 
 This isn't an ideal solution but it'll do for now.
 
+## Reproducible builds & deployments with Docker
+
+Brownie/solc embed a metadata hash at the end of every contract's bytecode. That
+hash includes solc's `settings.remappings`, and brownie resolves the OpenZeppelin
+remapping to an **absolute path under the brownie data folder** (`$HOME/.brownie`).
+So the value of `$HOME` — along with the toolchain/OS — flows into the bytecode and
+thus into the `CREATE2` deposit addresses. Compiling on a developer machine (e.g.
+Mac M4, or as a different user) therefore produces **different bytecode and deposit
+addresses** than x64 CI/production. The `.devcontainer/` image removes that variation
+by pinning:
+
+- **platform** `linux/amd64` (matches x64 CI/production; Docker Desktop emulates it on Apple Silicon),
+- the **repo path** to a fixed `/opt/chainflip-eth-contracts`,
+- **`HOME`** to `/home/ubuntu` — this must match the CI/production build host (the
+  self-hosted runners build as the `ubuntu` user), and is what makes the addresses
+  match mainnet. Verified via `make verify-bytecode`.
+- **solc 0.8.20**, **OpenZeppelin 4.8.3**, **eth-brownie 1.18.2** and the rest of the
+  toolchain from the committed lockfiles (`poetry.lock`, `yarn.lock`).
+
+Every developer therefore gets **byte-identical bytecode and identical contract
+addresses**, matching the canonical CI/production values.
+
+### Prerequisites
+
+- Docker Desktop. On Apple Silicon (M-series) enable **"Use Rosetta for x86/amd64
+  emulation"** (Settings → General) for reasonable `linux/amd64` build/compile speed.
+- Deploy secrets (only for live deploys): copy `.env.example` to `.env` and fill in
+  `SEED`, `AGG_KEY`, `GOV_KEY`, `COMM_KEY`, `WEB3_INFURA_PROJECT_ID`.
+
+### Usage
+
+```bash
+make build            # build the pinned linux/amd64 image
+make verify-bytecode  # determinism check: Deposit create2 addresses == canonical values
+make shell            # interactive shell inside the container
+make compile          # brownie compile (artifacts land in ./build)
+make test             # stateless test suite against an in-container hardhat node
+make deploy           # deploy to an in-container hardhat node (local demo)
+make deploy-eth       # deploy full suite to a throwaway eth localnet (chainId 10997)
+make deploy-arb       # deploy full suite to a throwaway arb localnet (chainId 412346)
+make deploy-bsc       # deploy full suite to a throwaway bsc localnet (chainId 343)
+make deploy-all       # deploy-eth + deploy-arb + deploy-bsc
+make deploy-summary   # print scripts/.artefacts/{eth,arb,bsc}.json
+make deploy-live NETWORK=goerli   # deploy to a live network (needs .env + RPC)
+make clean            # remove containers and named volumes
+```
+
+`make verify-bytecode` is the source of truth: it runs the same check as
+`.github/workflows/release.yml` and asserts the `Deposit` `CREATE2` addresses equal
+the canonical values hardcoded in `tests/shared_tests.py::deposit_bytecode_test`. If
+it passes, your local build matches production.
+
+`make deploy-eth` / `deploy-arb` / `deploy-bsc` mirror the deploy steps in
+`.github/workflows/create-geth-arb-network.yml`: each starts a throwaway in-container
+hardhat node with the matching chain id, runs the production `deploy_contracts` script,
+and prints the deployed contract addresses (also written to
+`scripts/.artefacts/<chain>.json`). Because they run in this image (canonical bytecode)
+from a fixed `SEED` on a fresh chain, the addresses are deterministic and match
+production. Override any deploy parameter via `.env` or on the command line, e.g.
+`make deploy-eth SEED="..." AGG_KEY="..." GOV_KEY="..."`.
+
+The working copy is bind-mounted into the container, so edit sources on the host as
+usual and re-run the `make` targets — no rebuild needed unless dependencies change.
+
+The environment lives in **`.devcontainer/`** (`Dockerfile`, `docker-compose.yml`,
+`devcontainer.json`). VS Code / Cursor users can instead run **"Dev Containers:
+Reopen in Container"** to work directly inside the same image. (This is distinct from
+the repo-root `docker-compose.yml`, which starts a geth + Arbitrum localnet to deploy
+*against*.)
+
+> If you previously compiled the contracts outside this image (e.g. a native
+> `brownie compile` on macOS), stale artifacts in `./build` reference the old paths
+> and can break the in-container project load. Run `make clean-build` once to remove
+> `./build`, then re-run.
+
 ## Deploy the contracts
 
 The deploying account will be allocated all the FLIP on a testnet (90M)

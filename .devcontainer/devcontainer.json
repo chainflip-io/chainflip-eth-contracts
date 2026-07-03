@@ -1,0 +1,19 @@
+{
+  "name": "chainflip-eth-contracts",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",
+  // Mount at the FIXED canonical path — required for deterministic bytecode/addresses.
+  "workspaceFolder": "/opt/chainflip-eth-contracts",
+  // Let VS Code keep the container alive with its own command (our service's default
+  // `command: bash` would exit under `compose up`).
+  "overrideCommand": true,
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "NomicFoundation.hardhat-solidity",
+        "tintinweb.solidity-visual-auditor"
+      ]
+    }
+  }
+}

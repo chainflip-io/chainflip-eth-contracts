@@ -1,0 +1,16 @@
+# Keep the build context small and reproducible. The image only COPYs the
+# dependency manifests; everything else arrives at runtime via the bind-mount.
+.git
+build/
+node_modules/
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.*
+reports/
+.pytest_cache/
+.hypothesis/
+abis.zip
+*.log
