@@ -48,7 +48,7 @@ DEPLOY_ENV := \
 # $(1)=brownie network id  $(2)=chainId  $(3)=artefact id
 define deploy_chain
 	$(COMPOSE) run --rm $(DEPLOY_ENV) -e DEPLOY_ARTEFACT_ID=$(3) -e HH_CHAIN_ID=$(2) dev bash -c '\
-		npx hardhat node --config hardhat-localnet.config.js >/tmp/hardhat.log 2>&1 & \
+		npx hardhat node --config hardhat.config.js >/tmp/hardhat.log 2>&1 & \
 		until curl -s http://127.0.0.1:8545 >/dev/null; do sleep 1; done; \
 		brownie networks delete $(1) 2>/dev/null || true; \
 		brownie networks add Ethereum $(1) host=http://127.0.0.1:8545 chainid=$(2); \
