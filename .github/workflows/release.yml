@@ -42,7 +42,10 @@ jobs:
           poetry install
 
       - name: Install solc
-        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+        run: |
+          mkdir -p ~/.solcx
+          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
+          chmod +x ~/.solcx/solc-v0.8.20
 
       # Ensure that the Deposit's bytecode hasn't changed
       - run: poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat

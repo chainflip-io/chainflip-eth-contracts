@@ -149,7 +149,10 @@ jobs:
           poetry install
 
       - name: Install solc
-        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+        run: |
+          mkdir -p ~/.solcx
+          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
+          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum docker host=http://localhost:8545 chainid=10997
@@ -312,7 +315,10 @@ jobs:
           poetry install
 
       - name: Install solc
-        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+        run: |
+          mkdir -p ~/.solcx
+          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
+          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum bsc-docker host=http://localhost:8545 chainid=343
@@ -431,7 +437,10 @@ jobs:
           poetry install
 
       - name: Install solc
-        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+        run: |
+          mkdir -p ~/.solcx
+          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
+          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346
@@ -602,7 +611,10 @@ jobs:
           poetry install
 
       - name: Install solc
-        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+        run: |
+          mkdir -p ~/.solcx
+          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
+          chmod +x ~/.solcx/solc-v0.8.20
 
       - name: Add the network
         run: poetry run brownie networks add Ethereum arb-l2 host=http://localhost:8547 chainid=412346

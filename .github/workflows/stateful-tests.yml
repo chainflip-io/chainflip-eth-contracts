@@ -54,7 +54,10 @@ jobs:
           poetry install
 
       - name: Install solc
-        run: poetry run python -c "from solcx import install_solc; install_solc('v0.8.20')"
+        run: |
+          mkdir -p ~/.solcx
+          curl -fL https://github.com/ethereum/solidity/releases/download/v0.8.20/solc-static-linux -o ~/.solcx/solc-v0.8.20
+          chmod +x ~/.solcx/solc-v0.8.20
 
       # Spinning hardhat node externally because there's some intermittent nasty bug when the node is shut down at
       # the end of some stateful test causing the tests to fail - it is confusingly logged as a Flaky inconsistent
