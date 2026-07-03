@@ -113,20 +113,6 @@ Current pre-commit hooks implemented:
 
 To perform a commit without running the pre-commits, add the --no-verify flag to the git commit command. (not recommended)
 
-### Generating Docs
-
-Requires [Yarn](https://yarnpkg.com).
-
-```bash
-yarn docgen
-```
-
-## Notes
-
-Brownie and `solidity-docgen` don't play very nice with each other. For this reason we've installed the OpenZeppelin contracts through both the brownie package manager (because it doesn't like node_modules when compiling internally), and `yarn` (because `solc` doesn't search the `~/.brownie` folder for packages).
-
-This isn't an ideal solution but it'll do for now.
-
 ## Deploy the contracts
 
 The deploying account will be allocated all the FLIP on a testnet (90M)
@@ -143,7 +129,7 @@ npx hardhat node --config hardhat-interval-mining.config.js
 # If brownie fails to connect to the hardhat node check ip and run with the adequate hostname address. For instance:
 npx hardhat node --hostname 127.0.0.1
 # deploy the contracts - they will be deployed by acct #1 on the hardhat pre-seeded accounts
-poetry run brownie run deploy_and
+poetry run brownie run deploy_contracts
 ```
 
 ### Live Test network
@@ -167,6 +153,73 @@ export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you
 poetry run brownie run deploy_contracts --network goerli
 ```
 
+### Bytecode
+
+#### CBOR Metadata Hash and Absolute Paths
+
+Solidity appends a CBOR-encoded blob to the end of every compiled contract's bytecode. This blob contains a hash of the compiler metadata, which includes source file paths. Brownie records **absolute paths** to source files in that metadata. This means the CBOR hash and therefore the deployed bytecode changes. The bytecode of the Deposit contract that is embedded into the Vault contract is used in address derivation in the State Chain, which means this directly impact deposit channel address generation.
+
+To reproduce and/or deploy byte-for-byte identical bytecode to what CI compiles and what is deployed on live networks, the project must be compiled from `/home/ubuntu/`. Follow the steps below on a Linux machine.
+
+#### Reproducing CI/Mainnet Bytecode
+
+```bash
+# 1. Create the expected directory and take ownership
+sudo mkdir /home/ubuntu && sudo chown -R $USER:$USER /home/ubuntu
+
+# 2. Clone the repo directly into /home/ubuntu
+cd /home/ubuntu
+git clone git@github.com:chainflip-io/chainflip-eth-contracts.git
+mv chainflip-eth-contracts/* .
+mv chainflip-eth-contracts/.[!.]* . 2>/dev/null || true
+rm -rf chainflip-eth-contracts/
+
+# 3. Install dependencies
+yarn
+poetry shell
+poetry install
+```
+
+Verify compilation is reproducible by running a test that checks bytecode (it should fail at this point because the OpenZeppelin remapping still points to the wrong path):
+
+```bash
+poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat
+```
+
+#### Fixing the OpenZeppelin Remapping
+
+Brownie resolves OpenZeppelin imports via a remapping in its compiler module. By default this remapping uses the path `~/.brownie/packages/...`, which expands to your actual home directory rather than `/home/ubuntu`. You must patch it manually.
+
+Patch the `_get_solc_remappings` function in the Brownie compiler module to hardcode the `/home/ubuntu` path:
+
+```bash
+sed -i 's|.*return \[f.*remapped_dict.*|    return ["@openzeppelin=/home/ubuntu/.brownie/packages/OpenZeppelin/openzeppelin-contracts@4.8.3"]|' \
+  "$(poetry env list --full-path | head -1)/lib/python3.8/site-packages/brownie/project/compiler/__init__.py"
+```
+
+#### Providing the OpenZeppelin Package
+
+Rather than downloading the package via Brownie's package manager (which would place it under your real home), copy it directly from `node_modules`:
+
+```bash
+mkdir -p /home/ubuntu/.brownie/packages/OpenZeppelin/openzeppelin-contracts@4.8.3
+cp -r node_modules/@openzeppelin/contracts /home/ubuntu/.brownie/packages/OpenZeppelin/openzeppelin-contracts@4.8.3/
+```
+
+#### Recompile and Verify
+
+```bash
+rm -rf build
+poetry run brownie compile
+poetry run brownie test tests/unit/vault/test_deployAndFetchBatch.py::test_getCreate2Addr --network hardhat
+```
+
+The test should now pass, and the compiled bytecode will match what CI and mainnet produced.
+
+> **Note:** Stripping the CBOR suffix from the bytecode would make compilation environment-independent, but Etherscan and other block explorers rely on it to verify and display contract source code. For this reason we keep it and control the compilation path instead.
+
+> **Note:** An alternative is to pull the `build/` artifacts from CI and deploy without recompiling (either by pre-populating `build/` and getting Brownie to not recompile, or by manually crafting deployment transactions with the known bytecode). However, both of those options are prone to human error.
+
 ## Useful commands
 
 `poetry run brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
@@ -174,5 +227,3 @@ poetry run brownie run deploy_contracts --network goerli
 `poetry run brownie test --stateful false` runs all tests EXCEPT stateful tests
 
 `poetry run brownie test --stateful true` runs ONLY the stateful tests
-
-`poetry run brownie run deploy_and all_events` will deploy the contracts and submit transactions which should emit the full suite of events
