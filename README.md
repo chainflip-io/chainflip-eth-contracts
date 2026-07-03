@@ -8,47 +8,80 @@ Chainflip is a cross-chain decentralised exchange, coordinated through its own b
 
 The State Chain Gatway contract holds the FLIP funds that are being used to stake to the State Chain. The Vault contract holds the funds used for the exchange functionality of the protocol. The State Chain nodes have control over the funds held in these contracts via a threshold signature scheme. The KeyManager is the contract storing all the necessary keys and performing signature verification.
 
-## Dependencies
+## Reproducible builds with the dev container
 
-- Python >3.7, <3.10
-  For Ubuntu `sudo apt-get install python3 python-dev python3-dev build-essential`
-- [Poetry (Python dependency manager)](https://python-poetry.org/docs/) v2.2.1
+Contract bytecode is **not** environment-independent. `solc` embeds a CBOR metadata hash at the end of every contract's bytecode, and that hash includes the compiler's `settings.remappings`. Brownie resolves the OpenZeppelin remapping to an **absolute** path under `$HOME/.brownie`, so the value of `$HOME` — along with the CPU architecture, the `solc`/OpenZeppelin/brownie versions, and the path the repo lives at — leaks into every contract's bytecode and therefore into the deterministic `CREATE2` deposit addresses. A native build on a Mac (arm64, `$HOME=/Users/you`) will produce different bytecode than an x64 CI/production build, which breaks address parity.
 
-In case of python version dependency issues it might be useful to use a virtual environment such as pyenv. For example:
+To make builds **byte-identical on every machine** (including Apple Silicon) and match x64 CI/production, this repo ships a pinned dev container under [`.devcontainer/`](.devcontainer/). It neutralises all per-machine variation by fixing:
 
-```bash
-pyenv install 3.8.10
-poetry env use ~/.pyenv/versions/3.8.10/bin/python
-poetry install
-```
+- **platform** → `linux/amd64` (emulated on Apple Silicon via Docker Desktop),
+- **`$HOME`** → `/home/ubuntu` (matches the CI/production build host),
+- **repo path** → `/opt/chainflip-eth-contracts` (fixed canonical mount point),
+- **toolchain** → `solc` 0.8.20, OpenZeppelin 4.8.3, `eth-brownie` 1.18.2, Poetry 2.2.1, Node 18 (all pinned via lockfiles).
+
+A CI job ([`verify-bytecode-parity.yml`](.github/workflows/verify-bytecode-parity.yml)) compiles the contracts both natively and inside this container and diffs every contract's bytecode to prove they are identical.
+
+There are two ways to work inside the container:
+
+- **`make shell`** — opens an interactive shell inside the container with the full toolchain (`brownie`, `slither`, `yarn`, …) on `PATH`. Every command snippet in this README is meant to be run here.
+- **VS Code Dev Containers** — open the repo and choose "Reopen in Container" (see [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json)) to get the same shell in a VS Code terminal.
+
+The `make` targets below are convenience wrappers that run individual commands inside the container for you (build, test, deploy) without opening a shell.
+
+### Requirements
+
+The only host dependencies are:
+
+- [Docker](https://docs.docker.com/get-docker/) + Docker Compose (Docker Desktop on Mac/Windows includes both),
+- `make`.
+
+Everything else (Python 3.9, Poetry, Node/yarn, `solc`, brownie packages, OpenZeppelin) is baked into the image.
+
+## Make commands
+
+All targets run inside the pinned dev container. Run `make build` once first to build the image.
+
+| Command | Description |
+| --- | --- |
+| `make build` | Build the pinned `linux/amd64` dev-container image. |
+| `make shell` | Open an interactive shell inside the container (for ad-hoc `brownie`, `slither`, `yarn`, etc.). |
+| `make compile` | `brownie compile`. |
+| `make test` | Run the stateless test suite (`brownie test --network hardhat --stateful false`) against an in-container hardhat node. |
+| `make verify-bytecode` | **Primary determinism check.** Asserts the `Deposit` `CREATE2` addresses equal the canonical values in `tests/shared_tests.py`. Mirrors the release CI. |
+| `make deploy` | Deploy to an in-container hardhat node (local demo). |
+| `make deploy-eth` | Deploy the full suite to a throwaway eth localnet (chainId 10997). |
+| `make deploy-arb` | Deploy the full suite to a throwaway arb localnet (chainId 412346). |
+| `make deploy-bsc` | Deploy the full suite to a throwaway bsc localnet (chainId 343). |
+| `make deploy-all` | `deploy-eth` + `deploy-arb` + `deploy-bsc`. |
+| `make deploy-summary` | Print the deployed addresses from `scripts/.artefacts/{eth,arb,bsc}.json`. |
+| `make deploy-live NETWORK=goerli` | Deploy to a live network (needs `.env` + RPC endpoint). |
+| `make clean-build` | Remove `./build` (run once if you previously compiled outside the container, e.g. a native macOS brownie run). |
+| `make clean` | Remove the containers and named volumes. |
+
+The `deploy-{eth,arb,bsc}` targets each spin up a throwaway in-container hardhat node with the matching chainId, run the production `deploy_contracts` script, and print the deployed addresses. Same `SEED` + a fresh chain + canonical bytecode ⇒ the production addresses. Deploy variables (`SEED`, `AGG_KEY`, `GOV_KEY`, `COMM_KEY`, `GENESIS_STAKE`, `NUM_GENESIS_VALIDATORS`, …) default to the test values in the `Makefile` and can be overridden via `.env` or on the command line, e.g. `make deploy-eth AGG_KEY=... SEED=...`.
 
 ## Setup
-
-First, ensure you have [Poetry](https://python-poetry.org), [Yarn](https://yarnpkg.com) and Ganache (`npm install -g ganache-cli`) are installed.
 
 ```bash
 git clone git@github.com:chainflip-io/chainflip-eth-contracts.git
 cd chainflip-eth-contracts
-yarn
-poetry shell
-poetry install
-poetry run brownie pm install OpenZeppelin/openzeppelin-contracts@4.8.3
-# optional
-pre-commit install
+make build
 ```
 
-Then, set the appropriate environment variables. See `.env.example` as an example. To deploy on a live network a SEED and an RPC endpoint is needed.
+Then, set the appropriate environment variables. See `.env.example` as an example — the container reads `.env` automatically. To deploy on a live network a SEED and an RPC endpoint is needed.
 
 ### Running Tests
 
 We use the `hardhat` EVM for testing.
+
+Launch a container shell with `make shell` (or open a terminal inside the VS Code Dev Container), then run:
 
 ```bash
 # Run without the stateful tests, because they take hours
 poetry run brownie test --network hardhat --stateful false
 ```
 
-Run tests with additional features:
+Run tests with additional features. Inside the same container shell:
 
 ```bash
 poetry run brownie test <test-name> -s --network hardhat --stateful <bool> --coverage --gas --hypothesis-seed <seed_number>
@@ -63,11 +96,13 @@ Flags:
 - `--coverage` - generates and updates the test coverage report under reports/coverage.json
 - `--hypothesis-seed <seed_number>` - Inputs a seed (int) to the hypothesis strategies. Useful to deterministically reproduce tests failures and for accurate gas comparisons when doing gas optimizations.
 
+> Note: brownie needs a hardhat node. Inside the container shell start one first with `npx hardhat node &`. (The `make test` wrapper does this for you.)
+
 ### Static Analysis
 
-Slither is used for static analysis. In the event of the command below failing, try removing the `build/` directory and run it again.
+Slither is used for static analysis. In the event of the command below failing, try removing the `build/` directory (`make clean-build`) and run it again.
 
-Inside the poetry shell:
+Inside a container shell (`make shell`, or a VS Code Dev Container terminal):
 
 ```bash
 slither .
@@ -77,7 +112,7 @@ slither .
 
 We use solhint and prettier for the solidity code and black for the python code. A general check is performed also in CI.
 
-To run the lint check or to format the code, run the following inside the poetry shell:
+Inside a container shell (`make shell`, or a VS Code Dev Container terminal), run the following to lint the check or to format the code:
 
 ```bash
 poetry run yarn lint
@@ -105,8 +140,6 @@ Then Echidna can be run as normal. Echidna is not capable of reading the inherit
 
 ### Pre-commit hook
 
-Pre-commit is part of the poetry virtual environment. Therefore, ensure that poetry is installed when commiting.
-
 Current pre-commit hooks implemented:
 
 - lint
@@ -115,7 +148,7 @@ To perform a commit without running the pre-commits, add the --no-verify flag to
 
 ### Generating Docs
 
-Requires [Yarn](https://yarnpkg.com).
+Inside a container shell (`make shell`, or a VS Code Dev Container terminal):
 
 ```bash
 yarn docgen
@@ -123,92 +156,17 @@ yarn docgen
 
 ## Notes
 
-Brownie and `solidity-docgen` don't play very nice with each other. For this reason we've installed the OpenZeppelin contracts through both the brownie package manager (because it doesn't like node_modules when compiling internally), and `yarn` (because `solc` doesn't search the `~/.brownie` folder for packages).
+Brownie and `solidity-docgen` don't play very nice with each other. For this reason we've installed the OpenZeppelin contracts through both the brownie package manager (because it doesn't like node_modules when compiling internally), and `yarn` (because `solc` doesn't search the `~/.brownie` folder for packages). Both are baked into the dev-container image.
 
 This isn't an ideal solution but it'll do for now.
 
-## Reproducible builds & deployments with Docker
-
-Brownie/solc embed a metadata hash at the end of every contract's bytecode. That
-hash includes solc's `settings.remappings`, and brownie resolves the OpenZeppelin
-remapping to an **absolute path under the brownie data folder** (`$HOME/.brownie`).
-So the value of `$HOME` — along with the toolchain/OS — flows into the bytecode and
-thus into the `CREATE2` deposit addresses. Compiling on a developer machine (e.g.
-Mac M4, or as a different user) therefore produces **different bytecode and deposit
-addresses** than x64 CI/production. The `.devcontainer/` image removes that variation
-by pinning:
-
-- **platform** `linux/amd64` (matches x64 CI/production; Docker Desktop emulates it on Apple Silicon),
-- the **repo path** to a fixed `/opt/chainflip-eth-contracts`,
-- **`HOME`** to `/home/ubuntu` — this must match the CI/production build host (the
-  self-hosted runners build as the `ubuntu` user), and is what makes the addresses
-  match mainnet. Verified via `make verify-bytecode`.
-- **solc 0.8.20**, **OpenZeppelin 4.8.3**, **eth-brownie 1.18.2** and the rest of the
-  toolchain from the committed lockfiles (`poetry.lock`, `yarn.lock`).
-
-Every developer therefore gets **byte-identical bytecode and identical contract
-addresses**, matching the canonical CI/production values.
-
-### Prerequisites
-
-- Docker Desktop. On Apple Silicon (M-series) enable **"Use Rosetta for x86/amd64
-  emulation"** (Settings → General) for reasonable `linux/amd64` build/compile speed.
-- Deploy secrets (only for live deploys): copy `.env.example` to `.env` and fill in
-  `SEED`, `AGG_KEY`, `GOV_KEY`, `COMM_KEY`, `WEB3_INFURA_PROJECT_ID`.
-
-### Usage
-
-```bash
-make build            # build the pinned linux/amd64 image
-make verify-bytecode  # determinism check: Deposit create2 addresses == canonical values
-make shell            # interactive shell inside the container
-make compile          # brownie compile (artifacts land in ./build)
-make test             # stateless test suite against an in-container hardhat node
-make deploy           # deploy to an in-container hardhat node (local demo)
-make deploy-eth       # deploy full suite to a throwaway eth localnet (chainId 10997)
-make deploy-arb       # deploy full suite to a throwaway arb localnet (chainId 412346)
-make deploy-bsc       # deploy full suite to a throwaway bsc localnet (chainId 343)
-make deploy-all       # deploy-eth + deploy-arb + deploy-bsc
-make deploy-summary   # print scripts/.artefacts/{eth,arb,bsc}.json
-make deploy-live NETWORK=goerli   # deploy to a live network (needs .env + RPC)
-make clean            # remove containers and named volumes
-```
-
-`make verify-bytecode` is the source of truth: it runs the same check as
-`.github/workflows/release.yml` and asserts the `Deposit` `CREATE2` addresses equal
-the canonical values hardcoded in `tests/shared_tests.py::deposit_bytecode_test`. If
-it passes, your local build matches production.
-
-`make deploy-eth` / `deploy-arb` / `deploy-bsc` mirror the deploy steps in
-`.github/workflows/create-geth-arb-network.yml`: each starts a throwaway in-container
-hardhat node with the matching chain id, runs the production `deploy_contracts` script,
-and prints the deployed contract addresses (also written to
-`scripts/.artefacts/<chain>.json`). Because they run in this image (canonical bytecode)
-from a fixed `SEED` on a fresh chain, the addresses are deterministic and match
-production. Override any deploy parameter via `.env` or on the command line, e.g.
-`make deploy-eth SEED="..." AGG_KEY="..." GOV_KEY="..."`.
-
-The working copy is bind-mounted into the container, so edit sources on the host as
-usual and re-run the `make` targets — no rebuild needed unless dependencies change.
-
-The environment lives in **`.devcontainer/`** (`Dockerfile`, `docker-compose.yml`,
-`devcontainer.json`). VS Code / Cursor users can instead run **"Dev Containers:
-Reopen in Container"** to work directly inside the same image. (This is distinct from
-the repo-root `docker-compose.yml`, which starts a geth + Arbitrum localnet to deploy
-*against*.)
-
-> If you previously compiled the contracts outside this image (e.g. a native
-> `brownie compile` on macOS), stale artifacts in `./build` reference the old paths
-> and can break the in-container project load. Run `make clean-build` once to remove
-> `./build`, then re-run.
-
 ## Deploy the contracts
 
-The deploying account will be allocated all the FLIP on a testnet (90M)
-
-Inside the poetry shell:
+The deploying account will be allocated all the FLIP on a testnet (90M).
 
 ### Local Test network
+
+Launch a container shell with `make shell` (or open a terminal inside the VS Code Dev Container), then run:
 
 ```bash
 # if you haven't already started a hardhat node
@@ -221,7 +179,11 @@ npx hardhat node --hostname 127.0.0.1
 poetry run brownie run deploy_and
 ```
 
+As a shortcut, `make deploy` runs the hardhat node + `deploy_and` for you, and `make deploy-eth` / `deploy-arb` / `deploy-bsc` reproduce the full production deployment (and canonical `CREATE2` addresses) against throwaway localnets with the right chainId.
+
 ### Live Test network
+
+Launch a container shell with `make shell` (or open a terminal inside the VS Code Dev Container), then run:
 
 ```bash
 # get this id from Infura and/or Alchemy
@@ -242,7 +204,11 @@ export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you
 poetry run brownie run deploy_contracts --network goerli
 ```
 
+Alternatively, put the same variables in `.env` and run `make deploy-live NETWORK=goerli` from the host.
+
 ## Useful commands
+
+Inside a container shell (`make shell`, or a VS Code Dev Container terminal):
 
 `poetry run brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
 
