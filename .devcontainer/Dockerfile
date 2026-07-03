@@ -61,22 +61,20 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
 # Fixed canonical project path — part of the determinism contract (see header).
 WORKDIR /opt/chainflip-eth-contracts
 
-# --- Poetry 1.4.1 (pinned; identical to snok/install-poetry in CI) -------------
-ENV POETRY_VERSION=1.4.1
+# --- Poetry 2.2.1 (pinned) -----------------------------------------------------
+ENV POETRY_VERSION=2.2.1
 RUN curl -sSL https://install.python-poetry.org | python3.9 - \
     && ln -sf "${POETRY_HOME}/bin/poetry" /usr/local/bin/poetry \
     && poetry --version
 
 # The venv poetry creates is symlinked to a stable path (/opt/venv) that lives
 # OUTSIDE the runtime bind-mount, so `brownie`/`pytest` stay on PATH at runtime
-# without invoking poetry (which would choke on the 2.x-only `package-mode` key).
+# without needing to invoke poetry.
 ENV PATH="/opt/venv/bin:${POETRY_HOME}/bin:${PATH}"
 
 # --- Python deps from the committed lockfile (NO relock) -----------------------
-# CI strips the 2.x-only `package-mode = false` key before installing with 1.4.1.
 COPY pyproject.toml poetry.lock ./
-RUN sed -i '/^package-mode = false$/d' pyproject.toml \
-    && poetry env use python3.9 \
+RUN poetry env use python3.9 \
     && poetry install --no-root \
     && ln -sfn "$(poetry env info --path)" /opt/venv \
     && brownie --version
