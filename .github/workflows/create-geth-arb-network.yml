@@ -222,17 +222,28 @@ jobs:
       image-tag: ${{ env.IMAGE_TAG }}
     needs:
       - build-bsc-base
-    services:
-      bsc:
-        image: ghcr.io/${{ github.repository }}/bsc-base:latest
-        ports:
-          - 8545:8545
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Start BSC node
+        run: |
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+          FORK_TIME_1=$(( $(date +%s) + 5 ))
+          FORK_TIME_2=$(( $(date +%s) + 15 ))
+          docker run -d --name bsc \
+            -e FORK_TIME_1=$FORK_TIME_1 \
+            -e FORK_TIME_2=$FORK_TIME_2 \
+            -p 8545:8545 \
+            ghcr.io/${{ github.repository }}/bsc-base:latest
+          until curl -sf -X POST http://127.0.0.1:8545 \
+            -H "Content-Type: application/json" \
+            --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'; do
+            echo "Waiting for BSC node..."
+            sleep 2
+          done
+          echo "Waiting for all forks to activate..."
+          sleep 20
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -298,9 +309,8 @@ jobs:
 
       - name: Commit and push new bsc image
         run: |
-          CONTAINER=$(docker ps --format '{{.Names}}' | grep bsc)
-          docker stop $CONTAINER
-          docker commit $CONTAINER ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
+          docker stop bsc
+          docker commit bsc ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
           docker push ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
 
       - name: Summary

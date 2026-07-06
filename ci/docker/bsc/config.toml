@@ -121,13 +121,6 @@ ReadHeaderTimeout = 0
 WriteTimeout = 30000000000
 IdleTimeout = 120000000000
 
-[Node.LogConfig]
-FileRoot = ""
-FilePath = "bsc.log"
-MaxBytesSize = 10485760
-Level = "info"
-MaxBackups = 1000
-TimeFormat = "01-02|15:04:05.000"
 
 [FakeBeacon]
 Enable = false
