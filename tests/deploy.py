@@ -289,6 +289,20 @@ def deploy_wbtc_contract(deployer, MockWBTC):
     return mockWbtc
 
 
+# Deploy mock for cbBTC as a mock token with 8 decimals
+def deploy_cbbtc_contract(deployer, MockCBBTC):
+    required_confs = transaction_params()
+
+    mockCbbtc = MockCBBTC.deploy(
+        "Coinbase Wrapped BTC",
+        "cbBTC",
+        INIT_CBBTC_SUPPLY,
+        CBBTC_TOKEN_DECIMALS,
+        {"from": deployer, "required_confs": required_confs},
+    )
+    return mockCbbtc
+
+
 def deploy_addressHolder(
     deployer,
     AddressHolder,
