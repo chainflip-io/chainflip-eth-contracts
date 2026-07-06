@@ -1,4 +1,4 @@
-FROM ghcr.io/bnb-chain/bsc:1.6.7
+FROM ghcr.io/bnb-chain/bsc:1.7.1
 
 USER root
 RUN rm -rf /geth/data && mkdir -p /geth/data
