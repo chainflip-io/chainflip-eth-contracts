@@ -9,6 +9,9 @@
   "dependencies": {
     "@openzeppelin/contracts": "4.8.3"
   },
+  "resolutions": {
+    "handlebars": ">=4.7.9"
+  },
   "devDependencies": {
     "hardhat": "2.14.1",
     "markdownlint-cli": "0.34.0",
@@ -16,7 +19,6 @@
     "prettier-plugin-solidity": "1.1.3",
     "solc": "0.8.20",
     "solhint": "3.4.1",
-    "solhint-plugin-prettier": "0.0.5",
-    "solidity-docgen": "0.5.16"
+    "solhint-plugin-prettier": "0.0.5"
   }
 }
