@@ -164,6 +164,20 @@ export REDEMPTION_DELAY=<redemption delay in seconds>
 poetry run brownie run deploy_contracts --network sepolia
 ```
 
+### Gas estimations
+
+The simplest way to run gas estimations locally for the main Vault AllBatch transaction is to run:
+
+```bash
+poetry run brownie test tests/unit/vault/test_allBatch_gas.py --network hardhat --stateful false --gas
+```
+
+Some EVM networks differ on gas costs. Also, the localnet hardhat node might differ from the real live network due to different configuration, fork etc.. The same tests can be run on a live network. Make sure to set the `SEED` environment and the endpoint rpc environment.
+
+```bash
+poetry run brownie test tests/unit/vault/test_allBatch_gas.py --network sepolia --stateful false --gas
+```
+
 ### Bytecode
 
 #### CBOR Metadata Hash and Absolute Paths
