@@ -134,23 +134,34 @@ poetry run brownie run deploy_contracts
 
 ### Live Test network
 
+The script automatically detects whether to run an Ethereum or secondary EVM deployment (Arbitrum, BNB) based on the chain ID. Ethereum requires extra parameters due to the staking contract.
+
+**All networks:**
+
 ```bash
 # get this id from Infura and/or Alchemy
 export WEB3_INFURA_PROJECT_ID=<Infura project id>
-export WEB3_ALCHEMY_PROJECT_ID=<Infura project id>
+export WEB3_ALCHEMY_PROJECT_ID=<Alchemy project id>
 # ensure that the ETH account associated with this seed has ETH on that network
 export SEED="<your seed phrase>"
 # Set an aggregate key, a governance address and a community address that you would like to use
 export AGG_KEY=<agg key with leading parity byte, hex format, no leading 0x>
 export GOV_KEY=<gov address, hex format, with leading 0x>
 export COMM_KEY=<comm address, hex format, with leading 0x>
-# Set genesis parameters
-export GENESIS_STAKE=<the stake each node should have at genesis> (default =
-50000000000000000000000)
-export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
+```
 
-# deploy the contracts to goerli.
-poetry run brownie run deploy_contracts --network goerli
+**Ethereum only**:
+
+```bash
+# Set genesis parameters
+export GENESIS_STAKE=<the stake each node should have at genesis> (default = 50000000000000000000000)
+export NUM_GENESIS_VALIDATORS=<number of genesis validators in the chainspec you expect to start against this contract> (default = 5)
+export REDEMPTION_DELAY=<redemption delay in seconds>
+```
+
+```bash
+# deploy the contracts to Sepolia.
+poetry run brownie run deploy_contracts --network sepolia
 ```
 
 ### Bytecode
