@@ -231,6 +231,11 @@ jobs:
           docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
           FORK_TIME_1=$(( $(date +%s) + 5 ))
           FORK_TIME_2=$(( $(date +%s) + 15 ))
+          # Persist the exact fork times so they can be baked into the committed
+          # image. On replay the node MUST use the same fork schedule the chain
+          # state was built with.
+          echo "FORK_TIME_1=$FORK_TIME_1" >> "$GITHUB_ENV"
+          echo "FORK_TIME_2=$FORK_TIME_2" >> "$GITHUB_ENV"
           docker run -d --name bsc \
             -e FORK_TIME_1=$FORK_TIME_1 \
             -e FORK_TIME_2=$FORK_TIME_2 \
@@ -310,7 +315,14 @@ jobs:
       - name: Commit and push new bsc image
         run: |
           docker stop bsc
-          docker commit bsc ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
+          # Bake the build-time fork schedule into the image so the localnet node
+          # resumes the committed chain state with the identical fork times. Without
+          # this the entrypoint falls back to FORK_TIME_*=1, which mismatches the
+          # baked state and halts block production.
+          docker commit \
+            --change "ENV FORK_TIME_1=${{ env.FORK_TIME_1 }}" \
+            --change "ENV FORK_TIME_2=${{ env.FORK_TIME_2 }}" \
+            bsc ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
           docker push ghcr.io/chainflip-io/chainflip-eth-contracts/bsc:${{ env.IMAGE_TAG }}
 
       - name: Summary
