@@ -176,6 +176,8 @@ Some EVM networks differ on gas costs. Also, the localnet hardhat node might dif
 
 ```bash
 poetry run brownie test tests/unit/vault/test_allBatch_gas.py --network sepolia --stateful false --gas
+# Run the specific test in isolation to get the specific gas consumption for that action.
+poetry run brownie test tests/unit/vault/test_allBatch_gas.py::test_allBatch_transfer_native --network sepolia --stateful false --gas
 ```
 
 ### Bytecode
