@@ -1325,55 +1325,48 @@ def test_vault(
                         self.km, self.v.executexSwapAndCall, *args, sender=st_sender
                     )
             else:
-                if st_token_amount == 0:
-                    print("        REV_MSG_NZ_UINT _executexSwapAndCall", *toLog)
-                    with reverts(REV_MSG_NZ_UINT):
+                if st_token.balanceOf(self.v.address) < st_token_amount:
+                    print(
+                        "        REV_MSG_ERC20_EXCEED_BAL _executexSwapAndCall",
+                        *toLog,
+                    )
+                    with reverts(REV_MSG_ERC20_EXCEED_BAL):
                         signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                            self.km,
+                            self.v.executexSwapAndCall,
+                            *args,
+                            sender=st_sender,
                         )
                 else:
-                    if st_token.balanceOf(self.v.address) < st_token_amount:
-                        print(
-                            "        REV_MSG_ERC20_EXCEED_BAL _executexSwapAndCall",
-                            *toLog,
+                    print("                    rule_executexSwapAndCall", *toLog)
+                    tx = signed_call_km(
+                        self.km, self.v.executexSwapAndCall, *args, sender=st_sender
+                    )
+
+                    if st_token == self.tokenA:
+                        assert (
+                            st_token.balanceOf(self.v.address)
+                            == self.tokenABals[self.v.address] - st_token_amount
                         )
-                        with reverts(REV_MSG_ERC20_EXCEED_BAL):
-                            signed_call_km(
-                                self.km,
-                                self.v.executexSwapAndCall,
-                                *args,
-                                sender=st_sender,
-                            )
+                        self.tokenABals[self.v.address] -= st_token_amount
+                    elif st_token == self.tokenB:
+                        assert (
+                            st_token.balanceOf(self.v.address)
+                            == self.tokenBBals[self.v.address] - st_token_amount
+                        )
+                        self.tokenBBals[self.v.address] -= st_token_amount
                     else:
-                        print("                    rule_executexSwapAndCall", *toLog)
-                        tx = signed_call_km(
-                            self.km, self.v.executexSwapAndCall, *args, sender=st_sender
-                        )
+                        assert False, "Panicc"
 
-                        if st_token == self.tokenA:
-                            assert (
-                                st_token.balanceOf(self.v.address)
-                                == self.tokenABals[self.v.address] - st_token_amount
-                            )
-                            self.tokenABals[self.v.address] -= st_token_amount
-                        elif st_token == self.tokenB:
-                            assert (
-                                st_token.balanceOf(self.v.address)
-                                == self.tokenBBals[self.v.address] - st_token_amount
-                            )
-                            self.tokenBBals[self.v.address] -= st_token_amount
-                        else:
-                            assert False, "Panicc"
-
-                        assert tx.events["ReceivedxSwapAndCall"][0].values() == [
-                            st_srcChain,
-                            hexStr(st_srcAddress),
-                            message,
-                            st_token,
-                            st_token_amount,
-                            0,
-                            0,
-                        ]
+                    assert tx.events["ReceivedxSwapAndCall"][0].values() == [
+                        st_srcChain,
+                        hexStr(st_srcAddress),
+                        message,
+                        st_token,
+                        st_token_amount,
+                        0,
+                        0,
+                    ]
 
         def rule_executexCall(
             self,
