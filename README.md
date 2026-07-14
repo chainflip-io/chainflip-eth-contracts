@@ -8,6 +8,55 @@ Chainflip is a cross-chain decentralised exchange, coordinated through its own b
 
 The State Chain Gatway contract holds the FLIP funds that are being used to stake to the State Chain. The Vault contract holds the funds used for the exchange functionality of the protocol. The State Chain nodes have control over the funds held in these contracts via a threshold signature scheme. The KeyManager is the contract storing all the necessary keys and performing signature verification.
 
+## Reproducible builds with the dev container
+
+Contract bytecode is **not** environment-independent. `solc` embeds a CBOR metadata hash at the end of every contract's bytecode, and that hash includes the compiler's `settings.remappings`. Brownie resolves the OpenZeppelin remapping to an **absolute** path under `$HOME/.brownie`, so the value of `$HOME` — along with the CPU architecture, the `solc`/OpenZeppelin/brownie versions, and the path the repo lives at — leaks into every contract's bytecode and therefore into the deterministic `CREATE2` deposit addresses. A native build on a Mac (arm64, `$HOME=/Users/you`) will produce different bytecode than an x64 CI/production build, which breaks address parity.
+
+To make builds **byte-identical on every machine** (including Apple Silicon) and match x64 CI/production, this repo ships a pinned dev container under [`.devcontainer/`](.devcontainer/). It neutralises all per-machine variation by fixing:
+
+- **platform** → `linux/amd64` (emulated on Apple Silicon via Docker Desktop),
+- **`$HOME`** → `/home/ubuntu` (matches the CI/production build host),
+- **repo path** → `/opt/chainflip-eth-contracts` (fixed canonical mount point),
+- **toolchain** → `solc` 0.8.20, OpenZeppelin 4.8.3, `eth-brownie` 1.18.2, Poetry 2.2.1, Node 18 (all pinned via lockfiles).
+
+A CI job ([`verify-bytecode-parity.yml`](.github/workflows/verify-bytecode-parity.yml)) compiles the contracts both natively and inside this container and diffs every contract's bytecode to prove they are identical.
+
+The only host dependencies are [Docker](https://docs.docker.com/get-docker/) + Docker Compose (Docker Desktop on Mac/Windows includes both) and `make`. Everything else (Python 3.9, Poetry, Node/yarn, `solc`, brownie packages, OpenZeppelin) is baked into the image.
+
+## Make commands
+
+All targets run inside the pinned dev container. Run `make build` once first to build the image.
+
+| Command | Description |
+| --- | --- |
+| `make build` | Build the pinned `linux/amd64` dev-container image. |
+| `make shell` | Open an interactive shell inside the container (for ad-hoc `brownie`, `slither`, `yarn`, etc.). |
+| `make compile` | `brownie compile`. |
+| `make test` | Run the stateless test suite (`brownie test --network hardhat --stateful false`) against an in-container hardhat node. |
+| `make verify-bytecode` | **Primary determinism check.** Asserts the `Deposit` `CREATE2` addresses equal the canonical values in `tests/shared_tests.py`. Mirrors the release CI. |
+| `make deploy` | Deploy to an in-container hardhat node (local demo). |
+| `make deploy-eth` | Deploy the full suite to a throwaway eth localnet (chainId 10997). |
+| `make deploy-arb` | Deploy the full suite to a throwaway arb localnet (chainId 412346). |
+| `make deploy-bsc` | Deploy the full suite to a throwaway bsc localnet (chainId 343). |
+| `make deploy-all` | `deploy-eth` + `deploy-arb` + `deploy-bsc`. |
+| `make deploy-summary` | Print the deployed addresses from `scripts/.artefacts/{eth,arb,bsc}.json`. |
+| `make deploy-live NETWORK=sepolia` | Deploy to a live network (needs `.env` + RPC endpoint). |
+| `make clean-build` | Remove `./build` (run once if you previously compiled outside the container, e.g. a native macOS brownie run). |
+| `make clean` | Remove the containers and named volumes. |
+
+The `deploy-{eth,arb,bsc}` targets each spin up a throwaway in-container hardhat node with the matching chainId, run the production `deploy_contracts` script, and print the deployed addresses. Same `SEED` + a fresh chain + canonical bytecode ⇒ the production addresses. Deploy variables (`SEED`, `AGG_KEY`, `GOV_KEY`, `COMM_KEY`, `GENESIS_STAKE`, `NUM_GENESIS_VALIDATORS`, …) default to the test values in the `Makefile` and can be overridden via `.env` or on the command line, e.g. `make deploy-eth AGG_KEY=... SEED=...`.
+
+### Running the commands below inside the dev container
+
+All the command snippets in the rest of this README are written for a native setup (an Ubuntu host, as used by CI/production — see [Dependencies](#dependencies) and [Setup](#setup)). Every one of them can also be run unchanged inside the dev container: launch a shell with
+
+```bash
+make build   # once
+make shell
+```
+
+(or open the repo in VS Code and choose "Reopen in Container", see [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json)) and run the commands from there. The container shell already has the full toolchain (`brownie`, `slither`, `yarn`, …) on `PATH`, so the native setup steps can be skipped.
+
 ## Dependencies
 
 - Python >3.7, <3.10

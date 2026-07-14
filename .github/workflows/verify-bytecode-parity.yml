@@ -1,0 +1,118 @@
+name: Verify Bytecode Parity
+
+# Temporary parity monitor: compiles the contracts two ways in parallel — the
+# existing NATIVE CI path and the pinned DEV CONTAINER (.devcontainer/) — and
+# diffs the resulting bytecode across every contract. Confirms the dev container
+# reproduces exactly what native CI produces. Once this has run cleanly for a
+# while, CI can move to building inside the dev container directly and this
+# workflow (plus the native path) can be retired.
+
+on:
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize]
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Build (native)
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup Node
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
+        with:
+          node-version: "18"
+
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
+
+      - run: npm install --global yarn
+      - run: yarn
+
+      # Workaround because poetry 2.2.1 is not supported via snok/install-poetry
+      # and this is the only difference in the pyproject.toml.
+      - run: |
+          sed -i '/^package-mode = false$/d' pyproject.toml
+          poetry install
+
+      - name: Compile (native)
+        run: poetry run brownie compile
+
+      - name: Dump bytecode manifest
+        run: ./scripts/dump_bytecode.sh bytecode-manifest.txt
+
+      - name: Upload native manifest
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        with:
+          name: bytecode-manifest-native
+          path: bytecode-manifest.txt
+          if-no-files-found: error
+
+  container:
+    name: Build (dev container)
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      # Build the pinned linux/amd64 image and compile inside it. build/ is
+      # bind-mounted, so container-produced build/contracts/*.json lands on the
+      # host workspace where the shared dump script can read it.
+      - name: Build image
+        run: make build
+
+      - name: Compile (container)
+        run: |
+          make clean-build || true
+          make compile
+
+      - name: Dump bytecode manifest
+        run: ./scripts/dump_bytecode.sh bytecode-manifest.txt
+
+      - name: Upload container manifest
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        with:
+          name: bytecode-manifest-container
+          path: bytecode-manifest.txt
+          if-no-files-found: error
+
+  compare:
+    name: Compare bytecode
+    needs: [native, container]
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    timeout-minutes: 10
+    steps:
+      - name: Download native manifest
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: bytecode-manifest-native
+          path: native
+
+      - name: Download container manifest
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: bytecode-manifest-container
+          path: container
+
+      - name: Diff bytecode manifests
+        run: |
+          if diff -u native/bytecode-manifest.txt container/bytecode-manifest.txt; then
+            echo "✅ Native and dev-container bytecode are identical."
+          else
+            echo "❌ Bytecode differs between the native CI build and the dev container."
+            echo "   Lines prefixed '-' are native, '+' are the container (contract name is the first field)."
+            exit 1
+          fi

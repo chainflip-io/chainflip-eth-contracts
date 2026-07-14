@@ -1,0 +1,43 @@
+# Reproducible dev/deploy environment. Separate from the repo-root docker-compose.yml
+# (which spins up a geth + Arbitrum localnet to deploy AGAINST — a different concern).
+#
+# Used both by the Makefile (`make build`, `make verify-bytecode`, ...) and by VS Code
+# Dev Containers (via .devcontainer/devcontainer.json → "Reopen in Container").
+#
+# All relative paths are anchored at this file's directory (.devcontainer/), so `..`
+# refers to the repo root. The working copy is bind-mounted at the FIXED canonical
+# path so the solc metadata hash — and therefore all bytecode and CREATE2 addresses —
+# is identical on every host regardless of where the repo lives locally.
+name: chainflip-eth-contracts-dev
+
+services:
+  dev:
+    platform: linux/amd64 # match x64 CI/production; Docker Desktop emulates on M4
+    build:
+      context: .. # repo root, so the Dockerfile can COPY pyproject.toml, yarn.lock, ...
+      dockerfile: .devcontainer/Dockerfile
+    image: chainflip-eth-contracts-dev:latest
+    working_dir: /opt/chainflip-eth-contracts
+    environment:
+      # HOME=/home/ubuntu is REQUIRED for bytecode determinism (brownie leaks
+      # $HOME/.brownie into solc metadata) — see .devcontainer/Dockerfile header.
+      - HOME=/home/ubuntu
+    env_file:
+      - path: ../.env # deploy secrets (SEED, AGG_KEY, GOV_KEY, COMM_KEY, WEB3_INFURA_PROJECT_ID)
+        required: false
+    volumes:
+      # The working copy at the canonical path (compiler always sees the same path).
+      - ..:/opt/chainflip-eth-contracts
+      # Named volumes seeded from the image so the baked, amd64-built dependencies
+      # survive the bind-mount above and persist across runs.
+      - brownie-packages:/home/ubuntu/.brownie
+      - solcx-cache:/home/ubuntu/.solcx
+      - node-modules:/opt/chainflip-eth-contracts/node_modules
+    stdin_open: true
+    tty: true
+    command: bash
+
+volumes:
+  brownie-packages:
+  solcx-cache:
+  node-modules:
