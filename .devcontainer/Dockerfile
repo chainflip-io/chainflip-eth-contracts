@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-#
 # Reproducible development / deployment environment for chainflip-eth-contracts.
 #
 # The goal of this image is DETERMINISTIC contract bytecode and CREATE/CREATE2
