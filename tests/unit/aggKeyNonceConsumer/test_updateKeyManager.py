@@ -110,12 +110,20 @@ def test_updateKeyManager_arbitrary_rev_omit(cf, mockKeyManagers, KeyManagerMock
             signed_call_cf(
                 cf, aggKeyNonceConsumer.updateKeyManager, km_zero_govKey, True
             )
-        with reverts("Transaction reverted without a reason string"):
-            signed_call_cf(
-                cf, aggKeyNonceConsumer.updateKeyManager, km_zero_commKey, True
-            )
+    # Vault no longer requires non-zero commKey; stateChainGateway still does
+    with reverts("Transaction reverted without a reason string"):
+        signed_call_cf(cf, cf.stateChainGateway.updateKeyManager, km_zero_commKey, True)
 
     _emergency_withdrawals(cf, cf.gov, cf.COMMUNITY_KEY)
+
+
+def test_updateKeyManager_vault_zero_commKey_omit(cf, KeyManagerMock5):
+    km_zero_commKey = cf.SAFEKEEPER.deploy(
+        KeyManagerMock5,
+        cf.keyManager.getGovernanceKey(),
+        ZERO_ADDR,
+    )
+    signed_call_cf(cf, cf.vault.updateKeyManager, km_zero_commKey, True)
 
 
 # Separating success tests because once a keyManagerMock is set the following ones will fail

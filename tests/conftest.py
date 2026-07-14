@@ -1,8 +1,10 @@
 import pytest
+import deploy as _deploy
 from consts import *
 from deploy import *
 from deploy import (
     deploy_Chainflip_contracts,
+    deploy_contracts_secondary_evm,
     deploy_new_multicall,
     deploy_new_cfReceiver,
 )
@@ -30,6 +32,28 @@ def cfDeploy(
         DeployerContract,
         AddressChecker,
     )
+
+
+# Minimal deployment for secondary EVM chains (only KeyManager, Vault and AddressChecker)
+@pytest.fixture(scope="module")
+def cf_minimal(a, KeyManager, Vault, AddressChecker):
+    seed = environ.get("SEED")
+    # If there is no seed used use the default hardhat test accounts
+    if seed:
+        deployer_index = int(environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
+        cf_accs = accounts.from_mnemonic(seed, count=10)
+        deployer = cf_accs[deployer_index]
+        alice = cf_accs[1]
+    else:
+        deployer = a[9]
+        alice = a[1]
+
+    cf = deploy_contracts_secondary_evm(deployer, KeyManager, Vault, AddressChecker)
+
+    cf.safekeeper = cf.gov
+    cf.SAFEKEEPER = cf.gov
+    cf.ALICE = alice
+    return cf
 
 
 # Deploy the contracts and set up common test environment
@@ -113,6 +137,13 @@ def redemptionRegistered(cf, fundedMin):
 @pytest.fixture(scope="module")
 def token(cf, Token):
     return cf.SAFEKEEPER.deploy(
+        Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY, DEFAULT_TOKEN_DECIMALS
+    )
+
+
+@pytest.fixture(scope="module")
+def token_minimal(cf_minimal, Token):
+    return cf_minimal.SAFEKEEPER.deploy(
         Token, "NotAPonzi", "NAP", INIT_TOKEN_SUPPLY, DEFAULT_TOKEN_DECIMALS
     )
 

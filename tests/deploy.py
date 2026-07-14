@@ -415,5 +415,5 @@ def deploy_price_feeds(deployer, PriceFeedMockContract, feed_descriptions):
 # the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
 # nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
 def transaction_params():
-    network.priority_fee("1 gwei")
+    network.priority_fee("2 gwei")
     return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 3
