@@ -62,8 +62,8 @@ contract Vault is IVault, AggKeyNonceConsumer, GovernanceCommunityGuarded {
             // Ensure that the last validate time is not in the future
             require(lastValidateTime <= block.timestamp);
         } else {
-            // Check that the addresses have been initialized
-            require(newGovKey != address(0) && newCommKey != address(0));
+            // Check that the governance key has been initialized
+            require(newGovKey != address(0));
         }
     }
 

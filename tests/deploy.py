@@ -289,6 +289,20 @@ def deploy_wbtc_contract(deployer, MockWBTC):
     return mockWbtc
 
 
+# Deploy mock for cbBTC as a mock token with 8 decimals
+def deploy_cbbtc_contract(deployer, MockCBBTC):
+    required_confs = transaction_params()
+
+    mockCbbtc = MockCBBTC.deploy(
+        "Coinbase Wrapped BTC",
+        "cbBTC",
+        INIT_CBBTC_SUPPLY,
+        CBBTC_TOKEN_DECIMALS,
+        {"from": deployer, "required_confs": required_confs},
+    )
+    return mockCbbtc
+
+
 def deploy_addressHolder(
     deployer,
     AddressHolder,
@@ -401,5 +415,5 @@ def deploy_price_feeds(deployer, PriceFeedMockContract, feed_descriptions):
 # the script. Therefore, we increase the required_confs for live networks only. No need to do it for testing
 # nor localnets/devnets - that is with hardhat (including forks), with id 31337, and geth image, with id 10997.
 def transaction_params():
-    network.priority_fee("1 gwei")
+    network.priority_fee("2 gwei")
     return 1 if chain.id in [hardhat, eth_localnet, arb_localnet] else 3
