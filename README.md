@@ -246,7 +246,11 @@ mv chainflip-eth-contracts/* .
 mv chainflip-eth-contracts/.[!.]* . 2>/dev/null || true
 rm -rf chainflip-eth-contracts/
 
-# 3. Install dependencies
+# 3. Clear Poetry environment for this project to ensure a fresh one is created
+# Remove any existing Poetry virtualenv cache folders for this project
+rm -rf $(poetry env list --full-path 2>/dev/null | awk '{print $1}') 2>/dev/null || true
+
+# 4. Install dependencies
 yarn
 poetry shell
 poetry install
