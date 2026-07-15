@@ -16,6 +16,8 @@
 #   make deploy-all       # deploy-eth + deploy-arb + deploy-bsc
 #   make deploy-summary   # print scripts/.artefacts/{eth,arb,bsc}.json
 #   make deploy-live NETWORK=goerli   # deploy to a live network (needs .env + RPC)
+#   make generate-verification-json CHAIN_ID=97   # Etherscan standard-json inputs
+#                         #   for that chain's deployments recorded in build/deployments
 #   make clean-build      # remove ./build (run once if you previously compiled
 #                         #   outside this image, e.g. a native macOS brownie run)
 #   make clean            # remove containers + named volumes
@@ -56,7 +58,7 @@ define deploy_chain
 		echo; echo "==== Deployed contracts ($(1), chainId $(2)) ===="; jq . scripts/.artefacts/$(3).json'
 endef
 
-.PHONY: build shell compile test verify-bytecode deploy deploy-eth deploy-arb deploy-bsc deploy-all deploy-summary deploy-live clean-build clean
+.PHONY: build shell compile test verify-bytecode deploy deploy-eth deploy-arb deploy-bsc deploy-all deploy-summary deploy-live generate-verification-json clean-build clean
 
 build:
 	$(COMPOSE) build
@@ -99,6 +101,12 @@ deploy-summary:
 deploy-live:
 	@test -n "$(NETWORK)" || { echo "Set NETWORK=<brownie-network>, e.g. make deploy-live NETWORK=goerli"; exit 1; }
 	$(RUN) brownie run deploy_contracts --network $(NETWORK)
+
+# CHAIN_ID selects which deployments to export from build/deployments/map.json;
+# the script runs against a local hardhat node and never touches the live network.
+generate-verification-json:
+	@test -n "$(CHAIN_ID)" || { echo "Set CHAIN_ID=<chain id>, e.g. make generate-verification-json CHAIN_ID=97"; exit 1; }
+	$(RUN) $(call WITH_NODE,brownie run generate_verification_json main $(CHAIN_ID) --network hardhat)
 
 clean-build:
 	rm -rf build
