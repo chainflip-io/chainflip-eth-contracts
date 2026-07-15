@@ -291,11 +291,3 @@ The test should now pass, and the compiled bytecode will match what CI and mainn
 > **Note:** Stripping the CBOR suffix from the bytecode would make compilation environment-independent, but Etherscan and other block explorers rely on it to verify and display contract source code. For this reason we keep it and control the compilation path instead.
 
 > **Note:** An alternative is to pull the `build/` artifacts from CI and deploy without recompiling (either by pre-populating `build/` and getting Brownie to not recompile, or by manually crafting deployment transactions with the known bytecode). However, both of those options are prone to human error.
-
-## Useful commands
-
-`poetry run brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
-
-`poetry run brownie test --stateful false` runs all tests EXCEPT stateful tests
-
-`poetry run brownie test --stateful true` runs ONLY the stateful tests
