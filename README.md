@@ -229,15 +229,11 @@ poetry run brownie test tests/unit/vault/test_allBatch_gas.py --network sepolia 
 poetry run brownie test tests/unit/vault/test_allBatch_gas.py::test_allBatch_transfer_native --network sepolia --stateful false --gas
 ```
 
-### Bytecode
+### Reproduce deployed contracts' Bytecode in Ubuntu without the dev container
 
-#### CBOR Metadata Hash and Absolute Paths
+The deployed contracts' bytecode can be reproduced in Ubuntu without using the dev container by manually applying some workarounds to the compilation setup.
 
-Solidity appends a CBOR-encoded blob to the end of every compiled contract's bytecode. This blob contains a hash of the compiler metadata, which includes source file paths. Brownie records **absolute paths** to source files in that metadata. This means the CBOR hash and therefore the deployed bytecode changes. The bytecode of the Deposit contract that is embedded into the Vault contract is used in address derivation in the State Chain, which means this directly impact deposit channel address generation.
-
-To reproduce and/or deploy byte-for-byte identical bytecode to what CI compiles and what is deployed on live networks, the project must be compiled from `/home/ubuntu/`. Follow the steps below on a Linux machine.
-
-#### Reproducing CI/Mainnet Bytecode
+#### Setting up the directory and dependencies
 
 ```bash
 # 1. Create the expected directory and take ownership
@@ -250,7 +246,11 @@ mv chainflip-eth-contracts/* .
 mv chainflip-eth-contracts/.[!.]* . 2>/dev/null || true
 rm -rf chainflip-eth-contracts/
 
-# 3. Install dependencies
+# 3. Clear Poetry environment for this project to ensure a fresh one is created
+# Remove any existing Poetry virtualenv cache folders for this project
+rm -rf $(poetry env list --full-path 2>/dev/null | awk '{print $1}') 2>/dev/null || true
+
+# 4. Install dependencies
 yarn
 poetry shell
 poetry install
@@ -295,11 +295,3 @@ The test should now pass, and the compiled bytecode will match what CI and mainn
 > **Note:** Stripping the CBOR suffix from the bytecode would make compilation environment-independent, but Etherscan and other block explorers rely on it to verify and display contract source code. For this reason we keep it and control the compilation path instead.
 
 > **Note:** An alternative is to pull the `build/` artifacts from CI and deploy without recompiling (either by pre-populating `build/` and getting Brownie to not recompile, or by manually crafting deployment transactions with the known bytecode). However, both of those options are prone to human error.
-
-## Useful commands
-
-`poetry run brownie test -s` - runs with the `print` outputs in tests. Currently there are only `print` outputs in the stateful test so one can visually verify that most txs are valid and not reverting
-
-`poetry run brownie test --stateful false` runs all tests EXCEPT stateful tests
-
-`poetry run brownie test --stateful true` runs ONLY the stateful tests
