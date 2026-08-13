@@ -33,6 +33,7 @@ All targets run inside the pinned dev container. Run `make build` once first to 
 | `make shell` | Open an interactive shell inside the container (for ad-hoc `brownie`, `slither`, `yarn`, etc.). |
 | `make compile` | `brownie compile`. |
 | `make test` | Run the stateless test suite (`brownie test --network hardhat --stateful false`) against an in-container hardhat node. |
+| `make estimate_gas` | Measure the Vault's `allBatch`/`executexSwapAndCall` gas costs and derive the state chain's `mod fees` constants from them. Prints an analysis and writes `reports/evm_gas_analysis_<network>_<chainId>.txt`. Optional `NETWORK=<brownie network>` (default `hardhat`), `TOKEN=<stablecoin address>`, `RECIPIENT_SALT=<value>` — see [Gas estimations](#gas-estimations). |
 | `make verify-bytecode` | **Primary determinism check.** Asserts the `Deposit` `CREATE2` addresses equal the canonical values in `tests/shared_tests.py`. Mirrors the release CI. |
 | `make deploy` | Deploy to an in-container hardhat node (local demo). |
 | `make deploy-eth` | Deploy the full suite to a throwaway eth localnet (chainId 10997). |
@@ -41,6 +42,7 @@ All targets run inside the pinned dev container. Run `make build` once first to 
 | `make deploy-all` | `deploy-eth` + `deploy-arb` + `deploy-bsc`. |
 | `make deploy-summary` | Print the deployed addresses from `scripts/.artefacts/{eth,arb,bsc}.json`. |
 | `make deploy-live NETWORK=sepolia` | Deploy to a live network (needs `.env` + RPC endpoint). |
+| `make generate-verification-json CHAIN_ID=97` | Export Etherscan standard-JSON input for that chain's deployments recorded in `build/deployments/map.json`. `CHAIN_ID` is required; the script runs against a local hardhat node and never touches the live network. |
 | `make clean-build` | Remove `./build` (run once if you previously compiled outside the container, e.g. a native macOS brownie run). |
 | `make clean` | Remove the containers and named volumes. |
 
@@ -215,18 +217,26 @@ poetry run brownie run deploy_contracts --network sepolia
 
 ### Gas estimations
 
-The simplest way to run gas estimations locally for the main Vault AllBatch transaction is to run:
+`tests/unit/vault/test_allBatchGasEstimate.py` measures the Vault's `allBatch` and `executexSwapAndCall`, and derives the state chain's fee constants for a secondary EVM chain from those measurements. The simplest way to run it is:
 
 ```bash
-poetry run brownie test tests/unit/vault/test_allBatch_gas.py --network hardhat --stateful false --gas
+make estimate_gas
 ```
 
-Some EVM networks differ on gas costs. Also, the localnet hardhat node might differ from the real live network due to different configuration, fork etc.. The same tests can be run on a live network. Make sure to set the `SEED` environment and the endpoint rpc environment.
+That starts a throwaway hardhat node in the dev container and prints an analysis: every measurement at 1, 2 and 3 items per batch, the per-item and base costs fitted from them, each constant beside the row and column it was read from, and a check of whether `BASE + PER_ITEM` actually covers the worst case. The same report is written to `reports/evm_gas_analysis_<network>_<chainId>.txt` — named after the chain it measured, so runs against different networks don't overwrite each other (e.g. `reports/evm_gas_analysis_bsc-test_97.txt`).
+
+Some EVM networks differ on gas costs. Also, the localnet hardhat node might differ from the real live network due to different configuration, fork etc.. The same measurements can be run against a live network and its real token contract:
 
 ```bash
-poetry run brownie test tests/unit/vault/test_allBatch_gas.py --network sepolia --stateful false --gas
-# Run the specific test in isolation to get the specific gas consumption for that action.
-poetry run brownie test tests/unit/vault/test_allBatch_gas.py::test_allBatch_transfer_native --network sepolia --stateful false --gas
+make estimate_gas NETWORK=bsc-test TOKEN=0x<stablecoin address>
+```
+
+`NETWORK` is any network `brownie networks list` knows and defaults to `hardhat`; `TOKEN` defaults to the mock ERC20 from `tests/conftest.py`. A live run deploys its own KeyManager, Vault and AddressChecker, so `SEED` must be funded with both the gas asset and the token. Pick a **stablecoin**: a run moves 0.45 of a token out of the account and strands 0.12 of it — cents in USDT, real money in something like WBTC. Pass a fresh `RECIPIENT_SALT=<value>` when re-running against the same live chain, so the "new recipient" cases get addresses no earlier run has touched.
+
+To run it without the dev container, or to add brownie's own `--gas` profile for per-function min/mean/max:
+
+```bash
+poetry run brownie test tests/unit/vault/test_allBatchGasEstimate.py --network hardhat --stateful false --gas
 ```
 
 ### Reproduce deployed contracts' Bytecode in Ubuntu without the dev container
