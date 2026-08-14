@@ -84,7 +84,9 @@ def fresh_addr(tag, n, i):
     # parametrized runs of the same measurement never share an address — otherwise run
     # n=2 reuses the address run n=1 created and the marginal cost silently mixes fresh
     # and existing recipients.
-    return web3.toChecksumAddress(web3.keccak(text=f"{RECIPIENT_SALT}-{tag}-{n}-{i}")[-20:].hex())
+    return web3.toChecksumAddress(
+        web3.keccak(text=f"{RECIPIENT_SALT}-{tag}-{n}-{i}")[-20:].hex()
+    )
 
 
 def is_local():
@@ -527,7 +529,9 @@ def emit_message_overhead(out, rule):
             f"{overhead:>16.1f}{1:>10}"
         )
     out()
-    out("  vault overhead = vault total - user's estimateGas budget, per byte of message")
+    out(
+        "  vault overhead = vault total - user's estimateGas budget, per byte of message"
+    )
     if worst > 1:
         out(
             f"  The state chain adds 1 gas/byte; the Vault's own overhead measures"
@@ -596,7 +600,9 @@ def emit(config, token, amnt):
         out()
         out("  'first-time receiver' pays the zero -> non-zero token balance slot; the")
         out("  CCM constants are read off the first-time receiver at msg=0")
-        out("  \"user's estimateGas budget\" is eth_estimateGas of a direct cfReceive call")
+        out(
+            '  "user\'s estimateGas budget" is eth_estimateGas of a direct cfReceive call'
+        )
         out(
             f"  from the Vault minus {EVM_BASE_GAS_LIMIT:,} — the gas_budget the docs"
             " tell implementers to buy"
