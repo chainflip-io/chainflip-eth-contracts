@@ -9,6 +9,10 @@ below therefore runs at n = 1, 2, 3 in one `allBatch`: the slope is the per-item
 and the intercept is the batch base cost. The analysis at the end of the module derives
 every constant and prints it, including a coverage check of its own output.
 
+The CCM measurements (CCM_VAULT_*_GAS_OVERHEAD) are OFF by default — they deploy a
+CFTester per case and are only needed when those two constants are being set. Turn them
+on with CCM=1 in the environment (`make estimate_gas CCM=1`); everything else always runs.
+
 Local (mock ERC20 from conftest's `token_minimal`, no real funds needed):
 
     brownie test tests/unit/vault/test_allBatchGasEstimate.py --network hardhat --stateful false
@@ -17,13 +21,14 @@ Live network, measuring against the chain's real token contract:
 
     export SEED="<mnemonic funded with the gas asset AND the token>"
     export TOKEN_ADDRESS=0x55d398326f99059fF775485246999027B3197955   # BSC-USDT
+    export CCM=1                                                     # optional
     brownie test tests/unit/vault/test_allBatchGasEstimate.py --network bsc-main --stateful false
 
 PICK A LOW-VALUE TOKEN — a stablecoin. Amounts are 1% of one whole token (scaled by
 decimals()) because token gas depends on decimals and on whether a balance slot crosses
-zero, never on value. A run moves 0.45 of a token out of the account (45 transfers of 0.01)
-and strands 0.12 of it in hash-derived addresses and CFTester contracts: cents in USDT,
-hundreds of dollars in WBTC.
+zero, never on value. A run moves 0.33 of a token out of the account (0.45 with CCM=1, in
+transfers of 0.01) and strands 0.06 of it (0.12 with CCM=1) in hash-derived addresses and
+CFTester contracts: cents in USDT, hundreds of dollars in WBTC.
 
 A live run deploys its own KeyManager, Vault, AddressChecker and one CFTester per CCM
 case, and it moves real balances, so keep it to testnets unless you mean it. Set
@@ -43,6 +48,13 @@ from deploy import deploy_new_cfReceiver
 # Salts the generated "new recipient" addresses, so a re-run against a persistent chain
 # can get a set nothing has touched yet. Irrelevant on a throwaway node.
 RECIPIENT_SALT = environ.get("RECIPIENT_SALT", "")
+
+# The CCM measurements are opt-in: they deploy a CFTester per case and are only wanted
+# when CCM_VAULT_*_GAS_OVERHEAD is being set, so a plain fetch/egress run skips them.
+MEASURE_CCM = environ.get("CCM", "").strip().lower() in ("1", "true", "yes", "on")
+ccm_only = pytest.mark.skipif(
+    not MEASURE_CCM, reason="CCM measurements are opt-in: set CCM=1 to run them"
+)
 
 # Items per allBatch, and CCM message lengths in bytes: both the parameters the tests
 # run at and the columns the analysis reads them back from.
@@ -83,13 +95,19 @@ def confirm_live_run(config, token):
     """Confirm before touching a live chain: this run spends real gas and real tokens."""
     if is_local():
         return
+    # The CCM cases account for 0.12 of the token spend (0.06 of it stranded in the
+    # CFTesters, 0.06 left in the Vault), so the figures quoted differ with the flag.
+    ccm = " and one CFTester per CCM case" if MEASURE_CCM else ""
+    total, stranded, vault = (
+        ("0.45", "0.12", "0.24") if MEASURE_CCM else ("0.33", "0.06", "0.18")
+    )
     prompt = (
         f"\nLive run on {network.show_active()} (chainId {chain.id}) with "
         f"{token.symbol()} at {token.address}."
-        f"\nIt deploys its own KeyManager/Vault/AddressChecker and moves 0.45"
-        f" {token.symbol()} plus gas out of this account: 0.12 stranded (fresh"
-        f" recipients, CFTesters), 0.33 retrievable (0.24 in the Vault it deploys, 0.09"
-        f" in your own SEED accounts). Continue? [y/N]: "
+        f"\nIt deploys its own KeyManager/Vault/AddressChecker{ccm} and moves {total}"
+        f" {token.symbol()} plus gas out of this account: {stranded} stranded (fresh"
+        f" recipients{', CFTesters' if MEASURE_CCM else ''}), retrievable {vault} in the"
+        f" Vault it deploys and 0.09 in your own SEED accounts. Continue? [y/N]: "
     )
     # pytest redirects stdout AND stdin, so both have to be released to ask anything;
     # `in_=True` is what restores stdin (global_and_fixture_disabled() leaves it closed).
@@ -315,7 +333,26 @@ CCM_SRC_ADDR = "0x" + "11" * 20
 # zero -> non-zero token balance slot) call from polluting the next measurement, and the
 # second call in each case gives the warm number.
 
+# What an implementer following the docs budgets: eth_estimateGas of a direct cfReceive
+# call, from the Vault, minus the 21,000 intrinsic cost. Measured at every message length
+# so the analysis can subtract its slope from the Vault's: the difference is the per-byte
+# cost the state chain has to add, and everything below it is already in gas_budget.
+EVM_BASE_GAS_LIMIT = 21_000
 
+
+def user_budget(cf_minimal, receiver, token, amount, message, value=0):
+    estimate = receiver.cfReceive.estimate_gas(
+        CCM_SRC_CHAIN,
+        CCM_SRC_ADDR,
+        message,
+        token,
+        amount,
+        {"from": cf_minimal.vault.address, "value": value},
+    )
+    return estimate - EVM_BASE_GAS_LIMIT
+
+
+@ccm_only
 @pytest.mark.parametrize("msg_len", CCM_LENGTHS)
 def test_gas_ccm_native(cf_minimal, CFTester, amnt, msg_len):
     """executexSwapAndCall with native: cold receiver then warm receiver."""
@@ -335,7 +372,22 @@ def test_gas_ccm_native(cf_minimal, CFTester, amnt, msg_len):
         )
         record(f"ccm_native_{label}", msg_len, tx.gas_used)
 
+    # Warm receiver, i.e. the same state the user's own estimateGas would see.
+    record(
+        "ccm_native_user_budget",
+        msg_len,
+        user_budget(
+            cf_minimal,
+            receiver,
+            NATIVE_ADDR,
+            amnt.native,
+            message,
+            value=amnt.native,
+        ),
+    )
 
+
+@ccm_only
 @pytest.mark.parametrize("msg_len", CCM_LENGTHS)
 def test_gas_ccm_token(cf_minimal, CFTester, non_native_token, amnt, msg_len):
     """executexSwapAndCall with the token: cold receiver then warm receiver."""
@@ -356,6 +408,14 @@ def test_gas_ccm_token(cf_minimal, CFTester, non_native_token, amnt, msg_len):
             message,
         )
         record(f"ccm_token_{label}", msg_len, tx.gas_used)
+
+    record(
+        "ccm_token_user_budget",
+        msg_len,
+        user_budget(
+            cf_minimal, receiver, non_native_token.address, amnt.token, message
+        ),
+    )
 
 
 # ----------------------------------------------------------------- analysis ---
@@ -394,8 +454,10 @@ SERIES = [
 CCM_SERIES = [
     ("ccm_native_cold", "native, first-time receiver"),
     ("ccm_native_warm", "native, repeat receiver"),
+    ("ccm_native_user_budget", "  native, user's estimateGas budget"),
     ("ccm_token_cold", "token, first-time receiver"),
     ("ccm_token_warm", "token, repeat receiver"),
+    ("ccm_token_user_budget", "  token, user's estimateGas budget"),
 ]
 
 
@@ -411,6 +473,15 @@ def ceil_to(value, step):
     return -(-int(value) // step) * step
 
 
+def slope(label):
+    """Gas per message byte for a CCM series, or None if it was not measured."""
+    points = RESULTS.get(label, {})
+    lo, hi = CCM_LENGTHS[0], CCM_LENGTHS[-1]
+    if lo not in points or hi not in points:
+        return None
+    return (points[hi] - points[lo]) / (hi - lo)
+
+
 def fit(label):
     """Linear fit over n: returns (per_item, base), or None if the series is incomplete."""
     points = RESULTS.get(label, {})
@@ -418,6 +489,59 @@ def fit(label):
         return None
     per_item = (points[3] - points[1]) / 2
     return per_item, points[1] - per_item
+
+
+# The state chain adds `+ message_length` (1 gas/byte) on top of the user's gas_budget
+# for "the extra gas overhead of passing the message through the Vault". The gas/byte
+# column above is NOT that number: it is the whole per-byte cost, most of which the user
+# already bought (their own transaction's calldata, their receiver's work on the message).
+# Only the difference between the two slopes is the Vault's, and that is what the state
+# chain's constant should be.
+CCM_MESSAGE_PAIRS = [
+    ("native", "ccm_native_warm", "ccm_native_user_budget"),
+    ("token", "ccm_token_warm", "ccm_token_user_budget"),
+]
+
+
+def emit_message_overhead(out, rule):
+    rows = [
+        (asset, slope(vault_label), slope(user_label))
+        for asset, vault_label, user_label in CCM_MESSAGE_PAIRS
+    ]
+    rows = [r for r in rows if r[1] is not None and r[2] is not None]
+    if not rows:
+        return
+
+    out("Per message byte — how much of it is actually the Vault's overhead?")
+    rule()
+    out(
+        f"  {'':<12}{'vault total':>13}{'estimateGas budget':>20}"
+        f"{'vault overhead':>16}{'charged':>10}"
+    )
+    worst = 0.0
+    for asset, vault_per_byte, user_per_byte in rows:
+        overhead = vault_per_byte - user_per_byte
+        worst = max(worst, overhead)
+        out(
+            f"  {asset:<12}{vault_per_byte:>13.1f}{user_per_byte:>20.1f}"
+            f"{overhead:>16.1f}{1:>10}"
+        )
+    out()
+    out("  vault overhead = vault total - user's estimateGas budget, per byte of message")
+    if worst > 1:
+        out(
+            f"  The state chain adds 1 gas/byte; the Vault's own overhead measures"
+            f" {worst:.1f}\n"
+            f"  gas/byte, so `+ message_length` UNDER-collects by {worst - 1:.1f} gas/byte"
+            f"\n  ({(worst - 1) * CCM_LENGTHS[-1]:,.0f} gas on a {CCM_LENGTHS[-1]}-byte"
+            " message). Raise the multiplier."
+        )
+    else:
+        out(
+            f"  The state chain adds 1 gas/byte and the Vault's own overhead measures"
+            f" {worst:.1f}\n  gas/byte, so `+ message_length` covers it."
+        )
+    out()
 
 
 def emit(config, token, amnt):
@@ -454,22 +578,36 @@ def emit(config, token, amnt):
     out("  'new account/holder' is the worst case: account creation / new balance slot")
     out()
 
-    out("executexSwapAndCall total, by message length in bytes:")
-    rule()
-    header = "".join(f"{f'msg={length}':>10}" for length in CCM_LENGTHS)
-    out(f"{'series':<31}{header}{'gas/byte':>10}")
-    for label, description in CCM_SERIES:
-        points = RESULTS.get(label, {})
-        if not points:
-            continue
-        row = cells(points, CCM_LENGTHS, 10)
-        slope = ""
-        if 0 in points and 1000 in points:
-            slope = f"{(points[1000] - points[0]) / 1000:>10.1f}"
-        out(f"{description:<31}{row}{slope}")
-    out()
-    out("  'first-time receiver' pays the zero -> non-zero token balance slot; the")
-    out("  CCM constants are read off the first-time receiver at msg=0")
+    if any(RESULTS.get(label) for label, _ in CCM_SERIES):
+        out("executexSwapAndCall total, by message length in bytes:")
+        rule()
+        header = "".join(f"{f'msg={length}':>10}" for length in CCM_LENGTHS)
+        out(f"{'series':<35}{header}{'gas/byte':>10}")
+        for label, description in CCM_SERIES:
+            points = RESULTS.get(label, {})
+            if not points:
+                continue
+            row = cells(points, CCM_LENGTHS, 10)
+            per_byte = slope(label)
+            out(
+                f"{description:<35}{row}"
+                f"{'' if per_byte is None else f'{per_byte:>10.1f}'}"
+            )
+        out()
+        out("  'first-time receiver' pays the zero -> non-zero token balance slot; the")
+        out("  CCM constants are read off the first-time receiver at msg=0")
+        out("  \"user's estimateGas budget\" is eth_estimateGas of a direct cfReceive call")
+        out(
+            f"  from the Vault minus {EVM_BASE_GAS_LIMIT:,} — the gas_budget the docs"
+            " tell implementers to buy"
+        )
+        out()
+        emit_message_overhead(out, rule)
+    else:
+        # Say it outright: a missing CCM_VAULT_* below is a flag that was off, not a
+        # measurement that came back empty.
+        out("executexSwapAndCall was NOT measured (CCM=1 turns it on), so the two")
+        out("CCM_VAULT_*_GAS_OVERHEAD constants are absent below.")
     out()
 
     # The state chain charges BASE + PER_ITEM for a single fetch/egress, so the base is
@@ -591,13 +729,11 @@ def emit(config, token, amnt):
         f"  * The token constants are measured against {token.symbol()} only. A proxy-based\n"
         "    or hooked asset on the same chain costs more — re-run with its TOKEN_ADDRESS."
     )
-    native_slope = RESULTS.get("ccm_native_cold", {})
-    if 0 in native_slope and 1000 in native_slope:
-        per_byte = (native_slope[1000] - native_slope[0]) / 1000
+    if slope("ccm_native_user_budget") is not None:
         out(
-            f"  * CCM message cost measured at {per_byte:.1f} gas/byte, but"
-            " calculate_ccm_gas_limit\n"
-            "    adds `+ message_length` (1 gas/byte)."
+            "  * The per-byte table assumes implementers actually follow the docs and\n"
+            "    estimateGas their own cfReceive. One that hardcodes a gas_budget buys\n"
+            "    none of the per-byte cost, and no state-chain constant can fix that."
         )
     out(
         "  * A first deposit costs the deployAndFetch above, while the state chain\n"

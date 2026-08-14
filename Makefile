@@ -12,6 +12,7 @@
 #   make estimate_gas     # measure a secondary EVM chain's gas constants for the state
 #                         #   chain's chains/src/<chain>.rs `mod fees` (prints an
 #                         #   analysis). NETWORK=<brownie network> TOKEN=<stablecoin>
+#                         #   CCM=1 adds the CCM_VAULT_* measurements (off by default)
 #   make deploy           # deploy to an in-container hardhat node (local demo)
 #   make deploy-eth       # deploy full suite to a throwaway eth localnet (chainId 10997)
 #   make deploy-arb       # deploy full suite to a throwaway arb localnet (chainId 412346)
@@ -77,7 +78,7 @@ test:
 
 
 GAS_TEST := tests/unit/vault/test_allBatchGasEstimate.py
-GAS_ENV = -e TOKEN_ADDRESS="$(TOKEN)" -e RECIPIENT_SALT="$(RECIPIENT_SALT)"
+GAS_ENV = -e TOKEN_ADDRESS="$(TOKEN)" -e RECIPIENT_SALT="$(RECIPIENT_SALT)" -e CCM="$(CCM)"
 
 estimate_gas:
 	@NET="$(NETWORK)"; NET="$${NET:-hardhat}"; \
