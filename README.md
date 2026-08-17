@@ -33,7 +33,7 @@ All targets run inside the pinned dev container. Run `make build` once first to 
 | `make shell` | Open an interactive shell inside the container (for ad-hoc `brownie`, `slither`, `yarn`, etc.). |
 | `make compile` | `brownie compile`. |
 | `make test` | Run the stateless test suite (`brownie test --network hardhat --stateful false`) against an in-container hardhat node. |
-| `make estimate_gas` | Measure the Vault's `allBatch`/`executexSwapAndCall` gas costs and derive the state chain's `mod fees` constants from them. Prints an analysis and writes `reports/evm_gas_analysis_<network>_<chainId>.txt`. Optional `NETWORK=<brownie network>` (default `hardhat`), `TOKEN=<stablecoin address>`, `RECIPIENT_SALT=<value>` — see [Gas estimations](#gas-estimations). |
+| `make estimate_gas` | Measure the Vault's `allBatch` gas costs and derive the state chain's `mod fees` constants from them; pass `CCM=1` to also measure `executexSwapAndCall`. Prints an analysis and writes `reports/evm_gas_analysis_<network>_<chainId>.txt`. Supports `NETWORK=<brownie network>` (default `hardhat`), `TOKEN=<stablecoin address>`, and `RECIPIENT_SALT=<value>` (required for live runs) — see [Gas estimations](#gas-estimations). |
 | `make verify-bytecode` | **Primary determinism check.** Asserts the `Deposit` `CREATE2` addresses equal the canonical values in `tests/shared_tests.py`. Mirrors the release CI. |
 | `make deploy` | Deploy to an in-container hardhat node (local demo). |
 | `make deploy-eth` | Deploy the full suite to a throwaway eth localnet (chainId 10997). |
