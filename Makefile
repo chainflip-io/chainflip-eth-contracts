@@ -9,6 +9,10 @@
 #   make shell            # interactive shell in the container
 #   make compile          # brownie compile
 #   make test             # stateless test suite
+#   make estimate_gas     # measure a secondary EVM chain's gas constants for the state
+#                         #   chain's chains/src/<chain>.rs `mod fees` (prints an
+#                         #   analysis). NETWORK=<brownie network> TOKEN=<stablecoin>
+#                         #   CCM=1 adds the CCM_VAULT_* measurements (off by default)
 #   make deploy           # deploy to an in-container hardhat node (local demo)
 #   make deploy-eth       # deploy full suite to a throwaway eth localnet (chainId 10997)
 #   make deploy-arb       # deploy full suite to a throwaway arb localnet (chainId 412346)
@@ -58,7 +62,7 @@ define deploy_chain
 		echo; echo "==== Deployed contracts ($(1), chainId $(2)) ===="; jq . scripts/.artefacts/$(3).json'
 endef
 
-.PHONY: build shell compile test verify-bytecode deploy deploy-eth deploy-arb deploy-bsc deploy-all deploy-summary deploy-live generate-verification-json clean-build clean
+.PHONY: build shell compile test estimate_gas verify-bytecode deploy deploy-eth deploy-arb deploy-bsc deploy-all deploy-summary deploy-live generate-verification-json clean-build clean
 
 build:
 	$(COMPOSE) build
@@ -71,6 +75,26 @@ compile:
 
 test:
 	$(RUN) $(call WITH_NODE,brownie test --network hardhat --stateful false)
+
+
+GAS_TEST := tests/unit/vault/test_allBatchGasEstimate.py
+GAS_ENV = -e TOKEN_ADDRESS="$(TOKEN)" -e RECIPIENT_SALT="$(RECIPIENT_SALT)" -e CCM="$(CCM)"
+
+estimate_gas:
+	@NET="$(NETWORK)"; NET="$${NET:-hardhat}"; \
+	rm -f reports/evm_gas_analysis_$${NET}_*.txt; \
+	if [ "$$NET" = "hardhat" ]; then \
+		$(COMPOSE) run --rm -e SEED= $(GAS_ENV) dev \
+			$(call WITH_NODE,brownie test $(GAS_TEST) --network hardhat --stateful false); \
+	else \
+		$(COMPOSE) run --rm $(GAS_ENV) dev \
+			brownie test $(GAS_TEST) --network $$NET --stateful false; \
+	fi; \
+	STATUS=$$?; \
+	REPORT=$$(ls -t reports/evm_gas_analysis_$${NET}_*.txt 2>/dev/null | head -1); \
+	if [ -n "$$REPORT" ]; then echo; echo "==== $$REPORT ===="; cat "$$REPORT"; \
+	else echo "No analysis written — see the test output above for what failed."; fi; \
+	exit $$STATUS
 
 # Mirrors .github/workflows/release.yml — asserts the Deposit create2 addresses
 # equal the canonical values in tests/shared_tests.py::deposit_bytecode_test.
