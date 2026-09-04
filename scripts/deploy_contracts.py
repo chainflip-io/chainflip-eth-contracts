@@ -34,6 +34,7 @@ from deploy import (
     deploy_wbtc_contract,
     deploy_bsc_usdt_contract,
     deploy_cbbtc_contract,
+    transaction_params,
 )
 from shared_tests import deposit_bytecode_test
 
@@ -43,6 +44,25 @@ cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 deployer = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 print(f"DEPLOYER = {deployer}")
+
+PRICE_FEED_DECIMAL_SCALE = 10**8
+LOCALNET_PRICE_FEEDS = [
+    "BTC / USD",
+    "ETH / USD",
+    "SOL / USD",
+    "USDC / USD",
+    "USDT / USD",
+]
+BSC_LOCALNET_PRICE_FEEDS = [
+    ("BTC / USD", 10_000),
+    ("ETH / USD", 1_000),
+    ("SOL / USD", 100),
+    ("USDC / USD", 1),
+    ("USDT / USD", 1),
+    ("TRX / USD", 1),
+    ("BNB / USD", 600),
+    ("DOT / USD", 10),
+]
 
 
 def main():
@@ -202,8 +222,18 @@ def deploy_optional_contracts(cf, addressDump):
         cf.priceFeeds = deploy_price_feeds(
             deployer,
             PriceFeedMock,
-            ["BTC / USD", "ETH / USD", "SOL / USD", "USDC / USD", "USDT / USD"],
+            LOCALNET_PRICE_FEEDS,
         )
+        addressDump["PRICE_FEEDS"] = ", ".join(
+            f"{feed[0]}: {feed[1].address}" for feed in cf.priceFeeds
+        )
+    elif chain.id in [bnb_localnet]:
+        cf.priceFeeds = deploy_price_feeds(
+            deployer,
+            PriceFeedMock,
+            [feed[0] for feed in BSC_LOCALNET_PRICE_FEEDS],
+        )
+        update_bsc_localnet_price_feeds(cf.priceFeeds)
         addressDump["PRICE_FEEDS"] = ", ".join(
             f"{feed[0]}: {feed[1].address}" for feed in cf.priceFeeds
         )
@@ -220,6 +250,16 @@ def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.cbbtc = deploy_cbbtc_contract(deployer, Token)
         addressDump["CBBTC_ADDRESS"] = cf.cbbtc.address
+
+
+def update_bsc_localnet_price_feeds(price_feeds):
+    required_confs = transaction_params()
+
+    for price_feed, (_, price) in zip(price_feeds, BSC_LOCALNET_PRICE_FEEDS):
+        price_feed[1].updatePrice(
+            price * PRICE_FEED_DECIMAL_SCALE,
+            {"from": deployer, "required_confs": required_confs},
+        )
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):

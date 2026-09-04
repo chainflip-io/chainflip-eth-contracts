@@ -28,7 +28,6 @@ RUN pnpm install
 
 # Add Script
 COPY ./evm-localnet-utils/arb_init.ts /app/arb_init.ts
-COPY ./evm-localnet-utils/bsc_init.ts /app/bsc_init.ts
 
 # Add ARB raw TXs JSON
 COPY ./scripts/.artefacts/arbRawDeploymentTxs.json /app/arbRawDeploymentTxs.json
