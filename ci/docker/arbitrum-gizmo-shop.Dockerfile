@@ -20,14 +20,14 @@ LABEL org.opencontainers.image.documentation="https://github.com/chainflip-io/ch
 WORKDIR /app
 
 # Install app dependencies
-COPY ./arb-utils/package.json /app/package.json
-COPY ./arb-utils/pnpm-lock.yaml /app/pnpm-lock.yaml
+COPY ./evm-localnet-utils/package.json /app/package.json
+COPY ./evm-localnet-utils/pnpm-lock.yaml /app/pnpm-lock.yaml
 
-RUN npm install -g pnpm
-RUN pnpm install
+RUN npm install -g pnpm@8.15.9
+RUN pnpm install --frozen-lockfile
 
 # Add Script
-COPY ./arb-utils/arb_init.ts /app/arb_init.ts
+COPY ./evm-localnet-utils/arb_init.ts /app/arb_init.ts
 
 # Add ARB raw TXs JSON
 COPY ./scripts/.artefacts/arbRawDeploymentTxs.json /app/arbRawDeploymentTxs.json

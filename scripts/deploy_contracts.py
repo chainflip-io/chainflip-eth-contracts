@@ -34,6 +34,7 @@ from deploy import (
     deploy_wbtc_contract,
     deploy_bsc_usdt_contract,
     deploy_cbbtc_contract,
+    transaction_params,
 )
 from shared_tests import deposit_bytecode_test
 
@@ -43,6 +44,34 @@ cf_accs = accounts.from_mnemonic(AUTONOMY_SEED, count=10)
 DEPLOYER_ACCOUNT_INDEX = int(os.environ.get("DEPLOYER_ACCOUNT_INDEX") or 0)
 deployer = cf_accs[DEPLOYER_ACCOUNT_INDEX]
 print(f"DEPLOYER = {deployer}")
+
+PRICE_FEED_DECIMAL_SCALE = 10**8
+LOCALNET_PRICE_FEEDS = [
+    "BTC / USD",
+    "ETH / USD",
+    "SOL / USD",
+    "USDC / USD",
+    "USDT / USD",
+]
+ETH_LOCALNET_EXTRA_PRICE_FEEDS = [
+    ("cbBTC / USD", 40_000),
+    ("BNB / USD", 600),
+]
+ARB_LOCALNET_EXTRA_PRICE_FEEDS = [
+    ("WBTC / USD", 40_000),
+    ("BNB / USD", 600),
+    ("DOT / USD", 1),
+]
+BSC_LOCALNET_PRICE_FEEDS = [
+    ("BTC / USD", 10_000),
+    ("ETH / USD", 1_000),
+    ("SOL / USD", 100),
+    ("USDC / USD", 1),
+    ("USDT / USD", 1),
+    ("TRX / USD", 1),
+    ("BNB / USD", 600),
+    ("DOT / USD", 10),
+]
 
 
 def main():
@@ -202,11 +231,15 @@ def deploy_optional_contracts(cf, addressDump):
         cf.priceFeeds = deploy_price_feeds(
             deployer,
             PriceFeedMock,
-            ["BTC / USD", "ETH / USD", "SOL / USD", "USDC / USD", "USDT / USD"],
+            LOCALNET_PRICE_FEEDS,
         )
-        addressDump["PRICE_FEEDS"] = ", ".join(
-            f"{feed[0]}: {feed[1].address}" for feed in cf.priceFeeds
+    elif chain.id in [bnb_localnet]:
+        cf.priceFeeds = deploy_price_feeds(
+            deployer,
+            PriceFeedMock,
+            [feed[0] for feed in BSC_LOCALNET_PRICE_FEEDS],
         )
+        update_localnet_price_feeds(cf.priceFeeds, BSC_LOCALNET_PRICE_FEEDS)
     if chain.id in [eth_mainnet, eth_sepolia, eth_localnet, hardhat] and hasattr(
         cf, "flip"
     ):
@@ -220,6 +253,37 @@ def deploy_optional_contracts(cf, addressDump):
     if chain.id in [arb_localnet, eth_localnet, hardhat]:
         cf.cbbtc = deploy_cbbtc_contract(deployer, Token)
         addressDump["CBBTC_ADDRESS"] = cf.cbbtc.address
+
+    # Append new feeds after all existing deployments to preserve their addresses.
+    if chain.id in [arb_localnet, eth_localnet, hardhat]:
+        # Hardhat supports both Ethereum and secondary EVM deployments.
+        extra_feed_settings = (
+            ETH_LOCALNET_EXTRA_PRICE_FEEDS
+            if hasattr(cf, "flip")
+            else ARB_LOCALNET_EXTRA_PRICE_FEEDS
+        )
+        extra_price_feeds = deploy_price_feeds(
+            deployer,
+            PriceFeedMock,
+            [feed[0] for feed in extra_feed_settings],
+        )
+        cf.priceFeeds.extend(extra_price_feeds)
+        update_localnet_price_feeds(extra_price_feeds, extra_feed_settings)
+
+    if hasattr(cf, "priceFeeds"):
+        addressDump["PRICE_FEEDS"] = ", ".join(
+            f"{feed[0]}: {feed[1].address}" for feed in cf.priceFeeds
+        )
+
+
+def update_localnet_price_feeds(price_feeds, feed_settings):
+    required_confs = transaction_params()
+
+    for price_feed, (_, price) in zip(price_feeds, feed_settings):
+        price_feed[1].updatePrice(
+            price * PRICE_FEED_DECIMAL_SCALE,
+            {"from": deployer, "required_confs": required_confs},
+        )
 
 
 def display_common_deployment_params(chain_id, deployer, govKey, commKey, aggKey):
